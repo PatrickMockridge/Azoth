@@ -2341,7 +2341,11 @@ def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _Phase
                 "component needs a correlation; a keycard supplies the parameters a "
                 "cubic reads and not these",
             )
-        kinds.append(record.antoine_form())
+        # **The raw label, not the cleaned form.** `saturation` maps it through
+        # `form_from_type` at the point of use, exactly as the rust kernel does; storing the
+        # mapped form here instead would put a different quantity in the field the two
+        # languages share, and only a row the mapping refuses would show it.
+        kinds.append(record.antoine_type)
         coefficients.extend(record.antoine)
         tcs.append(record.Tc.to_base_units().magnitude)
         pcs.append(record.Pc.to_base_units().magnitude)
@@ -2405,7 +2409,11 @@ def ge_van_laar_acid_phase_parameters(
                 "a species the acid model does not cover takes its `P0` from Antoine, and "
                 "the databank carries none for this one",
             )
-        kinds.append(record.antoine_form())
+        # **The raw label, not the cleaned form.** `saturation` maps it through
+        # `form_from_type` at the point of use, exactly as the rust kernel does; storing the
+        # mapped form here instead would put a different quantity in the field the two
+        # languages share, and only a row the mapping refuses would show it.
+        kinds.append(record.antoine_type)
         coefficients.extend(record.antoine)
         tcs.append(record.Tc.to_base_units().magnitude)
         pcs.append(record.Pc.to_base_units().magnitude)

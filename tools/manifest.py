@@ -548,7 +548,11 @@ def citation_problems(manifest: Manifest, root: Path = ROOT) -> list[str]:
     recorded = next((u.commit for u in manifest.upstreams if u.id == "neqsim"), "")
     if not recorded:
         return []
-    documents = [*(root / "specs").rglob("*.toml"), root / "NOTICE", MANIFEST.parent / "README.md"]
+    documents = [
+        *(root / "specs").rglob("*.toml"),
+        root / "NOTICE",
+        root / "databank" / "README.md",
+    ]
     messages: list[str] = []
     for path in sorted(documents):
         if not path.is_file():

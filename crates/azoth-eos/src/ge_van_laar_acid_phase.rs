@@ -25,7 +25,7 @@
 use azoth_core::units::pascals;
 use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::databank::{GeVanLaarAcidPhaseParameters, VanLaarAcidParameters};
+use crate::databank::{AntoineRecord, GeVanLaarAcidPhaseParameters, VanLaarAcidParameters};
 use crate::ge_phase::{combine, saturation};
 use crate::model_gen;
 use crate::results::GeVanLaarAcidPhaseResult;
@@ -118,26 +118,36 @@ pub fn ge_van_laar_acid_phase(
     warnings.extend(activity.warnings);
     let gamma = activity.gamma;
 
-    // `P0` per component: the acid correlation for the three modelled species, the
-    // database Antoine for anything else. `saturation` evaluates all of them, and the
-    // acid entries' results are then discarded - their stored rows are the all-zero ones
-    // the databank carries, so what is discarded is nothing.
-    let (antoine_p_sat, antoine_warnings) = saturation(&params.antoine, T)?;
+    // `P0` per component: the acid correlation for the three modelled species, the database
+    // Antoine for anything else. **`saturation` is asked only about the components that
+    // actually take the fallback**, because a component the acid correlation covers must not
+    // be refused for having no Antoine row of its own - the three of them carry upstream's
+    // `none` marker, and asking would refuse this model for its own components.
+    let fallback: Vec<AntoineRecord> = params
+        .antoine
+        .iter()
+        .zip(&params.acid_index)
+        .filter(|(_, index)| **index == 0)
+        .map(|(record, _)| record.clone())
+        .collect();
+    let (fallback_p_sat, antoine_warnings) = saturation(&fallback, T)?;
     warnings.extend(antoine_warnings);
     let acids = crate::nitric_sulfuric_acid_vapor_pressure::nitric_sulfuric_acid_vapor_pressure(
         azoth_core::units::kelvins(T),
     )?;
     warnings.extend(acids.warnings);
 
+    let mut next = fallback_p_sat.into_iter();
     let p_sat: Vec<f64> = params
         .acid_index
         .iter()
-        .enumerate()
-        .map(|(i, &index)| match index {
+        .map(|&index| match index {
             1 => acids.p_water.value,
             2 => acids.p_nitric_acid.value,
             3 => acids.p_sulfuric_acid.value,
-            _ => antoine_p_sat[i],
+            _ => next
+                .next()
+                .expect("one fallback pressure per component the acid correlation does not cover"),
         })
         .collect();
 

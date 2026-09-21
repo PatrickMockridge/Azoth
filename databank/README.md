@@ -57,7 +57,7 @@ check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1
 **The porting backlog is "carried, nothing reads it yet" — 397 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **379 columns carry it**, carried
+`not-ported` reason names the class that would close it — **378 columns carry it**, carried
 and dropped together, with a handful `unreachable-upstream` and the rest `not-a-value` or
 `empty-upstream` — `PhaseHydrate`, `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`,
 `ParachorSurfaceTension` and the rest. The check refuses a `not-ported` reason with no
@@ -99,9 +99,15 @@ failing before it writes anything.
 ## What none of this can tell you
 
 **Whether the vendored slice is current.** `manifest.toml` records the NeqSim commit it
-was last checked against (`805cf0f910819a19fdc45702fc44c4a3675d93d8`, v3.20.0), and
+was last checked against (`f0c7436c6923766b1e22957b7075f650600457a7`, master), and
 nothing here can tell you a newer NeqSim exists. The `not_vendored` list was built by
 expanding NeqSim's resource directory by hand, at that commit.
+
+**The `version` field does not identify the revision.** It names the `revision` property in
+NeqSim's own `pom.xml`, which reads `3.21.0` both at the `v3.21.0` tag and on master — 50
+commits apart — so the same version names two different trees. **The `commit` is the pin**,
+and a document wanting a readable name for it says `NeqSim master`, because that is the only
+name that resolves to the bytes vendored here.
 
 The alternative - fetching from GitHub in CI - would make every build depend on a
 network service the project does not control, to answer a question that only matters

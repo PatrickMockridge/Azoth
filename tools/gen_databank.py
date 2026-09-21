@@ -169,8 +169,13 @@ def _upstream(key: str) -> str:
 
 NEQSIM_VERSION = _upstream("version")
 NEQSIM_COMMIT = _upstream("commit")
+#: **The revision, named by the commit rather than the version.** The manifest's `version`
+#: is NeqSim's own `pom.xml` property, which reads the same at the release tag and on master
+#: - fifty commits apart - so a citation built from it names two different trees. The commit
+#: is the pin, and `master` is the only readable name that resolves to the bytes vendored
+#: here. The version is kept beside it because a reader recognises it.
 CITATION = (
-    f"NeqSim v{NEQSIM_VERSION} COMP.csv (Equinor/NTNU), Apache-2.0, "
+    f"NeqSim master ({NEQSIM_COMMIT[:7]}) COMP.csv (Equinor/NTNU), Apache-2.0, "
     f"retrieved {_upstream('retrieved')}"
 )
 

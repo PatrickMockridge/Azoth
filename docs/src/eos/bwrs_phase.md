@@ -69,4 +69,4 @@ not an equation, and both implementations read it from here.
 ## References
 
 - Younglove, B. A.; Ely, J. F. (1987). "Thermophysical Properties of Fluids. II. Methane, Ethane, Propane, Isobutane, and Normal Butane." Journal of Physical and Chemical Reference Data 16(4), 577-798. DOI 10.1063/1.555785
-- NeqSim 3.20.0, `ComponentBWRS.java` / `PhaseBWRSEos.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.
+- NeqSim master, `ComponentBWRS.java` / `PhaseBWRSEos.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.

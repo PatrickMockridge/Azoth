@@ -14,7 +14,7 @@ assumptions = [
 references = [
     "Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). \"Accurate statistical associating fluid theory for chain molecules formed from Mie segments.\" The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786",
     "Wilson, G. M. (1969). \"A Modified Redlich-Kwong Equation of State, Application to General Physical Data Calculations.\" Paper 15C, AIChE 65th National Meeting.",
-    "NeqSim 3.20.0, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.",
+    "NeqSim master, `TPflashSAFT.java` / `SystemSAFTVRMie.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.",
 ]
 [source]
 standard = "Lafitte, T. et al. (2013)"

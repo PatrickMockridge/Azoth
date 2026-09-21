@@ -18,6 +18,7 @@ from typing import Any, NamedTuple
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.warnings import Warning
+from azoth.eos.components import form_from_type
 from azoth.eos.reference.antoine_vapor_pressure import antoine_vapor_pressure
 
 
@@ -30,6 +31,37 @@ class GeFugacities(NamedTuple):
     p_sat: list[float]
     #: Caveats from the correlations.
     warnings: list[Warning]
+
+
+class AntoineSubset(NamedTuple):
+    """A per-component Antoine table, as :func:`saturation` reads one."""
+
+    antoine_type: tuple[str, ...]
+    antoine_coefficients: tuple[float, ...]
+    antoine_tc: tuple[float, ...]
+    antoine_pc: tuple[float, ...]
+
+
+def uncovered(params: Any) -> AntoineSubset:
+    """The components of ``params`` that take the Antoine fallback.
+
+    **A phase that overrides some components' ``P0`` from another correlation must not ask
+    :func:`saturation` about those.** Upstream's acid phase takes the three acids' vapour
+    pressures from
+    :mod:`azoth.eos.reference.nitric_sulfuric_acid_vapor_pressure` and reaches Antoine only
+    for anything else, and the acids carry upstream's ``none`` marker in the databank - so
+    asking refuses the phase for its own components. The resolver agrees: it requires an
+    Antoine row only of a component the acid correlation does not cover.
+    """
+    keep = [i for i, index in enumerate(params.acid_index) if index == 0]
+    return AntoineSubset(
+        antoine_type=tuple(params.antoine_type[i] for i in keep),
+        antoine_coefficients=tuple(
+            params.antoine_coefficients[i * 5 + k] for i in keep for k in range(5)
+        ),
+        antoine_tc=tuple(params.antoine_tc[i] for i in keep),
+        antoine_pc=tuple(params.antoine_pc[i] for i in keep),
+    )
 
 
 def saturation(antoine: Any, t_k: float) -> tuple[list[float], list[Warning]]:
@@ -45,13 +77,21 @@ def saturation(antoine: Any, t_k: float) -> tuple[list[float], list[Warning]]:
     warnings: list[Warning] = []
     p_sat: list[float] = []
     for i in range(len(antoine.antoine_type)):
-        # **A `none` row is refused rather than evaluated.** It is upstream's marker for an
-        # *unavailable* correlation - `83b64e5`, PR #3775 - and an activity-coefficient
-        # phase's standard state **is** `P0`, so a component without one cannot be in this
-        # phase. Sent to Wagner the row's five zeros give `exp(0) * Pc = Pc`: a plausible
-        # number four orders of magnitude wrong, which is the failure this library exists to
-        # make impossible. The rust kernel refuses at the same place.
-        if antoine.antoine_type[i] == "none":
+        # **A row with no correlation is refused rather than evaluated.** Upstream's marker
+        # for an *unavailable* correlation - `83b64e5`, PR #3775, which now covers 331 of its
+        # 389 rows - and an activity-coefficient phase's standard state **is** `P0`, so a
+        # component without one cannot be in this phase. Sent to Wagner the row's five zeros
+        # give `exp(0) * Pc = Pc`: a plausible number four orders of magnitude wrong, which is
+        # the failure this library exists to make impossible. The rust kernel refuses at the
+        # same place.
+        #
+        # **The label is the raw one and the mapping happens here**, which is what the rust
+        # kernel does and what `form_from_type` is for: the parameters carry the databank's
+        # own `AntoineVapPresLiqType` label, and `""` from the mapping is the refusal.
+        start = i * 5
+        [a, b, c, d, e] = antoine.antoine_coefficients[start : start + 5]
+        form = form_from_type(antoine.antoine_type[i], e)
+        if not form:
             raise InvalidInputError(
                 "components",
                 "the component at index "
@@ -60,15 +100,13 @@ def saturation(antoine: Any, t_k: float) -> tuple[list[float], list[Warning]]:
                 "phase's standard state is the pure liquid's saturation pressure, so a "
                 "component without one cannot be in this phase",
             )
-        start = i * 5
-        [a, b, c, d, e] = antoine.antoine_coefficients[start : start + 5]
         saturated = antoine_vapor_pressure(
             a,
             b,
             c,
             d,
             e,
-            antoine.antoine_type[i],
+            form,
             from_si(antoine.antoine_tc[i], "K"),
             from_si(antoine.antoine_pc[i], "Pa"),
             from_si(t_k, "K"),

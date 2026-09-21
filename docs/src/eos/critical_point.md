@@ -78,4 +78,4 @@ not an equation, and both implementations read it from here.
 - Heidemann, R. A.; Khalil, A. M. (1980). "The calculation of critical points." AIChE Journal 26(5), 769-779. DOI 10.1002/aic.690260510.
 - Michelsen, M. L.; Mollerup, J. M. (2004). "Thermodynamic Models: Fundamentals and Computational Aspects", ch. 5.
 - Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.
-- NeqSim 3.20.0, `CriticalPointFlash.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.
+- NeqSim master, `CriticalPointFlash.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.

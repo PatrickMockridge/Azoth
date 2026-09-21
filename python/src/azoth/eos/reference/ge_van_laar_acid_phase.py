@@ -20,7 +20,7 @@ from azoth.core.result import GeVanLaarAcidPhaseResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos.components import GeVanLaarAcidPhaseParameters, VanLaarAcidParameters
-from azoth.eos.reference._ge_phase import combine, saturation
+from azoth.eos.reference._ge_phase import combine, saturation, uncovered
 from azoth.eos.reference.nitric_sulfuric_acid_vapor_pressure import (
     nitric_sulfuric_acid_vapor_pressure,
 )
@@ -115,9 +115,12 @@ def ge_van_laar_acid_phase(
     gamma = list(activity.gamma)
 
     # `P0` per component: the acid correlation for the three modelled species, the database
-    # Antoine for anything else. `saturation` evaluates all of them and the acid entries'
-    # results are then discarded - their stored rows are the all-zero ones.
-    antoine_p_sat, antoine_warnings = saturation(params, t_si)
+    # Antoine for anything else. **`saturation` is asked only about the components that
+    # actually take the fallback**, because a component the acid correlation covers must not
+    # be refused for having no Antoine row of its own - the three of them carry upstream's
+    # `none` marker, and asking would refuse this model for its own components.
+    fallback = uncovered(params)
+    fallback_p_sat, antoine_warnings = saturation(fallback, t_si)
     warnings.extend(antoine_warnings)
     acids = nitric_sulfuric_acid_vapor_pressure(from_si(t_si, "K"))
     warnings.extend(acids.warnings)
@@ -127,7 +130,13 @@ def ge_van_laar_acid_phase(
         2: acids.p_nitric_acid.to_base_units().magnitude,
         3: acids.p_sulfuric_acid.to_base_units().magnitude,
     }
-    p_sat = [acid_pa.get(index, antoine_p_sat[i]) for i, index in enumerate(params.acid_index)]
+    # **The fallback is consumed lazily**, one per component: `dict.get` evaluates its default
+    # eagerly, so `acid_pa.get(index, next(remaining))` would spend a fallback pressure on
+    # every acid component too and run out.
+    remaining = iter(fallback_p_sat)
+    p_sat = [
+        acid_pa[index] if index in acid_pa else next(remaining) for index in params.acid_index
+    ]
 
     # The penalty replaces the whole coefficient, not just `P0`: NeqSim returns it before
     # computing anything else.

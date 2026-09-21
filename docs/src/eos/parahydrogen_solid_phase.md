@@ -67,4 +67,4 @@ not an equation, and both implementations read it from here.
 ## References
 
 - Sannerhaugen, A. (2026). "Equation of State for Solid Para-hydrogen." (thesis).
-- NeqSim 3.20.0, `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.
+- NeqSim master, `thermo/util/solid/ParaHydrogenSolidHelmholtzEquation.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.

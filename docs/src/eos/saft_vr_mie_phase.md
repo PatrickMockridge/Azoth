@@ -65,4 +65,4 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## References
 
 - Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). "Accurate statistical associating fluid theory for chain molecules formed from Mie segments." The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786
-- NeqSim 3.20.0, `PhaseSAFTVRMie.java` / `ComponentSAFTVRMie.java`, Apache-2.0, commit 805cf0f910819a19fdc45702fc44c4a3675d93d8.
+- NeqSim master, `PhaseSAFTVRMie.java` / `ComponentSAFTVRMie.java`, Apache-2.0, commit f0c7436c6923766b1e22957b7075f650600457a7.
