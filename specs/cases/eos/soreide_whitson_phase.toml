@@ -70,38 +70,36 @@ id = "a_condensate_at_333_k"
 tolerance = 1e-08
 source = """NeqSim master, the same probe's third mixture - CO2, methane, n-butane, n-heptane,
 water at `0.15 0.4 0.15 0.1 0.2`, flashed at 60 C and 100 bara - at its flashed vapour
-composition. **The expected values are this library's, and NeqSim's differ**: it gives
-`Z = 0.769862281664881` and `lnPhi = [-0.345400985060, -0.0888646269367, -1.27926109832,
--2.07522298313, -0.576172200859]`, and its aqueous phase differs the same way.
+composition, which is `x` below. **The two agree to `9e-14` on `Z` and `1e-12` on every
+`ln phi`**, and the comparison is only fair at this composition: the case is fed the phase, it
+does not flash, so an input taken from another revision's flash measures the flash and not the
+model.
 
-The whole of the difference is the six comma-decimal rows of `KIJWhitsonSoriede`. This mixture
-contains two of them - `CO2`/`n-butane` and `CO2`/`n-heptane` - and NeqSim's own reader throws on
-those rows and leaves `KIJSRK` in place by the per-pair `catch` in `EosMixingRuleHandler`. Feeding
-the model `KIJSRK` for those two pairs alone reproduces NeqSim's numbers above to twelve digits,
-which is the measurement that says the divergence is those two rows and nothing else.
-
-So this case is the divergence pinned rather than described, and it is the reason the model's
-specification states it: azoth reads the column as the file writes it, and NeqSim evaluates a
-different fitted parameter without saying so."""
+`validation/neqsim/captures/soreide_whitson_arithmetic.tsv` is that flash's own record, and its
+`kij` block is the check: the six rows whose `KIJWhitsonSoriede` entry carried a decimal comma
+now hold `0.1241` and its siblings, which is what this library's reader made of them all along.
+NeqSim's `Double.parseDouble` threw on those rows and the per-pair `catch` in
+`EosMixingRuleHandler` swallowed it, so its pairs fell back to `KIJSRK` - and the six rows
+upstream has since rewritten are why this case is a comparison rather than a divergence pinned."""
 [cases.inputs]
 components = ["CO2", "methane", "n-butane", "n-heptane", "water"]
 T = 333.15
 P = 10000000.0
 x = [
-    0.183288952782,
-    0.683579694669,
-    0.0399702490289,
-    0.0186031829599,
-    0.0745579205601,
+    0.185665176862,
+    0.680978150810,
+    0.0398663745830,
+    0.0188443410379,
+    0.0746459567070,
 ]
 salinity = 0.0
 compressed_phase = "vapour"
 [cases.expected]
-z_factor = 0.7700995223966778
+z_factor = 0.7690830488152696
 ln_phi = [
-    -0.34438750978488825,
-    -0.08912685266260975,
-    -1.2856335983970442,
-    -2.0495469364865997,
-    -0.5762876807455574,
+    -0.344901510120477,
+    -0.08858361432369372,
+    -1.287720027792928,
+    -2.053384039061119,
+    -0.5779054139995432,
 ]
