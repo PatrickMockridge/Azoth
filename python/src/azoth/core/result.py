@@ -501,6 +501,23 @@ class HydrateFormationPressureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateEquilibriumLineResult(_HasWarnings):
+    """Result of ``eos.hydrate_equilibrium_line``.
+
+    A hydrate curve: the formation temperature at each of ten equally spaced pressures from a
+    minimum to a maximum. The grid is NeqSim's own - ten points, whatever the bounds - and the
+    arithmetic at each point is ``eos.hydrate_formation_temperature``'s.
+    """
+
+    #: The formation temperatures, in grid order, in kelvin.
+    temperature: tuple[float, ...]
+    #: The pressures the points were solved at, in pascals, parallel to ``temperature``.
+    pressure: tuple[float, ...]
+    #: Caveats, from every point of the grid.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrateFractionResult(_HasWarnings):
     """Result of ``eos.hydrate_fraction``."""
 

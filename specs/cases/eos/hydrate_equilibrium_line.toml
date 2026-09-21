@@ -1,0 +1,34 @@
+model = "eos.hydrate_equilibrium_line"
+[[cases]]
+id = "methane_ethane_propane_water_from_1_to_200_bara"
+tolerance = 1e-06
+source = """NeqSim master, `HydrateEquilibriumLine` over methane/ethane/propane/water at
+`79.0 10.10 2.050 10.0` moles, from `validation/neqsim/HydrateEquilibriumProbe.java`: ten
+pressures from 1 to 200 bara and the formation temperature at each, the first at
+`258.09958291696` K and the last at `297.061002920514` K.
+
+**The seeding between points is left out and that is measured, not assumed.** NeqSim sets the
+system's temperature to the previous point's answer before each solve; the probe runs the same
+ten pressures independently on a fresh system and the two vectors agree to every printed digit
+(`worst_relative_gap = 0`). So the seeding is a starting guess rather than part of the
+answer, and this model solves each point from nothing.
+
+The fluid is a plain SRK on purpose, as for the formation temperature: the hydrate's arithmetic
+takes its guests' fugacities from whatever fluid it is attached to, so this pins the hydrate
+and not the mixing rule. NeqSim's own published cases for this family use `SystemSrkCPAstatoil`
+with `CLASSIC_TX_CPA`, which is a second thing to be right about rather than a first."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "water"]
+eos = "srk"
+hydrate_model = "pvtsim"
+P_min = 100000.0
+P_max = 20000000.0
+z = [
+    0.7810182896688087,
+    0.09985170538803756,
+    0.020266930301532374,
+    0.09886307464162135,
+]
+[cases.expected]
+temperature = [258.099582916960, 282.316876654403, 287.762981872390, 290.688987372908, 292.552200127104, 293.861737270018, 294.863816418626, 295.690077826984, 296.410250673584, 297.061002920514]
+pressure = [100000.0, 2311111.1, 4522222.2, 6733333.3, 8944444.4, 11155555.6, 13366666.7, 15577777.8, 17788888.9, 20000000.0]

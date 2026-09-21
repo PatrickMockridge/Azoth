@@ -3257,6 +3257,37 @@ pub fn hydrate_formation_pressure(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// A hydrate curve over a pressure grid, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the hydrate's guest
+/// tables are keyed by name, so a mixture built from constants alone could not carry them.
+#[pyfunction]
+#[pyo3(signature = (components, P_min, P_max, z, eos = "srk", hydrate_model = "pvtsim"))]
+#[allow(non_snake_case)] // `P_min` and `P_max` are the bounds in the chemistry
+pub fn hydrate_equilibrium_line(
+    py: Python<'_>,
+    components: Vec<String>,
+    P_min: f64,
+    P_max: f64,
+    z: Vec<f64>,
+    eos: &str,
+    hydrate_model: &str,
+) -> PyResult<crate::results::PyHydrateEquilibriumLineResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
+        &names,
+        eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
+        None,
+        hydrate_model
+            .parse()
+            .unwrap_or(azoth_eos::hydrate::HydrateModel::Pvtsim),
+    )
+    .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::hydrate_equilibrium_line(&mixture, pascals(P_min), pascals(P_max), &z)
+        .map(|r| crate::results::PyHydrateEquilibriumLineResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The fraction of a feed that is hydrate at a state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest

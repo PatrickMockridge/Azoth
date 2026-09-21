@@ -428,6 +428,12 @@ class HeliumPhaseResult:
     warnings: list[Warning]
 
 @final
+class HydrateEquilibriumLineResult:
+    temperature: list[float]
+    pressure: list[float]
+    warnings: list[Warning]
+
+@final
 class HydrateFormationPressureResult:
     pressure: Qty
     structure: str
@@ -1538,6 +1544,14 @@ def heat_of_vaporization(
     T: float,
 ) -> HeatOfVaporizationResult: ...
 def helium_phase(T: float, P: float) -> HeliumPhaseResult: ...
+def hydrate_equilibrium_line(
+    components: list[str],
+    P_min: float,
+    P_max: float,
+    z: list[float],
+    eos: str,
+    hydrate_model: str | None = None,
+) -> HydrateEquilibriumLineResult: ...
 def hydrate_formation_pressure(
     components: list[str],
     T: float,

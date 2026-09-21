@@ -898,6 +898,26 @@ impl CalcResult for HydrateFormationPressureResult {
     }
 }
 
+/// Result of `eos.hydrate_equilibrium_line`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateEquilibriumLineResult {
+    /// The formation temperatures along the grid, in grid order.
+    pub temperature: Vec<f64>,
+    /// The pressures the points were solved at, parallel to `temperature`.
+    pub pressure: Vec<f64>,
+    /// Caveats, from every point of the grid.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateEquilibriumLineResult {
+    const CALC_ID: &'static str = "eos.hydrate_equilibrium_line";
+    const FIELDS: &'static [&'static str] = &["temperature", "pressure", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.pure_saturation`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PureSaturationResult {

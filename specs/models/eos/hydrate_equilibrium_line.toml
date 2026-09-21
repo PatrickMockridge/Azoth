@@ -1,0 +1,79 @@
+id = "eos.hydrate_equilibrium_line"
+name = "Hydrate equilibrium line"
+kind = "procedure"
+assumptions = [
+    "**this is a grid over `eos.hydrate_formation_temperature`, and that model is all the arithmetic.** The equality, the cages and the structure are its; this adds the pressures and the vectors.",
+    "**the grid is ten points and that count is not an input.** NeqSim's `numberOfPoints` is a field initialised to ten that no constructor or setter writes, so its own surface cannot vary it either. Another grid is `eos.hydrate_formation_temperature` called by the caller.",
+    "the pressures are `P_min + (P_max - P_min) i / 9` for `i` in `0..10`, which lands exactly on `P_max` at the last point - NeqSim's own stepping, and why it never sets the maximum separately.",
+    "**the seeding between points is not reproduced, because it changes nothing.** NeqSim sets each point's starting temperature to the previous answer; the ten pressures solved independently agree with its walk to every printed digit (`worst_relative_gap = 0` in the capture).",
+    "**a point that cannot be solved is refused rather than repeated.** NeqSim catches a failed point and then reads the system's temperature anyway, so the vector carries the previous point's answer at that index and nothing says so.",
+    "**the two vectors are all there is.** NeqSim reports a temperature row and a pressure row, so the structure a point solved to is not in the answer even though the model behind it reports one; ask `eos.hydrate_formation_temperature` for it.",
+    "**`guo_finch` solves a different equilibrium, not a better one.** Its reference is the empty lattice's vapour pressure with no reference-water-fugacity term, and NeqSim reaches it only through a `CPA-SRK-EOS`-named system - so on a fluid this library can build it is another calculation.",
+    "**the `guo_finch` grid does not bracket at every pressure.** Measured on the one case: it solves from 23 to 100 bara, giving `259.36` K at 100 where `pvtsim` gives `293.23`, and refuses at 1 and 200 bara.",
+    "no energy balance. The line is a phase-equilibrium locus at a set of pressures, not a statement about how a stream got there.",
+]
+references = [
+    "van der Waals, J. H.; Platteeuw, J. C. (1959). \"Clathrate Solutions.\" Advances in Chemical Physics 2(1), 1-57. DOI 10.1002/9780470143483.ch1.",
+    "Sloan, E. D.; Koh, C. A. (2008). \"Clathrate Hydrates of Natural Gases.\", 3rd ed., CRC Press.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `HydrateEquilibriumLine` is the port source, over `HydrateFormationTemperatureFlash`.",
+]
+[source]
+standard = "NeqSim master `HydrateEquilibriumLine`"
+edition = "The grid and nothing else: the points are `HydrateFormationTemperatureFlash`'s, and the seeding between them is left out because it changes no answer."
+[algorithm]
+scheme = "hydrate_equilibrium_grid"
+initialisation = "uniform_pressure_grid"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 600
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name. At least one must be water and one a hydrate former."
+[inputs.P_min]
+unit = "Pa"
+description = "the lowest pressure of the grid, which is the first point."
+[inputs.P_max]
+unit = "Pa"
+description = "the highest pressure of the grid, which is the last point and must be above the minimum."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions, checked rather than renormalised."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs, which is also the equation each point's reference water phase is built from."
+[inputs.hydrate_model]
+type = "enum"
+values = ["pvtsim", "guo_finch"]
+optional = true
+description = "which of NeqSim's two fitted component models fills the cages, as for `eos.hydrate_formation_temperature`."
+[outputs]
+[outputs.temperature]
+type = "vector"
+unit = "K"
+length = "one per grid point, ten of them"
+description = "the formation temperature at each pressure, in grid order."
+[outputs.pressure]
+type = "vector"
+unit = "Pa"
+length = "one per grid point, parallel to `temperature`"
+description = "the pressures the points were solved at, which is the grid the caller asked for."
+[[valid_range]]
+quantity = "P_min"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "P_max"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure, and it must be above the minimum"
+[implementations]
+python = "azoth.eos.hydrate_equilibrium_line"
+rust = "azoth_eos::hydrate_equilibrium_line"

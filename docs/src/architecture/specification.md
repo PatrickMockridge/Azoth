@@ -39,14 +39,14 @@ SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash oper
 and ~60 saturation operations, **~60 physical-property methods**, 25 alpha functions and
 15 mixing rules, over a **~90-field component model**.
 
-azoth has **139 ids** — 65 calculations and 74 models.
+azoth has **140 ids** — 65 calculations and 75 models.
 
 ## The ledger
 
 `databank/manifest.toml` records every column of every vendored NeqSim table, and for each
 column that is not carried across, the NeqSim class that would close it, under a reason
 prefix from a closed vocabulary: `not-ported`, `not-yet`, `not-a-value`,
-`empty-upstream`, `licence`, `superseded-by`.
+`empty-upstream`, `licence`, `superseded-by`, `unreachable-upstream`, `uncalled-upstream`.
 
 `tools/check_manifest.py` validates it and prints the tally. That tally is the port's
 progress bar, and it is the checker's to print rather than this page's to copy: run

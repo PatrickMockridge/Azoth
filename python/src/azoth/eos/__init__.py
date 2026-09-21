@@ -100,6 +100,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
@@ -260,6 +261,8 @@ __all__ = [
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
     "helium_phase",
+    "hydrate_equilibrium_line",
+    "hydrate_formation_pressure",
     "hydrate_formation_temperature",
     "hydrate_fraction",
     "hydrogen_phase",
@@ -362,6 +365,7 @@ _AMMONIA_PHASE = "eos.ammonia_phase"
 _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
 _HYDRATE_FORMATION_TEMPERATURE = "eos.hydrate_formation_temperature"
+_HYDRATE_EQUILIBRIUM_LINE = "eos.hydrate_equilibrium_line"
 _HYDRATE_FRACTION = "eos.hydrate_fraction"
 _HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
@@ -2027,6 +2031,44 @@ def hydrate_formation_pressure(
     """
     return resolve(_HYDRATE_FORMATION_PRESSURE)(  # type: ignore[no-any-return]
         components=components, T=T, z=z, eos=eos, hydrate_model=hydrate_model
+    )
+
+
+def hydrate_equilibrium_line(
+    components: list[str],
+    P_min: Q,
+    P_max: Q,
+    z: list[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
+) -> HydrateEquilibriumLineResult:
+    """A hydrate curve: the formation temperature at ten pressures from ``P_min`` to ``P_max``.
+
+    A loop over :func:`hydrate_formation_temperature` rather than an equilibrium of its own,
+    so the equality, the cages and the structure are that model's. What this adds is the grid
+    - which is **ten points and not a caller's choice**, because NeqSim's own line has a
+    ``numberOfPoints`` field that nothing ever sets. A caller wanting another grid wants
+    :func:`hydrate_formation_temperature` over pressures of their own.
+
+    NeqSim seeds each point's solve with the previous point's answer, and this does not: the
+    two agree to every printed digit, so the seeding is a starting guess and not part of the
+    answer.
+
+    Raises:
+        InvalidInputError: if either bound is not positive, if ``P_max`` is not above
+            ``P_min``, if the fluid has no water, or if nothing in it occupies a cage.
+        OutOfRangeError: from any point's cavity sum.
+        SolverNotConvergedError: from any point's own solve.
+
+    See :func:`azoth.eos.reference.hydrate_equilibrium_line`.
+    """
+    return resolve(_HYDRATE_EQUILIBRIUM_LINE)(  # type: ignore[no-any-return]
+        components=components,
+        P_min=P_min,
+        P_max=P_max,
+        z=z,
+        eos=eos,
+        hydrate_model=hydrate_model,
     )
 
 

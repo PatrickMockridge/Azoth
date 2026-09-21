@@ -240,6 +240,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::scale_saturation_ratio, m)?)?;
     m.add_function(wrap_pyfunction!(eos::solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::salt_precipitation, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::hydrate_equilibrium_line, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrogen_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::water_phase, m)?)?;

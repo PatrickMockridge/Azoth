@@ -25,8 +25,9 @@ use azoth_eos::results::{
     FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
     GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrateFormationPressureResult, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    HydrateEquilibriumLineResult, HydrateFormationPressureResult,
+    HydrateFormationTemperatureResult, HydrateFractionResult, HydrogenPhaseResult,
+    IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
     MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
@@ -4387,6 +4388,48 @@ impl From<&HydrateFormationPressureResult> for PyHydrateFormationPressureResult 
     }
 }
 
+/// Result of `eos.hydrate_equilibrium_line`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateEquilibriumLineResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateEquilibriumLineResult {
+    /// The formation temperatures along the grid, in kelvin.
+    #[pyo3(get)]
+    pub temperature: Vec<f64>,
+    /// The pressures the points were solved at, in pascals, parallel to `temperature`.
+    #[pyo3(get)]
+    pub pressure: Vec<f64>,
+    /// Caveats, from every point of the grid.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateEquilibriumLineResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateEquilibriumLineResult({} point(s), {} to {} K)",
+            self.temperature.len(),
+            self.temperature.first().copied().unwrap_or(f64::NAN),
+            self.temperature.last().copied().unwrap_or(f64::NAN)
+        )
+    }
+}
+
+impl From<&HydrateEquilibriumLineResult> for PyHydrateEquilibriumLineResult {
+    fn from(r: &HydrateEquilibriumLineResult) -> Self {
+        Self {
+            temperature: r.temperature.clone(),
+            pressure: r.pressure.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.hydrate_fraction`, transported.
 #[pyclass(
     frozen,
@@ -6739,6 +6782,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateFormationTemperatureResult::CALC_ID => {
             HydrateFormationTemperatureResult::FIELDS.to_vec()
         }
+        HydrateEquilibriumLineResult::CALC_ID => HydrateEquilibriumLineResult::FIELDS.to_vec(),
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),

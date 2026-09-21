@@ -64,6 +64,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
@@ -2801,6 +2802,36 @@ def hydrate_fraction(
         balance_error=result.balance_error,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hydrate_equilibrium_line(
+    components: Sequence[str],
+    P_min: Q,
+    P_max: Q,
+    z: Sequence[float],
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
+) -> HydrateEquilibriumLineResult:
+    """A hydrate curve over a pressure grid, computed in Rust.
+
+    **The component names cross unresolved**, and the Rust side resolves them: the hydrate's
+    guest tables are keyed by name, so a mixture built from constants alone could not carry
+    them.
+    """
+    spec = _models_gen.model("eos.hydrate_equilibrium_line")
+    result = _core.hydrate_equilibrium_line(
+        list(components),
+        input_to_si(spec, "P_min", P_min),
+        input_to_si(spec, "P_max", P_max),
+        list(z),
+        eos,
+        hydrate_model,
+    )
+    return HydrateEquilibriumLineResult(
+        temperature=tuple(result.temperature),
+        pressure=tuple(result.pressure),
         warnings=_warnings(result.warnings),
     )
 

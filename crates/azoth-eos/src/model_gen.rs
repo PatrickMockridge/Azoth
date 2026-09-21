@@ -24,6 +24,7 @@
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
+//!   - specs/models/eos/hydrate_equilibrium_line.toml
 //!   - specs/models/eos/hydrate_formation_pressure.toml
 //!   - specs/models/eos/hydrate_formation_temperature.toml
 //!   - specs/models/eos/hydrate_fraction.toml
@@ -3064,6 +3065,109 @@ pub static HELIUM_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HELIUM_PHASE_ALGORITHM),
     checks: HELIUM_PHASE_CHECKS,
     cases: HELIUM_PHASE_CASES,
+};
+
+static HYDRATE_EQUILIBRIUM_LINE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P_min",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P_max",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure, and it must be above the minimum",
+        },
+    },
+];
+
+static HYDRATE_EQUILIBRIUM_LINE_CASES: &[TestCase] = &[TestCase {
+    id: "methane_ethane_propane_water_from_1_to_200_bara",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-06,
+    numbers: &[("P_min", 100000.0), ("P_max", 20000000.0)],
+    flags: &[],
+    lists: &[("components", &["methane", "ethane", "propane", "water"])],
+    strings: &[("eos", "srk"), ("hydrate_model", "pvtsim")],
+    vectors: &[(
+        "z",
+        &[
+            0.7810182896688087,
+            0.09985170538803756,
+            0.020266930301532374,
+            0.09886307464162135,
+        ],
+    )],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[
+        (
+            "temperature",
+            &[
+                258.09958291696,
+                282.316876654403,
+                287.76298187239,
+                290.688987372908,
+                292.552200127104,
+                293.861737270018,
+                294.863816418626,
+                295.690077826984,
+                296.410250673584,
+                297.061002920514,
+            ],
+        ),
+        (
+            "pressure",
+            &[
+                100000.0, 2311111.1, 4522222.2, 6733333.3, 8944444.4, 11155555.6, 13366666.7,
+                15577777.8, 17788888.9, 20000000.0,
+            ],
+        ),
+    ],
+    expected_strings: &[],
+}];
+
+static HYDRATE_EQUILIBRIUM_LINE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "hydrate_equilibrium_grid",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 600,
+    bracket: None,
+    initialisation: Some("uniform_pressure_grid"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.hydrate_equilibrium_line`.
+pub static HYDRATE_EQUILIBRIUM_LINE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hydrate_equilibrium_line",
+    kind: "procedure",
+    algorithm: Some(&HYDRATE_EQUILIBRIUM_LINE_ALGORITHM),
+    checks: HYDRATE_EQUILIBRIUM_LINE_CHECKS,
+    cases: HYDRATE_EQUILIBRIUM_LINE_CASES,
 };
 
 static HYDRATE_FORMATION_PRESSURE_CHECKS: &[SpecCheck] = &[
@@ -8497,6 +8601,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
+    &HYDRATE_EQUILIBRIUM_LINE_SPEC,
     &HYDRATE_FORMATION_PRESSURE_SPEC,
     &HYDRATE_FORMATION_TEMPERATURE_SPEC,
     &HYDRATE_FRACTION_SPEC,
