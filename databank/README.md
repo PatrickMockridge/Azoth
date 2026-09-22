@@ -45,11 +45,11 @@ done with it and a reason; the other six are vendored whole, three of them becau
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1095 read, 0 not-vendored entr(ies))
-  381  carried, nothing reads it yet
+check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1126 read, 0 not-vendored entr(ies))
+  350  carried, nothing reads it yet
   1109  carried with no unit NeqSim states (neqsim-internal)
-  349  not-ported
-   10  not-a-value
+  312  not-ported
+   16  not-a-value
    10  empty-upstream
     2  superseded-by
     7  unreachable-upstream
@@ -57,10 +57,10 @@ check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1
    11  unread-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 381 columns — and it is
+**The porting backlog is "carried, nothing reads it yet" — 350 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **349 columns carry it**, carried
+`not-ported` reason names the class that would close it — **312 columns carry it**, carried
 and dropped together, with a handful `unreachable-upstream`, ten `uncalled-upstream`, eleven
 `unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.
@@ -112,14 +112,20 @@ should be able to answer it from this file alone. That is the whole of its purpo
 
 ```bash
 python tools/check_manifest.py                     # the manifest against the files
-python tools/gen_databank.py --check               # the shipped files against the sources
+python tools/gen_databank.py --check               # the component files against the sources
+python tools/gen_reaction_data.py --check          # the reaction files against the sources
 ```
 
-Both run in CI. Between them: every vendored file is declared and present; the manifest's
-columns and the source's header agree in both directions; the `used` columns and the
-compiled header agree in both directions; the row counts are what the manifest says;
-and `tools/gen_databank.py`'s own column list cannot disagree with the manifest without
+All three run in CI. Between them: every vendored file is declared and present; the
+manifest's columns and the source's header agree in both directions; the `used` columns
+and the compiled header agree in both directions; the row counts are what the manifest
+says; and each generator's own column list cannot disagree with the manifest without
 failing before it writes anything.
+
+**Two generators rather than one** because the compiled files answer to two crates:
+`data/components/` is the equation-of-state data and `data/reactions/` is the reaction
+data, and a tool that wrote both would be the one place a namespace's data could be
+generated into the wrong tree.
 
 ## What none of this can tell you
 
