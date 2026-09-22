@@ -40,8 +40,9 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.toml` is the record of what was taken
 
 Every resource file NeqSim ships is declared once, and every column of every one of
-them (35 files, 1,497 columns) is listed with what was done with it and a reason.
-`tools/check_manifest.py` prints the tally:
+them whose columns are enumerated — 31 files, 1,497 columns — is listed with what was
+done with it and a reason; the other six are vendored whole, three of them because
+they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
 check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1095 read, 0 not-vendored entr(ies))
