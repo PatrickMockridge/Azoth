@@ -107,7 +107,8 @@ process model needs.
 ### Tier 2 — water and gas-water
 
 Water and the aqueous models: the water EOS, water content and dehydration, acid-gas
-solubility, electrolytes, salts and scale, and freezing.
+solubility, electrolytes, salts and scale, freezing, and the reactions an aqueous phase
+reaches equilibrium through.
 
 - **The water EOS.** `ComponentWater`, `PhaseWaterIAPWS`, `SystemWaterIF97`,
   `thermo/util/steam/Iapws_if97`.
@@ -133,6 +134,31 @@ solubility, electrolytes, salts and scale, and freezing.
   (`eos.furst_electrolyte_phase`) and `SystemFurstElectrolyteEos`, with the same three
   again for Mod2004 (`eos.furst_electrolyte_mod2004_phase`) over the parameters
   `FurstElectrolyteConstants` hardcodes.
+- **Reactions.** Ported, each with the id that carries it: `ChemicalReaction`
+  (`reactions.equilibrium_constant` - `ln K = K1 + K2/T + K3 ln T + K4 T`, its derivative and
+  the heat of reaction, over all three data sources); `ChemicalReactionList`
+  (`reactions.reference_potentials` - the greedy independent basis and the potentials
+  `sum(nu_i mu_i) = -RT ln K` gives); `ChemicalEquilibrium` (`reactions.chemical_equilibrium`
+  - the Smith-Missen Newton solve, with the electroneutrality row among the constraints); and
+  `ChemicalReactionOperations` (`reactions.reactive_phase_equilibrium` - that solve as an
+  operation on one phase, with the phase search's `-1` skip carried as a result rather than an
+  error). The data is NeqSim's own: `element`, `STOCCOEFDATA`, `REACTIONDATA`,
+  `REACTIONDATAPITZER` and `REACTIONDATAKENTEISENBERG`, compiled to `data/reactions/`.
+  **The element table is what bounds what a fluid can react** - a substance with no row cannot
+  enter the balance, and **the glycols have no row at all**, so a P9 inhibitor fluid is not
+  reactive. **The three sources are different standard states and are not interchangeable**:
+  `CO2water`'s `K1` is `253.235548` in `REACTIONDATA.csv` against `653.705141388` in
+  `REACTIONDATAPITZER.csv`, which is why the source is an input rather than a default.
+  **Not ported, each with its blocker in the spec**: the LP initial estimate
+  (`LinearProgrammingChemicalEquilibrium`'s `SimplexSolver`), the second refinement
+  (`useAdaptiveDerivatives` needs `d(ln phi_i)/d(n_j)`), NeqSim's three-residual certification
+  (measured, it fails on all five captured fluids), and the branch NeqSim takes from *inside*
+  `TPflash`, `TPmultiflash`, `TPmultiflashWAX` and the bubble and dew operations - azoth's
+  flashes carry no chemical dispatch, which is the same seam named below.
+  **`Kinetics` has no reachable consumer**: `ChemicalReactionOperations` builds it, and the only
+  site that reaches it is `EnhancementFactorAlg` in `fluidmechanics/`'s reactive film model,
+  which is not a port target; it also stands on `calcEffectiveDiffusionCoefficients`, which is
+  P1's transport machinery rather than this tier's.
 - **Duan-Sun, unreachable.** `ComponentGeDuanSun`, `PhaseDuanSun`, `SystemDuanSun` and
   `thermo/util/empiric/DuanSun.java` are **not ported, and no state they accept exists**:
   `SystemDuanSun.addComponent` throws for every name but `CO2`, and the phase it would build
@@ -230,7 +256,8 @@ The specialist physics.
   flash it drives is `eos.tp_multiflash_wax`'s. **It is constructed, not dead** —
   `neqsim/mcp/runners/FlowAssuranceRunner.java:192` builds it, fully qualified, which is why a
   bare `new WaxCurveCalculator(` grep misses it. `process/chemistry/wax/` is carried with the
-  process tier.
+  process tier. **Filed upstream**: this finding and the solid-vapour-pressure one below are
+  NeqSim `#3914` and `#3915`, the two drafts not recording which number is which.
 - **Asphaltene, carried on a defect upstream rather than for want of a port.**
   `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
   `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the
@@ -248,7 +275,8 @@ The specialist physics.
   sequence of states, and only its endpoint — reached where a solid forms and `SolidFlash`
   re-derives the phases — is a state at all. The coefficient the family's solid is built on is
   ported (`eos.solid_fugacity`, `eos.tp_solid_flash`); this family is revisited when upstream
-  closes the defect.
+  closes the defect, which is **filed upstream as `#3914`/`#3915` together with the wax
+  family's three models above** - the two drafts record the pair and not which is which.
 - **Hydrogen and cryogenic.** Ported, each with the id that carries it:
   `thermo/util/leachman/` as `eos.hydrogen_phase`, the Leachman equation of state for the two
   spin isomers with both the dilute and the dense root selectable;
@@ -303,9 +331,18 @@ Port on demand, as a caller needs them:
 - **Sulfur.** `thermo/util/sulfur/SulfurThermodynamics`.
 - **Amines.** `thermo/util/amines/` (`AmineSystem`, `AmineKentEisenberg`), and the
   amine viscosity and diffusivity methods.
-- **Reactive and equilibrium.** `thermodynamicoperations/flashops/reactiveflash/`
+- **Reactive and equilibrium, the rest.** `thermodynamicoperations/flashops/reactiveflash/`
   (`ReactiveMultiphaseTPflash`, `ReactiveMultiphasePHflash`, `ReactiveStabilityAnalysis`,
-  `ModifiedRANDSolver`, `DIISAccelerator`), `ChemicalEquilibrium`, and `chemicalreactions/`.
+  `ModifiedRANDSolver`, `DIISAccelerator`, with `FormulaMatrix`) and
+  `thermodynamicoperations/chemicalequilibrium/ChemicalEquilibrium`. **The last is a name
+  collision**: two classes are called `ChemicalEquilibrium`, and this one is a 100-line
+  operation that loops `solveChemEq` over a system's phases until the composition stops
+  moving, while the 1,211-line solver Tier 2 ports is the other. It is **reachable** -
+  `ThermodynamicOperations` builds it - so it is a port nobody has done rather than a class
+  with no site, and what it needs is the chemical-system dispatch: an operation over a
+  *system* that solves reactions as part of its own state, which azoth's per-calc operations
+  and reaction-free flashes do not have. `chemicalreactions/`'s live path is Tier 2's now,
+  with its four ids.
 - **Black oil.** `blackoil/`.
 - **Standards.** `standards/` — standard and regulatory calculations.
 

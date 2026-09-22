@@ -137,6 +137,18 @@ of the tree is the simulation suite (`DifferentialLiberation`, `ConstantVolumeDe
 `SwellingTest`, `SaturationPressure`, `SeparatorTest`, `GOR`, `MMPCalculator`), the model
 tuning and the reservoir properties, and it is here.
 
+**P10 is four ids and not the whole tree.** `reactions.equilibrium_constant` is
+`ChemicalReaction`'s `ln K`, its temperature derivative and its heat of reaction over each of
+the three standard states; `reactions.reference_potentials` is the independent basis
+`ChemicalReactionList` reduces the reaction set to and the potentials `sum(nu_i mu_i) = -RT ln K`
+gives; `reactions.chemical_equilibrium` is `ChemicalEquilibrium`'s Smith-Missen Newton solve,
+with the electroneutrality row among the element constraints; and
+`reactions.reactive_phase_equilibrium` is `ChemicalReactionOperations`'s facade over one phase,
+where the phase search's `-1` is a **skip reported as a result** and not a failure. The other
+two thirds are not ported and [the port roadmap](../../../ROADMAP.md) names each blocker:
+`Kinetics` has no consumer outside `fluidmechanics/`, and `flashops/reactiveflash/` is gated on
+a flash that carries a chemical branch.
+
 The middleware's shape is [The middleware](./middleware.md), and it is deferred until P12
 closes — an interoperation surface sits on top of the kernels and the executor, not beside
 them.
