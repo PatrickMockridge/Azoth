@@ -16,14 +16,20 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import EquilibriumConstantResult, ReferencePotentialsResult
+from azoth.core.result import (
+    ChemicalEquilibriumResult,
+    EquilibriumConstantResult,
+    ReferencePotentialsResult,
+)
 from azoth.core.units import Q
 
 __all__ = [
+    "chemical_equilibrium",
     "equilibrium_constant",
     "reference_potentials",
 ]
 
+_CHEMICAL_EQUILIBRIUM = "reactions.chemical_equilibrium"
 _EQUILIBRIUM_CONSTANT = "reactions.equilibrium_constant"
 _REFERENCE_POTENTIALS = "reactions.reference_potentials"
 
@@ -60,3 +66,38 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
     See :func:`azoth.reactions.reference.reference_potentials`.
     """
     return resolve(_REFERENCE_POTENTIALS)(components=components, source=source, T=T)  # type: ignore[no-any-return]
+
+
+def chemical_equilibrium(
+    a_matrix: list[list[float]],
+    b: list[float],
+    moles: list[float],
+    chem_ref: list[float],
+    log_activity: list[float],
+    T: Q,
+    max_iterations: float,
+    tolerance: float,
+) -> ChemicalEquilibriumResult:
+    """The reactive equilibrium composition of a phase, by the Smith-Missen method.
+
+    ``a_matrix`` is the element matrix with the electroneutrality row last, ``b`` the
+    element amounts it conserves, ``moles`` the starting composition, ``chem_ref`` the
+    reduced standard-state potentials and ``log_activity`` the ``ln(gamma)``.
+
+    Returns a result whether or not the solve converged; ``converged`` says which.
+
+    Raises:
+        InvalidInputError: where the shapes disagree.
+
+    See :func:`azoth.reactions.reference.chemical_equilibrium`.
+    """
+    return resolve(_CHEMICAL_EQUILIBRIUM)(  # type: ignore[no-any-return]
+        a_matrix=a_matrix,
+        b=b,
+        moles=moles,
+        chem_ref=chem_ref,
+        log_activity=log_activity,
+        T=T,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+    )

@@ -34,6 +34,7 @@ from azoth.core.result import (
     BubbleTemperatureResult,
     BwrsPhaseResult,
     CapillaryDewPointResult,
+    ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -377,15 +378,69 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
     """
     # A model, not a calc: its spec is in the model registry, and `input_to_si` reads the
     # same declarations either way.
-    from azoth._models_gen import model as _model
-
-    spec = _model("reactions.reference_potentials")
+    spec = _models_gen.model("reactions.reference_potentials")
     result = _core.reference_potentials(list(components), source, input_to_si(spec, "T", T))
     return ReferencePotentialsResult(
         potentials=tuple(from_si(value.magnitude_si, value.unit) for value in result.potentials),
         independent=tuple(result.independent),
         survivors=tuple(result.survivors),
         rank=result.rank,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
+    """A declared input as its SI magnitude, quantity or not.
+
+    **The boundary is mixed by design.** A vector whose spec declares a unit arrives as a
+    pint quantity and has to be converted; a dimensionless one - ``chem_ref``,
+    ``log_activity``, the element matrix - arrives as the bare number it is, and
+    ``input_to_si`` refuses that rather than passing it through.
+    """
+    # A quantity or a bare number. `Q` is a type alias rather than a class, so the check
+    # is made the other way round: the numeric branch is the one `isinstance` can name.
+    if isinstance(value, int | float):
+        return float(value)
+    return input_to_si(spec, name, value)
+
+
+def chemical_equilibrium(
+    a_matrix: list[list[float]],
+    b: list[float],
+    moles: list[float],
+    chem_ref: list[float],
+    log_activity: list[float],
+    T: Q,
+    max_iterations: float,
+    tolerance: float,
+) -> ChemicalEquilibriumResult:
+    """The reactive equilibrium solve, computed in Rust.
+
+    The matrix crosses nested, so every argument here is one the spec declares.
+    """
+    spec = _models_gen.model("reactions.chemical_equilibrium")
+    # The unit-carrying vectors cross as SI magnitudes, element by element, for the same
+    # reason the reference converts them: a model's declared units are the boundary's.
+    a_matrix = [[_si(spec, "a_matrix", value) for value in row] for row in a_matrix]
+    b = [_si(spec, "b", value) for value in b]
+    moles = [_si(spec, "moles", value) for value in moles]
+    chem_ref = [_si(spec, "chem_ref", value) for value in chem_ref]
+    log_activity = [_si(spec, "log_activity", value) for value in log_activity]
+    result = _core.chemical_equilibrium(
+        a_matrix,
+        list(b),
+        list(moles),
+        list(chem_ref),
+        list(log_activity),
+        input_to_si(spec, "T", T),
+        int(max_iterations),
+        float(tolerance),
+    )
+    return ChemicalEquilibriumResult(
+        moles=tuple(from_si(value.magnitude_si, value.unit) for value in result.moles),
+        iterations=result.iterations,
+        error=result.error,
+        converged=result.converged,
         warnings=_warnings(result.warnings),
     )
 

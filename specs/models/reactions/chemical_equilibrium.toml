@@ -1,0 +1,99 @@
+id = "reactions.chemical_equilibrium"
+name = "Reactive chemical equilibrium by the Smith-Missen method"
+kind = "procedure"
+assumptions = [
+    "**the ideal `M` matrix only**: `M[i][k] = delta_ik / n_i`. NeqSim can add `d(ln phi_i)/d(n_j)` to it, subtract `1/n_t` from every entry, or switch the first on after five passes; see the `M` assumption below each of those.",
+    "**`useFugacityDerivatives` and `useFullMMatrix` have no caller.** Neither setter is called anywhere in NeqSim's `src/main`, so both modes are dead and the ideal form is the only one its own entry points reach from the data.",
+    "**`useAdaptiveDerivatives` is reached and is not ported.** `solveChemEq` sets it from the second refinement onward, and it then switches on `d(ln phi_i)/d(n_j)` - a fugacity-derivative surface this library does not have. The first refinement, which is what this takes, runs without it.",
+    "**the mole-fraction standard state only.** `getLogReactionActivity` also has a solute-molality branch, which is `SystemPitzer`'s and blocked behind the EoS/GE seam, and a Deshmukh-Mather branch, which is a phase this library carries as a state and not as this solver's partner.",
+    "**the conservation correction runs unconditionally.** NeqSim gates it on `getNumberOfPhases() == 1`, so a multiphase caller diverges here: this always compares the phase's element amounts against `b` and couples to the amounts when they disagree.",
+    "**NeqSim's ion floor is not reproduced.** After the loop it raises a phase where *both* `H3O+` and `OH-` are below a mole fraction of `1e-15`, which no captured state reaches - the two fluids here sit at `1.6e-13` and `7.3e-11` on the lower ion and are left alone.",
+    "**`step()` mixes units.** It recomputes `R T (mu_ref + ln(n_i/n_t) + ln gamma_i)` while subtracting an `A^T lambda` from the *reduced* solve, so the `R T` does not cancel between `G_0` and `G_1`. An inconsistency in NeqSim, reproduced rather than corrected - and why `T` is an input.",
+    "the tolerance is **relaxed by 1.5x after the fifteenth pass**, so a slow solve can report convergence against a looser bar than the one it was given. That is NeqSim's behaviour and it is why `iterations` is reported beside `converged`.",
+    "**an unconverged solve still returns its last iterate**, and one of the two fluids captured here never converges. A port that converged further would answer where NeqSim refuses to, so `converged` is part of the result rather than an error.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalEquilibrium` is the port source: `chemSolve`, `solve` and `step`.",
+    "Smith, W. R.; Missen, R. W. (1982). \"Chemical Reaction Equilibrium Analysis: Theory and Algorithms.\" Wiley, New York. The Lagrange formulation the bordered system and the Newton direction are equations 3.115 and its neighbours.",
+    "Michelsen, M. L.; Mollerup, J. M. (2007). \"Thermodynamic Models: Fundamentals and Computational Aspects.\", 2nd ed., Tie-Line Publications. The damped step and the Gibbs measures it is chosen from.",
+]
+[source]
+standard = "NeqSim master `ChemicalEquilibrium`"
+edition = "Its `chemSolve` for the bordered Lagrange system, `step` for the damped step length, and `solve` for the outer loop - all three on the ideal `M` matrix and the mole-fraction standard state."
+[algorithm]
+scheme = "smith_missen_newton"
+initialisation = "caller_supplied"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 100
+[inputs]
+[inputs.a_matrix]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per element, one column per component, with the electroneutrality row last"
+description = "the element matrix: how many atoms of each element each substance carries, with the ionic charges as a final row. Its column count is the number of components and its row count the length of `b`.\n"
+[inputs.b]
+type = "vector"
+unit = "mol"
+length = "one per element, matching the matrix's rows"
+description = "the element amounts the solve conserves. **The electroneutrality row's entry is zero**, which is what makes the charge balance a constraint rather than an amount.\n"
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the starting composition. The answer depends on it: a solve from the raw phase composition and one from an LP-improved composition reach different converged states, so the caller's start is part of the input.\n"
+[inputs.chem_ref]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's reduced standard-state potential, `mu_ref / (R T)`. **Reduced and not in J/mol**: the solver adds `ln(n_i/n_t)` to it, and NeqSim divides by `R T` before it ever gets here.\n"
+[inputs.log_activity]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's `ln(gamma)`, **held fixed for the solve**. NeqSim re-reads them from the live phase on each accepted pass; the two captured fluids have them between `1e-9` and `5e-5`, which is what makes holding them a statement this spec has to make rather than a detail.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature. **Read only by the step search**, which recomputes its chemical potentials as `R T (mu_ref + ln(n_i/n_t) + ln gamma)` while subtracting an `A^T lambda` that came out of the reduced solve - so the factor does not cancel and the step needs `T` to reproduce it.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the pass cap. NeqSim's default is 100 and its own callers set it, so it is an input rather than a constant.\n"
+[inputs.tolerance]
+unit = "dimensionless"
+description = "the error the solve is trying to reach, before the relaxation above. NeqSim's default is 1e-8.\n"
+[outputs]
+[outputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component, in the caller's order"
+description = "the composition at the answer, or at the point the solve gave up. Present either way, because NeqSim's callers read it either way.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "passes taken. Read it beside `converged`: a solve that stopped on the cap or on stagnation reports a large count and a false flag.\n"
+[outputs.error]
+unit = "dimensionless"
+description = "`sum(|dn_i| / n_i)` over the species that moved on the last pass, the quantity the tolerance is compared against.\n"
+[outputs.converged]
+type = "boolean"
+description = "whether the error came in under the tolerance. False is a real answer here and not an error: one of the two captured fluids never converges in NeqSim.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature, and the potentials take its logarithm\n"
+[[valid_range]]
+quantity = "tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an error bound; zero could never be reached\n"
+[[valid_range]]
+quantity = "max_iterations"
+min = 2
+min_inclusive = true
+severity = "error"
+rationale = "the solve runs at least two passes whatever the error, so a cap below two is not a cap this honours\n"
+[implementations]
+python = "azoth.reactions.chemical_equilibrium"
+rust = "azoth_reactions::chemical_equilibrium"

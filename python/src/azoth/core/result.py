@@ -324,6 +324,28 @@ class EquilibriumConstantResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ChemicalEquilibriumResult(_HasWarnings):
+    """Result of ``reactions.chemical_equilibrium``.
+
+    **An unconverged solve is a result and not an exception.** NeqSim returns its last
+    iterate whatever happens and its callers read it, so ``converged`` is what says
+    whether to believe the composition rather than the composition being withheld - and
+    one of the two captured fluids never converges.
+    """
+
+    #: The moles of each species at the answer, or where the solve gave up.
+    moles: tuple[Q, ...]
+    #: Passes taken.
+    iterations: int
+    #: ``sum(|dn_i| / n_i)`` over the species that moved on the last pass.
+    error: float
+    #: Whether the error came in under the tolerance.
+    converged: bool
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ReferencePotentialsResult(_HasWarnings):
     """Result of ``reactions.reference_potentials``.
 

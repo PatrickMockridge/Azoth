@@ -14,4 +14,5 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 
 | Model | Scheme | Source |
 |---|---|---|
+| [`reactions.chemical_equilibrium`](./chemical_equilibrium.md) | `smith_missen_newton` | NeqSim master `ChemicalEquilibrium` |
 | [`reactions.reference_potentials`](./reference_potentials.md) | `direct composition` | NeqSim master `ChemicalReactionList` |

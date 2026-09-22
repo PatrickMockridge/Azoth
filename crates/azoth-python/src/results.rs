@@ -54,6 +54,7 @@ use azoth_eos::results::{
     WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
+use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::reference_potentials::ReferencePotentialsResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
@@ -548,6 +549,65 @@ impl From<&EquilibriumConstantResult> for PyEquilibriumConstantResult {
                 unit: "J/mol".to_string(),
             },
             reference: r.reference.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `reactions.chemical_equilibrium`, transported.
+///
+/// Four fields, one of them a flag: **an unconverged solve is a result and not an
+/// exception**, because NeqSim returns its last iterate and its callers read it.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ChemicalEquilibriumResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyChemicalEquilibriumResult {
+    /// The moles of each species, at the answer or where the solve gave up, each as an SI
+    /// magnitude and a display unit.
+    #[pyo3(get)]
+    pub moles: Vec<PyQty>,
+    /// Passes taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The final error.
+    #[pyo3(get)]
+    pub error: f64,
+    /// Whether the error came in under the tolerance.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyChemicalEquilibriumResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ChemicalEquilibriumResult(converged={}, iterations={}, error={})",
+            self.converged, self.iterations, self.error
+        )
+    }
+}
+
+impl From<&ChemicalEquilibriumResult> for PyChemicalEquilibriumResult {
+    fn from(r: &ChemicalEquilibriumResult) -> Self {
+        Self {
+            moles: r
+                .moles
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            iterations: r.iterations,
+            error: r.error,
+            converged: r.converged,
             warnings: transport(&r.warnings),
         }
     }
@@ -6906,6 +6966,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
+        ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),

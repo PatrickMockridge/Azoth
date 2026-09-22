@@ -1,0 +1,60 @@
+fluid=co2-water
+components=6
+  component[0]=CO2 reference_state=solute
+  component[1]=water reference_state=solvent
+  component[2]=OH- reference_state=solute
+  component[3]=H3O+ reference_state=solute
+  component[4]=HCO3- reference_state=solute
+  component[5]=CO3-- reference_state=solute
+A=4x6
+  A[0]=1.0 0.0 0.0 0.0 1.0 1.0
+  A[1]=0.0 2.0 1.0 3.0 1.0 0.0
+  A[2]=2.0 1.0 1.0 1.0 3.0 3.0
+  A[3]=0.0 0.0 -1.0 1.0 -1.0 -2.0
+b=0.0100000002 20.000000000499995 10.0200000008 0.0
+n0=0.01 10.0 1.0E-10 1.0E-10 1.0E-10 1.0E-10
+temperature=298.15
+moles_in_phase=10.0100000004
+chem_ref_reduced=-54.799675618630715 34.71668301316976 29.168005792406905 80.53072046786522 -51.26333965244762 -62.360694093973336
+log_activity=-9.011528106405895E-6 4.50347850157462E-9 1.796936226301782E-5 -1.4965042737128537E-5 1.796936226301782E-5 -2.146463497462378E-6
+direct_converged=true
+direct_iterations=15
+direct_error=8.640377302526758E-10
+direct_tolerance=1.0E-8
+direct_moles=0.009792249013516927 9.999584498324415 1.56818348558654E-12 2.077508879165351E-4 2.0775118632527042E-4 8.37016915653789E-15
+solveChemEq_converged=true
+solveChemEq_charge_mols=-1.9999391601120407E-10
+solveChemEq_max_element_residual=1.9839063725157757E-10
+solveChemEq_max_reaction_log_residual=1.7135270979906636E-9
+fluid=co2-h2s-water
+components=9
+  component[0]=CO2 reference_state=solute
+  component[1]=H2S reference_state=solute
+  component[2]=water reference_state=solvent
+  component[3]=HS- reference_state=solute
+  component[4]=OH- reference_state=solute
+  component[5]=H3O+ reference_state=solute
+  component[6]=HCO3- reference_state=solute
+  component[7]=S-- reference_state=solute
+  component[8]=CO3-- reference_state=solute
+A=5x9
+  A[0]=1.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0 1.0
+  A[1]=0.0 1.0 0.0 1.0 0.0 0.0 0.0 1.0 0.0
+  A[2]=0.0 2.0 2.0 1.0 1.0 3.0 1.0 0.0 0.0
+  A[3]=2.0 0.0 1.0 0.0 1.0 1.0 3.0 0.0 3.0
+  A[4]=0.0 0.0 0.0 -1.0 -1.0 1.0 -1.0 -2.0 -2.0
+b=0.0100000002 0.0100000002 20.020000000599993 10.0200000008 0.0
+n0=0.01 0.01 10.0 1.0E-10 1.0E-10 1.0E-10 1.0E-10 1.0E-10 1.0E-10
+temperature=298.15
+moles_in_phase=10.0200000006
+chem_ref_reduced=-54.799675618630715 -6.095027215259875 34.71668301316976 8.47902384579385 29.168005792406905 80.53072046786522 -51.26333965244762 5.860693250061994 -62.360694093973336
+log_activity=-1.3721072326782651E-5 -8.614131123395666E-6 1.115629776754501E-8 2.3715913856170966E-5 1.7155360115678198E-5 -4.8482080576093406E-5 1.7155360115678198E-5 2.3715913856170966E-5 -2.9401819753305247E-6
+direct_converged=false
+direct_iterations=12
+direct_error=117.07787931775188
+direct_tolerance=1.0E-8
+direct_moles=0.009999999185511397 0.010000000199829563 9.999999998785558 1.7211671501670292E-13 7.302593447592917E-11 5.26922596500549E-10 9.752547107285015E-10 6.560999999999975E-23 3.9234917356647824E-11
+solveChemEq_converged=false
+solveChemEq_charge_mols=3.3215292919948253E-6
+solveChemEq_max_element_residual=9.965988898130718E-6
+solveChemEq_max_reaction_log_residual=19.928503588703887

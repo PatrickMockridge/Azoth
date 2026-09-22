@@ -1305,6 +1305,14 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class ChemicalEquilibriumResult:
+    moles: list[Qty]
+    iterations: int
+    error: float
+    converged: bool
+    warnings: list[Warning]
+
+@final
 class EquilibriumConstantResult:
     ln_k: float
     k: float
@@ -2354,6 +2362,16 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def chemical_equilibrium(
+    a_matrix: list[list[float]],
+    b: list[float],
+    moles: list[float],
+    chem_ref: list[float],
+    log_activity: list[float],
+    T: float,
+    max_iterations: float,
+    tolerance: float,
+) -> ChemicalEquilibriumResult: ...
 def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
 def reference_potentials(
     components: list[str],

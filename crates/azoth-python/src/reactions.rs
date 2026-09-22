@@ -64,3 +64,40 @@ pub fn reference_potentials(
     .map(|r| crate::results::PyReferencePotentialsResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
+
+/// The reactive equilibrium composition of a phase.
+///
+/// **The matrix crosses nested**, so the parameter list is exactly the spec's declared
+/// inputs - a flat vector plus a row count would be two parameters where the spec has one,
+/// and the generated stub would disagree with this signature.
+#[pyfunction]
+#[pyo3(signature = (a_matrix, b, moles, chem_ref, log_activity, T, max_iterations, tolerance))]
+#[pyo3(
+    text_signature = "(a_matrix, b, moles, chem_ref, log_activity, T, max_iterations, tolerance)"
+)]
+#[allow(non_snake_case)] // `T` is the symbol in the chemistry
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+pub fn chemical_equilibrium(
+    py: Python<'_>,
+    a_matrix: Vec<Vec<f64>>,
+    b: Vec<f64>,
+    moles: Vec<f64>,
+    chem_ref: Vec<f64>,
+    log_activity: Vec<f64>,
+    T: f64,
+    max_iterations: u32,
+    tolerance: f64,
+) -> PyResult<crate::results::PyChemicalEquilibriumResult> {
+    azoth_reactions::chemical_equilibrium::chemical_equilibrium(
+        &a_matrix,
+        &b,
+        &moles,
+        &chem_ref,
+        &log_activity,
+        T,
+        max_iterations,
+        tolerance,
+    )
+    .map(|r| crate::results::PyChemicalEquilibriumResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

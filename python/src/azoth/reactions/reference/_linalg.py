@@ -156,3 +156,19 @@ def solve_lu(a: list[list[float]], b: list[float]) -> list[float]:
             total -= lu[k][j] * solution[j]
         solution[k] = total / lu[k][k]
     return solution
+
+
+def solve_columns(m: list[list[float]], rhs: list[list[float]]) -> list[list[float]]:
+    """Solve ``m x = rhs`` for a square ``m`` and several right-hand sides.
+
+    One LU per column, in the order the columns are given, so the rounding is the same as
+    solving each column on its own - which is what NeqSim's ``Matrix.solve`` does with a
+    rectangular right-hand side.
+    """
+    columns = len(rhs[0]) if rhs else 0
+    out = [[0.0] * columns for _ in rhs]
+    for c in range(columns):
+        solved = solve_lu(m, [row[c] for row in rhs])
+        for i, value in enumerate(solved):
+            out[i][c] = value
+    return out

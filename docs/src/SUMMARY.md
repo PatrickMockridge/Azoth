@@ -162,6 +162,7 @@
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
+  - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)
   - [Reference potentials from an independent reaction basis](./reactions/reference_potentials.md)
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
