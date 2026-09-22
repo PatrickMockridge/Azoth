@@ -130,6 +130,7 @@ name = "azoth-reactions"
 version = "0.1.0"
 dependencies = [
  "azoth-core",
+ "azoth-eos",
  "azoth-test-support",
  "csv",
  "serde",

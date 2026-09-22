@@ -15,6 +15,9 @@ toml.workspace = true
 
 [dev-dependencies]
 azoth-test-support.workspace = true
+# Only the tests: the RAND solve takes `ln phi` as a closure so the crate needs no equation
+# of state, and a cubic is what the oracle's fugacity coefficients came from.
+azoth-eos.workspace = true
 # Only the tests: the crate itself is dimensionless and needs no units library.
 uom.workspace = true
 
