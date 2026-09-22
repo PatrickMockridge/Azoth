@@ -54,6 +54,10 @@ jobs:
       # no NeqSim checkout, because the sources are committed - which is what lets
       # this run here rather than only on a machine that has one.
       - run: python tools/gen_databank.py --check
+      # The reaction tables the reactions crate reads, against the vendored copies. The
+      # same shape as the line above and for the same reason, and separate from it
+      # because those are the component and interaction data and these are the reactions.
+      - run: python tools/gen_reaction_data.py --check
       # The baseline keycard against the compiled component data it derives from.
       - run: python tools/gen_keycard.py --check
       # The recorded NeqSim cases against the probe captures they are derived from.

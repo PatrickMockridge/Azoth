@@ -2786,9 +2786,11 @@ reason = """\
 
 [[upstreams.files]]
 id = "neqsim/element.csv"
+compiled_to = "data/reactions/elements.csv"
 upstream_path = "src/main/resources/data/element.csv"
 vendored_source = "databank/sources/neqsim/element.csv"
 source_rows = 178
+compiled_rows = 178
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -3148,9 +3150,11 @@ vendored_source = "databank/sources/neqsim/scale_remediation.csv"
 source_rows = 20
 [[upstreams.files]]
 id = "neqsim/STOCCOEFDATA.csv"
+compiled_to = "data/reactions/stoichiometry.csv"
 upstream_path = "src/main/resources/data/STOCCOEFDATA.csv"
 vendored_source = "databank/sources/neqsim/STOCCOEFDATA.csv"
 source_rows = 151
+compiled_rows = 151
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -8036,9 +8040,11 @@ as = "sub140"
 unit = "neqsim-internal"
 [[upstreams.files]]
 id = "neqsim/REACTIONDATA.csv"
+compiled_to = "data/reactions/REACTIONDATA.csv"
 upstream_path = "src/main/resources/data/REACTIONDATA.csv"
 vendored_source = "databank/sources/neqsim/REACTIONDATA.csv"
 source_rows = 47
+compiled_rows = 47
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -8113,9 +8119,11 @@ unit = "neqsim-internal"
 reason = "not-ported: the standard-source reaction set. Its live reader is `ChemicalReactionList.readReactions`, reached from `SystemThermo.chemicalReactionInit`, and P10 is what ports it. `ChemicalReactionFactory.getChemicalReaction` looks a reaction up in this table by name and is unreachable: a private constructor and no caller in `src/main`."
 [[upstreams.files]]
 id = "neqsim/REACTIONDATAKENTEISENBERG.csv"
+compiled_to = "data/reactions/REACTIONDATAKENTEISENBERG.csv"
 upstream_path = "src/main/resources/data/REACTIONDATAKENTEISENBERG.csv"
 vendored_source = "databank/sources/neqsim/REACTIONDATAKENTEISENBERG.csv"
 source_rows = 6
+compiled_rows = 6
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
@@ -8190,9 +8198,11 @@ unit = "neqsim-internal"
 reason = "not-ported: the apparent-equilibrium-constant set the Kent-Eisenberg model runs on, selected by `SystemKentEisenberg.getChemicalReactionDataSource` returning `ChemicalReactionDataSource.KENT_EISENBERG`. azoth carries the phase and none of the reactions that give it its ions."
 [[upstreams.files]]
 id = "neqsim/REACTIONDATAPITZER.csv"
+compiled_to = "data/reactions/REACTIONDATAPITZER.csv"
 upstream_path = "src/main/resources/data/REACTIONDATAPITZER.csv"
 vendored_source = "databank/sources/neqsim/REACTIONDATAPITZER.csv"
 source_rows = 47
+compiled_rows = 47
 [[upstreams.files.columns]]
 name = "ID"
 disposition = "vendored"
