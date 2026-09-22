@@ -11,6 +11,7 @@
 
 use pyo3::prelude::*;
 
+use azoth_reactions::chemical_equilibrium::ConcentrationBasis;
 use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
@@ -75,12 +76,12 @@ pub fn reference_potentials(
 /// `whole_system` is NeqSim's `getNumberOfPhases() == 1`, which decides whether the solve
 /// corrects its conservation coupling to the phase's own element amounts.
 #[pyfunction]
-#[pyo3(signature = (a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance))]
+#[pyo3(signature = (a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance, concentration_basis, solvent_weight, solvent_mask, phase_moles))]
 #[pyo3(
-    text_signature = "(a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance)"
+    text_signature = "(a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance, concentration_basis, solvent_weight, solvent_mask, phase_moles)"
 )]
 #[allow(non_snake_case)] // `T` is the symbol in the chemistry
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twelve
 pub fn chemical_equilibrium(
     py: Python<'_>,
     a_matrix: Vec<Vec<f64>>,
@@ -92,7 +93,13 @@ pub fn chemical_equilibrium(
     T: f64,
     max_iterations: u32,
     tolerance: f64,
+    concentration_basis: &str,
+    solvent_weight: f64,
+    solvent_mask: Vec<f64>,
+    phase_moles: f64,
 ) -> PyResult<crate::results::PyChemicalEquilibriumResult> {
+    let parsed_basis: ConcentrationBasis =
+        concentration_basis.parse().map_err(|e| to_pyerr(py, e))?;
     azoth_reactions::chemical_equilibrium::chemical_equilibrium(
         &a_matrix,
         &b,
@@ -103,6 +110,10 @@ pub fn chemical_equilibrium(
         T,
         max_iterations,
         tolerance,
+        parsed_basis,
+        solvent_weight,
+        &solvent_mask,
+        phase_moles,
     )
     .map(|r| crate::results::PyChemicalEquilibriumResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

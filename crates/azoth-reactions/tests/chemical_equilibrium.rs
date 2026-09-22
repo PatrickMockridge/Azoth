@@ -13,7 +13,7 @@
 //! vectors and strings - so it is asserted here, which is where a boolean belongs anyway.
 
 use azoth_core::spec::TestCase;
-use azoth_reactions::chemical_equilibrium::chemical_equilibrium;
+use azoth_reactions::chemical_equilibrium::{ConcentrationBasis, chemical_equilibrium};
 use azoth_reactions::model_gen;
 use azoth_test_support as common;
 
@@ -53,6 +53,13 @@ fn call(case: &TestCase) -> azoth_reactions::ChemicalEquilibriumResult {
         common::input(case, "T"),
         common::input(case, "max_iterations") as u32,
         common::input(case, "tolerance"),
+        common::input_str(case, "concentration_basis")
+            .parse()
+            .expect("the case names a concentration basis"),
+        common::input(case, "solvent_weight"),
+        case.vector("solvent_mask")
+            .expect("the case states the reference-state split"),
+        common::input(case, "phase_moles"),
     )
     .unwrap_or_else(|e| panic!("test `{}` should compute but failed: {e}", case.id))
 }
@@ -125,6 +132,7 @@ fn the_convergence_flags_are_what_neqsim_reports() {
         let result = call(case);
         let expected = match case.id {
             "co2_water_from_the_phase_composition" => true,
+            "pitzer_solute_molality_basis" => true,
             "co2_h2s_water_does_not_converge" => false,
             other => panic!("{other}: a case with no stated convergence"),
         };
@@ -196,6 +204,10 @@ fn a_matrix_with_the_wrong_width_is_refused() {
         298.15,
         100,
         1e-8,
+        ConcentrationBasis::MoleFraction,
+        0.0,
+        &[],
+        3.0,
     )
     .expect_err("one column against three components");
     assert!(

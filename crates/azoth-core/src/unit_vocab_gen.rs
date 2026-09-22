@@ -18,6 +18,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "length",
     "area",
     "volume_rate",
+    "mass",
     "mass_rate",
     "amount",
     "molar_flow",
@@ -55,6 +56,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("length", [1, 0, 0, 0, 0, 0, 0]),
     ("area", [2, 0, 0, 0, 0, 0, 0]),
     ("volume_rate", [3, 0, -1, 0, 0, 0, 0]),
+    ("mass", [0, 1, 0, 0, 0, 0, 0]),
     ("mass_rate", [0, 1, -1, 0, 0, 0, 0]),
     ("amount", [0, 0, 0, 0, 0, 1, 0]),
     ("molar_flow", [0, 0, -1, 0, 0, 1, 0]),
@@ -122,6 +124,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "kg/s",
     "mol/s",
     "mol",
+    "kg",
     "kg/m**3",
     "m/s",
     "m**2/s",
@@ -161,6 +164,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("kg/s", [0, 1, -1, 0, 0, 0, 0]),
     ("mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("mol", [0, 0, 0, 0, 0, 1, 0]),
+    ("kg", [0, 1, 0, 0, 0, 0, 0]),
     ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
     ("m/s", [1, 0, -1, 0, 0, 0, 0]),
     ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
@@ -215,6 +219,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("kg/s", |v| crate::units::kilograms_per_second(v).value),
     ("mol/s", |v| v),
     ("mol", |v| crate::units::moles(v).value),
+    ("kg", |v| crate::units::kilograms(v).value),
     ("kg/m**3", |v| {
         crate::units::kilograms_per_cubic_meter(v).value
     }),
@@ -303,6 +308,7 @@ mod dimension_assertions {
         let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_second(1.0);
         let _: uom::si::f64::MassRate = crate::units::kilograms_per_second(1.0);
         let _: uom::si::f64::AmountOfSubstance = crate::units::moles(1.0);
+        let _: uom::si::f64::Mass = crate::units::kilograms(1.0);
         let _: uom::si::f64::MassDensity = crate::units::kilograms_per_cubic_meter(1.0);
         let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
         let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);

@@ -13,6 +13,9 @@ exponents = [2, 0, 0, 0, 0, 0, 0]
 id = "volume_rate"
 exponents = [3, 0, -1, 0, 0, 0, 0]
 [[dimensions]]
+id = "mass"
+exponents = [0, 1, 0, 0, 0, 0, 0]
+[[dimensions]]
 id = "mass_rate"
 exponents = [0, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
@@ -128,6 +131,12 @@ dimension = "amount"
 pint = "mole"
 uom = "amount_of_substance::mole"
 rust_ctor = "moles"
+[[units]]
+id = "kg"
+dimension = "mass"
+pint = "kilogram"
+uom = "mass::kilogram"
+rust_ctor = "kilograms"
 [[units]]
 id = "kg/m**3"
 dimension = "mass_density"

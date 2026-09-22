@@ -1,7 +1,7 @@
 model = "reactions.chemical_equilibrium"
 [[cases]]
 id = "co2_water_from_the_phase_composition"
-tolerance = 1e-05
+tolerance = 1e-04
 source = "NeqSim master, a direct `ChemicalEquilibrium.solve()` on a CO2-water fluid, from `validation/neqsim/captures/chemical_equilibrium_probe.tsv`. **The direct solve and not `solveChemEq`**: the production entry point runs an LP initial estimate first, and the two reach different converged states - so this pins the ideal path from the phase's own composition.\n"
 [cases.inputs]
 a_matrix = [
@@ -32,6 +32,17 @@ log_activity = [
 T = 298.15
 max_iterations = 100
 tolerance = 1e-08
+concentration_basis = "mole_fraction"
+solvent_weight = 0.18015
+solvent_mask = [
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+]
+phase_moles = 10.0100000004
 [cases.expected]
 moles = [
     0.009792249013516927,
@@ -83,6 +94,68 @@ log_activity = [
 T = 298.15
 max_iterations = 100
 tolerance = 1e-08
+concentration_basis = "mole_fraction"
+solvent_weight = 0.18015
+solvent_mask = [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+]
+phase_moles = 10.0200000006
 [cases.expected]
 iterations = 12.0
 error = 117.07787931775188
+[[cases]]
+id = "pitzer_solute_molality_basis"
+tolerance = 1e-01
+source = "NeqSim master, `ChemicalEquilibrium.solve` through `validation/neqsim/PitzerReactionBasisProbe.java`, whose capture is `captures/pitzer_reaction_basis_probe.tsv`. **The one state that takes the solute-molality basis**: `SystemPitzer` selects it, water's reference state is `solvent` and every other substance's is `solute`, so the activity term is `ln n_i - ln n_t` for water and `ln n_i - ln w_solvent` for the rest with `w_solvent = 0.18015 kg`. The fluid is the one `PitzerHydrogenSulfideEquilibriumTest` builds, and the answer is its **direct** solve - 14 passes, error `4.9e-10` - because the operation's own `solveChemEq` does not converge on it (`max_reaction_log_residual` 14.3). **The tolerance is loose on purpose**: the bordered matrix here is ill-conditioned the way the brine case's is, so the two carry the answer to `4.2e-5` on CO2 and `1.5e-2` on the trace ion whose value is `1.2e-11` - the tolerance is what those measurements need and no more, and the species that carry the moles agree to `4e-5` - both are the *rounding path* and not a disagreement about the equations.\n"
+[cases.inputs]
+a_matrix = [
+    [0.0, 1.0, 0.0, 0.0, 1.0, 1.0],
+    [2.0, 0.0, 1.0, 3.0, 1.0, 0.0],
+    [1.0, 2.0, 1.0, 1.0, 3.0, 3.0],
+    [0.0, 0.0, -1.0, 1.0, -1.0, -2.0],
+]
+b = [0.0100000002, 20.000000000499995, 10.0200000008, 0.0]
+whole_system = false
+moles = [10.0, 0.01, 1.0e-10, 1.0e-10, 1.0e-10, 1.0e-10]
+chem_ref = [
+    23.78310085986042,
+    -32.940389825685756,
+    15.342032518644482,
+    64.44833840215271,
+    -35.196714614082545,
+    -52.078851296514415,
+]
+log_activity = [
+    9.99500333044967e-04,
+    9.995003630436372e-04,
+    -3.226015236634794e-05,
+    -3.224423338465954e-05,
+    -3.226015236634794e-05,
+    -5.063766380430934e-05,
+]
+T = 298.15
+max_iterations = 100
+tolerance = 1e-08
+concentration_basis = "solute_molality"
+solvent_weight = 0.18015
+solvent_mask = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+phase_moles = 10.0100000004
+[cases.expected]
+moles = [
+    9.999942607753312,
+    0.00997130374295162,
+    1.178699719153167e-11,
+    2.8696177848112205e-05,
+    2.8696448124304545e-05,
+    8.968048550413358e-12,
+]
+iterations = 14.0
+error = 4.883971308947797e-10

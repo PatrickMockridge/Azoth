@@ -15,6 +15,8 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from azoth._dispatch import resolve
 from azoth.core.result import (
     ChemicalEquilibriumResult,
@@ -81,6 +83,10 @@ def chemical_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str,
+    solvent_weight: Q,
+    solvent_mask: Sequence[float],
+    phase_moles: Q,
 ) -> ChemicalEquilibriumResult:
     """The reactive equilibrium composition of a phase, by the Smith-Missen method.
 
@@ -107,6 +113,10 @@ def chemical_equilibrium(
         T=T,
         max_iterations=max_iterations,
         tolerance=tolerance,
+        concentration_basis=concentration_basis,
+        solvent_weight=solvent_weight,
+        solvent_mask=solvent_mask,
+        phase_moles=phase_moles,
     )
 
 

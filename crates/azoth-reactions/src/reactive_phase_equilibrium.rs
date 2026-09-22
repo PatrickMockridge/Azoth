@@ -48,7 +48,9 @@
 
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
-use crate::chemical_equilibrium::{ChemicalEquilibriumResult, chemical_equilibrium};
+use crate::chemical_equilibrium::{
+    ChemicalEquilibriumResult, ConcentrationBasis, chemical_equilibrium,
+};
 use crate::databank::{ReactionDataSource, element_composition, ionic_charge};
 use crate::equilibrium_constant::GAS_CONSTANT;
 use crate::model_gen;
@@ -272,6 +274,11 @@ pub fn reactive_phase_equilibrium(
         moles.to_vec()
     };
 
+    // **The mole-fraction basis, because this operation cannot state the other one.**
+    // NeqSim's operation reads the basis off its system, and the molality branch's two
+    // data - the reference-state split and the solvent's own mass - are properties of a
+    // phase this operation is handed only as vectors. Reaching it needs the P8 seam; until
+    // then a Pitzer phase through *this* id is a divergence the spec's assumptions name.
     let solved: ChemicalEquilibriumResult = chemical_equilibrium(
         &a_matrix,
         &b,
@@ -282,6 +289,10 @@ pub fn reactive_phase_equilibrium(
         temperature,
         max_iterations,
         tolerance,
+        ConcentrationBasis::MoleFraction,
+        0.0,
+        &[],
+        phase_moles,
     )?;
     warnings.extend(solved.warnings.iter().cloned());
 

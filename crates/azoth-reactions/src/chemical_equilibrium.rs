@@ -62,6 +62,83 @@ pub const STAGNATION_LIMIT: u32 = 10;
 /// otherwise reach, and it does not converge at all.
 pub const CONSERVATION_CORRECTION_PHASES: usize = 1;
 
+/// Which standard state the activity term is taken on, NeqSim's
+/// `ChemicalReactionConcentrationBasis`.
+///
+/// `SystemPitzer` is the only system that selects [`Self::SoluteMolality`], and the branch
+/// changes the term for every component whose reference state is `solute` from
+/// `ln n_i - ln n_t` to `ln n_i - ln w_solvent`, where `w_solvent` is the solvent's own
+/// mass. **The Jacobian does not follow it**: `M[i][k]` stays `delta_ik / n_i`, which is
+/// the derivative of the *mole-fraction* form, so a molality-basis solve iterates a
+/// residual its own matrix does not describe. NeqSim does the same
+/// (`ChemicalEquilibrium.java:210-235` builds `M` with no reference to the basis), and
+/// reproducing it rather than correcting it is the tie-breaker the port follows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConcentrationBasis {
+    /// `ln n_i - ln n_t` for every component, and the only form the captured fluids take.
+    MoleFraction,
+    /// `ln n_i - ln w_solvent` for a solute and the mole-fraction form for a solvent.
+    SoluteMolality,
+}
+
+impl std::str::FromStr for ConcentrationBasis {
+    type Err = AzothError;
+
+    /// A basis this library does not carry is refused rather than defaulted, for the reason
+    /// the reaction sources are: the two answer different questions.
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "mole_fraction" | "mole-fraction" => Ok(Self::MoleFraction),
+            "solute_molality" | "solute-molality" => Ok(Self::SoluteMolality),
+            other => Err(AzothError::InvalidInput {
+                field: "concentration_basis".to_string(),
+                reason: format!("`{other}` is not one of `mole_fraction`, `solute_molality`"),
+            }),
+        }
+    }
+}
+
+/// The concentration basis together with the two facts the component vectors cannot state.
+///
+/// The reference-state split and the solvent's mass are databank properties of the
+/// substances, and this id is handed vectors; the caller supplies them as the live phase
+/// has them, which is what `calculateSolventWeight` computes there.
+#[derive(Debug, Clone, Copy)]
+struct ActivityBasis<'a> {
+    /// Which standard state the term is taken on.
+    basis: ConcentrationBasis,
+    /// The solvent's own mass in kg, floored at [`MIN_MOLES`] as NeqSim floors it.
+    solvent_weight: f64,
+    /// One entry per component: 1 where its reference state is `solvent`.
+    solvent_mask: &'a [f64],
+}
+
+impl ActivityBasis<'_> {
+    /// The `ln` of each component's denominator, one per component: `n_t`, or the solvent's
+    /// mass for a solute on the molality basis.
+    ///
+    /// `total` is NeqSim's `n_t`, which is **the phase's total moles read once when the
+    /// solver is constructed and never updated** (`ChemicalEquilibrium.java:199`). It is
+    /// not the running sum of the reactive set: `carbonate` splits one species into two, so
+    /// a sum that followed the trial would drift away from the value NeqSim divides by for
+    /// the whole solve. Where the phase holds only its reactive substances the two agree at
+    /// the first pass and part afterwards.
+    fn log_denominators(&self, total: f64, species: usize) -> Vec<f64> {
+        let total = total.max(MIN_MOLES);
+        let solvent = self.solvent_weight.max(MIN_MOLES);
+        (0..species)
+            .map(|i| {
+                let is_solvent = self.solvent_mask.get(i).copied().unwrap_or(0.0) != 0.0;
+                match self.basis {
+                    ConcentrationBasis::MoleFraction => total.ln(),
+                    ConcentrationBasis::SoluteMolality if !is_solvent => solvent.ln(),
+                    ConcentrationBasis::SoluteMolality => total.ln(),
+                }
+            })
+            .collect()
+    }
+}
+
 /// Result of `reactions.chemical_equilibrium`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChemicalEquilibriumResult {
@@ -113,6 +190,10 @@ pub fn chemical_equilibrium(
     temperature: f64,
     max_iterations: u32,
     tolerance: f64,
+    concentration_basis: ConcentrationBasis,
+    solvent_weight: f64,
+    solvent_mask: &[f64],
+    phase_moles: f64,
 ) -> Result<ChemicalEquilibriumResult> {
     let spec = &model_gen::CHEMICAL_EQUILIBRIUM_SPEC;
     let mut warnings = Vec::new();
@@ -167,6 +248,30 @@ pub fn chemical_equilibrium(
         });
     }
 
+    // **The mask is checked where it is read.** On the mole-fraction basis the denominator
+    // is `n_t` for every component whatever the mask says, and the operation's own call -
+    // which cannot state the molality basis - passes the split it never reads.
+    if concentration_basis == ConcentrationBasis::SoluteMolality && solvent_mask.len() != species {
+        return Err(AzothError::InvalidInput {
+            field: "solvent_mask".to_string(),
+            reason: format!(
+                "{} mask entr(ies) against {species} component(s), and the solute-molality \
+                 basis reads one per component",
+                solvent_mask.len()
+            ),
+        });
+    }
+    // **`n_t`, read once.** NeqSim takes the phase's total moles when the solver is
+    // constructed and divides by that for the whole solve - `ChemicalEquilibrium.java:199`
+    // - so it is not the running sum of the reactive set, and it is not the sum of `moles`
+    // either unless the phase holds nothing else.
+    let n_t = phase_moles.max(MIN_MOLES);
+    let activity_basis = ActivityBasis {
+        basis: concentration_basis,
+        solvent_weight,
+        solvent_mask,
+    };
+
     // **Two compositions, because NeqSim has two.** `committed` is what the phase holds
     // and `n_mol` is the trial this pass computed; a pass whose error did not improve is
     // *not* written back, so the next pass re-derives from the same committed state
@@ -199,6 +304,8 @@ pub fn chemical_equilibrium(
             &committed,
             chem_ref,
             log_activity,
+            &activity_basis,
+            n_t,
         )?;
         let step = step_of(
             &committed,
@@ -207,6 +314,8 @@ pub fn chemical_equilibrium(
             &dn,
             &a_lambda,
             temperature,
+            &activity_basis,
+            n_t,
         );
 
         // The error and the trial in one pass, as NeqSim takes them: a species whose step
@@ -273,6 +382,7 @@ pub fn chemical_equilibrium(
 }
 
 /// One `chemSolve`: the two Lagrange systems and the Newton direction.
+#[allow(clippy::too_many_arguments)] // the trial composition, the potentials and the activity basis
 fn chem_solve(
     a_matrix: &[Vec<f64>],
     b: &[f64],
@@ -280,17 +390,19 @@ fn chem_solve(
     n_mol: &[f64],
     chem_ref: &[f64],
     log_activity: &[f64],
+    activity_basis: &ActivityBasis<'_>,
+    n_t: f64,
 ) -> Result<(Vec<f64>, Vec<f64>)> {
     let n_elements = b.len();
     let species = n_mol.len();
-    let n_t = n_mol.iter().sum::<f64>().max(MIN_MOLES);
+    let log_denominator = activity_basis.log_denominators(n_t, species);
 
     let mut m = vec![vec![0.0; species]; species];
     let mut chem_pot = vec![0.0; species];
     for i in 0..species {
         let n_i = n_mol[i].max(MIN_MOLES);
         m[i][i] = 1.0 / n_i;
-        chem_pot[i] = chem_ref[i] + n_i.ln() - n_t.ln() + log_activity[i];
+        chem_pot[i] = chem_ref[i] + n_i.ln() - log_denominator[i] + log_activity[i];
     }
 
     // `M^-1 A^T`, then `A M^-1 A^T`.
@@ -407,6 +519,7 @@ fn chem_solve(
 /// gone negative to `innerStep`, which bisects the step back toward the current state;
 /// that path is a refusal here, because it is reached only by a step the damping below
 /// was supposed to prevent and no captured state takes it.
+#[allow(clippy::too_many_arguments)] // the trial composition, the potentials and the activity basis
 fn step_of(
     n_mol: &[f64],
     chem_ref: &[f64],
@@ -414,9 +527,11 @@ fn step_of(
     dn: &[f64],
     a_lambda: &[f64],
     temperature: f64,
+    activity_basis: &ActivityBasis<'_>,
+    n_t: f64,
 ) -> f64 {
     let species = n_mol.len();
-    let n_t = n_mol.iter().sum::<f64>().max(MIN_MOLES);
+    let log_denominator = activity_basis.log_denominators(n_t, species);
 
     // **`R T` is not decoration.** `step()` recomputes its own `chem_pot` as
     // `R T (mu_ref + ln(n_i/n_t) + ln gamma_i)` - the *dimensional* potential - while the
@@ -448,9 +563,15 @@ fn step_of(
     }
 
     let potential = |value: f64, index: usize| {
-        r_t * (chem_ref[index] + value.max(MIN_MOLES).ln() - n_t.ln() + log_activity[index])
+        r_t * (chem_ref[index] + value.max(MIN_MOLES).ln() - log_denominator[index]
+            + log_activity[index])
     };
 
+    // **The derivative does not follow the residual onto the molality basis.** These two
+    // `1/n` terms are the derivative of the mole-fraction form, and NeqSim's `M` matrix is
+    // the same expression whatever basis the system selects - so a molality-basis solve
+    // damps with a gradient its own residual is not the integral of. Reproduced, because
+    // the alternative is a step rule NeqSim does not have.
     let mut g_1 = 0.0;
     for i in 0..species {
         g_1 += (potential(n_omega[i], i) - a_lambda[i])

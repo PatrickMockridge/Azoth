@@ -33,6 +33,7 @@ it puts ``1/MIN_MOLES = 1e60`` into ``G_1`` and drives the step to zero. See
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
@@ -63,6 +64,10 @@ def chemical_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str,
+    solvent_weight: Q,
+    solvent_mask: Sequence[float],
+    phase_moles: Q,
 ) -> ChemicalEquilibriumResult:
     """The reactive equilibrium composition of a phase.
 
@@ -147,6 +152,22 @@ def chemical_equilibrium(
             f"coefficient(s) against {species} component(s)",
         )
 
+    # **`n_t`, read once.** NeqSim takes the phase's total moles when the solver is
+    # constructed and divides by that for the whole solve - `ChemicalEquilibrium.java:199`
+    # - so it is not the running sum of the reactive set: `carbonate` splits one species
+    # into two, and a sum that followed the trial drifts away from the value NeqSim uses.
+    n_t = max(input_to_si(spec, "phase_moles", phase_moles), MIN_MOLES)
+    # The activity term's denominator, per component: `n_t`, or the solvent's own mass for a
+    # solute on the molality basis. **The Jacobian does not follow it** - `M` stays
+    # `delta_ik/n_i` whatever the basis - which is NeqSim's behaviour, reproduced.
+    weight = max(input_to_si(spec, "solvent_weight", solvent_weight), MIN_MOLES)
+    log_denominator = [
+        math.log(weight)
+        if concentration_basis == "solute_molality" and not _is_solvent(solvent_mask, i)
+        else math.log(n_t)
+        for i in range(species)
+    ]
+
     # Two compositions, because NeqSim has two: `committed` is what the phase holds and
     # `trial` is what this pass computed. A pass whose error did not improve is not
     # written back, so the next pass re-derives from the committed state.
@@ -166,8 +187,25 @@ def chemical_equilibrium(
         error = 0.0
 
         trial = list(committed)
-        dn, a_lambda = _chem_solve(a_matrix, b, whole_system, committed, chem_ref, log_activity)
-        step = _step_of(committed, chem_ref, log_activity, dn, a_lambda, temperature)
+        dn, a_lambda = _chem_solve(
+            a_matrix,
+            b,
+            whole_system,
+            committed,
+            chem_ref,
+            log_activity,
+            log_denominator,
+        )
+        step = _step_of(
+            committed,
+            chem_ref,
+            log_activity,
+            dn,
+            a_lambda,
+            temperature,
+            n_t,
+            log_denominator,
+        )
 
         for i in range(species):
             if committed[i] < MIN_MOLES:
@@ -226,6 +264,17 @@ def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
     return input_to_si(spec, name, value)
 
 
+def _is_solvent(solvent_mask: Sequence[float], index: int) -> bool:
+    """Whether this component keeps the mole-fraction form, from the caller's split.
+
+    The mask is read only on the solute-molality basis, and an entry the caller did not
+    state is a component the reference-state table does not call a solvent.
+    """
+    if index >= len(solvent_mask):
+        return False
+    return bool(solvent_mask[index])
+
+
 def _chem_solve(
     a_matrix: list[list[float]],
     b: list[float],
@@ -233,11 +282,11 @@ def _chem_solve(
     n_mol: list[float],
     chem_ref: list[float],
     log_activity: list[float],
+    log_denominator: list[float],
 ) -> tuple[list[float], list[float]]:
     """One `chemSolve`: the bordered Lagrange system and the Newton direction."""
     n_elements = len(b)
     species = len(n_mol)
-    n_t = max(sum(n_mol), MIN_MOLES)
 
     # `M` is diagonal in the ideal form, so `M^-1 v` is `n_i * v_i` - but it is built and
     # solved rather than shortcut, because the full form is not diagonal and the port
@@ -247,7 +296,7 @@ def _chem_solve(
     for i in range(species):
         n_i = max(n_mol[i], MIN_MOLES)
         m[i][i] = 1.0 / n_i
-        chem_pot[i] = chem_ref[i] + math.log(n_i) - math.log(n_t) + log_activity[i]
+        chem_pot[i] = chem_ref[i] + math.log(n_i) - log_denominator[i] + log_activity[i]
 
     a_transpose = [[a_matrix[e][i] for e in range(n_elements)] for i in range(species)]
     m_inv_at = _linalg.solve_columns(m, a_transpose)
@@ -325,10 +374,11 @@ def _step_of(
     dn: list[float],
     a_lambda: list[float],
     temperature: float,
+    n_t: float,
+    log_denominator: list[float],
 ) -> float:
     """`step()`: the damped step length, from the two Gibbs measures."""
     species = len(n_mol)
-    n_t = max(sum(n_mol), MIN_MOLES)
     r_t = GAS_CONSTANT * temperature
 
     n_omega = [n_mol[i] + dn[i] for i in range(species)]
@@ -341,7 +391,10 @@ def _step_of(
 
     def potential(value: float, index: int) -> float:
         return r_t * (
-            chem_ref[index] + math.log(max(value, MIN_MOLES)) - math.log(n_t) + log_activity[index]
+            chem_ref[index]
+            + math.log(max(value, MIN_MOLES))
+            - log_denominator[index]
+            + log_activity[index]
         )
 
     g_1 = sum(

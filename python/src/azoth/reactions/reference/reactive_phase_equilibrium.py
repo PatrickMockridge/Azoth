@@ -214,6 +214,11 @@ def reactive_phase_equilibrium(
         else [max(value, MIN_WRITTEN_MOLES) for value in seed_moles]
     )
 
+    # **The mole-fraction basis, because this operation cannot state the other one.** NeqSim
+    # reads the basis off its system, and the molality branch's two data - the reference-state
+    # split and the solvent's own mass - are properties of a phase this operation is handed
+    # only as vectors. Reaching it needs the P8 seam; until then a Pitzer phase through this
+    # id is a divergence the spec's assumptions name.
     solved = chemical_equilibrium(
         a_matrix,
         b,
@@ -224,6 +229,10 @@ def reactive_phase_equilibrium(
         T,
         max_iterations,
         tolerance,
+        "mole_fraction",
+        from_si(0.0, "kg"),
+        (),
+        phase_moles,
     )
     warnings.extend(solved.warnings)
 

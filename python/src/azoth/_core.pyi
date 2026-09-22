@@ -2509,6 +2509,10 @@ def chemical_equilibrium(
     T: float,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str,
+    solvent_weight: float,
+    solvent_mask: list[float],
+    phase_moles: float,
 ) -> ChemicalEquilibriumResult: ...
 def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
 def reactive_phase_equilibrium(

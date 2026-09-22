@@ -5,7 +5,8 @@ assumptions = [
     "**the ideal `M` matrix only**: `M[i][k] = delta_ik / n_i`. NeqSim can add `d(ln phi_i)/d(n_j)` to it, subtract `1/n_t` from every entry, or switch the first on after five passes; see the `M` assumption below each of those.",
     "**`useFugacityDerivatives` and `useFullMMatrix` have no caller.** Neither setter is called anywhere in NeqSim's `src/main`, so both modes are dead and the ideal form is the only one its own entry points reach from the data.",
     "**`useAdaptiveDerivatives` is reached and is not ported.** `solveChemEq` sets it from the second refinement onward, switching on `d(ln phi_i)/d(n_j)`. azoth has that derivative; this id, a procedure over vectors, has no phase to reach it through. The first refinement runs without it.",
-    "**the mole-fraction standard state only.** `getLogReactionActivity` also has a solute-molality branch, which is `SystemPitzer`'s and blocked behind the EoS/GE seam, and a Deshmukh-Mather branch, which is a phase this library carries as a state and not as this solver's partner.",
+    "**the solute-molality basis is an input, not a blocked seam.** `SystemPitzer` is its only selector; the branch replaces `ln n_t` with `ln w_solvent` for every component whose reference state is `solute`. The split and the mass are databank facts the vectors cannot see, so the caller supplies them.",
+    "**the Deshmukh-Mather branch is a phase and not a basis.** It is taken on `PhaseDeshmukhMather` whatever the concentration basis says: `ln(a_water)` for water, and `ln(molality) + ln(gamma_molality)` for the rest, with the coefficient converted off the mole-fraction scale.",
     "**the trace species are determined by the bordered matrix's conditioning, not by the tolerance.** The captured brine's sits at `6.7e16`, past the double-precision limit, and its three trace ions land `1.99e-3` from the same solve run independently.",
     "**the conservation correction is gated on the phase being the whole system**, NeqSim's `getNumberOfPhases() == 1`. On a flashed CO2-water aqueous phase it fires on the charge row and the solve stops converging, where NeqSim reaches it in nineteen passes.",
     "**NeqSim's ion floor is not reproduced.** After the loop it raises a phase where *both* `H3O+` and `OH-` are below a mole fraction of `1e-15`, which no captured state reaches - the two fluids here sit at `1.6e-13` and `7.3e-11` on the lower ion and are left alone.",
@@ -65,6 +66,21 @@ description = "the pass cap. NeqSim's default is 100 and its own callers set it,
 [inputs.tolerance]
 unit = "dimensionless"
 description = "the error the solve is trying to reach, before the relaxation above. NeqSim's default is 1e-8.\n"
+[inputs.concentration_basis]
+type = "enum"
+values = ["mole_fraction", "solute_molality"]
+description = "which standard state the activity term is taken on. **`solute_molality` is `SystemPitzer`'s**: `ln n_t` becomes `ln w_solvent` for a `solute`, and a `solvent` keeps the mole-fraction form. **NeqSim's Jacobian does not follow** - `M` stays `delta_ik/n_i` - and that is reproduced.\n"
+[inputs.solvent_weight]
+unit = "kg"
+description = "the solvent's own mass, `sum(n_j M_j)` over the components whose reference state is `solvent`, floored at `1e-60`. **Read only on the solute-molality basis**: a mole-fraction caller states the true mass it never reads rather than a placeholder.\n"
+[inputs.solvent_mask]
+type = "vector"
+unit = "dimensionless"
+length = "one per component: 1 where its reference state is `solvent`"
+description = "which components keep the mole-fraction form on the solute-molality basis. A mask rather than a name list for the reason `reactions.reference_potentials` gives: the names are the caller's own, and the positions are what the branch chooses between.\n"
+[inputs.phase_moles]
+unit = "mol"
+description = "**the phase's total moles, which is NeqSim's `n_t`.** Read once, at construction, and divided by for the whole solve - not the running sum of the reactive set, and not the sum of `moles` unless the phase holds nothing else.\n"
 [outputs]
 [outputs.moles]
 type = "vector"

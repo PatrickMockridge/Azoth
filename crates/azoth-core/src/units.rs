@@ -16,7 +16,7 @@
 
 pub use uom::si::f64::{
     AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, HeatTransfer,
-    Length, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity, MolarMass,
+    Length, Mass, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity, MolarMass,
     MolarVolume, Power, Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval,
     ThermalConductance, ThermalConductivity, ThermodynamicTemperature, Velocity, VolumeRate,
 };
@@ -24,8 +24,8 @@ pub use uom::si::{
     amount_of_substance::mole, area::square_meter, diffusion_coefficient::square_meter_per_second,
     dynamic_viscosity::pascal_second, electric_charge::coulomb,
     heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::meter,
-    length::millimeter, mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
-    molality::mole_per_kilogram, molar_energy::joule_per_mole,
+    length::millimeter, mass::kilogram, mass_density::kilogram_per_cubic_meter,
+    mass_rate::kilogram_per_second, molality::mole_per_kilogram, molar_energy::joule_per_mole,
     molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
     molar_volume::cubic_meter_per_mole, power::watt, pressure::pascal,
     specific_heat_capacity::joule_per_kilogram_kelvin, surface_tension::newton_per_meter,
@@ -87,6 +87,12 @@ pub fn square_meters_per_second(value: f64) -> DiffusionCoefficient {
 #[must_use]
 pub fn kilograms_per_cubic_meter(value: f64) -> MassDensity {
     MassDensity::new::<kilogram_per_cubic_meter>(value)
+}
+
+/// A mass in kilograms.
+#[must_use]
+pub fn kilograms(value: f64) -> Mass {
+    Mass::new::<kilogram>(value)
 }
 
 /// A dynamic viscosity in pascal seconds.

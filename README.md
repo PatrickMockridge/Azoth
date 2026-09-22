@@ -27,7 +27,7 @@ engine**, with an agentic layer on top. The algorithms are ported from
 - **An agentic layer.** Ninety skills under `skills/` teach an agent to call the library,
   and a four-role HAZOP team chains them.
 - **A formal layer in Lean.** The dimension group is proved (`lean/Azoth/Dim.lean`); the
-  35-unit vocabulary compiles into theorems (`lean/Azoth/Vocabulary.lean`).
+  36-unit vocabulary compiles into theorems (`lean/Azoth/Vocabulary.lean`).
 
 ## Install
 

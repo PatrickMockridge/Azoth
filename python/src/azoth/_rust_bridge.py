@@ -421,6 +421,10 @@ def chemical_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str,
+    solvent_weight: Q,
+    solvent_mask: Sequence[float],
+    phase_moles: Q,
 ) -> ChemicalEquilibriumResult:
     """The reactive equilibrium solve, computed in Rust.
 
@@ -444,6 +448,10 @@ def chemical_equilibrium(
         input_to_si(spec, "T", T),
         int(max_iterations),
         float(tolerance),
+        concentration_basis,
+        input_to_si(spec, "solvent_weight", solvent_weight),
+        [_si(spec, "solvent_mask", value) for value in solvent_mask],
+        input_to_si(spec, "phase_moles", phase_moles),
     )
     return ChemicalEquilibriumResult(
         moles=tuple(from_si(value.magnitude_si, value.unit) for value in result.moles),
