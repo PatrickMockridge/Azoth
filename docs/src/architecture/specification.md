@@ -288,7 +288,10 @@ page:
 - **Pi and rho are a language, not a spec field.** The calculus at
   [Processes and channels](../calculus/process.md) states a unit operation as a
   process on typed, directional channels, and that statement is what tranche P11
-  will build the tier against. **Nothing declares a port today**: the unit-operation
-  tier was deleted rather than repaired, so there is no model carrying a port, no
-  lint rule holding one against its inputs and outputs, and no interpreter for the
-  calculus. A page describing a port is a specification, and it is marked as one.
+  builds the tier against. **It is no longer a bare specification**: `specs/unit_ops/`
+  declares 24 unit operations with typed channels, `crates/azoth-process` carries the
+  loader and `azoth_process::validate`, and a cargo test holds every shipped palette entry
+  and flowsheet to the calculus's rules. What is still absent is the *interpreter* — the
+  executor is P12 — and the Lean statement of the two claims, which
+  `lean/Azoth/` does not carry. A page describing a port was a specification; it is now a
+  declaration with a checker behind it.

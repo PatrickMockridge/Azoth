@@ -1,13 +1,12 @@
 id = "unit_ops.tank"
 name = "Tank"
+notes = "Its two outlets are `getGasOutStream` and `getLiquidOutStream`, and its inlet is a mixer, so it is many-in. Its volume is what `VUflash` solves at, and it cannot be declared here yet: the vocabulary has no plain volume dimension (`m**3/s` and `m**3/mol` exist, `m**3` does not), so the parameter is absent rather than wrong until that dimension lands with this kernel."
 [source]
 standard = "NeqSim process/equipment/tank/Tank.java"
-[parameters.pressure_drop]
-unit = "Pa"
-description = "the pressure loss across the tank"
 [[ports]]
 name = "inlet"
 direction = "in"
+multiplicity = "many"
 [ports.fields]
 n = { dimension = "molar_flow" }
 z = { dimension = "dimensionless", shape = "vector" }
@@ -15,7 +14,16 @@ P = { dimension = "pressure" }
 T = { dimension = "thermodynamic_temperature" }
 h = { dimension = "molar_energy" }
 [[ports]]
-name = "outlet"
+name = "gas"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "liquid"
 direction = "out"
 [ports.fields]
 n = { dimension = "molar_flow" }

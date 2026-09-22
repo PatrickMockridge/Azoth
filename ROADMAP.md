@@ -6,11 +6,13 @@ or model that ordinary oil, gas and water work uses is ported before one only a
 specialist reaches for.
 
 This maps NeqSim's physics **one to one**. Every class under NeqSim's `thermo/`,
-`thermodynamicoperations/` and `physicalproperties/` trees is assigned to a tier below;
-the trees that are not physics — `process` (unit operations and the flowsheet),
-`fluidmechanics` (azoth has its own hydraulics) and the support packages — are named at
-the end rather than silently dropped. The column-by-column record is
-`databank/manifest.toml`, which this file orders; it does not re-inventory it.
+`thermodynamicoperations/` and `physicalproperties/` trees is assigned to a tier below.
+The trees that are not physics are named at the end rather than silently dropped, and they
+are of two kinds: **`process/`** — unit operations and the flowsheet — is not physics but is
+a port target in its own right, the specification putting it at tranche P11 and P12; while
+**`fluidmechanics/`** (azoth has its own hydraulics) and the support packages are not ported
+at all. The column-by-column record is `databank/manifest.toml`, which this file orders; it
+does not re-inventory it.
 
 ## The rules every port follows
 
@@ -351,9 +353,13 @@ Port on demand, as a caller needs them:
 The following NeqSim trees are deliberately not ported, so that the mapping above is
 complete rather than silent about them:
 
-- **`process/`** (unit operations, equipment, the flowsheet). azoth's specification puts
-  the unit-operation tier at tranche P11; the tier was deleted, not deferred piecemeal,
-  and it is built on the physics above once that is complete.
+**`process/` is not in this list.** It is not physics, but it *is* a port target: the
+unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
+at P12. An early tier was deleted in `1118aa9` for asserting a process simulator this library
+did not have, and it has since been re-founded on the process calculus — `crates/azoth-process`
+carries the channel types, the stream record, the palette loader and the checker,
+`specs/unit_ops/` declares 24 unit operations, and six of them carry kernels.
+
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.
 - **`statistics/`, `util/`, `mcp/`, `mathlib/`, `integration/`, `datapresentation/`,
@@ -372,7 +378,7 @@ in this order:
 2. **P1** — transport properties; the pipe and equipment kernels need density and
    viscosity from a mixture.
 3. **P2–P10** — the physics.
-4. **P11** — a kernel for every palette entry, not six of 25.
+4. **P11** — a kernel for every palette entry, not six of 24.
 5. **P12** — the flowsheet executor: topological order, a recycle fixed point, a session,
    structured diagnostics, the TOML/JSON round trip and a result codec.
 

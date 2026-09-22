@@ -55,10 +55,13 @@ outlets `c'₁ … c'ₙ`, with `n(c)` the molar-flow field of a channel:
              Σᵢ ḣ(cᵢ)  =  Σⱼ ḣ(c'ⱼ) + duty    enthalpy
 ```
 
-*Status: **specified**. Nothing in this repository declares a channel, a polarity or
-a multiplicity yet, so there is no linear discipline for a balance to follow from.
-`Azoth.Process.balances_close_under_linearity` is what the `ports` layer is checked
-against, and it is proved then.*
+*Status: **specified**. The `ports` layer exists: `specs/unit_ops/` declares 24 unit
+operations, each with typed channels carrying a polarity and a multiplicity, and
+`azoth_process::validate` holds a flowsheet to the discipline above in Rust — a `one` port
+consumed exactly once, a `many` port at least once, every feed and product used once, and
+every loop passing through a declared recycle. What does not exist is the theorem:
+`lean/Azoth/` has no `Process.lean`, so the balance is *checked* and not *proved*, and
+`Azoth.Process.balances_close_under_linearity` is for the tranche that states it.*
 
 The reason this belongs here rather than in a runtime check is that a balance
 asserted at runtime is a check that can be skipped, and a balance that follows from
@@ -77,11 +80,15 @@ the pure evaluation of `f`:
 U  ≅  f(x₁, …, xₘ)
 ```
 
-*Status: **specified**, and this page's subject is further away than the others.
-There is no unit-operation tier in this repository: the eight that existed were
-deleted pending tranche P11, so the claim is not that an implementation is
-unchecked but that there is no implementation to check.
-`Azoth.Process.unit_op_is_extensional` is for the tier that returns.*
+*Status: **specified**. The tier this claim is about has returned, in part: an early
+one was deleted in `1118aa9` for asserting a process simulator this library did not have,
+and it was re-founded on this page's own calculus — `crates/azoth-process` carries the
+channel types, the stream record, the palette loader and the checker, `specs/unit_ops/`
+declares 24 unit operations, and six of them carry kernels. So the claim is no longer that
+there is nothing to check. It is that **nothing checks it**: `lean/Azoth/` has no
+`Process.lean`, and an implementation agreeing with a port declaration is exactly what this
+claim asserts and nothing tests. `Azoth.Process.unit_op_is_extensional` is for the tranche
+that proves it.*
 
 Three hypotheses, and each is doing work: *only its declared channels*, so `U`
 cannot read anything the caller did not supply; *total*, so it cannot fail on a

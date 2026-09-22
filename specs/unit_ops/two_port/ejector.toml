@@ -1,12 +1,31 @@
 id = "unit_ops.ejector"
 name = "Ejector"
+notes = "Declared with two inlets, so it is not a two-port machine and its family directory is a misnomer for it. The declaration is the machine; the directory is where someone filed it."
 [source]
 standard = "NeqSim process/equipment/ejector/Ejector.java"
-[parameters.outlet_pressure]
+[parameters.discharge_pressure]
 unit = "Pa"
-description = "the pressure at the ejector's outlet"
+description = "the pressure the diffuser discharges at, `setDischargePressure`"
+[parameters.diffuser_efficiency]
+unit = "dimensionless"
+description = "the diffuser's isentropic efficiency, `setDiffuserEfficiency`"
+[parameters.suction_nozzle_efficiency]
+unit = "dimensionless"
+description = "the suction nozzle's isentropic efficiency, `setSuctionNozzleEfficiency`"
+[parameters.mixing_efficiency]
+unit = "dimensionless"
+description = "the mixing chamber's efficiency, `setMixingEfficiency`"
 [[ports]]
-name = "inlet"
+name = "motive"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "suction"
 direction = "in"
 [ports.fields]
 n = { dimension = "molar_flow" }

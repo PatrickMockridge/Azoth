@@ -14,6 +14,7 @@
 use std::collections::{HashMap, HashSet};
 
 use azoth_core::unit_vocab_gen::dimension_exponents;
+use azoth_core::units::UNIT_NAMES;
 
 use crate::channel::{ChannelType, Direction, FieldType, Multiplicity};
 use crate::flowsheet::{Connection, Flowsheet, Instance, Recycle};
@@ -24,6 +25,18 @@ use crate::unit_op::UnitOpSpec;
 pub enum Diagnostic {
     UnknownDimension {
         dimension: String,
+    },
+    /// A parameter's declared unit is not one this crate can convert.
+    ///
+    /// **The sibling of `UnknownDimension`, and it was missing until P11.** A port
+    /// field's dimension was held to the vocabulary from the start and a parameter's unit
+    /// was not, which is how `unit_ops.tank` carried a `pressure_drop` in `Pa` for a class
+    /// whose `run` never reads a pressure drop — a declared quantity with nothing behind it
+    /// and nothing to catch it.
+    UnknownParameterUnit {
+        unit_op: String,
+        parameter: String,
+        unit: String,
     },
     DuplicateUnitOpId {
         id: String,
@@ -123,6 +136,18 @@ pub fn validate_palette(specs: &[UnitOpSpec]) -> Vec<Diagnostic> {
                 if dimension_exponents(&field.dimension).is_none() {
                     diags.push(Diagnostic::UnknownDimension {
                         dimension: field.dimension.clone(),
+                    });
+                }
+            }
+        }
+
+        for (name, parameter) in &spec.parameters {
+            if let Some(unit) = &parameter.unit {
+                if !UNIT_NAMES.contains(&unit.as_str()) {
+                    diags.push(Diagnostic::UnknownParameterUnit {
+                        unit_op: spec.id.clone(),
+                        parameter: name.clone(),
+                        unit: unit.clone(),
                     });
                 }
             }
@@ -559,6 +584,7 @@ mod tests {
                 port("feed", Direction::In, Multiplicity::One),
                 port("discharge", Direction::Out, Multiplicity::One),
             ],
+            notes: None,
         }
     }
 
@@ -573,6 +599,7 @@ mod tests {
                 port("feed", Direction::In, Multiplicity::Many),
                 port("product", Direction::Out, Multiplicity::One),
             ],
+            notes: None,
         }
     }
 
@@ -871,6 +898,30 @@ mod tests {
             d,
             Diagnostic::UnrecycledLoop { .. }
         )));
+    }
+
+    #[test]
+    fn an_unknown_parameter_unit_in_the_palette_is_reported() {
+        let mut spec = two_port("unit_ops.tank");
+        spec.parameters.insert(
+            "volume".to_string(),
+            crate::unit_op::Param {
+                unit: Some("m**3".to_string()),
+                description: "the tank's volume".to_string(),
+            },
+        );
+        let diags = validate_palette(&[spec]);
+        // `m**3` is not `m**3/s`: the vocabulary has no plain volume unit, so a volume
+        // cannot be declared until one is added. That is the state this records rather
+        // than a spelling to be worked around.
+        assert!(has(
+            &diags,
+            Diagnostic::UnknownParameterUnit {
+                unit_op: "unit_ops.tank".into(),
+                parameter: "volume".into(),
+                unit: "m**3".into(),
+            }
+        ));
     }
 
     #[test]

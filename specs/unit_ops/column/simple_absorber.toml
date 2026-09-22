@@ -1,10 +1,8 @@
 id = "unit_ops.simple_absorber"
 name = "Simple absorber"
+notes = "**Not ported**, and the refusal is this entry's content. `SimpleAbsorber` is not the stage-wise absorber its name and ports describe: its constructor adds MDEA and water in proportion to the feed CO2, calls `chemicalReactionInit()` and a fixed mixing rule, and `run` is a fixed-point loop that adds and removes MDEA until the loading matches. `setNumberOfStages` writes a field `run` never reads, so the parameter this entry used to declare was inert. Porting it faithfully needs the MDEA/CO2 electrolyte chemistry, which P8 declined: `thermo/util/amines/`'s `AmineSystem` and `AmineKentEisenberg` are the classes that would close it, and P8's tier is where it belongs. Both inlets are set to the same stream by the constructor, so the `solvent` port is what the class allows rather than what it uses."
 [source]
 standard = "NeqSim process/equipment/absorber/SimpleAbsorber.java"
-[parameters.number_of_stages]
-unit = "dimensionless"
-description = "the number of theoretical stages"
 [[ports]]
 name = "feed"
 direction = "in"
