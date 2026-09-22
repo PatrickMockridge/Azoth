@@ -25,6 +25,8 @@ out, weighting to -47627.87. This diverges deliberately and the spec says so.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import SplitterResult
@@ -92,21 +94,52 @@ def splitter(
     if total <= 0.0:
         raise InvalidInputError("split_factors", "the split fractions must sum to a positive value")
 
+    states = _route(components, t, p, feed_z, split_factors)
+    z = tuple(feed_z)
+    return SplitterResult(
+        products_n=tuple(from_si(n * fraction, "mol/s") for fraction in states.fractions),
+        products_z=tuple(z for _ in states.fractions),
+        products_p=tuple(feed_p for _ in states.fractions),
+        products_t=tuple(feed_t for _ in states.fractions),
+        products_h=tuple(from_si(states.h_in, "J/mol") for _ in states.fractions),
+        warnings=tuple(warnings),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SplitStates:
+    """The feed's own state and the share each outlet takes of it, in SI.
+
+    The refusals are not here: they are about the *declared* factors, and
+    :func:`splitter` states them before the fluid is resolved. What is here is what the
+    split is - one enthalpy, and the normalised fractions that divide the flow.
+    """
+
+    h_in: float
+    fractions: tuple[float, ...]
+
+
+def _route(
+    components: list[str],
+    t: float,
+    p: float,
+    feed_z: list[float],
+    split_factors: list[float],
+) -> SplitStates:
+    """The splitter's intermediates, in the order it computes them, in SI.
+
+    **One arithmetic, two consumers.** :func:`splitter` builds the result from this and
+    :mod:`azoth.process.layers` reports the same numbers against a NeqSim capture, so a
+    layer the harness compares is a layer the model actually took. The feed's enthalpy is
+    the whole interior: a split is a flow division and nothing else, which is exactly why
+    the branch enthalpies the capture carries are the row where the two libraries part.
+    """
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     # The feed's own state, which every outlet carries: `h` is a function of `(T, P, z)`
     # and none of the three moves.
     h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, feed_z)
-
-    fractions = [factor / total for factor in split_factors]
-    z = tuple(feed_z)
-    return SplitterResult(
-        products_n=tuple(from_si(n * fraction, "mol/s") for fraction in fractions),
-        products_z=tuple(z for _ in fractions),
-        products_p=tuple(feed_p for _ in fractions),
-        products_t=tuple(feed_t for _ in fractions),
-        products_h=tuple(from_si(h_in, "J/mol") for _ in fractions),
-        warnings=tuple(warnings),
-    )
+    total = sum(split_factors)
+    return SplitStates(h_in=h_in, fractions=tuple(factor / total for factor in split_factors))
 
 
 def _spec() -> dict[str, object]:

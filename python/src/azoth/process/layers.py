@@ -138,11 +138,76 @@ def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dump
 
 
+def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.splitter`'s layers, from the reference's own factored arithmetic.
+
+    **The branches' enthalpies are the layers where NeqSim and this library part**, and
+    they are dumped so that the parting is measured rather than described. Two of the three
+    are declared divergences; see `LAYER_CASES`.
+
+    Nothing here reads a state the kernel did not compute. A branch's pressure, temperature
+    and composition are the feed's *by construction* - the kernel copies them - so dumping
+    them would be dumping the input, and the entropy is a function of `(T, P, z)` the
+    splitter never forms, which would make this a second implementation of
+    `Stream::entropy` rather than a layer of the split.
+    """
+    from azoth.process.reference.splitter import _route
+
+    states = _route(
+        [str(name) for name in inputs["components"]],
+        float(inputs["feed_t"]),
+        float(inputs["feed_p"]),
+        [float(v) for v in inputs["feed_z"]],
+        [float(f) for f in inputs["split_factors"]],
+    )
+    n = float(inputs["feed_n"])
+    dump = {"feed_h": states.h_in}
+    for index, fraction in enumerate(states.fractions):
+        dump[f"products{index}_n"] = n * fraction
+        dump[f"products{index}_h"] = states.h_in
+    # The balance a split owes, under the same name the probe prints it by. It is the
+    # diverging one: `run`'s branches carry the defect, so their weighted enthalpy is not
+    # the feed's.
+    dump["molar_enthalpy_out_weighted"] = sum(
+        fraction * states.h_in for fraction in states.fractions
+    )
+    return dump
+
+
 #: One model's layers, keyed by the model id a case names.
 DUMPERS: dict[str, Dumper] = {
     "process.pump": _pump,
+    "process.splitter": _splitter,
     "process.heat_exchanger": _heat_exchanger,
 }
+
+
+@dataclass(frozen=True)
+class Divergence:
+    """A layer the port **deliberately** does not reproduce, and how far from it it is.
+
+    **Sometimes the layer that moved is supposed to.** `Splitter.run` does not conserve
+    enthalpy: it clones the inlet fluid, zeroes it with `init(0)` and adds each component
+    back phase by phase, so its outlets weight to `2.3` times what came in. A split changes
+    no state, so the port answers with the feed's enthalpy - and a comparison against the
+    capture's number can only ever read as a failure, at any tolerance.
+
+    Reading it as a failure would be the wrong answer, and reading it as nothing would let
+    the port drift. So the divergence is **declared and bounded**: the capture's value is
+    asserted to be at least `at_least` times the port's. NeqSim repairing `Splitter.run`, or
+    the port starting to agree, moves the ratio out of that band and fails - which is what
+    makes this a measurement rather than a comment that quietly stops being true. The same
+    shape as `crates/azoth-process/tests/stream.rs`'s
+    `the_heavy_oil_viscosity_is_still_wrong_for_water`.
+    """
+
+    key: str
+    #: The least the capture's value, divided by the port's, is allowed to be. A bound
+    #: rather than an equality: the ratio is a ratio of two flashes' arithmetic, and the
+    #: point is which of them it is near, not the digits.
+    at_least: float
+    #: Why the two are apart, in the shape the spec's `source` states it.
+    reason: str
 
 
 @dataclass(frozen=True)
@@ -171,7 +236,38 @@ class LayerCase:
     #: efficiency of one and azoth has `9.18e-12`, which is 1400 times it and also zero. No
     #: relative tolerance can be met there, at any value.
     diagnostic: tuple[tuple[str, float], ...] = ()
+    #: Layers held to a declared [`Divergence`] instead of to agreement.
+    divergence: tuple[Divergence, ...] = ()
 
+
+#: The splitter's three divergent layers, declared once because both its rows carry the
+#: same split and therefore the same bands.
+#:
+#: The capture has `-93092.87`, `-28142.87` and a weighted `-47627.87` against a feed of
+#: `-20689.86`, which is `4.50`, `1.36` and `2.30` times the port's answer. The bounds sit
+#: a little under each, so that the bands are the *ratios* and not their last digits: what
+#: is asserted is that the capture is still several times away, not how many.
+_SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
+    Divergence(
+        key="products0_h",
+        at_least=3.0,
+        reason="`Splitter.run` reaches its branch state through `init(0)` and "
+        "`addComponent(int, double)` over every phase, so the first branch's enthalpy is "
+        "not the feed's and the port's is: a split changes no state",
+    ),
+    Divergence(
+        key="products1_h",
+        at_least=1.2,
+        reason="the same defect on the branch that carries most of the flow, where it is "
+        "the smallest - the stale phase's share of the total is what moves",
+    ),
+    Divergence(
+        key="molar_enthalpy_out_weighted",
+        at_least=1.8,
+        reason="the two branches weighted by their fractions, which is the balance a "
+        "splitter owes and the row where NeqSim's 2.3 times the feed is visible",
+    ),
+)
 
 #: The process cases a layer diff can read. **One entry per case**, so a probe row added
 #: without a case - or a case whose probe row was reordered - is a mismatch
@@ -193,6 +289,24 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         # 1e-9 kJ/(mol*K) is 1e-6 J/(mol*K): four orders below any physical irreversibility
         # and four above the double-precision rounding of an enthalpy near 2.5e4 J/mol.
         diagnostic=(("entropy_production_kJ_per_molK", 1e-9),),
+    ),
+    # The splitter's two rows carry the same numbers, so the pairing is the label's and
+    # not a state's.
+    LayerCase(
+        model="process.splitter",
+        case="a_two_way_split_of_a_liquid",
+        capture="process_splitter.tsv",
+        block=0,
+        identified_by=("split_factors", "0.3 0.7"),
+        divergence=_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.splitter",
+        case="the_factors_are_normalised",
+        capture="process_splitter.tsv",
+        block=1,
+        identified_by=("split_factors", "3.0 7.0"),
+        divergence=_SPLITTER_DIVERGENCE,
     ),
     # The exchanger's five cases sit on blocks 0, 1, 2, 5 and 6. Blocks 3 and 4 are
     # NeqSim's own `runSpecifiedStream` rows, which the port deliberately does not

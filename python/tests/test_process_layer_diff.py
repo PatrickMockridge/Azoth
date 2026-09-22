@@ -92,12 +92,22 @@ def test_a_models_layers_agree_with_its_capture(layer_case: layers.LayerCase) ->
 
     dumped = layers.rows(layer_case.model, inputs)
     absolute = dict(layer_case.diagnostic)
+    divergence = {d.key: d for d in layer_case.divergence}
     compared = 0
     for key, value in dumped.items():
         if key not in block:
             continue
         expected = float(block[key])
-        if key in absolute:
+        if key in divergence:
+            declared = divergence[key]
+            ratio = abs(expected) / abs(value) if value else float("inf")
+            assert ratio >= declared.at_least, (
+                f"{layer_case.model}::{layer_case.case}.{key}: the capture's {expected} is "
+                f"{ratio:.3f} times azoth's {value}, under the {declared.at_least} this "
+                f"divergence is declared to be at least. It is a deliberate one: "
+                f"{declared.reason}"
+            )
+        elif key in absolute:
             assert abs(value - expected) <= absolute[key], (
                 f"{layer_case.model}::{layer_case.case}.{key}: {value} against the "
                 f"capture's {expected} is {abs(value - expected):.3e} absolute, over the "
