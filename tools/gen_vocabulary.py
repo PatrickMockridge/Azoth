@@ -85,6 +85,10 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (-1, 1, -1, 0, 0, 0, 0): "DynamicViscosity",
     (0, 0, 0, 0, 1, 0, 0): "ThermodynamicTemperature",
     (2, 1, -3, 0, 0, 0, 0): "Power",
+    # A heat exchanger's overall conductance, `UA`: the power per kelvin the rating
+    # multiplies by an NTU. uom carries it, and the exponents are a power over a
+    # temperature rather than a new base.
+    (2, 1, -3, 0, -1, 0, 0): "ThermalConductance",
     (2, 0, -2, 0, -1, 0, 0): "SpecificHeatCapacity",
     (1, 1, -3, 0, -1, 0, 0): "ThermalConductivity",
     (0, 1, -3, 0, -1, 0, 0): "HeatTransfer",
@@ -162,6 +166,7 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "J/(kg*K)": "Dimension.Energy / (Dimension.Mass * Dimension.Temperature)",
     "W/(m*K)": "Dimension.Power / (Dimension.Length * Dimension.Temperature)",
     "W/(m**2*K)": "Dimension.Power / (Dimension.Area * Dimension.Temperature)",
+    "W/K": "Dimension.Power / Dimension.Temperature",
     "N/m": "Dimension.Force / Dimension.Length",
     "kg/mol": "Dimension.Mass / Dimension.AmountOfSubstance",
     "m**3/mol": "Dimension.Volume / Dimension.AmountOfSubstance",

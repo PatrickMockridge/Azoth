@@ -52,6 +52,9 @@ exponents = [1, 1, -3, 0, -1, 0, 0]
 id = "heat_transfer"
 exponents = [0, 1, -3, 0, -1, 0, 0]
 [[dimensions]]
+id = "thermal_conductance"
+exponents = [2, 1, -3, 0, -1, 0, 0]
+[[dimensions]]
 id = "surface_tension"
 exponents = [0, 1, -2, 0, 0, 0, 0]
 [[dimensions]]
@@ -185,6 +188,12 @@ dimension = "heat_transfer"
 pint = "watt/(meter**2*kelvin)"
 uom = "heat_transfer::watt_per_square_meter_kelvin"
 rust_ctor = "watts_per_square_meter_kelvin"
+[[units]]
+id = "W/K"
+dimension = "thermal_conductance"
+pint = "watt/kelvin"
+uom = "thermal_conductance::watt_per_kelvin"
+rust_ctor = "watts_per_kelvin"
 [[units]]
 id = "N/m"
 dimension = "surface_tension"

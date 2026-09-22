@@ -31,6 +31,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "specific_heat_capacity",
     "thermal_conductivity",
     "heat_transfer",
+    "thermal_conductance",
     "surface_tension",
     "molar_mass",
     "molar_volume",
@@ -67,6 +68,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("specific_heat_capacity", [2, 0, -2, 0, -1, 0, 0]),
     ("thermal_conductivity", [1, 1, -3, 0, -1, 0, 0]),
     ("heat_transfer", [0, 1, -3, 0, -1, 0, 0]),
+    ("thermal_conductance", [2, 1, -3, 0, -1, 0, 0]),
     ("surface_tension", [0, 1, -2, 0, 0, 0, 0]),
     ("molar_mass", [0, 1, 0, 0, 0, -1, 0]),
     ("molar_volume", [3, 0, 0, 0, 0, -1, 0]),
@@ -130,6 +132,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "J/(kg*K)",
     "W/(m*K)",
     "W/(m**2*K)",
+    "W/K",
     "N/m",
     "kg/mol",
     "m**3/mol",
@@ -168,6 +171,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("J/(kg*K)", [2, 0, -2, 0, -1, 0, 0]),
     ("W/(m*K)", [1, 1, -3, 0, -1, 0, 0]),
     ("W/(m**2*K)", [0, 1, -3, 0, -1, 0, 0]),
+    ("W/K", [2, 1, -3, 0, -1, 0, 0]),
     ("N/m", [0, 1, -2, 0, 0, 0, 0]),
     ("kg/mol", [0, 1, 0, 0, 0, -1, 0]),
     ("m**3/mol", [3, 0, 0, 0, 0, -1, 0]),
@@ -229,6 +233,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("W/(m**2*K)", |v| {
         crate::units::watts_per_square_meter_kelvin(v).value
     }),
+    ("W/K", |v| crate::units::watts_per_kelvin(v).value),
     ("N/m", |v| crate::units::newtons_per_meter(v).value),
     ("kg/mol", |v| crate::units::kilograms_per_mole(v).value),
     ("m**3/mol", |v| crate::units::cubic_meters_per_mole(v).value),
@@ -308,6 +313,7 @@ mod dimension_assertions {
         let _: uom::si::f64::SpecificHeatCapacity = crate::units::joules_per_kilogram_kelvin(1.0);
         let _: uom::si::f64::ThermalConductivity = crate::units::watts_per_meter_kelvin(1.0);
         let _: uom::si::f64::HeatTransfer = crate::units::watts_per_square_meter_kelvin(1.0);
+        let _: uom::si::f64::ThermalConductance = crate::units::watts_per_kelvin(1.0);
         let _: uom::si::f64::SurfaceTension = crate::units::newtons_per_meter(1.0);
         let _: uom::si::f64::MolarMass = crate::units::kilograms_per_mole(1.0);
         let _: uom::si::f64::MolarVolume = crate::units::cubic_meters_per_mole(1.0);

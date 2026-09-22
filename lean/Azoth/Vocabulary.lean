@@ -39,6 +39,7 @@ def units : List (String × Units.Dimension) :=
     ("J/(kg*K)", Dim.ofExponents [2, 0, -2, 0, -1, 0, 0]),
     ("W/(m*K)", Dim.ofExponents [1, 1, -3, 0, -1, 0, 0]),
     ("W/(m**2*K)", Dim.ofExponents [0, 1, -3, 0, -1, 0, 0]),
+    ("W/K", Dim.ofExponents [2, 1, -3, 0, -1, 0, 0]),
     ("N/m", Dim.ofExponents [0, 1, -2, 0, 0, 0, 0]),
     ("kg/mol", Dim.ofExponents [0, 1, 0, 0, 0, -1, 0]),
     ("m**3/mol", Dim.ofExponents [3, 0, 0, 0, 0, -1, 0]),
@@ -173,6 +174,12 @@ theorem u_W_per__m_times_K_dimension :
     `Dimension.Power / (Dimension.Area * Dimension.Temperature)`. -/
 theorem u_W_per__m_pow_2_times_K_dimension :
     dimOf "W/(m**2*K)" = some (Dimension.Power / (Dimension.Area * Dimension.Temperature)) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "W/K" carries the dimension `lean-units` calls
+    `Dimension.Power / Dimension.Temperature`. -/
+theorem u_W_per_K_dimension :
+    dimOf "W/K" = some (Dimension.Power / Dimension.Temperature) := by
   simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
 
 /-- "N/m" carries the dimension `lean-units` calls

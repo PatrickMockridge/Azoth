@@ -34,6 +34,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
 //       > captures/process_throttling_valve.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
+//       > captures/process_heat_exchanger.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.stream.StreamInterface;
@@ -58,6 +60,9 @@ public class ProcessProbe {
         break;
       case "throttling_valve":
         throttlingValve();
+        break;
+      case "heat_exchanger":
+        heatExchanger();
         break;
       default:
         throw new IllegalArgumentException("no such unit operation: " + which);
@@ -265,6 +270,81 @@ public class ProcessProbe {
     print("inlet", inlet);
     print("outlet", valve.getOutletStream());
     System.out.println();
+  }
+
+  static void heatExchanger() {
+    // **`HeatExchanger.run`'s default branch is an effectiveness-NTU rating, not a
+    // duty.** It seeds each side's outlet by flashing it at the *other* side's inlet
+    // temperature to estimate a heat capacity, takes `Cmin`/`Cmax`, forms
+    // `NTU = UA / Cmin` and applies `calcThermalEffectivenes(NTU, Cr)` to that swing.
+    // `energyInput` is never read: `duty` is this class's *output*.
+    //
+    // **The first two rows exist because of a dimensional question**, and the `UA` is
+    // deliberately small enough that the effectiveness does not saturate at one.
+    // `Cmin` is a *molar* heat capacity (J/mol/K) and `UA` is a total conductance (W/K),
+    // so `NTU = UA / Cmin` is dimensionless only while the capacity-limiting side flows
+    // at one mole per second. Row two doubles *that* side's flow and changes nothing
+    // else; a correct `NTU` would fall, and a molar one will not.
+    String[] hotNames = new String[] { "methane", "n-butane" };
+    double[] hotZ = new double[] { 0.8, 0.2 };
+    String[] coldNames = new String[] { "n-butane", "n-pentane" };
+    double[] coldZ = new double[] { 0.5, 0.5 };
+
+    exchangerRow("ua_rating_counterflow", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 100.0, null,
+        0, null);
+    exchangerRow("ua_rating_hot_flow_2", hotNames, hotZ, 2.0, coldNames, coldZ, 1.0, 100.0, null, 0,
+        null);
+    // The arrangement is a parameter, so it gets a row: the same exchanger in parallel flow
+    // moves less heat than the counterflow one above, which is the whole reason it is one.
+    exchangerRow("ua_rating_parallelflow", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 100.0, null,
+        0, "concentric tube paralellflow");
+    exchangerRow("out_temperature_pins_the_hot_side", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0,
+        100.0, 350.0, 0, null);
+    exchangerRow("out_temperature_pins_the_cold_side", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0,
+        100.0, 360.0, 1, null);
+  }
+
+  static void exchangerRow(String label, String[] hotNames, double[] hotZ, double hotFlow,
+      String[] coldNames, double[] coldZ, double coldFlow, Double ua, Double pinnedK,
+      int pinnedSide, String arrangement) {
+    Stream hot = feed(hotNames, hotZ, 400.0, 20.0, hotFlow);
+    Stream cold = feed(coldNames, coldZ, 300.0, 5.0, coldFlow);
+
+    neqsim.process.equipment.heatexchanger.HeatExchanger hx =
+        new neqsim.process.equipment.heatexchanger.HeatExchanger("hx1", hot, cold);
+    if (ua != null) {
+      hx.setUAvalue(ua);
+    }
+    if (pinnedK != null) {
+      hx.setOutStreamSpecificationNumber(pinnedSide);
+      hx.setOutTemperature(pinnedK, "K");
+    }
+    if (arrangement != null) {
+      hx.setFlowArrangement(arrangement);
+    }
+    hx.run();
+
+    System.out.println(label);
+    print("hot_in", hot);
+    print("cold_in", cold);
+    print("hot_out", hx.getOutStream(0));
+    print("cold_out", hx.getOutStream(1));
+    // **The balance the exchanger owes, printed so the capture carries its own
+    // evidence.** Total enthalpies, because the two sides may carry different flows.
+    double hotDuty = duty(hot, hx.getOutStream(0));
+    double coldDuty = duty(cold, hx.getOutStream(1));
+    System.out.println("hot_duty_W=" + hotDuty);
+    System.out.println("cold_duty_W=" + coldDuty);
+    System.out.println();
+  }
+
+  /// The total enthalpy a side gained, in W: molar change times molar flow.
+  static double duty(StreamInterface inlet, StreamInterface outlet) {
+    SystemInterface a = inlet.getThermoSystem();
+    SystemInterface b = outlet.getThermoSystem();
+    double in = a.getEnthalpy() / a.getTotalNumberOfMoles() * inlet.getFlowRate("mol/sec");
+    double out = b.getEnthalpy() / b.getTotalNumberOfMoles() * outlet.getFlowRate("mol/sec");
+    return out - in;
   }
 
   /// One stream's record, which is what a port carries.
