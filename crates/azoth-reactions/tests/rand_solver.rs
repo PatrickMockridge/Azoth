@@ -117,3 +117,60 @@ fn the_water_gas_shift_reproduces_the_captured_equilibrium() {
     );
     assert!(solution.moles[0] < 0.25, "CO fell to {}", solution.moles[0]);
 }
+
+/// **The driver's own numbers, not only the composition.** `ReactiveMultiphaseTPflash` reports
+/// three things for the path it takes on this fluid - the equilibrium moles, their total, and
+/// the Gibbs measure `computeGibbsEnergy` - and all three are in the capture. The total is the
+/// one that is easy to get wrong by assuming: it is `getTotalMoles` of the solve, and a
+/// reaction that splits one species into two moves it away from the feed's.
+#[test]
+fn the_drivers_single_phase_answer_is_the_captured_one() {
+    use azoth_reactions::reactive_flash::single_phase_equilibrium;
+
+    let matrix =
+        FormulaMatrix::build(&NAMES.map(String::from)).expect("the components are in the databank");
+    let b: Vec<f64> = matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
+        .collect();
+    let g0 = standard_potentials(&thermo_data(), TEMPERATURE, PRESSURE_BARA);
+
+    let (mixture, _) = mixture_of(&NAMES, Cubic::Srk, None).expect("the databank carries them");
+    let reduced = mixture
+        .reduced_parameters(kelvins(TEMPERATURE), pascals(PRESSURE_BARA * 1.0e5))
+        .expect("a state");
+    let mut ln_phi = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        Ok(mixture
+            .phase_state(&reduced, x, RootSide::Vapour)?
+            .ln_phi
+            .clone())
+    };
+
+    let outcome =
+        single_phase_equilibrium(&matrix.matrix, &g0, &b, &FEED, &mut ln_phi).expect("it solves");
+    assert!(outcome.converged, "the captured state converges");
+
+    // `equilibrium_total_moles` from the capture.
+    let captured_total = 0.999_999_128_896_382_f64;
+    assert!(
+        (outcome.total_moles - captured_total).abs() / captured_total < 1.0e-5,
+        "the total is {} against the capture's {captured_total}",
+        outcome.total_moles
+    );
+
+    // `final_gibbs_energy` from the capture: `sum_i x_i (ln x_i + ln phi_i)`, dimensionless -
+    // **and exactly twice this port's**, because the capture's system still holds two phase
+    // objects with the same composition and `beta = 1.0` each, so the driver's sum counts the
+    // one phase twice. The port models the phase the solve leaves, so it reports the
+    // thermodynamic value; the ratio is asserted rather than the number, which is what makes
+    // the duplicate a measurement instead of a rounding difference.
+    let captured_gibbs = -2.259_535_542_715_054_7_f64;
+    let ratio = captured_gibbs / outcome.gibbs_energy;
+    assert!(
+        (ratio - 2.0).abs() < 1.0e-4,
+        "the capture's Gibbs measure is {captured_gibbs} against this port's {}, a ratio of \
+         {ratio} rather than the two the duplicate phase accounts for",
+        outcome.gibbs_energy
+    );
+}

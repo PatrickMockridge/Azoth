@@ -23,6 +23,7 @@ pub mod linalg;
 pub mod lp_seed;
 pub mod model_gen;
 pub mod rand_solver;
+pub mod reactive_flash;
 pub mod reactive_phase;
 pub mod reactive_phase_equilibrium;
 pub mod reactive_stability;
