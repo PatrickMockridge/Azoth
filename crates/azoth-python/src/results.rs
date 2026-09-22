@@ -26,8 +26,8 @@ use azoth_eos::results::{
     GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
     HydrateEquilibriumLineResult, HydrateFormationPressureResult,
-    HydrateFormationTemperatureResult, HydrateFractionResult, HydrogenPhaseResult,
-    IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
+    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
     MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
@@ -4388,6 +4388,63 @@ impl From<&HydrateFormationPressureResult> for PyHydrateFormationPressureResult 
     }
 }
 
+/// Result of `eos.hydrate_inhibitor_concentration`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateInhibitorConcentrationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateInhibitorConcentrationResult {
+    /// The inhibitor's moles at the answer, the feed's own included.
+    #[pyo3(get)]
+    pub inhibitor_moles: f64,
+    /// The inhibitor's mass fraction of the inhibitor-and-water pair.
+    #[pyo3(get)]
+    pub weight_fraction: f64,
+    /// The hydrate temperature the answer's composition gives.
+    #[pyo3(get)]
+    pub hydrate_temperature: PyQty,
+    /// Secant steps taken, with a floor of three.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `T_hydrate - T_target` at the answer, in kelvin.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateInhibitorConcentrationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateInhibitorConcentrationResult({} mol, {:.1} wt%, {} iteration(s))",
+            self.inhibitor_moles,
+            self.weight_fraction * 100.0,
+            self.iterations
+        )
+    }
+}
+
+impl From<&HydrateInhibitorConcentrationResult> for PyHydrateInhibitorConcentrationResult {
+    fn from(r: &HydrateInhibitorConcentrationResult) -> Self {
+        Self {
+            inhibitor_moles: r.inhibitor_moles,
+            weight_fraction: r.weight_fraction,
+            hydrate_temperature: PyQty {
+                magnitude_si: r.hydrate_temperature.value,
+                unit: "K".to_string(),
+            },
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.hydrate_equilibrium_line`, transported.
 #[pyclass(
     frozen,
@@ -6787,6 +6844,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
             HydrateFormationTemperatureResult::FIELDS.to_vec()
         }
         HydrateEquilibriumLineResult::CALC_ID => HydrateEquilibriumLineResult::FIELDS.to_vec(),
+        HydrateInhibitorConcentrationResult::CALC_ID => {
+            HydrateInhibitorConcentrationResult::FIELDS.to_vec()
+        }
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),

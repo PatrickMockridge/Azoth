@@ -16,6 +16,9 @@ exponents = [3, 0, -1, 0, 0, 0, 0]
 id = "mass_rate"
 exponents = [0, 1, -1, 0, 0, 0, 0]
 [[dimensions]]
+id = "amount"
+exponents = [0, 0, 0, 0, 0, 1, 0]
+[[dimensions]]
 id = "molar_flow"
 exponents = [0, 0, -1, 0, 0, 1, 0]
 [[dimensions]]
@@ -116,6 +119,12 @@ rust_ctor = "kilograms_per_second"
 id = "mol/s"
 dimension = "molar_flow"
 pint = "mole/second"
+[[units]]
+id = "mol"
+dimension = "amount"
+pint = "mole"
+uom = "amount_of_substance::mole"
+rust_ctor = "moles"
 [[units]]
 id = "kg/m**3"
 dimension = "mass_density"

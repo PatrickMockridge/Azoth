@@ -193,17 +193,22 @@ The specialist physics.
 - **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
   `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
-  `HydrateFormationPressureFlash` (`eos.hydrate_formation_pressure`); and `TPHydrateFlash`
+  `HydrateFormationPressureFlash` (`eos.hydrate_formation_pressure`); `TPHydrateFlash`
   (`eos.hydrate_fraction`), **with the composition taken from both cavities and the material
-  balance asserted at the answer**. **Not ported**:
-  `PitzerHydrateFlash` with `ComponentHydratePitzer` and `ComponentHydrateGF`, which are
-  reachable through the model name and whose coupling to the electrolyte phases is the seam
-  this would need; the two inhibitor flashes (`HydrateInhibitorConcentrationFlash`,
-  `HydrateInhibitorwtFlash`); `HydrateEquilibriumLine` and `HydrateEquilibriumDiagnostics`;
-  and **carried as unreachable upstream** `ComponentHydrateKluda`, which has no construction
-  site anywhere in `src/main`, `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose
-  only sites are two commented-out lines in `PhaseHydrate`, and `OLGAhydrateCurveGenerator`,
-  which only a test builds. `process/chemistry/hydrate/` is carried with the process tier.
+  balance asserted at the answer**; `HydrateEquilibriumLine` (`eos.hydrate_equilibrium_line`);
+  `HydrateInhibitorConcentrationFlash` (`eos.hydrate_inhibitor_concentration`); and
+  `ComponentHydrateGF`, the second fitted component model, behind `hydrate_model = "guo_finch"`
+  on all three hydrate ids. **Not ported**: `PitzerHydrateFlash` with
+  `ComponentHydratePitzer`, which is reachable through the model name and is gated on the
+  EoS/GE hybrid seam P8 did not close - a flash whose two phases run different models, and
+  `SystemPitzer` configures exactly that; and `HydrateInhibitorwtFlash`, which reads a phase's
+  **aqueous** type, a rule `PhaseEos.init` assigns from an aqueous-versus-hydrocarbon mole
+  fraction and this library has nowhere. `HydrateEquilibriumDiagnostics` is an audit of a
+  state rather than a model, and what it asserts belongs in a test. **Carried as unreachable
+  upstream**: `ComponentHydrateKluda`, which has no construction site anywhere in `src/main`,
+  `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose only sites are two
+  commented-out lines in `PhaseHydrate`, and `OLGAhydrateCurveGenerator`, which only a test
+  builds. `process/chemistry/hydrate/` is carried with the process tier.
 - **Wax.** Ported, each with the id that carries it: `ComponentWax` (`eos.wax_solid_fugacity`,
   its `fugcoef2`), `TPmultiflashWAX` (`eos.tp_multiflash_wax`) and `PhaseWax`, which is the
   class `SystemThermo` adds when the wax check is on. `eos.tbp_fraction_properties` is

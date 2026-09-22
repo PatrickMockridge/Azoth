@@ -99,6 +99,7 @@
   - [Hydrate formation pressure](./eos/hydrate_formation_pressure.md)
   - [Hydrate formation temperature](./eos/hydrate_formation_temperature.md)
   - [Hydrate fraction](./eos/hydrate_fraction.md)
+  - [Hydrate inhibitor concentration](./eos/hydrate_inhibitor_concentration.md)
   - [Hydrogen reference phase state](./eos/hydrogen_phase.md)
   - [Fugacity coefficients of a Kent-Eisenberg phase](./eos/kent_eisenberg_phase.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)

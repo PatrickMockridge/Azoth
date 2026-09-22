@@ -15,13 +15,13 @@
 //! resistance coefficient - are plain `f64`, here and in the Python API.
 
 pub use uom::si::f64::{
-    Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, HeatTransfer, Length,
-    MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity, MolarMass, MolarVolume, Power,
-    Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval, ThermalConductivity,
-    ThermodynamicTemperature, Velocity, VolumeRate,
+    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, HeatTransfer,
+    Length, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity, MolarMass,
+    MolarVolume, Power, Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval,
+    ThermalConductivity, ThermodynamicTemperature, Velocity, VolumeRate,
 };
 pub use uom::si::{
-    area::square_meter, diffusion_coefficient::square_meter_per_second,
+    amount_of_substance::mole, area::square_meter, diffusion_coefficient::square_meter_per_second,
     dynamic_viscosity::pascal_second, electric_charge::coulomb,
     heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::meter,
     length::millimeter, mass_density::kilogram_per_cubic_meter, mass_rate::kilogram_per_second,
@@ -227,6 +227,18 @@ pub fn joules_per_mole_kelvin(value: f64) -> MolarHeatCapacity {
 /// `.value` is still mol/kg. This is the scale every activity-coefficient phase works in,
 /// and it is per kilogram of *solvent* rather than of solution - a distinction the number
 /// cannot carry and the models' own documentation has to.
+/// An amount of substance in moles.
+///
+/// `.value` is the mole number itself. **Added for `eos.hydrate_inhibitor_concentration`**,
+/// whose answer is an absolute amount: NeqSim's secant adds moles to a system and reports the
+/// inventory it reached, so a model taking a normalised composition would reproduce the
+/// equation and not the path.
+#[must_use]
+pub fn moles(value: f64) -> AmountOfSubstance {
+    AmountOfSubstance::new::<mole>(value)
+}
+
+/// A molality in moles per kilogram of solvent.
 #[must_use]
 pub fn moles_per_kilogram(value: f64) -> Molality {
     Molality::new::<mole_per_kilogram>(value)

@@ -3288,6 +3288,46 @@ pub fn hydrate_equilibrium_line(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The inhibitor moles that hold a hydrate temperature down to a target, computed in Rust.
+///
+/// **The feed crosses in moles**, which is the one hydrate model here that does: the secant
+/// adds an absolute amount to the inhibitor's entry, so a normalised feed would reproduce the
+/// equation and not the path.
+#[pyfunction]
+#[pyo3(signature = (components, moles, inhibitor, T_target, P, eos = "srk", hydrate_model = "pvtsim"))]
+#[allow(non_snake_case)] // `T_target`, `P` and `eos` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // the names, the feed, the inhibitor and the state
+pub fn hydrate_inhibitor_concentration(
+    py: Python<'_>,
+    components: Vec<String>,
+    moles: Vec<f64>,
+    inhibitor: &str,
+    T_target: f64,
+    P: f64,
+    eos: &str,
+    hydrate_model: &str,
+) -> PyResult<crate::results::PyHydrateInhibitorConcentrationResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
+        &names,
+        eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
+        None,
+        hydrate_model
+            .parse()
+            .unwrap_or(azoth_eos::hydrate::HydrateModel::Pvtsim),
+    )
+    .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::hydrate_inhibitor_concentration(
+        &mixture,
+        inhibitor,
+        &moles,
+        kelvins(T_target),
+        pascals(P),
+    )
+    .map(|r| crate::results::PyHydrateInhibitorConcentrationResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The fraction of a feed that is hydrate at a state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest

@@ -1,0 +1,108 @@
+# cpa fluid, MEG to a hydrate temperature of 270.900000000000 K at 100.000000000000 bara
+inhibitor_moles = 0.326183190896948
+water_moles = 1.00000000000000
+total_moles = 2.48118319089695
+inhibitor_weight_fraction = 0.529153346459209
+weight_percent = 52.9153346459209
+hydrate_temperature_reached = 270.900757289875
+residual = 0.000757289875480183
+phases = 2.00000000000000
+phase[0].beta = 0.463497004751478
+phase[0].temperature = 270.900757289875
+phase[0].x_MEG = 1.42751485416592e-07
+phase[0].x_water = 6.44495090693522e-05
+phase[1].beta = 0.536502995248523
+phase[1].temperature = 270.900757289875
+phase[1].x_MEG = 0.245036272347958
+phase[1].x_water = 0.751167567287635
+
+# srk fluid, MEG to a hydrate temperature of 270.900000000000 K at 100.000000000000 bara
+inhibitor_moles = 1.66321547941976
+water_moles = 1.00000000000000
+total_moles = 3.81821547941975
+inhibitor_weight_fraction = 0.851421604021146
+weight_percent = 85.1421604021146
+hydrate_temperature_reached = 270.900682375896
+residual = 0.000682375896133181
+phases = 2.00000000000000
+phase[0].beta = 0.302366331925649
+phase[0].temperature = 270.900682375896
+phase[0].x_MEG = 1.38404124985478e-06
+phase[0].x_water = 4.83964392560163e-05
+phase[1].beta = 0.697633668074351
+phase[1].temperature = 270.900682375896
+phase[1].x_MEG = 0.624396177123128
+phase[1].x_water = 0.375394467746537
+
+# cpa fluid, MEG to a hydrate temperature of 265.000000000000 K at 100.000000000000 bara
+inhibitor_moles = 0.428214813479144
+water_moles = 1.00000000000000
+total_moles = 2.58321481347914
+inhibitor_weight_fraction = 0.596020665716255
+weight_percent = 59.6020665716255
+hydrate_temperature_reached = 265.000673841558
+residual = 0.000673841557670585
+phases = 2.00000000000000
+phase[0].beta = 0.444745554429355
+phase[0].temperature = 265.000673841558
+phase[0].x_MEG = 1.08712446311874e-07
+phase[0].x_water = 4.00674951394300e-05
+phase[1].beta = 0.555254445570645
+phase[1].temperature = 265.000673841558
+phase[1].x_MEG = 0.298544444179448
+phase[1].x_water = 0.697151941303003
+
+# srk fluid, MEG to a hydrate temperature of 265.000000000000 K at 100.000000000000 bara
+inhibitor_moles = 2.16391196885298
+water_moles = 1.00000000000000
+total_moles = 4.31891196885298
+inhibitor_weight_fraction = 0.881734574278325
+weight_percent = 88.1734574278325
+hydrate_temperature_reached = 265.000596871306
+residual = 0.000596871306072444
+phases = 2.00000000000000
+phase[0].beta = 0.267261324841846
+phase[0].temperature = 265.000596871306
+phase[0].x_MEG = 1.00914104167406e-06
+phase[0].x_water = 2.90149690548481e-05
+phase[1].beta = 0.732738675158154
+phase[1].temperature = 265.000596871306
+phase[1].x_MEG = 0.683779203979487
+phase[1].x_water = 0.315981741032642
+
+# cpa fluid, MEG to a hydrate temperature of 275.000000000000 K at 100.000000000000 bara
+inhibitor_moles = 0.261692083956744
+water_moles = 1.00000000000000
+total_moles = 2.41669208395674
+inhibitor_weight_fraction = 0.474136905223680
+weight_percent = 47.4136905223680
+hydrate_temperature_reached = 275.000904012105
+residual = 0.000904012104740559
+phases = 2.00000000000000
+phase[0].beta = 0.476164535681653
+phase[0].temperature = 275.000904012105
+phase[0].x_MEG = 1.64726921005357e-07
+phase[0].x_water = 8.89583343071244e-05
+phase[1].beta = 0.523835464318348
+phase[1].temperature = 275.000904012105
+phase[1].x_MEG = 0.206715981668228
+phase[1].x_water = 0.789840361709753
+
+# srk fluid, MEG to a hydrate temperature of 275.000000000000 K at 100.000000000000 bara
+inhibitor_moles = 1.34741017270367
+water_moles = 1.00000000000000
+total_moles = 3.50241017270367
+inhibitor_weight_fraction = 0.822769695596269
+weight_percent = 82.2769695596269
+hydrate_temperature_reached = 275.000859253751
+residual = 0.000859253750491007
+phases = 2.00000000000000
+phase[0].beta = 0.329676488164459
+phase[0].temperature = 275.000859253751
+phase[0].x_MEG = 1.71624414604355e-06
+phase[0].x_water = 6.83792022597165e-05
+phase[1].beta = 0.670323511835541
+phase[1].temperature = 275.000859253751
+phase[1].x_MEG = 0.573915197012958
+phase[1].x_water = 0.425906482852119
+

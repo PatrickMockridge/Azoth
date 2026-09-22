@@ -1,0 +1,30 @@
+model = "eos.hydrate_inhibitor_concentration"
+[[cases]]
+id = "meg_in_neqsims_own_feed_on_a_plain_cubic"
+tolerance = 1e-04
+source = """NeqSim master, `HydrateInhibitorConcentrationFlash` on the composition its own `main` uses
+- methane 1.0, ethane 0.10, propane 0.050, i-butane 0.0050, MEG 0.1, water 1.0 mol at 100 bara -
+from `validation/neqsim/HydrateInhibitorProbe.java`. This is the **plain `SystemSrkEos`**
+column: `1.66321547941976` mol of MEG to reach 270.9 K, a mass fraction of `0.851421604021146`.
+
+**NeqSim's own `main` runs the same composition as a `SystemSrkCPAstatoil`, and gets
+`0.326183190896948` mol - `0.529153346459209` by mass.** The equilibrium is on water's
+fugacity, so the association is most of that gap, and this library can flash neither
+associating water nor MEG. So the CPA column is *recorded* rather than reproduced, and this
+case states which of the two it is.
+
+**The secant's own shape is in the iteration count.** NeqSim adds `error * 0.01` moles while
+`iter < 4` and `-error/derrordC * 0.5` after, and its loop runs three times whatever the
+residual is - so the count is not a convergence history but a floor plus whatever the secant
+needed past it."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "i-butane", "MEG", "water"]
+moles = [1.0, 0.10, 0.050, 0.0050, 0.1, 1.0]
+inhibitor = "MEG"
+T_target = 270.9
+P = 10000000.0
+eos = "srk"
+hydrate_model = "pvtsim"
+[cases.expected]
+inhibitor_moles = 1.66321547941976
+weight_fraction = 0.851421604021146

@@ -898,6 +898,40 @@ impl CalcResult for HydrateFormationPressureResult {
     }
 }
 
+/// Result of `eos.hydrate_inhibitor_concentration`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateInhibitorConcentrationResult {
+    /// The inhibitor's moles at the answer, which is the feed's own plus what the secant added.
+    pub inhibitor_moles: f64,
+    /// The inhibitor's mass fraction of the inhibitor-and-water pair - what a dosing figure
+    /// means, and what NeqSim's own entry point reports.
+    pub weight_fraction: f64,
+    /// The hydrate temperature the answer's composition gives.
+    pub hydrate_temperature: ThermodynamicTemperature,
+    /// Secant steps taken.
+    pub iterations: u32,
+    /// `T_hydrate - T_target` at the answer, in kelvin.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateInhibitorConcentrationResult {
+    const CALC_ID: &'static str = "eos.hydrate_inhibitor_concentration";
+    const FIELDS: &'static [&'static str] = &[
+        "inhibitor_moles",
+        "weight_fraction",
+        "hydrate_temperature",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.hydrate_equilibrium_line`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HydrateEquilibriumLineResult {

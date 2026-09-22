@@ -68,6 +68,7 @@ from azoth.core.result import (
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
+    HydrateInhibitorConcentrationResult,
     HydrateStructure,
     HydrogenPhaseResult,
     IdealGasCpResult,
@@ -2836,6 +2837,44 @@ def hydrate_equilibrium_line(
     )
 
 
+def hydrate_inhibitor_concentration(
+    components: Sequence[str],
+    moles: Sequence[float],
+    inhibitor: str,
+    T_target: Q,
+    P: Q,
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
+) -> HydrateInhibitorConcentrationResult:
+    """The moles of inhibitor that hold a hydrate temperature down, computed in Rust.
+
+    **The feed crosses in moles**, unlike every other hydrate model here: the secant adds an
+    absolute amount to the inhibitor's entry, so a normalised feed would reproduce the
+    equation and not the path.
+    """
+    spec = _models_gen.model("eos.hydrate_inhibitor_concentration")
+    result = _core.hydrate_inhibitor_concentration(
+        list(components),
+        # A unit-bearing vector crosses as quantities; the kernel takes SI moles.
+        [to_si(value, "mol", "moles") for value in moles],
+        inhibitor,
+        input_to_si(spec, "T_target", T_target),
+        input_to_si(spec, "P", P),
+        eos,
+        hydrate_model,
+    )
+    return HydrateInhibitorConcentrationResult(
+        inhibitor_moles=result.inhibitor_moles,
+        weight_fraction=result.weight_fraction,
+        hydrate_temperature=from_si(
+            result.hydrate_temperature.magnitude_si, result.hydrate_temperature.unit
+        ),
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def hydrate_formation_pressure(
     components: Sequence[str],
     T: Q,
@@ -3073,9 +3112,7 @@ def freezing_point(
     para-hydrogen route reads the reference equation on that side.
     """
     spec = _models_gen.model("eos.freezing_point")
-    result = _core.freezing_point(
-        list(components), list(z), solid, input_to_si(spec, "P", P)
-    )
+    result = _core.freezing_point(list(components), list(z), solid, input_to_si(spec, "P", P))
     return FreezingPointResult(
         temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
         component=result.component,

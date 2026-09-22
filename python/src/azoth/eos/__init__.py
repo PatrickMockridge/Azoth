@@ -104,6 +104,7 @@ from azoth.core.result import (
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
+    HydrateInhibitorConcentrationResult,
     HydrogenPhaseResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
@@ -265,6 +266,7 @@ __all__ = [
     "hydrate_formation_pressure",
     "hydrate_formation_temperature",
     "hydrate_fraction",
+    "hydrate_inhibitor_concentration",
     "hydrogen_phase",
     "ideal_gas_cp",
     "kent_eisenberg_phase",
@@ -366,6 +368,7 @@ _CO2_PHASE = "eos.co2_phase"
 _HELIUM_PHASE = "eos.helium_phase"
 _HYDRATE_FORMATION_TEMPERATURE = "eos.hydrate_formation_temperature"
 _HYDRATE_EQUILIBRIUM_LINE = "eos.hydrate_equilibrium_line"
+_HYDRATE_INHIBITOR_CONCENTRATION = "eos.hydrate_inhibitor_concentration"
 _HYDRATE_FRACTION = "eos.hydrate_fraction"
 _HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
@@ -2034,6 +2037,48 @@ def hydrate_formation_pressure(
     )
 
 
+def hydrate_inhibitor_concentration(
+    components: list[str],
+    moles: list[Q],
+    inhibitor: str,
+    T_target: Q,
+    P: Q,
+    eos: str = "srk",
+    hydrate_model: str = "pvtsim",
+) -> HydrateInhibitorConcentrationResult:
+    """The moles of inhibitor that hold a hydrate temperature down to a target.
+
+    A secant on the inhibitor's moles whose residual is ``T_hydrate - T_target``: each trial
+    adds inhibitor to the feed and asks what the hydrate temperature is now. This is the
+    dosing question - how much MEG or methanol a line needs.
+
+    **The feed is stated in moles.** The secant walks an absolute amount, and NeqSim's first
+    three steps (``error * 0.01``) and its secant step (``-error/dError/dC * 0.5``) are both in
+    moles, so a normalised feed would reproduce the equation and not the path.
+
+    **An associating fluid and a classical one disagree, and this library can flash neither
+    associating water nor MEG.** The equilibrium is on water's fugacity: NeqSim's own
+    ``SystemSrkCPAstatoil`` feed reaches 270.9 K at 100 bara with ``0.326`` mol of MEG where
+    the same composition on a plain ``SystemSrkEos`` needs ``1.663``.
+
+    Raises:
+        InvalidInputError: if ``moles`` does not match ``components``, if ``inhibitor`` is not
+            one of them, if the feed has no water, or if ``P`` is not positive.
+        SolverNotConvergedError: if the secant reaches its step cap without landing.
+
+    See :func:`azoth.eos.reference.hydrate_inhibitor_concentration`.
+    """
+    return resolve(_HYDRATE_INHIBITOR_CONCENTRATION)(  # type: ignore[no-any-return]
+        components=components,
+        moles=moles,
+        inhibitor=inhibitor,
+        T_target=T_target,
+        P=P,
+        eos=eos,
+        hydrate_model=hydrate_model,
+    )
+
+
 def hydrate_equilibrium_line(
     components: list[str],
     P_min: Q,
@@ -2322,9 +2367,7 @@ def solid_fugacity(
     )
 
 
-def freezing_point(
-    components: list[str], z: list[float], solid: str, P: Q
-) -> FreezingPointResult:
+def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> FreezingPointResult:
     """The temperature at which a fluid's solid-forming substance freezes.
 
     Two routes. ``para-hydrogen`` is solved against the calibrated solid Helmholtz equation

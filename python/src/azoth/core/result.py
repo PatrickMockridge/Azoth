@@ -521,6 +521,26 @@ class HydrateEquilibriumLineResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateInhibitorConcentrationResult(_HasWarnings):
+    """Result of ``eos.hydrate_inhibitor_concentration``."""
+
+    #: The inhibitor's moles at the answer, the feed's own included.
+    inhibitor_moles: float
+    #: The inhibitor's mass fraction of the inhibitor-and-water pair, which is what a dosing
+    #: figure reports - the hydrocarbons are not in its denominator.
+    weight_fraction: float
+    #: The hydrate temperature the answer's composition gives, which should be the target to
+    #: the tolerance.
+    hydrate_temperature: Q
+    #: Secant steps taken, with a floor of three.
+    iterations: int
+    #: ``T_hydrate - T_target`` at the answer, in kelvin.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrateFractionResult(_HasWarnings):
     """Result of ``eos.hydrate_fraction``."""
 
