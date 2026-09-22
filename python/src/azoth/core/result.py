@@ -545,9 +545,23 @@ class ReactivePhaseEquilibriumResult(_HasWarnings):
     iterations: int
     #: The solve's final error. Zero when skipped.
     error: float
-    #: The solve's own convergence flag. False when skipped **and** for a solve that ran
-    #: and did not converge, so it is only meaningful beside ``skipped``.
+    #: **``solveChemEq``'s return**: the solve converged *and* the three residuals came in
+    #: under their tolerances. False when skipped, false for a solve that ran and did not
+    #: converge, and **false for one that converged and was not certified**.
     converged: bool
+    #: NeqSim's refinement loop: how many ran. One wherever a solve ran, zero on a skip -
+    #: the second needs ``useAdaptiveDerivatives`` and a live phase.
+    refinements: int
+    #: Whether all three residuals came in under their tolerances: ``2e-6`` on the reaction
+    #: log residual, ``1e-8`` mol on the net charge, ``1e-8`` mol on the element balance.
+    certified: bool
+    #: ``max |ln Q - ln K|`` over the reactions the fluid can run, at the answer.
+    max_reaction_log_residual: float
+    #: The phase's net charge over **every** component it holds. ``nan`` on a skip, which is
+    #: what NeqSim returns there.
+    net_charge_moles: Q
+    #: ``max |A n - b|`` over the element rows, at the answer - the charge row excluded.
+    max_element_residual: Q
     #: **Whether the linear program's estimate became the starting composition.** False is
     #: a state and not a failure: NeqSim reads the estimate's absence as keeping the phase's
     #: own composition, which is what ``seed_moles`` reports then.

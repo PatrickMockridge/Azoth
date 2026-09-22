@@ -1086,6 +1086,21 @@ pub struct PyReactivePhaseEquilibriumResult {
     /// The solve's own convergence flag, false on a skip.
     #[pyo3(get)]
     pub converged: bool,
+    /// NeqSim's refinement loop: how many ran.
+    #[pyo3(get)]
+    pub refinements: u32,
+    /// Whether all three residuals came in under their tolerances.
+    #[pyo3(get)]
+    pub certified: bool,
+    /// `max |ln Q - ln K|` over the reactions the fluid can run.
+    #[pyo3(get)]
+    pub max_reaction_log_residual: f64,
+    /// The phase's net charge, `nan` on a skip.
+    #[pyo3(get)]
+    pub net_charge_moles: PyQty,
+    /// `max |A n - b|` over the element rows.
+    #[pyo3(get)]
+    pub max_element_residual: PyQty,
     /// Whether the linear program's estimate became the starting composition.
     #[pyo3(get)]
     pub seed_applied: bool,
@@ -1138,6 +1153,17 @@ impl From<&ReactivePhaseEquilibriumResult> for PyReactivePhaseEquilibriumResult 
             iterations: r.iterations,
             error: r.error,
             converged: r.converged,
+            refinements: r.refinements,
+            certified: r.certified,
+            max_reaction_log_residual: r.max_reaction_log_residual,
+            net_charge_moles: PyQty {
+                magnitude_si: r.net_charge_moles,
+                unit: "mol".to_string(),
+            },
+            max_element_residual: PyQty {
+                magnitude_si: r.max_element_residual,
+                unit: "mol".to_string(),
+            },
             seed_applied: r.seed_applied,
             seed_moles: r
                 .seed_moles

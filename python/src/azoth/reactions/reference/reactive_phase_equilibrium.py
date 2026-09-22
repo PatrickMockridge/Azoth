@@ -26,14 +26,20 @@ reaction set; the captured bicarbonate brine is the fluid where it is not.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Sequence
+
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReactivePhaseEquilibriumResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.reactions.reference import _lp_seed, _tables
-from azoth.reactions.reference.chemical_equilibrium import chemical_equilibrium
-from azoth.reactions.reference.equilibrium_constant import GAS_CONSTANT
+from azoth.reactions.reference.chemical_equilibrium import MIN_MOLES, chemical_equilibrium
+from azoth.reactions.reference.equilibrium_constant import (
+    GAS_CONSTANT,
+    equilibrium_constant,
+)
 from azoth.reactions.reference.reference_potentials import reference_potentials
 
 #: The charge, in moles of elementary charge, below which the phase is treated as
@@ -43,6 +49,15 @@ CHARGE_NOISE_MOLE_FRACTION = 1e-10
 #: The floor ``updateMoles`` raises every mole number to before writing it back, from
 #: ``Math.max(newMoles[i], 1e-45)``.
 MIN_WRITTEN_MOLES = 1e-45
+
+#: The reaction log residual `solveChemEq` requires, from `REACTION_LOG_RESIDUAL_TOLERANCE`.
+REACTION_LOG_RESIDUAL_TOLERANCE = 2.0e-6
+
+#: The net charge it requires, in moles of elementary charge.
+REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES = 1.0e-8
+
+#: The element-balance residual it requires, in mol.
+ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES = 1.0e-8
 
 #: The three phase type names NeqSim solves reactions in.
 REACTIVE_PHASE_LABELS = ("aqueous", "liquid", "oil")
@@ -191,6 +206,14 @@ def reactive_phase_equilibrium(
             iterations=0,
             error=0.0,
             converged=False,
+            # Nothing was solved, so nothing is certified: NeqSim's net-charge reader is NaN
+            # without a reactive phase and its two other residuals have no phase to be
+            # computed on.
+            refinements=0,
+            certified=False,
+            max_reaction_log_residual=math.nan,
+            net_charge_moles=from_si(math.nan, "mol"),
+            max_element_residual=from_si(math.nan, "mol"),
             # Nothing was solved, so no estimate was applied: the caller's own composition
             # comes back as both the seed and the answer.
             seed_applied=False,
@@ -236,6 +259,29 @@ def reactive_phase_equilibrium(
     )
     warnings.extend(solved.warnings)
 
+    # NeqSim's certificate, on the composition the solve left. **`converged` is this and not
+    # the solver's own flag**: `solveChemEq` returns false wherever one of the three
+    # residuals is over its tolerance, and on all five captured fluids it is.
+    certificate = _certify(
+        components,
+        source,
+        temperature,
+        a_matrix,
+        b,
+        solved.moles,
+        magnitudes,
+        activity,
+        input_to_si(spec, "phase_charge", phase_charge),
+        input_to_si(spec, "phase_moles", phase_moles),
+    )
+    max_reaction_log_residual, net_charge_moles, max_element_residual = certificate
+    certified = (
+        solved.converged
+        and max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
+        and abs(net_charge_moles) <= REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES
+        and max_element_residual <= ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES
+    )
+
     return ReactivePhaseEquilibriumResult(
         skipped=False,
         seed_applied=estimate is not None,
@@ -250,7 +296,12 @@ def reactive_phase_equilibrium(
         ),
         iterations=solved.iterations,
         error=solved.error,
-        converged=solved.converged,
+        converged=certified,
+        refinements=1,
+        certified=certified,
+        max_reaction_log_residual=max_reaction_log_residual,
+        net_charge_moles=from_si(net_charge_moles, "mol"),
+        max_element_residual=from_si(max_element_residual, "mol"),
         warnings=tuple(warnings),
     )
 
@@ -266,6 +317,74 @@ def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
     from azoth.reactions.reference.chemical_equilibrium import _si as shared
 
     return shared(spec, name, value)
+
+
+def _certify(
+    components: list[str],
+    source: str,
+    temperature: float,
+    a_matrix: list[list[float]],
+    b: list[float],
+    answer: Sequence[Q],
+    input_moles: list[float],
+    log_activity: list[float],
+    phase_charge: float,
+    phase_moles: float,
+) -> tuple[float, float, float]:
+    """NeqSim's three-residual certificate, evaluated at the answer.
+
+    The three are `solveChemEq`'s own gate (``ChemicalReactionOperations.java:652-654``), and
+    one of them needs the reaction set back: ``max |ln Q - ln K|`` over the reactions this
+    fluid can run, with ``Q`` from the same activity term the solve used. The other two are
+    ``A n - b`` over the element rows and the phase's net charge.
+
+    **A species a surviving reaction names but the caller did not supply is refused**, not
+    skipped: NeqSim reads it off the live phase, which holds every product the reaction
+    machinery added, and a shorter list here would report a smaller residual than the one
+    that exists.
+    """
+    answer_magnitudes = [float(value.to("mol").magnitude) for value in answer]
+    worst_reaction = 0.0
+    for reaction in _tables.reactions(source):
+        if not reaction.use_reaction:
+            continue
+        species = _tables.stoichiometry(reaction.name)
+        if not species:
+            continue
+        # `removeJunkReactions`: a reaction is kept only when every *reactant* the fluid could
+        # hold is one it holds. The reactants are the negative coefficients.
+        if not all(name in components for name, coefficient in species if coefficient < 0.0):
+            continue
+        ln_k = equilibrium_constant(source, reaction.name, quantity(temperature, "K")).ln_k
+        quotient = 0.0
+        for name, coefficient in species:
+            if name not in components:
+                raise InvalidInputError(
+                    "components",
+                    f"the reaction `{reaction.name}` names {name}, which this fluid does not "
+                    f"carry, so its log residual cannot be evaluated here",
+                )
+            index = components.index(name)
+            x = max(answer_magnitudes[index] / phase_moles, MIN_MOLES)
+            quotient += coefficient * (math.log(x) + log_activity[index])
+        worst_reaction = max(worst_reaction, abs(quotient - ln_k))
+
+    # The charge row is the phase's net charge, and the correction `b` carries is applied to
+    # the reactive set only - so the phase's own charge moves by what the set gained.
+    charge_row = len(a_matrix) - 1
+    net_charge = phase_charge + sum(
+        a_matrix[charge_row][i] * (answer_magnitudes[i] - input_moles[i])
+        for i in range(len(answer_magnitudes))
+    )
+
+    worst_element = 0.0
+    for element in range(charge_row):
+        amount = sum(
+            a_matrix[element][i] * answer_magnitudes[i] for i in range(len(answer_magnitudes))
+        )
+        worst_element = max(worst_element, abs(amount - b[element]))
+
+    return worst_reaction, net_charge, worst_element
 
 
 def _element_matrix(components: list[str]) -> list[list[float]]:

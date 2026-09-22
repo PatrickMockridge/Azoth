@@ -106,6 +106,21 @@ type = "vector"
 unit = "mol"
 length = "one per component, in the caller's order"
 description = "the composition the solve started from: the estimate where one exists, the caller's `moles` where none does.\n"
+[outputs.refinements]
+unit = "dimensionless"
+description = "NeqSim's `MAXIMUM_EQUILIBRIUM_REFINEMENTS` loop: how many refinements ran. **This takes the first and not the second**, which switches on `useAdaptiveDerivatives` and needs a live phase, so it is 1 wherever a solve ran and 0 on a skip.\n"
+[outputs.certified]
+type = "boolean"
+description = "whether all three residuals came in under their tolerances: `2e-6` on the reaction log residual, `1e-8` mol on the net charge, `1e-8` mol on the element balance. **NeqSim's own gate**, and false on every captured fluid.\n"
+[outputs.max_reaction_log_residual]
+unit = "dimensionless"
+description = "`max |ln Q - ln K|` over the reactions the fluid can run, at the answer, with `Q` from the same activity term the solve used. **The residual the certificate exists for**: the five captured fluids sit between `13.9` and `29.6`.\n"
+[outputs.net_charge_moles]
+unit = "mol"
+description = "the phase's net charge `sum(z_i n_i)` in moles of elementary charge, over **every** component it holds - the spectator ions included. **Not the reactive set's own**, which is a different number wherever a phase carries an ion outside the reaction set.\n"
+[outputs.max_element_residual]
+unit = "mol"
+description = "`max |A n - b|` over the element rows, at the answer. The charge row is not among them: it is checked separately, as the net charge.\n"
 [outputs.iterations]
 unit = "dimensionless"
 description = "the solve's passes. Zero when skipped, which is why `skipped` is read first.\n"

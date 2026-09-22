@@ -1395,6 +1395,11 @@ class ReactivePhaseEquilibriumResult:
     iterations: int
     error: float
     converged: bool
+    refinements: int
+    certified: bool
+    max_reaction_log_residual: float
+    net_charge_moles: Qty
+    max_element_residual: Qty
     seed_applied: bool
     seed_moles: list[Qty]
     warnings: list[Warning]

@@ -13,6 +13,7 @@ importable as a top-level ``_helpers``.
 from __future__ import annotations
 
 import dataclasses
+import math
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
@@ -60,7 +61,22 @@ __all__ = [
 #: measured, `eos.hydrate_fraction`'s first case is ``0.0`` in Rust and ``1.11e-16`` in
 #: Python. The model's case records the zero because that is the claim; comparing the two
 #: kernels to each other at that magnitude compares rounding, not the claim.
-_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"balance_error", "residual", "tm"})
+_DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
+    {
+        "balance_error",
+        "residual",
+        "tm",
+        # `reactions.reactive_phase_equilibrium`'s certificate. Each is a difference of
+        # `O(100)` logarithms - `sum(nu_i (ln x_i + ln gamma_i)) - ln K` - whose own value is
+        # of order `1e-8` on a converged solve, so a rounding path difference of `1e-12`
+        # between the two kernels is a *hundred percent* of what is being compared. They are
+        # diagnostics and are compared against the bound the solver declared, which is what
+        # makes the comparison a measurement rather than an impossible strictness.
+        "max_reaction_log_residual",
+        "net_charge_moles",
+        "max_element_residual",
+    }
+)
 
 #: Fields that are **not compared across implementations at all**, because their value is a
 #: property of the arithmetic rather than of the model. An iteration count is the clearest
@@ -295,7 +311,26 @@ def assert_results_equal(
             # One side has to have produced *something*; that the loop ran is the claim.
             assert a is not None and b is not None, f"{context}.{field}: absent on one side"
             continue
-        if isinstance(a, pint.Quantity) or isinstance(b, pint.Quantity):
+        if field in _MAY_AGREE_ON_NAN and _both_nan(a, b):
+            # NeqSim's own readers return NaN where there is nothing to read, and the two
+            # kernels agreeing on that is the claim rather than a failure to make one.
+            continue
+        # **A diagnostic is checked before the kind of value it is.** These are the fields
+        # whose value is a *residue*, and one of them carries a unit: the relative
+        # comparison the quantity branch applies would be reading a cancellation's last
+        # digits as if they were the answer.
+        if field in _DIAGNOSTIC_FIELDS and diagnostic_bound is not None:
+            # A diagnostic may carry a unit - a residual in moles - and the bound it is
+            # compared against is a bare magnitude in the same unit, so the quantities are
+            # stripped here rather than after the conversion the other branch does.
+            if isinstance(a, pint.Quantity) or isinstance(b, pint.Quantity):
+                assert isinstance(a, pint.Quantity) and isinstance(b, pint.Quantity), (
+                    f"{context}.{field}: one side is a bare number and the other a quantity"
+                )
+                a = a.to_base_units().magnitude
+                b = b.to_base_units().magnitude
+            _assert_diagnostic(a, b, diagnostic_bound, f"{context}.{field}")
+        elif isinstance(a, pint.Quantity) or isinstance(b, pint.Quantity):
             assert isinstance(a, pint.Quantity) and isinstance(b, pint.Quantity), (
                 f"{context}.{field}: one side is a bare number and the other a quantity"
             )
@@ -341,6 +376,37 @@ def assert_results_equal(
             assert_close(float(a), float(b), tolerance, f"{context}.{field}")
         else:
             assert a == b, f"{context}.{field}: {a!r} != {b!r}"
+
+
+#: Fields where two NaNs are an agreement rather than a failure.
+#:
+#: `reactions.reactive_phase_equilibrium`'s three residuals are NeqSim's own readers, and each
+#: returns `NaN` when there is no reactive phase to read: a skipped phase has nothing to
+#: certify. One NaN against a number is still a failure - that is one kernel computing what
+#: the other refused - and a case pinning a number catches a NaN wherever both should have one.
+_MAY_AGREE_ON_NAN = frozenset(
+    {"max_reaction_log_residual", "net_charge_moles", "max_element_residual"}
+)
+
+
+def _both_nan(a: Any, b: Any) -> bool:
+    """Whether both sides are NaN, however they are wrapped.
+
+    A quantity, a bare number or a vector of either: the three fields this is used for are
+    scalars in both languages, and the vector case is here so that the rule cannot be
+    quietly wrong if one of them ever carries a vector.
+    """
+
+    def one(value: Any) -> bool:
+        if isinstance(value, pint.Quantity):
+            value = value.to_base_units().magnitude
+        if isinstance(value, (int, float)):
+            return math.isnan(float(value))
+        if isinstance(value, (tuple, list)):
+            return all(one(entry) for entry in value)
+        return False
+
+    return one(a) and one(b)
 
 
 def _is_numeric_nested(value: Any) -> bool:

@@ -49,10 +49,12 @@
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
 use crate::chemical_equilibrium::{
-    ChemicalEquilibriumResult, ConcentrationBasis, chemical_equilibrium,
+    ChemicalEquilibriumResult, ConcentrationBasis, MIN_MOLES, chemical_equilibrium,
 };
-use crate::databank::{ReactionDataSource, element_composition, ionic_charge};
-use crate::equilibrium_constant::GAS_CONSTANT;
+use crate::databank::{
+    ReactionDataSource, element_composition, ionic_charge, reactions, stoichiometry,
+};
+use crate::equilibrium_constant::{GAS_CONSTANT, equilibrium_constant};
 use crate::model_gen;
 use crate::reactive_phase::is_reactive_phase;
 use crate::reference_potentials::reference_potentials;
@@ -64,6 +66,17 @@ pub const CHARGE_NOISE_MOLE_FRACTION: f64 = 1e-10;
 /// The floor `updateMoles` raises every mole number to before writing it back, from
 /// `Math.max(newMoles[i], 1e-45)`.
 pub const MIN_WRITTEN_MOLES: f64 = 1e-45;
+
+/// The reaction log residual `solveChemEq` requires, from `REACTION_LOG_RESIDUAL_TOLERANCE`.
+pub const REACTION_LOG_RESIDUAL_TOLERANCE: f64 = 2.0e-6;
+
+/// The net charge it requires, in moles of elementary charge, from
+/// `REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES`.
+pub const REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES: f64 = 1.0e-8;
+
+/// The element-balance residual it requires, in mol, from
+/// `ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES`.
+pub const ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES: f64 = 1.0e-8;
 
 /// Which starting composition the Newton solve is given.
 ///
@@ -122,9 +135,28 @@ pub struct ReactivePhaseEquilibriumResult {
     pub iterations: u32,
     /// The solve's final error. Zero when skipped.
     pub error: f64,
-    /// Whether the solve converged. False when skipped, which is why `skipped` is
-    /// checked first.
+    /// **`solveChemEq`'s return**: the solve converged *and* the three residuals came in
+    /// under their tolerances. False when skipped, false for a solve that ran and did not
+    /// converge, and **false for one that converged and was not certified** - which is the
+    /// distinction the raw solver flag cannot make.
     pub converged: bool,
+    /// NeqSim's `MAXIMUM_EQUILIBRIUM_REFINEMENTS` loop: how many refinements it ran. **The
+    /// port takes the first and not the second**, which needs `useAdaptiveDerivatives` and a
+    /// live phase - so this is 1 wherever a solve ran and 0 on a skip.
+    pub refinements: u32,
+    /// Whether all three residuals came in under their tolerances: `2e-6` on the reaction
+    /// log residual, `1e-8` mol on the net charge, `1e-8` mol on the element balance.
+    pub certified: bool,
+    /// `max |ln Q - ln K|` over the surviving reactions, at the answer. **The residual the
+    /// certificate exists for**: on all five captured fluids it sits between `13.9` and
+    /// `29.6`, so NeqSim's own `solveChemEq` returns false on every one of them.
+    pub max_reaction_log_residual: f64,
+    /// The phase's net charge `sum(z_i n_i)`, in moles of elementary charge, over **every**
+    /// component it holds. `NaN` on a skip, which is what NeqSim returns there.
+    pub net_charge_moles: f64,
+    /// `max |A n - b|` over the element rows, in mol, at the answer. **The charge row is not
+    /// among them** - it is checked separately, as the net charge.
+    pub max_element_residual: f64,
     /// **Whether the linear program's estimate became the starting composition.** False is
     /// not a failure: the estimate is a state the program either has or does not, and
     /// NeqSim's own entry point reads its absence as "keep the composition the phase has".
@@ -148,6 +180,11 @@ impl CalcResult for ReactivePhaseEquilibriumResult {
         "iterations",
         "error",
         "converged",
+        "refinements",
+        "certified",
+        "max_reaction_log_residual",
+        "net_charge_moles",
+        "max_element_residual",
         "seed_applied",
         "seed_moles",
         "warnings",
@@ -156,6 +193,88 @@ impl CalcResult for ReactivePhaseEquilibriumResult {
     fn warnings(&self) -> &[Warning] {
         &self.warnings
     }
+}
+
+/// NeqSim's three-residual certificate, evaluated at the answer.
+///
+/// The three are `solveChemEq`'s own gate (`ChemicalReactionOperations.java:652-654`), and
+/// one of them needs the reaction set back: `max |ln Q - ln K|` over the reactions this
+/// fluid can run, with `Q` from the same activity term the solve used. The other two are
+/// `A n - b` over the element rows and the phase's net charge.
+///
+/// **A species a surviving reaction names but the caller did not supply is refused**, not
+/// skipped: NeqSim reads it off the live phase, which holds every product the reaction
+/// machinery added, and a caller's shorter list would silently drop the reaction and report
+/// a smaller residual than the one that exists.
+#[allow(clippy::too_many_arguments)] // the reaction set, the phase, and the answer
+fn certify(
+    components: &[String],
+    source: ReactionDataSource,
+    temperature: f64,
+    a_matrix: &[Vec<f64>],
+    b: &[f64],
+    answer: &[f64],
+    input: &[f64],
+    log_activity: &[f64],
+    phase_charge: f64,
+    phase_moles: f64,
+) -> Result<(f64, f64, f64)> {
+    let mut worst_reaction = 0.0_f64;
+    for row in reactions(source)? {
+        if !row.use_reaction {
+            continue;
+        }
+        let species = stoichiometry(&row.name)?;
+        if species.is_empty() {
+            continue;
+        }
+        // `removeJunkReactions`: a reaction is kept only when every *reactant* the fluid
+        // could hold is one it holds. The reactants are the negative coefficients.
+        let every_reactant_present = species
+            .iter()
+            .filter(|(_, coefficient)| *coefficient < 0.0)
+            .all(|(name, _)| components.iter().any(|held| held == name));
+        if !every_reactant_present {
+            continue;
+        }
+        let ln_k =
+            equilibrium_constant(source, &row.name, azoth_core::units::kelvins(temperature))?.ln_k;
+        let mut quotient = 0.0_f64;
+        for (name, coefficient) in &species {
+            let index = components
+                .iter()
+                .position(|held| held == name)
+                .ok_or_else(|| AzothError::InvalidInput {
+                    field: "components".to_string(),
+                    reason: format!(
+                        "the reaction `{}` names {name}, which this fluid does not carry, so \
+                         its log residual cannot be evaluated here",
+                        row.name
+                    ),
+                })?;
+            let x = (answer[index] / phase_moles).max(MIN_MOLES);
+            quotient += coefficient * (x.ln() + log_activity[index]);
+        }
+        worst_reaction = worst_reaction.max((quotient - ln_k).abs());
+    }
+
+    // The charge row is the phase's net charge, and the correction `b` carries is applied
+    // to the reactive set only - so the phase's own charge moves by what the set gained.
+    let charge_row = a_matrix.len() - 1;
+    let mut net_charge = phase_charge;
+    for i in 0..answer.len() {
+        net_charge += a_matrix[charge_row][i] * (answer[i] - input[i]);
+    }
+
+    let mut worst_element = 0.0_f64;
+    for row in 0..charge_row {
+        let amount: f64 = (0..answer.len())
+            .map(|i| a_matrix[row][i] * answer[i])
+            .sum();
+        worst_element = worst_element.max((amount - b[row]).abs());
+    }
+
+    Ok((worst_reaction, net_charge, worst_element))
 }
 
 /// The reactive equilibrium composition of one phase.
@@ -241,6 +360,14 @@ pub fn reactive_phase_equilibrium(
             iterations: 0,
             error: 0.0,
             converged: false,
+            // Nothing was solved, so nothing is certified: NeqSim's
+            // `getReactivePhaseChargeMoles` is NaN here and its two other residuals have no
+            // phase to be computed on.
+            refinements: 0,
+            certified: false,
+            max_reaction_log_residual: f64::NAN,
+            net_charge_moles: f64::NAN,
+            max_element_residual: f64::NAN,
             // Nothing was solved, so no estimate was applied: the caller's own composition
             // comes back as both the seed and the answer.
             seed_applied: false,
@@ -296,6 +423,26 @@ pub fn reactive_phase_equilibrium(
     )?;
     warnings.extend(solved.warnings.iter().cloned());
 
+    // NeqSim's certificate, on the composition the solve left. **`converged` is this and
+    // not the solver's own flag**: `solveChemEq` returns false wherever one of the three
+    // residuals is over its tolerance, and on all five captured fluids it is.
+    let (max_reaction_log_residual, net_charge_moles, max_element_residual) = certify(
+        components,
+        source,
+        temperature,
+        &a_matrix,
+        &b,
+        &solved.moles,
+        moles,
+        log_activity,
+        phase_charge,
+        phase_moles,
+    )?;
+    let certified = solved.converged
+        && max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
+        && net_charge_moles.abs() <= REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES
+        && max_element_residual <= ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES;
+
     Ok(ReactivePhaseEquilibriumResult {
         skipped: false,
         a_matrix,
@@ -311,7 +458,12 @@ pub fn reactive_phase_equilibrium(
         error: solved.error,
         seed_applied: estimate.is_some(),
         seed_moles,
-        converged: solved.converged,
+        converged: certified,
+        refinements: 1,
+        certified,
+        max_reaction_log_residual,
+        net_charge_moles,
+        max_element_residual,
         warnings,
     })
 }

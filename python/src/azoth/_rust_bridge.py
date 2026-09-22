@@ -3672,10 +3672,17 @@ def reactive_phase_equilibrium(
         iterations=result.iterations,
         error=result.error,
         converged=result.converged,
-        seed_applied=result.seed_applied,
-        seed_moles=tuple(
-            from_si(value.magnitude_si, value.unit) for value in result.seed_moles
+        refinements=result.refinements,
+        certified=result.certified,
+        max_reaction_log_residual=result.max_reaction_log_residual,
+        net_charge_moles=from_si(
+            result.net_charge_moles.magnitude_si, result.net_charge_moles.unit
         ),
+        max_element_residual=from_si(
+            result.max_element_residual.magnitude_si, result.max_element_residual.unit
+        ),
+        seed_applied=result.seed_applied,
+        seed_moles=tuple(from_si(value.magnitude_si, value.unit) for value in result.seed_moles),
         warnings=_warnings(result.warnings),
     )
 

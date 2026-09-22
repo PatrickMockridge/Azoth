@@ -19,7 +19,9 @@ use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::model_gen;
 use azoth_reactions::reactive_phase::reactive_phase_index;
 use azoth_reactions::reactive_phase_equilibrium::{
-    ReactionSeed, ReactivePhaseEquilibriumResult, reactive_phase_equilibrium,
+    ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES, REACTION_LOG_RESIDUAL_TOLERANCE,
+    REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES, ReactionSeed, ReactivePhaseEquilibriumResult,
+    reactive_phase_equilibrium,
 };
 use azoth_test_support as common;
 
@@ -292,4 +294,60 @@ fn a_substance_outside_the_element_table_is_refused() {
     )
     .expect_err("MEG has no formula row");
     assert!(error.to_string().contains("MEG"), "{error}");
+}
+
+/// **The certificate is NeqSim's gate, and it is a different question from convergence.**
+///
+/// `solveChemEq` returns `converged && r1 && r2 && r3` - a converged solve whose reaction log
+/// residual is over `2e-6` is reported as a failure - and on the five captured fluids that is
+/// what happens. These cases model the *direct* solve, which passes its own gate: the first
+/// converges and is certified, the second converges nowhere and is not, and the skipped phase
+/// certifies nothing because there is no phase to certify on.
+///
+/// The four numbers themselves are not pinned here. The captures' residuals come from
+/// `solveChemEq` and this path does not, so a value taken from them would be a claim about a
+/// different call; what is pinned is what the flags mean.
+#[test]
+fn the_certificate_is_the_gate_and_not_the_solver_flag() {
+    let spec = model_gen::model(MODEL_ID).expect("the model should be in its own table");
+    for case in spec.cases {
+        let result = call(case);
+        if result.skipped {
+            assert_eq!(result.refinements, 0, "{}: nothing ran", case.id);
+            assert!(!result.certified, "{}: nothing to certify", case.id);
+            assert!(
+                result.net_charge_moles.is_nan(),
+                "{}: NeqSim's net charge is NaN without a reactive phase",
+                case.id
+            );
+            continue;
+        }
+        assert_eq!(result.refinements, 1, "{}: the first refinement", case.id);
+
+        let under = result.max_reaction_log_residual <= REACTION_LOG_RESIDUAL_TOLERANCE
+            && result.net_charge_moles.abs() <= REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES
+            && result.max_element_residual <= ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES;
+        assert_eq!(
+            result.certified,
+            under,
+            "{}: certified={} against residuals {} / {} / {}",
+            case.id,
+            result.certified,
+            result.max_reaction_log_residual,
+            result.net_charge_moles,
+            result.max_element_residual
+        );
+        assert_eq!(
+            result.converged, result.certified,
+            "{}: the returned flag is the gate's",
+            case.id
+        );
+        // The element balance is conserved by construction, so its residual is rounding.
+        assert!(
+            result.max_element_residual < 1e-9,
+            "{}: the elements came out at {}",
+            case.id,
+            result.max_element_residual
+        );
+    }
 }

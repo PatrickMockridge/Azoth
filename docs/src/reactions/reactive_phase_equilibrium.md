@@ -53,6 +53,11 @@ not an equation, and both implementations read it from here.
 | `moles` | mol | the composition the phase is left holding: the solve's answer with `updateMoles`'s floor applied, or the caller's own where the solve was skipped. |
 | `seed_applied` | - | whether the estimate became the starting composition. **False is a state and not a failure**: NeqSim reads the estimate's absence as keeping the phase's own composition, which is what `seed_moles` reports then. |
 | `seed_moles` | mol | the composition the solve started from: the estimate where one exists, the caller's `moles` where none does. |
+| `refinements` | dimensionless | NeqSim's `MAXIMUM_EQUILIBRIUM_REFINEMENTS` loop: how many refinements ran. **This takes the first and not the second**, which switches on `useAdaptiveDerivatives` and needs a live phase, so it is 1 wherever a solve ran and 0 on a skip. |
+| `certified` | - | whether all three residuals came in under their tolerances: `2e-6` on the reaction log residual, `1e-8` mol on the net charge, `1e-8` mol on the element balance. **NeqSim's own gate**, and false on every captured fluid. |
+| `max_reaction_log_residual` | dimensionless | `max |ln Q - ln K|` over the reactions the fluid can run, at the answer, with `Q` from the same activity term the solve used. **The residual the certificate exists for**: the five captured fluids sit between `13.9` and `29.6`. |
+| `net_charge_moles` | mol | the phase's net charge `sum(z_i n_i)` in moles of elementary charge, over **every** component it holds - the spectator ions included. **Not the reactive set's own**, which is a different number wherever a phase carries an ion outside the reaction set. |
+| `max_element_residual` | mol | `max |A n - b|` over the element rows, at the answer. The charge row is not among them: it is checked separately, as the net charge. |
 | `iterations` | dimensionless | the solve's passes. Zero when skipped, which is why `skipped` is read first. |
 | `error` | dimensionless | the solve's final error. Zero when skipped. |
 | `converged` | - | the solve's own flag. False when skipped **and** false for a solve that ran and did not converge, so it is only meaningful beside `skipped`. |
