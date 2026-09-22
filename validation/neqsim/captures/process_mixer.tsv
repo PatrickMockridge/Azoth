@@ -17,6 +17,8 @@ product_T=300.0379420950389
 product_h=-21581.51317087694
 product_s=-67.16430943832786
 product_z=n-butane:0.39999999999999997 n-pentane:0.6
+mix_pressure_bara=6.0
+mixed_enthalpy_W=-64744.53946421818
 
 specified_outlet_pressure_bara=8.0
 feed0_n=1.0
@@ -37,4 +39,6 @@ product_T=299.9753356067683
 product_h=-21581.513144252458
 product_s=-67.23513468739246
 product_z=n-butane:0.39999999999999997 n-pentane:0.6
+mix_pressure_bara=8.0
+mixed_enthalpy_W=-64744.53946421818
 

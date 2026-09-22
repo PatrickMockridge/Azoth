@@ -174,11 +174,68 @@ def _splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     return dump
 
 
+def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.mixer`'s layers, from the reference's own factored arithmetic.
+
+    **`mixed_enthalpy_W` is the layer worth having.** An outlet's molar enthalpy is the
+    weighted total over the total flow, and a mean of the right magnitude hides a wrong
+    weighting - the two inlets here are at `-20689.86` and `-22027.34` J/mol, so weighting
+    them by moles or by mass gives answers `0.2%` apart while the totals are `65 kJ` apart
+    and cannot be confused. `Mixer.calcMixStreamEnthalpy` is the class's own name for it.
+
+    The joined composition and the outlet pressure are on the record and are not dumped: a
+    layer the port already carries would be the validation case over again.
+    """
+    from azoth.process.reference.mixer import _route
+
+    states = _route(
+        [str(name) for name in inputs["components"]],
+        [float(v) for v in inputs["feed_n"]],
+        [[float(v) for v in row] for row in inputs["feed_z"]],
+        [float(v) for v in inputs["feed_p"]],
+        [float(v) for v in inputs["feed_t"]],
+        None if inputs.get("outlet_pressure") is None else float(inputs["outlet_pressure"]),
+    )
+    return {"mixed_enthalpy_W": states.h_total}
+
+
 #: One model's layers, keyed by the model id a case names.
 DUMPERS: dict[str, Dumper] = {
     "process.pump": _pump,
     "process.splitter": _splitter,
+    "process.mixer": _mixer,
     "process.heat_exchanger": _heat_exchanger,
+}
+
+#: The process models whose kernel forms **nothing the port records do not carry**, and why.
+#:
+#: The harness exists to localise a wrong answer, and localising needs a layer between the
+#: input and the output. Some kernels do not have one - their whole arithmetic *is* the
+#: outlet record, so every number they form is on a port and the validation case already
+#: holds it to the same capture. Declaring them here rather than leaving them absent is the
+#: rule the palette follows too: nothing is silently missing, and a new process model has to
+#: say which side of this it is on.
+#:
+#: **This is not "the model is too simple to check".** Each entry names the arithmetic and
+#: what would have to exist for there to be a layer.
+NO_INTERIOR: dict[str, str] = {
+    "process.throttling_valve": (
+        "the kernel is one ``Stream::from_ph`` - the outlet pressure the valve applied, and "
+        "the flash it runs at the inlet's enthalpy. The applied pressure *is* the outlet "
+        "record, and `getDeltaPressure` and `getEntropyProduction` are both differences of "
+        "the two records' own fields, so nothing is left over. A layer would need the valve "
+        "to size itself, which is the `MechanicalDesign.calcValveSize()` path the palette "
+        "entry's `valve_opening` was withdrawn for"
+    ),
+    "process.separator": (
+        "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
+        "entrainment moves, and every one of the four is on the two outlet records - the "
+        "vapour fraction is their flow ratio and the compositions are their ``z``. "
+        "`Separator` exposes no getter for the *flash* state either: `getThermoSystem()` is "
+        "the working system with the entrainment already applied, and re-flashing the feed "
+        "to reach the state before it would be a second implementation of the ported "
+        "arithmetic rather than a layer of it"
+    ),
 }
 
 
@@ -289,6 +346,20 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         # 1e-9 kJ/(mol*K) is 1e-6 J/(mol*K): four orders below any physical irreversibility
         # and four above the double-precision rounding of an enthalpy near 2.5e4 J/mol.
         diagnostic=(("entropy_production_kJ_per_molK", 1e-9),),
+    ),
+    LayerCase(
+        model="process.mixer",
+        case="two_feeds_at_different_pressures",
+        capture="process_mixer.tsv",
+        block=0,
+        identified_by=("specified_outlet_pressure_bara", "null"),
+    ),
+    LayerCase(
+        model="process.mixer",
+        case="a_stated_outlet_pressure_overrides_the_lowest_feed",
+        capture="process_mixer.tsv",
+        block=1,
+        identified_by=("specified_outlet_pressure_bara", "8.0"),
     ),
     # The splitter's two rows carry the same numbers, so the pairing is the label's and
     # not a state's.

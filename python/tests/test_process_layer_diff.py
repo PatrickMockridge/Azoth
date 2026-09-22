@@ -34,6 +34,29 @@ def _case_inputs(model_id: str, case_id: str) -> tuple[dict[str, Any], float]:
     raise AssertionError(f"{model_id} has no case {case_id!r}")
 
 
+def test_every_process_model_says_which_kind_it_is() -> None:
+    """Each is either dumped or declared to have no interior, and never both.
+
+    **The harness's own version of "nothing is silently absent".** A model added to
+    `specs/models/process/` with no entry here would be one the layer diff never sees, and
+    the silence would look exactly like agreement - which is the failure mode the whole
+    tier's record is written against. So the partition has to be total, and a model that
+    has no layer between its input and its output has to say so in `NO_INTERIOR` rather
+    than be left out.
+    """
+    declared = {m["id"] for m in _models_gen.MODELS if str(m["id"]).startswith("process.")}
+    dumped = set(layers.DUMPERS)
+    interiorless = set(layers.NO_INTERIOR)
+    assert not dumped & interiorless, (
+        f"{sorted(dumped & interiorless)} is both dumped and declared to have no interior"
+    )
+    assert declared == dumped | interiorless, (
+        f"neither dumped nor declared interiorless: {sorted(declared - dumped - interiorless)}; "
+        f"declared for an id that is not a process model: "
+        f"{sorted((dumped | interiorless) - declared)}"
+    )
+
+
 def _models() -> list[str]:
     seen: list[str] = []
     for layer_case in layers.LAYER_CASES:

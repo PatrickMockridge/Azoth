@@ -21,6 +21,8 @@ it - and both cases exercise one of the two.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import MixerResult
@@ -92,41 +94,86 @@ def mixer(
                 f"`feed_n` has {len(feed_n)} and `{name}` has {got}",
             )
 
+    states = _route(
+        components,
+        [input_to_si(spec, "feed_n", value) for value in feed_n],
+        feed_z,
+        [input_to_si(spec, "feed_p", value) for value in feed_p],
+        [input_to_si(spec, "feed_t", value) for value in feed_t],
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+    )
+    return MixerResult(
+        product_n=from_si(states.n_total, "mol/s"),
+        product_z=states.z,
+        product_p=from_si(states.pressure, "Pa"),
+        product_t=states.product_t,
+        product_h=from_si(states.h_out, "J/mol"),
+        warnings=tuple(warnings),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class MixStates:
+    """The mixer's intermediates, in the order it computes them, in SI.
+
+    ``h_total`` is the one number here the record does not carry: an outlet's molar
+    enthalpy is this over the total flow, and a mean of the right magnitude hides a wrong
+    weighting. NeqSim exposes it by name as ``Mixer.calcMixStreamEnthalpy``.
+    """
+
+    n_total: float
+    z: tuple[float, ...]
+    h_total: float
+    h_out: float
+    pressure: float
+    product_t: Q
+
+
+def _route(
+    components: list[str],
+    feed_n: list[float],
+    feed_z: list[list[float]],
+    feed_p: list[float],
+    feed_t: list[float],
+    outlet_pressure: float | None,
+) -> MixStates:
+    """The mixer's intermediates, in SI, in the order it computes them.
+
+    **One arithmetic, two consumers.** :func:`mixer` builds the result from this and
+    :mod:`azoth.process.layers` reports the same numbers against a NeqSim capture, so a
+    layer the harness compares is a layer the model actually took.
+    """
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
 
-    n_total = sum(input_to_si(spec, "feed_n", value) for value in feed_n)
-    n_components = len(feed_z[0])
-    z = [0.0] * n_components
+    n_total = sum(feed_n)
+    z = [0.0] * len(feed_z[0])
     h_total = 0.0
-    for index, flow in enumerate(feed_n):
-        n_i = input_to_si(spec, "feed_n", flow)
-        t_i = input_to_si(spec, "feed_t", feed_t[index])
-        p_i = input_to_si(spec, "feed_p", feed_p[index])
-        h_i, _ = enthalpy_at(mixture, ideal_gas, t_i, p_i, feed_z[index])
+    for index, n_i in enumerate(feed_n):
+        h_i, _ = enthalpy_at(mixture, ideal_gas, feed_t[index], feed_p[index], feed_z[index])
         for i, zi in enumerate(feed_z[index]):
             z[i] += n_i * zi
         h_total += n_i * h_i
     z = [zi / n_total for zi in z]
 
-    # Carried as the caller's quantity rather than as a magnitude: `ph_flash` takes
-    # quantities, where `enthalpy_at` above takes SI. The two conventions are the existing
-    # surface's, not this model's choice.
+    h_out = h_total / n_total
+    # Carried as a quantity rather than as a magnitude: `ph_flash` takes quantities, where
+    # `enthalpy_at` above takes SI. The two conventions are the existing surface's, not this
+    # model's choice.
     if outlet_pressure is None:
-        pressure = min(feed_p, key=lambda value: input_to_si(spec, "feed_p", value))
-        pressure_si = input_to_si(spec, "feed_p", pressure)
+        pressure = min(feed_p)
+        pressure_q: Q = from_si(pressure, "Pa")
     else:
         pressure = outlet_pressure
-        pressure_si = input_to_si(spec, "outlet_pressure", outlet_pressure)
-    h_out = h_total / n_total
-    solved = ph_flash_solve(mixture, ideal_gas, pressure, from_si(h_out, "J/mol"), z)
+        pressure_q = from_si(pressure, "Pa")
+    solved = ph_flash_solve(mixture, ideal_gas, pressure_q, from_si(h_out, "J/mol"), z)
 
-    return MixerResult(
-        product_n=from_si(n_total, "mol/s"),
-        product_z=tuple(z),
-        product_p=from_si(pressure_si, "Pa"),
+    return MixStates(
+        n_total=n_total,
+        z=tuple(z),
+        h_total=h_total,
+        h_out=h_out,
+        pressure=pressure,
         product_t=solved.T,
-        product_h=from_si(h_out, "J/mol"),
-        warnings=tuple(warnings),
     )
 
 

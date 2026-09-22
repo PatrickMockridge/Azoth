@@ -189,6 +189,20 @@ public class ProcessProbe {
       print("feed0", first);
       print("feed1", second);
       print("product", mixer.getOutletStream());
+      // **The mixer's own number, and the one the record carries only in divided form.**
+      // `calcMixStreamEnthalpy` sums the inlets' *totals* - J, for a process fluid whose
+      // moles are one second of flow - and the outlet record carries that over the total
+      // flow. A wrong weighting would be invisible in the quotient, which is the reason to
+      // print the sum.
+      //
+      // **`getMinInletPressure` is named for the lowest inlet and does not return it.**
+      // Its javadoc says "lowest active inlet pressure ... (equal to the outlet pressure)",
+      // and the measurement agrees with the parenthesis: on the row that *specifies* 8 bara
+      // it reads 8.0, not the 6.0 the lowest inlet is at. So it is a restatement of the
+      // outlet pressure and is printed under that name rather than the getter's - it is
+      // evidence about the class, not a layer of the mix.
+      System.out.println("mix_pressure_bara=" + mixer.getMinInletPressure());
+      System.out.println("mixed_enthalpy_W=" + mixer.calcMixStreamEnthalpy());
       System.out.println();
     }
   }
@@ -245,11 +259,14 @@ public class ProcessProbe {
   }
 
   static void throttlingValve() {
-    // **Three rows, and the third is the one a port gets wrong.** `ThrottlingValve.run`
-    // clamps a pressure *above* the inlet back to the inlet - `isAcceptNegativeDP` is
-    // false by default - so a valve asked to raise the pressure passes the stream
-    // through rather than compressing it. A port that took the stated pressure at face
-    // value would quietly become a compressor.
+    // **Three rows, and the third is the one a port gets wrong - in the other direction
+    // than it first looks.** A pressure *above* the inlet is not clamped: `acceptNegativeDP`
+    // is `true` by default, so the outlet is set to the stated 40 bara and flashed at the
+    // inlet's enthalpy, which raises its temperature 5 K. Describing this as a clamp is the
+    // natural reading of `run`'s `isAcceptNegativeDP` branch and it is wrong - the branch
+    // that clamps is the one the flag is *cleared* for. **A port that refused an outlet
+    // above the inlet would be inventing a bound the class does not have**, which is what
+    // the case records.
     //
     // The fluid is a single-phase gas, so the isenthalpic drop's temperature fall is a
     // real part of the answer rather than a rounding. `run` chooses the flash by
