@@ -55,6 +55,7 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
+use azoth_reactions::reference_potentials::ReferencePotentialsResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -547,6 +548,67 @@ impl From<&EquilibriumConstantResult> for PyEquilibriumConstantResult {
                 unit: "J/mol".to_string(),
             },
             reference: r.reference.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `reactions.reference_potentials`, transported.
+///
+/// Two masks travel beside the potentials: they are what says which components the basis
+/// solved for and which reactions survived, and a port that chose a different basis would
+/// land on plausible numbers without them.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ReferencePotentialsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyReferencePotentialsResult {
+    /// The standard-state reference potentials, in the caller's order, each as an SI
+    /// magnitude and a display unit.
+    #[pyo3(get)]
+    pub potentials: Vec<PyQty>,
+    /// A mask over the components: 1.0 where the basis solved directly.
+    #[pyo3(get)]
+    pub independent: Vec<f64>,
+    /// A mask over the source's loaded reactions, in table order.
+    #[pyo3(get)]
+    pub survivors: Vec<f64>,
+    /// The rank the reaction basis reached.
+    #[pyo3(get)]
+    pub rank: usize,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyReferencePotentialsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ReferencePotentialsResult(rank={}, {} component(s))",
+            self.rank,
+            self.potentials.len()
+        )
+    }
+}
+
+impl From<&ReferencePotentialsResult> for PyReferencePotentialsResult {
+    fn from(r: &ReferencePotentialsResult) -> Self {
+        Self {
+            potentials: r
+                .potentials
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "J/mol".to_string(),
+                })
+                .collect(),
+            independent: r.independent.clone(),
+            survivors: r.survivors.clone(),
+            rank: r.rank,
             warnings: transport(&r.warnings),
         }
     }
@@ -6844,6 +6906,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
+        ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),

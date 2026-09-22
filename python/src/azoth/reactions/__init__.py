@@ -16,14 +16,16 @@ see :func:`azoth.backends` and :func:`azoth.use_backend`.
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import EquilibriumConstantResult
+from azoth.core.result import EquilibriumConstantResult, ReferencePotentialsResult
 from azoth.core.units import Q
 
 __all__ = [
     "equilibrium_constant",
+    "reference_potentials",
 ]
 
 _EQUILIBRIUM_CONSTANT = "reactions.equilibrium_constant"
+_REFERENCE_POTENTIALS = "reactions.reference_potentials"
 
 
 def equilibrium_constant(source: str, reaction: str, T: Q) -> EquilibriumConstantResult:
@@ -42,3 +44,19 @@ def equilibrium_constant(source: str, reaction: str, T: Q) -> EquilibriumConstan
     See :func:`azoth.reactions.reference.equilibrium_constant`.
     """
     return resolve(_EQUILIBRIUM_CONSTANT)(source=source, reaction=reaction, T=T)  # type: ignore[no-any-return]
+
+
+def reference_potentials(components: list[str], source: str, T: Q) -> ReferencePotentialsResult:
+    """The standard-state reference potentials of a fluid's reactive components.
+
+    ``components`` is the reactive set by name, **in the order the potentials are wanted
+    back** - the column indices the basis is chosen over are those positions. ``source``
+    is required rather than defaulting, for the reason :func:`equilibrium_constant` gives.
+
+    Raises:
+        InvalidInputError: if ``source`` is unknown, or the propagation cannot reach a
+            component, or a rank test meets a non-integral coefficient.
+
+    See :func:`azoth.reactions.reference.reference_potentials`.
+    """
+    return resolve(_REFERENCE_POTENTIALS)(components=components, source=source, T=T)  # type: ignore[no-any-return]

@@ -324,6 +324,32 @@ class EquilibriumConstantResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ReferencePotentialsResult(_HasWarnings):
+    """Result of ``reactions.reference_potentials``.
+
+    The first result carrying a *mask* rather than a list of names: which components the
+    basis solved for and which reactions survived are positions in the caller's component
+    order and the table's row order, and a position is what the basis actually chose over.
+    """
+
+    #: The standard-state reference potentials, one per component, in the caller's order.
+    #: A potential solved for directly and one propagated are the same quantity;
+    #: ``independent`` says which is which.
+    potentials: tuple[Q, ...]
+    #: A mask over the components: 1.0 where the basis solved directly, 0.0 where the
+    #: potential was propagated from the stoichiometry.
+    independent: tuple[float, ...]
+    #: A mask over the source's **loaded** reactions - the rows whose ``USEREACTION`` is
+    #: 1, in the table's physical order. That order is part of the answer, because the
+    #: reducer is greedy over it.
+    survivors: tuple[float, ...]
+    #: The rank the reaction basis reached.
+    rank: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PureSaturationResult(_HasWarnings):
     """Result of ``eos.pure_saturation``.
 

@@ -88,7 +88,7 @@ alpha functions of P2, for example, are still ahead.
 
 - **Now, at `azoth`-basis**: the four `azoth`-basis `library/` skills, and the `eos/`,
   `flow-assurance/`, `hydraulics/` and `thermal/` skills that drive the 66 implemented
-  calculations and 77 models.
+  calculations and 78 models.
 - **As a tranche lands**: the `screening` placeholder for a domain is promoted to
   `azoth`-basis in the same commit, and its `tranche` field is removed.
 

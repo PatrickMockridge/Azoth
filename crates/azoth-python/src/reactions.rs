@@ -39,3 +39,28 @@ pub fn equilibrium_constant(
     .map(|r| PyEquilibriumConstantResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
+
+/// The standard-state reference potentials of a fluid's reactive components.
+///
+/// `components` crosses as names and unresolved, for the same reason the reaction name
+/// does: the Rust side reads the tables, chooses the basis and propagates, so no
+/// stoichiometric coefficient and no rank decision reaches Python.
+#[pyfunction]
+#[pyo3(signature = (components, source, T))]
+#[pyo3(text_signature = "(components, source, T)")]
+#[allow(non_snake_case)] // `T` is the symbol in the published equation
+pub fn reference_potentials(
+    py: Python<'_>,
+    components: Vec<String>,
+    source: &str,
+    T: f64,
+) -> PyResult<crate::results::PyReferencePotentialsResult> {
+    let parsed: ReactionDataSource = source.parse().map_err(|e| to_pyerr(py, e))?;
+    azoth_reactions::reference_potentials::reference_potentials(
+        &components,
+        parsed,
+        azoth_core::units::kelvins(T),
+    )
+    .map(|r| crate::results::PyReferencePotentialsResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

@@ -148,6 +148,28 @@ def reactions(source: str) -> tuple[ReactionRow, ...]:
     )
 
 
+@cache
+def stoichiometry_rows() -> tuple[tuple[str, str, float], ...]:
+    """Every row of the stoichiometry table, as ``(reaction, component, coefficient)``."""
+    return tuple(
+        (row["reacname"], row["compname"], float(row["stoccoef"]))
+        for row in _rows(STOICHIOMETRY_CSV)
+    )
+
+
+def stoichiometry(reaction: str) -> tuple[tuple[str, float], ...]:
+    """One reaction's coefficients, keyed by component.
+
+    **All of them are integers** - the table carries only ``0``, ``1``, ``-1``, ``2`` and
+    ``-2`` - which is what makes the rank test over them exact. See :mod:`._linalg`.
+    """
+    return tuple(
+        (component, coefficient)
+        for name, component, coefficient in stoichiometry_rows()
+        if name == reaction
+    )
+
+
 def reaction(source: str, name: str) -> ReactionRow:
     """One reaction by name.
 

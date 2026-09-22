@@ -7,3 +7,11 @@ Every calculation in this section is generated from its specification. Each page
 | Calculation | Equation | Source |
 |---|---|---|
 | [`reactions.equilibrium_constant`](./equilibrium_constant.md) | $\ln K = K_{1} + \frac{K_{2}}{T} + K_{3}\ln T + K_{4}T, \qquad \frac{d\ln K}{dT} = -\frac{K_{1}}{T^{2}} + \frac{K_{2}}{T} + K_{3}, \qquad \Delta H = \frac{d\ln K}{dT}RT^{2}$ | NeqSim master `ChemicalReaction` |
+
+## Models
+
+The calculations above are equations; these are *procedures*. A model's spec fixes a scheme, a tolerance and an iteration cap rather than a formula, and two implementations that differ even slightly in those diverge - so each page leads with the algorithm and its settings, and the equations below it are the ones it composes rather than its own.
+
+| Model | Scheme | Source |
+|---|---|---|
+| [`reactions.reference_potentials`](./reference_potentials.md) | `direct composition` | NeqSim master `ChemicalReactionList` |

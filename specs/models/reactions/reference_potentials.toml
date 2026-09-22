@@ -1,0 +1,59 @@
+id = "reactions.reference_potentials"
+name = "Reference potentials from an independent reaction basis"
+kind = "direct"
+assumptions = [
+    "**the reaction set is not a parameter.** It is what the source carries, filtered to the reactions this fluid can run: a reaction is kept only if every reactant it names is a component the caller supplied, and reactants are the negative coefficients.",
+    "**the basis and the reduction are both greedy, so the row order is part of the answer.** The order is the table's physical order, which is what `readReactions` sees - its query has no `ORDER BY` - so a reaction that survives in one order can be the one dropped in another.",
+    "**the rank tests see only the stoichiometry.** The matrix is one column wider than the coefficients, the extra column holding `-R T ln K`, and the rank calls are on the narrower matrix. Every coefficient in the source is an integer, so the rank is exact.",
+    "NeqSim's rank is a singular-value count against `max(m, n) * s[0] * 2**-52`. On the three captured fluids the smallest singular value it keeps is 0.2461 and the cutoff is 4.8e-15, so the tolerance cannot change a decision here.",
+    "**the potentials come back in the caller's component order.** NeqSim's own order is `getAllComponents`'s, which is a `HashSet` iteration order - a property of Java's hash table and not of the chemistry. The capture records what that order happened to be.",
+    "the propagation is bounded by `2 * dependent + 1` passes, and a component it cannot reach is a refusal: NeqSim seeds one with the component's Gibbs energy of formation and continues, and that column is `vendored` here.",
+    "the rank test is exact only over integers. A non-integral coefficient is refused rather than rounded, because a rounded rank is an approximation the caller cannot tell from the answer.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionList` is the port source: `removeJunkReactions`, `removeDependentReactions` and `calcReferencePotentials`.",
+    "Smith, W. R.; Missen, R. W. (1982). \"Chemical Reaction Equilibrium Analysis: Theory and Algorithms.\" Wiley, New York. The independent-reaction formulation the basis comes from.",
+    "Golub, G. H.; Van Loan, C. F. (2013). \"Matrix Computations.\", 4th ed., Johns Hopkins University Press. The singular-value decomposition JAMA's rank is built on, and the reason a decomposition is not needed for an integer matrix.",
+]
+[source]
+standard = "NeqSim master `ChemicalReactionList`"
+edition = "Three passes over the reaction set: `removeJunkReactions`, then `removeDependentReactions`, then `calcReferencePotentials`'s independent-column solve and its propagation. The deadlock fallback is refused rather than reproduced."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's reactive components, by name, **in the order the potentials are wanted back**. The order is part of the input and not a presentation detail: the column indices the basis is chosen over are these positions.\n"
+[inputs.source]
+type = "enum"
+values = ["standard", "pitzer", "kent-eisenberg"]
+description = "which of NeqSim's three reaction tables supplies the candidates. Required rather than defaulting, for the reason `reactions.equilibrium_constant` gives.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature the constants are evaluated at.\n"
+[outputs]
+[outputs.potentials]
+type = "vector"
+unit = "J/mol"
+length = "one per component, in the caller's order"
+description = "the standard-state reference potentials. A potential the basis solved for directly and one propagated from the stoichiometry are the same quantity; `independent` says which is which.\n"
+[outputs.independent]
+type = "vector"
+unit = "dimensionless"
+length = "one per component, in the caller's order"
+description = "**a mask over the components**: 1 where the basis solved for the potential directly, 0 where it was propagated from the stoichiometry. A mask rather than a name list because the names are the caller's own input and the positions are what the basis chose over.\n"
+[outputs.survivors]
+type = "vector"
+unit = "dimensionless"
+length = "one per loaded reaction, in table order"
+description = "**a mask over the source's loaded reactions** - the rows whose `USEREACTION` is 1, in table order - 1 where the reaction survived the dependency test and 0 where it was dropped. Its length is the table's rather than the caller's.\n"
+[outputs.rank]
+unit = "dimensionless"
+description = "the rank the reaction basis reached, which is also the size of the independent component set. Fewer than the number of surviving reactions means the rest were dependent and dropped.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature, and the constants take its logarithm\n"
+[implementations]
+python = "azoth.reactions.reference_potentials"
+rust = "azoth_reactions::reference_potentials"

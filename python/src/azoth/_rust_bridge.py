@@ -120,6 +120,7 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
+    ReferencePotentialsResult,
     ReynoldsNumberResult,
     RkAlphaAbResult,
     RkDepartureResult,
@@ -363,6 +364,28 @@ def equilibrium_constant(source: str, reaction: str, T: Q) -> EquilibriumConstan
         ln_k_derivative=from_si(result.ln_k_derivative.magnitude_si, result.ln_k_derivative.unit),
         reaction_heat=from_si(result.reaction_heat.magnitude_si, result.reaction_heat.unit),
         reference=result.reference,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reference_potentials(components: list[str], source: str, T: Q) -> ReferencePotentialsResult:
+    """The standard-state reference potentials, computed in Rust.
+
+    The component names cross unresolved and in the caller's order, which is the order the
+    potentials come back in: the Rust side reads the reaction tables, chooses the basis
+    and propagates, so no stoichiometric coefficient and no rank decision reaches Python.
+    """
+    # A model, not a calc: its spec is in the model registry, and `input_to_si` reads the
+    # same declarations either way.
+    from azoth._models_gen import model as _model
+
+    spec = _model("reactions.reference_potentials")
+    result = _core.reference_potentials(list(components), source, input_to_si(spec, "T", T))
+    return ReferencePotentialsResult(
+        potentials=tuple(from_si(value.magnitude_si, value.unit) for value in result.potentials),
+        independent=tuple(result.independent),
+        survivors=tuple(result.survivors),
+        rank=result.rank,
         warnings=_warnings(result.warnings),
     )
 

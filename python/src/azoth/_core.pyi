@@ -1314,6 +1314,14 @@ class EquilibriumConstantResult:
     warnings: list[Warning]
 
 @final
+class ReferencePotentialsResult:
+    potentials: list[Qty]
+    independent: list[float]
+    survivors: list[float]
+    rank: int
+    warnings: list[Warning]
+
+@final
 class ConductionPlaneWallResult:
     q: Qty
     warnings: list[Warning]
@@ -2347,6 +2355,11 @@ def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResul
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
 def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
+def reference_potentials(
+    components: list[str],
+    source: str,
+    T: float,
+) -> ReferencePotentialsResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 
 # --- introspection --------------------------------------------------------

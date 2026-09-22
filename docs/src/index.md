@@ -222,6 +222,10 @@ Four sections, and the difference between them is the point:
 
 - [`reactions.equilibrium_constant`](./reactions/equilibrium_constant.md)
 
+*Models* — whose specs fix a procedure rather than an equation:
+
+- [`reactions.reference_potentials`](./reactions/reference_potentials.md) — Reference potentials from an independent reaction basis
+
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)

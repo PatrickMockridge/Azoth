@@ -3762,10 +3762,14 @@ pub fn thermal_conductivity(
 /// deleted rather than repaired; `eos` is the whole of what remains.
 ///
 /// **This is the function that has to change when a namespace is added.** It read
-/// `azoth_eos::model_gen` alone until `process` arrived, and the three `model_*` functions
-/// below stayed green for exactly as long as nobody asked them about a unit operation.
+/// `azoth_eos::model_gen` alone until `process` arrived, and again until `reactions` did -
+/// and the three `model_*` functions below stay green for exactly as long as nobody asks
+/// them about a namespace the chain does not carry.
 fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
-    azoth_eos::model_gen::models().iter().copied()
+    azoth_eos::model_gen::models()
+        .iter()
+        .chain(azoth_reactions::model_gen::models().iter())
+        .copied()
 }
 
 /// Every model id this extension implements.

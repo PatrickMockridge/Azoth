@@ -9,9 +9,15 @@
 //!
 //! * [`databank`] - the element table, the stoichiometry, and the reaction rows
 //! * [`equilibrium_constant`] - `ln K`, its derivative and the heat of reaction
+//! * [`reference_potentials`] - the independent basis, and the potentials from it
+//! * [`linalg`] - the exact rank and the LU solve those two rest on
 
 pub mod databank;
 pub mod equilibrium_constant;
+pub mod linalg;
+pub mod model_gen;
+pub mod reference_potentials;
 pub mod spec_gen;
 
 pub use equilibrium_constant::{EquilibriumConstantResult, equilibrium_constant};
+pub use reference_potentials::{ReferencePotentialsResult, reference_potentials};
