@@ -41,9 +41,7 @@ _NUMBERS = re.compile(r"\d+")
 
 #: The page's prose claim, above the sample: how many files have their columns enumerated
 #: and how many columns that is in total.
-_PROSE_COUNTS = re.compile(
-    r"(?P<files>\d+) files, (?P<columns>[\d,]+) columns"
-)
+_PROSE_COUNTS = re.compile(r"(?P<files>\d+) files, (?P<columns>[\d,]+) columns")
 
 
 def manifest_tool() -> ModuleType:
