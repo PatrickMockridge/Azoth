@@ -1086,6 +1086,12 @@ pub struct PyReactivePhaseEquilibriumResult {
     /// The solve's own convergence flag, false on a skip.
     #[pyo3(get)]
     pub converged: bool,
+    /// Whether the linear program's estimate became the starting composition.
+    #[pyo3(get)]
+    pub seed_applied: bool,
+    /// The composition the solve started from, one `mol` quantity per component.
+    #[pyo3(get)]
+    pub seed_moles: Vec<PyQty>,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -1132,6 +1138,15 @@ impl From<&ReactivePhaseEquilibriumResult> for PyReactivePhaseEquilibriumResult 
             iterations: r.iterations,
             error: r.error,
             converged: r.converged,
+            seed_applied: r.seed_applied,
+            seed_moles: r
+                .seed_moles
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }

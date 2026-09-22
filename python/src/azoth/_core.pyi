@@ -1395,6 +1395,8 @@ class ReactivePhaseEquilibriumResult:
     iterations: int
     error: float
     converged: bool
+    seed_applied: bool
+    seed_moles: list[Qty]
     warnings: list[Warning]
 
 @final
@@ -2521,6 +2523,7 @@ def reactive_phase_equilibrium(
     T: float,
     max_iterations: float,
     tolerance: float,
+    seed: str,
 ) -> ReactivePhaseEquilibriumResult: ...
 def reference_potentials(
     components: list[str],

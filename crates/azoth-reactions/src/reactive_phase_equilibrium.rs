@@ -63,6 +63,38 @@ pub const CHARGE_NOISE_MOLE_FRACTION: f64 = 1e-10;
 /// `Math.max(newMoles[i], 1e-45)`.
 pub const MIN_WRITTEN_MOLES: f64 = 1e-45;
 
+/// Which starting composition the Newton solve is given.
+///
+/// NeqSim's production path always runs the linear program: `initCalc` is built in
+/// `ChemicalReactionOperations`' constructor and is only ever cleared inside
+/// `reinitializeForReactivePhase`, which re-arms it. `None` is the direct path the captured
+/// cases model, where the potentials are solved from the caller's own composition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReactionSeed {
+    /// Start from the caller's composition.
+    None,
+    /// Start from `LinearProgrammingChemicalEquilibrium`'s estimate, where the program has
+    /// a solution - see [`crate::lp_seed`] for what happens where it does not.
+    LinearProgramming,
+}
+
+impl std::str::FromStr for ReactionSeed {
+    type Err = AzothError;
+
+    /// A seed this library does not carry is refused rather than defaulted: the two differ
+    /// in where the solve starts, and a fallback would answer a question not asked.
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "none" => Ok(Self::None),
+            "linear_programming" | "linear-programming" => Ok(Self::LinearProgramming),
+            other => Err(AzothError::InvalidInput {
+                field: "seed".to_string(),
+                reason: format!("`{other}` is not one of `none`, `linear_programming`"),
+            }),
+        }
+    }
+}
+
 /// Result of `reactions.reactive_phase_equilibrium`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReactivePhaseEquilibriumResult {
@@ -91,6 +123,14 @@ pub struct ReactivePhaseEquilibriumResult {
     /// Whether the solve converged. False when skipped, which is why `skipped` is
     /// checked first.
     pub converged: bool,
+    /// **Whether the linear program's estimate became the starting composition.** False is
+    /// not a failure: the estimate is a state the program either has or does not, and
+    /// NeqSim's own entry point reads its absence as "keep the composition the phase has".
+    pub seed_applied: bool,
+    /// The composition the solve started from: the estimate where one exists and the
+    /// caller's own `moles` where it does not. **Floored at `updateMoles`'s `1e-45`** when
+    /// the estimate is used, which is what NeqSim writes back.
+    pub seed_moles: Vec<f64>,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -106,6 +146,8 @@ impl CalcResult for ReactivePhaseEquilibriumResult {
         "iterations",
         "error",
         "converged",
+        "seed_applied",
+        "seed_moles",
         "warnings",
     ];
 
@@ -139,6 +181,7 @@ pub fn reactive_phase_equilibrium(
     temperature: f64,
     max_iterations: u32,
     tolerance: f64,
+    seed: ReactionSeed,
 ) -> Result<ReactivePhaseEquilibriumResult> {
     let spec = &model_gen::REACTIVE_PHASE_EQUILIBRIUM_SPEC;
     let mut warnings = Vec::new();
@@ -196,6 +239,10 @@ pub fn reactive_phase_equilibrium(
             iterations: 0,
             error: 0.0,
             converged: false,
+            // Nothing was solved, so no estimate was applied: the caller's own composition
+            // comes back as both the seed and the answer.
+            seed_applied: false,
+            seed_moles: moles.to_vec(),
             warnings,
         });
     }
@@ -207,11 +254,29 @@ pub fn reactive_phase_equilibrium(
         .map(|potential| potential / (GAS_CONSTANT * temperature))
         .collect();
 
+    // NeqSim's seed: the estimate is written back into the phase through `updateMoles`
+    // before the solve starts, so it is the starting composition where one exists.
+    let estimate = match seed {
+        ReactionSeed::None => None,
+        ReactionSeed::LinearProgramming => {
+            crate::lp_seed::initial_estimate(&a_matrix, &b, &reduced)
+        }
+    };
+    let seed_moles: Vec<f64> = estimate.clone().unwrap_or_else(|| moles.to_vec());
+    let start: Vec<f64> = if estimate.is_some() {
+        seed_moles
+            .iter()
+            .map(|value| value.max(MIN_WRITTEN_MOLES))
+            .collect()
+    } else {
+        moles.to_vec()
+    };
+
     let solved: ChemicalEquilibriumResult = chemical_equilibrium(
         &a_matrix,
         &b,
         whole_system,
-        moles,
+        &start,
         &reduced,
         log_activity,
         temperature,
@@ -233,6 +298,8 @@ pub fn reactive_phase_equilibrium(
             .collect(),
         iterations: solved.iterations,
         error: solved.error,
+        seed_applied: estimate.is_some(),
+        seed_moles,
         converged: solved.converged,
         warnings,
     })

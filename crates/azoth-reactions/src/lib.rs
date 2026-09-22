@@ -19,6 +19,7 @@ pub mod chemical_equilibrium;
 pub mod databank;
 pub mod equilibrium_constant;
 pub mod linalg;
+pub mod lp_seed;
 pub mod model_gen;
 pub mod reactive_phase;
 pub mod reactive_phase_equilibrium;

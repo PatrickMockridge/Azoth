@@ -548,6 +548,13 @@ class ReactivePhaseEquilibriumResult(_HasWarnings):
     #: The solve's own convergence flag. False when skipped **and** for a solve that ran
     #: and did not converge, so it is only meaningful beside ``skipped``.
     converged: bool
+    #: **Whether the linear program's estimate became the starting composition.** False is
+    #: a state and not a failure: NeqSim reads the estimate's absence as keeping the phase's
+    #: own composition, which is what ``seed_moles`` reports then.
+    seed_applied: bool
+    #: The composition the solve started from: the estimate where one exists, the caller's
+    #: own ``moles`` where none does.
+    seed_moles: tuple[Q, ...]
     #: Caveats.
     warnings: tuple[Warning, ...]
 

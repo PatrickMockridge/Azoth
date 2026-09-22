@@ -3631,6 +3631,7 @@ def reactive_phase_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    seed: str = "none",
 ) -> ReactivePhaseEquilibriumResult:
     """The phase's reactive equilibrium, computed in Rust.
 
@@ -3652,6 +3653,7 @@ def reactive_phase_equilibrium(
         input_to_si(spec, "T", T),
         int(max_iterations),
         float(tolerance),
+        seed,
     )
     return ReactivePhaseEquilibriumResult(
         skipped=result.skipped,
@@ -3662,6 +3664,10 @@ def reactive_phase_equilibrium(
         iterations=result.iterations,
         error=result.error,
         converged=result.converged,
+        seed_applied=result.seed_applied,
+        seed_moles=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.seed_moles
+        ),
         warnings=_warnings(result.warnings),
     )
 

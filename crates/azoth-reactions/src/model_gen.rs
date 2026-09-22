@@ -285,7 +285,11 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             "components",
             &["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"],
         )],
-        strings: &[("source", "standard"), ("phase", "aqueous")],
+        strings: &[
+            ("source", "standard"),
+            ("seed", "linear_programming"),
+            ("phase", "aqueous"),
+        ],
         vectors: &[
             (
                 "moles",
@@ -344,6 +348,17 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
                     3.2997798471182613e-15,
                 ],
             ),
+            (
+                "seed_moles",
+                &[
+                    0.00012573383934458022,
+                    9.999733292115952,
+                    8.690090644094265e-12,
+                    3.7523303281414325e-05,
+                    1.4784390876737142e-05,
+                    2.6728220502961853e-21,
+                ],
+            ),
         ],
         expected_strings: &[],
     },
@@ -366,7 +381,11 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             "components",
             &["CO2", "water", "HCO3-", "CO3--", "OH-", "H3O+"],
         )],
-        strings: &[("source", "standard"), ("phase", "aqueous")],
+        strings: &[
+            ("source", "standard"),
+            ("seed", "none"),
+            ("phase", "aqueous"),
+        ],
         vectors: &[
             (
                 "moles",
@@ -447,7 +466,7 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             "components",
             &["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"],
         )],
-        strings: &[("source", "standard"), ("phase", "gas")],
+        strings: &[("source", "standard"), ("seed", "none"), ("phase", "gas")],
         vectors: &[
             (
                 "moles",

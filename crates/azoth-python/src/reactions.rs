@@ -12,6 +12,7 @@
 use pyo3::prelude::*;
 
 use azoth_reactions::databank::ReactionDataSource;
+use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
 use crate::results::{PyEquilibriumConstantResult, PyReactivePhaseEquilibriumResult};
@@ -115,13 +116,13 @@ pub fn chemical_equilibrium(
 /// that ran and did not converge.
 #[pyfunction]
 #[pyo3(
-    signature = (components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance)
+    signature = (components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance, seed)
 )]
 #[pyo3(
-    text_signature = "(components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance)"
+    text_signature = "(components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance, seed)"
 )]
 #[allow(non_snake_case)] // `T` is the symbol in the chemistry
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eleven
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twelve
 pub fn reactive_phase_equilibrium(
     py: Python<'_>,
     components: Vec<String>,
@@ -135,8 +136,10 @@ pub fn reactive_phase_equilibrium(
     T: f64,
     max_iterations: u32,
     tolerance: f64,
+    seed: &str,
 ) -> PyResult<PyReactivePhaseEquilibriumResult> {
     let parsed: ReactionDataSource = source.parse().map_err(|e| to_pyerr(py, e))?;
+    let parsed_seed: ReactionSeed = seed.parse().map_err(|e| to_pyerr(py, e))?;
     azoth_reactions::reactive_phase_equilibrium::reactive_phase_equilibrium(
         &components,
         parsed,
@@ -149,6 +152,7 @@ pub fn reactive_phase_equilibrium(
         T,
         max_iterations,
         tolerance,
+        parsed_seed,
     )
     .map(|r| PyReactivePhaseEquilibriumResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

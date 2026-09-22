@@ -19,7 +19,7 @@ use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::model_gen;
 use azoth_reactions::reactive_phase::reactive_phase_index;
 use azoth_reactions::reactive_phase_equilibrium::{
-    ReactivePhaseEquilibriumResult, reactive_phase_equilibrium,
+    ReactionSeed, ReactivePhaseEquilibriumResult, reactive_phase_equilibrium,
 };
 use azoth_test_support as common;
 
@@ -34,6 +34,9 @@ fn call(case: &TestCase) -> ReactivePhaseEquilibriumResult {
     let source: ReactionDataSource = common::input_str(case, "source")
         .parse()
         .expect("the case names one of the three sources");
+    let seed: ReactionSeed = common::input_str(case, "seed")
+        .parse()
+        .expect("the case says where the solve starts");
     let components: Vec<String> = case
         .list("components")
         .expect("the case states its components")
@@ -60,6 +63,7 @@ fn call(case: &TestCase) -> ReactivePhaseEquilibriumResult {
         common::input(case, "T"),
         common::input(case, "max_iterations") as u32,
         common::input(case, "tolerance"),
+        seed,
     )
     .unwrap_or_else(|e| panic!("test `{}` should compute but failed: {e}", case.id))
 }
@@ -92,6 +96,25 @@ fn every_case_in_the_spec() {
                 tolerance,
                 &format!("{}: moles[{i}]", case.id),
             );
+        }
+
+        // **The seed, which is where the case and the code can disagree about the start.**
+        // `seed_applied` is a flag on the result and `TestCase` carries flags for inputs
+        // and not for expectations, so it is read from the raw spec here - the entry that
+        // says so is `SELF_ASSERTED_EXPECTATIONS` in `tools/gen_registry.py`.
+        if let Some(flag) = case.flag("seed_applied") {
+            assert_eq!(result.seed_applied, flag, "{}: seed_applied", case.id);
+        }
+        if let Some(expected_seed) = case.expected_vector("seed_moles") {
+            assert_eq!(result.seed_moles.len(), expected_seed.len(), "{}", case.id);
+            for (i, (actual, expected)) in result.seed_moles.iter().zip(expected_seed).enumerate() {
+                common::assert_close(
+                    *actual,
+                    *expected,
+                    tolerance,
+                    &format!("{}: seed_moles[{i}]", case.id),
+                );
+            }
         }
 
         let expected_b = case.expected_vector("b").expect("the case states b");
@@ -265,6 +288,7 @@ fn a_substance_outside_the_element_table_is_refused() {
         298.15,
         100,
         1e-8,
+        ReactionSeed::None,
     )
     .expect_err("MEG has no formula row");
     assert!(error.to_string().contains("MEG"), "{error}");

@@ -31,7 +31,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReactivePhaseEquilibriumResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
-from azoth.reactions.reference import _tables
+from azoth.reactions.reference import _lp_seed, _tables
 from azoth.reactions.reference.chemical_equilibrium import chemical_equilibrium
 from azoth.reactions.reference.equilibrium_constant import GAS_CONSTANT
 from azoth.reactions.reference.reference_potentials import reference_potentials
@@ -89,6 +89,7 @@ def reactive_phase_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    seed: str = "none",
 ) -> ReactivePhaseEquilibriumResult:
     """The reactive equilibrium composition of one phase.
 
@@ -97,7 +98,8 @@ def reactive_phase_equilibrium(
         source: which of the three reaction tables the reference potentials come from.
         phase: the phase's type name as NeqSim spells it. ``aqueous``, ``liquid`` or
             ``oil`` takes the solve; anything else skips it.
-        moles: their amounts in the phase, and the starting composition.
+        moles: their amounts in the phase, ``A n``'s operand and the starting
+            composition wherever the linear-program estimate is absent.
         phase_charge: the phase's own ``sum(z_i n_i)``, over **every** component it
             holds, in moles of elementary charge.
         phase_moles: the phase's total moles, read for the charge-row tolerance.
@@ -189,6 +191,10 @@ def reactive_phase_equilibrium(
             iterations=0,
             error=0.0,
             converged=False,
+            # Nothing was solved, so no estimate was applied: the caller's own composition
+            # comes back as both the seed and the answer.
+            seed_applied=False,
+            seed_moles=tuple(from_si(value, "mol") for value in magnitudes),
             warnings=tuple(warnings),
         )
 
@@ -198,11 +204,21 @@ def reactive_phase_equilibrium(
         float(potential.to("J/mol").magnitude) / (GAS_CONSTANT * temperature)
         for potential in chem_ref
     ]
+    # NeqSim's seed: the estimate is written back into the phase through `updateMoles`
+    # before the solve starts, so it is the starting composition where one exists.
+    estimate = None if seed == "none" else _lp_seed.initial_estimate(a_matrix, b, reduced)
+    seed_moles = list(magnitudes) if estimate is None else estimate
+    start = (
+        list(magnitudes)
+        if estimate is None
+        else [max(value, MIN_WRITTEN_MOLES) for value in seed_moles]
+    )
+
     solved = chemical_equilibrium(
         a_matrix,
         b,
         whole_system,
-        magnitudes,
+        start,
         reduced,
         activity,
         T,
@@ -213,6 +229,8 @@ def reactive_phase_equilibrium(
 
     return ReactivePhaseEquilibriumResult(
         skipped=False,
+        seed_applied=estimate is not None,
+        seed_moles=tuple(from_si(value, "mol") for value in seed_moles),
         a_matrix=tuple(tuple(row) for row in a_matrix),
         b=tuple(from_si(value, "mol") for value in b),
         chem_ref=chem_ref,

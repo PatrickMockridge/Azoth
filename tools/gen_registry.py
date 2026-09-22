@@ -179,6 +179,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `test_cross_impl`, which reads the field off both results, so a shape one side
         # got wrong is caught there rather than here.
         "products_z",
+        # `reactive_phase_equilibrium`'s boolean, which `TestCase` carries for an input but
+        # not for an expectation: a flag on the *result* is read by the model's own test,
+        # which asserts the case's value against the field.
+        "seed_applied",
     }
 )
 
