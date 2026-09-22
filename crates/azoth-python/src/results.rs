@@ -27,31 +27,31 @@ use azoth_eos::results::{
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
     HydrateEquilibriumLineResult, HydrateFormationPressureResult,
     HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
-    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
-    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
-    PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
-    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
-    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
-    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
-    SaltPrecipitationResult, ScaleSaturationRatioResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SolidFugacityResult, SoreideWhitsonAlphaResult,
-    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
-    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
-    VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    HydrateInhibitorWtResult, HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult,
+    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
+    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
+    MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
+    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
+    PcsaftRahmatPhaseResult, PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
+    PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SaftFlashResult,
+    SaftVrMiePhaseResult, SaltPrecipitationResult, ScaleSaturationRatioResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SolidFugacityResult,
+    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult,
+    TpMultiflashResult, TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult,
+    TvFlashResult, TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult,
+    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
+    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
+    WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
 use azoth_thermal::results::ConductionPlaneWallResult;
@@ -4388,6 +4388,60 @@ impl From<&HydrateFormationPressureResult> for PyHydrateFormationPressureResult 
     }
 }
 
+/// Result of `eos.hydrate_inhibitor_wt`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HydrateInhibitorWtResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHydrateInhibitorWtResult {
+    /// The inhibitor's moles at the answer, the feed's own included.
+    #[pyo3(get)]
+    pub inhibitor_moles: f64,
+    /// The aqueous phase's inhibitor mass fraction.
+    #[pyo3(get)]
+    pub weight_fraction: f64,
+    /// How many phases the answer's state has.
+    #[pyo3(get)]
+    pub phases: u32,
+    /// Secant steps taken, with a floor of three.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// `-(wtp - wt_target)` at the answer.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHydrateInhibitorWtResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HydrateInhibitorWtResult({} mol, {:.1} wt% aqueous, {} phase(s))",
+            self.inhibitor_moles,
+            self.weight_fraction * 100.0,
+            self.phases
+        )
+    }
+}
+
+impl From<&HydrateInhibitorWtResult> for PyHydrateInhibitorWtResult {
+    fn from(r: &HydrateInhibitorWtResult) -> Self {
+        Self {
+            inhibitor_moles: r.inhibitor_moles,
+            weight_fraction: r.weight_fraction,
+            phases: r.phases,
+            iterations: r.iterations,
+            residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.hydrate_inhibitor_concentration`, transported.
 #[pyclass(
     frozen,
@@ -6847,6 +6901,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         HydrateInhibitorConcentrationResult::CALC_ID => {
             HydrateInhibitorConcentrationResult::FIELDS.to_vec()
         }
+        HydrateInhibitorWtResult::CALC_ID => HydrateInhibitorWtResult::FIELDS.to_vec(),
         HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
         HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
         TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),

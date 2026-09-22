@@ -69,6 +69,7 @@ from azoth.core.result import (
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
     HydrateInhibitorConcentrationResult,
+    HydrateInhibitorWtResult,
     HydrateStructure,
     HydrogenPhaseResult,
     IdealGasCpResult,
@@ -2833,6 +2834,41 @@ def hydrate_equilibrium_line(
     return HydrateEquilibriumLineResult(
         temperature=tuple(result.temperature),
         pressure=tuple(result.pressure),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hydrate_inhibitor_wt(
+    components: Sequence[str],
+    moles: Sequence[float],
+    inhibitor: str,
+    wt_target: float,
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+) -> HydrateInhibitorWtResult:
+    """The inhibitor dose that reaches a target aqueous mass fraction, computed in Rust.
+
+    **The feed crosses in moles**, as for its sibling: the secant adds an absolute amount to
+    the inhibitor's entry.
+    """
+    spec = _models_gen.model("eos.hydrate_inhibitor_wt")
+    result = _core.hydrate_inhibitor_wt(
+        list(components),
+        # A unit-bearing vector crosses as quantities; the kernel takes SI moles.
+        [to_si(value, "mol", "moles") for value in moles],
+        inhibitor,
+        wt_target,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        eos,
+    )
+    return HydrateInhibitorWtResult(
+        inhibitor_moles=result.inhibitor_moles,
+        weight_fraction=result.weight_fraction,
+        phases=result.phases,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 

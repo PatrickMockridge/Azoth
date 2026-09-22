@@ -41,6 +41,49 @@ public class HydrateInhibitorProbe {
       report("cpa", target, 100.0);
       report("srk", target, 100.0);
     }
+    // The *other* flash: a target weight fraction rather than a target temperature, and the
+    // only one of the pair that reads a phase's type. `hydrateInhibitorConcentrationSet` is
+    // NeqSim's name for it, which reads like the first one and is not.
+    for (double target : new double[] {0.30, 0.50, 0.70}) {
+      reportWeight("cpa", target, 100.0);
+      reportWeight("srk", target, 100.0);
+    }
+  }
+
+  private static void reportWeight(String fluid, double target, double pressureBara) {
+    System.out.printf("# %s fluid, MEG to a mass fraction of %.15g at %.15g bara%n", fluid, target,
+        pressureBara);
+    try {
+      SystemInterface system = build(fluid, pressureBara);
+      ThermodynamicOperations operations = new ThermodynamicOperations(system);
+      operations.hydrateInhibitorConcentrationSet("MEG", target);
+
+      double inhibitorMoles = system.getPhase(0).getComponent("MEG").getNumberOfmoles();
+      double waterMoles = system.getPhase(0).getComponent("water").getNumberOfmoles();
+      double inhibitorMass = inhibitorMoles * system.getPhase(0).getComponent("MEG").getMolarMass();
+      double waterMass = waterMoles * system.getPhase(0).getComponent("water").getMolarMass();
+
+      row("inhibitor_moles", inhibitorMoles);
+      row("water_moles", waterMoles);
+      row("total_moles", system.getTotalNumberOfMoles());
+      row("weight_fraction", inhibitorMass / (inhibitorMass + waterMass));
+      row("target", target);
+      row("residual", -(inhibitorMass / (inhibitorMass + waterMass) - target));
+
+      row("phases", system.getNumberOfPhases());
+      for (int p = 0; p < system.getNumberOfPhases(); p++) {
+        PhaseInterface phase = system.getPhase(p);
+        System.out.printf("phase[%d].type = %s%n", p, phase.getType());
+        row("phase[" + p + "].beta", phase.getBeta());
+        if (phase.hasComponent("MEG")) {
+          row("phase[" + p + "].x_MEG", phase.getComponent("MEG").getx());
+          row("phase[" + p + "].x_water", phase.getComponent("water").getx());
+        }
+      }
+    } catch (Exception error) {
+      System.out.printf("# failed: %s: %s%n", error.getClass().getSimpleName(), error.getMessage());
+    }
+    System.out.println();
   }
 
   private static SystemInterface build(String fluid, double pressureBara) {

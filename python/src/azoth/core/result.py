@@ -521,6 +521,25 @@ class HydrateEquilibriumLineResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HydrateInhibitorWtResult(_HasWarnings):
+    """Result of ``eos.hydrate_inhibitor_wt``."""
+
+    #: The inhibitor's moles at the answer, the feed's own included.
+    inhibitor_moles: float
+    #: The **aqueous phase's** inhibitor mass fraction, which is what the secant drives to the
+    #: target. Not the feed's own: a gas phase takes some inhibitor with it.
+    weight_fraction: float
+    #: How many phases the answer's state has.
+    phases: int
+    #: Secant steps taken, with a floor of three.
+    iterations: int
+    #: ``-(wtp - wt_target)`` at the answer.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HydrateInhibitorConcentrationResult(_HasWarnings):
     """Result of ``eos.hydrate_inhibitor_concentration``."""
 

@@ -106,3 +106,105 @@ phase[1].temperature = 275.000859253751
 phase[1].x_MEG = 0.573915197012958
 phase[1].x_water = 0.425906482852119
 
+# cpa fluid, MEG to a mass fraction of 0.300000000000000 at 100.000000000000 bara
+inhibitor_moles = 0.124372418372090
+water_moles = 1.00000000000000
+total_moles = 2.27937241837209
+weight_fraction = 0.299971639240079
+target = 0.300000000000000
+residual = 2.83607599212421e-05
+phases = 2.00000000000000
+phase[0].type = GAS
+phase[0].beta = 0.505314454790005
+phase[0].x_MEG = 6.36380924558549e-08
+phase[0].x_water = 9.15823507664970e-05
+phase[1].type = AQUEOUS
+phase[1].beta = 0.494685545209995
+phase[1].x_MEG = 0.110300965499170
+phase[1].x_water = 0.886767314611583
+
+# srk fluid, MEG to a mass fraction of 0.300000000000000 at 100.000000000000 bara
+inhibitor_moles = 0.124375874492093
+water_moles = 1.00000000000000
+total_moles = 2.27937587449209
+weight_fraction = 0.299977474456202
+target = 0.300000000000000
+residual = 2.25255437980576e-05
+phases = 2.00000000000000
+phase[0].type = GAS
+phase[0].beta = 0.506756020491602
+phase[0].x_MEG = 1.09810024411550e-06
+phase[0].x_water = 7.55781559953574e-05
+phase[1].type = AQUEOUS
+phase[1].beta = 0.493243979508398
+phase[1].x_MEG = 0.110625176857676
+phase[1].x_water = 0.889373826584068
+
+# cpa fluid, MEG to a mass fraction of 0.500000000000000 at 100.000000000000 bara
+inhibitor_moles = 0.290208702414814
+water_moles = 1.00000000000000
+total_moles = 2.44520870241481
+weight_fraction = 0.499971743479347
+target = 0.500000000000000
+residual = 2.82565206528584e-05
+phases = 2.00000000000000
+phase[0].type = GAS
+phase[0].beta = 0.470481079910908
+phase[0].x_MEG = 1.55323760876421e-07
+phase[0].x_water = 7.69762186386708e-05
+phase[1].type = AQUEOUS
+phase[1].beta = 0.529518920089092
+phase[1].x_MEG = 0.224136584074696
+phase[1].x_water = 0.772261037371761
+
+# srk fluid, MEG to a mass fraction of 0.500000000000000 at 100.000000000000 bara
+inhibitor_moles = 0.290210522059004
+water_moles = 1.00000000000000
+total_moles = 2.44521052205901
+weight_fraction = 0.499973311005118
+target = 0.500000000000000
+residual = 2.66889948822291e-05
+phases = 2.00000000000000
+phase[0].type = GAS
+phase[0].beta = 0.472384263537992
+phase[0].x_MEG = 1.16819328545883e-06
+phase[0].x_water = 7.47298183835813e-05
+phase[1].type = AQUEOUS
+phase[1].beta = 0.527615736462008
+phase[1].x_MEG = 0.224945411662357
+phase[1].x_water = 0.775047847521890
+
+# cpa fluid, MEG to a mass fraction of 0.700000000000000 at 100.000000000000 bara
+inhibitor_moles = 0.677165880768553
+water_moles = 1.00000000000000
+total_moles = 2.83216588076855
+weight_fraction = 0.699980060557032
+target = 0.700000000000000
+residual = 1.99394429682975e-05
+phases = 2.00000000000000
+phase[0].type = GAS
+phase[0].beta = 0.404818553427515
+phase[0].x_MEG = 2.98936460182152e-07
+phase[0].x_water = 5.73799927410317e-05
+phase[1].type = AQUEOUS
+phase[1].beta = 0.595181446572485
+phase[1].x_MEG = 0.401723073733315
+phase[1].x_water = 0.593203025029976
+
+# srk fluid, MEG to a mass fraction of 0.700000000000000 at 100.000000000000 bara
+inhibitor_moles = 0.677156064897633
+water_moles = 1.00000000000000
+total_moles = 2.83215606489763
+weight_fraction = 0.699977016351537
+target = 0.700000000000000
+residual = 2.29836484630930e-05
+phases = 2.00000000000000
+phase[0].type = GAS
+phase[0].beta = 0.407817323019553
+phase[0].x_MEG = 1.29649981449528e-06
+phase[0].x_water = 7.09839515213414e-05
+phase[1].type = AQUEOUS
+phase[1].beta = 0.592182676980447
+phase[1].x_MEG = 0.403752228049602
+phase[1].x_water = 0.596199368917912
+

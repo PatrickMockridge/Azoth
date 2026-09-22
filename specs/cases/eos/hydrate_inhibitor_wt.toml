@@ -1,0 +1,29 @@
+model = "eos.hydrate_inhibitor_wt"
+[[cases]]
+id = "meg_to_a_thirty_percent_aqueous_fraction"
+tolerance = 1e-04
+source = """NeqSim master, `HydrateInhibitorwtFlash` on the composition its sibling's `main` uses -
+methane 1.0, ethane 0.10, propane 0.050, i-butane 0.0050, MEG 0.1, water 1.0 mol at 273.15 K and
+100 bara - from `validation/neqsim/HydrateInhibitorProbe.java`. This is the **plain
+`SystemSrkEos`** column: `0.124375874492093` mol of MEG to reach an aqueous mass fraction of
+0.30.
+
+**The two fluids barely differ here, and that is the opposite of the concentration flash's
+result.** NeqSim's own `main` runs the same composition as a `SystemSrkCPAstatoil` and needs
+`0.124372418372090` - a relative `3e-5`. Its sibling is five times apart on the same feed,
+because that one's equilibrium is on water's fugacity and this one's inner step is an ordinary
+flash. So the association is not what this model's answer turns on.
+
+**The target is met in the aqueous phase and the feed's own figure sits below it**:
+`0.299977474456202` against `0.30`, because a gas phase carries a little MEG with it."""
+[cases.inputs]
+components = ["methane", "ethane", "propane", "i-butane", "MEG", "water"]
+moles = [1.0, 0.10, 0.050, 0.0050, 0.1, 1.0]
+inhibitor = "MEG"
+wt_target = 0.30
+T = 273.15
+P = 10000000.0
+eos = "srk"
+[cases.expected]
+inhibitor_moles = 0.124375874492093
+weight_fraction = 0.30

@@ -17,7 +17,7 @@ import pytest
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.units import quantity
-from azoth.eos import hydrate_inhibitor_concentration
+from azoth.eos import hydrate_inhibitor_concentration, hydrate_inhibitor_wt
 
 NAMES = ["methane", "ethane", "propane", "i-butane", "MEG", "water"]
 
@@ -51,3 +51,24 @@ def test_an_inhibitor_the_feed_does_not_have_is_refused() -> None:
         hydrate_inhibitor_concentration(
             NAMES, MOLES, "methanol", quantity(270.9, "K"), quantity(100.0e5, "Pa"), eos="srk"
         )
+
+
+#: `(target mass fraction, the capture's plain-SRK inhibitor moles)`. The wt flash's two fluids
+#: agree to `3e-5`, unlike the concentration flash's factor of five: its inner step is an
+#: ordinary cubic flash, so the association is not what its answer turns on.
+WT_DOSES = [
+    (0.30, 0.124375874492093),
+    (0.50, 0.290210522059004),
+    (0.70, 0.677156064897633),
+]
+
+
+@pytest.mark.parametrize(("target", "want"), WT_DOSES)
+def test_the_weight_fraction_dose_reproduces_the_capture(target: float, want: float) -> None:
+    result = hydrate_inhibitor_wt(
+        NAMES, MOLES, "MEG", target, quantity(273.15, "K"), quantity(100.0e5, "Pa"), eos="srk"
+    )
+    assert abs(result.inhibitor_moles / want - 1.0) < 1.0e-12
+    # **The target is met in the aqueous phase**, which is what the secant's residual is on.
+    assert abs(result.weight_fraction - target) <= 1.0e-5
+    assert result.phases == 2

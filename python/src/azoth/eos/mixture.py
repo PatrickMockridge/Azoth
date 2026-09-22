@@ -69,6 +69,11 @@ class Component:
     #: a ``1e50`` marker for one that is not, so the exclusion is a *number* the fraction
     #: solve carries rather than a phase list assembled per state.
     wax_former: bool = False
+    #: NeqSim's ``COMPTYPE`` for the substance, lower-cased: ``hc``, ``inert``, ``glycol``,
+    #: ``water`` and the rest. **Carried because a phase's *label* is a function of it**:
+    #: ``PhaseEos.init`` asks whether a component is a hydrocarbon to decide between an oil
+    #: and an aqueous phase. Empty for a card's substance, which has no table row.
+    component_class: str = ""
     #: Heat of fusion in J/mol and the triple-point temperature in K, for a substance the
     #: databank states them for. **Zero means the table carries no value**, which is every
     #: substance the wax model does not treat as a solid, and a model reading one refuses a

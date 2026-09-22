@@ -95,6 +95,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.hydrate_formation_temperature`](./hydrate_formation_temperature.md) | `hydrate_temperature_bisection` | NeqSim master `HydrateFormationTemperatureFlash` |
 | [`eos.hydrate_fraction`](./hydrate_fraction.md) | `hydrate_bound_fixed_point` | NeqSim master `TPHydrateFlash`, with the composition and the bound corrected |
 | [`eos.hydrate_inhibitor_concentration`](./hydrate_inhibitor_concentration.md) | `inhibitor_moles_secant` | NeqSim master `HydrateInhibitorConcentrationFlash` |
+| [`eos.hydrate_inhibitor_wt`](./hydrate_inhibitor_wt.md) | `inhibitor_moles_secant` | NeqSim master `HydrateInhibitorwtFlash` |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `density_solve_on_the_selected_root` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
 | [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim master `PhaseKentEisenberg` |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |

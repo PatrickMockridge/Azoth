@@ -622,6 +622,7 @@ class DatabankEntry:
             molar_mass=self.molar_mass,
             alpha_params=params,
             wax_former=self.wax_former,
+            component_class=self.component_type,
             heat_of_fusion=self.heat_of_fusion,
             triple_point_temperature=self.triple_point_temperature,
             cp_solid=self.cp_solid,

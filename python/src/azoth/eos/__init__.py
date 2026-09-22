@@ -105,6 +105,7 @@ from azoth.core.result import (
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
     HydrateInhibitorConcentrationResult,
+    HydrateInhibitorWtResult,
     HydrogenPhaseResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
@@ -267,6 +268,7 @@ __all__ = [
     "hydrate_formation_temperature",
     "hydrate_fraction",
     "hydrate_inhibitor_concentration",
+    "hydrate_inhibitor_wt",
     "hydrogen_phase",
     "ideal_gas_cp",
     "kent_eisenberg_phase",
@@ -369,6 +371,7 @@ _HELIUM_PHASE = "eos.helium_phase"
 _HYDRATE_FORMATION_TEMPERATURE = "eos.hydrate_formation_temperature"
 _HYDRATE_EQUILIBRIUM_LINE = "eos.hydrate_equilibrium_line"
 _HYDRATE_INHIBITOR_CONCENTRATION = "eos.hydrate_inhibitor_concentration"
+_HYDRATE_INHIBITOR_WT = "eos.hydrate_inhibitor_wt"
 _HYDRATE_FRACTION = "eos.hydrate_fraction"
 _HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
@@ -2076,6 +2079,48 @@ def hydrate_inhibitor_concentration(
         P=P,
         eos=eos,
         hydrate_model=hydrate_model,
+    )
+
+
+def hydrate_inhibitor_wt(
+    components: list[str],
+    moles: list[Q],
+    inhibitor: str,
+    wt_target: float,
+    T: Q,
+    P: Q,
+    eos: str = "srk",
+) -> HydrateInhibitorWtResult:
+    """The moles of inhibitor that put the aqueous phase at a target mass fraction.
+
+    The other half of the inhibitor pair, and the one that reads a phase's *label*: the
+    composition comes from NeqSim's ``getPhase(PhaseType.AQUEOUS)``, which a cubic phase
+    carries from ``PhaseEos.init``'s three branches - its volume ratio against a bar, then
+    whether its hydrocarbons outweigh its aqueous components.
+
+    **The target is met in the aqueous phase and the feed's own figure sits below it**, because
+    a gas phase carries a little inhibitor away: on the capture's own state the aqueous phase
+    is at ``0.30`` while the feed reads ``0.299977474456202``.
+
+    NeqSim calls this entry point ``hydrateInhibitorConcentrationSet``, which reads like the
+    temperature one and is not.
+
+    Raises:
+        InvalidInputError: if ``moles`` does not match ``components``, if ``inhibitor`` is not
+            one of them, if the feed has no water, or if ``P`` is not positive.
+        SolverNotConvergedError: if no trial produces an aqueous phase, or the secant reaches
+            its step cap without landing.
+
+    See :func:`azoth.eos.reference.hydrate_inhibitor_wt`.
+    """
+    return resolve(_HYDRATE_INHIBITOR_WT)(  # type: ignore[no-any-return]
+        components=components,
+        moles=moles,
+        inhibitor=inhibitor,
+        wt_target=wt_target,
+        T=T,
+        P=P,
+        eos=eos,
     )
 
 

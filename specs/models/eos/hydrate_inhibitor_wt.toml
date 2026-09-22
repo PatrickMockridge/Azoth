@@ -1,0 +1,92 @@
+id = "eos.hydrate_inhibitor_wt"
+name = "Hydrate inhibitor weight fraction"
+kind = "procedure"
+assumptions = [
+    "**a secant on the inhibitor's moles**, whose residual is the aqueous phase's own mass fraction against the target: each trial adds inhibitor and re-flashes.",
+    "**the feed is stated in moles, not as a composition.** The secant walks an *absolute* amount - the first three steps are `error * 0.01` moles and the rest are `-error / dError/dC * 0.5` moles - so a normalised feed would reproduce the equation and not the path.",
+    "**the fraction is the aqueous phase's, and the target is met there rather than in the feed.** A gas phase carries a little inhibitor, so the feed-based figure NeqSim's own entry point reports sits just below the target - `0.299971639240079` against `0.30` at the capture's first state.",
+    "**this is the one model here that reads a phase's *label*.** The composition comes from `getPhase(PhaseType.AQUEOUS)`, and a cubic phase carries that label from `PhaseEos.init`'s three branches; every other hydrate model reads the fluid as a whole.",
+    "the first branch compares `getVolume() / getB()` against `1.75`, and both halves are in NeqSim's own `1e-5 m3/mol`: methane at 300 K and 50 bar prints `46.0917080848140` and `2.98485123264092`, a quotient of `15.4418778332323`. That is `Z/b_r`, the reduced covolume's reciprocal, and no unit enters.",
+    "**\"hydrocarbon\" is wider than the name: `COMPTYPE == \"HC\"` *or* `\"inert\"`.** `isInert()` is counted on the same side, which is what puts a pure CO2 liquid on the OIL branch - its row is `inert`, and a probe state at 260 K and 60 bar comes back `OIL`.",
+    "the inner flash is the ordinary two-phase one, not a multiphase solve, so a state that would split three ways is reported two.",
+    "the first three steps run whatever the residual is, and the loop's condition is `(|error| > 1e-5 && iter < 100) || iter < 3`, so the count is a floor.",
+    "no aqueous phase on any trial is a refusal rather than a fallback: NeqSim's `else` branch adds `getTotalNumberOfMoles()` of inhibitor and re-flashes, which is a search this does not reproduce.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `HydrateInhibitorwtFlash` is the port source.",
+    "Sloan, E. D.; Koh, C. A. (2008). \"Clathrate Hydrates of Natural Gases.\", 3rd ed., CRC Press. The dosing correlation is its own chapter; this is the operation around it.",
+]
+[source]
+standard = "NeqSim master `HydrateInhibitorwtFlash`"
+edition = "The secant, over this library's own two-phase flash and its own reading of `PhaseEos.init`'s phase label."
+[algorithm]
+scheme = "inhibitor_moles_secant"
+initialisation = "feed_inventory"
+convergence = "absolute"
+tolerance = 1e-05
+max_iterations = 100
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the fluid is made of, by name. At least one must be water, and the inhibitor must be one of them."
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the feed's component mole numbers. The secant adds to the inhibitor's entry, so the absolute scale is what the answer is on."
+[inputs.inhibitor]
+type = "string"
+description = "which component is the inhibitor, by name - `MEG`, `methanol` or whatever the feed carries. It must be one of `components`."
+[inputs.wt_target]
+unit = "dimensionless"
+description = "the mass fraction of the aqueous phase that the dosing is to reach."
+[inputs.T]
+unit = "K"
+description = "absolute temperature at which the fluid is flashed."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the fluid is flashed."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+description = "the cubic the fluid runs."
+[outputs]
+[outputs.inhibitor_moles]
+unit = "mol"
+description = "the inhibitor's moles at the answer, the feed's own included."
+[outputs.weight_fraction]
+unit = "dimensionless"
+description = "the aqueous phase's inhibitor mass fraction at the answer, which should be the target to the tolerance."
+[outputs.phases]
+unit = "dimensionless"
+description = "how many phases the answer's state has."
+[outputs.iterations]
+unit = "dimensionless"
+description = "secant steps taken, with a floor of three."
+[outputs.residual]
+unit = "dimensionless"
+description = "`-(wtp - wt_target)` at the answer, the sign the operation's own residual carries."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "wt_target"
+min = 0
+max = 1
+min_inclusive = false
+max_inclusive = false
+severity = "error"
+rationale = "a mass fraction of two things, and neither a feed of pure inhibitor nor one of pure water has an aqueous pair to fraction"
+[implementations]
+python = "azoth.eos.hydrate_inhibitor_wt"
+rust = "azoth_eos::hydrate_inhibitor_wt"

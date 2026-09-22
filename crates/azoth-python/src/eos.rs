@@ -3328,6 +3328,40 @@ pub fn hydrate_inhibitor_concentration(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The inhibitor dose that reaches a target aqueous mass fraction, computed in Rust.
+///
+/// **The feed crosses in moles**, as for its sibling: the secant adds an absolute amount to
+/// the inhibitor's entry.
+#[pyfunction]
+#[pyo3(signature = (components, moles, inhibitor, wt_target, T, P, eos = "srk"))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // the names, the feed, the inhibitor and the state
+pub fn hydrate_inhibitor_wt(
+    py: Python<'_>,
+    components: Vec<String>,
+    moles: Vec<f64>,
+    inhibitor: &str,
+    wt_target: f64,
+    T: f64,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::results::PyHydrateInhibitorWtResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, _) =
+        azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
+            .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::hydrate_inhibitor_wt(
+        &mixture,
+        inhibitor,
+        &moles,
+        wt_target,
+        kelvins(T),
+        pascals(P),
+    )
+    .map(|r| crate::results::PyHydrateInhibitorWtResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The fraction of a feed that is hydrate at a state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the hydrate's guest

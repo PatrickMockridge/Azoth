@@ -155,6 +155,7 @@ Four sections, and the difference between them is the point:
 - [`eos.hydrate_formation_temperature`](./eos/hydrate_formation_temperature.md) — Hydrate formation temperature
 - [`eos.hydrate_fraction`](./eos/hydrate_fraction.md) — Hydrate fraction
 - [`eos.hydrate_inhibitor_concentration`](./eos/hydrate_inhibitor_concentration.md) — Hydrate inhibitor concentration
+- [`eos.hydrate_inhibitor_wt`](./eos/hydrate_inhibitor_wt.md) — Hydrate inhibitor weight fraction
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state
 - [`eos.kent_eisenberg_phase`](./eos/kent_eisenberg_phase.md) — Fugacity coefficients of a Kent-Eisenberg phase
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities

@@ -196,14 +196,16 @@ The specialist physics.
   `HydrateFormationPressureFlash` (`eos.hydrate_formation_pressure`); `TPHydrateFlash`
   (`eos.hydrate_fraction`), **with the composition taken from both cavities and the material
   balance asserted at the answer**; `HydrateEquilibriumLine` (`eos.hydrate_equilibrium_line`);
-  `HydrateInhibitorConcentrationFlash` (`eos.hydrate_inhibitor_concentration`); and
+  `HydrateInhibitorConcentrationFlash` (`eos.hydrate_inhibitor_concentration`) and
+  `HydrateInhibitorwtFlash` (`eos.hydrate_inhibitor_wt`), the dosing pair; and
   `ComponentHydrateGF`, the second fitted component model, behind `hydrate_model = "guo_finch"`
-  on all three hydrate ids. **Not ported**: `PitzerHydrateFlash` with
-  `ComponentHydratePitzer`, which is reachable through the model name and is gated on the
-  EoS/GE hybrid seam P8 did not close - a flash whose two phases run different models, and
-  `SystemPitzer` configures exactly that; and `HydrateInhibitorwtFlash`, which reads a phase's
-  **aqueous** type, a rule `PhaseEos.init` assigns from an aqueous-versus-hydrocarbon mole
-  fraction and this library has nowhere. `HydrateEquilibriumDiagnostics` is an audit of a
+  on all three hydrate ids. The dose pair needed one piece of machinery this library did not
+  have: the **phase label** `PhaseEos.init` assigns - a volume ratio against `1.75`, then
+  whether a phase's hydrocarbons outweigh its aqueous components - which `eos.hydrate_inhibitor_wt`
+  carries because it is the only model here that asks which phase is the aqueous one.
+  **Not ported**: `PitzerHydrateFlash` with `ComponentHydratePitzer`, which is reachable through
+  the model name and is gated on the EoS/GE hybrid seam P8 did not close - a flash whose two
+  phases run different models, and `SystemPitzer` configures exactly that. `HydrateEquilibriumDiagnostics` is an audit of a
   state rather than a model, and what it asserts belongs in a test. **Carried as unreachable
   upstream**: `ComponentHydrateKluda`, which has no construction site anywhere in `src/main`,
   `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose only sites are two

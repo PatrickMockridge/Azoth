@@ -404,6 +404,7 @@ impl Entry {
         Ok(
             Component::new(kelvins(self.tc), pascals(self.pc), self.omega)?
                 .with_molar_mass(self.molar_mass)
+                .with_class(self.class.clone())
                 .with_wax_data(
                     self.wax_former,
                     self.heat_of_fusion,

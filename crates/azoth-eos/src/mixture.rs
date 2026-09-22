@@ -150,6 +150,15 @@ pub struct Component {
     /// makes the exclusion a number the fraction solve can carry rather than a phase list
     /// that has to be assembled per state.
     pub wax_former: bool,
+    /// NeqSim's `COMPTYPE` for the substance, lower-cased: `hc`, `inert`, `glycol`, `water`
+    /// and the rest.
+    ///
+    /// **Carried because a phase's *label* is a function of it.** `PhaseEos.init` decides
+    /// whether a phase is a gas, an oil or an aqueous one from its volume ratio and from
+    /// whether its hydrocarbons outweigh its aqueous components - and "is this a
+    /// hydrocarbon" is `COMPTYPE == "HC"` plus the two flags a TBP cut carries, which a
+    /// databank row does not need. Empty for a card's substance, which has no table row.
+    pub class: String,
     /// Heat of fusion, in J/mol, and the triple-point temperature in K, for a substance the
     /// databank states them for.
     ///
@@ -209,6 +218,7 @@ impl Component {
             alpha_params: Vec::new(),
             volume_shift: 0.0,
             wax_former: false,
+            class: String::new(),
             heat_of_fusion: 0.0,
             triple_point_temperature: 0.0,
             cp_solid: [0.0; 4],
@@ -236,6 +246,16 @@ impl Component {
     #[must_use]
     pub fn with_molar_mass(mut self, molar_mass: Option<f64>) -> Self {
         self.molar_mass = molar_mass;
+        self
+    }
+
+    /// This component, with the substance's `COMPTYPE` attached.
+    ///
+    /// The databank populates it; a card's substance has none, and a model that classifies
+    /// by it refuses rather than guessing.
+    #[must_use]
+    pub fn with_class(mut self, class: String) -> Self {
+        self.class = class;
         self
     }
 

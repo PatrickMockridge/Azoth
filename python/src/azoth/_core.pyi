@@ -469,6 +469,15 @@ class HydrateInhibitorConcentrationResult:
     warnings: list[Warning]
 
 @final
+class HydrateInhibitorWtResult:
+    inhibitor_moles: float
+    weight_fraction: float
+    phases: int
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class HydrogenPhaseResult:
     z_factor: float
     u: Qty
@@ -1598,6 +1607,15 @@ def hydrate_inhibitor_concentration(
     eos: str,
     hydrate_model: str | None = None,
 ) -> HydrateInhibitorConcentrationResult: ...
+def hydrate_inhibitor_wt(
+    components: list[str],
+    moles: list[float],
+    inhibitor: str,
+    wt_target: float,
+    T: float,
+    P: float,
+    eos: str,
+) -> HydrateInhibitorWtResult: ...
 def hydrogen_phase(
     T: float,
     P: float,

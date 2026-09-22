@@ -1,0 +1,98 @@
+# methane gas at 300.000000000000 K, 50.0000000000000 bara
+phases = 1.00000000000000
+phase[0].beta = 1.00000000000000
+phase[0].z = 0.923926437462382
+phase[0].volume = 46.0917080848140
+phase[0].molar_volume = 46.0917080848140
+phase[0].moles = 1.00000000000000
+phase[0].b = 2.98485123264092
+phase[0].volume_over_b = 15.4418778332323
+phase[0].sum_hydrocarbons = 1.00000000000000
+phase[0].sum_aqueous = 0.00000000000000
+phase[0].type = GAS
+
+# lng liquid at 150.000000000000 K, 50.0000000000000 bara
+phases = 1.00000000000000
+phase[0].beta = 1.00000000000000
+phase[0].z = 0.201944577435027
+phase[0].volume = 5.03718160615215
+phase[0].molar_volume = 5.03718160615215
+phase[0].moles = 1.00000000000000
+phase[0].b = 4.10105437947046
+phase[0].volume_over_b = 1.22826501188764
+phase[0].sum_hydrocarbons = 1.00000000000000
+phase[0].sum_aqueous = 0.00000000000000
+phase[0].type = OIL
+
+# meg and water at 300.000000000000 K, 1.00000000000000 bara
+phases = 1.00000000000000
+phase[0].beta = 1.00000000000000
+phase[0].z = 0.00110443577892524
+phase[0].volume = 3.03032051050009
+phase[0].molar_volume = 2.75483682772735
+phase[0].moles = 1.10000000000000
+phase[0].b = 2.68727329916755
+phase[0].volume_over_b = 1.12765624227309
+phase[0].sum_hydrocarbons = 0.00000000000000
+phase[0].sum_aqueous = 1.00000000000000
+phase[0].type = AQUEOUS
+
+# inhibitor feed at 273.150000000000 K, 100.000000000000 bara
+phases = 2.00000000000000
+phase[0].beta = 0.512234212072368
+phase[0].z = 0.693576423728696
+phase[0].volume = 18.1946963759331
+phase[0].molar_volume = 15.7517817180628
+phase[0].moles = 1.15508814822319
+phase[0].b = 3.79035648112657
+phase[0].volume_over_b = 4.80025994033291
+phase[0].sum_hydrocarbons = 0.999923057239758
+phase[0].sum_aqueous = 7.69427602420686e-05
+phase[0].type = GAS
+phase[1].beta = 0.487765787927632
+phase[1].z = 0.119020718241497
+phase[1].volume = 2.97314309025081
+phase[1].molar_volume = 2.70307396492542
+phase[1].moles = 1.09991185177681
+phase[1].b = 2.68708339171020
+phase[1].volume_over_b = 1.10645732076017
+phase[1].sum_hydrocarbons = 6.61368576203037e-07
+phase[1].sum_aqueous = 0.999999338631424
+phase[1].type = AQUEOUS
+
+# gas and aqueous at 300.000000000000 K, 10.0000000000000 bara
+phases = 2.00000000000000
+phase[0].beta = 0.501388861769569
+phase[0].z = 0.983539134176968
+phase[0].volume = 123.004709457215
+phase[0].molar_volume = 245.327965649436
+phase[0].moles = 0.501388861769569
+phase[0].b = 1.49535744545291
+phase[0].volume_over_b = 82.2577303047164
+phase[0].sum_hydrocarbons = 0.997229904965256
+phase[0].sum_aqueous = 0.00277009503474368
+phase[0].type = GAS
+phase[1].beta = 0.498611138230431
+phase[1].z = 0.00956049459406434
+phase[1].volume = 1.18904351531747
+phase[1].molar_volume = 2.38471109878809
+phase[1].moles = 0.498611138230431
+phase[1].b = 1.05255765800557
+phase[1].volume_over_b = 1.12967067055549
+phase[1].sum_hydrocarbons = 6.62377789392848e-08
+phase[1].sum_aqueous = 0.999999933762221
+phase[1].type = AQUEOUS
+
+# co2 liquid at 260.000000000000 K, 60.0000000000000 bara
+phases = 1.00000000000000
+phase[0].beta = 1.00000000000000
+phase[0].z = 0.133091039842390
+phase[0].volume = 4.79518176201627
+phase[0].molar_volume = 4.79518176201627
+phase[0].moles = 1.00000000000000
+phase[0].b = 2.96862038015217
+phase[0].volume_over_b = 1.61528964568062
+phase[0].sum_hydrocarbons = 1.00000000000000
+phase[0].sum_aqueous = 0.00000000000000
+phase[0].type = OIL
+

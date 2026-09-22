@@ -29,6 +29,7 @@
 //!   - specs/models/eos/hydrate_formation_temperature.toml
 //!   - specs/models/eos/hydrate_fraction.toml
 //!   - specs/models/eos/hydrate_inhibitor_concentration.toml
+//!   - specs/models/eos/hydrate_inhibitor_wt.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
@@ -3701,6 +3702,99 @@ pub static HYDRATE_INHIBITOR_CONCENTRATION_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HYDRATE_INHIBITOR_CONCENTRATION_ALGORITHM),
     checks: HYDRATE_INHIBITOR_CONCENTRATION_CHECKS,
     cases: HYDRATE_INHIBITOR_CONCENTRATION_CASES,
+};
+
+static HYDRATE_INHIBITOR_WT_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "wt_target",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: Some(1.0),
+            max_inclusive: false,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a mass fraction of two things, and neither a feed of pure inhibitor nor one of pure water has an aqueous pair to fraction",
+        },
+    },
+];
+
+static HYDRATE_INHIBITOR_WT_CASES: &[TestCase] = &[TestCase {
+    id: "meg_to_a_thirty_percent_aqueous_fraction",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 0.0001,
+    numbers: &[("wt_target", 0.3), ("T", 273.15), ("P", 10000000.0)],
+    flags: &[],
+    lists: &[(
+        "components",
+        &["methane", "ethane", "propane", "i-butane", "MEG", "water"],
+    )],
+    strings: &[("inhibitor", "MEG"), ("eos", "srk")],
+    vectors: &[("moles", &[1.0, 0.1, 0.05, 0.005, 0.1, 1.0])],
+    matrices: &[],
+    expected: &[
+        ("inhibitor_moles", 0.124375874492093),
+        ("weight_fraction", 0.3),
+    ],
+    expected_vectors: &[],
+    expected_strings: &[],
+}];
+
+static HYDRATE_INHIBITOR_WT_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "inhibitor_moles_secant",
+    convergence: "absolute",
+    tolerance: 1e-05,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("feed_inventory"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.hydrate_inhibitor_wt`.
+pub static HYDRATE_INHIBITOR_WT_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hydrate_inhibitor_wt",
+    kind: "procedure",
+    algorithm: Some(&HYDRATE_INHIBITOR_WT_ALGORITHM),
+    checks: HYDRATE_INHIBITOR_WT_CHECKS,
+    cases: HYDRATE_INHIBITOR_WT_CASES,
 };
 
 static HYDROGEN_PHASE_CHECKS: &[SpecCheck] = &[
@@ -8733,6 +8827,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &HYDRATE_FORMATION_TEMPERATURE_SPEC,
     &HYDRATE_FRACTION_SPEC,
     &HYDRATE_INHIBITOR_CONCENTRATION_SPEC,
+    &HYDRATE_INHIBITOR_WT_SPEC,
     &HYDROGEN_PHASE_SPEC,
     &KENT_EISENBERG_PHASE_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,

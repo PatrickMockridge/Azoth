@@ -898,6 +898,41 @@ impl CalcResult for HydrateFormationPressureResult {
     }
 }
 
+/// Result of `eos.hydrate_inhibitor_wt`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HydrateInhibitorWtResult {
+    /// The inhibitor's moles at the answer, the feed's own included.
+    pub inhibitor_moles: f64,
+    /// The **aqueous phase's** inhibitor mass fraction, which is the quantity the secant drives
+    /// to the target. Not the feed's own - a gas phase takes some inhibitor with it, and
+    /// NeqSim's own entry point reports the feed-based figure instead.
+    pub weight_fraction: f64,
+    /// How many phases the answer's state has.
+    pub phases: u32,
+    /// Secant steps taken, with a floor of three.
+    pub iterations: u32,
+    /// `-(wtp - wt_target)` at the answer.
+    pub residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HydrateInhibitorWtResult {
+    const CALC_ID: &'static str = "eos.hydrate_inhibitor_wt";
+    const FIELDS: &'static [&'static str] = &[
+        "inhibitor_moles",
+        "weight_fraction",
+        "phases",
+        "iterations",
+        "residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.hydrate_inhibitor_concentration`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HydrateInhibitorConcentrationResult {
