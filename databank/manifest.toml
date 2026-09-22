@@ -300,10 +300,9 @@ reason = "not-ported: the liquid-viscosity `polynom` model; NeqSim's `liquidphys
 consumer = "roadmap:P1"
 [[upstreams.files.columns]]
 name = "GIBBSENERGYOFFORMATION"
-disposition = "vendored"
+disposition = "used"
 as = "gibbsenergyofformation"
 unit = "J/mol"
-reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "DIELECTRICPARAMETER1"
 disposition = "used"
@@ -457,16 +456,14 @@ unit = "K"
 reason = "not-ported: read as a starting temperature by `WaterDewPointTemperatureFlash`, which is the live reader, and by nothing else. The legacy `FreezingPointTemperatureFlashOld` names it too and is unreachable upstream - no `new` for it in `src/main` and no reference outside its own file."
 [[upstreams.files.columns]]
 name = "ENTHALPYOFFORMATION"
-disposition = "vendored"
+disposition = "used"
 as = "enthalpyofformation"
 unit = "J/mol"
-reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "ABSOLUTEENTROPY"
-disposition = "vendored"
+disposition = "used"
 as = "absoluteentropy"
 unit = "J/(mol*K)"
-reason = "not-ported: NeqSim's `ChemicalReactionOperations` and `ModifiedRANDSolver` read it for reaction equilibrium; azoth's `eos.molar_enthalpy_entropy` does not (`getHID` zeroes the formation enthalpy)"
 [[upstreams.files.columns]]
 name = "SOLIDDENSITYCOEFS1"
 disposition = "used"

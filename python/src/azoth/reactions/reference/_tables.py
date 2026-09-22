@@ -130,6 +130,53 @@ def ionic_charge(component: str) -> float | None:
     return _charges().get(component.strip().lower())
 
 
+@dataclass(frozen=True, slots=True)
+class FormationProperties:
+    """One component's standard-state formation properties, in the table's own units."""
+
+    #: The Gibbs energy of formation, J/mol.
+    gibbs_energy_of_formation: float
+    #: The ideal-gas enthalpy of formation, J/mol. Read by the reactive flash's reference
+    #: potential, and **not** by the ideal-gas enthalpy: NeqSim's ``getHID`` multiplies
+    #: this column by zero (``Component.java:1631``).
+    enthalpy_of_formation: float
+    #: The ideal-gas absolute entropy, J/(mol*K).
+    absolute_entropy: float
+
+
+@cache
+def _formation() -> dict[str, FormationProperties]:
+    """Every component's formation properties, keyed by lowercased name."""
+    return {
+        row["name"]: FormationProperties(
+            gibbs_energy_of_formation=float(row["gibbsenergyofformation"]),
+            enthalpy_of_formation=float(row["enthalpyofformation"]),
+            absolute_entropy=float(row["absoluteentropy"]),
+        )
+        for row in _rows(COMPONENTS_CSV)
+    }
+
+
+def formation_properties(component: str) -> FormationProperties | None:
+    """One component's formation properties, or ``None`` where there is no row for it.
+
+    **A zero is returned as a zero rather than read as absent.** The table has no blanks,
+    and a substance in its own standard state - ``oxygen``, ``nitrogen``, ``hydrogen``,
+    ``argon`` - has a zero Gibbs energy of formation and a zero enthalpy of formation
+    because that is the definition. ``H+`` is zero in all three columns, which is the
+    aqueous standard state's own convention. The same columns also carry zeros that *are*
+    missing data, and a value alone cannot tell the two apart: ``formic acid``'s Gibbs
+    energy of formation is ``0.0`` against a fitted ``-378700`` enthalpy, and ``ethylene``'s
+    absolute entropy is ``0.0`` against a Gibbs energy of formation that is right. NeqSim
+    reads all of them as numbers and so does this, which is why the ambiguity is recorded
+    here instead of being resolved by a rule the data does not support.
+
+    Names are matched as the component databank spells them - lowercased and trimmed -
+    which is how :func:`ionic_charge` settles the same difference between the two tables.
+    """
+    return _formation().get(component.strip().lower())
+
+
 def source_path(source: str) -> str:
     """The compiled file one source identifier names.
 

@@ -45,10 +45,10 @@ done with it and a reason; the other six are vendored whole, three of them becau
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1132 read, 0 not-vendored entr(ies))
-  344  carried, nothing reads it yet
+check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1135 read, 0 not-vendored entr(ies))
+  341  carried, nothing reads it yet
   1109  carried with no unit NeqSim states (neqsim-internal)
-  303  not-ported
+  300  not-ported
    19  not-a-value
    10  empty-upstream
     2  superseded-by
@@ -57,10 +57,10 @@ check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1
    11  unread-upstream
 ```
 
-**The porting backlog is "carried, nothing reads it yet" — 344 columns — and it is
+**The porting backlog is "carried, nothing reads it yet" — 341 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **303 columns carry it**, carried
+`not-ported` reason names the class that would close it — **300 columns carry it**, carried
 and dropped together, with a handful `unreachable-upstream`, ten `uncalled-upstream`, eleven
 `unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.

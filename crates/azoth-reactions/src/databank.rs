@@ -354,6 +354,81 @@ fn ionic_charges() -> Result<&'static HashMap<String, f64>, AzothError> {
     }
 }
 
+/// One component's standard-state formation properties, in the units the table holds them.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FormationProperties {
+    /// The Gibbs energy of formation, in J/mol.
+    pub gibbs_energy_of_formation: f64,
+    /// The ideal-gas enthalpy of formation, in J/mol. Read by the reactive flash's
+    /// reference potential, and **not** by the ideal-gas enthalpy: NeqSim's `getHID`
+    /// multiplies this column by zero (`Component.java:1631`).
+    pub enthalpy_of_formation: f64,
+    /// The ideal-gas absolute entropy, in J/(mol*K).
+    pub absolute_entropy: f64,
+}
+
+/// One component's formation properties, or `None` where the databank has no row for it.
+///
+/// **A zero is returned as a zero rather than read as absent.** The table has no blanks,
+/// and a substance in its own standard state has a zero Gibbs energy of formation and a
+/// zero enthalpy of formation because that is the definition; `oxygen`, `nitrogen`,
+/// `hydrogen` and `argon` are the ones here. `H+` is zero in all three columns, which is
+/// the aqueous standard state's own convention. The same columns also carry zeros that
+/// *are* missing data, and
+/// a value alone cannot tell the two apart: `formic acid`'s Gibbs energy of formation is
+/// `0.0` against a fitted `-378700` enthalpy, and `ethylene`'s absolute entropy is `0.0`
+/// against a Gibbs energy of formation that is right. NeqSim reads all of them as
+/// numbers and so does this, which is why the ambiguity is recorded here instead of being
+/// resolved by a rule the data does not support.
+///
+/// Names are matched as the component databank spells them - lowercased and trimmed -
+/// which is how [`ionic_charge`] settles the same difference between the two tables.
+///
+/// # Errors
+/// Fails if the compiled component table is malformed.
+pub fn formation_properties(component: &str) -> Result<Option<FormationProperties>, AzothError> {
+    Ok(formation_table()?
+        .get(&component.trim().to_lowercase())
+        .copied())
+}
+
+/// Every component's formation properties, keyed by lowercased name.
+fn formation_table() -> Result<&'static HashMap<String, FormationProperties>, AzothError> {
+    static TABLE: OnceLock<Result<HashMap<String, FormationProperties>, AzothError>> =
+        OnceLock::new();
+    match TABLE.get_or_init(|| {
+        let mut parsed = reader(COMPONENTS_CSV)?;
+        let header = parsed.headers().map_err(malformed)?.clone();
+        let indexed = |name: &str| -> Result<usize, AzothError> {
+            header
+                .iter()
+                .position(|column| column == name)
+                .ok_or_else(|| absent_column(name))
+        };
+        let name_column = indexed("name")?;
+        let gibbs_column = indexed("gibbsenergyofformation")?;
+        let enthalpy_column = indexed("enthalpyofformation")?;
+        let entropy_column = indexed("absoluteentropy")?;
+
+        let mut out = HashMap::new();
+        for row in parsed.records() {
+            let row = row.map_err(malformed)?;
+            out.insert(
+                column(&row, name_column)?.trim().to_lowercase(),
+                FormationProperties {
+                    gibbs_energy_of_formation: number(&row, gibbs_column)?,
+                    enthalpy_of_formation: number(&row, enthalpy_column)?,
+                    absolute_entropy: number(&row, entropy_column)?,
+                },
+            );
+        }
+        Ok(out)
+    }) {
+        Ok(table) => Ok(table),
+        Err(error) => Err(error.clone()),
+    }
+}
+
 fn absent_column(name: &str) -> AzothError {
     AzothError::InvalidInput {
         field: "component_data".to_string(),
@@ -414,6 +489,49 @@ mod tests {
             element_composition("CO2").expect("parses"),
             Some(vec![("C".to_string(), 1.0), ("O".to_string(), 2.0)])
         );
+    }
+
+    #[test]
+    fn the_formation_properties_are_read_by_name_in_the_databanks_own_spelling() {
+        // The element table spells it `CO2` and the reaction tables spell it `CO2`; the
+        // component databank spells it `co2`, and the lookup settles that.
+        let co2 = formation_properties("CO2")
+            .expect("parses")
+            .expect("the databank carries it");
+        assert_eq!(
+            co2,
+            FormationProperties {
+                gibbs_energy_of_formation: -394_359.0,
+                enthalpy_of_formation: -393_509.0,
+                absolute_entropy: 213.8,
+            }
+        );
+        assert!(
+            formation_properties("no-such-substance")
+                .expect("parses")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn a_zero_formation_property_is_returned_as_a_value() {
+        // Oxygen's zeros are the standard state's definition, and `H+` is zero in all
+        // three columns by the aqueous convention. Both are answers.
+        let oxygen = formation_properties("oxygen")
+            .expect("parses")
+            .expect("the databank carries it");
+        assert_eq!(oxygen.gibbs_energy_of_formation, 0.0);
+        assert_eq!(oxygen.enthalpy_of_formation, 0.0);
+        assert_eq!(oxygen.absolute_entropy, 205.1);
+
+        // And the same column carries a zero that is *not* an answer: formic acid's
+        // fitted enthalpy of formation is a number while its Gibbs energy of formation is
+        // zero, and nothing in the value says which kind of zero it is.
+        let formic_acid = formation_properties("formic acid")
+            .expect("parses")
+            .expect("the databank carries it");
+        assert_eq!(formic_acid.gibbs_energy_of_formation, 0.0);
+        assert_eq!(formic_acid.enthalpy_of_formation, -378_700.0);
     }
 
     #[test]
