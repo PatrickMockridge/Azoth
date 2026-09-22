@@ -1,0 +1,71 @@
+id = "process.throttling_valve"
+name = "Throttling valve"
+kind = "direct"
+assumptions = [
+    "**the drop is isenthalpic.** `ThrottlingValve.run` flashes a `PHflash` at the inlet's total enthalpy and `Stream::from_ph` is the same operation, so the outlet's temperature is the one the mixture reaches at the outlet pressure.",
+    "**`outlet_pressure` is taken at face value even above the inlet.** NeqSim's `acceptNegativeDP` defaults to `true`, so the capture's third row takes 30 bara to 40 at the same enthalpy. A port that clamped would disagree with the class it names.",
+    "**nothing bounds the drop and no pressure is refused.** A valve asked for a pressure it cannot reach raises it, which is what the measured class does; whether that is a sensible thing to ask for is the caller's business and not a check this can make on a single inlet.",
+    "**`valve_opening` is not a parameter here and the sizing mode is not ported.** It solves the drop from the trim, with `Kv` from `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod` - the `process/mechanicaldesign/` tree.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `ThrottlingValve` also carries a choked-flow branch, a laminar branch, a fouling fraction, an `isIsoThermal` mode and a controller path. **None is ported**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` reaches.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/valve/ThrottlingValve.java` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim process/equipment/valve/ThrottlingValve.java"
+edition = "Its steady-state `run` in its default specification: the outlet's pressure as the inlet's clone is set to, and a `PHflash` at the inlet's enthalpy for the temperature. **The `isCalcPressure` branch is not carried**; it solves the pressure from the trim, which is the mechanical-design tree."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow. A valve passes what it is given, so this is also the outlet's - the kernel passes it through rather than recomputing it.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one. A valve changes no composition.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which with `inlet_t` and `inlet_z` fixes the inlet state and its enthalpy.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy the drop carries.\n"
+[inputs.outlet_pressure]
+unit = "Pa"
+description = "the pressure the valve drops the stream to, which is `unit_ops.throttling_valve`'s own parameter. Taken at face value even above the inlet, as `run` does by default.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the inlet's: a valve adds no moles.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition, which is the inlet's.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet pressure, which is `outlet_pressure` rather than something the valve solves for.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet temperature, solved from the unchanged enthalpy at the outlet pressure. A drop cools a gas and warms a liquid below its Joule-Thomson inversion temperature, and which one it is is the flash's answer rather than a sign convention here.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy, which is the inlet's: the drop is isenthalpic.\n"
+[[valid_range]]
+quantity = "outlet_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.throttling_valve"
+rust = "azoth_process::throttling_valve"

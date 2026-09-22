@@ -16,10 +16,12 @@ from azoth.process.reference.mixer import mixer
 from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
 from azoth.process.reference.splitter import splitter
+from azoth.process.reference.throttling_valve import throttling_valve
 
 __all__ = [
     "mixer",
     "pump",
     "separator",
     "splitter",
+    "throttling_valve",
 ]

@@ -214,6 +214,33 @@ pub fn pump(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.throttling_valve` - the valve's kernel as a registered id.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]
+#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure)")]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are six
+pub fn throttling_valve(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+) -> PyResult<crate::results::PyThrottlingValveResult> {
+    azoth_process::throttling_valve(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+    )
+    .map(|r| crate::results::PyThrottlingValveResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.separator` - the separator's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input = None))]

@@ -31,6 +31,9 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve \
+//       > captures/process_throttling_valve.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.stream.StreamInterface;
@@ -52,6 +55,9 @@ public class ProcessProbe {
         break;
       case "separator":
         separator();
+        break;
+      case "throttling_valve":
+        throttlingValve();
         break;
       default:
         throw new IllegalArgumentException("no such unit operation: " + which);
@@ -219,6 +225,45 @@ public class ProcessProbe {
     print("feed", inlet);
     print("vapour", separator.getGasOutStream());
     print("liquid", separator.getLiquidOutStream());
+    System.out.println();
+  }
+
+  static void throttlingValve() {
+    // **Three rows, and the third is the one a port gets wrong.** `ThrottlingValve.run`
+    // clamps a pressure *above* the inlet back to the inlet - `isAcceptNegativeDP` is
+    // false by default - so a valve asked to raise the pressure passes the stream
+    // through rather than compressing it. A port that took the stated pressure at face
+    // value would quietly become a compressor.
+    //
+    // The fluid is a single-phase gas, so the isenthalpic drop's temperature fall is a
+    // real part of the answer rather than a rounding. `run` chooses the flash by
+    // specification - `TPflash` when the pressure did not move or `isIsoThermal`, a
+    // `PHflash` otherwise - so row three exercises the first branch and rows one and two
+    // the second.
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.9, 0.1 };
+
+    valveRow("outlet_pressure_bara=10", names, z, 10.0, null);
+    valveRow("delta_pressure_bara=10", names, z, null, 10.0);
+    valveRow("outlet_pressure_bara=40_above_the_inlet", names, z, 40.0, null);
+  }
+
+  static void valveRow(String label, String[] names, double[] z, Double outletBara,
+      Double deltaBara) {
+    Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+    neqsim.process.equipment.valve.ThrottlingValve valve =
+        new neqsim.process.equipment.valve.ThrottlingValve("v1", inlet);
+    if (outletBara != null) {
+      valve.setOutletPressure(outletBara);
+    }
+    if (deltaBara != null) {
+      valve.setDeltaPressure(deltaBara, "bara");
+    }
+    valve.run();
+
+    System.out.println(label);
+    print("inlet", inlet);
+    print("outlet", valve.getOutletStream());
     System.out.println();
   }
 

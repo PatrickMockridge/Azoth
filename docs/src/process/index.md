@@ -17,3 +17,4 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.pump`](./pump.md) | `direct composition` | NeqSim process/equipment/pump/Pump.java |
 | [`process.separator`](./separator.md) | `direct composition` | NeqSim process/equipment/separator/Separator.java |
 | [`process.splitter`](./splitter.md) | `direct composition` | NeqSim process/equipment/splitter/Splitter.java |
+| [`process.throttling_valve`](./throttling_valve.md) | `direct composition` | NeqSim process/equipment/valve/ThrottlingValve.java |

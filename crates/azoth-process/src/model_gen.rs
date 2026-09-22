@@ -5,6 +5,7 @@
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/separator.toml
 //!   - specs/models/process/splitter.toml
+//!   - specs/models/process/throttling_valve.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
@@ -450,7 +451,139 @@ pub static SPLITTER_SPEC: ModelSpec = ModelSpec {
     cases: SPLITTER_CASES,
 };
 
-static ALL_MODELS: &[&ModelSpec] = &[&MIXER_SPEC, &PUMP_SPEC, &SEPARATOR_SPEC, &SPLITTER_SPEC];
+static THROTTLING_VALVE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "outlet_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "inlet_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+];
+
+static THROTTLING_VALVE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "a_gas_isenthalpic_drop",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_pressure", 1000000.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_n", 1.0),
+            ("outlet_p", 1000000.0),
+            ("outlet_t", 308.9295610763757),
+            ("outlet_h", 1235.7579664789316),
+        ],
+        expected_vectors: &[("outlet_z", &[0.9, 0.1])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_same_drop_stated_as_a_delta",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_pressure", 2000000.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_n", 1.0),
+            ("outlet_p", 2000000.0),
+            ("outlet_t", 314.62348149495364),
+            ("outlet_h", 1235.7579669275347),
+        ],
+        expected_vectors: &[("outlet_z", &[0.9, 0.1])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_pressure_above_the_inlet_is_honoured",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 3000000.0),
+            ("inlet_t", 320.0),
+            ("outlet_pressure", 4000000.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("outlet_n", 1.0),
+            ("outlet_p", 4000000.0),
+            ("outlet_t", 325.0535827975854),
+            ("outlet_h", 1235.7579658880618),
+        ],
+        expected_vectors: &[("outlet_z", &[0.9, 0.1])],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.throttling_valve`.
+pub static THROTTLING_VALVE_SPEC: ModelSpec = ModelSpec {
+    id: "process.throttling_valve",
+    kind: "direct",
+    algorithm: None,
+    checks: THROTTLING_VALVE_CHECKS,
+    cases: THROTTLING_VALVE_CASES,
+};
+
+static ALL_MODELS: &[&ModelSpec] = &[
+    &MIXER_SPEC,
+    &PUMP_SPEC,
+    &SEPARATOR_SPEC,
+    &SPLITTER_SPEC,
+    &THROTTLING_VALVE_SPEC,
+];
 
 /// Every model in this namespace, in id order.
 #[must_use]

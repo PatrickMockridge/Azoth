@@ -54,7 +54,9 @@ use azoth_eos::results::{
     WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
-use azoth_process::{MixerResult, PumpResult, SeparatorResult, SplitterResult};
+use azoth_process::{
+    MixerResult, PumpResult, SeparatorResult, SplitterResult, ThrottlingValveResult,
+};
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
@@ -554,6 +556,64 @@ impl From<&MixerResult> for PyMixerResult {
                 magnitude_si: r.product_h.value,
                 unit: "J/mol".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.throttling_valve`, transported.
+///
+/// The same shape as `PumpResult`, which is what a two-port unit operation's outlet is.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ThrottlingValveResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyThrottlingValveResult {
+    /// Molar flow out, mol/s.
+    #[pyo3(get)]
+    pub outlet_n: PyQty,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub outlet_z: Vec<f64>,
+    /// Outlet pressure.
+    #[pyo3(get)]
+    pub outlet_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub outlet_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub outlet_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyThrottlingValveResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ThrottlingValveResult(outlet_n={} {}, outlet_t={})",
+            self.outlet_n.magnitude_si, self.outlet_n.unit, self.outlet_t.magnitude_si
+        )
+    }
+}
+
+impl From<&ThrottlingValveResult> for PyThrottlingValveResult {
+    fn from(r: &ThrottlingValveResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            outlet_n: quantity(r.outlet_n, "mol/s"),
+            outlet_z: r.outlet_z.clone(),
+            outlet_p: quantity(r.outlet_p.value, "Pa"),
+            outlet_t: quantity(r.outlet_t.value, "K"),
+            outlet_h: quantity(r.outlet_h.value, "J/mol"),
             warnings: transport(&r.warnings),
         }
     }
@@ -7353,6 +7413,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
+        ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),

@@ -1346,6 +1346,15 @@ class SplitterResult:
     warnings: list[Warning]
 
 @final
+class ThrottlingValveResult:
+    outlet_n: Qty
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    warnings: list[Warning]
+
+@final
 class ChemicalEquilibriumResult:
     moles: list[Qty]
     iterations: int
@@ -2450,6 +2459,14 @@ def splitter(
     feed_t: float,
     split_factors: list[float],
 ) -> SplitterResult: ...
+def throttling_valve(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    outlet_pressure: float,
+) -> ThrottlingValveResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],

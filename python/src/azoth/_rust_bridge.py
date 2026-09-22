@@ -150,6 +150,7 @@ from azoth.core.result import (
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
+    ThrottlingValveResult,
     TpFlashSaftResult,
     TpMultiflashResult,
     TpMultiflashWaxResult,
@@ -3735,6 +3736,39 @@ def separator(
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def throttling_valve(
+    components: Sequence[str],
+    inlet_n: Q,
+    inlet_z: Sequence[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+) -> ThrottlingValveResult:
+    """`process.throttling_valve`, computed in Rust.
+
+    The component names cross unresolved, as the other unit operations' do: the Rust side
+    resolves the mixture itself, so the two languages cannot disagree about which databank
+    row answered.
+    """
+    spec = _models_gen.model("process.throttling_valve")
+    result = _core.throttling_valve(
+        list(components),
+        input_to_si(spec, "inlet_n", inlet_n),
+        [_si(spec, "inlet_z", v) for v in inlet_z],
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+    )
+    return ThrottlingValveResult(
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         warnings=_warnings(result.warnings),
     )
 

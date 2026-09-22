@@ -1,0 +1,36 @@
+outlet_pressure_bara=10
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=10.0
+outlet_T=308.9295610763757
+outlet_h=1235.7579664789316
+outlet_z=methane:0.9 n-butane:0.1
+
+delta_pressure_bara=10
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=20.0
+outlet_T=314.62348149495364
+outlet_h=1235.7579669275347
+outlet_z=methane:0.9 n-butane:0.1
+
+outlet_pressure_bara=40_above_the_inlet
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=40.0
+outlet_T=325.0535827975854
+outlet_h=1235.7579658880618
+outlet_z=methane:0.9 n-butane:0.1
+

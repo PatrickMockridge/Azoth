@@ -374,6 +374,30 @@ class PumpResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ThrottlingValveResult(_HasWarnings):
+    """Result of ``process.throttling_valve``.
+
+    The same five fields as :class:`PumpResult`, and for the same reason: a two-port unit
+    operation's result is its outlet's record. What differs is the physics - a pump adds
+    work and this adds nothing, so the enthalpy crosses unchanged and the temperature is
+    what the outlet pressure makes of it.
+    """
+
+    #: Outlet molar flow, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, which is the inlet's.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure, which is the parameter the valve drops the stream to.
+    outlet_p: Q
+    #: Outlet temperature, solved from the unchanged enthalpy at the outlet pressure.
+    outlet_t: Q
+    #: Outlet molar enthalpy, which is the inlet's.
+    outlet_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SeparatorResult(_HasWarnings):
     """Result of ``process.separator``.
 

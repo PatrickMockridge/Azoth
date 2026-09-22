@@ -165,6 +165,7 @@
   - [Pump](./process/pump.md)
   - [Separator](./process/separator.md)
   - [Splitter](./process/splitter.md)
+  - [Throttling valve](./process/throttling_valve.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)

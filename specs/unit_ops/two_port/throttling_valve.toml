@@ -1,13 +1,11 @@
 id = "unit_ops.throttling_valve"
 name = "Throttling valve"
+notes = "**`valve_opening` is withdrawn, and the sizing mode with it.** `ThrottlingValve` has two: `outlet_pressure` gives the drop and `run` flashes isenthalpically to it, while `isCalcPressure` instead *solves* the drop from the trim, calling `adjustKv(Kv, percentValveOpening)` and `calculateOutletPressure`, with `Kv` from `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod` (IEC 60534). That tree is `process/mechanicaldesign/valve/`, which P11 does not port, so a form offering `valve_opening` would offer a number nothing reads - which is the defect this entry already had. Adding it back means adding the parameter and the sizing kernel together."
 [source]
 standard = "NeqSim process/equipment/valve/ThrottlingValve.java"
 [parameters.outlet_pressure]
 unit = "Pa"
 description = "the pressure the valve drops the stream to"
-[parameters.valve_opening]
-unit = "dimensionless"
-description = "the valve opening as a fraction, from 0 to 1"
 [[ports]]
 name = "inlet"
 direction = "in"

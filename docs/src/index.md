@@ -227,6 +227,7 @@ Four sections, and the difference between them is the point:
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.separator`](./process/separator.md) — Separator
 - [`process.splitter`](./process/splitter.md) — Splitter
+- [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):
 

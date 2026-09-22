@@ -1,0 +1,52 @@
+model = "process.throttling_valve"
+[[cases]]
+id = "a_gas_isenthalpic_drop"
+tolerance = 2e-04
+source = "NeqSim master, `ThrottlingValve.run` on a 0.9/0.1 methane/n-butane gas at 320 K and 30 bara, `setOutletPressure(10)`, from `validation/neqsim/captures/process_throttling_valve.tsv`. **The temperature falls to 308.93 K at an unchanged enthalpy** - 1235.7579664789316 against the inlet's 1235.7579663941092, which is the flash's own `5e-11` relative rather than a duty - so the row is the isenthalpic claim and the Joule-Thomson answer at once. **The tolerance is `2e-04` and the enthalpy sets it**: `1235.6349464868845` here against the capture's `1235.7579664789316` is `9.96e-5` relative, and the temperature agrees far closer. That difference is not this port's and not the flash's either - it is a **systematic offset between the two libraries' molar enthalpies, linear in temperature**, measured on pure methane at 30 bara through the same `Stream` route: `+0.0249` J/mol at 260 K, `-0.0145` at 280, `-0.0634` at 300, `-0.1230` at 320, `-0.1949` at 340. That is a slope of `-0.00275` J/(mol*K) crossing zero near 269 K, which is consistent with the two implementations' ideal-gas heat capacities differing by a constant, and locating it is `azoth-eos`'s business rather than this tier's. The case is where it becomes visible: every other process case pins a *difference* (the pump) or a large-magnitude enthalpy whose relative tolerance hid it.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_pressure = 1000000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 1000000.0
+outlet_t = 308.9295610763757
+outlet_h = 1235.7579664789316
+[[cases]]
+id = "the_same_drop_stated_as_a_delta"
+tolerance = 2e-04
+source = "The capture's second row, which reaches a 20 bara outlet through `setDeltaPressure(10, \"bara\")` rather than through a stated pressure. **The case exists so that the two ways of stating one drop are one answer**: `run` resolves the ΔP into a pressure before it flashes, and a port that only understood `outlet_pressure` would have no way to check that. The temperature is 314.62 K, between the first row's and the inlet's, as a smaller drop implies.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_pressure = 2000000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 2000000.0
+outlet_t = 314.62348149495364
+outlet_h = 1235.7579669275347
+[[cases]]
+id = "a_pressure_above_the_inlet_is_honoured"
+tolerance = 2e-04
+source = "The capture's third row: `setOutletPressure(40)` on a 30 bara inlet. **NeqSim honours it**, because `acceptNegativeDP` defaults to `true`, and the outlet comes back at 40 bara with the inlet's enthalpy and a temperature 5 K higher. The `false` setting would clamp to the inlet instead, and `run`'s comment calls that the setting for a caller who wants the clamp. **A port that refused the input would be inventing a bound the class does not have**, and one that clamped silently would answer a question nobody asked - which is why this is a case and not a validation rule.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_pressure = 4000000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 4000000.0
+outlet_t = 325.0535827975854
+outlet_h = 1235.7579658880618

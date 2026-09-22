@@ -15,7 +15,13 @@ import pathlib
 
 from azoth import _core
 from azoth._dispatch import resolve
-from azoth.core.result import MixerResult, PumpResult, SeparatorResult, SplitterResult
+from azoth.core.result import (
+    MixerResult,
+    PumpResult,
+    SeparatorResult,
+    SplitterResult,
+    ThrottlingValveResult,
+)
 from azoth.core.units import Q
 from azoth.process.kernels import Stream
 
@@ -26,11 +32,13 @@ __all__ = [
     "pump",
     "separator",
     "splitter",
+    "throttling_valve",
     "validate",
 ]
 
 _MIXER = "process.mixer"
 _SEPARATOR = "process.separator"
+_THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 
@@ -188,4 +196,34 @@ def separator(
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
         heat_input=heat_input,
+    )
+
+
+def throttling_valve(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+) -> ThrottlingValveResult:
+    """Drop a stream to a lower pressure without heat or work.
+
+    ``inlet_n``, ``inlet_z``, ``inlet_p`` and ``inlet_t`` are the inlet's record and
+    ``outlet_pressure`` is ``unit_ops.throttling_valve``'s own parameter. The drop is
+    isenthalpic, so the outlet's temperature is the one the mixture reaches at the outlet
+    pressure and its enthalpy is the inlet's.
+
+    ``outlet_pressure`` is taken at face value even when it is above the inlet: NeqSim's
+    ``acceptNegativeDP`` defaults to ``true`` and the capture's third case records it.
+
+    See :func:`azoth.process.reference.throttling_valve`.
+    """
+    return resolve(_THROTTLING_VALVE)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        outlet_pressure=outlet_pressure,
     )
