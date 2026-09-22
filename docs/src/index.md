@@ -224,6 +224,7 @@ Four sections, and the difference between them is the point:
 *Models* — whose specs fix a procedure rather than an equation:
 
 - [`process.pump`](./process/pump.md) — Pump
+- [`process.splitter`](./process/splitter.md) — Splitter
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):
 

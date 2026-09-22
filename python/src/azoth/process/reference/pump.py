@@ -73,7 +73,7 @@ def pump(
         >>> r = pump(
         ...     ["n-butane"],
         ...     1.0,
-        ...     [1.0],
+        ...     q(1.0, "mol/s"),
         ...     q(5.0, "bar"),
         ...     q(250.0, "K"),
         ...     q(20.0, "bar"),
@@ -121,7 +121,7 @@ def pump(
     outlet_t = ph_flash_solve(mixture, ideal_gas, outlet_pressure, from_si(h_out, "J/mol"), inlet_z)
 
     return PumpResult(
-        outlet_n=n,
+        outlet_n=from_si(n, "mol/s"),
         outlet_z=tuple(inlet_z),
         outlet_p=outlet_pressure,
         outlet_t=outlet_t.T,

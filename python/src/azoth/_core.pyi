@@ -1306,11 +1306,20 @@ class ReynoldsNumberResult:
 
 @final
 class PumpResult:
-    outlet_n: float
+    outlet_n: Qty
     outlet_z: list[float]
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    warnings: list[Warning]
+
+@final
+class SplitterResult:
+    products_n: list[Qty]
+    products_z: list[list[float]]
+    products_p: list[Qty]
+    products_t: list[Qty]
+    products_h: list[Qty]
     warnings: list[Warning]
 
 @final
@@ -2392,6 +2401,14 @@ def pump(
     outlet_pressure: float,
     isentropic_efficiency: float,
 ) -> PumpResult: ...
+def splitter(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    split_factors: list[float],
+) -> SplitterResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],

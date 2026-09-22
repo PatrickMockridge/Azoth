@@ -1,0 +1,41 @@
+model = "process.splitter"
+[[cases]]
+id = "a_two_way_split_of_a_liquid"
+tolerance = 1e-05
+source = "NeqSim master, `Splitter.run` on a 0.6/0.4 n-butane/n-pentane liquid at 300 K and 10 bara, from `validation/neqsim/captures/process_splitter.tsv`. **`products_h` comes from the capture's `feed_h`, not from its outlet rows**, and that is the point of this case rather than a convenience: NeqSim's outlet enthalpies are -93092.87 and -28142.87 against a feed of -20689.86, weighting to -47627.87, which is 2.3 times what went in. The pressure, temperature, composition and flow of every outlet are right, so the operation is correct on the state it reports and wrong on the enthalpy, and `Splitter.run`'s own route - `clone()`, `init(0)`, `addComponent(int, double)` over every phase, `TPflash()` - is why. A split changes no state, so the feed's enthalpy is the answer an oracle would give if it conserved energy. **The tolerance is the measured agreement on `products_h` and no better.** The flow, state and composition cross as exact arithmetic - the capture's `0.30000000000000004` and `0.5999999999999999` are its own last-bit rounding - but an enthalpy comes from a flash, and this library's differs from NeqSim's by `3.1e-6` relative on this fluid: the capture has `-20689.86284462001`, both kernels here have `-20689.92763880804`. That is `eos.ph_flash`'s arithmetic and not the splitter's, exactly as the pump's case records for its own outlet.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [0.3, 0.7]
+[cases.expected]
+products_n = [0.3, 0.7]
+products_z = [
+    [0.6, 0.4],
+    [0.6, 0.4],
+]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462001, -20689.86284462001]
+[[cases]]
+id = "the_factors_are_normalised"
+tolerance = 1e-05
+source = "The capture's second row, which writes the same split as `3.0 7.0`. `setSplitFactors` divides by the sum, so NeqSim returns the first row's numbers - `normalised=0.3 0.7` and the same two outlet flows - and the assertion is that this does too. **The case exists so that normalisation is an oracled claim and not one this library makes about itself**, which is why it is a case and not an assumption.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.6, 0.4]
+feed_p = 1000000.0
+feed_t = 300.0
+split_factors = [3.0, 7.0]
+[cases.expected]
+products_n = [0.3, 0.7]
+products_z = [
+    [0.6, 0.4],
+    [0.6, 0.4],
+]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-20689.86284462001, -20689.86284462001]

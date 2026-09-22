@@ -26,7 +26,12 @@
 //! each scalar field one entry per stream, which is the port's multiplicity written out —
 //! the calculus makes the multiplicity part of the declaration an implementation must
 //! agree with, so folding a mixer to a fixed two inlets would answer a smaller question.
+//! [`splitter`] is the first id with such a port, and its result is the shape in full:
+//! `products_n`, `products_p`, `products_t` and `products_h` are vectors with one entry
+//! per outlet and `products_z` a matrix with one row per outlet.
 
 pub mod pump;
+pub mod splitter;
 
 pub use pump::{PumpResult, pump};
+pub use splitter::{SplitterResult, splitter};

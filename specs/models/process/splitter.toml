@@ -1,0 +1,76 @@
+id = "process.splitter"
+name = "Splitter"
+kind = "direct"
+assumptions = [
+    "**the factors are normalised, so only their ratios mean anything.** `[0.3, 0.7]` and `[3.0, 7.0]` are the same split, which the capture's two rows show as one set of numbers. A caller who wants absolute outlet flows is asking for `process.component_splitter`'s question, not this one.",
+    "**nothing about the state changes but the flow.** The outlets carry the feed's composition, pressure, temperature and molar enthalpy, so the fractions are the only thing a splitter computes. The kernel is deliberately flash-free.",
+    "**an outlet's enthalpy is the feed's because `h` is a state function**, and the state did not move. That is the whole of the enthalpy balance here and it is why it holds at any fraction.",
+    "**NeqSim's `Splitter.run` does not conserve enthalpy, and this diverges deliberately.** Its branch enthalpies do not match the states they report, so reproducing them would mean reproducing a broken balance. The capture carries the numbers and the case's `source` states the case they make.",
+    "**a factor may not be negative and the total may not be zero or less.** NeqSim clamps a negative factor to zero and falls back to putting everything down the first branch when the total is not positive; this refuses both, because a splitter asked for a split it cannot make has no answer to report.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Splitter` also carries a mechanical design, a capacity map and a `runTransient` with a pressure-driven mode. **None is ported**: this is the steady-state arithmetic, which is what the palette's `split_factors` reaches.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim process/equipment/splitter/Splitter.java"
+edition = "Its steady-state `run`: the factors divided by their sum, and each outlet the feed's own state scaled to its share. **The capture's outlet enthalpies are not used**, for the reason the assumptions give; its feed row is, because a split is a statement about the feed's state and not a new one."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the inlet's molar flow, which the factors divide between the outlets.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, which every outlet carries unchanged.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the inlet pressure, which every outlet carries unchanged.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the inlet temperature, which every outlet carries unchanged and which fixes the inlet state with `feed_p` and `feed_z`.\n"
+[inputs.split_factors]
+type = "vector"
+unit = "dimensionless"
+length = "one per outlet"
+description = "the fraction of the feed to each outlet. Normalised, so only the ratios matter; the outlet count is this vector's length, which is why there is no separate one.\n"
+[outputs]
+[outputs.products_n]
+type = "vector"
+unit = "mol/s"
+length = "one per outlet"
+description = "each outlet's molar flow: `feed_n` times its factor over the sum.\n"
+[outputs.products_z]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per outlet, one column per component"
+description = "each outlet's composition, which is the feed's written out once per outlet.\n"
+[outputs.products_p]
+type = "vector"
+unit = "Pa"
+length = "one per outlet"
+description = "each outlet's pressure, which is `feed_p`.\n"
+[outputs.products_t]
+type = "vector"
+unit = "K"
+length = "one per outlet"
+description = "each outlet's temperature, which is `feed_t`.\n"
+[outputs.products_h]
+type = "vector"
+unit = "J/mol"
+length = "one per outlet"
+description = "each outlet's molar enthalpy, which is the feed's. A splitter adds no heat and no work and does not flash, so this is the one field an oracle cannot be asked for - see the assumptions.\n"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.splitter"
+rust = "azoth_process::splitter"

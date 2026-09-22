@@ -173,6 +173,12 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # through `TestCase::matrix` and compares it row by row against the matrix the
         # operation built, so the specification is what constrains it either way.
         "a_matrix",
+        # `splitter`'s per-outlet compositions, which are a matrix because a `many` port
+        # writes its `z` one row per outlet. The Python runner compares the values, as it
+        # does for `a_matrix`; the two kernels are compared with each other by
+        # `test_cross_impl`, which reads the field off both results, so a shape one side
+        # got wrong is caught there rather than here.
+        "products_z",
     }
 )
 

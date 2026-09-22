@@ -162,6 +162,7 @@
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Unit operations](./process/index.md)
   - [Pump](./process/pump.md)
+  - [Splitter](./process/splitter.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)

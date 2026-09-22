@@ -360,7 +360,7 @@ class PumpResult(_HasWarnings):
     """
 
     #: Molar flow out, which is the inlet's.
-    outlet_n: float
+    outlet_n: Q
     #: Outlet composition, one entry per component.
     outlet_z: tuple[float, ...]
     #: Outlet pressure.
@@ -369,6 +369,33 @@ class PumpResult(_HasWarnings):
     outlet_t: Q
     #: Outlet molar enthalpy: the inlet's plus the isentropic head over the efficiency.
     outlet_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SplitterResult(_HasWarnings):
+    """Result of ``process.splitter``.
+
+    **A ``many`` port's result, which is the shape the process layer's port rule gives
+    it**: one field per record field, each carrying one entry per outlet, and ``z`` a
+    matrix with one row per outlet. There is no list of ``Stream`` objects, because a
+    result has to be a flat set of named fields on both sides of the language boundary.
+
+    A splitter changes no state, so every entry of every field but ``products_n`` is the
+    feed's, written out once per outlet.
+    """
+
+    #: Molar flow of each outlet.
+    products_n: tuple[Q, ...]
+    #: Composition of each outlet, one row per outlet.
+    products_z: tuple[tuple[float, ...], ...]
+    #: Pressure of each outlet.
+    products_p: tuple[Q, ...]
+    #: Temperature of each outlet.
+    products_t: tuple[Q, ...]
+    #: Molar enthalpy of each outlet.
+    products_h: tuple[Q, ...]
     #: Caveats.
     warnings: tuple[Warning, ...]
 

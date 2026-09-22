@@ -3757,18 +3757,18 @@ pub fn thermal_conductivity(
 /// Every model in the workspace, across every namespace that has one.
 ///
 /// The table is generated into the crate that owns its namespace, so a second
-/// namespace means a second table chained in here. `process` was one - a unit-operation
-/// layer that asserted a process simulator this library does not have - and it was
-/// deleted rather than repaired; `eos` is the whole of what remains.
+/// namespace means a second table chained in here. There are three: `eos` and
+/// `reactions`, and `process`, which is the unit-operation tier and is what P11 builds.
 ///
-/// **This is the function that has to change when a namespace is added.** It read
-/// `azoth_eos::model_gen` alone until `process` arrived, and again until `reactions` did -
-/// and the three `model_*` functions below stay green for exactly as long as nobody asks
-/// them about a namespace the chain does not carry.
+/// **This is the function that has to change when a namespace is added**, and a missing
+/// chain is not self-announcing: `process.pump` landed without one, and the contract test
+/// that would have said so is `@pytest.mark.requires_rust`, so a Python-backend run
+/// skipped it. A namespace is added here in the same commit as its first model.
 fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
     azoth_eos::model_gen::models()
         .iter()
         .chain(azoth_reactions::model_gen::models().iter())
+        .chain(azoth_process::model_gen::models().iter())
         .copied()
 }
 

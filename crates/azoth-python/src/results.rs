@@ -54,7 +54,7 @@ use azoth_eos::results::{
     WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
-use azoth_process::PumpResult;
+use azoth_process::{PumpResult, SplitterResult};
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
@@ -492,6 +492,79 @@ impl PyConductionPlaneWallResult {
     }
 }
 
+/// Result of `process.splitter`, transported.
+///
+/// **The `many` port's shape in full**, and the first result that carries one: a vector per
+/// scalar record field with one entry per outlet, and `products_z` a matrix with one row per
+/// outlet. The alternative - a nested list of outlet objects - is not available to a result,
+/// which has to be a flat set of named fields on both sides of the boundary.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SplitterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySplitterResult {
+    /// Molar flow of each outlet, mol/s.
+    #[pyo3(get)]
+    pub products_n: Vec<PyQty>,
+    /// Composition of each outlet, one row per outlet.
+    #[pyo3(get)]
+    pub products_z: Vec<Vec<f64>>,
+    /// Pressure of each outlet.
+    #[pyo3(get)]
+    pub products_p: Vec<PyQty>,
+    /// Temperature of each outlet.
+    #[pyo3(get)]
+    pub products_t: Vec<PyQty>,
+    /// Molar enthalpy of each outlet.
+    #[pyo3(get)]
+    pub products_h: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySplitterResult {
+    fn __repr__(&self) -> String {
+        let flows: Vec<f64> = self.products_n.iter().map(|n| n.magnitude_si).collect();
+        format!("SplitterResult(products_n={flows:?})")
+    }
+}
+
+impl From<&SplitterResult> for PySplitterResult {
+    fn from(r: &SplitterResult) -> Self {
+        let quantity = |values: &[f64], unit: &str| -> Vec<PyQty> {
+            values
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: unit.to_string(),
+                })
+                .collect()
+        };
+        Self {
+            products_n: quantity(&r.products_n, "mol/s"),
+            products_z: r.products_z.clone(),
+            products_p: quantity(
+                &r.products_p.iter().map(|p| p.value).collect::<Vec<_>>(),
+                "Pa",
+            ),
+            products_t: quantity(
+                &r.products_t.iter().map(|t| t.value).collect::<Vec<_>>(),
+                "K",
+            ),
+            products_h: quantity(
+                &r.products_h.iter().map(|h| h.value).collect::<Vec<_>>(),
+                "J/mol",
+            ),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `process.pump`, transported.
 ///
 /// **The first result of a unit operation**, and its shape is the palette's own port
@@ -509,7 +582,7 @@ impl PyConductionPlaneWallResult {
 pub struct PyPumpResult {
     /// Molar flow out, mol/s.
     #[pyo3(get)]
-    pub outlet_n: f64,
+    pub outlet_n: PyQty,
     /// Outlet composition.
     #[pyo3(get)]
     pub outlet_z: Vec<f64>,
@@ -531,8 +604,8 @@ pub struct PyPumpResult {
 impl PyPumpResult {
     fn __repr__(&self) -> String {
         format!(
-            "PumpResult(outlet_n={}, outlet_t={})",
-            self.outlet_n, self.outlet_t.magnitude_si
+            "PumpResult(outlet_n={} {}, outlet_t={})",
+            self.outlet_n.magnitude_si, self.outlet_n.unit, self.outlet_t.magnitude_si
         )
     }
 }
@@ -540,7 +613,10 @@ impl PyPumpResult {
 impl From<&PumpResult> for PyPumpResult {
     fn from(r: &PumpResult) -> Self {
         Self {
-            outlet_n: r.outlet_n,
+            outlet_n: PyQty {
+                magnitude_si: r.outlet_n,
+                unit: "mol/s".to_string(),
+            },
             outlet_z: r.outlet_z.clone(),
             outlet_p: PyQty {
                 magnitude_si: r.outlet_p.value,
@@ -7124,6 +7200,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
+        SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

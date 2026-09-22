@@ -136,6 +136,7 @@ from azoth.core.result import (
     SolidFugacityResult,
     SoreideWhitsonAlphaResult,
     SoreideWhitsonPhaseResult,
+    SplitterResult,
     SrkAlphaAbResult,
     SrkCpaPhaseResult,
     SrkDepartureResult,
@@ -3661,9 +3662,41 @@ def reactive_phase_equilibrium(
     )
 
 
+def splitter(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    split_factors: Sequence[float],
+) -> SplitterResult:
+    """`process.splitter`, computed in Rust.
+
+    The component names cross unresolved, as the pump's do: the Rust side resolves the
+    mixture itself, so the two languages cannot disagree about which databank row answered.
+    """
+    spec = _models_gen.model("process.splitter")
+    result = _core.splitter(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        [_si(spec, "split_factors", v) for v in split_factors],
+    )
+    return SplitterResult(
+        products_n=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_n),
+        products_z=tuple(tuple(row) for row in result.products_z),
+        products_p=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_p),
+        products_t=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_t),
+        products_h=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_h),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def pump(
     components: Sequence[str],
-    inlet_n: float,
+    inlet_n: Q,
     inlet_z: Sequence[float],
     inlet_p: Q,
     inlet_t: Q,
@@ -3687,7 +3720,7 @@ def pump(
         float(isentropic_efficiency),
     )
     return PumpResult(
-        outlet_n=result.outlet_n,
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
         outlet_z=tuple(result.outlet_z),
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
