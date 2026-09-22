@@ -328,6 +328,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::throttling_valve, m)?)?;
     m.add_function(wrap_pyfunction!(process::heat_exchanger, m)?)?;
     m.add_function(wrap_pyfunction!(process::pump, m)?)?;
+    m.add_function(wrap_pyfunction!(process::pump_stream, m)?)?;
     m.add_function(wrap_pyfunction!(process::validate_flowsheet, m)?)?;
 
     // Re-export the Python exception classes so both backends raise the same

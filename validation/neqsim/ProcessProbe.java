@@ -66,16 +66,20 @@ public class ProcessProbe {
     // **A liquid, because a pump on a gas is not a case.** The fluid is pure n-butane at
     // 250 K and 5 bara, which is below its vapour pressure - the same fluid the kernel's
     // own balance test uses, so the two are comparing like with like.
-    Stream inlet = feed(new String[] { "n-butane" }, new double[] { 1.0 }, 250.0, 5.0, 1.0);
+    for (double efficiency : new double[] { 0.75, 1.0 }) {
+      Stream inlet = feed(new String[] { "n-butane" }, new double[] { 1.0 }, 250.0, 5.0, 1.0);
+      neqsim.process.equipment.pump.Pump pump =
+          new neqsim.process.equipment.pump.Pump("p1", inlet);
+      pump.setOutletPressure(20.0);
+      pump.setIsentropicEfficiency(efficiency);
+      pump.run();
 
-    neqsim.process.equipment.pump.Pump pump = new neqsim.process.equipment.pump.Pump("p1", inlet);
-    pump.setOutletPressure(20.0);
-    pump.setIsentropicEfficiency(0.75);
-    pump.run();
-
-    print("inlet", inlet);
-    print("outlet", pump.getOutletStream());
-    System.out.println("power_kW=" + pump.getPower("kW"));
+      System.out.println("isentropic_efficiency=" + efficiency);
+      print("inlet", inlet);
+      print("outlet", pump.getOutletStream());
+      System.out.println("power_kW=" + pump.getPower("kW"));
+      System.out.println();
+    }
   }
 
   /// One stream's record, which is what a port carries.

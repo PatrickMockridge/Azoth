@@ -254,14 +254,19 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ("result_fields(calc_id: str)", "list[str]"),
     ("calc_ids()", "list[str]"),
     ("version()", "str"),
-    # The process layer: a stream value and the unit-operation kernels, plus the
-    # flowsheet checker.
+    # The process layer: a stream value and the Stream-level unit-operation kernels,
+    # plus the flowsheet checker.
+    #
+    # **These take and return a `Stream`; the `process.*` ids take the record field by
+    # field.** Two call shapes, one arithmetic - `pump` here is `_core.pump_stream` and the
+    # id of that name is generated from its spec above. The suffix is what keeps a stub
+    # from declaring `pump` twice.
     ("splitter(feed: Stream, fractions: list[float])", "list[Stream]"),
     ("mixer(inlets: list[Stream], outlet_pressure: float | None = ...)", "Stream"),
     ("separator(feed: Stream, temperature: float)", "tuple[Stream, Stream]"),
     ("throttling_valve(feed: Stream, outlet_pressure: float)", "Stream"),
     ("heat_exchanger(hot: Stream, cold: Stream, duty: float)", "tuple[Stream, Stream]"),
-    ("pump(feed: Stream, outlet_pressure: float, efficiency: float)", "Stream"),
+    ("pump_stream(feed: Stream, outlet_pressure: float, efficiency: float)", "Stream"),
     ("validate_flowsheet(flowsheet: str, palette_dir: str)", "list[str]"),
 )
 

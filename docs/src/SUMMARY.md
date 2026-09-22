@@ -160,6 +160,8 @@
   - [Flow through an orifice from the pressure difference across it](./hydraulics/orifice_flow.md)
   - [Pump shaft power from flow, head and efficiency](./hydraulics/pump_power.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
+- [Unit operations](./process/index.md)
+  - [Pump](./process/pump.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)

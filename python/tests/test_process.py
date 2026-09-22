@@ -1,6 +1,6 @@
 """The process layer's Python binding: streams, kernels and the checker.
 
-`azoth.process` is a binding to `crates/azoth-process`, not a second
+`azoth.process.kernels` is a binding to `crates/azoth-process`, not a second
 implementation, so these tests require the compiled extension and exercise the
 binding's balance invariants rather than a reference.
 """
@@ -13,6 +13,7 @@ import pytest
 
 import azoth
 from azoth import process
+from azoth.process import kernels
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -36,7 +37,7 @@ def _close(actual: float, expected: float, tol: float = 1e-6) -> None:
 
 def test_a_splitter_conserves_moles_and_state() -> None:
     feed = _binary(0.5, 100.0, 1e5, 300.0)
-    outs = process.splitter(feed, [0.3, 0.7])
+    outs = kernels.splitter(feed, [0.3, 0.7])
 
     assert len(outs) == 2
     _close(outs[0].n + outs[1].n, feed.n)
@@ -50,7 +51,7 @@ def test_a_splitter_conserves_moles_and_state() -> None:
 def test_a_mixer_conserves_moles_and_enthalpy() -> None:
     a = _binary(1.0, 50.0, 1e5, 300.0)
     b = _binary(0.0, 50.0, 1e5, 300.0)
-    m = process.mixer([a, b])
+    m = kernels.mixer([a, b])
 
     _close(m.n, 100.0)
     _close(m.z[0], 0.5)
@@ -59,7 +60,7 @@ def test_a_mixer_conserves_moles_and_enthalpy() -> None:
 
 def test_a_separator_conserves_moles() -> None:
     feed = _binary(0.5, 100.0, 5e5, 270.0)
-    vapour, liquid = process.separator(feed, azoth.ureg.Quantity(270.0, "K"))
+    vapour, liquid = kernels.separator(feed, azoth.ureg.Quantity(270.0, "K"))
 
     _close(vapour.n + liquid.n, feed.n)
 

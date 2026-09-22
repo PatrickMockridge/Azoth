@@ -346,6 +346,34 @@ class ChemicalEquilibriumResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PumpResult(_HasWarnings):
+    """Result of ``process.pump``.
+
+    **A unit operation's result is its outlet's record**, spelled out field by field: the
+    flow, composition, pressure, temperature and molar enthalpy the port carries. There is
+    no ``Stream`` object, because a model's result has to be a flat set of named fields on
+    both sides of the language boundary - the same shape every other model's result has.
+
+    An inlet carries four of the record's five fields and an outlet all five: ``h`` is a
+    state function of ``(T, P, z)``, so an inlet's is computed rather than accepted and an
+    outlet's is reported because a machine changes it.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: float
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure.
+    outlet_p: Q
+    #: Outlet temperature, solved from the shifted enthalpy.
+    outlet_t: Q
+    #: Outlet molar enthalpy: the inlet's plus the isentropic head over the efficiency.
+    outlet_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ReactivePhaseEquilibriumResult(_HasWarnings):
     """Result of ``reactions.reactive_phase_equilibrium``.
 

@@ -97,7 +97,7 @@ fn wrap_streams(streams: Vec<Stream>) -> Vec<PyStream> {
 /// Split a stream into several with the same state, scaled by `fractions`.
 #[pyfunction]
 pub fn splitter(py: Python<'_>, feed: &PyStream, fractions: Vec<f64>) -> PyResult<Vec<PyStream>> {
-    azoth_process::splitter(&feed.to_stream(), &fractions)
+    azoth_process::kernels::splitter(&feed.to_stream(), &fractions)
         .map(wrap_streams)
         .map_err(|e| to_pyerr(py, e))
 }
@@ -111,7 +111,7 @@ pub fn mixer(
     outlet_pressure: Option<f64>,
 ) -> PyResult<PyStream> {
     let streams: Vec<Stream> = inlets.iter().map(|s| s.borrow(py).to_stream()).collect();
-    azoth_process::mixer(&streams, outlet_pressure.map(pascals))
+    azoth_process::kernels::mixer(&streams, outlet_pressure.map(pascals))
         .map(PyStream::from_inner)
         .map_err(|e| to_pyerr(py, e))
 }
@@ -123,7 +123,7 @@ pub fn separator(
     feed: &PyStream,
     temperature: f64,
 ) -> PyResult<(PyStream, PyStream)> {
-    azoth_process::separator(&feed.to_stream(), kelvins(temperature))
+    azoth_process::kernels::separator(&feed.to_stream(), kelvins(temperature))
         .map(|(v, l)| (PyStream::from_inner(v), PyStream::from_inner(l)))
         .map_err(|e| to_pyerr(py, e))
 }
@@ -135,7 +135,7 @@ pub fn throttling_valve(
     feed: &PyStream,
     outlet_pressure: f64,
 ) -> PyResult<PyStream> {
-    azoth_process::throttling_valve(&feed.to_stream(), pascals(outlet_pressure))
+    azoth_process::kernels::throttling_valve(&feed.to_stream(), pascals(outlet_pressure))
         .map(PyStream::from_inner)
         .map_err(|e| to_pyerr(py, e))
 }
@@ -148,22 +148,58 @@ pub fn heat_exchanger(
     cold: &PyStream,
     duty: f64,
 ) -> PyResult<(PyStream, PyStream)> {
-    azoth_process::heat_exchanger(&hot.to_stream(), &cold.to_stream(), watts(duty))
+    azoth_process::kernels::heat_exchanger(&hot.to_stream(), &cold.to_stream(), watts(duty))
         .map(|(h, c)| (PyStream::from_inner(h), PyStream::from_inner(c)))
         .map_err(|e| to_pyerr(py, e))
 }
 
 /// Raise a liquid stream to `outlet_pressure` (SI, Pa) at `efficiency`.
+///
+/// **The Stream-level kernel, not the `process.pump` id.** The two are one arithmetic under
+/// two call shapes: this takes a `Stream` and returns one, which is what a flowsheet's
+/// connection carries, while the id takes the record field by field so that a case, a
+/// cross-impl test and a NeqSim capture can address it. The suffix says which is which.
 #[pyfunction]
-pub fn pump(
+pub fn pump_stream(
     py: Python<'_>,
     feed: &PyStream,
     outlet_pressure: f64,
     efficiency: f64,
 ) -> PyResult<PyStream> {
-    azoth_process::pump(&feed.to_stream(), pascals(outlet_pressure), efficiency)
+    azoth_process::kernels::pump(&feed.to_stream(), pascals(outlet_pressure), efficiency)
         .map(PyStream::from_inner)
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.pump` - the pump's kernel as a registered id.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
+pub fn pump(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+    isentropic_efficiency: f64,
+) -> PyResult<crate::results::PyPumpResult> {
+    azoth_process::pump(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+        isentropic_efficiency,
+    )
+    .map(|r| crate::results::PyPumpResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Validate a flowsheet's TOML against a palette directory, returning the

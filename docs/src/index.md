@@ -218,6 +218,13 @@ Four sections, and the difference between them is the point:
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
 
+**Unit operations** - [`process/index.md`](./process/index.md):
+
+
+*Models* — whose specs fix a procedure rather than an equation:
+
+- [`process.pump`](./process/pump.md) — Pump
+
 **Reactions** - [`reactions/index.md`](./reactions/index.md):
 
 - [`reactions.equilibrium_constant`](./reactions/equilibrium_constant.md)

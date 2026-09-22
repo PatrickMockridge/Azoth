@@ -1,7 +1,8 @@
 //! The kernels' balance invariants: moles and enthalpy are conserved.
 
 use azoth_core::units::{kelvins, pascals, watts};
-use azoth_process::{Stream, heat_exchanger, mixer, pump, separator, splitter, throttling_valve};
+use azoth_process::Stream;
+use azoth_process::kernels::{heat_exchanger, mixer, pump, separator, splitter, throttling_valve};
 
 fn close(a: f64, b: f64) {
     let scale = 1.0 + a.abs() + b.abs();

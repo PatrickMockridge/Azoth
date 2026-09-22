@@ -1,0 +1,37 @@
+model = "process.pump"
+[[cases]]
+id = "butane_5_to_20_bara_at_250_k"
+tolerance = 1e-05
+source = "NeqSim master, `Pump.run` with `setOutletPressure(20 bara)` and `setIsentropicEfficiency(0.75)`, from `validation/neqsim/captures/process_pump.tsv`. The fluid is pure n-butane at 250 K and 5 bara - below its vapour pressure, so a liquid, which is the only state a pump is a case for; the probe's first draft used a 90/10 methane/butane gas and the two libraries disagreed by 72%, which measured the draft rather than the port. The capture prints bar and a `name:value` composition; the numbers here are the same states in Pa and a bare vector.\n"
+[cases.inputs]
+components = ["n-butane"]
+inlet_n = 1.0
+inlet_z = [1.0]
+inlet_p = 500000.0
+inlet_t = 250.0
+outlet_pressure = 2000000.0
+isentropic_efficiency = 0.75
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [1.0]
+outlet_p = 2000000.0
+outlet_t = 250.76214168277508
+outlet_h = -25382.694279985513
+[[cases]]
+id = "the_work_divides_by_the_efficiency"
+tolerance = 1e-05
+source = "The capture's own state, run at two efficiencies. **The tolerance is the measured agreement and no better**: the outlet enthalpy sits `1.6e-6` from the capture, and that figure is the *inlet's* own difference - the flash, not the pump - since the isentropic head itself agrees to `1.3e-7`. A case that pinned tighter would be pinning the flash's arithmetic against NeqSim's, which is `eos.ps_flash`'s business and not this model's.\n"
+[cases.inputs]
+components = ["n-butane"]
+inlet_n = 1.0
+inlet_z = [1.0]
+inlet_p = 500000.0
+inlet_t = 250.0
+outlet_pressure = 2000000.0
+isentropic_efficiency = 1.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [1.0]
+outlet_p = 2000000.0
+outlet_t = 250.40558913594867
+outlet_h = -25426.73406996356

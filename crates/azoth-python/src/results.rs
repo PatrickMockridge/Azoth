@@ -54,6 +54,7 @@ use azoth_eos::results::{
     WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
+use azoth_process::PumpResult;
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
@@ -488,6 +489,73 @@ impl PyConductionPlaneWallResult {
             "ConductionPlaneWallResult(q={} {})",
             self.q.magnitude_si, self.q.unit
         )
+    }
+}
+
+/// Result of `process.pump`, transported.
+///
+/// **The first result of a unit operation**, and its shape is the palette's own port
+/// record spelled out: a `many` port crosses as a matrix and vectors, so a model with
+/// several outlets has one set of fields per port rather than a nested object. There is no
+/// `Stream` in a result because a result has to be a flat set of named fields on both sides
+/// of the language boundary.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PumpResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPumpResult {
+    /// Molar flow out, mol/s.
+    #[pyo3(get)]
+    pub outlet_n: f64,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub outlet_z: Vec<f64>,
+    /// Outlet pressure, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub outlet_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub outlet_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub outlet_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPumpResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PumpResult(outlet_n={}, outlet_t={})",
+            self.outlet_n, self.outlet_t.magnitude_si
+        )
+    }
+}
+
+impl From<&PumpResult> for PyPumpResult {
+    fn from(r: &PumpResult) -> Self {
+        Self {
+            outlet_n: r.outlet_n,
+            outlet_z: r.outlet_z.clone(),
+            outlet_p: PyQty {
+                magnitude_si: r.outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            outlet_t: PyQty {
+                magnitude_si: r.outlet_t.value,
+                unit: "K".to_string(),
+            },
+            outlet_h: PyQty {
+                magnitude_si: r.outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
     }
 }
 
@@ -7055,6 +7123,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
+        PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

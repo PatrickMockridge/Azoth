@@ -114,6 +114,7 @@ from azoth.core.result import (
     PtPhaseEnvelopeResult,
     PuFlashResult,
     PumpPowerResult,
+    PumpResult,
     PureSaturationResult,
     PvfFlashResult,
     PvFlashResult,
@@ -3656,5 +3657,40 @@ def reactive_phase_equilibrium(
         iterations=result.iterations,
         error=result.error,
         converged=result.converged,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pump(
+    components: Sequence[str],
+    inlet_n: float,
+    inlet_z: Sequence[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+    isentropic_efficiency: float,
+) -> PumpResult:
+    """`process.pump`, computed in Rust.
+
+    The component names cross unresolved, as the reaction ids' do: the Rust side resolves
+    the mixture itself, so the two languages cannot disagree about which databank row
+    answered.
+    """
+    spec = _models_gen.model("process.pump")
+    result = _core.pump(
+        list(components),
+        input_to_si(spec, "inlet_n", inlet_n),
+        [_si(spec, "inlet_z", v) for v in inlet_z],
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        float(isentropic_efficiency),
+    )
+    return PumpResult(
+        outlet_n=result.outlet_n,
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         warnings=_warnings(result.warnings),
     )

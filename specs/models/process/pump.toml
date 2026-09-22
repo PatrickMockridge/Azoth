@@ -1,0 +1,77 @@
+id = "process.pump"
+name = "Pump"
+kind = "direct"
+assumptions = [
+    "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist, while an outlet reports the `h` it reached because a machine changes it.",
+    "**this is `unit_ops.pump`'s arithmetic, not a second one.** The kernel in `azoth_process::kernels` is what the flowsheet calls and what this wraps; the only thing added here is the declared input list and the result type.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route. A case on SRK or a non-classic rule is not a case this can be held to.",
+    "**the work is an isentropic head from a flash, not `v (P_out - P_in)`.** NeqSim clones the fluid to the outlet pressure and runs a `PSflash` at the inlet entropy, because `calculateAsCompressor` defaults to `true`; the incompressible form is its linearisation.",
+    "**the outlet temperature is solved, not assumed isothermal.** The work raises the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it.",
+    "NeqSim's `Pump` also carries a `runTransient` path, a mechanical design and a performance curve. **None is ported**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` and `isentropic_efficiency` reach.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pump/Pump.java` is the port source, through its `run`.",
+    "Smith, J. M.; Van Ness, H. C.; Abbott, M. M. (2005). \"Introduction to Chemical Engineering Thermodynamics.\", 7th ed., McGraw-Hill. The incompressible-liquid work `v(P2 - P1)` and the isentropic efficiency that divides it.",
+]
+[source]
+standard = "NeqSim process/equipment/pump/Pump.java"
+edition = "Its steady-state `run`: an isentropic flash to the outlet pressure at the inlet entropy, the step divided by the isentropic efficiency, and the outlet temperature solved from the shifted enthalpy by a second flash."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. Every port of a unit operation carries the same fluid, so this is declared once.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow. A pump moves what it is given, so this is also the outlet's - the kernel passes it through rather than recomputing it.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which with `inlet_t` and `inlet_z` fixes the inlet state and its entropy.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy.\n"
+[inputs.outlet_pressure]
+unit = "Pa"
+description = "the pressure the pump raises the stream to, which is `unit_ops.pump`'s own parameter.\n"
+[inputs.isentropic_efficiency]
+unit = "dimensionless"
+description = "the pump's isentropic efficiency, in `(0, 1]`. The isentropic head divides by it, so an efficiency of one is the reversible limit - and the captured second row is exactly that.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the inlet's: a pump adds work and no moles.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition, which is the inlet's.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet pressure, which is `outlet_pressure` rather than something the pump solves for.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet temperature, solved from the shifted enthalpy at the outlet pressure.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy: the inlet's plus `(H(P_out, s_in) - H(P_in)) / eta`. Reported because a machine's whole effect on the stream is this and the temperature it implies.\n"
+[[valid_range]]
+quantity = "isentropic_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the reversible work divides by it, so zero has no answer and above one would recover more work than isentropic\n"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.pump"
+rust = "azoth_process::pump"

@@ -1305,6 +1305,15 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class PumpResult:
+    outlet_n: float
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    warnings: list[Warning]
+
+@final
 class ChemicalEquilibriumResult:
     moles: list[Qty]
     iterations: int
@@ -2374,6 +2383,15 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def pump(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    outlet_pressure: float,
+    isentropic_efficiency: float,
+) -> PumpResult: ...
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],
@@ -2435,7 +2453,7 @@ def mixer(inlets: list[Stream], outlet_pressure: float | None = ...) -> Stream: 
 def separator(feed: Stream, temperature: float) -> tuple[Stream, Stream]: ...
 def throttling_valve(feed: Stream, outlet_pressure: float) -> Stream: ...
 def heat_exchanger(hot: Stream, cold: Stream, duty: float) -> tuple[Stream, Stream]: ...
-def pump(feed: Stream, outlet_pressure: float, efficiency: float) -> Stream: ...
+def pump_stream(feed: Stream, outlet_pressure: float, efficiency: float) -> Stream: ...
 def validate_flowsheet(flowsheet: str, palette_dir: str) -> list[str]: ...
 
 # --- exceptions -----------------------------------------------------------
