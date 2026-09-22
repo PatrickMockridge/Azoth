@@ -74,7 +74,19 @@ def columns_for(file_id: str) -> tuple[tuple[str, str], ...]:
         raise SystemExit("gen_reaction_data: " + "; ".join(problems))
     for entry in found.files():
         if entry.id == file_id:
-            return tuple((c.name, c.as_field) for c in entry.columns)
+            pairs: list[tuple[str, str]] = []
+            for column in entry.columns:
+                # A carried column names the field it becomes, and every column of these
+                # five files is carried. Refused rather than defaulted, because a
+                # column that reaches here without one has no compiled name to be read
+                # under and would silently leave a hole in the header.
+                if column.as_field is None:
+                    raise SystemExit(
+                        f"gen_reaction_data: {file_id}.{column.name} is "
+                        f"`{column.disposition}` and names no compiled field"
+                    )
+                pairs.append((column.name, column.as_field))
+            return tuple(pairs)
     raise SystemExit(f"gen_reaction_data: {file_id} is not declared in the manifest")
 
 
@@ -101,9 +113,7 @@ def build(source: Path, file_id: str, name: str) -> tuple[tuple[str, ...], list[
         raise SystemExit(f"gen_reaction_data: {name} has no column {missing}")
 
     compiled = tuple(as_field for _, as_field in pairs)
-    renamed = [
-        {as_field: row[upstream].strip() for upstream, as_field in pairs} for row in rows
-    ]
+    renamed = [{as_field: row[upstream].strip() for upstream, as_field in pairs} for row in rows]
     return compiled, renamed
 
 
