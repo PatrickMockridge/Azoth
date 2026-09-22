@@ -25,6 +25,7 @@ pub mod model_gen;
 pub mod rand_solver;
 pub mod reactive_phase;
 pub mod reactive_phase_equilibrium;
+pub mod reactive_stability;
 pub mod reference_potentials;
 pub mod spec_gen;
 

@@ -28,6 +28,7 @@ import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermodynamicoperations.flashops.reactiveflash.FormulaMatrix;
 import neqsim.thermodynamicoperations.flashops.reactiveflash.ReactiveMultiphaseTPflash;
+import neqsim.thermodynamicoperations.flashops.reactiveflash.ReactiveStabilityAnalysis;
 
 public class ReactiveFlashProbe {
 
@@ -48,6 +49,17 @@ public class ReactiveFlashProbe {
         new String[] { "water", "CO2", "OH-", "H3O+" }, new double[] { 10.0, 0.01, 1e-10, 1e-10 });
     matrixOnly("water-meg", 298.15,
         new String[] { "water", "MEG" }, new double[] { 1.0, 1.0 });
+    stabilityOnly("wgs-600K", 600.0, 1.0,
+        new String[] { "CO", "water", "CO2", "hydrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25 });
+    // The same chemistry at 50 bar, where the water the shift leaves behind has a liquid to
+    // form - the case a stability analysis exists for.
+    stabilityOnly("wgs-600K-50bar", 600.0, 50.0,
+        new String[] { "CO", "water", "CO2", "hydrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25 });
+    stabilityOnly("methane-water-co2-hydrogen-1000K", 1000.0, 1.0,
+        new String[] { "methane", "water", "CO2", "hydrogen" },
+        new double[] { 0.4, 0.2, 0.2, 0.2 });
   }
 
   /// The matrix alone, for a fluid whose flash needs the ionic branch this port refuses.
@@ -81,6 +93,109 @@ public class ReactiveFlashProbe {
             .append(column + 1 < matrix.getNumberOfComponents() ? " " : "");
       }
       System.out.println(line);
+    }
+    System.out.println();
+  }
+
+  /// The stability analysis's own answers, which the flash's final state cannot show.
+  ///
+  /// `ReactiveStabilityAnalysis` decides whether a second phase forms, and it does that by
+  /// bringing the feed to *homogeneous* chemical equilibrium first - so the reference
+  /// potentials it tests against are the equilibrated feed's, not the feed's - and then
+  /// running a tangent-plane trial from each Wilson and pure-component seed. What it found is
+  /// printed: every seed's TPD, which of them were unstable, and the trial compositions they
+  /// equilibrated to.
+  static void stabilityOnly(String label, double temperature, double pressure, String[] names,
+      double[] moles) {
+    System.out.println("fluid=" + label);
+    SystemInterface system = new SystemSrkEos(temperature, pressure);
+    for (int i = 0; i < names.length; i++) {
+      system.addComponent(names[i], moles[i]);
+    }
+    system.setMixingRule("classic");
+    system.setMaxNumberOfPhases(1);
+    system.setNumberOfPhases(1);
+    system.init(0);
+    system.init(1);
+
+    FormulaMatrix matrix = new FormulaMatrix(system);
+    ReactiveStabilityAnalysis stability = new ReactiveStabilityAnalysis(system, matrix);
+
+    // What the class's own `generateTrialPhases` will read, and the Wilson K it builds from
+    // them - recomputed here because both are local to the method.
+    double[] x = new double[system.getPhase(0).getNumberOfComponents()];
+    double[] k = new double[x.length];
+    StringBuilder xLine = new StringBuilder("phase_x_after_ce=");
+    StringBuilder kLine = new StringBuilder("wilson_k=");
+    for (int i = 0; i < x.length; i++) {
+      x[i] = system.getPhase(0).getComponent(i).getx();
+      double tc = system.getPhase(0).getComponent(i).getTC();
+      double pc = system.getPhase(0).getComponent(i).getPC();
+      double omega = system.getPhase(0).getComponent(i).getAcentricFactor();
+      k[i] = (pc / system.getPressure()) * Math.exp(5.373 * (1.0 + omega) * (1.0 - tc / system.getTemperature()));
+      xLine.append(x[i]).append(i + 1 < x.length ? " " : "");
+      kLine.append(k[i]).append(i + 1 < k.length ? " " : "");
+    }
+    System.out.println(xLine);
+    System.out.println(kLine);
+
+    boolean unstable = stability.run();
+
+    // **The seeds and their distances, which the class does not expose.** `generateTrialPhases`
+    // and `runStabilityTrial` are private, so they are reached by reflection rather than
+    // re-derived: a port has to reproduce every seed's TPD, and the class only keeps the ones
+    // that came in under its threshold.
+    try {
+      java.lang.reflect.Method generate =
+          ReactiveStabilityAnalysis.class.getDeclaredMethod("generateTrialPhases");
+      generate.setAccessible(true);
+      java.lang.reflect.Method trial =
+          ReactiveStabilityAnalysis.class.getDeclaredMethod("runStabilityTrial", double[].class);
+      trial.setAccessible(true);
+      // What the same formula and the *live* composition would give, beside what the class
+      // returns, so the two are compared in one run rather than across two.
+      double xSum = 0.0;
+      for (int i = 0; i < x.length; i++) {
+        xSum += system.getPhase(0).getComponent(i).getx();
+      }
+      System.out.println("live_x_sum=" + xSum);
+      StringBuilder mineLine = new StringBuilder("recomputed_liquid_seed=");
+      StringBuilder vapourLine = new StringBuilder("recomputed_vapour_seed=");
+      for (int i = 0; i < x.length; i++) {
+        double zi = system.getPhase(0).getComponent(i).getx();
+        mineLine.append(zi / k[i]).append(i + 1 < x.length ? " " : "");
+        vapourLine.append(k[i] * zi).append(i + 1 < x.length ? " " : "");
+      }
+      System.out.println(mineLine);
+      System.out.println(vapourLine);
+
+      @SuppressWarnings("unchecked")
+      java.util.List<double[]> seeds = (java.util.List<double[]>) generate.invoke(stability);
+      System.out.println("trial_seeds=" + seeds.size());
+      for (int i = 0; i < seeds.size(); i++) {
+        printVector("seed[" + i + "]", seeds.get(i));
+        System.out.println("  seed_tpd[" + i + "]=" + trial.invoke(stability, (Object) seeds.get(i)));
+      }
+    } catch (ReflectiveOperationException ex) {
+      System.out.println("reflection_failed=" + ex);
+    }
+
+    // What the class leaves in the phase: if its CE step wrote the equilibrated composition
+    // with `setx`, this is it, and the seeds are built from that rather than from the feed.
+    StringBuilder afterRun = new StringBuilder("phase_x_after_run=");
+    for (int i = 0; i < x.length; i++) {
+      afterRun.append(system.getPhase(0).getComponent(i).getx()).append(i + 1 < x.length ? " " : "");
+    }
+    System.out.println(afterRun);
+    System.out.println("unstable=" + unstable);
+    System.out.println("number_of_unstable_trials=" + stability.getNumberOfUnstableTrials());
+    double[] worst = stability.getMostUnstableTrial();
+    System.out.println("most_unstable_trial=" + (worst == null ? "null" : java.util.Arrays.toString(worst)));
+    java.util.List<double[]> trials = stability.getUnstableTrialCompositions();
+    java.util.List<Double> tpds = stability.getTpdValues();
+    for (int i = 0; i < trials.size(); i++) {
+      printVector("unstable_trial[" + i + "]", trials.get(i));
+      System.out.println("  tpd[" + i + "]=" + tpds.get(i));
     }
     System.out.println();
   }
