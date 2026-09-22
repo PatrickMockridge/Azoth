@@ -125,6 +125,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "azoth-reactions"
+version = "0.1.0"
+dependencies = [
+ "azoth-core",
+ "azoth-test-support",
+ "csv",
+ "serde",
+ "toml",
+ "uom",
+]
+
+[[package]]
 name = "azoth-test-support"
 version = "0.1.0"
 dependencies = [

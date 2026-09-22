@@ -1,0 +1,22 @@
+[package]
+name = "azoth-reactions"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Chemical reaction equilibrium: element balances, reference potentials, constrained Gibbs minimisation"
+
+[dependencies]
+azoth-core.workspace = true
+csv.workspace = true
+serde.workspace = true
+toml.workspace = true
+
+[dev-dependencies]
+azoth-test-support.workspace = true
+# Only the tests: the crate itself is dimensionless and needs no units library.
+uom.workspace = true
+
+[lints]
+workspace = true
