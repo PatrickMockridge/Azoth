@@ -436,6 +436,21 @@ public class ProcessProbe {
     double coldDuty = duty(cold, hx.getOutStream(1));
     System.out.println("hot_duty_W=" + hotDuty);
     System.out.println("cold_duty_W=" + coldDuty);
+    // **The rating's own two numbers, and the two the rating does not compute.** `run`
+    // keeps `duty` and `thermalEffectiveness` as fields with getters, and those two pin the
+    // whole interior: `duty = effectiveness * swing` and the kept side is the one whose
+    // swing is larger, so `C_max = duty / (effectiveness * span)` and the effectiveness
+    // relation then leaves `C_min` as its only unknown. `NTU` is a package-private field
+    // with no getter, so it is reached through them rather than read.
+    //
+    // The pinned branch sets neither: `runSpecifiedStream` returns without touching `duty`
+    // or `thermalEffectiveness`, so both read back as their initialisers. Printing a zero
+    // there would say "this branch's duty is zero" when it says only that the branch does
+    // not compute one.
+    if (pinnedK == null) {
+      System.out.println("duty_W=" + hx.getDuty());
+      System.out.println("effectiveness=" + hx.getThermalEffectiveness());
+    }
     System.out.println();
   }
 

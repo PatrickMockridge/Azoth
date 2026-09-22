@@ -38,6 +38,7 @@ the case is pinned to the capture's ``reference_pin_*`` rows rather than to its
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
@@ -119,6 +120,16 @@ def heat_exchanger(
     ua_si = None if ua is None else input_to_si(spec, "ua", ua)
     hot_t_si = input_to_si(spec, "hot_in_t", hot_in_t)
     cold_t_si = input_to_si(spec, "cold_in_t", cold_in_t)
+    hot_out_t_si = (
+        None
+        if hot_outlet_temperature is None
+        else input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature)
+    )
+    cold_out_t_si = (
+        None
+        if cold_outlet_temperature is None
+        else input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature)
+    )
     # Every declared bound's quantity is fed here: a closure that supplies some and not
     # the rest emits a `RANGE_CHECK_SKIPPED` warning for a check that could have run.
     apply_checks(
@@ -127,6 +138,104 @@ def heat_exchanger(
         warnings,
     )
 
+    hot_n = input_to_si(spec, "hot_in_n", hot_in_n)
+    cold_n = input_to_si(spec, "cold_in_n", cold_in_n)
+
+    states = _states(
+        hot_components,
+        hot_n,
+        hot_in_z,
+        input_to_si(spec, "hot_in_p", hot_in_p),
+        hot_t_si,
+        cold_components,
+        cold_n,
+        cold_in_z,
+        input_to_si(spec, "cold_in_p", cold_in_p),
+        cold_t_si,
+        ua_si,
+        flow_arrangement,
+        hot_out_t_si,
+        cold_out_t_si,
+    )
+
+    return HeatExchangerResult(
+        hot_out_n=from_si(hot_n, "mol/s"),
+        hot_out_z=tuple(hot_in_z),
+        hot_out_p=hot_in_p,
+        hot_out_t=states.hot_out_t,
+        hot_out_h=from_si(states.hot_out_h, "J/mol"),
+        cold_out_n=from_si(cold_n, "mol/s"),
+        cold_out_z=tuple(cold_in_z),
+        cold_out_p=cold_in_p,
+        cold_out_t=states.cold_out_t,
+        cold_out_h=from_si(states.cold_out_h, "J/mol"),
+        warnings=tuple(warnings),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Rating:
+    """The rating's own numbers, in the order ``run`` computes them, in SI.
+
+    ``C`` is a total over a temperature difference, so W/K; that is what makes ``NTU``
+    dimensionless. ``NTU`` is a package-private field of ``HeatExchanger`` with no getter, so
+    a capture cannot carry it - but ``duty`` and ``effectiveness`` are two numbers it does
+    carry, and those two pin this record: the kept side is the larger swing, so
+    ``C_max = duty / (effectiveness * span)``, and the effectiveness relation then leaves
+    ``C_min`` as the only unknown. A capacity this got wrong cannot hide behind the other.
+    """
+
+    hot_capacity: float
+    cold_capacity: float
+    c_min: float
+    c_max: float
+    capacity_ratio: float
+    ntu: float
+    effectiveness: float
+
+
+@dataclass(frozen=True, slots=True)
+class ExchangerStates:
+    """Both sides' states on the way through, and the rating's interior, in SI."""
+
+    hot_in_h: float
+    cold_in_h: float
+    hot_out_h: float
+    cold_out_h: float
+    hot_out_t: Q
+    cold_out_t: Q
+    #: The kept side's own total enthalpy change, W - negative when that side cools. It is
+    #: what ``run`` publishes as ``getDuty``, and the pinned branch reports the pinned
+    #: side's change the same way.
+    duty: float
+    #: ``None`` when an outlet was pinned instead: that branch does not rate anything.
+    rating: Rating | None
+
+
+def _states(
+    hot_components: list[str],
+    hot_in_n: float,
+    hot_in_z: list[float],
+    hot_in_p: float,
+    hot_in_t: float,
+    cold_components: list[str],
+    cold_in_n: float,
+    cold_in_z: list[float],
+    cold_in_p: float,
+    cold_in_t: float,
+    ua: float | None,
+    flow_arrangement: str,
+    hot_outlet_temperature: float | None,
+    cold_outlet_temperature: float | None,
+) -> ExchangerStates:
+    """The exchanger's intermediates, in the order it computes them, in SI.
+
+    **One arithmetic, two consumers.** :func:`heat_exchanger` builds the result from this and
+    :mod:`azoth.process.layers` reports the same numbers against a NeqSim capture, so a layer
+    the harness compares is a layer the model actually took. The refusals are here rather
+    than in the caller for the same reason the Rust kernel holds them: they are about which
+    branch runs, and a caller that had to know would be a second copy of that decision.
+    """
     if hot_outlet_temperature is not None and cold_outlet_temperature is not None:
         raise InvalidInputError(
             "hot_outlet_temperature",
@@ -134,7 +243,7 @@ def heat_exchanger(
             "nothing left to solve for",
         )
     pinned = hot_outlet_temperature is not None or cold_outlet_temperature is not None
-    if not pinned and ua_si is None:
+    if not pinned and ua is None:
         raise InvalidInputError(
             "ua",
             "the rating needs an overall conductance. NeqSim's `UAvalue` defaults to "
@@ -148,70 +257,74 @@ def heat_exchanger(
             f"falls through to the counterflow relation for an arrangement it does not "
             f"know, which would make a misspelling a plausible answer",
         )
+    span = abs(hot_in_t - cold_in_t)
+    if not pinned and span <= 2.220446049250313e-16 * max(abs(hot_in_t), abs(cold_in_t)):
+        raise InvalidInputError(
+            "hot_in_t",
+            f"both inlets are at {hot_in_t} K, so there is no driving force for the "
+            f"rating to size against",
+        )
 
     hot_mixture, hot_gas = _components.mixture_of(hot_components, eos="pr")
     cold_mixture, cold_gas = _components.mixture_of(cold_components, eos="pr")
-    hot_n = input_to_si(spec, "hot_in_n", hot_in_n)
-    cold_n = input_to_si(spec, "cold_in_n", cold_in_n)
-    hot_p = input_to_si(spec, "hot_in_p", hot_in_p)
-    cold_p = input_to_si(spec, "cold_in_p", cold_in_p)
-    hot_h, _ = enthalpy_at(hot_mixture, hot_gas, hot_t_si, hot_p, hot_in_z)
-    cold_h, _ = enthalpy_at(cold_mixture, cold_gas, cold_t_si, cold_p, cold_in_z)
+    hot_h, _ = enthalpy_at(hot_mixture, hot_gas, hot_in_t, hot_in_p, hot_in_z)
+    cold_h, _ = enthalpy_at(cold_mixture, cold_gas, cold_in_t, cold_in_p, cold_in_z)
 
+    rating: Rating | None = None
     if pinned:
         hot_pinned = hot_outlet_temperature is not None
-        pinned_t = input_to_si(
-            spec,
-            "hot_outlet_temperature" if hot_pinned else "cold_outlet_temperature",
-            hot_outlet_temperature if hot_pinned else cold_outlet_temperature,
-        )
+        pinned_t = hot_outlet_temperature if hot_pinned else cold_outlet_temperature
+        assert pinned_t is not None  # `pinned` guarantees exactly one of them
         if hot_pinned:
-            specified, _ = enthalpy_at(hot_mixture, hot_gas, pinned_t, hot_p, hot_in_z)
-            duty = hot_n * (specified - hot_h)
-            hot_out_h, cold_out_h = specified, cold_h - duty / cold_n
+            specified, _ = enthalpy_at(hot_mixture, hot_gas, pinned_t, hot_in_p, hot_in_z)
+            duty = hot_in_n * (specified - hot_h)
+            hot_out_h, cold_out_h = specified, cold_h - duty / cold_in_n
         else:
-            specified, _ = enthalpy_at(cold_mixture, cold_gas, pinned_t, cold_p, cold_in_z)
-            duty = cold_n * (specified - cold_h)
-            cold_out_h, hot_out_h = specified, hot_h - duty / hot_n
+            specified, _ = enthalpy_at(cold_mixture, cold_gas, pinned_t, cold_in_p, cold_in_z)
+            duty = cold_in_n * (specified - cold_h)
+            cold_out_h, hot_out_h = specified, hot_h - duty / hot_in_n
     else:
-        span = abs(hot_t_si - cold_t_si)
-        # The same guard the Rust uses, so the two refuse the same inputs rather than
-        # agreeing by accident on the cases that do not reach it.
-        if span <= 2.220446049250313e-16 * max(abs(hot_t_si), abs(cold_t_si)):
-            raise InvalidInputError(
-                "hot_in_t",
-                f"both inlets are at {hot_t_si} K, so there is no driving force for the "
-                f"rating to size against",
-            )
-        assert ua_si is not None  # the mode check above guarantees it
-        hot_seeded, _ = enthalpy_at(hot_mixture, hot_gas, cold_t_si, hot_p, hot_in_z)
-        cold_seeded, _ = enthalpy_at(cold_mixture, cold_gas, hot_t_si, cold_p, cold_in_z)
-        hot_swing = hot_n * (hot_seeded - hot_h)
-        cold_swing = cold_n * (cold_seeded - cold_h)
-        c_min = min(abs(hot_swing), abs(cold_swing)) / span
-        c_max = max(abs(hot_swing), abs(cold_swing)) / span
-        effectiveness = _effectiveness(ua_si / c_min, c_min / c_max, flow_arrangement)
+        assert ua is not None  # the mode check above guarantees it
+        # Each side flashed at the *other's* inlet temperature, which is `run`'s own
+        # estimate of its capacity and is what makes the number of passes not matter.
+        hot_seeded, _ = enthalpy_at(hot_mixture, hot_gas, cold_in_t, hot_in_p, hot_in_z)
+        cold_seeded, _ = enthalpy_at(cold_mixture, cold_gas, hot_in_t, cold_in_p, cold_in_z)
+        hot_swing = hot_in_n * (hot_seeded - hot_h)
+        cold_swing = cold_in_n * (cold_seeded - cold_h)
+        hot_capacity = abs(hot_swing) / span
+        cold_capacity = abs(cold_swing) / span
+        c_min = min(hot_capacity, cold_capacity)
+        c_max = max(hot_capacity, cold_capacity)
+        capacity_ratio = c_min / c_max
+        ntu = ua / c_min
+        effectiveness = _effectiveness(ntu, capacity_ratio, flow_arrangement)
+        rating = Rating(
+            hot_capacity=hot_capacity,
+            cold_capacity=cold_capacity,
+            c_min=c_min,
+            c_max=c_max,
+            capacity_ratio=capacity_ratio,
+            ntu=ntu,
+            effectiveness=effectiveness,
+        )
         # The side whose seeded swing is the larger is the one `run` keeps, and the other
         # is energy-balanced against it.
         if abs(cold_swing) > abs(hot_swing):
             duty = effectiveness * hot_swing
-            hot_out_h, cold_out_h = hot_h + duty / hot_n, cold_h - duty / cold_n
+            hot_out_h, cold_out_h = hot_h + duty / hot_in_n, cold_h - duty / cold_in_n
         else:
             duty = effectiveness * cold_swing
-            cold_out_h, hot_out_h = cold_h + duty / cold_n, hot_h - duty / hot_n
+            cold_out_h, hot_out_h = cold_h + duty / cold_in_n, hot_h - duty / hot_in_n
 
-    return HeatExchangerResult(
-        hot_out_n=from_si(hot_n, "mol/s"),
-        hot_out_z=tuple(hot_in_z),
-        hot_out_p=hot_in_p,
-        hot_out_t=_temperature(hot_mixture, hot_gas, hot_p, hot_out_h, hot_in_z),
-        hot_out_h=from_si(hot_out_h, "J/mol"),
-        cold_out_n=from_si(cold_n, "mol/s"),
-        cold_out_z=tuple(cold_in_z),
-        cold_out_p=cold_in_p,
-        cold_out_t=_temperature(cold_mixture, cold_gas, cold_p, cold_out_h, cold_in_z),
-        cold_out_h=from_si(cold_out_h, "J/mol"),
-        warnings=tuple(warnings),
+    return ExchangerStates(
+        hot_in_h=hot_h,
+        cold_in_h=cold_h,
+        hot_out_h=hot_out_h,
+        cold_out_h=cold_out_h,
+        hot_out_t=_temperature(hot_mixture, hot_gas, hot_in_p, hot_out_h, hot_in_z),
+        cold_out_t=_temperature(cold_mixture, cold_gas, cold_in_p, cold_out_h, cold_in_z),
+        duty=duty,
+        rating=rating,
     )
 
 

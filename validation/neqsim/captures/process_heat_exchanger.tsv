@@ -25,6 +25,8 @@ cold_out_s=-51.12344456533323
 cold_out_z=n-butane:0.5 n-pentane:0.5
 hot_duty_W=-4861.386048565117
 cold_duty_W=4861.386050314866
+duty_W=-4861.386048470768
+effectiveness=0.7610899331029217
 
 ua_rating_hot_flow_2
 hot_in_n=2.0
@@ -53,6 +55,8 @@ cold_out_s=-46.41270154701297
 cold_out_z=n-butane:0.5 n-pentane:0.5
 hot_duty_W=-6440.820714769395
 cold_duty_W=6440.820715181437
+duty_W=-6440.820713870621
+effectiveness=0.5041817042888134
 
 ua_rating_parallelflow
 hot_in_n=1.0
@@ -81,6 +85,8 @@ cold_out_s=-52.03230467831368
 cold_out_z=n-butane:0.5 n-pentane:0.5
 hot_duty_W=-4561.741694506989
 cold_duty_W=4561.741696552206
+duty_W=-4561.741694282377
+effectiveness=0.7141781472027564
 
 out_temperature_pins_the_hot_side
 hot_in_n=1.0

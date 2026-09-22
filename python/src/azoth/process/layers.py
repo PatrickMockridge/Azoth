@@ -45,6 +45,10 @@ Dumper = Callable[[Mapping[str, Any]], dict[str, float]]
 ROOT = Path(__file__).resolve().parents[4]
 CAPTURES = ROOT / "validation" / "neqsim" / "captures"
 
+#: The key a block's own label is kept under. `#` is not a character a probe key starts
+#: with, so it cannot collide with a row.
+LABEL_KEY = "#label"
+
 
 def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.pump`'s layers, from the reference's own factored arithmetic."""
@@ -72,9 +76,72 @@ def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.heat_exchanger`'s layers, from the reference's own factored arithmetic.
+
+    **The rating's interior is here and the capture does not have it.** `NTU` is a
+    package-private field of `HeatExchanger` with no getter, so the probe cannot print it -
+    but `getDuty` and `getThermalEffectiveness` are two numbers it can, and those two pin
+    every number below: the kept side is the one whose seeded swing is larger, so
+    `duty = effectiveness * C_max * span`, and the effectiveness relation then leaves
+    `C_min` as its only unknown. A wrong `c_min` cannot reach the same duty and the same
+    effectiveness at the same `UA`, which is why the un-oracled four are worth dumping
+    beside the two that are compared.
+    """
+    from azoth.process.reference.heat_exchanger import _states
+
+    def optional(key: str) -> float | None:
+        value = inputs.get(key)
+        return None if value is None else float(value)
+
+    states = _states(
+        [str(name) for name in inputs["hot_components"]],
+        float(inputs["hot_in_n"]),
+        [float(v) for v in inputs["hot_in_z"]],
+        float(inputs["hot_in_p"]),
+        float(inputs["hot_in_t"]),
+        [str(name) for name in inputs["cold_components"]],
+        float(inputs["cold_in_n"]),
+        [float(v) for v in inputs["cold_in_z"]],
+        float(inputs["cold_in_p"]),
+        float(inputs["cold_in_t"]),
+        optional("ua"),
+        str(inputs.get("flow_arrangement", "counterflow")),
+        optional("hot_outlet_temperature"),
+        optional("cold_outlet_temperature"),
+    )
+    # In the order the kernel computes them - the inlets, then the rating, then the
+    # outlets - because the harness reports the *first* layer that moved, and the first one
+    # to move should be the cause rather than the answer it produced.
+    dump = {
+        "hot_in_h": states.hot_in_h,
+        "cold_in_h": states.cold_in_h,
+    }
+    if states.rating is not None:
+        rating = states.rating
+        dump |= {
+            "hot_capacity": rating.hot_capacity,
+            "cold_capacity": rating.cold_capacity,
+            "c_min": rating.c_min,
+            "c_max": rating.c_max,
+            "capacity_ratio": rating.capacity_ratio,
+            "ntu": rating.ntu,
+            "effectiveness": rating.effectiveness,
+            "duty_W": states.duty,
+        }
+    dump |= {
+        "hot_out_h": states.hot_out_h,
+        "cold_out_h": states.cold_out_h,
+        "hot_out_T": states.hot_out_t.to("K").magnitude,
+        "cold_out_T": states.cold_out_t.to("K").magnitude,
+    }
+    return dump
+
+
 #: One model's layers, keyed by the model id a case names.
 DUMPERS: dict[str, Dumper] = {
     "process.pump": _pump,
+    "process.heat_exchanger": _heat_exchanger,
 }
 
 
@@ -91,7 +158,9 @@ class LayerCase:
     block: int
     #: The one row the probe prints in that block that identifies it, as `(key, value)`.
     #: Checked rather than documented: the pairing is positional, so a probe row inserted
-    #: or reordered would otherwise pair a dump against another state's numbers.
+    #: or reordered would otherwise pair a dump against another state's numbers. Name the
+    #: block's [`LABEL_KEY`] where there is one - a label is an identity, a state is a
+    #: thing the comparison is already testing.
     identified_by: tuple[str, str]
     #: Layers compared on an **absolute** bound, with the bound, because the oracle is zero
     #: there by construction and a ratio divides by the vanishing thing.
@@ -125,25 +194,84 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         # and four above the double-precision rounding of an enthalpy near 2.5e4 J/mol.
         diagnostic=(("entropy_production_kJ_per_molK", 1e-9),),
     ),
+    # The exchanger's five cases sit on blocks 0, 1, 2, 5 and 6. Blocks 3 and 4 are
+    # NeqSim's own `runSpecifiedStream` rows, which the port deliberately does not
+    # reproduce - see `UNCASED_ROWS`.
+    LayerCase(
+        model="process.heat_exchanger",
+        case="the_effectiveness_ntu_rating",
+        capture="process_heat_exchanger.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "ua_rating_counterflow"),
+    ),
+    LayerCase(
+        model="process.heat_exchanger",
+        case="the_rating_answers_the_flow",
+        capture="process_heat_exchanger.tsv",
+        block=1,
+        identified_by=(LABEL_KEY, "ua_rating_hot_flow_2"),
+    ),
+    LayerCase(
+        model="process.heat_exchanger",
+        case="the_arrangement_moves_less_heat",
+        capture="process_heat_exchanger.tsv",
+        block=2,
+        identified_by=(LABEL_KEY, "ua_rating_parallelflow"),
+    ),
+    LayerCase(
+        model="process.heat_exchanger",
+        case="a_pinned_hot_outlet",
+        capture="process_heat_exchanger.tsv",
+        block=5,
+        identified_by=(LABEL_KEY, "reference_pin_hot_350"),
+    ),
+    LayerCase(
+        model="process.heat_exchanger",
+        case="a_pinned_cold_outlet",
+        capture="process_heat_exchanger.tsv",
+        block=6,
+        identified_by=(LABEL_KEY, "reference_pin_cold_320"),
+    ),
 )
+
+#: Probe rows that are **deliberately not cases**, per capture, by the count they take.
+#:
+#: A probe row and a case are not the same thing: a row can be evidence for a divergence
+#: rather than an oracle for a state the port reproduces. The exchanger's two
+#: `out_temperature_pins_*` rows are that - NeqSim's own `runSpecifiedStream` lands on an
+#: enthalpy its own `PHflash` places at another temperature, so the two pinned cases are
+#: held to the `reference_pin_*` rows instead. Counting them here rather than leaving the
+#: block count open keeps the check exact: a probe row added without a case still fails.
+UNCASED_ROWS: dict[str, int] = {
+    "process_heat_exchanger.tsv": 2,
+}
 
 
 def capture_blocks(capture: str) -> list[dict[str, str]]:
-    """A capture's blocks, each as its `key=value` rows.
+    """A capture's blocks, each as its `key=value` rows plus its label.
 
     The process probes print one block per case: a label line, the ports' records, the
     machine's own numbers, and a blank line. The label is the block's first line and is not
-    a `key=value` row, so it is dropped - what identifies a block for a reader is a line
-    *inside* it, which is what `LayerCase.identified_by` is for.
+    a `key=value` row, so it is kept under [`LABEL_KEY`] rather than dropped. **It is what
+    `LayerCase.identified_by` should name**, because it is the block's identity rather than
+    a state: keying the pairing on a number would make an identification failure reachable
+    by the very arithmetic the comparison exists to test, and two rows that differ only in
+    an argument the ports do not carry - the exchanger's counterflow and parallel-flow rows
+    - have no other distinguishing line between them.
     """
     text = (CAPTURES / capture).read_text(encoding="utf-8")
     blocks: list[dict[str, str]] = []
     for chunk in text.strip().split("\n\n"):
         rows: dict[str, str] = {}
         for line in chunk.strip().splitlines():
+            line = line.strip()
+            if not line:
+                continue
             if "=" in line:
                 key, _, value = line.partition("=")
                 rows[key.strip()] = value.strip()
+            else:
+                rows[LABEL_KEY] = line
         if rows:
             blocks.append(rows)
     return blocks

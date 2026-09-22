@@ -49,15 +49,30 @@ def test_a_capture_has_one_block_per_case(model: str) -> None:
     A probe row added without a case, or a case whose row was reordered, would otherwise
     pair a dump against another state's numbers - which compares and fails, or worse,
     compares and passes by coincidence.
+
+    A block a case deliberately does not cover - a row that is evidence for a divergence
+    rather than an oracle for a state the port reproduces - is declared in
+    `LAYER_CASES`'s sibling [`layers.UNCASED_ROWS`] rather than excused by widening the
+    comparison: the check stays exact, and the block count it holds to is the capture's
+    own. The blocks the cases *do* name are checked one by one below, so the two together
+    say which rows the cases cover and not merely how many.
     """
     declared = next(m for m in _models_gen.MODELS if m["id"] == model)["cases"]
     captures = {c.capture for c in layers.LAYER_CASES if c.model == model}
     assert len(captures) == 1, f"{model} reads more than one capture: {sorted(captures)}"
     capture = captures.pop()
     blocks = layers.capture_blocks(capture)
-    assert len(blocks) == len(declared), (
-        f"{capture} has {len(blocks)} block(s) and {model} has {len(declared)} case(s); "
-        f"the pairing is positional, so the two move together"
+    uncased = layers.UNCASED_ROWS.get(capture, 0)
+    assert len(blocks) == len(declared) + uncased, (
+        f"{capture} has {len(blocks)} block(s), {model} has {len(declared)} case(s) and "
+        f"{uncased} block(s) are declared uncased; the pairing is positional, so the "
+        f"three move together"
+    )
+    named = [c.block for c in layers.LAYER_CASES if c.model == model]
+    assert len(set(named)) == len(named), f"{model} names a block twice: {named}"
+    assert len(set(range(len(blocks))) - set(named)) == uncased, (
+        f"{capture} has {sorted(set(range(len(blocks))) - set(named))} block(s) no case "
+        f"names and {uncased} are declared uncased"
     )
 
 
