@@ -257,7 +257,7 @@ The specialist physics.
   `neqsim/mcp/runners/FlowAssuranceRunner.java:192` builds it, fully qualified, which is why a
   bare `new WaxCurveCalculator(` grep misses it. `process/chemistry/wax/` is carried with the
   process tier. **Filed upstream**: this finding and the solid-vapour-pressure one below are
-  NeqSim `#3914` and `#3915`, the two drafts not recording which number is which.
+  NeqSim `#3913` and `#3914`, the two drafts not recording which number is which.
 - **Asphaltene, carried on a defect upstream rather than for want of a port.**
   `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
   `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the
@@ -275,7 +275,7 @@ The specialist physics.
   sequence of states, and only its endpoint — reached where a solid forms and `SolidFlash`
   re-derives the phases — is a state at all. The coefficient the family's solid is built on is
   ported (`eos.solid_fugacity`, `eos.tp_solid_flash`); this family is revisited when upstream
-  closes the defect, which is **filed upstream as `#3914`/`#3915` together with the wax
+  closes the defect, which is **filed upstream as `#3913`/`#3914` together with the wax
   family's three models above** - the two drafts record the pair and not which is which.
 - **Hydrogen and cryogenic.** Ported, each with the id that carries it:
   `thermo/util/leachman/` as `eos.hydrogen_phase`, the Leachman equation of state for the two
