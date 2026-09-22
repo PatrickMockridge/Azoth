@@ -18,6 +18,7 @@ from typing import Any
 
 import pint
 
+from azoth._dispatch import fluid_inputs
 from azoth._registry_gen import BY_ID, CALCS
 from azoth.core.result import FlowRegime
 from azoth.core.units import quantity, to_si
@@ -548,9 +549,15 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
     # question of every model whether or not it names a fluid.
     takes = parameters_of(model)
 
-    names = inputs.get(_MODEL_COMPONENTS_INPUT)
-    if names is not None:
-        if "mixture" in takes:
+    for prefix, declared_name in fluid_inputs(model):
+        names = inputs.get(declared_name)
+        if names is None:
+            raise AssertionError(
+                f"{model['id']} declares {declared_name!r} and the case does not state it; "
+                f"a fluid a case leaves out is a fluid this would build as something else"
+            )
+        mixture_key = f"{prefix}mixture"
+        if mixture_key in takes:
             # A model may declare which cubic it is evaluated under - the gamma-phi
             # flash does, because its vapour is half of what it is. The declaration is
             # what builds the mixture, so a case states its own vapour rather than
@@ -565,12 +572,13 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             # under a CPA model - so a case that wants it says so.
             fluid, ideal_gas = databank.mixture_of(
                 list(names),
-                eos=inputs.get("eos", "pr"),
-                associating=bool(inputs.get(_ASSOCIATING_KEY, False)),
+                eos=inputs.get(f"{prefix}eos", "pr"),
+                associating=bool(inputs.get(f"{prefix}associating", False)),
             )
-            kwargs["mixture"] = fluid
-            if "ideal_gas" in takes:
-                kwargs["ideal_gas"] = ideal_gas
+            kwargs[mixture_key] = fluid
+            ideal_gas_key = f"{prefix}ideal_gas"
+            if ideal_gas_key in takes:
+                kwargs[ideal_gas_key] = ideal_gas
         elif "coeffs" in takes:
             # A non-cubic reference EOS takes the coefficient sets rather than a
             # `Mixture`: `eos.bwrs_phase` is the one, and the MBWR-32 coefficients
@@ -600,13 +608,20 @@ def model_kwargs(model: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[st
             # gamma-phi flash takes both - one cubic vapour, one activity-model liquid.
             kwargs["params"] = parameter_set(model, names, inputs)
 
+    fluids = fluid_inputs(model)
+    # Every input the loop above consumed: the fluids' own names, and the per-fluid
+    # boundary keys a case uses to describe how each one is built.
+    resolved = {name for _, name in fluids}
+    resolved |= {_ASSOCIATING_KEY, "eos"}
+    for prefix, _ in fluids:
+        resolved |= {f"{prefix}{_ASSOCIATING_KEY}", f"{prefix}eos"}
     for name, value in inputs.items():
-        # Passed only what the function takes. `components` is resolved above - into a
-        # `Mixture`, a coefficient set, or the names verbatim - and a parameter set's own
-        # extra inputs were consumed there too, so either would be a second, wrong answer
-        # or a keyword the function does not have. `tools/gen_stub.py` asks the same
+        # Passed only what the function takes. A fluid's own inputs are resolved above -
+        # into a `Mixture`, a coefficient set, or the names verbatim - and a parameter
+        # set's extra inputs were consumed there too, so either would be a second, wrong
+        # answer or a keyword the function does not have. `tools/gen_stub.py` asks the same
         # question of the same signature, which is what keeps the boundary and this in step.
-        if name in (_MODEL_COMPONENTS_INPUT, _ASSOCIATING_KEY) or name not in takes:
+        if name in resolved or name not in takes:
             continue
         kwargs[name] = _declared(declared[name], value)
     return kwargs

@@ -28,7 +28,7 @@ from typing import Any, get_args, get_origin, get_type_hints
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "python" / "src"))
 
-from azoth._dispatch import result_type  # noqa: E402
+from azoth._dispatch import fluid_inputs, result_type  # noqa: E402
 from azoth._models_gen import MODELS  # noqa: E402
 from azoth._registry_gen import CALCS  # noqa: E402
 
@@ -445,26 +445,26 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
     taken = set(inspect.signature(getattr(module, name)).parameters)
 
     params: list[str] = []
-    if "components" in model["inputs"]:
-        # A model that names a fluid resolves the names into a flattened mixture
-        # (four vectors) or, for a pure-component model, the critical constants as
-        # scalars. A model with no `components` input - one that takes per-component
-        # vectors directly - has no such prefix to add.
-        if "mixture" in taken:
+    # **One pass per fluid the model names**, so a model with two sides carries two
+    # flattened mixtures. The prefix is the input's own - `components` gives the bare
+    # names and `hot_components` gives `hot_` - which is what makes a second fluid an
+    # input rather than a change to this function.
+    for prefix, _ in fluid_inputs(model):
+        if f"{prefix}mixture" in taken:
             params += [
-                "Tc: list[float]",
-                "Pc: list[float]",
-                "omega: list[float]",
-                "kij: list[float]",
+                f"{prefix}Tc: list[float]",
+                f"{prefix}Pc: list[float]",
+                f"{prefix}omega: list[float]",
+                f"{prefix}kij: list[float]",
             ]
             # The association, which the boundary used to drop: a mixture whose
             # association does not cross is a *different fluid* that converges, and
             # `eos.pt_flash` ran a classical SRK flash for a session because of it. It
             # is required rather than defaulted, so a caller that forgets gets a
             # `TypeError` instead of a plausible answer.
-            params.append("association: AssociationSpec")
+            params.append(f"{prefix}association: AssociationSpec")
             if model["id"] in MOLAR_MASS_MODELS:
-                params.append("molar_mass: list[float]")
+                params.append(f"{prefix}molar_mass: list[float]")
             if "params" in taken:
                 # A model that takes both a mixture and a parameter record - the
                 # gamma-phi flash, whose vapour is a cubic and whose liquid is an
@@ -492,18 +492,27 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             # the boundary verbatim rather than as a flattened mixture.
             params.append("components: list[str]")
         else:
-            params += ["Tc: float", "Pc: float", "omega: float"]
-    if "ideal_gas" in taken:
-        params += [f"{n}: list[float]" for n in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")]
+            params += [
+                f"{prefix}Tc: float",
+                f"{prefix}Pc: float",
+                f"{prefix}omega: float",
+            ]
+        if f"{prefix}ideal_gas" in taken:
+            params += [
+                f"{prefix}{n}: list[float]" for n in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")
+            ]
     # **The declared inputs, optional ones last**, for the reason `ordered_parameters`
-    # gives: the signature has to parse. `components` is skipped because it is the input
-    # every model resolves into a `Mixture`, and a *second* one the function does not
-    # take is one the boundary resolved beside it - UNIFAC-UMR-PRU's parameter set, which
-    # a `params` record carries rather than a signature. Asking the signature is what
-    # keeps the two rules from diverging: `python/tests/_helpers.py` skips exactly these
-    # when it builds its own call.
+    # gives: the signature has to parse. **Every fluid is skipped**, because each is the
+    # input the loop above resolved into a `Mixture` or its scalars, and a *second* one
+    # the function does not take is one the boundary resolved beside it -
+    # UNIFAC-UMR-PRU's parameter set, which a `params` record carries rather than a
+    # signature. Asking the signature is what keeps the two rules from diverging:
+    # `python/tests/_helpers.py` skips exactly these when it builds its own call.
+    fluids = fluid_inputs(model)
+    resolved = {name for _, name in fluids}
+    resolved |= {f"{prefix}ideal_gas" for prefix, _ in fluids}
     for parameter, declaration in ordered_parameters(model["inputs"]):
-        if parameter == "components" or parameter not in taken:
+        if parameter in resolved or parameter not in taken:
             continue
         params.append(render_parameter(parameter, declaration))
     if "hydrogen_type" in taken:

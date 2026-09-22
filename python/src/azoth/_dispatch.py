@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import importlib
 import os
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from types import ModuleType
 from typing import Any, Literal, get_type_hints
@@ -131,6 +131,44 @@ def reference_for(calc_id: str) -> Callable[..., Any]:
         function_name,
     )
     return resolved
+
+
+#: The input a model names its one fluid by when it names only one.
+MODEL_COMPONENTS_INPUT = "components"
+
+#: The suffix a model names a *second* fluid by: `hot_components` gives the function
+#: `hot_mixture` and `hot_ideal_gas`.
+MODEL_COMPONENTS_SUFFIX = "_components"
+
+
+def fluid_inputs(model: Mapping[str, Any]) -> list[tuple[str, str]]:
+    """Every fluid a model names, as `(prefix, declared input name)`.
+
+    A model declares a fluid with an input of ``type = "components"``, and the boundary
+    resolves it into the objects the implementation actually takes: a `Mixture` and an
+    `IdealGasModel`, built from the databank so a case and a caller reach the same fluid.
+    Which argument names those land on is **derived from the input's own name** -
+    `components` gives `mixture`/`ideal_gas`, `hot_components` gives
+    `hot_mixture`/`hot_ideal_gas` - because a second convention beside the first would be
+    a second thing to keep in step.
+
+    **A model that names two fluids is the reason this exists.** `process.heat_exchanger`
+    is the first: its two ports carry different fluids, so one `components` input could not
+    describe it, and everything downstream - the case runner, the bridge, the stub
+    generator - had assumed exactly one. The derivation is written for the general case so
+    that a third would need no edit here.
+    """
+    out: list[tuple[str, str]] = []
+    for name, declaration in model["inputs"].items():
+        if declaration.get("type") != "components":
+            continue
+        prefix = (
+            ""
+            if name == MODEL_COMPONENTS_INPUT
+            else name[: -len(MODEL_COMPONENTS_SUFFIX)] + "_"
+        )
+        out.append((prefix, name))
+    return out
 
 
 def result_type(calc_id: str) -> type[Any]:
