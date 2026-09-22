@@ -68,7 +68,15 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"balance_error", "residual", "tm
 #: and `eos.tp_flash_saft`'s do - seven steps against fourteen, on the same state, to the same
 #: K-values. The tolerance the loop stops at is asserted through `residual`, which carries
 #: the bound the solver declared.
-_UNCOMPARED_FIELDS: frozenset[str] = frozenset({"iterations"})
+#:
+#: `error` is the second, and for the same reason one level along: it is the quantity an
+#: iteration *stops on*, so it reports where the loop is when the two codes part rather
+#: than what they were computing. `reactions.chemical_equilibrium` is the case that
+#: needed it - the two kernels converge to the same composition, one pass apart, and
+#: report errors five times apart because that is where each stopped. **The value is still
+#: pinned against NeqSim**, by the model's own case; this only drops the comparison of the
+#: two kernels to each other.
+_UNCOMPARED_FIELDS: frozenset[str] = frozenset({"iterations", "error"})
 
 
 def spec(calc_id: str) -> dict[str, Any]:
