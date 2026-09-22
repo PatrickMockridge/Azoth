@@ -120,16 +120,24 @@ pub fn mixer_stream(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// Flash a stream into vapour and liquid outlets at `temperature` (SI, K).
+/// Flash a stream into vapour and liquid outlets (SI: Pa, W, dimensionless).
 #[pyfunction]
+#[pyo3(signature = (feed, pressure_drop, gas_in_liquid = 0.0, heat_input = None))]
 pub fn separator_stream(
     py: Python<'_>,
     feed: &PyStream,
-    temperature: f64,
+    pressure_drop: f64,
+    gas_in_liquid: f64,
+    heat_input: Option<f64>,
 ) -> PyResult<(PyStream, PyStream)> {
-    azoth_process::kernels::separator(&feed.to_stream(), kelvins(temperature))
-        .map(|(v, l)| (PyStream::from_inner(v), PyStream::from_inner(l)))
-        .map_err(|e| to_pyerr(py, e))
+    azoth_process::kernels::separator(
+        &feed.to_stream(),
+        pascals(pressure_drop),
+        gas_in_liquid,
+        heat_input.map(watts),
+    )
+    .map(|(v, l)| (PyStream::from_inner(v), PyStream::from_inner(l)))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Drop a stream to `outlet_pressure` without heat or work (SI, Pa).
@@ -203,6 +211,39 @@ pub fn pump(
         isentropic_efficiency,
     )
     .map(|r| crate::results::PyPumpResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.separator` - the separator's kernel as a registered id.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input = None))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+pub fn separator(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_liquid: f64,
+    heat_input: Option<f64>,
+) -> PyResult<crate::results::PySeparatorResult> {
+    azoth_process::separator(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_liquid,
+        heat_input.map(watts),
+    )
+    .map(|r| crate::results::PySeparatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

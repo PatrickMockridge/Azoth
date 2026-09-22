@@ -32,8 +32,10 @@
 
 pub mod mixer;
 pub mod pump;
+pub mod separator;
 pub mod splitter;
 
 pub use mixer::{MixerResult, mixer};
 pub use pump::{PumpResult, pump};
+pub use separator::{SeparatorResult, separator};
 pub use splitter::{SplitterResult, splitter};

@@ -15,7 +15,7 @@ import pathlib
 
 from azoth import _core
 from azoth._dispatch import resolve
-from azoth.core.result import MixerResult, PumpResult, SplitterResult
+from azoth.core.result import MixerResult, PumpResult, SeparatorResult, SplitterResult
 from azoth.core.units import Q
 from azoth.process.kernels import Stream
 
@@ -24,11 +24,13 @@ __all__ = [
     "load_flowsheet",
     "mixer",
     "pump",
+    "separator",
     "splitter",
     "validate",
 ]
 
 _MIXER = "process.mixer"
+_SEPARATOR = "process.separator"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 
@@ -150,4 +152,40 @@ def mixer(
         feed_p=feed_p,
         feed_t=feed_t,
         outlet_pressure=outlet_pressure,
+    )
+
+
+def separator(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_liquid: float,
+    heat_input: Q | None = None,
+) -> SeparatorResult:
+    """Flash a stream into vapour and liquid outlets.
+
+    ``feed_n``, ``feed_z``, ``feed_p`` and ``feed_t`` are the inlet's record and
+    ``pressure_drop``, ``heat_input`` and ``gas_in_liquid`` are ``unit_ops.separator``'s
+    own parameters. The flash is at the **feed's** temperature - the vessel holds it - so a
+    pressure drop is not a throttling and the outlets do not carry the inlet's enthalpy; a
+    ``heat_input`` is the one thing that moves it.
+
+    Raises:
+        InvalidInputError: where the pressure drop takes the outlet below zero or the
+            entrainment fraction is outside ``[0, 1]``.
+
+    See :func:`azoth.process.reference.separator`.
+    """
+    return resolve(_SEPARATOR)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        pressure_drop=pressure_drop,
+        gas_in_liquid=gas_in_liquid,
+        heat_input=heat_input,
     )

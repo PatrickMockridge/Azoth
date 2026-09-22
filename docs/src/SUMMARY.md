@@ -163,6 +163,7 @@
 - [Unit operations](./process/index.md)
   - [Mixer](./process/mixer.md)
   - [Pump](./process/pump.md)
+  - [Separator](./process/separator.md)
   - [Splitter](./process/splitter.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)

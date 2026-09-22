@@ -1,0 +1,94 @@
+model = "process.separator"
+[[cases]]
+id = "the_equilibrium_split"
+tolerance = 2e-04
+source = "NeqSim master, `Separator.run` on a 0.7/0.3 methane/n-butane mixture at 300 K and 20 bara, from `validation/neqsim/captures/process_separator.tsv`. **Nothing is asked of the vessel**: no pressure drop, no heat input, no entrainment, so the flash is at the feed's own state and the split is the equilibrium one. That is also the only row where the energy balance closes - 0.81822 x 530.15 + 0.18178 x -17268.96 = -2705.37 against a feed of -2705.35 - and the case pins both outlets' records because a port that got one right and the other wrong would look correct on a sum. **The tolerance is the measured agreement and no better, and `vapour_h` sets it.** The flow and both compositions agree to `2e-12` - they come out of the same K-values - and the enthalpies are `0.06` J/mol apart, which is `1.2e-4` relative on the vapour's `530.15` because that field is the smallest-magnitude one in the row. The same absolute `0.06` J/mol appears on the liquid here and on `process.splitter`'s and `process.pump`'s own enthalpies, so it is the flash's arithmetic rather than either port's: a relative tolerance on a quantity that happens to pass near zero is a tighter test than the physics can meet.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+[cases.expected]
+vapour_n = 0.8182211906421439
+vapour_z = [0.8339243334525452, 0.16607566654745468]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 530.1529163915932
+liquid_n = 0.18177880935785606
+liquid_z = [0.09718095876744991, 0.9028190412325501]
+liquid_p = 2000000.0
+liquid_t = 300.0
+liquid_h = -17268.958496924708
+[[cases]]
+id = "a_pressure_drop_holds_the_temperature"
+tolerance = 2e-04
+source = "The capture's second row, a 2 bar drop. **The case exists because the outlets do not carry the inlet's enthalpy**: the feed is -2705.35 J/mol and the outlets weight to -2364.95, which is 340 J/mol that the balance does not account for. `Separator.run` sets the pressure to `P - pressureDrop` and runs a `TPflash`, so the vessel holds the temperature and the drop is not a throttling. A port that made it isenthalpic would be physically defensible and would disagree with the class it names - and would therefore have to say so rather than quietly improve it.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 200000.0
+gas_in_liquid = 0.0
+[cases.expected]
+vapour_n = 0.8360536845155941
+vapour_z = [0.8203430710096191, 0.1796569289903808]
+vapour_p = 1800000.0
+vapour_t = 300.0
+vapour_h = 594.757372548732
+liquid_n = 0.16394631548440586
+liquid_z = [0.08630357366533918, 0.9136964263346607]
+liquid_p = 1800000.0
+liquid_t = 300.0
+liquid_h = -17457.57964433711
+[[cases]]
+id = "a_heat_input_moves_the_flash"
+tolerance = 2e-04
+source = "The capture's third row, 1000 W into a 1 mol/s feed. **The duty is W and the enthalpy it moves is per mole**, so it adds `1000 / 1.0 = 1000` J/mol to the feed's -2705.35 and the outlets come out at 305.974 K - the temperature that carries it - rather than at the feed's 300 K. The weighted outlet enthalpy is -1704.25 against the feed's -2705.35 plus 1000, which is `Heater.run`'s one-second convention holding: a NeqSim process stream's total moles are one second of flow.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+heat_input = 1000.0
+gas_in_liquid = 0.0
+[cases.expected]
+vapour_n = 0.8544688027651463
+vapour_z = [0.8035773316657293, 0.19642266833427077]
+vapour_p = 2000000.0
+vapour_t = 305.9744979880211
+vapour_h = 821.1818312940813
+liquid_n = 0.14553119723485375
+liquid_z = [0.09185823889567003, 0.90814176110433]
+liquid_p = 2000000.0
+liquid_t = 305.9744979880211
+liquid_h = -16539.564427297686
+[[cases]]
+id = "entrainment_carries_vapour_into_the_liquid"
+tolerance = 2e-04
+source = "The capture's fourth row, `setEntrainment(0.05, \"mole\", \"feed\", \"gas\", \"liquid\")`. A twentieth of the vapour's moles move into the liquid: the vapour keeps its composition and its flow falls to 0.95 of the equilibrium one, 0.77731 against 0.81822, and the liquid becomes 0.22269 mol of a mixture that is 23% methane rather than the 9.7% the flash alone would give. `addPhaseFractionToPhase` moves the components one at a time, so the transfer is by moles and needs no root. **The liquid's enthalpy is not the mixed one**: NeqSim re-flashes the outlet at the carried temperature, so the case pins what the class reports rather than an energy balance it does not close.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.05
+[cases.expected]
+vapour_n = 0.7773101311100368
+vapour_z = [0.8339243334525452, 0.16607566654745468]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 530.1529163915928
+liquid_n = 0.22268986888996328
+liquid_z = [0.23253041230060956, 0.7674695876993904]
+liquid_p = 2000000.0
+liquid_t = 300.0
+liquid_h = -13999.027492525918

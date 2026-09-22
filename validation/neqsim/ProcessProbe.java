@@ -50,6 +50,9 @@ public class ProcessProbe {
       case "mixer":
         mixer();
         break;
+      case "separator":
+        separator();
+        break;
       default:
         throw new IllegalArgumentException("no such unit operation: " + which);
     }
@@ -168,24 +171,78 @@ public class ProcessProbe {
     }
   }
 
+  static void separator() {
+    // **Four rows, one per thing `Separator.run` does between the inlet and the outlets.**
+    // A pressure drop, an optional heat input before the flash, and an entrainment
+    // fraction that carries part of the vapour into the liquid; the first row has none of
+    // the three, which is the plain flash at the *feed's* temperature - the state a port
+    // that took a temperature of its own would never reach.
+    //
+    // The fluid is a methane/n-butane mixture at 300 K and 20 bara, chosen so a vapour
+    // phase exists and the entrainment row has something to move. Both outlets carry a
+    // record rather than one being an empty placeholder.
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.7, 0.3 };
+
+    Stream plain = feed(names, z, 300.0, 20.0, 1.0);
+    runSeparator("pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0", names, z, plain, 0.0, null,
+        0.0);
+
+    runSeparator("pressure_drop_bara=2 heat_input_W=0 gas_in_liquid=0", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 2.0, null, 0.0);
+
+    runSeparator("pressure_drop_bara=0 heat_input_W=1000 gas_in_liquid=0", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 0.0, 1000.0, 0.0);
+
+    runSeparator("pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0.05", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 0.0, null, 0.05);
+  }
+
+  static void runSeparator(String label, String[] names, double[] z, Stream inlet, double dropBara,
+      Double heatInputW, double gasInLiquid) {
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", inlet);
+    if (dropBara != 0.0) {
+      separator.setPressureDrop(dropBara);
+    }
+    if (heatInputW != null) {
+      separator.setHeatInput(heatInputW);
+    }
+    if (gasInLiquid != 0.0) {
+      // `specType` is "mole": the fraction is of the phase's mole count, which is the
+      // basis a five-field port can carry. "volume" and "mass" are the other two and
+      // neither is a mole fraction.
+      separator.setEntrainment(gasInLiquid, "mole", "feed", "gas", "liquid");
+    }
+    separator.run();
+    System.out.println(label);
+    print("feed", inlet);
+    print("vapour", separator.getGasOutStream());
+    print("liquid", separator.getLiquidOutStream());
+    System.out.println();
+  }
+
   /// One stream's record, which is what a port carries.
   ///
-  /// **The enthalpy is the system's total over the system's total moles, not phase 0's
-  /// over phase 0's.** The two agree on a single-phase fluid, which is why the pump's
-  /// capture cannot tell them apart - but a `SystemPrEos` keeps *two* phase objects alive
-  /// whatever `getNumberOfPhases()` says, and a unit operation that leaves them
-  /// inconsistent makes phase 0's ratio a different number from the system's. Reading the
-  /// system's is the one that says what the stream carries.
+  /// **Both the enthalpy and the composition are the system's, not phase 0's.** A port's
+  /// record describes the *stream*, and a stream that has flashed is two phases with one
+  /// overall composition; phase 0's `x` is the vapour's composition and phase 0's enthalpy
+  /// over phase 0's moles is the vapour's, neither of which is what the port carries.
+  ///
+  /// The two agree on a single-phase fluid, which is why the pump's and splitter's
+  /// captures cannot tell them apart - but a separator's whole subject is a fluid that is
+  /// *not* single-phase, and reading phase 0 there reports the vapour twice.
   static void print(String port, StreamInterface stream) {
     SystemInterface fluid = stream.getThermoSystem();
     System.out.println(port + "_n=" + stream.getFlowRate("mol/sec"));
     System.out.println(port + "_P=" + stream.getPressure("bara"));
     System.out.println(port + "_T=" + stream.getTemperature("K"));
     System.out.println(port + "_h=" + fluid.getEnthalpy() / fluid.getTotalNumberOfMoles());
+    double[] overall = fluid.getMolarComposition();
     StringBuilder composition = new StringBuilder(port + "_z=");
     for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
       composition.append(fluid.getPhase(0).getComponent(i).getName()).append(":")
-          .append(fluid.getPhase(0).getComponent(i).getx());
+          .append(overall[i]);
       if (i + 1 < fluid.getPhase(0).getNumberOfComponents()) {
         composition.append(" ");
       }

@@ -1,0 +1,99 @@
+id = "process.separator"
+name = "Separator"
+kind = "direct"
+assumptions = [
+    "**the flash is at the feed's own temperature, not at one the caller states.** `Separator.run` reduces the pressure and runs a `TPflash`, so the vessel holds the temperature; a stated temperature is not a parameter of that class and is not one here. `heat_input` is the only thing that moves it.",
+    "**a pressure drop is therefore not a throttling, and the outlets do not carry the inlet's enthalpy.** The capture's 2 bar row takes -2705.35 J/mol in to a weighted -2364.95 out. That is the class's own model of the vessel, and the balance is open whenever `pressure_drop` is non-zero.",
+    "**`heat_input` moves the flash to the enthalpy it implies**, following `Heater.run`'s one-second convention: the duty is W and the flow is mol/s, so it adds `Q/n` J/mol before the flash. The outlet temperature is then solved for and both outlets are at it.",
+    "**`gas_in_liquid` carries that fraction of the vapour's moles into the liquid outlet**, which is `setEntrainment(..., \"mole\", \"feed\", \"gas\", \"liquid\")`. Both outlets are then at the same temperature, so the transfer moves material and not energy.",
+    "**the entrainment acts only where both phases exist.** `addPhaseFractionToPhase` returns unchanged unless the from-phase and to-phase are both present, so a single-phase feed is untouched whatever the fraction says.",
+    "**`efficiency` is not a parameter here.** `Separator` carries the field and a setter, and `run` never reads it - the class says so at `Separator.java:575`. The palette entry used to declare it, which is a parameter nothing could honour.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`. **None is ported**, and neither are `oil_in_gas` and `water_in_gas`: those move material between the oil, aqueous and gas phases, which a two-outlet port has no phases for.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim process/equipment/separator/Separator.java"
+edition = "Its steady-state `run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the enthalpy a `heatInput` implies, the entrainment calls, each outlet from its phase. **`oilInGas` and `waterInGas` are not carried**: no oil or aqueous phase exists here."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the inlet's molar flow, which the flash's vapour fraction divides between the outlets.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, the feed the flash splits.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the inlet pressure. The outlets flash at this less `pressure_drop`.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the inlet temperature, which the vessel holds and the outlets therefore share, unless a `heat_input` moves the flash.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel, which is `unit_ops.separator`'s own parameter. NeqSim's is in the thermo system's pressure unit and this one is in pascals, as every other pressure here is.\n"
+[inputs.gas_in_liquid]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the liquid outlet. Zero is the equilibrium split and no entrainment.\n"
+[inputs.heat_input]
+unit = "W"
+optional = true
+description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for.\n"
+[outputs]
+[outputs.vapour_n]
+unit = "mol/s"
+description = "the vapour outlet's molar flow: the feed's times the vapour fraction, less whatever `gas_in_liquid` carried away.\n"
+[outputs.vapour_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vapour outlet's composition, which is the flash's `y` - entrainment takes moles from the vapour and leaves its composition alone.\n"
+[outputs.vapour_p]
+unit = "Pa"
+description = "the vapour outlet's pressure, which is `feed_p - pressure_drop`.\n"
+[outputs.vapour_t]
+unit = "K"
+description = "the vapour outlet's temperature, which is `feed_t` unless a `heat_input` moved the flash.\n"
+[outputs.vapour_h]
+unit = "J/mol"
+description = "the vapour outlet's molar enthalpy at its own state. **Not the inlet's** whenever a pressure drop or an entrainment is asked for - see the assumptions.\n"
+[outputs.liquid_n]
+unit = "mol/s"
+description = "the liquid outlet's molar flow: the feed's less the vapour's, plus whatever `gas_in_liquid` carried in.\n"
+[outputs.liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid outlet's composition, which is the flash's `x` or, where vapour was carried in, the mole-weighted mixture of `x` and the vapour's `y`.\n"
+[outputs.liquid_p]
+unit = "Pa"
+description = "the liquid outlet's pressure, the same as the vapour's.\n"
+[outputs.liquid_t]
+unit = "K"
+description = "the liquid outlet's temperature, the same as the vapour's - one flash decides both.\n"
+[outputs.liquid_h]
+unit = "J/mol"
+description = "the liquid outlet's molar enthalpy at its own state.\n"
+[[valid_range]]
+quantity = "pressure_drop"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a vessel passes pressure down, not up\n"
+[[valid_range]]
+quantity = "gas_in_liquid"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an entrainment fraction is a fraction\n"
+[implementations]
+python = "azoth.process.separator"
+rust = "azoth_process::separator"

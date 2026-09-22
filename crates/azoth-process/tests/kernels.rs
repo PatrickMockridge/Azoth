@@ -48,11 +48,19 @@ fn a_mixer_conserves_moles_and_enthalpy() {
 }
 
 #[test]
-fn a_separator_conserves_moles() {
+fn a_separator_conserves_moles_and_energy() {
     let feed = binary(0.5, 100.0, 5e5, 270.0);
-    let (vapour, liquid) = separator(&feed, kelvins(270.0)).expect("separator");
+    let (vapour, liquid) = separator(&feed, pascals(0.0), 0.0, None).expect("separator");
 
     close(vapour.n + liquid.n, feed.n);
+    // **Energy too, and only because nothing was asked of the vessel.** The flash is at
+    // the feed's own temperature and pressure, so the split is the equilibrium one and the
+    // sums match whatever the fluid is. A pressure drop or a heat input would move it, and
+    // that is a case's business rather than an invariant's.
+    close(
+        vapour.h.value * vapour.n + liquid.h.value * liquid.n,
+        feed.h.value * feed.n,
+    );
     if vapour.n > 0.0 && liquid.n > 0.0 {
         for i in 0..2 {
             close(
@@ -61,6 +69,23 @@ fn a_separator_conserves_moles() {
             );
         }
     }
+}
+
+#[test]
+fn a_separator_carries_vapour_into_the_liquid() {
+    let feed = binary(0.5, 100.0, 5e5, 270.0);
+    let (plain, _) = separator(&feed, pascals(0.0), 0.0, None).expect("separator");
+    let (carried, liquid) = separator(&feed, pascals(0.0), 0.1, None).expect("separator");
+
+    // A tenth of the vapour's moles move, and they move as material: the vapour keeps its
+    // composition and the liquid's becomes the mixture of what it had and what arrived.
+    close(carried.n, plain.n * 0.9);
+    close(carried.z[0], plain.z[0]);
+    close(carried.n + liquid.n, feed.n);
+    close(
+        carried.z[0] * carried.n + liquid.z[0] * liquid.n,
+        feed.z[0] * feed.n,
+    );
 }
 
 #[test]

@@ -133,6 +133,7 @@ from azoth.core.result import (
     SaltPrecipitationResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
+    SeparatorResult,
     SiddiqiLucasDiffusivityResult,
     SolidFugacityResult,
     SoreideWhitsonAlphaResult,
@@ -3692,6 +3693,48 @@ def mixer(
         product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
         product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def separator(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_liquid: float,
+    heat_input: Q | None = None,
+) -> SeparatorResult:
+    """`process.separator`, computed in Rust.
+
+    The component names cross unresolved, as the other unit operations' do: the Rust side
+    resolves the mixture itself, so the two languages cannot disagree about which databank
+    row answered.
+    """
+    spec = _models_gen.model("process.separator")
+    result = _core.separator(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        _si(spec, "gas_in_liquid", gas_in_liquid),
+        None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+    )
+    return SeparatorResult(
+        vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
+        vapour_z=tuple(result.vapour_z),
+        vapour_p=from_si(result.vapour_p.magnitude_si, result.vapour_p.unit),
+        vapour_t=from_si(result.vapour_t.magnitude_si, result.vapour_t.unit),
+        vapour_h=from_si(result.vapour_h.magnitude_si, result.vapour_h.unit),
+        liquid_n=from_si(result.liquid_n.magnitude_si, result.liquid_n.unit),
+        liquid_z=tuple(result.liquid_z),
+        liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
+        liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
+        liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
         warnings=_warnings(result.warnings),
     )
 

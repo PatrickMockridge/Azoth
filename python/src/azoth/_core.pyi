@@ -1323,6 +1323,20 @@ class PumpResult:
     warnings: list[Warning]
 
 @final
+class SeparatorResult:
+    vapour_n: Qty
+    vapour_z: list[float]
+    vapour_p: Qty
+    vapour_t: Qty
+    vapour_h: Qty
+    liquid_n: Qty
+    liquid_z: list[float]
+    liquid_p: Qty
+    liquid_t: Qty
+    liquid_h: Qty
+    warnings: list[Warning]
+
+@final
 class SplitterResult:
     products_n: list[Qty]
     products_z: list[list[float]]
@@ -2418,6 +2432,16 @@ def pump(
     outlet_pressure: float,
     isentropic_efficiency: float,
 ) -> PumpResult: ...
+def separator(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    pressure_drop: float,
+    gas_in_liquid: float,
+    heat_input: float | None = None,
+) -> SeparatorResult: ...
 def splitter(
     components: list[str],
     feed_n: float,
@@ -2484,7 +2508,7 @@ def calc_ids() -> list[str]: ...
 def version() -> str: ...
 def splitter_stream(feed: Stream, fractions: list[float]) -> list[Stream]: ...
 def mixer_stream(inlets: list[Stream], outlet_pressure: float | None = ...) -> Stream: ...
-def separator_stream(feed: Stream, temperature: float) -> tuple[Stream, Stream]: ...
+def separator_stream(feed: Stream, pressure_drop: float, gas_in_liquid: float = ..., heat_input: float | None = ...) -> tuple[Stream, Stream]: ...
 def throttling_valve_stream(feed: Stream, outlet_pressure: float) -> Stream: ...
 def heat_exchanger_stream(hot: Stream, cold: Stream, duty: float) -> tuple[Stream, Stream]: ...
 def pump_stream(feed: Stream, outlet_pressure: float, efficiency: float) -> Stream: ...

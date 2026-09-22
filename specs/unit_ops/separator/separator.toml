@@ -1,13 +1,17 @@
 id = "unit_ops.separator"
 name = "Separator"
+notes = "**The parameters are `Separator.run`'s own, and the entry used to declare two it does not read.** `temperature` was never a parameter of this class: `run` flashes at the feed's temperature (moving it only through `heatInput`). `efficiency` is a field with a setter that `run` never touches - the class says so at `Separator.java:575`, \"the entrainment applied during `run()` is unaffected\" - and the entrainment fractions are what actually move material, so `gas_in_liquid` is the one of the three a two-phase port can carry. `oil_in_gas` and `water_in_gas` move material between the oil, aqueous and gas phases, which a two-outlet entry has no phases for; they belong to `unit_ops.three_phase_separator`."
 [source]
 standard = "NeqSim process/equipment/separator/Separator.java"
-[parameters.temperature]
-unit = "K"
-description = "the flash temperature; defaults to the feed's temperature when omitted"
-[parameters.efficiency]
+[parameters.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy"
+[parameters.heat_input]
+unit = "W"
+description = "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's"
+[parameters.gas_in_liquid]
 unit = "dimensionless"
-description = "separation efficiency, between 0 and 1"
+description = "the fraction of the vapour's moles carried over into the liquid outlet, on NeqSim's `feed`/`mole` basis for `setEntrainment`"
 [[ports]]
 name = "feed"
 direction = "in"

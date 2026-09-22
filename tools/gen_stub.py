@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, get_args, get_origin, get_type_hints
 
@@ -265,7 +266,11 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     # the convention does not have to be rediscovered per kernel.
     ("splitter_stream(feed: Stream, fractions: list[float])", "list[Stream]"),
     ("mixer_stream(inlets: list[Stream], outlet_pressure: float | None = ...)", "Stream"),
-    ("separator_stream(feed: Stream, temperature: float)", "tuple[Stream, Stream]"),
+    (
+        "separator_stream(feed: Stream, pressure_drop: float, gas_in_liquid: float = ...,"
+        " heat_input: float | None = ...)",
+        "tuple[Stream, Stream]",
+    ),
     ("throttling_valve_stream(feed: Stream, outlet_pressure: float)", "Stream"),
     ("heat_exchanger_stream(hot: Stream, cold: Stream, duty: float)", "tuple[Stream, Stream]"),
     ("pump_stream(feed: Stream, outlet_pressure: float, efficiency: float)", "Stream"),
@@ -346,6 +351,22 @@ def render_parameter(name: str, declaration: dict[str, Any]) -> str:
     if declaration.get("optional", False):
         return f"{name}: {base} | None = None"
     return f"{name}: {base}"
+
+
+def ordered_parameters(inputs: Mapping[str, dict[str, Any]]) -> list[tuple[str, dict[str, Any]]]:
+    """A model's declared inputs, **with the optional ones last**.
+
+    Python has no syntax for a parameter with a default in front of one without, so a
+    spec that declares an optional input anywhere but last cannot be spelled as a
+    signature at all - and `process.separator`'s `gas_in_liquid` after `heat_input` was
+    exactly that, emitted as a stub that did not parse. The spec's own order is the
+    domain's order and is worth keeping; the *signature's* order is a language
+    constraint, so it is applied here rather than imposed on every spec.
+    """
+    items = list(inputs.items())
+    return [item for item in items if not item[1].get("optional", False)] + [
+        item for item in items if item[1].get("optional", False)
+    ]
 
 
 def render_result_class(calc_id: str) -> str:
@@ -469,12 +490,14 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             params += ["Tc: float", "Pc: float", "omega: float"]
     if "ideal_gas" in taken:
         params += [f"{n}: list[float]" for n in ("cp_a", "cp_b", "cp_c", "cp_d", "cp_e")]
-    for parameter, declaration in model["inputs"].items():
-        # `components` is the declared input every model resolves; a *second* one the
-        # function does not take is one the boundary resolved beside it - UNIFAC-UMR-PRU's
-        # parameter set, which a `params` record carries rather than a signature. Asking
-        # the signature is what keeps the two rules from diverging: `python/tests/_helpers.py`
-        # skips exactly these when it builds its own call.
+    # **The declared inputs, optional ones last**, for the reason `ordered_parameters`
+    # gives: the signature has to parse. `components` is skipped because it is the input
+    # every model resolves into a `Mixture`, and a *second* one the function does not
+    # take is one the boundary resolved beside it - UNIFAC-UMR-PRU's parameter set, which
+    # a `params` record carries rather than a signature. Asking the signature is what
+    # keeps the two rules from diverging: `python/tests/_helpers.py` skips exactly these
+    # when it builds its own call.
+    for parameter, declaration in ordered_parameters(model["inputs"]):
         if parameter == "components" or parameter not in taken:
             continue
         params.append(render_parameter(parameter, declaration))
@@ -502,10 +525,23 @@ def render_signature(entry: dict[str, Any]) -> str:
     params = (
         transport_parameters(entry)
         if entry["id"] in MODEL_IDS
-        else [render_parameter(name, d) for name, d in entry["inputs"].items()]
+        else [render_parameter(name, d) for name, d in ordered_parameters(entry["inputs"])]
     )
     if not params:
         return f"def {function}() -> {result_name}: ..."
+    # **Python has no syntax for a parameter with a default in front of one without**,
+    # so a signature that has one does not parse - and a `.pyi` that does not parse
+    # stops the type checker at that line rather than reporting it as a stub problem.
+    # `process.separator` emitted exactly that: `heat_input` optional before a required
+    # `gas_in_liquid`. The implementations put an optional input last for this reason,
+    # and this refuses the alternative rather than emitting a file nothing can read.
+    defaulted = [index for index, param in enumerate(params) if "=" in param]
+    if defaulted and any("=" not in param for param in params[defaulted[0] :]):
+        raise SystemExit(
+            f"gen_stub: {entry['id']}: a parameter with a default is followed by one "
+            f"without, which is not a valid Python signature. An optional input goes "
+            f"last, in the spec and in every implementation."
+        )
     single = f"def {function}({', '.join(params)}) -> {result_name}: ..."
     if len(single) <= 100:
         return single

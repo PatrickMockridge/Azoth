@@ -113,9 +113,25 @@ def mixer(inlets: Sequence[Stream], outlet_pressure: Q | None = None) -> Stream:
     return Stream(_core.mixer_stream([s._inner for s in inlets], p))
 
 
-def separator(stream: Stream, temperature: Q) -> tuple[Stream, Stream]:
-    """Flash a stream into vapour and liquid outlets at ``temperature``."""
-    vapour, liquid = _core.separator_stream(stream._inner, to_si(temperature, "K", "temperature"))
+def separator(
+    stream: Stream,
+    pressure_drop: Q,
+    gas_in_liquid: float = 0.0,
+    heat_input: Q | None = None,
+) -> tuple[Stream, Stream]:
+    """Flash a stream into vapour and liquid outlets across ``pressure_drop``.
+
+    The flash is at the feed's own temperature - the vessel holds it - so a pressure drop
+    is not a throttling and the outlets do not carry the inlet's enthalpy. ``heat_input``,
+    when given, moves the flash to the enthalpy it implies instead. ``gas_in_liquid`` is
+    the fraction of the vapour's moles carried over into the liquid outlet.
+    """
+    vapour, liquid = _core.separator_stream(
+        stream._inner,
+        to_si(pressure_drop, "Pa", "pressure_drop"),
+        float(gas_in_liquid),
+        None if heat_input is None else to_si(heat_input, "W", "heat_input"),
+    )
     return Stream(vapour), Stream(liquid)
 
 

@@ -225,6 +225,7 @@ Four sections, and the difference between them is the point:
 
 - [`process.mixer`](./process/mixer.md) — Mixer
 - [`process.pump`](./process/pump.md) — Pump
+- [`process.separator`](./process/separator.md) — Separator
 - [`process.splitter`](./process/splitter.md) — Splitter
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):

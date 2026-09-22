@@ -15,4 +15,5 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 |---|---|---|
 | [`process.mixer`](./mixer.md) | `direct composition` | NeqSim process/equipment/mixer/Mixer.java |
 | [`process.pump`](./pump.md) | `direct composition` | NeqSim process/equipment/pump/Pump.java |
+| [`process.separator`](./separator.md) | `direct composition` | NeqSim process/equipment/separator/Separator.java |
 | [`process.splitter`](./splitter.md) | `direct composition` | NeqSim process/equipment/splitter/Splitter.java |

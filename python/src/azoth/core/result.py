@@ -374,6 +374,41 @@ class PumpResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SeparatorResult(_HasWarnings):
+    """Result of ``process.separator``.
+
+    **Two outlets of single multiplicity, so ten fields.** The port rule gives a `one`
+    port the record's five fields as five result fields, and a separator has two such
+    ports, so this is the pair written out under the ports' own names - which is what
+    ``unit_ops.separator``'s ``vapour`` and ``liquid`` are called, and not a list of two
+    records.
+    """
+
+    #: Vapour outlet molar flow.
+    vapour_n: Q
+    #: Vapour outlet composition.
+    vapour_z: tuple[float, ...]
+    #: Vapour outlet pressure.
+    vapour_p: Q
+    #: Vapour outlet temperature.
+    vapour_t: Q
+    #: Vapour outlet molar enthalpy.
+    vapour_h: Q
+    #: Liquid outlet molar flow.
+    liquid_n: Q
+    #: Liquid outlet composition.
+    liquid_z: tuple[float, ...]
+    #: Liquid outlet pressure.
+    liquid_p: Q
+    #: Liquid outlet temperature.
+    liquid_t: Q
+    #: Liquid outlet molar enthalpy.
+    liquid_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MixerResult(_HasWarnings):
     """Result of ``process.mixer``.
 

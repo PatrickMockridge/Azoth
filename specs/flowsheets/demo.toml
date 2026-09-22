@@ -25,7 +25,7 @@ outlet_temperature = 320.0
 id = "sep1"
 unit = "unit_ops.separator"
 [instances.parameters]
-temperature = 290.0
+pressure_drop = 5.0e4
 
 [[connections]]
 from = "feed_1"

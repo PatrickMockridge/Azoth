@@ -1,0 +1,68 @@
+pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2705.348363948871
+feed_z=methane:0.7 n-butane:0.3
+vapour_n=0.8182211906421439
+vapour_P=20.0
+vapour_T=300.0
+vapour_h=530.1529163915932
+vapour_z=methane:0.8339243334525452 n-butane:0.16607566654745468
+liquid_n=0.18177880935785606
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-17268.958496924708
+liquid_z=methane:0.09718095876744991 n-butane:0.9028190412325501
+
+pressure_drop_bara=2 heat_input_W=0 gas_in_liquid=0
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2705.348363948871
+feed_z=methane:0.7 n-butane:0.3
+vapour_n=0.8360536845155941
+vapour_P=18.0
+vapour_T=300.0
+vapour_h=594.757372548732
+vapour_z=methane:0.8203430710096191 n-butane:0.1796569289903808
+liquid_n=0.16394631548440586
+liquid_P=18.0
+liquid_T=300.0
+liquid_h=-17457.57964433711
+liquid_z=methane:0.08630357366533918 n-butane:0.9136964263346607
+
+pressure_drop_bara=0 heat_input_W=1000 gas_in_liquid=0
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2705.348363948871
+feed_z=methane:0.7 n-butane:0.3
+vapour_n=0.8544688027651463
+vapour_P=20.0
+vapour_T=305.9744979880211
+vapour_h=821.1818312940813
+vapour_z=methane:0.8035773316657293 n-butane:0.19642266833427077
+liquid_n=0.14553119723485375
+liquid_P=20.0
+liquid_T=305.9744979880211
+liquid_h=-16539.564427297686
+liquid_z=methane:0.09185823889567003 n-butane:0.90814176110433
+
+pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0.05
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2705.348363948871
+feed_z=methane:0.7 n-butane:0.3
+vapour_n=0.7773101311100368
+vapour_P=20.0
+vapour_T=300.0
+vapour_h=530.1529163915928
+vapour_z=methane:0.8339243334525452 n-butane:0.16607566654745468
+liquid_n=0.22268986888996328
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-13999.027492525918
+liquid_z=methane:0.23253041230060956 n-butane:0.7674695876993904
+

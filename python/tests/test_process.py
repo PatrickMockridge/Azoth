@@ -59,10 +59,28 @@ def test_a_mixer_conserves_moles_and_enthalpy() -> None:
 
 
 def test_a_separator_conserves_moles() -> None:
+    q = azoth.ureg.Quantity
     feed = _binary(0.5, 100.0, 5e5, 270.0)
-    vapour, liquid = kernels.separator(feed, azoth.ureg.Quantity(270.0, "K"))
+    vapour, liquid = kernels.separator(feed, q(0.0, "Pa"))
 
     _close(vapour.n + liquid.n, feed.n)
+    # Energy too, and only because nothing was asked of the vessel: the flash is at the
+    # feed's own temperature and pressure. A pressure drop moves it, which is a case's
+    # business rather than an invariant's.
+    _close(
+        vapour.h.magnitude * vapour.n + liquid.h.magnitude * liquid.n,
+        feed.h.magnitude * feed.n,
+    )
+
+
+def test_a_separator_carries_vapour_into_the_liquid() -> None:
+    q = azoth.ureg.Quantity
+    feed = _binary(0.5, 100.0, 5e5, 270.0)
+    plain, _ = kernels.separator(feed, q(0.0, "Pa"))
+    carried, liquid = kernels.separator(feed, q(0.0, "Pa"), gas_in_liquid=0.1)
+
+    _close(carried.n, plain.n * 0.9)
+    _close(carried.n + liquid.n, feed.n)
 
 
 def test_validate_holds_the_demo_and_rejects_a_double_fed_inlet() -> None:
