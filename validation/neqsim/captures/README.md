@@ -34,6 +34,14 @@ no committed capture to compare against, so the next pin move cannot say whether
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 150 50 methane 1 > captures/pcsaft_probe_methane_150_50.tsv
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 300 100 propane 1 > captures/pcsaft_probe_propane_300_100.tsv
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 400 50 methane 1 > captures/pcsaft_probe_methane_400_50.tsv
+
+**`ProcessProbe` takes a unit operation's name and prints that unit operation's inlet and
+outlet on the palette's record**, so one recipe per unit operation and one capture each. It
+is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
+```
 ```
 
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
