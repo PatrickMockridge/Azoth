@@ -27,6 +27,19 @@ pub fn mixer(inlets: &[Stream], outlet_pressure: Option<Pressure>) -> azoth_core
     let n_components = components.len();
 
     let n_total: f64 = inlets.iter().map(|s| s.n).sum();
+    // **Feeds that carry nothing are refused rather than divided by.** The outlet
+    // composition is the flows' weighted average, so a zero total is a 0/0 and every field
+    // of the outlet would be NaN. NeqSim propagates a zero-flow outlet instead, through an
+    // `isActive` flag this library's `Stream` has no equivalent of; a caller with a branch
+    // that may be idle has to say what it wants, because a NaN state is not an answer.
+    if n_total <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "inlets",
+            format!(
+                "a mixer's feeds carry {n_total} mol/s in total, so there is no mixture to report"
+            ),
+        ));
+    }
     let mut z = vec![0.0; n_components];
     let mut h_total = 0.0;
     for inlet in inlets {

@@ -43,6 +43,7 @@ is the only probe here that drives `neqsim.process` rather than `neqsim.thermo`.
 ```bash
 java -cp .:neqsim-f0c7436.jar ProcessProbe pump > captures/process_pump.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe splitter > captures/process_splitter.tsv
+java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 ```
 
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate

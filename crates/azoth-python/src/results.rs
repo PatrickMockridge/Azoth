@@ -54,7 +54,7 @@ use azoth_eos::results::{
     WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
-use azoth_process::{PumpResult, SplitterResult};
+use azoth_process::{MixerResult, PumpResult, SplitterResult};
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
@@ -489,6 +489,73 @@ impl PyConductionPlaneWallResult {
             "ConductionPlaneWallResult(q={} {})",
             self.q.magnitude_si, self.q.unit
         )
+    }
+}
+
+/// Result of `process.mixer`, transported.
+///
+/// The counterpart of `SplitterResult`: a `many` port on the way in and the record's five
+/// fields on the way out, which is why this has no vectors in it.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MixerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMixerResult {
+    /// Molar flow out, mol/s.
+    #[pyo3(get)]
+    pub product_n: PyQty,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub product_z: Vec<f64>,
+    /// Outlet pressure.
+    #[pyo3(get)]
+    pub product_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub product_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub product_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMixerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MixerResult(product_n={} {}, product_t={})",
+            self.product_n.magnitude_si, self.product_n.unit, self.product_t.magnitude_si
+        )
+    }
+}
+
+impl From<&MixerResult> for PyMixerResult {
+    fn from(r: &MixerResult) -> Self {
+        Self {
+            product_n: PyQty {
+                magnitude_si: r.product_n,
+                unit: "mol/s".to_string(),
+            },
+            product_z: r.product_z.clone(),
+            product_p: PyQty {
+                magnitude_si: r.product_p.value,
+                unit: "Pa".to_string(),
+            },
+            product_t: PyQty {
+                magnitude_si: r.product_t.value,
+                unit: "K".to_string(),
+            },
+            product_h: PyQty {
+                magnitude_si: r.product_h.value,
+                unit: "J/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
     }
 }
 
@@ -7200,6 +7267,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
+        MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),

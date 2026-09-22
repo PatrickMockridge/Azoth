@@ -27,6 +27,6 @@ pub use load::{load_palette, parse_flowsheet};
 // work around: a kernel takes and returns a `Stream`, which is what a flowsheet's
 // connection carries, while a model takes the record field by field so that a case, a
 // cross-impl test and a NeqSim capture can address it.
-pub use models::{PumpResult, SplitterResult, pump, splitter};
+pub use models::{MixerResult, PumpResult, SplitterResult, mixer, pump, splitter};
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

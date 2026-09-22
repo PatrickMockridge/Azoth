@@ -1,0 +1,73 @@
+id = "process.mixer"
+name = "Mixer"
+kind = "direct"
+assumptions = [
+    "**the feeds are one port, so every field has one entry per feed.** `feed_n`, `feed_z`, `feed_p` and `feed_t` are vectors and a matrix of the same length, and the fluid's `components` is declared once because every inlet of a unit operation carries the same fluid.",
+    "**mixing is isenthalpic, and the outlet temperature is solved for.** The joined enthalpy is the flow-weighted average of the feeds' and `Stream::from_ph` finds the temperature at which the joined mixture carries it, so the outlet is at neither feed's temperature in general.",
+    "**the outlet pressure is the lowest feed pressure unless one is stated.** A mixer cannot raise its own pressure. NeqSim's `Mixer.run` does the same - it takes the minimum over the active inlets and lets an explicit outlet pressure override it - and both rows of the capture exercise one of the two.",
+    "**`outlet_pressure` is optional, and omitting it leaves the pressure unchecked.** A bound on an optional input cannot always run, so an omitted pressure produces a `RANGE_CHECK_SKIPPED` warning rather than silence: `checked and fine` and `never checked` must not look alike.",
+    "**feeds carrying nothing in total are refused.** The outlet composition is the flows' weighted average, so a zero total is a 0/0 and every field would return NaN. NeqSim propagates a zero-flow outlet instead, through an `isActive` flag `Stream` has no equivalent of.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Mixer` also carries a canonical inlet ordering, a pressure-mismatch flag and a `runTransient`. **The flag is not ported**: it warns that the inlets arrived at different pressures and the outlet collapsed to the lowest, which is about upstream equipment rather than the record.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/mixer/Mixer.java` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim process/equipment/mixer/Mixer.java"
+edition = "Its steady-state `run`: the active inlets' lowest pressure as the outlet's unless one is specified, and a `PHflash` at the flow-weighted enthalpy for the temperature."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name. Every feed carries this fluid, so it is declared once.\n"
+[inputs.feed_n]
+type = "vector"
+unit = "mol/s"
+length = "one per feed"
+description = "each feed's molar flow, whose sum is the outlet's.\n"
+[inputs.feed_z]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per feed, one column per component"
+description = "each feed's composition. The outlet's is these weighted by `feed_n`.\n"
+[inputs.feed_p]
+type = "vector"
+unit = "Pa"
+length = "one per feed"
+description = "each feed's pressure. The lowest is the outlet's unless `outlet_pressure` says otherwise.\n"
+[inputs.feed_t]
+type = "vector"
+unit = "K"
+length = "one per feed"
+description = "each feed's temperature, which with its pressure and composition fixes its enthalpy.\n"
+[inputs.outlet_pressure]
+unit = "Pa"
+optional = true
+description = "a specified outlet pressure, for a header whose pressure is held upstream. When omitted the outlet takes the lowest feed pressure.\n"
+[outputs]
+[outputs.product_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the feeds' sum.\n"
+[outputs.product_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition: the feeds' mole fractions weighted by their flows.\n"
+[outputs.product_p]
+unit = "Pa"
+description = "the outlet pressure: `outlet_pressure` when given, else the lowest feed pressure.\n"
+[outputs.product_t]
+unit = "K"
+description = "the outlet temperature, solved from the joined enthalpy at the outlet pressure.\n"
+[outputs.product_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy, the flow-weighted average of the feeds'. Mixing adds no heat and no work, so this is the whole of the energy balance.\n"
+[[valid_range]]
+quantity = "outlet_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[implementations]
+python = "azoth.process.mixer"
+rust = "azoth_process::mixer"

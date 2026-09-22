@@ -47,6 +47,9 @@ public class ProcessProbe {
       case "splitter":
         splitter();
         break;
+      case "mixer":
+        mixer();
+        break;
       default:
         throw new IllegalArgumentException("no such unit operation: " + which);
     }
@@ -132,6 +135,35 @@ public class ProcessProbe {
       SystemInterface feed = inlet.getThermoSystem();
       System.out.println("molar_enthalpy_in=" + feed.getEnthalpy() / feed.getTotalNumberOfMoles());
       System.out.println("molar_enthalpy_out_weighted=" + weighted);
+      System.out.println();
+    }
+  }
+
+  static void mixer() {
+    // **Two inlets at different pressures and different compositions.** `Mixer.run` sets
+    // the outlet to the lowest active inlet pressure and flashes the joined fluid to the
+    // flow-weighted enthalpy, so both rules are exercised: a composition that is not
+    // either feed's, and a pressure that is neither inlet's when the outlet is stated.
+    // The palette declares the outlet pressure optional, so the second row states one.
+    for (Double specified : new Double[] { null, 8.0 }) {
+      Stream first = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.6, 0.4 },
+          300.0, 10.0, 1.0);
+      Stream second = feed(new String[] { "n-butane", "n-pentane" }, new double[] { 0.3, 0.7 },
+          300.0, 6.0, 2.0);
+
+      neqsim.process.equipment.mixer.Mixer mixer =
+          new neqsim.process.equipment.mixer.Mixer("mx1");
+      mixer.addStream(first);
+      mixer.addStream(second);
+      if (specified != null) {
+        mixer.setOutletPressure(specified);
+      }
+      mixer.run();
+
+      System.out.println("specified_outlet_pressure_bara=" + specified);
+      print("feed0", first);
+      print("feed1", second);
+      print("product", mixer.getOutletStream());
       System.out.println();
     }
   }

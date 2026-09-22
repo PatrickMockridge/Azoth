@@ -12,10 +12,12 @@ rule arriving.
 
 from __future__ import annotations
 
+from azoth.process.reference.mixer import mixer
 from azoth.process.reference.pump import pump
 from azoth.process.reference.splitter import splitter
 
 __all__ = [
+    "mixer",
     "pump",
     "splitter",
 ]

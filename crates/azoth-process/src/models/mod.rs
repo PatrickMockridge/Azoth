@@ -30,8 +30,10 @@
 //! `products_n`, `products_p`, `products_t` and `products_h` are vectors with one entry
 //! per outlet and `products_z` a matrix with one row per outlet.
 
+pub mod mixer;
 pub mod pump;
 pub mod splitter;
 
+pub use mixer::{MixerResult, mixer};
 pub use pump::{PumpResult, pump};
 pub use splitter::{SplitterResult, splitter};

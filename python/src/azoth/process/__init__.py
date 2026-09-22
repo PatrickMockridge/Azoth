@@ -15,18 +15,20 @@ import pathlib
 
 from azoth import _core
 from azoth._dispatch import resolve
-from azoth.core.result import PumpResult, SplitterResult
+from azoth.core.result import MixerResult, PumpResult, SplitterResult
 from azoth.core.units import Q
 from azoth.process.kernels import Stream
 
 __all__ = [
     "Stream",
     "load_flowsheet",
+    "mixer",
     "pump",
     "splitter",
     "validate",
 ]
 
+_MIXER = "process.mixer"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 
@@ -113,4 +115,39 @@ def splitter(
         feed_p=feed_p,
         feed_t=feed_t,
         split_factors=split_factors,
+    )
+
+
+def mixer(
+    components: list[str],
+    feed_n: list[Q],
+    feed_z: list[list[float]],
+    feed_p: list[Q],
+    feed_t: list[Q],
+    outlet_pressure: Q | None = None,
+) -> MixerResult:
+    """Join several streams into one, conserving molar flow and enthalpy.
+
+    ``feed_n``, ``feed_z``, ``feed_p`` and ``feed_t`` are the feeds' records - one entry
+    per feed, the fluid's ``components`` named once - and ``outlet_pressure`` is
+    ``unit_ops.mixer``'s own parameter, optional because a mixer joins at the feeds'
+    lowest pressure unless a header's pressure is stated.
+
+    Mixing is isenthalpic, so the outlet's enthalpy is the feeds' weighted by their flows
+    and its temperature is the one at which the joined mixture carries it at the outlet
+    pressure. That is why the outlet is at neither feed's temperature in general.
+
+    Raises:
+        InvalidInputError: where the feeds' shapes disagree, no feed carries anything, or
+            the outlet pressure is not positive.
+
+    See :func:`azoth.process.reference.mixer`.
+    """
+    return resolve(_MIXER)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        outlet_pressure=outlet_pressure,
     )

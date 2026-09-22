@@ -85,6 +85,7 @@ from azoth.core.result import (
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult,
+    MixerResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult,
@@ -3658,6 +3659,39 @@ def reactive_phase_equilibrium(
         iterations=result.iterations,
         error=result.error,
         converged=result.converged,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def mixer(
+    components: Sequence[str],
+    feed_n: Sequence[Q],
+    feed_z: Sequence[Sequence[float]],
+    feed_p: Sequence[Q],
+    feed_t: Sequence[Q],
+    outlet_pressure: Q | None = None,
+) -> MixerResult:
+    """`process.mixer`, computed in Rust.
+
+    The feeds cross as vectors, one entry per feed, because a `many` port is one port: the
+    outlet pressure is the only scalar here and it is optional, which is why the Rust side
+    takes an `Option` and the case may omit it.
+    """
+    spec = _models_gen.model("process.mixer")
+    result = _core.mixer(
+        list(components),
+        [input_to_si(spec, "feed_n", v) for v in feed_n],
+        [[_si(spec, "feed_z", v) for v in row] for row in feed_z],
+        [input_to_si(spec, "feed_p", v) for v in feed_p],
+        [input_to_si(spec, "feed_t", v) for v in feed_t],
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+    )
+    return MixerResult(
+        product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
+        product_z=tuple(result.product_z),
+        product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
+        product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         warnings=_warnings(result.warnings),
     )
 

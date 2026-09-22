@@ -1,0 +1,34 @@
+specified_outlet_pressure_bara=null
+feed0_n=1.0
+feed0_P=10.0
+feed0_T=300.0
+feed0_h=-20689.86284462001
+feed0_z=n-butane:0.6 n-pentane:0.4
+feed1_n=2.0
+feed1_P=6.0
+feed1_T=300.0
+feed1_h=-22027.338309799085
+feed1_z=n-butane:0.3 n-pentane:0.7
+product_n=3.0
+product_P=6.0
+product_T=300.0379420950389
+product_h=-21581.51317087694
+product_z=n-butane:0.39999999999999997 n-pentane:0.6
+
+specified_outlet_pressure_bara=8.0
+feed0_n=1.0
+feed0_P=10.0
+feed0_T=300.0
+feed0_h=-20689.86284462001
+feed0_z=n-butane:0.6 n-pentane:0.4
+feed1_n=2.0
+feed1_P=6.0
+feed1_T=300.0
+feed1_h=-22027.338309799085
+feed1_z=n-butane:0.3 n-pentane:0.7
+product_n=3.0
+product_P=8.0
+product_T=299.9753356067683
+product_h=-21581.513144252458
+product_z=n-butane:0.39999999999999997 n-pentane:0.6
+

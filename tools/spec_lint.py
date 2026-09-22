@@ -594,13 +594,23 @@ def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
         # The *declared* inputs the case provides: a boundary key is not an input, and
         # `eos` is a boundary key for one model and a declared input for another
         # (`ge_nrtl_flash` declares it, because its vapour is half of what it is).
-        supplied = set(case["inputs"]) & inputs
-        if len(supplied) != len(inputs):
+        #
+        # **An optional input may be left out, and leaving one out is not a gap.**
+        # `mixer`'s `outlet_pressure` is the first the process layer has: a case that
+        # omits it is exercising the branch where the outlet takes the lowest feed
+        # pressure, and the model's own range-check warning says the bound went unrun.
+        # Requiring it would make the two branches one case short of covering them.
+        required = {
+            name for name, declared in spec["inputs"].items() if not declared.get("optional")
+        }
+        supplied = set(case["inputs"]) & required
+        if len(supplied) != len(required):
+            missing = sorted(required - supplied)
             report.warn(
                 str(rel),
-                f"case '{case_id}' supplies {len(supplied)} of {len(inputs)} "
-                f"inputs; a case that leaves one out is not reproducing the model's "
-                f"whole signature.",
+                f"case '{case_id}' supplies {len(supplied)} of {len(required)} "
+                f"required inputs (missing {missing}); a case that leaves one out is "
+                f"not reproducing the model's whole signature.",
             )
 
 

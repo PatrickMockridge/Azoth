@@ -1,0 +1,40 @@
+model = "process.mixer"
+[[cases]]
+id = "two_feeds_at_different_pressures"
+tolerance = 1e-05
+source = "NeqSim master, `Mixer.run` on two 300 K butane/pentane liquids at 10 and 6 bara, 1.0 and 2.0 mol/s, from `validation/neqsim/captures/process_mixer.tsv`. No outlet pressure is specified, so **the outlet takes the lowest feed pressure**, 6 bara, which the capture's `product_P` shows. The outlet temperature is not either feed's - 300.0379 K - because the joined enthalpy is the flow-weighted average of two states at different pressures and the flash solves for the temperature that carries it at the outlet's. **The tolerance is the measured agreement and no better**: the composition and flow are exact, and the enthalpy sits `1.6e-5` J/mol from the capture, which is `eos.ph_flash`'s arithmetic rather than the mixer's.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = [1.0, 2.0]
+feed_z = [
+    [0.6, 0.4],
+    [0.3, 0.7],
+]
+feed_p = [1000000.0, 600000.0]
+feed_t = [300.0, 300.0]
+[cases.expected]
+product_n = 3.0
+product_z = [0.4, 0.6]
+product_p = 600000.0
+product_t = 300.0379420950389
+product_h = -21581.51317087694
+[[cases]]
+id = "a_stated_outlet_pressure_overrides_the_lowest_feed"
+tolerance = 1e-05
+source = "The capture's second row, which states an outlet pressure of 8 bara. **The case exists so that the override is an oracled claim and not one this library makes about itself**: NeqSim's `Mixer.run` takes the minimum over the active inlets and then lets `specifiedOutletPressure` replace it, and a port that only ever took the minimum would pass the first case and fail this one. The enthalpy is the same as the first row's to `2.7e-5`, which is the `PHflash`'s own convergence rather than anything the outlet pressure changes - mixing is isenthalpic, so the pressure moves the temperature and not the enthalpy.\n"
+[cases.inputs]
+components = ["n-butane", "n-pentane"]
+feed_n = [1.0, 2.0]
+feed_z = [
+    [0.6, 0.4],
+    [0.3, 0.7],
+]
+feed_p = [1000000.0, 600000.0]
+feed_t = [300.0, 300.0]
+outlet_pressure = 800000.0
+[cases.expected]
+product_n = 3.0
+product_z = [0.4, 0.6]
+product_p = 800000.0
+product_t = 299.9753356067683
+product_h = -21581.513144252458

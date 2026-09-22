@@ -1305,6 +1305,15 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class MixerResult:
+    product_n: Qty
+    product_z: list[float]
+    product_p: Qty
+    product_t: Qty
+    product_h: Qty
+    warnings: list[Warning]
+
+@final
 class PumpResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2392,6 +2401,14 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def mixer(
+    components: list[str],
+    feed_n: list[float],
+    feed_z: list[list[float]],
+    feed_p: list[float],
+    feed_t: list[float],
+    outlet_pressure: float | None = None,
+) -> MixerResult: ...
 def pump(
     components: list[str],
     inlet_n: float,

@@ -161,6 +161,7 @@
   - [Pump shaft power from flow, head and efficiency](./hydraulics/pump_power.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Unit operations](./process/index.md)
+  - [Mixer](./process/mixer.md)
   - [Pump](./process/pump.md)
   - [Splitter](./process/splitter.md)
 - [Reactions](./reactions/index.md)

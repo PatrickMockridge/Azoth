@@ -39,7 +39,7 @@ SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash oper
 and ~60 saturation operations, **~60 physical-property methods**, 25 alpha functions and
 15 mixing rules, over a **~90-field component model**.
 
-azoth has **148 ids** — 66 calculations and 82 models.
+azoth has **149 ids** — 66 calculations and 83 models.
 
 ## The ledger
 

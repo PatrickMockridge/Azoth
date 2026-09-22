@@ -374,6 +374,31 @@ class PumpResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class MixerResult(_HasWarnings):
+    """Result of ``process.mixer``.
+
+    **A ``many`` *inlet* port's counterpart to :class:`SplitterResult`**, and the two
+    together are the whole of what the process layer's port rule says: the feeds cross as
+    vectors and a matrix on the way in, the outlet as the record's five fields on the way
+    out. A feed carries four of the five - ``h`` is what the flash computes from the other
+    three - because an inlet has no enthalpy to report independently of its state.
+    """
+
+    #: Molar flow out: the feeds' sum.
+    product_n: Q
+    #: Outlet composition, the feeds' weighted by their flows.
+    product_z: tuple[float, ...]
+    #: Outlet pressure: ``outlet_pressure`` when given, else the lowest feed pressure.
+    product_p: Q
+    #: Outlet temperature, solved from the joined enthalpy at the outlet pressure.
+    product_t: Q
+    #: Outlet molar enthalpy, the flow-weighted average of the feeds'.
+    product_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class SplitterResult(_HasWarnings):
     """Result of ``process.splitter``.
 

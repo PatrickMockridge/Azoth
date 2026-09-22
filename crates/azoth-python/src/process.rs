@@ -206,6 +206,35 @@ pub fn pump(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.mixer` - the mixer's kernel as a registered id.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, outlet_pressure = None))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, outlet_pressure=None)")]
+#[allow(non_snake_case)] // the record's own field names
+pub fn mixer(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: Vec<f64>,
+    feed_z: Vec<Vec<f64>>,
+    feed_p: Vec<f64>,
+    feed_t: Vec<f64>,
+    outlet_pressure: Option<f64>,
+) -> PyResult<crate::results::PyMixerResult> {
+    let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
+    let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
+        feed_t.into_iter().map(kelvins).collect();
+    azoth_process::mixer(
+        &components,
+        &feed_n,
+        &feed_z,
+        &pressures,
+        &temperatures,
+        outlet_pressure.map(pascals),
+    )
+    .map(|r| crate::results::PyMixerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.splitter` - the splitter's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
