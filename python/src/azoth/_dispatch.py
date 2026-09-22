@@ -163,9 +163,7 @@ def fluid_inputs(model: Mapping[str, Any]) -> list[tuple[str, str]]:
         if declaration.get("type") != "components":
             continue
         prefix = (
-            ""
-            if name == MODEL_COMPONENTS_INPUT
-            else name[: -len(MODEL_COMPONENTS_SUFFIX)] + "_"
+            "" if name == MODEL_COMPONENTS_INPUT else name[: -len(MODEL_COMPONENTS_SUFFIX)] + "_"
         )
         out.append((prefix, name))
     return out

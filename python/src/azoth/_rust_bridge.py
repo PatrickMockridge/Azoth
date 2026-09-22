@@ -64,6 +64,7 @@ from azoth.core.result import (
     GeWilsonPhaseResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
+    HeatExchangerResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
     HydrateEquilibriumLineResult,
@@ -3769,6 +3770,64 @@ def throttling_valve(
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def heat_exchanger(
+    hot_components: Sequence[str],
+    hot_in_n: Q,
+    hot_in_z: Sequence[float],
+    hot_in_p: Q,
+    hot_in_t: Q,
+    cold_components: Sequence[str],
+    cold_in_n: Q,
+    cold_in_z: Sequence[float],
+    cold_in_p: Q,
+    cold_in_t: Q,
+    ua: Q | None = None,
+    flow_arrangement: str = "counterflow",
+    hot_outlet_temperature: Q | None = None,
+    cold_outlet_temperature: Q | None = None,
+) -> HeatExchangerResult:
+    """`process.heat_exchanger`, computed in Rust.
+
+    **Two component lists**, because this is the only unit operation whose ports do not
+    share one fluid. Both cross unresolved, so the Rust side resolves each through the
+    databank and the two languages cannot disagree about which row answered.
+    """
+    spec = _models_gen.model("process.heat_exchanger")
+    result = _core.heat_exchanger(
+        list(hot_components),
+        list(cold_components),
+        input_to_si(spec, "hot_in_n", hot_in_n),
+        [_si(spec, "hot_in_z", v) for v in hot_in_z],
+        input_to_si(spec, "hot_in_p", hot_in_p),
+        input_to_si(spec, "hot_in_t", hot_in_t),
+        input_to_si(spec, "cold_in_n", cold_in_n),
+        [_si(spec, "cold_in_z", v) for v in cold_in_z],
+        input_to_si(spec, "cold_in_p", cold_in_p),
+        input_to_si(spec, "cold_in_t", cold_in_t),
+        flow_arrangement,
+        None if ua is None else input_to_si(spec, "ua", ua),
+        None
+        if hot_outlet_temperature is None
+        else input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature),
+        None
+        if cold_outlet_temperature is None
+        else input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature),
+    )
+    return HeatExchangerResult(
+        hot_out_n=from_si(result.hot_out_n.magnitude_si, result.hot_out_n.unit),
+        hot_out_z=tuple(result.hot_out_z),
+        hot_out_p=from_si(result.hot_out_p.magnitude_si, result.hot_out_p.unit),
+        hot_out_t=from_si(result.hot_out_t.magnitude_si, result.hot_out_t.unit),
+        hot_out_h=from_si(result.hot_out_h.magnitude_si, result.hot_out_h.unit),
+        cold_out_n=from_si(result.cold_out_n.magnitude_si, result.cold_out_n.unit),
+        cold_out_z=tuple(result.cold_out_z),
+        cold_out_p=from_si(result.cold_out_p.magnitude_si, result.cold_out_p.unit),
+        cold_out_t=from_si(result.cold_out_t.magnitude_si, result.cold_out_t.unit),
+        cold_out_h=from_si(result.cold_out_h.magnitude_si, result.cold_out_h.unit),
         warnings=_warnings(result.warnings),
     )
 

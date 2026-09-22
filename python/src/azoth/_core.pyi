@@ -1305,6 +1305,20 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class HeatExchangerResult:
+    hot_out_n: Qty
+    hot_out_z: list[float]
+    hot_out_p: Qty
+    hot_out_t: Qty
+    hot_out_h: Qty
+    cold_out_n: Qty
+    cold_out_z: list[float]
+    cold_out_p: Qty
+    cold_out_t: Qty
+    cold_out_h: Qty
+    warnings: list[Warning]
+
+@final
 class MixerResult:
     product_n: Qty
     product_z: list[float]
@@ -2424,6 +2438,22 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def heat_exchanger(
+    hot_components: list[str],
+    cold_components: list[str],
+    hot_in_n: float,
+    hot_in_z: list[float],
+    hot_in_p: float,
+    hot_in_t: float,
+    cold_in_n: float,
+    cold_in_z: list[float],
+    cold_in_p: float,
+    cold_in_t: float,
+    flow_arrangement: str,
+    ua: float | None = None,
+    hot_outlet_temperature: float | None = None,
+    cold_outlet_temperature: float | None = None,
+) -> HeatExchangerResult: ...
 def mixer(
     components: list[str],
     feed_n: list[float],

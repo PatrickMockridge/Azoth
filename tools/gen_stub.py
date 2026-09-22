@@ -487,10 +487,11 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             # rather than the several loose vectors the transport wants. The field order
             # is the transport order, and the kernel rebuilds by shape.
             params += parameter_record_fields(model)
-        elif "components" in taken:
-            # The EOS-CG mixture maps its own fixed component names, so the names cross
-            # the boundary verbatim rather than as a flattened mixture.
-            params.append("components: list[str]")
+        elif f"{prefix}components" in taken:
+            # Either the EOS-CG mixture, which maps its own fixed component names, or a
+            # process model, whose Rust side resolves the names itself. Both cross the
+            # boundary verbatim rather than as a flattened mixture.
+            params.append(f"{prefix}components: list[str]")
         else:
             params += [
                 f"{prefix}Tc: float",

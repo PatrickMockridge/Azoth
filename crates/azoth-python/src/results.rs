@@ -55,7 +55,8 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    MixerResult, PumpResult, SeparatorResult, SplitterResult, ThrottlingValveResult,
+    HeatExchangerResult, MixerResult, PumpResult, SeparatorResult, SplitterResult,
+    ThrottlingValveResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -491,6 +492,84 @@ impl PyConductionPlaneWallResult {
             "ConductionPlaneWallResult(q={} {})",
             self.q.magnitude_si, self.q.unit
         )
+    }
+}
+
+/// Result of `process.heat_exchanger`, transported.
+///
+/// Ten fields under this unit operation's own port names, the shape `SeparatorResult` has.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeatExchangerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeatExchangerResult {
+    /// Hot outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub hot_out_n: PyQty,
+    /// Hot outlet composition.
+    #[pyo3(get)]
+    pub hot_out_z: Vec<f64>,
+    /// Hot outlet pressure.
+    #[pyo3(get)]
+    pub hot_out_p: PyQty,
+    /// Hot outlet temperature.
+    #[pyo3(get)]
+    pub hot_out_t: PyQty,
+    /// Hot outlet molar enthalpy.
+    #[pyo3(get)]
+    pub hot_out_h: PyQty,
+    /// Cold outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub cold_out_n: PyQty,
+    /// Cold outlet composition.
+    #[pyo3(get)]
+    pub cold_out_z: Vec<f64>,
+    /// Cold outlet pressure.
+    #[pyo3(get)]
+    pub cold_out_p: PyQty,
+    /// Cold outlet temperature.
+    #[pyo3(get)]
+    pub cold_out_t: PyQty,
+    /// Cold outlet molar enthalpy.
+    #[pyo3(get)]
+    pub cold_out_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHeatExchangerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeatExchangerResult(hot_out_t={} {}, cold_out_t={})",
+            self.hot_out_t.magnitude_si, self.hot_out_t.unit, self.cold_out_t.magnitude_si
+        )
+    }
+}
+
+impl From<&HeatExchangerResult> for PyHeatExchangerResult {
+    fn from(r: &HeatExchangerResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            hot_out_n: quantity(r.hot_out_n, "mol/s"),
+            hot_out_z: r.hot_out_z.clone(),
+            hot_out_p: quantity(r.hot_out_p.value, "Pa"),
+            hot_out_t: quantity(r.hot_out_t.value, "K"),
+            hot_out_h: quantity(r.hot_out_h.value, "J/mol"),
+            cold_out_n: quantity(r.cold_out_n, "mol/s"),
+            cold_out_z: r.cold_out_z.clone(),
+            cold_out_p: quantity(r.cold_out_p.value, "Pa"),
+            cold_out_t: quantity(r.cold_out_t.value, "K"),
+            cold_out_h: quantity(r.cold_out_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
     }
 }
 
@@ -7411,6 +7490,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
+        HeatExchangerResult::CALC_ID => HeatExchangerResult::FIELDS.to_vec(),
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),

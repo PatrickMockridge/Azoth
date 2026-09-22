@@ -433,6 +433,39 @@ class SeparatorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HeatExchangerResult(_HasWarnings):
+    """Result of ``process.heat_exchanger``.
+
+    Two single-multiplicity ports, so ten fields under this unit operation's own port
+    names - the shape :class:`SeparatorResult` has, with the two sides carrying different
+    fluids rather than two phases of one.
+    """
+
+    #: Hot outlet molar flow.
+    hot_out_n: Q
+    #: Hot outlet composition.
+    hot_out_z: tuple[float, ...]
+    #: Hot outlet pressure.
+    hot_out_p: Q
+    #: Hot outlet temperature.
+    hot_out_t: Q
+    #: Hot outlet molar enthalpy.
+    hot_out_h: Q
+    #: Cold outlet molar flow.
+    cold_out_n: Q
+    #: Cold outlet composition.
+    cold_out_z: tuple[float, ...]
+    #: Cold outlet pressure.
+    cold_out_p: Q
+    #: Cold outlet temperature.
+    cold_out_t: Q
+    #: Cold outlet molar enthalpy.
+    cold_out_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MixerResult(_HasWarnings):
     """Result of ``process.mixer``.
 

@@ -252,6 +252,58 @@ pub fn throttling_valve(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.heat_exchanger` - the exchanger's kernel as a registered id.
+///
+/// **Two component lists, because this is the only unit operation whose ports do not
+/// share one fluid.** The names cross unresolved, as every other process model's do, and
+/// the Rust side resolves each through the databank `Stream::mixture()` uses.
+#[pyfunction]
+// **The two component lists lead, and the rest follow in the spec's order**, which is
+// what `tools/gen_stub.py` emits: it writes every fluid the model names before the
+// declared inputs, so a signature that interleaved them would be a stub that lies.
+#[pyo3(signature = (hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua = None, hot_outlet_temperature = None, cold_outlet_temperature = None))]
+#[pyo3(
+    text_signature = "(hot_components, cold_components, hot_in_n, hot_in_z, hot_in_p, hot_in_t, cold_in_n, cold_in_z, cold_in_p, cold_in_t, flow_arrangement, ua=None, hot_outlet_temperature=None, cold_outlet_temperature=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are fourteen
+pub fn heat_exchanger(
+    py: Python<'_>,
+    hot_components: Vec<String>,
+    cold_components: Vec<String>,
+    hot_in_n: f64,
+    hot_in_z: Vec<f64>,
+    hot_in_p: f64,
+    hot_in_t: f64,
+    cold_in_n: f64,
+    cold_in_z: Vec<f64>,
+    cold_in_p: f64,
+    cold_in_t: f64,
+    flow_arrangement: &str,
+    ua: Option<f64>,
+    hot_outlet_temperature: Option<f64>,
+    cold_outlet_temperature: Option<f64>,
+) -> PyResult<crate::results::PyHeatExchangerResult> {
+    azoth_process::heat_exchanger(
+        &hot_components,
+        hot_in_n,
+        &hot_in_z,
+        pascals(hot_in_p),
+        kelvins(hot_in_t),
+        &cold_components,
+        cold_in_n,
+        &cold_in_z,
+        pascals(cold_in_p),
+        kelvins(cold_in_t),
+        ua.map(watts_per_kelvin),
+        flow_arrangement,
+        hot_outlet_temperature.map(kelvins),
+        cold_outlet_temperature.map(kelvins),
+    )
+    .map(|r| crate::results::PyHeatExchangerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.separator` - the separator's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input = None))]

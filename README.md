@@ -27,7 +27,7 @@ engine**, with an agentic layer on top. The algorithms are ported from
 - **An agentic layer.** Ninety skills under `skills/` teach an agent to call the library,
   and a four-role HAZOP team chains them.
 - **A formal layer in Lean.** The dimension group is proved (`lean/Azoth/Dim.lean`); the
-  34-unit vocabulary compiles into theorems (`lean/Azoth/Vocabulary.lean`).
+  35-unit vocabulary compiles into theorems (`lean/Azoth/Vocabulary.lean`).
 
 ## Install
 
@@ -53,7 +53,7 @@ Units cross the API as `pint` quantities; a bare number where a length is expect
 
 ## The book
 
-The full catalog — 66 calculations and 85 models, each with its equation, source, valid
+The full catalog — 66 calculations and 86 models, each with its equation, source, valid
 range and a worked example — is in [the book](docs/src/index.md), generated from the same
 spec files as the code.
 

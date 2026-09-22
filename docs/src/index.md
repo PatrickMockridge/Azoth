@@ -223,6 +223,7 @@ Four sections, and the difference between them is the point:
 
 *Models* — whose specs fix a procedure rather than an equation:
 
+- [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.mixer`](./process/mixer.md) — Mixer
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.separator`](./process/separator.md) — Separator

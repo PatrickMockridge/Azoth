@@ -16,6 +16,7 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    HeatExchangerResult,
     MixerResult,
     PumpResult,
     SeparatorResult,
@@ -27,6 +28,7 @@ from azoth.process.kernels import Stream
 
 __all__ = [
     "Stream",
+    "heat_exchanger",
     "load_flowsheet",
     "mixer",
     "pump",
@@ -37,6 +39,7 @@ __all__ = [
 ]
 
 _MIXER = "process.mixer"
+_HEAT_EXCHANGER = "process.heat_exchanger"
 _SEPARATOR = "process.separator"
 _THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
@@ -226,4 +229,57 @@ def throttling_valve(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
+    )
+
+
+def heat_exchanger(
+    hot_components: list[str],
+    hot_in_n: Q,
+    hot_in_z: list[float],
+    hot_in_p: Q,
+    hot_in_t: Q,
+    cold_components: list[str],
+    cold_in_n: Q,
+    cold_in_z: list[float],
+    cold_in_p: Q,
+    cold_in_t: Q,
+    ua: Q | None = None,
+    flow_arrangement: str = "counterflow",
+    hot_outlet_temperature: Q | None = None,
+    cold_outlet_temperature: Q | None = None,
+) -> HeatExchangerResult:
+    """Exchange heat between two streams.
+
+    **The two sides carry different fluids**, so this is the one unit operation with two
+    component lists rather than one. ``hot_in_*`` and ``cold_in_*`` are the two inlets'
+    records and ``ua``, ``flow_arrangement``, ``hot_outlet_temperature`` and
+    ``cold_outlet_temperature`` are ``unit_ops.heat_exchanger``'s own parameters, of which
+    the last three describe two modes.
+
+    The default mode is the **effectiveness-NTU rating** its NeqSim class runs: ``ua`` and
+    ``flow_arrangement`` size the exchanger and the duty is what comes out. Pinning one
+    outlet temperature is the other mode, and it energy-balances the opposite side.
+
+    Raises:
+        InvalidInputError: where neither or both outlet temperatures are given, where the
+            rating is asked for without a ``ua``, or where the arrangement is not one of
+            ``counterflow``, ``parallelflow`` and ``shell_and_tube``.
+
+    See :func:`azoth.process.reference.heat_exchanger`.
+    """
+    return resolve(_HEAT_EXCHANGER)(  # type: ignore[no-any-return]
+        hot_components=hot_components,
+        hot_in_n=hot_in_n,
+        hot_in_z=hot_in_z,
+        hot_in_p=hot_in_p,
+        hot_in_t=hot_in_t,
+        cold_components=cold_components,
+        cold_in_n=cold_in_n,
+        cold_in_z=cold_in_z,
+        cold_in_p=cold_in_p,
+        cold_in_t=cold_in_t,
+        ua=ua,
+        flow_arrangement=flow_arrangement,
+        hot_outlet_temperature=hot_outlet_temperature,
+        cold_outlet_temperature=cold_outlet_temperature,
     )

@@ -1,0 +1,125 @@
+id = "process.heat_exchanger"
+name = "Heat exchanger"
+kind = "direct"
+assumptions = [
+    "**the default mode is a rating, not a duty.** `HeatExchanger.run` specifies `UAvalue`, estimates each side's heat capacity, forms `NTU = UA / C_min` and scales the driving swing by `calcThermalEffectivenes`. `duty` is an *output* of this class; `energyInput` appears nowhere in it.",
+    "**each side's capacity is estimated, not read at its inlet.** `run` flashes each side at the *other's* inlet temperature and divides the total enthalpy change by that temperature change. `C` is a difference of totals over one of temperatures - W/K - so `NTU = UA / C_min` is dimensionless.",
+    "**an effectiveness of one leaves the capacity-limited side at its seeded state.** That state is \"this side at the other's inlet temperature\", which is what an effectiveness of one means, and `run` skips the reflash rather than finding it again by a longer route.",
+    "**`hot_outlet_temperature` or `cold_outlet_temperature` is the class's other mode**, pinning that side at its inlet pressure and energy-balancing the other. At most one may be given: with both, the other side has nothing left to solve for. `ua` is unread in that mode.",
+    "**an arrangement NeqSim does not know is refused rather than treated as counterflow.** `calcThermalEffectivenes` falls through to the counterflow relation for anything unrecognised, which would make a misspelling a plausible answer.",
+    "**the two sides may be different fluids.** This is the only unit operation whose ports do not share one fluid, so `hot_components` and `cold_components` are two declarations rather than one.",
+    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a `useDeltaT` variant, a UA from correlations and a mechanical design. **None is ported**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
+edition = "Its steady-state `run`: the effectiveness-NTU rating its default branch runs, and the `outTemperature` specification that pins one side. **The capture's `out_temperature_*` rows are not used**: `runSpecifiedStream` pins through a clone of an already-flashed fluid."
+[inputs]
+[inputs.hot_components]
+type = "components"
+description = "the hot side's substances, by name. A different list from the cold side's, which is why this is not the one `components` every other unit operation declares.\n"
+[inputs.hot_in_n]
+unit = "mol/s"
+description = "the hot inlet's molar flow.\n"
+[inputs.hot_in_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per hot-side component"
+description = "the hot inlet's composition.\n"
+[inputs.hot_in_p]
+unit = "Pa"
+description = "the hot inlet's pressure, which both hot outlets carry: neither mode drops it.\n"
+[inputs.hot_in_t]
+unit = "K"
+description = "the hot inlet's temperature, which with `hot_in_p` fixes its enthalpy and sets the rating's driving force.\n"
+[inputs.cold_components]
+type = "components"
+description = "the cold side's substances, by name.\n"
+[inputs.cold_in_n]
+unit = "mol/s"
+description = "the cold inlet's molar flow.\n"
+[inputs.cold_in_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per cold-side component"
+description = "the cold inlet's composition.\n"
+[inputs.cold_in_p]
+unit = "Pa"
+description = "the cold inlet's pressure.\n"
+[inputs.cold_in_t]
+unit = "K"
+description = "the cold inlet's temperature. The two inlets must differ: equal temperatures leave the rating no driving force to size against.\n"
+[inputs.ua]
+unit = "W/K"
+optional = true
+description = "the overall conductance, `unit_ops.heat_exchanger`'s own parameter. Required for the rating and unread when an outlet temperature is pinned; NeqSim's `UAvalue` defaults to 500 W/K and this refuses to guess it.\n"
+[inputs.flow_arrangement]
+type = "enum"
+values = ["counterflow", "parallelflow", "shell_and_tube"]
+description = "which effectiveness relation the rating uses, for the reason `calcThermalEffectivenes` takes one. NeqSim spells these \"concentric tube counterflow\", \"concentric tube paralellflow\" and \"shell and tube\".\n"
+[inputs.hot_outlet_temperature]
+unit = "K"
+optional = true
+description = "pin the hot outlet at this temperature, at its inlet pressure, and energy-balance the cold side against it.\n"
+[inputs.cold_outlet_temperature]
+unit = "K"
+optional = true
+description = "pin the cold outlet at this temperature and energy-balance the hot side against it.\n"
+[outputs]
+[outputs.hot_out_n]
+unit = "mol/s"
+description = "the hot outlet's molar flow, which is its inlet's.\n"
+[outputs.hot_out_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per hot-side component"
+description = "the hot outlet's composition, which is its inlet's.\n"
+[outputs.hot_out_p]
+unit = "Pa"
+description = "the hot outlet's pressure, which is `hot_in_p`.\n"
+[outputs.hot_out_t]
+unit = "K"
+description = "the hot outlet's temperature: solved from the duty in the rating, or the pin itself where the hot side is the one pinned.\n"
+[outputs.hot_out_h]
+unit = "J/mol"
+description = "the hot outlet's molar enthalpy: the inlet's less the duty it released.\n"
+[outputs.cold_out_n]
+unit = "mol/s"
+description = "the cold outlet's molar flow.\n"
+[outputs.cold_out_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per cold-side component"
+description = "the cold outlet's composition.\n"
+[outputs.cold_out_p]
+unit = "Pa"
+description = "the cold outlet's pressure, which is `cold_in_p`.\n"
+[outputs.cold_out_t]
+unit = "K"
+description = "the cold outlet's temperature.\n"
+[outputs.cold_out_h]
+unit = "J/mol"
+description = "the cold outlet's molar enthalpy: the inlet's plus the duty it gained, which is the hot side's to the flash's own arithmetic.\n"
+[[valid_range]]
+quantity = "ua"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a conductance is positive, and zero moves nothing\n"
+[[valid_range]]
+quantity = "hot_in_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[[valid_range]]
+quantity = "cold_in_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.heat_exchanger"
+rust = "azoth_process::heat_exchanger"

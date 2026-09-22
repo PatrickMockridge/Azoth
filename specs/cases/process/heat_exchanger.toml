@@ -1,0 +1,141 @@
+model = "process.heat_exchanger"
+[[cases]]
+id = "the_effectiveness_ntu_rating"
+tolerance = 3e-04
+source = "NeqSim master, `HeatExchanger.run` with `setUAvalue(100)` on a 0.8/0.2 methane/n-butane gas at 400 K and 20 bara against a 0.5/0.5 butane/pentane liquid at 300 K and 5 bara, from `validation/neqsim/captures/process_heat_exchanger.tsv`. **The rating is the class's default branch and it takes no duty**: `UA` and the arrangement are what it reads, and the effectiveness comes out of `calcThermalEffectivenes(UA / C_min, C_min / C_max)`. A `UA` of 100 W/K is deliberate - at the 500 W/K default the effectiveness saturates at one and the rows stop distinguishing anything. **The tolerance is `3e-04` and `hot_out_h` sets it**, at `2.6e-04`: that enthalpy is `1236.58` J/mol, so the flash's own `0.3` J/mol difference between the two libraries is a large relative figure on a small-magnitude field, the same shape `process.throttling_valve` records.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+ua = 100.0
+flow_arrangement = "counterflow"
+[cases.expected]
+hot_out_n = 1.0
+hot_out_z = [0.8, 0.2]
+hot_out_p = 2000000.0
+hot_out_t = 313.75707990040786
+hot_out_h = 1236.58326728879
+cold_out_n = 1.0
+cold_out_z = [0.5, 0.5]
+cold_out_p = 500000.0
+cold_out_t = 330.5970850142084
+cold_out_h = -16290.40249239591
+[[cases]]
+id = "the_rating_answers_the_flow"
+tolerance = 3e-04
+source = "The capture's second row, the same exchanger with the **hot** side at 2 mol/s. **The case exists because a capacity the construction got wrong would not move here.** Each side's `C` is a difference of totals over a temperature difference - W/K - so doubling the hot flow doubles `C_hot`, and since the hot side is the capacity-limiting one the `NTU` falls from `1.57` to `0.78` and the hot stream leaves hotter, at 343.85 K against 313.76. A construction that took `C` as a mole fraction or a molar capacity would leave the answer where it was, and this is the row that says which it is.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 2.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+ua = 100.0
+flow_arrangement = "counterflow"
+[cases.expected]
+hot_out_n = 2.0
+hot_out_z = [0.8, 0.2]
+hot_out_p = 2000000.0
+hot_out_t = 343.84999754943453
+hot_out_h = 2877.5589584692093
+cold_out_n = 1.0
+cold_out_z = [0.5, 0.5]
+cold_out_p = 500000.0
+cold_out_t = 339.9669021662337
+cold_out_h = -14710.967827529339
+[[cases]]
+id = "the_arrangement_moves_less_heat"
+tolerance = 3e-04
+source = "The capture's third row: the first case's exchanger in parallel flow rather than counterflow. **The case exists because the arrangement is a parameter and it must change the answer.** At the same `NTU` the parallel-flow relation is the smaller one, so the hot side leaves at 319.32 K rather than 313.76 and the duty is `4561.7` W rather than `4861.4`. A port that ignored the arrangement, or that treated an unrecognised one as counterflow the way `calcThermalEffectivenes` falls through, would pass the first two cases and fail this one.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+ua = 100.0
+flow_arrangement = "parallelflow"
+[cases.expected]
+hot_out_n = 1.0
+hot_out_z = [0.8, 0.2]
+hot_out_p = 2000000.0
+hot_out_t = 319.31818152334284
+hot_out_h = 1536.227621346918
+cold_out_n = 1.0
+cold_out_z = [0.5, 0.5]
+cold_out_p = 500000.0
+cold_out_t = 328.78787406756123
+cold_out_h = -16590.04684615857
+[[cases]]
+id = "a_pinned_hot_outlet"
+tolerance = 3e-04
+source = "The capture's `reference_pin_hot_350` row: the hot inlet's outlet pinned at 350 K, the cold side energy-balanced against it. **The reference row rather than the `out_temperature_pins_the_hot_side` row above it**, which is NeqSim's own `runSpecifiedStream` and is not the state it says it is: that method pins by cloning the stream's already-flashed fluid, setting the temperature and flashing again, and the enthalpy it lands on is one its own `PHflash` places at another temperature. Two states are pinned here - the hot outlet at its stated 350 K, and the cold outlet at the 318.438 K its duty implies - and both come from a fresh fluid at the state they name, so each is a number NeqSim's flash produced for the state the record claims.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+hot_outlet_temperature = 350.0
+[cases.expected]
+hot_out_n = 1.0
+hot_out_z = [0.8, 0.2]
+hot_out_p = 2000000.0
+hot_out_t = 350.0
+hot_out_h = 3219.4541058847717
+cold_out_n = 1.0
+cold_out_z = [0.5, 0.5]
+cold_out_p = 500000.0
+cold_out_t = 318.43800346001626
+cold_out_h = -18273.273337934537
+[[cases]]
+id = "a_pinned_cold_outlet"
+tolerance = 3e-04
+source = "The capture's `reference_pin_cold_320` row, the other side pinned. **Both pin directions are cases** because `setOutStreamSpecificationNumber` picks the side and a port that only understood one of them would pass the first and answer the second with the arguments swapped. The pinned side is the cold outlet at 320 K and the hot side carries the duty away.\n"
+[cases.inputs]
+hot_components = ["methane", "n-butane"]
+hot_in_n = 1.0
+hot_in_z = [0.8, 0.2]
+hot_in_p = 2000000.0
+hot_in_t = 400.0
+cold_components = ["n-butane", "n-pentane"]
+cold_in_n = 1.0
+cold_in_z = [0.5, 0.5]
+cold_in_p = 500000.0
+cold_in_t = 300.0
+flow_arrangement = "counterflow"
+cold_outlet_temperature = 320.0
+[cases.expected]
+hot_out_n = 1.0
+hot_out_z = [0.8, 0.2]
+hot_out_p = 2000000.0
+hot_out_t = 345.4935748670965
+hot_out_h = 2968.692983939156
+cold_out_n = 1.0
+cold_out_z = [0.5, 0.5]
+cold_out_p = 500000.0
+cold_out_t = 320.0
+cold_out_h = -18022.51221053017
