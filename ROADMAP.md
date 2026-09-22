@@ -256,8 +256,8 @@ The specialist physics.
   flash it drives is `eos.tp_multiflash_wax`'s. **It is constructed, not dead** —
   `neqsim/mcp/runners/FlowAssuranceRunner.java:192` builds it, fully qualified, which is why a
   bare `new WaxCurveCalculator(` grep misses it. `process/chemistry/wax/` is carried with the
-  process tier. **Filed upstream**: this finding and the solid-vapour-pressure one below are
-  NeqSim `#3913` and `#3914`, the two drafts not recording which number is which.
+  process tier. **Filed upstream as NeqSim `#3914`**, under this finding's own title; the
+  solid-vapour-pressure route below is `#3913`.
 - **Asphaltene, carried on a defect upstream rather than for want of a port.**
   `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
   `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the
@@ -275,8 +275,8 @@ The specialist physics.
   sequence of states, and only its endpoint — reached where a solid forms and `SolidFlash`
   re-derives the phases — is a state at all. The coefficient the family's solid is built on is
   ported (`eos.solid_fugacity`, `eos.tp_solid_flash`); this family is revisited when upstream
-  closes the defect, which is **filed upstream as `#3913`/`#3914` together with the wax
-  family's three models above** - the two drafts record the pair and not which is which.
+  closes the defect, which is **filed upstream as NeqSim `#3913`**; the wax family's three
+  models above are `#3914`.
 - **Hydrogen and cryogenic.** Ported, each with the id that carries it:
   `thermo/util/leachman/` as `eos.hydrogen_phase`, the Leachman equation of state for the two
   spin isomers with both the dilute and the dense root selectable;
