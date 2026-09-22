@@ -47,6 +47,7 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe mixer > captures/process_mixer.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separator.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve > captures/process_throttling_valve.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger > captures/process_heat_exchanger.tsv
+java -cp .:neqsim-f0c7436.jar ProcessProbe stream > captures/process_stream_properties.tsv
 ```
 
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate

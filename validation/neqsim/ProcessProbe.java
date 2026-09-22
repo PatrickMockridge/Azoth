@@ -36,6 +36,8 @@
 //       > captures/process_throttling_valve.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
 //       > captures/process_heat_exchanger.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
+//       > captures/process_stream_properties.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.stream.StreamInterface;
@@ -63,6 +65,9 @@ public class ProcessProbe {
         break;
       case "heat_exchanger":
         heatExchanger();
+        break;
+      case "stream":
+        stream();
         break;
       default:
         throw new IllegalArgumentException("no such unit operation: " + which);
@@ -435,6 +440,47 @@ public class ProcessProbe {
     double in = a.getEnthalpy() / a.getTotalNumberOfMoles() * inlet.getFlowRate("mol/sec");
     double out = b.getEnthalpy() / b.getTotalNumberOfMoles() * outlet.getFlowRate("mol/sec");
     return out - in;
+  }
+
+  static void stream() {
+    // **The stream's own properties, which no port field carries.** `s` is derived from
+    // `(T, P, z)` exactly as `h` is, and density and viscosity come from the state rather
+    // than from the record - so all three are functions a kernel reaches for rather than
+    // quantities a connection passes. This is where they are measured.
+    //
+    // Four single-phase states and one two-phase one. The two-phase row is the point of
+    // the last block: NeqSim's `getDensity()` averages the phases without saying so, and a
+    // stream that is two phases has no one density.
+    streamRow("butane_liquid", new String[] { "n-butane" }, new double[] { 1.0 }, 300.0, 10.0, 1.0);
+    streamRow("methane_butane_gas", new String[] { "methane", "n-butane" },
+        new double[] { 0.9, 0.1 }, 320.0, 30.0, 1.0);
+    streamRow("water_liquid", new String[] { "water" }, new double[] { 1.0 }, 300.0, 1.0, 1.0);
+    streamRow("methane_co2_gas", new String[] { "methane", "CO2" },
+        new double[] { 0.7, 0.3 }, 300.0, 50.0, 1.0);
+    streamRow("methane_butane_two_phase", new String[] { "methane", "n-butane" },
+        new double[] { 0.7, 0.3 }, 300.0, 20.0, 1.0);
+  }
+
+  static void streamRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSecond) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, molPerSecond);
+    SystemInterface fluid = inlet.getThermoSystem();
+    double moles = fluid.getTotalNumberOfMoles();
+    System.out.println(label);
+    System.out.println("phases=" + fluid.getNumberOfPhases());
+    System.out.println("molar_mass=" + fluid.getMolarMass());
+    System.out.println("mass_flow=" + inlet.getFlowRate("kg/sec"));
+    System.out.println("molar_entropy=" + fluid.getEntropy() / moles);
+    // **Three densities, and they are three different numbers.** `getPhase(0).getDensity()`
+    // with no unit is the cubic's own `M / (Z R T / P)`; the same call *with* a unit adds
+    // NeqSim's volume correction, which is 16% on liquid water; and
+    // `SystemInterface.getDensity()` averages over the phases. A port reports one of the
+    // three, so the capture has to say which - and azoth's `Stream::density()` is the first.
+    System.out.println("cubic_density=" + fluid.getPhase(0).getDensity());
+    System.out.println("corrected_density=" + fluid.getPhase(0).getDensity("kg/m3"));
+    System.out.println("system_density=" + fluid.getDensity("kg/m3"));
+    System.out.println("viscosity=" + fluid.getViscosity("kg/msec"));
+    System.out.println();
   }
 
   /// One stream's record, which is what a port carries.

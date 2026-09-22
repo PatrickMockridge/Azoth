@@ -4,8 +4,14 @@
 //! pressure, temperature and molar enthalpy. This module is that value: the thing
 //! a unit operation's kernel reads on its inlets and writes on its outlets.
 
-use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_eos::{Cubic, IdealGasModel, Mixture, databank, ph_flash};
+use azoth_core::units::{
+    MolarEnergy, MolarMass, Pressure, ThermodynamicTemperature, joules_per_mole, kilograms_per_mole,
+};
+use azoth_core::{AzothError, Result};
+use azoth_eos::{
+    Cubic, IdealGasModel, Mixture, Phase, databank, ph_flash, pr_mass_density, pr_molar_volume,
+    ps_flash, pt_flash,
+};
 
 /// A material stream on the shared record.
 #[derive(Debug, Clone)]
@@ -48,6 +54,80 @@ impl Stream {
             t,
             h: joules_per_mole(h),
         })
+    }
+
+    /// The molar entropy at the stream's own state, J/(mol·K).
+    ///
+    /// **Derived, not carried.** The record has five fields and this is not one of them,
+    /// for the reason `s` is a function of `(T, P, z)` exactly as `h` is: a sixth field
+    /// would have to be kept in step with the other five at every port of every unit
+    /// operation, and could then disagree with them.
+    pub fn entropy(&self) -> Result<f64> {
+        let (mixture, ideal_gas) = self.mixture()?;
+        let (s, _) = ps_flash::entropy_at(&mixture, &ideal_gas, self.t, self.p, &self.z)?;
+        Ok(s)
+    }
+
+    /// The mixture's molar mass, kg/mol.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::PropertyUnavailable`] if any component carries no molar
+    /// mass, which is true of a component built from critical constants alone. A
+    /// correlation that needs the mass refuses rather than defaulting it to zero.
+    pub fn molar_mass(&self) -> Result<MolarMass> {
+        let (mixture, _) = self.mixture()?;
+        let mut total = 0.0;
+        for (component, zi) in mixture.components().iter().zip(&self.z) {
+            let mass = component.molar_mass.ok_or_else(|| {
+                AzothError::property_unavailable(
+                    self.components.join(" / "),
+                    "molar_mass",
+                    "a component of this stream carries no molar mass, so the mixture has none",
+                )
+            })?;
+            total += zi * mass;
+        }
+        Ok(kilograms_per_mole(total))
+    }
+
+    /// The mass flow, kg/s: the molar flow times the molar mass.
+    pub fn mass_flow(&self) -> Result<f64> {
+        Ok(self.n * self.molar_mass()?.value)
+    }
+
+    /// The mass density at the stream's own state, kg/m³.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] **if the stream is two-phase**. A stream
+    /// that is two phases has no one density, and the two candidate conventions - the
+    /// vapour's, the liquid's, or a homogeneous average - are three different answers
+    /// rather than one. NeqSim's `Stream.getDensity()` reports phase 0's without saying
+    /// so; this refuses, and a caller with a two-phase line has to say which density they
+    /// mean.
+    pub fn density(&self) -> Result<f64> {
+        let (mixture, _) = self.mixture()?;
+        let root = self.single_phase_root(&mixture)?;
+        let v = pr_molar_volume(root, self.t, self.p)?.v;
+        Ok(pr_mass_density(self.molar_mass()?, v)?.rho.value)
+    }
+
+    /// The cubic root a single-phase stream sits on.
+    ///
+    /// Shared by the two accessors that need one, so the refusal is stated once: a
+    /// two-phase stream has two roots and nothing here may choose between them.
+    fn single_phase_root(&self, mixture: &Mixture) -> Result<f64> {
+        let flash = pt_flash(mixture, self.t, self.p, &self.z)?;
+        match flash.phase {
+            Phase::AllVapour => Ok(flash.z_vapour),
+            Phase::AllLiquid | Phase::Trivial => Ok(flash.z_liquid),
+            Phase::TwoPhase => Err(AzothError::invalid_input(
+                "stream",
+                format!(
+                    "this stream is two phases at {} K and {} Pa, so it has no one density                      or viscosity; a caller has to say which phase's they mean",
+                    self.t.value, self.p.value
+                ),
+            )),
+        }
     }
 
     /// A stream at a known molar enthalpy, with its temperature solved for.
