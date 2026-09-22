@@ -76,7 +76,14 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset({"balance_error", "residual", "tm
 #: report errors five times apart because that is where each stopped. **The value is still
 #: pinned against NeqSim**, by the model's own case; this only drops the comparison of the
 #: two kernels to each other.
-_UNCOMPARED_FIELDS: frozenset[str] = frozenset({"iterations", "error"})
+#:
+#: `converged` is the third and is the verdict *on* `error`: it is true when that quantity
+#: came in under a bound the loop relaxes by 1.5x after its fifteenth pass, so where the
+#: two codes stop decides it and nothing else does. On `reactions.reactive_phase_equilibrium`'s
+#: first case the reference reports `2.27e-8` and the extension `3.72e-8` against a relaxed
+#: bound of `3.375e-8`, and the flag crosses with it. **It is still asserted** - by the
+#: model's own crate test, per case, and by `reactions.chemical_equilibrium`'s.
+_UNCOMPARED_FIELDS: frozenset[str] = frozenset({"iterations", "error", "converged"})
 
 
 def spec(calc_id: str) -> dict[str, Any]:
@@ -452,6 +459,11 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
             kwargs[name] = list(value)
         elif kind in ("enum", "string"):
             kwargs[name] = value
+        elif kind == "boolean":
+            # A flag, not a number in any unit. `bool(value)` rather than `float(value)`:
+            # `reactions.chemical_equilibrium` is the first calc whose spec declares one,
+            # and a `0.0` reaching a `bool` parameter is refused by the extension.
+            kwargs[name] = bool(value)
         elif kind == "quantity" and declaration.get("unit") != "dimensionless":
             kwargs[name] = quantity(float(value), declaration["unit"])
         else:
@@ -508,6 +520,9 @@ def _declared(declaration: Mapping[str, Any], value: Any) -> Any:
         # `type = "enum"` reaches a function this way; `string` is what a
         # calculation's `source` field is spelled with.
         return str(value)
+    if kind == "boolean":
+        # A flag, for the reason `kwargs_for` gives.
+        return bool(value)
     return _scalar(unit, value)
 
 

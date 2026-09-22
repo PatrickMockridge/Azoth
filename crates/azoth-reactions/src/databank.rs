@@ -28,6 +28,12 @@ use std::sync::OnceLock;
 use azoth_core::AzothError;
 use csv::ReaderBuilder;
 
+// **One column is read from the component databank rather than from `data/reactions/`.**
+// The electroneutrality row of the element matrix holds each substance's ionic charge, and
+// NeqSim reads that from the component's own `COMP.csv` row rather than from any reaction
+// table. Vendoring it again under `data/reactions/` would make two copies of one upstream
+// column, so the compiled component table is read here instead - one field, by name.
+const COMPONENTS_CSV: &str = include_str!("../../../data/components/components.csv");
 const ELEMENTS_CSV: &str = include_str!("../../../data/reactions/elements.csv");
 const STOICHIOMETRY_CSV: &str = include_str!("../../../data/reactions/stoichiometry.csv");
 const STANDARD_CSV: &str = include_str!("../../../data/reactions/REACTIONDATA.csv");
@@ -39,6 +45,8 @@ const KENT_EISENBERG_CSV: &str =
 pub const ELEMENTS_PATH: &str = "data/reactions/elements.csv";
 /// The compiled stoichiometry table's path.
 pub const STOICHIOMETRY_PATH: &str = "data/reactions/stoichiometry.csv";
+/// The compiled component databank's path, read for the ionic charge alone.
+pub const COMPONENTS_PATH: &str = "data/components/components.csv";
 
 /// Which table a reaction's `K` is read from.
 ///
@@ -293,6 +301,64 @@ pub fn composition_table() -> Result<HashMap<String, Vec<(String, f64)>>, AzothE
             .push((row.element.clone(), row.count));
     }
     Ok(out)
+}
+
+/// One component's ionic charge, in elementary charges.
+///
+/// **`None` where the component databank has no row for the name.** That is the same
+/// kind of absence as a missing element row and is refused by the caller rather than
+/// defaulted to zero: a substance treated as neutral when it is charged is a charge row
+/// that does not balance, and the answer would still look like a number.
+///
+/// # Errors
+/// Fails if the compiled component table is malformed.
+pub fn ionic_charge(component: &str) -> Result<Option<f64>, AzothError> {
+    Ok(ionic_charges()?
+        .get(&component.trim().to_lowercase())
+        .copied())
+}
+
+/// Every component's ionic charge, keyed by lowercased name.
+///
+/// **The two tables spell their names differently and this is where that is settled.**
+/// `element.csv` and the reaction tables keep NeqSim's spelling, so the element matrix is
+/// built over `CO2` and `H3O+`; the component databank is lowercased by its generator,
+/// which is also how `azoth-eos` looks a component up. The column is found by header
+/// rather than by position, because the component table carries ~140 of them.
+fn ionic_charges() -> Result<&'static HashMap<String, f64>, AzothError> {
+    static TABLE: OnceLock<Result<HashMap<String, f64>, AzothError>> = OnceLock::new();
+    match TABLE.get_or_init(|| {
+        let mut parsed = reader(COMPONENTS_CSV)?;
+        let header = parsed.headers().map_err(malformed)?.clone();
+        let name_column = header
+            .iter()
+            .position(|column| column == "name")
+            .ok_or_else(|| absent_column("name"))?;
+        let charge_column = header
+            .iter()
+            .position(|column| column == "ioniccharge")
+            .ok_or_else(|| absent_column("ioniccharge"))?;
+
+        let mut out = HashMap::new();
+        for row in parsed.records() {
+            let row = row.map_err(malformed)?;
+            out.insert(
+                column(&row, name_column)?.trim().to_lowercase(),
+                number(&row, charge_column)?,
+            );
+        }
+        Ok(out)
+    }) {
+        Ok(table) => Ok(table),
+        Err(error) => Err(error.clone()),
+    }
+}
+
+fn absent_column(name: &str) -> AzothError {
+    AzothError::InvalidInput {
+        field: "component_data".to_string(),
+        reason: format!("the compiled component table has no `{name}` column"),
+    }
 }
 
 fn reader(text: &'static str) -> Result<csv::Reader<&'static [u8]>, AzothError> {

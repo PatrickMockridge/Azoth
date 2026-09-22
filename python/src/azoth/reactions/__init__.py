@@ -19,6 +19,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     ChemicalEquilibriumResult,
     EquilibriumConstantResult,
+    ReactivePhaseEquilibriumResult,
     ReferencePotentialsResult,
 )
 from azoth.core.units import Q
@@ -26,11 +27,13 @@ from azoth.core.units import Q
 __all__ = [
     "chemical_equilibrium",
     "equilibrium_constant",
+    "reactive_phase_equilibrium",
     "reference_potentials",
 ]
 
 _CHEMICAL_EQUILIBRIUM = "reactions.chemical_equilibrium"
 _EQUILIBRIUM_CONSTANT = "reactions.equilibrium_constant"
+_REACTIVE_PHASE_EQUILIBRIUM = "reactions.reactive_phase_equilibrium"
 _REFERENCE_POTENTIALS = "reactions.reference_potentials"
 
 
@@ -71,6 +74,7 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],
+    whole_system: bool,
     moles: list[float],
     chem_ref: list[float],
     log_activity: list[float],
@@ -81,7 +85,9 @@ def chemical_equilibrium(
     """The reactive equilibrium composition of a phase, by the Smith-Missen method.
 
     ``a_matrix`` is the element matrix with the electroneutrality row last, ``b`` the
-    element amounts it conserves, ``moles`` the starting composition, ``chem_ref`` the
+    element amounts it conserves, ``whole_system`` whether the phase is the only one (which
+    is NeqSim's ``getNumberOfPhases() == 1`` and decides whether the conservation coupling
+    is corrected), ``moles`` the starting composition, ``chem_ref`` the
     reduced standard-state potentials and ``log_activity`` the ``ln(gamma)``.
 
     Returns a result whether or not the solve converged; ``converged`` says which.
@@ -94,8 +100,56 @@ def chemical_equilibrium(
     return resolve(_CHEMICAL_EQUILIBRIUM)(  # type: ignore[no-any-return]
         a_matrix=a_matrix,
         b=b,
+        whole_system=whole_system,
         moles=moles,
         chem_ref=chem_ref,
+        log_activity=log_activity,
+        T=T,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+    )
+
+
+def reactive_phase_equilibrium(
+    components: list[str],
+    source: str,
+    phase: str,
+    moles: list[Q],
+    phase_charge: Q,
+    phase_moles: Q,
+    whole_system: bool,
+    log_activity: list[float],
+    T: Q,
+    max_iterations: float,
+    tolerance: float,
+) -> ReactivePhaseEquilibriumResult:
+    """The reactive equilibrium composition of one phase, from its own state.
+
+    ``components`` and ``moles`` are the phase's reactive substances and their amounts.
+    ``phase`` is its type name as NeqSim spells it: ``aqueous``, ``liquid`` or ``oil``
+    takes the solve and **anything else skips it**, which is how NeqSim's ``-1`` reaches
+    a caller here. ``phase_charge`` and ``phase_moles`` are the whole phase's own, which
+    is what the electroneutrality row's correction is read from, and ``whole_system``
+    whether this phase is the only one.
+
+    The matrix, the element amounts and the reference potentials come back either way.
+    ``skipped`` says whether a solve ran, and it is what separates a skip from a solve
+    that ran and did not converge.
+
+    Raises:
+        InvalidInputError: where the shapes disagree, or a component has no element row
+            or no charge.
+
+    See :func:`azoth.reactions.reference.reactive_phase_equilibrium`.
+    """
+    return resolve(_REACTIVE_PHASE_EQUILIBRIUM)(  # type: ignore[no-any-return]
+        components=components,
+        source=source,
+        phase=phase,
+        moles=moles,
+        phase_charge=phase_charge,
+        phase_moles=phase_moles,
+        whole_system=whole_system,
         log_activity=log_activity,
         T=T,
         max_iterations=max_iterations,

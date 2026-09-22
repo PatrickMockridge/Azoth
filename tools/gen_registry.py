@@ -168,6 +168,11 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # structure and `python/tests/models/test_stability_test.py` reads this same spec
         # and compares both backends against them.
         "w",
+        # `reactive_phase_equilibrium`'s element matrix, for the same reason and with the
+        # same shape. `crates/azoth-reactions/tests/reactive_phase_equilibrium.rs` reads it
+        # through `TestCase::matrix` and compares it row by row against the matrix the
+        # operation built, so the specification is what constrains it either way.
+        "a_matrix",
     }
 )
 

@@ -56,6 +56,7 @@ use azoth_eos::results::{
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
+use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
 use azoth_reactions::reference_potentials::ReferencePotentialsResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -597,6 +598,95 @@ impl PyChemicalEquilibriumResult {
 impl From<&ChemicalEquilibriumResult> for PyChemicalEquilibriumResult {
     fn from(r: &ChemicalEquilibriumResult) -> Self {
         Self {
+            moles: r
+                .moles
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            iterations: r.iterations,
+            error: r.error,
+            converged: r.converged,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `reactions.reactive_phase_equilibrium`, transported.
+///
+/// The first result carrying a **matrix**, and the first carrying a flag that says whether
+/// the solve ran at all. `skipped` crosses as a boolean and not as a sentinel: the
+/// composition on a skip is the caller's own, so a flattened flag would make an untouched
+/// answer indistinguishable from a converged one.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ReactivePhaseEquilibriumResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyReactivePhaseEquilibriumResult {
+    /// Whether the phase was one the solve runs in.
+    #[pyo3(get)]
+    pub skipped: bool,
+    /// The element matrix, one row per element and the electroneutrality row last.
+    #[pyo3(get)]
+    pub a_matrix: Vec<Vec<f64>>,
+    /// The element amounts the solve conserves, the charge correction last.
+    #[pyo3(get)]
+    pub b: Vec<PyQty>,
+    /// Each component's standard-state reference potential.
+    #[pyo3(get)]
+    pub chem_ref: Vec<PyQty>,
+    /// The composition the phase is left holding.
+    #[pyo3(get)]
+    pub moles: Vec<PyQty>,
+    /// Passes the solve took, zero on a skip.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The solve's final error, zero on a skip.
+    #[pyo3(get)]
+    pub error: f64,
+    /// The solve's own convergence flag, false on a skip.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyReactivePhaseEquilibriumResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ReactivePhaseEquilibriumResult(skipped={}, converged={}, iterations={})",
+            self.skipped, self.converged, self.iterations
+        )
+    }
+}
+
+impl From<&ReactivePhaseEquilibriumResult> for PyReactivePhaseEquilibriumResult {
+    fn from(r: &ReactivePhaseEquilibriumResult) -> Self {
+        Self {
+            skipped: r.skipped,
+            a_matrix: r.a_matrix.clone(),
+            b: r.b
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            chem_ref: r
+                .chem_ref
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "J/mol".to_string(),
+                })
+                .collect(),
             moles: r
                 .moles
                 .iter()
@@ -6967,6 +7057,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
+        ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),
         ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),

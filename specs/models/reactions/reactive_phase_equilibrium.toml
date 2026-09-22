@@ -1,0 +1,125 @@
+id = "reactions.reactive_phase_equilibrium"
+name = "Reactive equilibrium as an operation on one phase"
+kind = "procedure"
+assumptions = [
+    "**the element rows are sorted and NeqSim's are not.** `getAllElements` collects them into a `HashSet` and iterates it, so its order is Java's hash order - the capture's `C S H O` against this library's `C H O S`. The two matrices differ by a row permutation.",
+    "**the charge row is a correction, not a zero.** `b`'s last entry is the negation of the charge the ions outside the reaction set carry, and it is zero only when every ion in the phase is reactive. The captured bicarbonate brine is the fluid where it is not.",
+    "**the spectator ions are inputs.** The phase's own charge and mole count are summed over *every* component it holds, which this operation cannot see: `components` is the reaction set. They are what the correction and its tolerance are read from.",
+    "**azoth's flashes do not take this branch.** NeqSim calls `solveChemEq` from inside `TPflash`, `TPmultiflash`, `TPmultiflashWAX` and the bubble and dew operations; here the caller owns the coupling. The blocker is the chemical-system dispatch, at `SystemEosGE`'s seam.",
+    "**the LP initial estimate is not ported.** `solveChemEq` seeds from a Commons Math simplex solve of `A n = b` minimising `sum(mu_i n_i / R T)`; this starts from the caller's composition, which is why the two reach different converged states.",
+    "**one refinement, not two.** NeqSim runs two and switches `useAdaptiveDerivatives` on from the second, which needs `d(ln phi_i)/d(n_j)` - the derivative surface `reactions.chemical_equilibrium` already records as absent.",
+    "**NeqSim's certification is not reproduced, and it fails on every captured fluid.** After a refinement it requires a reaction log residual under `2e-6`; the five captures sit between `13.9` and `29.6`, so `solveChemEq` returns false on all of them.",
+    "**`b` is built from the composition the caller hands over.** NeqSim's `calcBVector` reads a cached `nVector`, which only a solve that gets past the phase search refreshes - so a skipped phase's element amounts are the constructor's stale ones there, and the capture prints both lines.",
+    "**`updateMoles`'s floor is applied to the answer.** NeqSim writes `max(n_i, 1e-45)` back to the phase, and the composition returned here carries it. No captured state reaches the floor, so nothing pinned from the capture moved.",
+    "**the reference potentials are built before the phase is classified**, as NeqSim's constructor builds them, so a skipped result carries them rather than a zero. A basis that cannot be built is refused even where nothing would be solved.",
+    "**the ionic charge is read from the component databank rather than taken from the caller.** A keycard that overrides `ionic_charge` is not seen here, so a fluid whose charge was corrected diverges in the charge row and nowhere else.",
+    "**the reaction machinery changes the phase split.** A CO2-water fluid at 400 K and 1.01325 bar is one gas phase without `chemicalReactionInit()` and gas plus aqueous with it, so a caller that flashes first classifies a different phase.",
+    "**the reaction set is fixed by the substances and not by the phase.** The skipped fluid still carries six reactive components: `removeJunkReactions` reads component names, so a gas with no aqueous phase has a reaction set and nowhere to solve it.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionOperations` is the port source: `getReactivePhaseIndex`, `calcNVector`, `calcBVector`, `calcAmatrix`, `calcChemRefPot`, `updateMoles` and `solveChemEq`.",
+    "Smith, W. R.; Missen, R. W. (1982). \"Chemical Reaction Equilibrium Analysis: Theory and Algorithms.\" Wiley, New York. The element balance and the electroneutrality constraint the operation hands the solve.",
+    "Apache Commons Math 3 - https://commons.apache.org/proper/commons-math/ - Apache-2.0. `SimplexSolver`, which `LinearProgrammingChemicalEquilibrium` seeds through and which is not ported.",
+]
+[source]
+standard = "NeqSim master `ChemicalReactionOperations`"
+edition = "The facade as an operation on one phase: the phase search and its skip, the element matrix with its charge row, the element amounts, the reference potentials, the solve, and the write-back floor. The LP seed and the second refinement are refused rather than approximated."
+[algorithm]
+scheme = "phase_reaction_balance"
+initialisation = "caller_supplied"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 100
+[inputs]
+[inputs.components]
+type = "components"
+description = "the phase's reactive substances, **which are not every substance in it**. Each needs an element row and a component row; one without either is refused rather than dropped, because a dropped substance is a smaller balance that still looks like an answer.\n"
+[inputs.source]
+type = "enum"
+values = ["standard", "pitzer", "kent-eisenberg"]
+description = "which of NeqSim's three reaction tables the reference potentials come from. Required rather than defaulting, for the reason `reactions.equilibrium_constant` gives.\n"
+[inputs.phase]
+type = "string"
+description = "the phase's type name as NeqSim spells it. `aqueous`, or `liquid`, or `oil` takes the solve; **anything else skips it**, which is `getReactivePhaseIndex` returning `-1`. The comparison folds case.\n"
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the reactive components' amounts in the phase. This is the starting composition as well as `A n`'s operand, because the LP seed is not ported and the caller's start is what the solve has.\n"
+[inputs.phase_charge]
+unit = "mol"
+description = "the phase's own ionic charge, `sum(z_i n_i)` in moles of elementary charge, **over every component the phase holds** and not only the reactive ones. A phase still holding an unmodelled ion carries its charge into the constraint.\n"
+[inputs.phase_moles]
+unit = "mol"
+description = "the phase's total moles. **Read only for the charge-row tolerance**, which is `1e-10 max(1, phase_moles)`: below it the phase is treated as neutral and the row is set to zero.\n"
+[inputs.whole_system]
+type = "boolean"
+description = "**whether this phase is the only one**, which is NeqSim's `getNumberOfPhases() == 1` and the condition its solve runs the conservation correction under. False for a phase a flash has split, where `b` is taken as given.\n"
+[inputs.log_activity]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's `ln(gamma)`, held fixed for the solve, as `reactions.chemical_equilibrium` takes it. It is the one live-phase quantity the operation cannot compute from what it is given.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature. It sets the standard state the potentials are reduced against and it is read by the step search inside the solve.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the solve's pass cap, passed through. NeqSim's default is 100 and its own callers set it, so it is an input rather than a constant.\n"
+[inputs.tolerance]
+unit = "dimensionless"
+description = "the error the solve is trying to reach, passed through. NeqSim's default is 1e-8.\n"
+[outputs]
+[outputs.skipped]
+type = "boolean"
+description = "**whether the phase was one the solve runs in.** True is NeqSim's `-1`: the composition comes back as it went in. A skip and a solve that failed are different results and this flag is what separates them.\n"
+[outputs.a_matrix]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per element the components carry, sorted by symbol, plus the electroneutrality row last"
+description = "the element matrix the solve is handed, built whether or not the phase is reactive. **Its row order is this library's**, where NeqSim's is a hash-set iteration; the rows hold the same coefficients either way.\n"
+[outputs.b]
+type = "vector"
+unit = "mol"
+length = "one per row of `a_matrix`, the charge row last"
+description = "the element amounts the solve conserves, `A n` with the charge row replaced by the correction the assumption above describes. **The last entry is that correction**, and it is what makes the constraint one on the phase.\n"
+[outputs.chem_ref]
+type = "vector"
+unit = "J/mol"
+length = "one per component, in the caller's order"
+description = "the standard-state reference potentials, the same quantity `reactions.reference_potentials` returns and **not** the reduced form `reactions.chemical_equilibrium` takes under that name. Built before the phase is classified, so a skip still carries them.\n"
+[outputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component, in the caller's order"
+description = "the composition the phase is left holding: the solve's answer with `updateMoles`'s floor applied, or the caller's own where the solve was skipped.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "the solve's passes. Zero when skipped, which is why `skipped` is read first.\n"
+[outputs.error]
+unit = "dimensionless"
+description = "the solve's final error. Zero when skipped.\n"
+[outputs.converged]
+type = "boolean"
+description = "the solve's own flag. False when skipped **and** false for a solve that ran and did not converge, so it is only meaningful beside `skipped`.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature, and the potentials are reduced against it\n"
+[[valid_range]]
+quantity = "tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an error bound; zero could never be reached\n"
+[[valid_range]]
+quantity = "max_iterations"
+min = 2
+min_inclusive = true
+severity = "error"
+rationale = "the solve runs at least two passes whatever the error, so a cap below two is not a cap this honours\n"
+[implementations]
+python = "azoth.reactions.reactive_phase_equilibrium"
+rust = "azoth_reactions::reactive_phase_equilibrium"

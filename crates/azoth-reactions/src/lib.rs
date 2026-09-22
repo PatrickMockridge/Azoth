@@ -11,6 +11,8 @@
 //! * [`equilibrium_constant`] - `ln K`, its derivative and the heat of reaction
 //! * [`reference_potentials`] - the independent basis, and the potentials from it
 //! * [`chemical_equilibrium`] - the Smith-Missen reactive solve
+//! * [`reactive_phase`] - which phase a fluid solves its reactions in
+//! * [`reactive_phase_equilibrium`] - that solve as an operation on one phase
 //! * [`linalg`] - the exact rank and the LU solve those two rest on
 
 pub mod chemical_equilibrium;
@@ -18,9 +20,13 @@ pub mod databank;
 pub mod equilibrium_constant;
 pub mod linalg;
 pub mod model_gen;
+pub mod reactive_phase;
+pub mod reactive_phase_equilibrium;
 pub mod reference_potentials;
 pub mod spec_gen;
 
 pub use chemical_equilibrium::{ChemicalEquilibriumResult, chemical_equilibrium};
 pub use equilibrium_constant::{EquilibriumConstantResult, equilibrium_constant};
+pub use reactive_phase::{is_reactive_phase, reactive_phase_index};
+pub use reactive_phase_equilibrium::{ReactivePhaseEquilibriumResult, reactive_phase_equilibrium};
 pub use reference_potentials::{ReferencePotentialsResult, reference_potentials};

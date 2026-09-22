@@ -346,6 +346,41 @@ class ChemicalEquilibriumResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ReactivePhaseEquilibriumResult(_HasWarnings):
+    """Result of ``reactions.reactive_phase_equilibrium``.
+
+    **A skip is an answer and not a failure.** ``skipped`` is NeqSim's
+    ``getReactivePhaseIndex`` returning ``-1``: the phase is neither aqueous nor liquid
+    nor oil, so there is no phase for a water-based equilibrium to be solved in, and the
+    composition comes back as it went in. A solve that ran and did not converge is the
+    other case, and ``skipped`` is what separates them.
+    """
+
+    #: Whether the phase was one the solve runs in.
+    skipped: bool
+    #: The element matrix: one row per element the components carry, sorted by symbol,
+    #: with the electroneutrality row last. Built whether or not the solve ran.
+    a_matrix: tuple[tuple[float, ...], ...]
+    #: The element amounts the solve conserves, one per row. **The last entry is the
+    #: charge correction** and is zero only when every ion in the phase is reactive.
+    b: tuple[Q, ...]
+    #: Each component's standard-state reference potential, from the independent basis.
+    #: Built before the phase is classified, so a skip still carries them.
+    chem_ref: tuple[Q, ...]
+    #: The composition the phase is left holding.
+    moles: tuple[Q, ...]
+    #: The solve's passes. Zero when skipped.
+    iterations: int
+    #: The solve's final error. Zero when skipped.
+    error: float
+    #: The solve's own convergence flag. False when skipped **and** for a solve that ran
+    #: and did not converge, so it is only meaningful beside ``skipped``.
+    converged: bool
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ReferencePotentialsResult(_HasWarnings):
     """Result of ``reactions.reference_potentials``.
 

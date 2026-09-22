@@ -56,6 +56,7 @@ STAGNATION_LIMIT = 10
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],
+    whole_system: bool,
     moles: list[float],
     chem_ref: list[float],
     log_activity: list[float],
@@ -69,6 +70,10 @@ def chemical_equilibrium(
         a_matrix: the element matrix, one row per element and one column per component,
             with the electroneutrality row last.
         b: the element amounts the solve conserves. The charge row's entry is zero.
+        whole_system: whether the phase is the only one, which is NeqSim's
+            ``getNumberOfPhases() == 1``. **It decides whether the conservation coupling
+            is corrected to the phase's own element amounts**, and the two branches reach
+            different fixed points.
         moles: the starting composition.
         chem_ref: each component's reduced standard-state potential, ``mu_ref / (R T)``.
         log_activity: each component's ``ln(gamma)``, held fixed for the solve.
@@ -161,7 +166,7 @@ def chemical_equilibrium(
         error = 0.0
 
         trial = list(committed)
-        dn, a_lambda = _chem_solve(a_matrix, b, committed, chem_ref, log_activity)
+        dn, a_lambda = _chem_solve(a_matrix, b, whole_system, committed, chem_ref, log_activity)
         step = _step_of(committed, chem_ref, log_activity, dn, a_lambda, temperature)
 
         for i in range(species):
@@ -224,6 +229,7 @@ def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
 def _chem_solve(
     a_matrix: list[list[float]],
     b: list[float],
+    whole_system: bool,
     n_mol: list[float],
     chem_ref: list[float],
     log_activity: list[float],
@@ -259,16 +265,23 @@ def _chem_solve(
 
     # The conservation coupling: `b` unless the phase's own element amounts disagree with
     # it, in which case the amounts are what is conserved and `b - A n` is carried.
+    #
+    # **Gated on the phase being the whole system**, which is NeqSim's
+    # `getNumberOfPhases() == 1`. The gate is not a detail: on the aqueous phase of a
+    # flashed CO2-water fluid the correction fires on the charge row and drives the solve
+    # away from the fixed point it otherwise reaches in the same nineteen passes.
     coupling = list(b)
     correction = [0.0] * n_elements
-    for e in range(n_elements):
-        current = sum(a_matrix[e][i] * n_mol[i] for i in range(species))
-        if abs(b[e] - current) > CONSERVATION_CORRECTION_TOLERANCE * max(1.0, abs(b[e])):
-            coupling = [
-                sum(a_matrix[f][i] * n_mol[i] for i in range(species)) for f in range(n_elements)
-            ]
-            correction = [b[f] - coupling[f] for f in range(n_elements)]
-            break
+    if whole_system:
+        for e in range(n_elements):
+            current = sum(a_matrix[e][i] * n_mol[i] for i in range(species))
+            if abs(b[e] - current) > CONSERVATION_CORRECTION_TOLERANCE * max(1.0, abs(b[e])):
+                coupling = [
+                    sum(a_matrix[f][i] * n_mol[i] for i in range(species))
+                    for f in range(n_elements)
+                ]
+                correction = [b[f] - coupling[f] for f in range(n_elements)]
+                break
 
     size = n_elements + 1
     larger = [[0.0] * size for _ in range(size)]

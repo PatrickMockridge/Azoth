@@ -31,6 +31,9 @@ from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 ELEMENTS_CSV: Final[str] = "data/reactions/elements.csv"
 STOICHIOMETRY_CSV: Final[str] = "data/reactions/stoichiometry.csv"
 
+#: The component databank, read for one column - see :func:`ionic_charge`.
+COMPONENTS_CSV: Final[str] = "data/components/components.csv"
+
 #: The three sources, by the identifier ``ChemicalReactionDataSource`` gives them.
 SOURCES: Final[dict[str, str]] = {
     "standard": "data/reactions/REACTIONDATA.csv",
@@ -104,6 +107,27 @@ def element_composition(component: str) -> tuple[tuple[str, float], ...] | None:
     """
     found = tuple((element, count) for name, element, count in elements() if name == component)
     return found or None
+
+
+@cache
+def _charges() -> dict[str, float]:
+    """Every component's ionic charge, keyed by lowercased name."""
+    return {row["name"]: float(row["ioniccharge"]) for row in _rows(COMPONENTS_CSV)}
+
+
+def ionic_charge(component: str) -> float | None:
+    """One component's ionic charge, or ``None`` where the component databank has no row.
+
+    **The two tables spell their names differently, and this is where that is settled.**
+    The element table keeps NeqSim's spelling, so the element matrix is built over
+    ``CO2`` and ``H3O+``; the component databank is lowercased by its generator, which is
+    also how :mod:`azoth.eos` looks a component up.
+
+    ``None`` is refused by the caller rather than read as zero: a substance treated as
+    neutral when it is charged is a charge row that does not balance, and the answer
+    would still look like a number.
+    """
+    return _charges().get(component.strip().lower())
 
 
 def source_path(source: str) -> str:

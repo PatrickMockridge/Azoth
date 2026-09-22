@@ -1,0 +1,166 @@
+model = "reactions.reactive_phase_equilibrium"
+[[cases]]
+id = "co2_water_aqueous_phase"
+tolerance = 1e-06
+source = "NeqSim master, from `validation/neqsim/captures/reaction_operations_probe.tsv`: the CO2-water fluid's aqueous phase after a flash, with the element matrix and the element amounts the facade built for it and the ideal Newton solve's own answer. **The solve and not `solveChemEq`**: the production entry point seeds from an LP this library does not port, and the two reach different converged states. The phase charge is summed from the capture's `n_before`, which is the state the caller is holding. The composition agrees to `1.5e-7` relative, worst on the trace ions, at the same pass count. **`error` is not pinned**: it is the quantity the loop stops on, and the bordered matrix's conditioning (`2.5e13` here) spreads it - the capture has `3.37e-8`, the reference `2.27e-8` and the extension `3.72e-8`, which is why `converged` crosses with it.\n"
+[cases.inputs]
+source = "standard"
+phase = "aqueous"
+components = ["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"]
+moles = [
+    1.2573383934458022e-04,
+    9.999733292115952,
+    8.690090644094265e-12,
+    3.7523303281414325e-05,
+    1.4784390876737142e-05,
+    2.6728220502961853e-21,
+]
+whole_system = false
+phase_charge = 2.273890371458653e-05
+phase_moles = 9.999911333658144
+log_activity = [
+    -3.1030489400052375e-04,
+    2.691048273106844e-09,
+    1.6340107041479257e-04,
+    -4.45333543268589e-04,
+    1.2896333374889934e-04,
+    -1.9997187576947795e-05,
+]
+T = 298.15
+max_iterations = 100
+tolerance = 1e-08
+[cases.expected]
+a_matrix = [
+    [1.0, 0.0, 0.0, 0.0, 1.0, 1.0],
+    [0.0, 2.0, 1.0, 3.0, 1.0, 0.0],
+    [2.0, 1.0, 1.0, 1.0, 3.0, 3.0],
+    [0.0, 0.0, -1.0, 1.0, -1.0, -2.0],
+]
+b = [1.4051823021470568e-04, 19.999593938541302, 10.000066636279326, 0.0]
+chem_ref = [
+    -135846.03262887645,
+    86061.16003668531,
+    72306.22849248124,
+    199632.18316177875,
+    -127079.60827279043,
+    -154589.47136119858,
+]
+moles = [
+    1.2573384043449446e-04,
+    9.99973329211278,
+    8.685091891949694e-12,
+    3.7523306303882275e-05,
+    1.4784389997460746e-05,
+    3.2997798471182613e-15,
+]
+iterations = 19.0
+[[cases]]
+id = "bicarbonate_brine_carries_its_spectator_charge"
+tolerance = 1e-02
+source = "The capture's bicarbonate brine, where the charge row is **not** zero. `HCO3-` and `CO3--` are in the reaction set and `Na+` is in no reaction the table carries, so the sodium's 0.02 mol of charge stays outside the reactive set and `b`'s last entry carries it. A port that assumed the electroneutrality row was zero passes the first case and fails here. **The composition is pinned loosely on purpose**: the bordered Lagrange matrix here has a condition number of `6.7e16`, past the double-precision limit, so its multipliers are not determined and the three trace ions land `1.99e-3` from the capture in *both* kernels and no closer. NeqSim's own two implementations part by as much. The matrix, the amounts and the potentials are exact and are pinned exactly. **`error` is not pinned**, for the reason the first case gives: the capture has `4.55e-9`, and the two kernels land either side of it.\n"
+[cases.inputs]
+source = "standard"
+phase = "aqueous"
+components = ["CO2", "water", "HCO3-", "CO3--", "OH-", "H3O+"]
+moles = [
+    1.355791821408818e-04,
+    9.999762521408506,
+    0.01997989768435248,
+    1.0295648328160809e-13,
+    1.7001418398616546e-08,
+    3.111766580692449e-08,
+]
+whole_system = false
+phase_charge = 1.3138935581800328e-08
+phase_moles = 10.039857943101433
+log_activity = [
+    0.035523536890543994,
+    3.686576278028042e-06,
+    -0.001870113251873029,
+    0.04431928501758531,
+    0.04451635300816914,
+    -0.07984441634095774,
+]
+T = 298.15
+max_iterations = 100
+tolerance = 1e-08
+[cases.expected]
+a_matrix = [
+    [1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+    [0.0, 2.0, 1.0, 0.0, 1.0, 3.0],
+    [2.0, 1.0, 3.0, 3.0, 1.0, 1.0],
+    [0.0, 0.0, -1.0, -2.0, -1.0, 1.0],
+]
+b = [0.020115476866617132, 20.019505050855795, 10.059973420945283, -0.019979896707241075]
+chem_ref = [
+    -27386.689890154594,
+    49908.04579044469,
+    36153.11424624062,
+    99569.74518438231,
+    127079.60827279044,
+    72552.57488898831,
+]
+moles = [
+    1.3557499371962708e-04,
+    9.999762521742847,
+    0.019979896714367944,
+    5.158348135543692e-09,
+    1.0066427974203557e-08,
+    3.3529432680236246e-08,
+]
+iterations = 18.0
+[[cases]]
+id = "a_single_gas_phase_is_skipped"
+tolerance = 1e-09
+source = "The capture's gas-condensate fluid at 400 K: one gas phase after the flash, so `getReactivePhaseIndex` returns -1 and the solve is skipped. **The matrix, the element amounts and the reference potentials are still built**, as NeqSim's constructor builds them, and the composition comes back untouched - which is why this case pins all four. Whether the solve was skipped is a boolean and is asserted in the model's own test. **`b` is pinned from the capture's `b_from_moles` and not from its `b`**: the facade's `calcBVector` reads a cached `nVector` that only a solve getting past the phase search refreshes, so on this fluid it is the constructor's stale one - `3.2e-12` where the phase holds `0.01` mol of carbon.\n"
+[cases.inputs]
+source = "standard"
+phase = "gas"
+components = ["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"]
+moles = [
+    0.010000000000594776,
+    1.0000000000592608,
+    6.510000000780689e-50,
+    6.510000000780689e-50,
+    6.510000000780689e-50,
+    6.510000000780689e-50,
+]
+whole_system = false
+phase_charge = -1.9530000002342068e-49
+phase_moles = 6.51000000038698
+log_activity = [
+    -0.002118177352953553,
+    0.0038986657427502918,
+    9.239312649800555e-04,
+    -0.011948665294150354,
+    9.239312649800555e-04,
+    0.005695619852952781,
+]
+T = 400.0
+max_iterations = 100
+tolerance = 1e-08
+[cases.expected]
+a_matrix = [
+    [1.0, 0.0, 0.0, 0.0, 1.0, 1.0],
+    [0.0, 2.0, 1.0, 3.0, 1.0, 0.0],
+    [2.0, 1.0, 1.0, 1.0, 3.0, 3.0],
+    [0.0, 0.0, -1.0, 1.0, -1.0, -2.0],
+]
+b = [0.010000000000594776, 2.0000000001185216, 1.0200000000604503, 0.0]
+chem_ref = [
+    -178983.82465811548,
+    114828.6944246573,
+    111965.52575477365,
+    235383.72618908188,
+    -134036.59780668365,
+    -139762.93514645094,
+]
+moles = [
+    0.010000000000594776,
+    1.0000000000592608,
+    6.510000000780689e-50,
+    6.510000000780689e-50,
+    6.510000000780689e-50,
+    6.510000000780689e-50,
+]
+iterations = 0.0

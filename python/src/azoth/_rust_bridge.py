@@ -121,6 +121,7 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
+    ReactivePhaseEquilibriumResult,
     ReferencePotentialsResult,
     ReynoldsNumberResult,
     RkAlphaAbResult,
@@ -407,6 +408,7 @@ def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],
+    whole_system: bool,
     moles: list[float],
     chem_ref: list[float],
     log_activity: list[float],
@@ -429,6 +431,7 @@ def chemical_equilibrium(
     result = _core.chemical_equilibrium(
         a_matrix,
         list(b),
+        whole_system,
         list(moles),
         list(chem_ref),
         list(log_activity),
@@ -3606,5 +3609,52 @@ def srk_cpa_phase(
         ln_phi=tuple(result.ln_phi),
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_phase_equilibrium(
+    components: Sequence[str],
+    source: str,
+    phase: str,
+    moles: Sequence[Q],
+    phase_charge: Q,
+    phase_moles: Q,
+    whole_system: bool,
+    log_activity: Sequence[float],
+    T: Q,
+    max_iterations: float,
+    tolerance: float,
+) -> ReactivePhaseEquilibriumResult:
+    """The phase's reactive equilibrium, computed in Rust.
+
+    The component names cross **unresolved**, as the reference potentials' do, and the
+    reaction name does for the same reason: the Rust side reads the element table, the
+    component table and the reaction table itself, so no coefficient reaches Python and
+    the two languages cannot disagree about which row answered.
+    """
+    spec = _models_gen.model("reactions.reactive_phase_equilibrium")
+    result = _core.reactive_phase_equilibrium(
+        list(components),
+        source,
+        phase,
+        [_si(spec, "moles", value) for value in moles],
+        input_to_si(spec, "phase_charge", phase_charge),
+        input_to_si(spec, "phase_moles", phase_moles),
+        whole_system,
+        [_si(spec, "log_activity", value) for value in log_activity],
+        input_to_si(spec, "T", T),
+        int(max_iterations),
+        float(tolerance),
+    )
+    return ReactivePhaseEquilibriumResult(
+        skipped=result.skipped,
+        a_matrix=tuple(tuple(row) for row in result.a_matrix),
+        b=tuple(from_si(value.magnitude_si, value.unit) for value in result.b),
+        chem_ref=tuple(from_si(value.magnitude_si, value.unit) for value in result.chem_ref),
+        moles=tuple(from_si(value.magnitude_si, value.unit) for value in result.moles),
+        iterations=result.iterations,
+        error=result.error,
+        converged=result.converged,
         warnings=_warnings(result.warnings),
     )

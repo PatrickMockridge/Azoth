@@ -52,6 +52,16 @@ pub const CONSERVATION_CORRECTION_TOLERANCE: f64 = 1e-8;
 /// `STAGNATION_LIMIT`.
 pub const STAGNATION_LIMIT: u32 = 10;
 
+/// Whether the conservation correction runs, which is NeqSim's
+/// `system.getNumberOfPhases() == 1`.
+///
+/// A phase that is the whole system conserves the element amounts it was handed; a phase
+/// that is one of several does not, and NeqSim then takes `b` as given. **Which branch is
+/// taken changes the answer and not only its digits**: on the aqueous phase of a flashed
+/// CO2-water fluid the correction drives the solve away from the fixed point it would
+/// otherwise reach, and it does not converge at all.
+pub const CONSERVATION_CORRECTION_PHASES: usize = 1;
+
 /// Result of `reactions.chemical_equilibrium`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChemicalEquilibriumResult {
@@ -96,6 +106,7 @@ impl CalcResult for ChemicalEquilibriumResult {
 pub fn chemical_equilibrium(
     a_matrix: &[Vec<f64>],
     b: &[f64],
+    whole_system: bool,
     moles: &[f64],
     chem_ref: &[f64],
     log_activity: &[f64],
@@ -181,7 +192,14 @@ pub fn chemical_equilibrium(
         // The trial starts from what the phase holds, not from the last trial.
         n_mol.copy_from_slice(&committed);
 
-        let (dn, a_lambda) = chem_solve(a_matrix, b, &committed, chem_ref, log_activity)?;
+        let (dn, a_lambda) = chem_solve(
+            a_matrix,
+            b,
+            whole_system,
+            &committed,
+            chem_ref,
+            log_activity,
+        )?;
         let step = step_of(
             &committed,
             chem_ref,
@@ -258,6 +276,7 @@ pub fn chemical_equilibrium(
 fn chem_solve(
     a_matrix: &[Vec<f64>],
     b: &[f64],
+    whole_system: bool,
     n_mol: &[f64],
     chem_ref: &[f64],
     log_activity: &[f64],
@@ -315,28 +334,31 @@ fn chem_solve(
     // The conservation coupling: `b` unless the phase's own element amounts disagree
     // with it, in which case the amounts are what is conserved and `b - A n` is carried.
     //
-    // **NeqSim gates this on `system.getNumberOfPhases() == 1`.** This runs it always, so
-    // a caller whose phase set is multiphase diverges from NeqSim here - which the spec
-    // states rather than leaving implied.
+    // **Gated on the phase being the whole system**, which is NeqSim's
+    // `system.getNumberOfPhases() == 1`. The gate is not a detail: on the aqueous phase of
+    // a flashed CO2-water fluid the correction fires on the charge row and drives the
+    // solve away from the fixed point it otherwise reaches in the same nineteen passes.
     let mut coupling = b.to_vec();
     let mut correction = vec![0.0; n_elements];
-    for e in 0..n_elements {
-        let mut current = 0.0;
-        for i in 0..species {
-            current += a_matrix[e][i] * n_mol[i];
-        }
-        if (b[e] - current).abs() > CONSERVATION_CORRECTION_TOLERANCE * b[e].abs().max(1.0) {
-            coupling = (0..n_elements)
-                .map(|f| {
-                    let mut sum = 0.0;
-                    for i in 0..species {
-                        sum += a_matrix[f][i] * n_mol[i];
-                    }
-                    sum
-                })
-                .collect();
-            correction = (0..n_elements).map(|f| b[f] - coupling[f]).collect();
-            break;
+    if whole_system {
+        for e in 0..n_elements {
+            let mut current = 0.0;
+            for i in 0..species {
+                current += a_matrix[e][i] * n_mol[i];
+            }
+            if (b[e] - current).abs() > CONSERVATION_CORRECTION_TOLERANCE * b[e].abs().max(1.0) {
+                coupling = (0..n_elements)
+                    .map(|f| {
+                        let mut sum = 0.0;
+                        for i in 0..species {
+                            sum += a_matrix[f][i] * n_mol[i];
+                        }
+                        sum
+                    })
+                    .collect();
+                correction = (0..n_elements).map(|f| b[f] - coupling[f]).collect();
+                break;
+            }
         }
     }
 

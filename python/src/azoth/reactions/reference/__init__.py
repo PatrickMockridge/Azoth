@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from azoth.reactions.reference.chemical_equilibrium import chemical_equilibrium
 from azoth.reactions.reference.equilibrium_constant import equilibrium_constant
+from azoth.reactions.reference.reactive_phase_equilibrium import reactive_phase_equilibrium
 from azoth.reactions.reference.reference_potentials import reference_potentials
 
 __all__ = [
     "chemical_equilibrium",
     "equilibrium_constant",
+    "reactive_phase_equilibrium",
     "reference_potentials",
 ]

@@ -43,6 +43,8 @@ fn call(case: &TestCase) -> azoth_reactions::ChemicalEquilibriumResult {
     chemical_equilibrium(
         &a_matrix,
         b,
+        case.flag("whole_system")
+            .expect("the case says whether the phase is the whole system"),
         moles,
         case.vector("chem_ref")
             .expect("the case states the reference potentials"),
@@ -187,6 +189,7 @@ fn a_matrix_with_the_wrong_width_is_refused() {
     let error = chemical_equilibrium(
         &[vec![1.0, 0.0]],
         &[1.0],
+        false,
         &[1.0, 1.0, 1.0],
         &[0.0, 0.0, 0.0],
         &[0.0, 0.0, 0.0],

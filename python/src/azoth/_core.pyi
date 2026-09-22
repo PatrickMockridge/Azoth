@@ -1322,6 +1322,18 @@ class EquilibriumConstantResult:
     warnings: list[Warning]
 
 @final
+class ReactivePhaseEquilibriumResult:
+    skipped: bool
+    a_matrix: list[list[float]]
+    b: list[Qty]
+    chem_ref: list[Qty]
+    moles: list[Qty]
+    iterations: int
+    error: float
+    converged: bool
+    warnings: list[Warning]
+
+@final
 class ReferencePotentialsResult:
     potentials: list[Qty]
     independent: list[float]
@@ -2365,6 +2377,7 @@ def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumber
 def chemical_equilibrium(
     a_matrix: list[list[float]],
     b: list[float],
+    whole_system: bool,
     moles: list[float],
     chem_ref: list[float],
     log_activity: list[float],
@@ -2373,6 +2386,19 @@ def chemical_equilibrium(
     tolerance: float,
 ) -> ChemicalEquilibriumResult: ...
 def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
+def reactive_phase_equilibrium(
+    components: list[str],
+    source: str,
+    phase: str,
+    moles: list[float],
+    phase_charge: float,
+    phase_moles: float,
+    whole_system: bool,
+    log_activity: list[float],
+    T: float,
+    max_iterations: float,
+    tolerance: float,
+) -> ReactivePhaseEquilibriumResult: ...
 def reference_potentials(
     components: list[str],
     source: str,
