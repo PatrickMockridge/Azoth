@@ -300,8 +300,98 @@ public class ProcessProbe {
         0, "concentric tube paralellflow");
     exchangerRow("out_temperature_pins_the_hot_side", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0,
         100.0, 350.0, 0, null);
+    // **The pin is a mild one on purpose.** 360 K asked the hot side for more than it had:
+    // it came back at 29.7 K, which is far below butane's freezing point, and neither
+    // library's cubic is meaningful down there. A pin that leaves both sides in a state the
+    // equation of state is for is worth more than one that tests the flash's extrapolation.
     exchangerRow("out_temperature_pins_the_cold_side", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0,
-        100.0, 360.0, 1, null);
+        100.0, 320.0, 1, null);
+
+    // **The pinned rows are not oracle-able, and these two are why.** `runSpecifiedStream`
+    // reaches the pinned state by cloning the stream's *already flashed* fluid, setting the
+    // temperature and flashing again, and that lands on an enthalpy that belongs to another
+    // temperature: a PHflash back from it returns 317.73 K, not the 320 K the stream
+    // reports. So these rows give the same two states reached the way that is self
+    // consistent - a fresh fluid at the pinned temperature, and a PHflash for the side the
+    // balance moves - and the case is pinned to these rather than to the rows above.
+    pinReferenceRow("reference_pin_hot_350", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 350.0, 0);
+    pinReferenceRow("reference_pin_cold_320", hotNames, hotZ, 1.0, coldNames, coldZ, 1.0, 320.0, 1);
+  }
+
+  static void pinReferenceRow(String label, String[] hotNames, double[] hotZ, double hotFlow,
+      String[] coldNames, double[] coldZ, double coldFlow, double pinnedK, int pinnedSide) {
+    Stream hotIn = feed(hotNames, hotZ, 400.0, 20.0, hotFlow);
+    Stream coldIn = feed(coldNames, coldZ, 300.0, 5.0, coldFlow);
+    boolean hotIsPinned = pinnedSide == 0;
+
+    // The pinned side: a fresh fluid at the pinned temperature, its own inlet pressure.
+    Stream pinned = hotIsPinned
+        ? feed(hotNames, hotZ, pinnedK, 20.0, hotFlow)
+        : feed(coldNames, coldZ, pinnedK, 5.0, coldFlow);
+    Stream pinnedIn = hotIsPinned ? hotIn : coldIn;
+    double pinnedDuty = duty(pinnedIn, pinned);
+
+    // The other side: a fresh fluid at its own inlet state, moved to the enthalpy the
+    // balance leaves it. **Printed from the fluid**, because wrapping it back in a `Stream`
+    // re-runs the stream's own machinery over a state that is already the answer.
+    // `PHflash` takes the **absolute** molar enthalpy, not a shift, so the target is the
+    // other side's own inlet value less the duty it is being handed.
+    Stream otherIn = hotIsPinned ? coldIn : hotIn;
+    double otherFlow = hotIsPinned ? coldFlow : hotFlow;
+    SystemInterface otherFluid = otherIn.getThermoSystem();
+    double otherInPerMole = otherFluid.getEnthalpy() / otherFluid.getTotalNumberOfMoles();
+    SystemInterface other = hotIsPinned
+        ? phFlash(coldNames, coldZ, 300.0, 5.0, coldFlow, otherInPerMole - pinnedDuty / coldFlow)
+        : phFlash(hotNames, hotZ, 400.0, 20.0, hotFlow, otherInPerMole - pinnedDuty / hotFlow);
+
+    System.out.println(label);
+    print("hot_in", hotIn);
+    print("cold_in", coldIn);
+    if (hotIsPinned) {
+      print("hot_out", pinned);
+      printFluid("cold_out", other, otherFlow);
+    } else {
+      printFluid("hot_out", other, otherFlow);
+      print("cold_out", pinned);
+    }
+    System.out.println();
+  }
+
+  /// One fluid's record, for a state that is not carried by a `Stream`.
+  static void printFluid(String port, SystemInterface fluid, double molPerSec) {
+    System.out.println(port + "_n=" + molPerSec);
+    System.out.println(port + "_P=" + fluid.getPressure("bara"));
+    System.out.println(port + "_T=" + fluid.getTemperature("K"));
+    System.out.println(port + "_h=" + fluid.getEnthalpy() / fluid.getTotalNumberOfMoles());
+    double[] overall = fluid.getMolarComposition();
+    StringBuilder composition = new StringBuilder(port + "_z=");
+    for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
+      composition.append(fluid.getPhase(0).getComponent(i).getName()).append(":")
+          .append(overall[i]);
+      if (i + 1 < fluid.getPhase(0).getNumberOfComponents()) {
+        composition.append(" ");
+      }
+    }
+    System.out.println(composition);
+  }
+
+  /// The state a fresh fluid at `(names, z, T, P)` reaches when its enthalpy is moved by
+  /// `perMole` joules per mole.
+  ///
+  /// **A fresh fluid, not a clone of the inlet's.** A cloned stream fluid has already been
+  /// through `init(0)` and a flash, and a second flash on it can land on a stale root - the
+  /// same reason `runSpecifiedStream`'s own pin does not reproduce a fresh flash's enthalpy.
+  static SystemInterface phFlash(String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSecond, double perMole) {
+    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    fluid.setTotalFlowRate(molPerSecond, "mol/sec");
+    fluid.init(0);
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).PHflash(perMole, "J/mol");
+    return fluid;
   }
 
   static void exchangerRow(String label, String[] hotNames, double[] hotZ, double hotFlow,

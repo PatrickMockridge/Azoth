@@ -272,7 +272,12 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
         "tuple[Stream, Stream]",
     ),
     ("throttling_valve_stream(feed: Stream, outlet_pressure: float)", "Stream"),
-    ("heat_exchanger_stream(hot: Stream, cold: Stream, duty: float)", "tuple[Stream, Stream]"),
+    (
+        "heat_exchanger_stream(hot: Stream, cold: Stream, ua: float | None = ...,"
+        " flow_arrangement: str = ..., hot_outlet_temperature: float | None = ...,"
+        " cold_outlet_temperature: float | None = ...)",
+        "tuple[Stream, Stream]",
+    ),
     ("pump_stream(feed: Stream, outlet_pressure: float, efficiency: float)", "Stream"),
     ("validate_flowsheet(flowsheet: str, palette_dir: str)", "list[str]"),
 )

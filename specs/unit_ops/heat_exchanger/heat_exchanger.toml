@@ -1,16 +1,19 @@
 id = "unit_ops.heat_exchanger"
 name = "Heat exchanger"
+notes = "**`duty` is withdrawn; this class does not take one.** `energyInput` appears nowhere in `HeatExchanger.java`, and `duty` there is an *output* - the parent `Heater`'s `setDuty` is what the entry was reading, and `HeatExchanger.run` overrides `Heater.run` entirely. What the class's default branch takes is **`UAvalue`** (default 500 W/K) and a flow arrangement, and it runs an effectiveness-NTU rating. `hot_outlet_temperature` and `cold_outlet_temperature` are its other mode: `setOutTemperature` plus `setOutStreamSpecificationNumber` pins one side and energy-balances the other. **Its `useRatingPressureDrop` and `useDeltaT` branches are not ported** - the first is a thermal-hydraulic rating through `process/mechanicaldesign/`, the second a ΔT-driven variant - and neither is a palette parameter here."
 [source]
 standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
-[parameters.duty]
-unit = "W"
-description = "the heat transferred from the hot to the cold stream"
+[parameters.ua]
+unit = "W/K"
+description = "the overall heat transfer coefficient times the area, which is what the rating is sized against; used when no outlet temperature is pinned"
+[parameters.flow_arrangement]
+description = "counterflow, parallelflow or shell_and_tube, which picks the effectiveness relation; NeqSim spells these \"concentric tube counterflow\", \"concentric tube paralellflow\" and \"shell and tube\" and defaults to the first"
 [parameters.hot_outlet_temperature]
 unit = "K"
-description = "a target temperature for the hot stream's outlet"
+description = "pin the hot outlet at this temperature and energy-balance the cold side against it; at most one of the two outlet temperatures may be given"
 [parameters.cold_outlet_temperature]
 unit = "K"
-description = "a target temperature for the cold stream's outlet"
+description = "pin the cold outlet at this temperature and energy-balance the hot side against it"
 [[ports]]
 name = "hot_in"
 direction = "in"

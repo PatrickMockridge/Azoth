@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use azoth_core::units::{joules_per_mole, kelvins, pascals, watts};
+use azoth_core::units::{joules_per_mole, kelvins, pascals, watts, watts_per_kelvin};
 use azoth_process::{self, Stream};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -152,17 +152,28 @@ pub fn throttling_valve_stream(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// Move `duty` (SI, W) from the hot stream to the cold stream.
+/// Exchange heat between two streams (SI: W/K, K).
 #[pyfunction]
+#[pyo3(signature = (hot, cold, ua = None, flow_arrangement = "counterflow", hot_outlet_temperature = None, cold_outlet_temperature = None))]
 pub fn heat_exchanger_stream(
     py: Python<'_>,
     hot: &PyStream,
     cold: &PyStream,
-    duty: f64,
+    ua: Option<f64>,
+    flow_arrangement: &str,
+    hot_outlet_temperature: Option<f64>,
+    cold_outlet_temperature: Option<f64>,
 ) -> PyResult<(PyStream, PyStream)> {
-    azoth_process::kernels::heat_exchanger(&hot.to_stream(), &cold.to_stream(), watts(duty))
-        .map(|(h, c)| (PyStream::from_inner(h), PyStream::from_inner(c)))
-        .map_err(|e| to_pyerr(py, e))
+    azoth_process::kernels::heat_exchanger(
+        &hot.to_stream(),
+        &cold.to_stream(),
+        ua.map(watts_per_kelvin),
+        flow_arrangement,
+        hot_outlet_temperature.map(kelvins),
+        cold_outlet_temperature.map(kelvins),
+    )
+    .map(|(h, c)| (PyStream::from_inner(h), PyStream::from_inner(c)))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Raise a liquid stream to `outlet_pressure` (SI, Pa) at `efficiency`.

@@ -1,6 +1,6 @@
 //! The kernels' balance invariants: moles and enthalpy are conserved.
 
-use azoth_core::units::{kelvins, pascals, watts};
+use azoth_core::units::{kelvins, pascals, watts_per_kelvin};
 use azoth_process::Stream;
 use azoth_process::kernels::{heat_exchanger, mixer, pump, separator, splitter, throttling_valve};
 
@@ -102,11 +102,72 @@ fn a_valve_is_isenthalpic() {
 fn a_heat_exchanger_conserves_energy() {
     let hot = binary(1.0, 50.0, 1e5, 350.0);
     let cold = binary(0.0, 50.0, 1e5, 300.0);
-    let duty = watts(2_000.0);
-    let (hot_out, cold_out) = heat_exchanger(&hot, &cold, duty).expect("heat_exchanger");
+    let (hot_out, cold_out) = heat_exchanger(
+        &hot,
+        &cold,
+        Some(watts_per_kelvin(50.0)),
+        "counterflow",
+        None,
+        None,
+    )
+    .expect("heat_exchanger");
 
-    close((hot.h.value - hot_out.h.value) * hot.n, duty.value);
-    close((cold_out.h.value - cold.h.value) * cold.n, duty.value);
+    // Whatever the rating decides, the two sides' duties are one duty.
+    close(
+        (hot.h.value - hot_out.h.value) * hot.n,
+        (cold_out.h.value - cold.h.value) * cold.n,
+    );
+    close(hot_out.n, hot.n);
+    close(cold_out.n, cold.n);
+    close(hot_out.p.value, hot.p.value);
+    close(cold_out.p.value, cold.p.value);
+}
+
+#[test]
+fn a_pinned_outlet_temperature_is_honoured() {
+    let hot = binary(1.0, 50.0, 1e5, 350.0);
+    let cold = binary(0.0, 50.0, 1e5, 300.0);
+    let (hot_out, cold_out) =
+        heat_exchanger(&hot, &cold, None, "counterflow", Some(kelvins(330.0)), None)
+            .expect("heat_exchanger");
+
+    close(hot_out.t.value, 330.0);
+    close(
+        (hot.h.value - hot_out.h.value) * hot.n,
+        (cold_out.h.value - cold.h.value) * cold.n,
+    );
+}
+
+#[test]
+fn an_exchanger_refuses_the_shapes_it_cannot_answer() {
+    let hot = binary(1.0, 50.0, 1e5, 350.0);
+    let cold = binary(0.0, 50.0, 1e5, 300.0);
+    // Both outlets pinned leaves the other side nothing to solve for.
+    assert!(
+        heat_exchanger(
+            &hot,
+            &cold,
+            None,
+            "counterflow",
+            Some(kelvins(330.0)),
+            Some(kelvins(340.0)),
+        )
+        .is_err()
+    );
+    // The rating without a conductance is NeqSim's 500 W/K, which this will not guess.
+    assert!(heat_exchanger(&hot, &cold, None, "counterflow", None, None).is_err());
+    // An arrangement NeqSim does not know falls through to counterflow; this refuses.
+    assert!(
+        heat_exchanger(
+            &hot,
+            &cold,
+            Some(watts_per_kelvin(50.0)),
+            "concentric tube counterflow",
+            None,
+            None,
+        )
+        .is_err()
+    );
 }
 
 #[test]

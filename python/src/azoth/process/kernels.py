@@ -144,10 +144,31 @@ def throttling_valve(stream: Stream, outlet_pressure: Q) -> Stream:
     )
 
 
-def heat_exchanger(hot: Stream, cold: Stream, duty: Q) -> tuple[Stream, Stream]:
-    """Move ``duty`` from the hot stream to the cold stream."""
+def heat_exchanger(
+    hot: Stream,
+    cold: Stream,
+    ua: Q | None = None,
+    flow_arrangement: str = "counterflow",
+    hot_outlet_temperature: Q | None = None,
+    cold_outlet_temperature: Q | None = None,
+) -> tuple[Stream, Stream]:
+    """Exchange heat between two streams.
+
+    Two modes and the caller states one: pinning an outlet temperature (at most one of the
+    two) energy-balances the other side against it, and otherwise ``ua`` and
+    ``flow_arrangement`` run the effectiveness-NTU rating.
+    """
     hot_out, cold_out = _core.heat_exchanger_stream(
-        hot._inner, cold._inner, to_si(duty, "W", "duty")
+        hot._inner,
+        cold._inner,
+        None if ua is None else to_si(ua, "W/K", "ua"),
+        flow_arrangement,
+        None
+        if hot_outlet_temperature is None
+        else to_si(hot_outlet_temperature, "K", "hot_outlet_temperature"),
+        None
+        if cold_outlet_temperature is None
+        else to_si(cold_outlet_temperature, "K", "cold_outlet_temperature"),
     )
     return Stream(hot_out), Stream(cold_out)
 
