@@ -45,6 +45,8 @@ number is the porting backlog. `tools/check_manifest.py` prints the tally.
                       the checkout, so it is work NeqSim has not done either
   uncalled-upstream   the class that would read it is live, and the member that would
                       read it is not: no caller, or a branch nothing can set
+  unread-upstream     no reader exists at all: the file is loaded and catalogued and
+                      nothing queries a row of it, which upstream states in the source
 """
 
 from __future__ import annotations
@@ -83,6 +85,12 @@ REASON_PREFIXES = (
     # measurement behind it is different: the class is constructed, so a reader checking
     # "is it reachable?" gets a yes from the class and has to go to the member.
     "uncalled-upstream",
+    # Carried data with no reader to test at all: no class, no member, no caller. Neither
+    # word above fits, because each asserts something about a class that this measurement
+    # finds does not exist - it is not that the reader is unreachable or uncalled, it is
+    # that nobody wrote one. Distinct for the same reason as the two above: a reader
+    # checking either of them has to search for a class, and here the search is empty.
+    "unread-upstream",
 )
 
 #: What may be done with a column.
@@ -255,6 +263,13 @@ def _column(raw: dict[str, Any], where: str, problems: list[str]) -> Column:
         problems.append(
             f"{where}.{name}: an `uncalled-upstream` reason names the NeqSim member that "
             f"would read it but is never called, in backticks."
+        )
+    # Same reasoning as `uncalled-upstream`: the claim is an absence, and an absence is
+    # only checkable if the reason says where it was measured.
+    if prefix == "unread-upstream" and "`" not in reason:
+        problems.append(
+            f"{where}.{name}: an `unread-upstream` reason names the NeqSim class or file "
+            f"the absence of a reader was measured in, in backticks."
         )
     if disposition in ("used", "vendored") and not as_field:
         problems.append(

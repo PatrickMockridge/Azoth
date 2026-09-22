@@ -46,7 +46,8 @@ azoth has **142 ids** — 65 calculations and 77 models.
 `databank/manifest.toml` records every column of every vendored NeqSim table, and for each
 column that is not carried across, the NeqSim class that would close it, under a reason
 prefix from a closed vocabulary: `not-ported`, `not-yet`, `not-a-value`,
-`empty-upstream`, `licence`, `superseded-by`, `unreachable-upstream`, `uncalled-upstream`.
+`empty-upstream`, `licence`, `superseded-by`, `unreachable-upstream`, `uncalled-upstream`,
+`unread-upstream`.
 
 `tools/check_manifest.py` validates it and prints the tally. That tally is the port's
 progress bar, and it is the checker's to print rather than this page's to copy: run

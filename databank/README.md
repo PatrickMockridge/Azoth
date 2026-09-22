@@ -47,23 +47,24 @@ them (35 files, 1,497 columns) is listed with what was done with it and a reason
 check_manifest: OK (37 vendored file(s), 1497 column(s), 1476 carried of which 1095 read, 0 not-vendored entr(ies))
   381  carried, nothing reads it yet
   1109  carried with no unit NeqSim states (neqsim-internal)
-  360  not-ported
+  349  not-ported
    10  not-a-value
    10  empty-upstream
     2  superseded-by
     7  unreachable-upstream
    10  uncalled-upstream
+   11  unread-upstream
 ```
 
 **The porting backlog is "carried, nothing reads it yet" — 381 columns — and it is
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
-`not-ported` reason names the class that would close it — **360 columns carry it**, carried
-and dropped together, with a handful `unreachable-upstream`, ten `uncalled-upstream` and the
-rest `not-a-value` or `empty-upstream` — `PhaseHydrate`, `CPAMixingRuleHandler`,
-`SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest. The check refuses a
-`not-ported` reason with no NeqSim name in it, so the list cannot drift back into being
-somewhere to put a column.
+`not-ported` reason names the class that would close it — **349 columns carry it**, carried
+and dropped together, with a handful `unreachable-upstream`, ten `uncalled-upstream`, eleven
+`unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
+`CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.
+The check refuses a `not-ported` reason with no NeqSim name in it, so the list cannot drift
+back into being somewhere to put a column.
 
 Nothing here is "out of scope". That word was in an earlier draft of this vocabulary
 and it was wrong: a file it labelled out of scope was work not yet done, and filing it
@@ -88,6 +89,17 @@ reaches the same columns, `ComponentHydrate.getEmptyHydrateStructureVapourPressu
 `type == -1` branch, is settable from nowhere in `src/main`. A reachability check on the
 class answers yes, which is why the class-level test does not cover this case: the ten
 columns that carry the kind are read by a route that exists and cannot be walked.
+
+`unread-upstream` is the third of the family and the emptiest: there is no reader to test.
+Not a class nobody constructs and not a member nobody calls — **no reader at all**.
+`ReactionKSPdata.csv` is the example, and upstream says it in as many words, at
+`NeqSimDataBase.java:597`, on the line above the `updateTable` call that loads it:
+`// Table ReactionKSPdata is not in use anywhere`. Its only other reference is
+`DataCatalogRunner.addTable`, which lists it for the MCP data catalogue and reads none of
+it. Two of the family's three names would be false here — there is no class to find
+unconstructed and no member to find uncalled — which is why it has its own word rather than
+a widened one. A reachability check cannot see this kind either: it searches for a reader,
+and the search that comes back empty is the answer.
 
 A reason is a quoted flow mapping, so `grep 'reason: not-ported'` matches nothing.
 Read the tally the check prints; there is no grep for it.
