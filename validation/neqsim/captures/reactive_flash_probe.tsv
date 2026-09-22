@@ -1,0 +1,71 @@
+fluid=wgs-600K
+temperature_K=600.0
+pressure_bara=1.0
+  feed[CO]=0.25
+  feed[water]=0.25
+  feed[CO2]=0.25
+  feed[hydrogen]=0.25
+elements=3 components=4 rank=3 independent_reactions=1
+  A[0]=1.0 0.0 1.0 0.0
+  A[1]=1.0 1.0 2.0 0.0
+  A[2]=0.0 2.0 0.0 2.0
+converged=true
+total_iterations=34
+final_residual=5.810373782466627E-5
+final_element_residual=1.5087805472004195E-6
+number_of_reactions=1
+equilibrium_total_moles=0.999999128896382
+final_gibbs_energy=-2.2595355427150547
+lagrange_multipliers=8.0936004970079 -57.25657263881863 -8.635174137767102
+phases=2
+  phase[0]=gas beta=1.0 moles=1.0
+x=CO:0.07914057148766156 water:0.07914057150033187 CO2:0.420859428519148 hydrogen:0.4208594284928585
+    total_moles=1.0
+  phase[1]=oil beta=1.0 moles=1.0
+x=CO:0.07914057596379304 water:0.07914057600238047 CO2:0.42085942405709015 hydrogen:0.4208594239767362
+    total_moles=1.0
+equilibrium_moles[0]=0.0791405025480234 0.0791405025606937 0.42085906190697714 0.42085906188068767
+
+fluid=methane-water-co2-hydrogen-1000K
+temperature_K=1000.0
+pressure_bara=1.0
+  feed[methane]=0.4
+  feed[water]=0.2
+  feed[CO2]=0.2
+  feed[hydrogen]=0.2
+elements=3 components=4 rank=3 independent_reactions=1
+  A[0]=1.0 0.0 1.0 0.0
+  A[1]=4.0 2.0 0.0 2.0
+  A[2]=0.0 1.0 2.0 0.0
+converged=true
+total_iterations=34
+final_residual=8.018537677401127E-6
+final_element_residual=1.569548426166081E-6
+number_of_reactions=1
+equilibrium_total_moles=1.1636946412719686
+final_gibbs_energy=-2.3291460958597456
+lagrange_multipliers=1.123199954871986 -9.146477371990214 -39.12158122282805
+phases=2
+  phase[0]=gas beta=1.0 moles=1.0
+x=methane:0.27339946207305693 water:0.03119923591091445 CO2:0.24220020190304836 hydrogen:0.4532011001129803
+    total_moles=1.0
+  phase[1]=oil beta=1.0 moles=1.0
+x=methane:0.27339941576719984 water:0.031199239996557288 CO2:0.242200223311631 hydrogen:0.4532011209246119
+    total_moles=1.0
+equilibrium_moles[0]=0.31815348894105516 0.03630638364131111 0.28184707706956624 0.5273876916200362
+
+fluid=co2-water-ions
+elements=4 components=4 rank=3 independent_reactions=1
+element_names=H O C Charge
+  A[0]=2.0 0.0 1.0 3.0
+  A[1]=1.0 2.0 1.0 1.0
+  A[2]=0.0 1.0 0.0 0.0
+  A[3]=0.0 0.0 -1.0 1.0
+
+fluid=water-meg
+elements=3 components=2 rank=2 independent_reactions=0
+element_names=H O Pseudo_MEG
+  A[0]=2.0 0.0
+  A[1]=1.0 0.0
+  A[2]=0.0 1.0
+

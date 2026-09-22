@@ -18,6 +18,7 @@
 pub mod chemical_equilibrium;
 pub mod databank;
 pub mod equilibrium_constant;
+pub mod formula_matrix;
 pub mod linalg;
 pub mod lp_seed;
 pub mod model_gen;
