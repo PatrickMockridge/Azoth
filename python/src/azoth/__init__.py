@@ -77,7 +77,7 @@ __version__ = "0.1.0"
 # is already bound. `process` is not in this list: it is the one namespace with
 # no pure-Python reference, so importing it needs the compiled extension, and
 # `import azoth` must not. It is imported lazily by `__getattr__` below.
-from azoth import batch, eos, hydraulics, keycard, properties, thermal
+from azoth import batch, eos, hydraulics, keycard, properties, reactions, thermal
 
 __all__ = [
     "AzothError",
@@ -106,6 +106,7 @@ __all__ = [
     "keycard",
     "process",
     "properties",
+    "reactions",
     "select",
     "thermal",
     "ureg",

@@ -53,7 +53,7 @@ Units cross the API as `pint` quantities; a bare number where a length is expect
 
 ## The book
 
-The full catalog — 65 calculations and 77 models, each with its equation, source, valid
+The full catalog — 66 calculations and 77 models, each with its equation, source, valid
 range and a worked example — is in [the book](docs/src/index.md), generated from the same
 spec files as the code.
 

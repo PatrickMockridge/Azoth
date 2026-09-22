@@ -1305,6 +1305,15 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class EquilibriumConstantResult:
+    ln_k: float
+    k: float
+    ln_k_derivative: Qty
+    reaction_heat: Qty
+    reference: str
+    warnings: list[Warning]
+
+@final
 class ConductionPlaneWallResult:
     q: Qty
     warnings: list[Warning]
@@ -2337,6 +2346,7 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 
 # --- introspection --------------------------------------------------------

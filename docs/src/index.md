@@ -218,6 +218,10 @@ Four sections, and the difference between them is the point:
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
 
+**Reactions** - [`reactions/index.md`](./reactions/index.md):
+
+- [`reactions.equilibrium_constant`](./reactions/equilibrium_constant.md)
+
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)

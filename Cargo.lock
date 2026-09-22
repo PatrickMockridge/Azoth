@@ -119,6 +119,7 @@ dependencies = [
  "azoth-eos",
  "azoth-hydraulics",
  "azoth-process",
+ "azoth-reactions",
  "azoth-thermal",
  "pyo3",
  "uom",

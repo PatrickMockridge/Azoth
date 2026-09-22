@@ -215,6 +215,11 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `eos` names the cubic the reference liquid is built from, the same categorical
         # input the other two carry.
         "eos.solid_fugacity",
+        # `source` picks one of three reaction tables and `reaction` names a row in it.
+        # The second is not an enum at all, and both select *which arithmetic* runs
+        # rather than scaling it, so there is no column to vary them down: a batch would
+        # compute one reaction N times.
+        "reactions.equilibrium_constant",
     }, sorted(excluded)
 
 

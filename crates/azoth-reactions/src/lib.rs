@@ -8,5 +8,10 @@
 //! by the caller rather than read from a live system.
 //!
 //! * [`databank`] - the element table, the stoichiometry, and the reaction rows
+//! * [`equilibrium_constant`] - `ln K`, its derivative and the heat of reaction
 
 pub mod databank;
+pub mod equilibrium_constant;
+pub mod spec_gen;
+
+pub use equilibrium_constant::{EquilibriumConstantResult, equilibrium_constant};

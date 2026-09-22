@@ -49,6 +49,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     EosCgPhaseResult,
+    EquilibriumConstantResult,
     FlowRegime,
     FreezingPointResult,
     FurstElectrolyteMod2004PhaseResult,
@@ -345,6 +346,25 @@ def pr_kappa(omega: float) -> PrKappaResult:
     """
     result = _core.pr_kappa(omega)
     return PrKappaResult(kappa=result.kappa, warnings=_warnings(result.warnings))
+
+
+def equilibrium_constant(source: str, reaction: str, T: Q) -> EquilibriumConstantResult:
+    """One reaction's equilibrium constant, computed in Rust.
+
+    The reaction's name and its source cross unresolved, so the Rust side reads the
+    table itself - which source, which row, which coefficients. No coefficient reaches
+    Python, and the two languages cannot disagree about which row answered.
+    """
+    spec = _spec_for("reactions.equilibrium_constant")
+    result = _core.equilibrium_constant(source, reaction, input_to_si(spec, "T", T))
+    return EquilibriumConstantResult(
+        ln_k=result.ln_k,
+        k=result.k,
+        ln_k_derivative=from_si(result.ln_k_derivative.magnitude_si, result.ln_k_derivative.unit),
+        reaction_heat=from_si(result.reaction_heat.magnitude_si, result.reaction_heat.unit),
+        reference=result.reference,
+        warnings=_warnings(result.warnings),
+    )
 
 
 def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaResult:

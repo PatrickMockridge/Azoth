@@ -54,6 +54,7 @@ use azoth_eos::results::{
     WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
+use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -484,6 +485,70 @@ impl PyConductionPlaneWallResult {
             "ConductionPlaneWallResult(q={} {})",
             self.q.magnitude_si, self.q.unit
         )
+    }
+}
+
+/// Result of `reactions.equilibrium_constant`, transported.
+///
+/// Two dimensionless outputs and two quantities, which is what a correlation whose
+/// constants are fitted looks like at a boundary: the constant and its logarithm carry
+/// no unit, and the derivative and the heat do.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EquilibriumConstantResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEquilibriumConstantResult {
+    /// `ln K`. Dimensionless.
+    #[pyo3(get)]
+    pub ln_k: f64,
+    /// `K`. Dimensionless.
+    #[pyo3(get)]
+    pub k: f64,
+    /// `d(ln K)/dT`, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub ln_k_derivative: PyQty,
+    /// The heat of reaction, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub reaction_heat: PyQty,
+    /// The row's own citation.
+    #[pyo3(get)]
+    pub reference: String,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEquilibriumConstantResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EquilibriumConstantResult(ln_k={}, k={}, reference={})",
+            self.ln_k, self.k, self.reference
+        )
+    }
+}
+
+impl From<&EquilibriumConstantResult> for PyEquilibriumConstantResult {
+    fn from(r: &EquilibriumConstantResult) -> Self {
+        Self {
+            ln_k: r.ln_k,
+            k: r.k,
+            ln_k_derivative: PyQty {
+                // **A bare `f64` and not a quantity**: uom has no reciprocal-temperature
+                // type, so `1/K` converts by identity and the number is already SI.
+                magnitude_si: r.ln_k_derivative,
+                unit: "1/K".to_string(),
+            },
+            reaction_heat: PyQty {
+                magnitude_si: r.reaction_heat.value,
+                unit: "J/mol".to_string(),
+            },
+            reference: r.reference.clone(),
+            warnings: transport(&r.warnings),
+        }
     }
 }
 
@@ -6778,6 +6843,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
+        EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
@@ -6957,6 +7023,7 @@ pub fn calc_ids() -> Vec<String> {
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
         PrKappaResult::CALC_ID.to_string(),
+        EquilibriumConstantResult::CALC_ID.to_string(),
         PrLeeKeslerAlphaResult::CALC_ID.to_string(),
         Matcop5PrumrAlphaResult::CALC_ID.to_string(),
         MatcopAlphaResult::CALC_ID.to_string(),

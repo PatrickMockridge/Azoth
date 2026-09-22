@@ -19,6 +19,7 @@ azoth-core.workspace = true
 azoth-hydraulics.workspace = true
 azoth-thermal.workspace = true
 azoth-eos.workspace = true
+azoth-reactions.workspace = true
 azoth-process.workspace = true
 uom.workspace = true
 pyo3 = { workspace = true }

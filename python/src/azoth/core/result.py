@@ -297,6 +297,33 @@ class PrKappaResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class EquilibriumConstantResult(_HasWarnings):
+    """Result of ``reactions.equilibrium_constant``.
+
+    The first result from a namespace that is not about a fluid's own state: its
+    inputs are a name and a temperature, and the arithmetic behind them is a fitted
+    correlation read from the databank rather than a constitutive equation.
+    """
+
+    #: ``ln K`` at the caller's temperature, from the row's four coefficients.
+    ln_k: float
+    #: ``K``, the exponential of ``ln_k``. Dimensionless, because the correlation's
+    #: standard state is what makes the constant so.
+    k: float
+    #: ``d(ln K)/dT``, van 't Hoff's derivative. The heat is this times ``R T**2``.
+    ln_k_derivative: Q
+    #: ``d(ln K)/dT * R * T**2``, in J/mol. **The sign is about the reaction as the
+    #: table writes it**: a negative value is exothermic in that direction and says
+    #: nothing about the reverse.
+    reaction_heat: Q
+    #: The row's own literature citation, which differs between the sources - so which
+    #: fit answered is visible rather than only in the table.
+    reference: str
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PureSaturationResult(_HasWarnings):
     """Result of ``eos.pure_saturation``.
 

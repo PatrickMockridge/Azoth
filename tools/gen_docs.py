@@ -58,6 +58,7 @@ NAMESPACES = {
     "hydraulics": "Hydraulics",
     "thermal": "Heat transfer",
     "eos": "Equations of state",
+    "reactions": "Reactions",
     "process": "Unit operations",
 }
 
