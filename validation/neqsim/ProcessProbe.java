@@ -104,6 +104,12 @@ public class ProcessProbe {
       print("inlet", inlet);
       print("outlet", pump.getOutletStream());
       System.out.println("power_kW=" + pump.getPower("kW"));
+      // **The pump's own intermediates, which the record does not carry.** The total
+      // entropy change across the machine is the second-law statement of the same head the
+      // shaft work reports: zero iff the step were reversible. `Pump` exposes no getter for
+      // the isentropic outlet itself, so this is the layer that localises a wrong head.
+      System.out.println(
+          "entropy_production_kJ_per_molK=" + pump.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
   }
@@ -499,6 +505,11 @@ public class ProcessProbe {
     System.out.println(port + "_P=" + stream.getPressure("bara"));
     System.out.println(port + "_T=" + stream.getTemperature("K"));
     System.out.println(port + "_h=" + fluid.getEnthalpy() / fluid.getTotalNumberOfMoles());
+    // **The entropy at every port, which the record does not carry.** `s` is a function of
+    // `(T, P, z)` exactly as `h` is, so a port that reports `h` can report `s` - and a
+    // library that derives rather than carries it can be held to the oracle at every port
+    // of every unit operation for one line here.
+    System.out.println(port + "_s=" + fluid.getEntropy() / fluid.getTotalNumberOfMoles());
     double[] overall = fluid.getMolarComposition();
     StringBuilder composition = new StringBuilder(port + "_z=");
     for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {

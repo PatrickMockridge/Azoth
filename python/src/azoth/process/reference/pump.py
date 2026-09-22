@@ -22,6 +22,8 @@ case hand over a state that does not exist.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PumpResult
@@ -104,6 +106,58 @@ def pump(
             f"is not",
         )
 
+    states = _states(components, t, p, inlet_z, p_out, isentropic_efficiency)
+
+    return PumpResult(
+        outlet_n=from_si(n, "mol/s"),
+        outlet_z=tuple(inlet_z),
+        outlet_p=outlet_pressure,
+        outlet_t=states.outlet_t,
+        outlet_h=from_si(states.h_out, "J/mol"),
+        warnings=tuple(warnings),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class PumpStates:
+    """The pump's intermediates, in the order it computes them, in SI.
+
+    A record rather than a dict so that a layer the harness reads and a field the result
+    carries are the same typed thing, and neither can acquire a name the other lacks.
+    """
+
+    #: The inlet's molar enthalpy and entropy, J/mol and J/(mol*K).
+    h_in: float
+    s_in: float
+    #: The isentropic outlet: the temperature at the raised pressure on the inlet's
+    #: entropy, and its molar enthalpy.
+    t_isentropic: Q
+    h_isentropic: float
+    #: The isentropic head, and the head the efficiency actually asks for.
+    dh_isentropic: float
+    dh_actual: float
+    #: The outlet: its molar enthalpy, its temperature, and its molar entropy - which is
+    #: the second-law statement of the step, since it rises iff the step was irreversible.
+    h_out: float
+    outlet_t: Q
+    s_out: float
+
+
+def _states(
+    components: list[str],
+    t: float,
+    p: float,
+    inlet_z: list[float],
+    p_out: float,
+    isentropic_efficiency: float,
+) -> PumpStates:
+    """The pump's intermediates, in the order it computes them, in SI.
+
+    **One arithmetic, two consumers.** :func:`pump` builds the result from this and
+    :mod:`azoth.process.layers` reports the same numbers against a NeqSim capture, so a
+    layer the harness compares is a layer the model actually took - which is the rule
+    `azoth.eos.layers` states and the reason this is factored rather than restated.
+    """
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
 
     # The inlet's own state, which is where the entropy and the enthalpy come from.
@@ -111,22 +165,35 @@ def pump(
     entropy, _ = entropy_at(mixture, ideal_gas, t, p, inlet_z)
 
     isentropic = ps_flash_solve(
-        mixture, ideal_gas, outlet_pressure, from_si(entropy, "J/(mol*K)"), inlet_z
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(entropy, "J/(mol*K)"), inlet_z
     )
     h_isentropic, _ = enthalpy_at(
         mixture, ideal_gas, isentropic.T.to("K").magnitude, p_out, inlet_z
     )
 
-    h_out = h_in + (h_isentropic - h_in) / isentropic_efficiency
-    outlet_t = ph_flash_solve(mixture, ideal_gas, outlet_pressure, from_si(h_out, "J/mol"), inlet_z)
+    dh_isentropic = h_isentropic - h_in
+    dh_actual = dh_isentropic / isentropic_efficiency
+    h_out = h_in + dh_actual
+    outlet_t = ph_flash_solve(
+        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_out, "J/mol"), inlet_z
+    )
 
-    return PumpResult(
-        outlet_n=from_si(n, "mol/s"),
-        outlet_z=tuple(inlet_z),
-        outlet_p=outlet_pressure,
+    # The outlet's own entropy, which is the second-law statement of the head: it rises
+    # across an irreversible step and is unchanged across a reversible one. `Pump` exposes
+    # it as `getEntropyProduction` and nothing else about the machine's interior, which is
+    # why the harness localises a wrong head through it.
+    s_out, _ = entropy_at(mixture, ideal_gas, outlet_t.T.to("K").magnitude, p_out, inlet_z)
+
+    return PumpStates(
+        h_in=h_in,
+        s_in=entropy,
+        t_isentropic=isentropic.T,
+        h_isentropic=h_isentropic,
+        dh_isentropic=dh_isentropic,
+        dh_actual=dh_actual,
+        h_out=h_out,
         outlet_t=outlet_t.T,
-        outlet_h=from_si(h_out, "J/mol"),
-        warnings=tuple(warnings),
+        s_out=s_out,
     )
 
 
