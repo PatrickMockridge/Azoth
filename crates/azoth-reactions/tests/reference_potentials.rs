@@ -12,7 +12,9 @@
 
 use azoth_core::spec::TestCase;
 use azoth_core::units::kelvins;
-use azoth_reactions::databank::ReactionDataSource;
+use azoth_reactions::databank::{
+    ReactionDataSource, formation_properties, reactions, stoichiometry,
+};
 use azoth_reactions::model_gen;
 use azoth_reactions::reference_potentials::reference_potentials;
 use azoth_test_support as common;
@@ -163,5 +165,114 @@ fn a_fluid_the_table_cannot_react_has_an_empty_basis() {
         result.survivors.iter().all(|kept| *kept == 0.0),
         "the one combustion row is dormant, so nothing survives: {:?}",
         result.survivors
+    );
+}
+
+/// The deadlock fallback is reproduced, and this is the case that exercises it.
+///
+/// `water/H3O+/OH-` reduces to one independent column and two dependent ones, and no
+/// surviving reaction has exactly one unknown - so NeqSim seeds the first uncomputed
+/// dependent component with its Gibbs energy of formation and carries on from there.
+/// `water` is solved for, `H3O+` takes its Gibbs energy of formation raw and not negated,
+/// and `OH-` follows from it by ordinary propagation.
+#[test]
+fn the_deadlock_fallback_seeds_one_component_and_propagates_from_it() {
+    let names: Vec<String> = ["water", "H3O+", "OH-"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let result = reference_potentials(&names, ReactionDataSource::Standard, kelvins(298.15))
+        .expect("the deadlock branch answers rather than refusing");
+
+    assert_eq!(result.rank, 1);
+    assert_eq!(
+        result.independent,
+        vec![1.0, 0.0, 0.0],
+        "only the first column is solved for"
+    );
+
+    let seeded = formation_properties("H3O+")
+        .expect("parses")
+        .expect("the component databank carries it");
+    assert_eq!(
+        result.potentials[1], seeded.gibbs_energy_of_formation,
+        "the seed is the component's Gibbs energy of formation, not its negative"
+    );
+
+    let propagated = formation_properties("OH-")
+        .expect("parses")
+        .expect("the component databank carries it");
+    assert_ne!(
+        result.potentials[2], propagated.gibbs_energy_of_formation,
+        "OH- is propagated from the seeded pair, not seeded itself"
+    );
+}
+
+/// **Every subset of the species the three tables' loaded reactions name answers**, and
+/// the deadlock fallback is what makes that true: 4,888 of these 14,333 subsets seed a
+/// component the propagation cannot reach, measured.
+///
+/// The counts are asserted rather than described, in both directions. A change that left
+/// the propagation unable to finish would stop the sweep from answering at all, and a
+/// change that made the reduction complete on its own would leave the fallback
+/// unexercised and drop the second count to zero - so the branch cannot quietly stop
+/// being reached, and a pin move that adds a reaction to any of the three tables has to
+/// re-measure both numbers.
+#[test]
+fn every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercised() {
+    let mut subsets = 0usize;
+    let mut seeded = 0usize;
+    for source in [
+        ReactionDataSource::Standard,
+        ReactionDataSource::Pitzer,
+        ReactionDataSource::KentEisenberg,
+    ] {
+        let mut species: Vec<String> = Vec::new();
+        for row in reactions(source).expect("the table parses") {
+            if !row.use_reaction {
+                continue;
+            }
+            for (component, _) in stoichiometry(&row.name).expect("the table parses") {
+                if !species.contains(&component) {
+                    species.push(component);
+                }
+            }
+        }
+        let width = species.len();
+        assert!(
+            (1..31).contains(&width),
+            "{source:?} names {width} species, which the sweep's bitmask does not cover"
+        );
+        for mask in 1u32..(1u32 << width) {
+            let set: Vec<String> = (0..width)
+                .filter(|index| mask & (1 << index) != 0)
+                .map(|index| species[index].clone())
+                .collect();
+            let result = reference_potentials(&set, source, kelvins(298.15))
+                .unwrap_or_else(|error| panic!("{source:?} with {set:?} is refused: {error}"));
+            subsets += 1;
+            // A seed is visible as a potential that *is* a component's Gibbs energy of
+            // formation. A zero-valued one is not counted: 36 of the databank's rows hold
+            // a zero there, so equality would credit a solved-for zero to the seed.
+            let did_seed = set.iter().enumerate().any(|(index, name)| {
+                formation_properties(name)
+                    .expect("the component table parses")
+                    .is_some_and(|row| {
+                        row.gibbs_energy_of_formation != 0.0
+                            && result.potentials[index] == row.gibbs_energy_of_formation
+                    })
+            });
+            if did_seed {
+                seeded += 1;
+            }
+        }
+    }
+    assert_eq!(
+        subsets, 14_333,
+        "the three tables' loaded species, subset by subset"
+    );
+    assert_eq!(
+        seeded, 4_888,
+        "subsets where the deadlock fallback seeds a component"
     );
 }

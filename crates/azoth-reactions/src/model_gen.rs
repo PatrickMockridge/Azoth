@@ -550,6 +550,30 @@ static REFERENCE_POTENTIALS_CHECKS: &[SpecCheck] = &[SpecCheck {
 
 static REFERENCE_POTENTIALS_CASES: &[TestCase] = &[
     TestCase {
+        id: "a_deadlocked_propagation_takes_the_formation_gibbs_seed",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[("components", &["water", "H3O+", "OH-"])],
+        strings: &[("source", "standard")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("rank", 1.0)],
+        expected_vectors: &[
+            (
+                "potentials",
+                &[49908.04579044469, -237129.0, 436761.1831617787],
+            ),
+            ("independent", &[1.0, 0.0, 0.0]),
+            ("survivors", &[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
         id: "co2_water_standard_at_298_15",
         kind: "case",
         property: None,

@@ -8,7 +8,7 @@
 
 **NeqSim master `ChemicalReactionList`**
 
-Three passes over the reaction set: `removeJunkReactions`, then `removeDependentReactions`, then `calcReferencePotentials`'s independent-column solve and its propagation. The deadlock fallback is refused rather than reproduced.
+Three passes over the reaction set: `removeJunkReactions`, then `removeDependentReactions`, then `calcReferencePotentials`'s independent-column solve and its propagation, with the Gibbs-energy-of-formation seed where the propagation cannot reach a component.
 
 
 ## What this model is
@@ -44,13 +44,15 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the rank tests see only the stoichiometry.** The matrix is one column wider than the coefficients, the extra column holding `-R T ln K`, and the rank calls are on the narrower matrix. Every coefficient in the source is an integer, so the rank is exact.
 - NeqSim's rank is a singular-value count against `max(m, n) * s[0] * 2**-52`. On the three captured fluids the smallest singular value it keeps is 0.2461 and the cutoff is 4.8e-15, so the tolerance cannot change a decision here.
 - **the potentials come back in the caller's component order.** NeqSim's own order is `getAllComponents`'s, which is a `HashSet` iteration order - a property of Java's hash table and not of the chemistry. The capture records what that order happened to be.
-- the propagation is bounded by `2 * dependent + 1` passes, and a component it cannot reach is a refusal: NeqSim seeds one with the component's Gibbs energy of formation and continues, and that column is `vendored` here.
+- the propagation is bounded by `2 * dependent + 1` passes, and a component it cannot reach takes NeqSim's seed - the component's Gibbs energy of formation, raw and not negated - after which the propagation continues from it. A component with no databank row is refused rather than seeded with zero.
+- **a basis narrower than the reaction count is an answer, not an error.** `calcReferencePotentials` returns null there and `calcChemRefPot` reads that as every component's Gibbs energy of formation; `rank` reports the rank it fell short of and `independent` is all zeros.
 - the rank test is exact only over integers. A non-integral coefficient is refused rather than rounded, because a rounded rank is an approximation the caller cannot tell from the answer.
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
+| `a_deadlocked_propagation_takes_the_formation_gibbs_seed` | components = ['water', 'H3O+', 'OH-'], source = standard, T = 298.15 | potentials = [49908.04579044469, -237129.0, 436761.1831617787], independent = [1.0, 0.0, 0.0], survivors = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], rank = 1.0 |
 | `co2_water_standard_at_298_15` | components = ['CO2', 'water', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], source = standard, T = 298.15 | potentials = [-135846.03262887645, 86061.16003668531, 72306.22849248124, 199632.18316177875, -127079.60827279043, -154589.47136119858], independent = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0], rank = 3.0 |
 | `co2_h2s_water_standard_at_298_15` | components = ['CO2', 'H2S', 'water', 'HS-', 'OH-', 'H3O+', 'HCO3-', 'S--', 'CO3--'], source = standard, T = 298.15 | potentials = [-135846.03262887645, -15109.3096192815, 86061.16003668531, 21019.134456794694, 72306.22849248124, 199632.18316177875, -127079.60827279043, 14528.405825181253, -154589.47136119858], independent = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0], rank = 5.0 |
 

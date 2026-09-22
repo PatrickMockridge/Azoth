@@ -1,0 +1,19 @@
+fluid=water-h3o-oh
+loaded_components=3
+  loaded[0]=water
+  loaded[1]=H3O+
+  loaded[2]=OH-
+  component[0]=water
+  component[1]=H3O+
+  component[2]=OH-
+  gibbs_formation[water]=-228572.0
+  gibbs_formation[H3O+]=-237129.0
+  gibbs_formation[OH-]=-157244.0
+reactions=1
+  reaction[0]=waterreac names=water OH- H3O+
+gmatrix=1x4
+  G[0]=-2.0 1.0 1.0 99816.09158088938
+potentials_null=false
+  potential[water]=49908.04579044469
+  potential[H3O+]=-237129.0
+  potential[OH-]=436761.1831617787

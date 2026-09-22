@@ -18,17 +18,29 @@ narrower matrix, so what is ranked is integers. See :mod:`._linalg`.
 **The row order is part of the answer**, because both the reduction and the column choice
 are greedy over the order the rows arrive in.
 
-# What is refused rather than reproduced
+# The two branches that answer from the databank
 
-``calcReferencePotentials`` has a deadlock fallback that seeds an unreachable component
-with its Gibbs energy of formation. That is a databank column this library carries as
-``vendored``, and no captured state reaches the branch, so it is refused with a named
-reason instead.
+``calcReferencePotentials`` has two ways to answer from a component's Gibbs energy of
+formation rather than from the reaction set, and both are reproduced:
+
+* when the component rank falls below the reaction count it returns null, and
+  ``ChemicalReactionOperations.calcChemRefPot`` reads that null as *every* component's
+  Gibbs energy of formation (``ChemicalReactionOperations.java:513-519``);
+* when the propagation deadlocks it seeds the first uncomputed dependent component with
+  that same number and carries on, and a final sweep seeds whatever is left
+  (``ChemicalReactionList.java:526-557``).
+
+The number is :func:`_tables.formation_properties`'s, out of ``GIBBSENERGYOFFORMATION``,
+and it is taken **raw and not negated**, so a seeded potential is not on the same footing
+as a solved one - which is why ``independent`` is reported. **The fallback is not an edge
+case**: 4,888 of the 14,333 subsets of the species the three tables' loaded reactions name
+seed at least one component, which the Rust twin's sweep test asserts.
 """
 
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from typing import Any
 
 from azoth.core.errors import InvalidInputError
@@ -144,64 +156,93 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
         else:
             dependent_columns.append(column)
 
-    if len(independent_columns) < n_rows:
-        raise InvalidInputError(
-            "reactions",
-            f"the reaction basis has rank {len(independent_columns)} against {n_rows} "
-            f"reaction(s), so no reference potentials follow from it. NeqSim returns an "
-            f"empty array here and `ChemicalReactionOperations.calcChemRefPot` falls back "
-            f"to each component's Gibbs energy of formation, a databank column this "
-            f"library does not carry",
-        )
-
-    solved = _linalg.solve_lu(current, [-value for value in independent_rhs])
-
+    # **A rank-deficient basis is an answer and not an error.** `calcReferencePotentials`
+    # returns null when the component rank falls below the reaction count, and
+    # `ChemicalReactionOperations.calcChemRefPot` reads that null as every component's
+    # Gibbs energy of formation. Nothing is marked independent there, because nothing was
+    # solved for; `rank` still reports the rank it fell short of.
+    rank = len(independent_columns)
     potentials = [0.0] * width
     computed = [False] * width
-    for i, column in enumerate(independent_columns):
-        potentials[column] = solved[i]
-        computed[column] = True
+    independent_mask = [0.0] * width
 
-    # The propagation: a dependent component is computable once a surviving reaction
-    # exists in which every *other* component it names is known.
-    for _ in range(len(dependent_columns) * 2 + 1):
-        progress = False
-        for column in dependent_columns:
-            if computed[column]:
+    if rank < n_rows:
+        for column in range(width):
+            potentials[column] = _formation_seed(components, column)
+            computed[column] = True
+    elif n_rows > 0:
+        solved = _linalg.solve_lu(current, [-value for value in independent_rhs])
+        for i, column in enumerate(independent_columns):
+            potentials[column] = solved[i]
+            computed[column] = True
+            independent_mask[column] = 1.0
+
+        # The propagation: a dependent component is computable once a surviving reaction
+        # exists in which every *other* component it names is known.
+        for _ in range(len(dependent_columns) * 2 + 1):
+            progress = False
+            for column in dependent_columns:
+                if computed[column]:
+                    continue
+                for r, row in enumerate(independent_rows):
+                    nu = row[column]
+                    if abs(nu) < _COEFFICIENT_FLOOR:
+                        continue
+                    if not all(
+                        j == column or abs(row[j]) <= _COEFFICIENT_FLOOR or computed[j]
+                        for j in range(width)
+                    ):
+                        continue
+                    sum_others = sum(row[j] * potentials[j] for j in range(width) if j != column)
+                    potentials[column] = (independent_rhs[r] - sum_others) / nu
+                    computed[column] = True
+                    progress = True
+                    break
+            if progress:
                 continue
-            for r, row in enumerate(independent_rows):
-                nu = row[column]
-                if abs(nu) < _COEFFICIENT_FLOOR:
-                    continue
-                if not all(
-                    j == column or abs(row[j]) <= _COEFFICIENT_FLOOR or computed[j]
-                    for j in range(width)
-                ):
-                    continue
-                sum_others = sum(row[j] * potentials[j] for j in range(width) if j != column)
-                potentials[column] = (independent_rhs[r] - sum_others) / nu
-                computed[column] = True
-                progress = True
+            # **The deadlock fallback, reproduced.** NeqSim seeds the first uncomputed
+            # dependent component with its Gibbs energy of formation and carries on, one
+            # per round that made no progress (`ChemicalReactionList.java:526-541`).
+            seed = next((column for column in dependent_columns if not computed[column]), None)
+            if seed is None:
                 break
-        if not progress:
-            stuck = [components[column] for column in dependent_columns if not computed[column]]
-            if not stuck:
-                break
-            raise InvalidInputError(
-                "reactions",
-                f"the propagation cannot reach {', '.join(stuck)} from the independent "
-                f"set: no surviving reaction has exactly one unknown. NeqSim falls back "
-                f"to the component's Gibbs energy of formation here, which is the "
-                f"`GIBBSENERGYOFFORMATION` column azoth carries as `vendored`",
-            )
+            potentials[seed] = _formation_seed(components, seed)
+            computed[seed] = True
+
+        # The final sweep (`:546-557`): whatever the rounds above left uncomputed takes
+        # the same seed.
+        for column in dependent_columns:
+            if not computed[column]:
+                potentials[column] = _formation_seed(components, column)
 
     return ReferencePotentialsResult(
         potentials=tuple(from_si(value, "J/mol") for value in potentials),
-        independent=tuple(1.0 if column in independent_columns else 0.0 for column in range(width)),
+        independent=tuple(independent_mask),
         survivors=tuple(survivor_mask),
-        rank=len(independent_columns),
+        rank=rank,
         warnings=(),
     )
+
+
+def _formation_seed(components: Sequence[str], column: int) -> float:
+    """NeqSim's seed for a component the propagation cannot reach.
+
+    **The component's Gibbs energy of formation, raw and not negated**
+    (``ChemicalReactionList.java:531``). A component with no databank row is refused
+    rather than seeded with zero: NeqSim's ``Component`` field defaults to zero when the
+    row is absent, and a component with no row cannot be built there at all, while here
+    the name is a caller's string.
+    """
+    name = components[column]
+    row = _tables.formation_properties(name)
+    if row is None:
+        raise InvalidInputError(
+            "reactions",
+            f"the reference potential of {name} cannot be reached by propagation and the "
+            f"component databank has no row for it, so there is no Gibbs energy of "
+            f"formation to seed it with as NeqSim's fallback does",
+        )
+    return row.gibbs_energy_of_formation
 
 
 def _spec() -> dict[str, Any]:

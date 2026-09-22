@@ -1,5 +1,18 @@
 model = "reactions.reference_potentials"
 [[cases]]
+id = "a_deadlocked_propagation_takes_the_formation_gibbs_seed"
+tolerance = 1e-12
+source = "NeqSim master, `ChemicalReactionList.calcReferencePotentials`, from `validation/neqsim/captures/reference_fallback_probe.tsv`. **The case where the propagation deadlocks**: `2 H2O = H3O+ + OH-` is one reaction over three components, so only `water` raises the rank to the reaction count and the two ions have no reaction in which every other component is known. NeqSim seeds `H3O+` with its Gibbs energy of formation taken raw and carries on, and `OH-` follows from it.\n"
+[cases.inputs]
+components = ["water", "H3O+", "OH-"]
+source = "standard"
+T = 298.15
+[cases.expected]
+potentials = [49908.04579044469, -237129.0, 436761.1831617787]
+independent = [1.0, 0.0, 0.0]
+survivors = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+rank = 1.0
+[[cases]]
 id = "co2_water_standard_at_298_15"
 tolerance = 1e-12
 source = "NeqSim master, `ChemicalReactionList.calcReferencePotentials`, from `validation/neqsim/captures/reference_potential_probe.tsv`. The component order is the capture's, which is `getAllComponents`'s `HashSet` iteration order; the potentials are matched against it position by position.\n"
