@@ -96,7 +96,11 @@ fn wrap_streams(streams: Vec<Stream>) -> Vec<PyStream> {
 
 /// Split a stream into several with the same state, scaled by `fractions`.
 #[pyfunction]
-pub fn splitter(py: Python<'_>, feed: &PyStream, fractions: Vec<f64>) -> PyResult<Vec<PyStream>> {
+pub fn splitter_stream(
+    py: Python<'_>,
+    feed: &PyStream,
+    fractions: Vec<f64>,
+) -> PyResult<Vec<PyStream>> {
     azoth_process::kernels::splitter(&feed.to_stream(), &fractions)
         .map(wrap_streams)
         .map_err(|e| to_pyerr(py, e))
@@ -105,7 +109,7 @@ pub fn splitter(py: Python<'_>, feed: &PyStream, fractions: Vec<f64>) -> PyResul
 /// Join several inlets into one, conserving molar flow and enthalpy.
 #[pyfunction]
 #[pyo3(signature = (inlets, outlet_pressure = None))]
-pub fn mixer(
+pub fn mixer_stream(
     py: Python<'_>,
     inlets: Vec<Py<PyStream>>,
     outlet_pressure: Option<f64>,
@@ -118,7 +122,7 @@ pub fn mixer(
 
 /// Flash a stream into vapour and liquid outlets at `temperature` (SI, K).
 #[pyfunction]
-pub fn separator(
+pub fn separator_stream(
     py: Python<'_>,
     feed: &PyStream,
     temperature: f64,
@@ -130,7 +134,7 @@ pub fn separator(
 
 /// Drop a stream to `outlet_pressure` without heat or work (SI, Pa).
 #[pyfunction]
-pub fn throttling_valve(
+pub fn throttling_valve_stream(
     py: Python<'_>,
     feed: &PyStream,
     outlet_pressure: f64,
@@ -142,7 +146,7 @@ pub fn throttling_valve(
 
 /// Move `duty` (SI, W) from the hot stream to the cold stream.
 #[pyfunction]
-pub fn heat_exchanger(
+pub fn heat_exchanger_stream(
     py: Python<'_>,
     hot: &PyStream,
     cold: &PyStream,

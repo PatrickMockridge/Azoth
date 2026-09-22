@@ -9,6 +9,11 @@ the kernel here, exactly as ``azoth_process::models`` wraps ``azoth_process::ker
 The split is why ``azoth.process.pump`` is the *model* and ``azoth.process.kernels.pump``
 is the kernel: two call shapes under one name is not a naming problem to work around but
 the sign that they belong in different places.
+
+**The bridge carries the ``_stream`` suffix on every one of them**, so ``_core.splitter``
+is the ``process.splitter`` id and ``_core.splitter_stream`` is what is called here. The
+suffix is applied whether or not the id exists yet, so adding one does not rename this
+module's call site.
 """
 
 from __future__ import annotations
@@ -98,32 +103,36 @@ class Stream:
 
 def splitter(stream: Stream, fractions: Sequence[float]) -> list[Stream]:
     """Split a stream into several with the same state, scaled by ``fractions``."""
-    out = _core.splitter(stream._inner, [float(f) for f in fractions])
+    out = _core.splitter_stream(stream._inner, [float(f) for f in fractions])
     return [Stream(s) for s in out]
 
 
 def mixer(inlets: Sequence[Stream], outlet_pressure: Q | None = None) -> Stream:
     """Join several inlets into one, conserving molar flow and enthalpy."""
     p = None if outlet_pressure is None else to_si(outlet_pressure, "Pa", "outlet_pressure")
-    return Stream(_core.mixer([s._inner for s in inlets], p))
+    return Stream(_core.mixer_stream([s._inner for s in inlets], p))
 
 
 def separator(stream: Stream, temperature: Q) -> tuple[Stream, Stream]:
     """Flash a stream into vapour and liquid outlets at ``temperature``."""
-    vapour, liquid = _core.separator(stream._inner, to_si(temperature, "K", "temperature"))
+    vapour, liquid = _core.separator_stream(stream._inner, to_si(temperature, "K", "temperature"))
     return Stream(vapour), Stream(liquid)
 
 
 def throttling_valve(stream: Stream, outlet_pressure: Q) -> Stream:
     """Drop a stream to ``outlet_pressure`` without heat or work."""
     return Stream(
-        _core.throttling_valve(stream._inner, to_si(outlet_pressure, "Pa", "outlet_pressure"))
+        _core.throttling_valve_stream(
+            stream._inner, to_si(outlet_pressure, "Pa", "outlet_pressure")
+        )
     )
 
 
 def heat_exchanger(hot: Stream, cold: Stream, duty: Q) -> tuple[Stream, Stream]:
     """Move ``duty`` from the hot stream to the cold stream."""
-    hot_out, cold_out = _core.heat_exchanger(hot._inner, cold._inner, to_si(duty, "W", "duty"))
+    hot_out, cold_out = _core.heat_exchanger_stream(
+        hot._inner, cold._inner, to_si(duty, "W", "duty")
+    )
     return Stream(hot_out), Stream(cold_out)
 
 

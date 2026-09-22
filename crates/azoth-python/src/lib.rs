@@ -322,11 +322,11 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // The process layer: a stream value and the unit-operation kernels, plus the
     // flowsheet checker. A binding, not a second implementation.
     m.add_class::<process::PyStream>()?;
-    m.add_function(wrap_pyfunction!(process::splitter, m)?)?;
-    m.add_function(wrap_pyfunction!(process::mixer, m)?)?;
-    m.add_function(wrap_pyfunction!(process::separator, m)?)?;
-    m.add_function(wrap_pyfunction!(process::throttling_valve, m)?)?;
-    m.add_function(wrap_pyfunction!(process::heat_exchanger, m)?)?;
+    m.add_function(wrap_pyfunction!(process::splitter_stream, m)?)?;
+    m.add_function(wrap_pyfunction!(process::mixer_stream, m)?)?;
+    m.add_function(wrap_pyfunction!(process::separator_stream, m)?)?;
+    m.add_function(wrap_pyfunction!(process::throttling_valve_stream, m)?)?;
+    m.add_function(wrap_pyfunction!(process::heat_exchanger_stream, m)?)?;
     m.add_function(wrap_pyfunction!(process::pump, m)?)?;
     m.add_function(wrap_pyfunction!(process::pump_stream, m)?)?;
     m.add_function(wrap_pyfunction!(process::validate_flowsheet, m)?)?;
