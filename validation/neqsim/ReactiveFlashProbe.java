@@ -69,6 +69,49 @@ public class ReactiveFlashProbe {
         new String[] { "CO", "water", "CO2", "hydrogen" },
         new double[] { 0.25, 0.25, 0.25, 0.25 });
     diis();
+    // `NR = 0` with more than one phase and no ion: the driver falls back to a conventional
+    // VLE flash, which is a path none of the reactive fluids above reaches.
+    nonReactive("methane-water-300K-50bar", 300.0, 50.0,
+        new String[] { "methane", "water" }, new double[] { 0.5, 0.5 });
+  }
+
+  /// `runNonReactiveFlash`: the Wilson-K successive substitution a fluid with no independent
+  /// reaction gets instead of the RAND solve.
+  static void nonReactive(String label, double temperature, double pressure, String[] names,
+      double[] moles) {
+    System.out.println("fluid=" + label);
+    System.out.println("temperature_K=" + temperature);
+    System.out.println("pressure_bara=" + pressure);
+
+    SystemInterface system = new SystemSrkEos(temperature, pressure);
+    for (int i = 0; i < names.length; i++) {
+      System.out.println("  feed[" + names[i] + "]=" + moles[i]);
+      system.addComponent(names[i], moles[i]);
+    }
+    system.setMixingRule("classic");
+    system.init(0);
+    system.init(1);
+    counts("before_flash", system);
+
+    FormulaMatrix matrix = new FormulaMatrix(system);
+    System.out.println("independent_reactions=" + matrix.getNumberOfIndependentReactions());
+    System.out.println("phase0_type=" + system.getPhase(0).getType());
+
+    ReactiveMultiphaseTPflash flash = new ReactiveMultiphaseTPflash(system);
+    flash.run();
+
+    System.out.println("converged=" + flash.isConverged());
+    System.out.println("total_iterations=" + flash.getTotalIterations());
+    counts("after_flash", system);
+    for (int phase = 0; phase < system.getNumberOfPhases(); phase++) {
+      StringBuilder composition = new StringBuilder("  phase_x[" + phase + "]=");
+      for (int i = 0; i < names.length; i++) {
+        composition.append(system.getPhase(phase).getComponent(i).getx())
+            .append(i + 1 < names.length ? " " : "");
+      }
+      System.out.println(composition);
+    }
+    System.out.println();
   }
 
   /// The DIIS accelerator's own answers, on a sequence it is fed rather than one a solve

@@ -255,3 +255,17 @@ singular_count=2
 singular_can_extrapolate=true
 singular_extrapolated=null
 
+fluid=methane-water-300K-50bar
+temperature_K=300.0
+pressure_bara=50.0
+  feed[methane]=0.5
+  feed[water]=0.5
+before_flash_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
+independent_reactions=0
+phase0_type=GAS
+converged=true
+total_iterations=0
+after_flash_phases=2 max_phases=2 beta[0]=0.5003348951610832 beta[1]=0.4996651048389168
+  phase_x[0]=0.999330366296782 6.696337032181276E-4
+  phase_x[1]=2.9209086496247944E-7 0.9999997079091351
+

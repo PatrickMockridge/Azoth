@@ -58,9 +58,14 @@
 //! [`crate::rand_solver::solve`].
 //!
 //! **Not ported**: the trace-ion short circuit (it needs `hasIonicSpecies`, which this crate's
-//! callers refuse before reaching here), `runNonReactiveFlash` - the `NR = 0` multiphase
-//! fallback to a conventional flash - and the reactive-stability *orchestrator* the loop's
+//! callers refuse before reaching here) and the reactive-stability *orchestrator* the loop's
 //! recheck calls, which is [`crate::reactive_stability`] driven from outside.
+//!
+//! [`non_reactive_flash`] and [`solve_rachford_rice`] are the `NR = 0` fallback: a fluid with
+//! no independent reaction and more than one phase is flashed conventionally, and the capture's
+//! methane/water block at 300 K and 50 bar pins it to `1e-12` on both compositions and on the
+//! vapour fraction - the tightest match in this stack, because a Wilson seed and six successive
+//! substitutions leave no long Newton trajectory to drift on.
 //!
 //! **No capture reaches the add.** The pair `SystemSrkEos` constructs means the stability
 //! analysis is skipped on every captured state, so no trial is ever produced; reaching it needs
@@ -507,4 +512,188 @@ pub fn outer_loop(
         equilibrium_total_moles,
         solution: outcome.expect("MAX_OUTER_ITERATIONS is 20, so the loop runs"),
     })
+}
+
+/// `solveRachfordRice`: the class's own Newton solve for the vapour fraction, 50 passes, the
+/// root clamped into `(1e-15, 1 - 1e-15)` after every step, stopped on a step under `1e-12` or
+/// a derivative under `1e-30`.
+///
+/// **This is a different routine from `initializeWithVLEFlash`'s inline loop**: 50 passes
+/// against 100, a `1e-12` step test against a `1e-10` residual test, and a clamp that keeps the
+/// root *inside* the interval rather than rejecting it at the bound. Both are in the class.
+#[must_use]
+pub fn solve_rachford_rice(feed: &[f64], log_k: &[f64], beta_guess: f64) -> f64 {
+    let mut beta = beta_guess;
+    for _ in 0..50 {
+        let mut f = 0.0_f64;
+        let mut derivative = 0.0_f64;
+        for i in 0..feed.len() {
+            let k = log_k[i].exp();
+            let denominator = 1.0 + beta * (k - 1.0);
+            if denominator.abs() < 1e-30 {
+                continue;
+            }
+            f += feed[i] * (k - 1.0) / denominator;
+            derivative -= feed[i] * (k - 1.0) * (k - 1.0) / (denominator * denominator);
+        }
+        if derivative.abs() < 1e-30 {
+            break;
+        }
+        let step = f / derivative;
+        beta -= step;
+        beta = beta.clamp(1e-15, 1.0 - 1e-15);
+        if step.abs() < 1e-12 {
+            break;
+        }
+    }
+    beta
+}
+
+/// What `runNonReactiveFlash` leaves: a two-phase VLE split of a fluid that has no independent
+/// reaction to run.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NonReactiveOutcome {
+    /// The two phases in the system's own index order, with the liquid composition written at
+    /// `liquid_index` and the vapour at the other.
+    pub phases: Vec<PhaseFeed>,
+    /// Whether the successive substitution came in under its `1e-10`.
+    pub converged: bool,
+    /// The successive-substitution passes taken. **`run` does not count these**: the driver's
+    /// `getTotalIterations()` reports `0` for a fluid that takes this path, which the capture
+    /// shows.
+    pub iterations: u32,
+    /// Whether every component's critical temperature was below the state's - the class's early
+    /// return, which reports convergence without flashing anything.
+    pub all_supercritical: bool,
+}
+
+/// `runNonReactiveFlash`: the conventional VLE flash the driver falls back to when a fluid has
+/// **no independent reaction** and more than one phase.
+///
+/// Wilson K-values seed a Rachford-Rice split, then successive substitution replaces them with
+/// `K_i = phi_liq,i / phi_vap,i` until the log-K change comes in under `1e-10`, up to 200
+/// passes. `ln_phi` answers per phase index, which is how the caller says which index takes the
+/// cubic's liquid root - the class reads the *phase types* (`liqIdx` is the index that is not
+/// `GAS`), and the caller passes that index here.
+///
+/// The class's `addPhase` branch for a one-phase system is not ported: `SystemThermo.addPhase`
+/// only increments the counter without creating a phase object, and the captured states all
+/// arrive with two.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] where a shape disagrees, and whatever `ln_phi` raises.
+pub fn non_reactive_flash(
+    feed: &[f64],
+    constants: &[CriticalConstants],
+    temperature: f64,
+    pressure: f64,
+    liquid_index: usize,
+    ln_phi: PhaseLogPhi<'_>,
+) -> Result<NonReactiveOutcome> {
+    let nc = feed.len();
+    if constants.len() != nc || liquid_index > 1 {
+        return Err(AzothError::InvalidInput {
+            field: "constants".to_string(),
+            reason: format!(
+                "{} constant set(s), {} component(s) and a liquid index of {liquid_index}",
+                constants.len(),
+                nc
+            ),
+        });
+    }
+    let gas_index = 1 - liquid_index;
+
+    // Every component above its critical temperature means there is no liquid to form, and the
+    // class reports convergence without touching the system.
+    let all_supercritical = (0..nc).all(|i| temperature >= constants[i].tc);
+    if all_supercritical {
+        return Ok(NonReactiveOutcome {
+            phases: vec![
+                PhaseFeed {
+                    fractions: feed.to_vec(),
+                    beta: 1.0,
+                },
+                PhaseFeed {
+                    fractions: feed.to_vec(),
+                    beta: 1.0,
+                },
+            ],
+            converged: true,
+            iterations: 0,
+            all_supercritical: true,
+        });
+    }
+
+    let mut log_k = vec![0.0_f64; nc];
+    for i in 0..nc {
+        if constants[i].pc > 0.0 && constants[i].tc > 0.0 {
+            log_k[i] = (constants[i].pc / pressure).ln()
+                + 5.373 * (1.0 + constants[i].omega) * (1.0 - constants[i].tc / temperature);
+        }
+    }
+
+    let mut beta = solve_rachford_rice(feed, &log_k, 0.5).clamp(1e-15, 1.0 - 1e-15);
+    let mut liquid = vec![0.0_f64; nc];
+    let mut vapour = vec![0.0_f64; nc];
+    compositions(feed, &log_k, beta, &mut liquid, &mut vapour);
+
+    let mut converged = false;
+    let mut iterations = 0_u32;
+    for iteration in 0..200 {
+        iterations = iteration + 1;
+        let ln_phi_liquid = ln_phi(liquid_index, &normalise(&liquid))?;
+        let ln_phi_vapour = ln_phi(gas_index, &normalise(&vapour))?;
+
+        let mut error = 0.0_f64;
+        for i in 0..nc {
+            let new_log_k = ln_phi_liquid[i] - ln_phi_vapour[i];
+            error += (new_log_k - log_k[i]).abs();
+            log_k[i] = new_log_k;
+        }
+
+        beta = solve_rachford_rice(feed, &log_k, beta).clamp(1e-15, 1.0 - 1e-15);
+        compositions(feed, &log_k, beta, &mut liquid, &mut vapour);
+
+        if error < 1e-10 {
+            converged = true;
+            break;
+        }
+    }
+
+    let mut phases = vec![
+        PhaseFeed {
+            fractions: Vec::new(),
+            beta: 0.0,
+        },
+        PhaseFeed {
+            fractions: Vec::new(),
+            beta: 0.0,
+        },
+    ];
+    phases[liquid_index] = PhaseFeed {
+        fractions: normalise(&liquid),
+        beta: 1.0 - beta,
+    };
+    phases[gas_index] = PhaseFeed {
+        fractions: normalise(&vapour),
+        beta,
+    };
+
+    Ok(NonReactiveOutcome {
+        phases,
+        converged,
+        iterations,
+        all_supercritical: false,
+    })
+}
+
+/// The class's two composition updates, which it writes twice: `x_i = z_i / (1 + beta (K_i - 1))`
+/// and `y_i = K_i x_i`, both floored at [`VLE_MIN_MOLES`].
+fn compositions(feed: &[f64], log_k: &[f64], beta: f64, liquid: &mut [f64], vapour: &mut [f64]) {
+    for i in 0..feed.len() {
+        let k = log_k[i].exp();
+        let x = feed[i] / (1.0 + beta * (k - 1.0));
+        liquid[i] = x.max(VLE_MIN_MOLES);
+        vapour[i] = (k * x).max(VLE_MIN_MOLES);
+    }
 }

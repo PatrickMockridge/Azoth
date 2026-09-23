@@ -613,3 +613,107 @@ fn the_trial_phase_is_added_at_the_guard() {
     assert!(!add_trial_phase(&mut phases, &[], 3).expect("nothing to add"));
     assert_eq!(phases.len(), 2);
 }
+
+/// **The non-reactive fallback, on a fluid that has no reaction to run.** Methane and water
+/// have rank 2 over three elements, so `NR = 0`; at 300 K and 50 bar they do not mix, and the
+/// driver's `runNonReactiveFlash` is what the capture's block records. It is a conventional VLE
+/// flash - Wilson K-values, then successive substitution with `K_i = phi_liq / phi_vap`.
+///
+/// Three things the capture pins beyond the split: the path reports `converged = true`, its
+/// **`total_iterations` is `0`** because the driver never counts these passes, and the gas
+/// phase is index 0 (`phase0_type=GAS`), so the *liquid* composition is written at index 1.
+///
+/// **This is the tightest match in the tranche**: both compositions and the vapour fraction
+/// agree to `1e-12`, which is round-off, because this path is a Wilson seed and 6 successive
+/// substitutions over the same cubic - there is no long Newton trajectory for two
+/// implementations to drift apart on.
+#[test]
+fn the_non_reactive_fallback_is_the_captured_split() {
+    use azoth_reactions::reactive_flash::non_reactive_flash;
+
+    const FEED: [f64; 2] = [0.5, 0.5];
+    let (mixture, constants) = mixture_and_constants_for(&["methane", "water"]);
+
+    let reduced = mixture
+        .reduced_parameters(kelvins(300.0), pascals(50.0e5))
+        .expect("a state");
+    let mut ln_phi = |phase: usize, x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        // The class reads the phase *types*; index 0 is `GAS` in the capture, index 1 is the
+        // liquid that takes the cubic's small root.
+        let side = if phase == 0 {
+            RootSide::Vapour
+        } else {
+            RootSide::Liquid
+        };
+        Ok(mixture.phase_state(&reduced, x, side)?.ln_phi.clone())
+    };
+
+    let outcome =
+        non_reactive_flash(&FEED, &constants, 300.0, 50.0, 1, &mut ln_phi).expect("the flash runs");
+
+    assert!(outcome.converged, "the capture has this one converged");
+    // The passes are reported here and **not** by the driver: the capture's
+    // `total_iterations` is `0` because `runNonReactiveFlash` never adds its own passes to the
+    // counter. The port's number is the successive substitution's, and it is not zero.
+    assert!(
+        outcome.iterations >= 1,
+        "the substitution ran {} passes",
+        outcome.iterations
+    );
+    assert!(
+        !outcome.all_supercritical,
+        "water is below its critical point"
+    );
+    assert_eq!(outcome.phases.len(), 2);
+
+    // `phase_x[0]` is the gas (methane-rich) and `phase_x[1]` the liquid (water-rich).
+    let captured_vapour = [0.999_330_366_296_782_f64, 6.696_337_032_181_276e-4];
+    let captured_liquid = [2.920_908_649_624_794_4e-7_f64, 0.999_999_707_909_135_1];
+    for (index, (got, want)) in outcome.phases[0]
+        .fractions
+        .iter()
+        .zip(captured_vapour)
+        .enumerate()
+    {
+        assert!(
+            (got - want).abs() / want.abs() < 1.0e-12,
+            "vapour component {index}: {got} against the capture's {want}"
+        );
+    }
+    for (index, (got, want)) in outcome.phases[1]
+        .fractions
+        .iter()
+        .zip(captured_liquid)
+        .enumerate()
+    {
+        assert!(
+            (got - want).abs() / want.abs() < 1.0e-12,
+            "liquid component {index}: {got} against the capture's {want}"
+        );
+    }
+
+    // `beta[0]` is the gas fraction and `beta[1]` the liquid's, and they sum to one.
+    let captured_vapour_fraction = 0.500_334_895_161_083_2_f64;
+    assert!(
+        (outcome.phases[0].beta - captured_vapour_fraction).abs() / captured_vapour_fraction
+            < 1.0e-12,
+        "the vapour fraction is {} against the capture's {captured_vapour_fraction}",
+        outcome.phases[0].beta
+    );
+    assert!((outcome.phases[0].beta + outcome.phases[1].beta - 1.0).abs() < 1.0e-12);
+}
+
+/// A mixture built from an arbitrary component list, with its critical constants.
+fn mixture_and_constants_for(names: &[&str]) -> (azoth_eos::Mixture, Vec<CriticalConstants>) {
+    let (mixture, _) = mixture_of(names, Cubic::Srk, None).expect("the databank carries them");
+    let constants = mixture
+        .components()
+        .iter()
+        .map(|component| CriticalConstants {
+            tc: component.tc.value,
+            pc: component.pc.value / 1.0e5,
+            omega: component.omega,
+        })
+        .collect();
+    (mixture, constants)
+}
