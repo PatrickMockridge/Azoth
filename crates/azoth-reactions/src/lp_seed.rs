@@ -237,4 +237,78 @@ mod tests {
             "a singular basis is skipped rather than solved"
         );
     }
+
+    /// **The component order does not move the optimum, and NeqSim's own order is a sort.**
+    ///
+    /// `LinearProgrammingChemicalEquilibrium`'s fallback branch sorts its component array
+    /// with `ReferencePotComparator` before building the matrix and the potentials - a
+    /// comparator that returns `1` or `0` and never `-1`, so it is not transitive and the
+    /// permutation it produces is arbitrary. Whatever permutation it produces, the sort
+    /// moves the potentials array and the matrix's columns *together* (both are read off
+    /// the same sorted array), so the program is the same one written in another column
+    /// order.
+    ///
+    /// This sweeps a permutation of both kinds of program and asserts what that implies:
+    /// **the objective value at the optimum is invariant**, and where the optimum is
+    /// unique the vertex permutes with the columns. Where it is *not* unique, the two runs
+    /// land on different vertices of the same optimal face - which is what makes the
+    /// tie-break a convention rather than an answer, and why this module pins the objective
+    /// and the mask and records the choice.
+    #[test]
+    fn a_column_permutation_moves_the_vertex_and_not_the_optimum() {
+        // A unique optimum: basis {0, 2} costs 3, and every other basis costs more or is
+        // singular.
+        let a = vec![vec![1.0, 0.0, 0.0], vec![0.0, 2.0, 1.0]];
+        let b = [1.0, 2.0];
+        let objective = [1.0, 5.0, 1.0];
+        let seed = initial_estimate(&a, &b, &objective).expect("feasible");
+        assert!(
+            seed[0] > 0.5 && seed[1] <= MIN_MOLES && seed[2] > 1.5,
+            "{seed:?}"
+        );
+
+        let swap = [2usize, 1, 0];
+        let moved: Vec<Vec<f64>> = a
+            .iter()
+            .map(|row| swap.iter().map(|&column| row[column]).collect())
+            .collect();
+        let moved_objective: Vec<f64> = swap.iter().map(|&column| objective[column]).collect();
+        let moved_seed =
+            initial_estimate(&moved, &b, &moved_objective).expect("the permutation is feasible");
+
+        let cost = |seed: &[f64], objective: &[f64]| -> f64 {
+            seed.iter().zip(objective).map(|(n, c)| n * c).sum()
+        };
+        assert!(
+            (cost(&seed, &objective) - cost(&moved_seed, &moved_objective)).abs() < 1e-12,
+            "the optimum's value is a property of the program and not of the column order"
+        );
+        for (i, &column) in swap.iter().enumerate() {
+            assert!(
+                (moved_seed[i] - seed[column]).abs() < 1e-15,
+                "column {i} of the permuted program is column {column} of the original"
+            );
+        }
+
+        // A degenerate face: `n_0 + n_1 + n_2 = 1` with every coefficient costing one, so
+        // every vertex is optimal and the tie-break decides which one comes back.
+        let a = vec![vec![1.0, 1.0, 1.0]];
+        let b = [1.0];
+        let objective = [1.0, 1.0, 1.0];
+        let seed = initial_estimate(&a, &b, &objective).expect("feasible");
+        assert!(seed[0] > 0.5, "the lowest basis mask wins: {seed:?}");
+
+        let swap = [2usize, 0, 1];
+        let moved: Vec<Vec<f64>> = a
+            .iter()
+            .map(|row| swap.iter().map(|&column| row[column]).collect())
+            .collect();
+        let moved_objective: Vec<f64> = swap.iter().map(|&column| objective[column]).collect();
+        let moved_seed =
+            initial_estimate(&moved, &b, &moved_objective).expect("the permutation is feasible");
+        assert!(
+            (cost(&seed, &objective) - cost(&moved_seed, &moved_objective)).abs() < 1e-12,
+            "still an optimum, whichever vertex the tie-break lands on"
+        );
+    }
 }
