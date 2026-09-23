@@ -255,6 +255,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::hydrate_inhibitor_wt, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrogen_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::iapws_henry_law, m)?)?;
     m.add_function(wrap_pyfunction!(eos::water_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::argon_solid_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::parahydrogen_solid_phase, m)?)?;

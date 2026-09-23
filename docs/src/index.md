@@ -77,6 +77,7 @@ Four sections, and the difference between them is the point:
 - [`eos.costald_molar_volume`](./eos/costald_molar_volume.md)
 - [`eos.hayduk_minhas_diffusivity`](./eos/hayduk_minhas_diffusivity.md)
 - [`eos.heat_of_vaporization`](./eos/heat_of_vaporization.md)
+- [`eos.iapws_henry_law`](./eos/iapws_henry_law.md)
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
 - [`eos.liquid_heat_capacity`](./eos/liquid_heat_capacity.md)
 - [`eos.matcop5_prumr_alpha`](./eos/matcop5_prumr_alpha.md)

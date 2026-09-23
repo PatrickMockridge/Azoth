@@ -28,31 +28,32 @@ use azoth_eos::results::{
     Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
     HeliumPhaseResult, HydrateEquilibriumLineResult, HydrateFormationPressureResult,
     HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
-    HydrateInhibitorWtResult, HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult,
-    LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
-    MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
-    MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
-    NrtlActivityCoefficientsResult, ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult,
-    PcsaftRahmatPhaseResult, PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
-    PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
-    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
-    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SaftFlashResult,
-    SaftVrMiePhaseResult, SaltPrecipitationResult, ScaleSaturationRatioResult,
-    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SolidFugacityResult,
-    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult,
-    TpMultiflashResult, TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult,
-    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
-    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
-    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
-    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
-    WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    HydrateInhibitorWtResult, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
+    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
+    PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
+    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
+    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
+    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
+    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
+    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
+    RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
+    SaltPrecipitationResult, ScaleSaturationRatioResult, SchwartzentruberAlphaResult,
+    SiddiqiLucasDiffusivityResult, SolidFugacityResult, SoreideWhitsonAlphaResult,
+    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
+    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
+    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
+    TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
+    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
+    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
+    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
+    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
+    VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
+    WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
@@ -5805,6 +5806,65 @@ impl From<&HeliumPhaseResult> for PyHeliumPhaseResult {
     }
 }
 
+/// Result of `eos.iapws_henry_law`, transported.
+///
+/// The status crosses as the spec's spelling, so the adapter rebuilds the enum and a caller
+/// compares `HenryStatus.WITHIN_FITTED_RANGE` regardless of which backend answered.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IapwsHenryLawResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIapwsHenryLawResult {
+    /// `kH`, the Henry constant.
+    #[pyo3(get)]
+    pub henry: PyQty,
+    /// `ln kH`.
+    #[pyo3(get)]
+    pub ln_henry: f64,
+    /// `d(ln kH)/dT`.
+    #[pyo3(get)]
+    pub d_ln_henry_d_t: f64,
+    /// The spec's spelling of the fitted-range status.
+    #[pyo3(get)]
+    pub status: String,
+    /// The row's reported root-mean-square residual in `ln kH`.
+    #[pyo3(get)]
+    pub rms_log_residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIapwsHenryLawResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "IapwsHenryLawResult(henry={}, status={})",
+            self.henry.magnitude_si, self.status
+        )
+    }
+}
+
+impl From<&IapwsHenryLawResult> for PyIapwsHenryLawResult {
+    fn from(r: &IapwsHenryLawResult) -> Self {
+        let qty = |v: f64, unit: &str| PyQty {
+            magnitude_si: v,
+            unit: unit.to_string(),
+        };
+        Self {
+            henry: qty(r.henry.value, "Pa"),
+            ln_henry: r.ln_henry,
+            d_ln_henry_d_t: r.d_ln_henry_d_t,
+            status: r.status.as_str().to_string(),
+            rms_log_residual: r.rms_log_residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.hydrogen_phase`, transported.
 #[pyclass(
     frozen,
@@ -7860,6 +7920,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
+        IapwsHenryLawResult::CALC_ID => IapwsHenryLawResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         ViscosityResult::CALC_ID => ViscosityResult::FIELDS.to_vec(),
@@ -7940,6 +8001,7 @@ pub fn calc_ids() -> Vec<String> {
         SiddiqiLucasDiffusivityResult::CALC_ID.to_string(),
         Co2WaterDiffusivityResult::CALC_ID.to_string(),
         ParachorSurfaceTensionResult::CALC_ID.to_string(),
+        IapwsHenryLawResult::CALC_ID.to_string(),
         IdealGasCpResult::CALC_ID.to_string(),
         PumpPowerResult::CALC_ID.to_string(),
         KFactorsResult::CALC_ID.to_string(),

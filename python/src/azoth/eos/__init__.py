@@ -70,7 +70,6 @@ from collections.abc import Sequence
 from azoth import keycard
 from azoth._dispatch import resolve
 from azoth.core.result import (
-    GeFlashResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     ArgonSolidPhaseResult,
@@ -92,6 +91,7 @@ from azoth.core.result import (
     FreezingPointResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
+    GeFlashResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
@@ -109,6 +109,7 @@ from azoth.core.result import (
     HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult,
     HydrogenPhaseResult,
+    IapwsHenryLawResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
     LiquidHeatCapacityResult,
@@ -274,6 +275,7 @@ __all__ = [
     "hydrate_inhibitor_concentration",
     "hydrate_inhibitor_wt",
     "hydrogen_phase",
+    "iapws_henry_law",
     "ideal_gas_cp",
     "kent_eisenberg_phase",
     "liquid_heat_capacity",
@@ -380,6 +382,7 @@ _HYDRATE_FRACTION = "eos.hydrate_fraction"
 _HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
+_IAPWS_HENRY_LAW = "eos.iapws_henry_law"
 _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
@@ -2448,6 +2451,26 @@ def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> F
     )
 
 
+def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
+    """The Henry constant of a gas in water, from the IAPWS guideline.
+
+    The standard state is limiting ``f/x`` at pure-water saturation. ``gas`` names one of
+    the guideline's 14 rows, by formula (``ch4``) or by name (``methane``) - the table's
+    vocabulary, which is wider than this library's component list.
+
+    The fitted window and the domain are different questions: a temperature outside a row's
+    window is returned with ``status`` saying so, and only a temperature outside liquid
+    water is refused.
+
+    Raises:
+        InvalidInputError: if ``gas`` names no row.
+        OutOfRangeError: if ``T`` is outside ``[273.15, 647.096)`` K.
+
+    See :func:`azoth.eos.reference.iapws_henry_law`.
+    """
+    return resolve(_IAPWS_HENRY_LAW)(gas=gas, T=T)  # type: ignore[no-any-return]
+
+
 def hydrogen_phase(
     T: Q, P: Q, hydrogen_type: str = "normal", compressed_phase: str = "vapour"
 ) -> HydrogenPhaseResult:
@@ -3498,11 +3521,11 @@ def effective_diffusion(
 
 def ge_flash(
     components: Sequence[str],
-    cubic: str,
     liquid_model: str,
     T: Q,
     P: Q,
     z: Sequence[float],
+    cubic: str,
 ) -> GeFlashResult:
     """The isothermal flash of a cubic vapour over a named activity-coefficient liquid.
 

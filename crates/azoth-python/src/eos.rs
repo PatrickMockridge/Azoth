@@ -21,11 +21,11 @@ use crate::results::{
     PyDesmukhMatherPhaseResult, PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult,
     PyGeUnifacPhaseResult, PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult,
     PyGeWilsonPhaseResult, PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult,
-    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIdealGasCpResult,
-    PyKentEisenbergPhaseResult, PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult,
-    PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult, PyMatcopPrAlphaResult,
-    PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult,
-    PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
+    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIapwsHenryLawResult,
+    PyIdealGasCpResult, PyKentEisenbergPhaseResult, PyLiquidHeatCapacityResult,
+    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
+    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
+    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
     PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
     PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
     PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPitzerPhaseResult,
@@ -3181,6 +3181,23 @@ pub fn helium_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyHeliumPhaseRes
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The Henry constant of a gas in water, computed in Rust.
+///
+/// `gas` crosses and is resolved by name, so the two backends accept the same vocabulary:
+/// the reference twin resolves it the same way, and a caller who has `methane` rather than
+/// `ch4` gets one answer and not two. The refusal is built here rather than left as a
+/// `ValueError` from the enum's own parser, because an unknown gas is the reference's
+/// `InvalidInputError` and the two backends must raise the same class.
+#[pyfunction]
+#[pyo3(signature = (gas, T))]
+#[allow(non_snake_case)] // `T` is the symbol in the guideline
+pub fn iapws_henry_law(py: Python<'_>, gas: &str, T: f64) -> PyResult<PyIapwsHenryLawResult> {
+    let row = azoth_eos::gas_by_name(gas).map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::iapws_henry_law(row, kelvins(T))
+        .map(|r| PyIapwsHenryLawResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// The Leachman hydrogen phase state, computed in Rust.
 #[pyfunction]
 #[pyo3(signature = (T, P, hydrogen_type = "normal", compressed_phase = "vapour"))]
@@ -4056,17 +4073,17 @@ pub fn effective_diffusion(
 /// languages cannot disagree about which row answered, and a caller cannot pair a liquid
 /// with a vapour built from a different component list.
 #[pyfunction]
-#[pyo3(signature = (components, cubic, liquid_model, T, P, z))]
-#[pyo3(text_signature = "(components, cubic, liquid_model, T, P, z)")]
+#[pyo3(signature = (components, liquid_model, T, P, z, cubic))]
+#[pyo3(text_signature = "(components, liquid_model, T, P, z, cubic)")]
 #[allow(non_snake_case)] // `T`, `P` and `z` are the symbols in the chemistry
 pub fn ge_flash(
     py: Python<'_>,
     components: Vec<String>,
-    cubic: &str,
     liquid_model: &str,
     T: f64,
     P: f64,
     z: Vec<f64>,
+    cubic: &str,
 ) -> PyResult<crate::results::PyGeFlashResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     azoth_eos::ge_flash::ge_flash(&names, cubic, liquid_model, kelvins(T), pascals(P), &z)

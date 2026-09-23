@@ -306,6 +306,7 @@ ENUMS = {
     "StabilityVerdict",
     "TpMultiflashSeed",
     "FlowRegime",
+    "HenryStatus",
     "HydrateStructure",
 }
 

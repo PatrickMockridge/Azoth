@@ -2583,6 +2583,47 @@ class DewTemperatureResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+class HenryStatus(StrEnum):
+    """Whether the guideline's Henry constant was evaluated inside the fitted range.
+
+    A returned number rather than a refusal: the equation is defined over the whole of
+    liquid water and the guideline's own extrapolating entry point exists for the rest.
+    What an extrapolation means is the consumer's decision - NeqSim's consumers turn it
+    into the insoluble limit - and this says which case applies so that the decision is
+    visible at the call site.
+    """
+
+    #: The temperature is inside the range the gas's row was fitted over.
+    WITHIN_FITTED_RANGE = "within_fitted_range"
+
+    #: The equation is defined, but the temperature is outside the row's fitted range.
+    GUIDELINE_EXTRAPOLATION = "guideline_extrapolation"
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class IapwsHenryLawResult(_HasWarnings):
+    """Result of ``eos.iapws_henry_law``.
+
+    The standard state is limiting ``f/x`` at pure-water saturation, so ``henry`` is a
+    pressure per mole fraction and is large for a sparingly soluble gas.
+    ``d_ln_henry_d_t`` comes from the guideline's own logarithmic expression rather than
+    from differencing the constant.
+    """
+
+    #: ``kH``, the Henry constant.
+    henry: Q
+    #: ``ln kH``, the logarithm of the value above and not of NeqSim's bar figure.
+    ln_henry: float
+    #: ``d(ln kH)/dT``.
+    d_ln_henry_d_t: float
+    #: Whether ``T`` is inside the row's fitted range.
+    status: HenryStatus
+    #: The row's reported root-mean-square residual in ``ln kH``.
+    rms_log_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class IdealGasCpResult(_HasWarnings):
     """Result of ``eos.ideal_gas_cp``.

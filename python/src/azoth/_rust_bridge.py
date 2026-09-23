@@ -56,11 +56,11 @@ from azoth.core.result import (
     FreezingPointResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
+    GeFlashResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
-    GeFlashResult,
     GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
@@ -77,6 +77,7 @@ from azoth.core.result import (
     HydrateInhibitorWtResult,
     HydrateStructure,
     HydrogenPhaseResult,
+    IapwsHenryLawResult,
     IdealGasCpResult,
     KComponent,
     KentEisenbergPhaseResult,
@@ -190,6 +191,7 @@ from azoth.core.result import (
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 )
+from azoth.core.result import HenryStatus as _HenryStatus
 from azoth.core.result import Phase as _Phase
 from azoth.core.result import StabilityVerdict as _StabilityVerdict
 from azoth.core.result import TpMultiflashSeed as _TpMultiflashSeed
@@ -3279,6 +3281,25 @@ def freezing_point(
     )
 
 
+def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
+    """The Henry constant of a gas in water, computed in Rust.
+
+    ``gas`` crosses as the table's own spelling, because the boundary a component name
+    crosses is the table's lookup and not this one's: `ch4` is a row and `methane` is a
+    name for it, and which of the two a caller has is the caller's business.
+    """
+    spec = _spec_for("eos.iapws_henry_law")
+    result = _core.iapws_henry_law(gas, input_to_si(spec, "T", T))
+    return IapwsHenryLawResult(
+        henry=from_si(result.henry.magnitude_si, result.henry.unit),
+        ln_henry=result.ln_henry,
+        d_ln_henry_d_t=result.d_ln_henry_d_t,
+        status=_HenryStatus(result.status),
+        rms_log_residual=result.rms_log_residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def hydrogen_phase(
     T: Q, P: Q, hydrogen_type: str = "normal", compressed_phase: str = "vapour"
 ) -> HydrogenPhaseResult:
@@ -4080,10 +4101,7 @@ def effective_diffusion(
     """
     spec = _models_gen.model("eos.effective_diffusion")
     result = _core.effective_diffusion(
-        [
-            [_si(spec, "binary_diffusion", value) for value in row]
-            for row in binary_diffusion
-        ],
+        [[_si(spec, "binary_diffusion", value) for value in row] for row in binary_diffusion],
         [float(value) for value in x],
     )
     return EffectiveDiffusionResult(
@@ -4110,11 +4128,11 @@ def ge_flash(
     """
     result = _core.ge_flash(
         list(components),
-        cubic,
         liquid_model,
         input_to_si(_models_gen.model("eos.ge_flash"), "T", T),
         input_to_si(_models_gen.model("eos.ge_flash"), "P", P),
         list(z),
+        cubic,
     )
     return GeFlashResult(
         beta=result.beta,

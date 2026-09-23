@@ -25,6 +25,7 @@
   - [Saturated liquid molar volume from the COSTALD equation](./eos/costald_molar_volume.md)
   - [Liquid binary diffusivity from the Hayduk-Minhas correlation](./eos/hayduk_minhas_diffusivity.md)
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
+  - [Henry constant of a gas in water, from the IAPWS guideline](./eos/iapws_henry_law.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Liquid heat capacity from NeqSim's polynomial](./eos/liquid_heat_capacity.md)
   - [Five-parameter Mathias-Copeman alpha function](./eos/matcop5_prumr_alpha.md)

@@ -203,6 +203,10 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
     assert excluded == {
         "hydraulics.crane_k_factors",
         "eos.antoine_vapor_pressure",
+        # `gas` names one of the IAPWS guideline's fourteen rows, a categorical input of the
+        # same kind `form` is: the constants change with it, so there is no float-array
+        # column to vary it down and a batch would compute one gas N times.
+        "eos.iapws_henry_law",
         "eos.hayduk_minhas_diffusivity",
         "eos.siddiqi_lucas_diffusivity",
         # `eos` names the cubic the wax cut's reference liquid is built from, and it is a

@@ -509,6 +509,15 @@ class HydrogenPhaseResult:
     warnings: list[Warning]
 
 @final
+class IapwsHenryLawResult:
+    henry: Qty
+    ln_henry: float
+    d_ln_henry_d_t: float
+    status: str
+    rms_log_residual: float
+    warnings: list[Warning]
+
+@final
 class IdealGasCpResult:
     cp: Qty
     warnings: list[Warning]
@@ -1795,6 +1804,7 @@ def hydrogen_phase(
     compressed_phase: str,
     hydrogen_type: str = "normal",
 ) -> HydrogenPhaseResult: ...
+def iapws_henry_law(gas: str, T: float) -> IapwsHenryLawResult: ...
 def ideal_gas_cp(
     cp_a: float,
     cp_b: float,

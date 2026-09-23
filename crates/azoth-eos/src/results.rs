@@ -2231,6 +2231,67 @@ impl CalcResult for DewPressureResult {
     }
 }
 
+/// Whether the guideline's Henry constant was evaluated inside the gas's fitted range.
+///
+/// A returned number rather than a refusal: the equation is defined over the whole of
+/// liquid water and the guideline's own extrapolating entry point exists for the rest.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum HenryStatus {
+    /// The temperature is inside the range the gas's row was fitted over.
+    WithinFittedRange,
+    /// The equation is defined, but the temperature is outside the row's fitted range.
+    GuidelineExtrapolation,
+}
+
+impl HenryStatus {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::WithinFittedRange => "within_fitted_range",
+            Self::GuidelineExtrapolation => "guideline_extrapolation",
+        }
+    }
+}
+
+/// Result of `eos.iapws_henry_law`.
+///
+/// The standard state is limiting `f/x` at pure-water saturation, so `henry` is a pressure
+/// per mole fraction and is large for a sparingly soluble gas. The derivative comes from
+/// the guideline's own logarithmic expression rather than from differencing the constant,
+/// so a caller differentiating `ln_henry` takes it rather than recomputing one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IapwsHenryLawResult {
+    /// `kH`, the Henry constant in pascals.
+    pub henry: Pressure,
+    /// `ln kH`.
+    pub ln_henry: f64,
+    /// `d(ln kH)/dT`, in `1/K`.
+    pub d_ln_henry_d_t: f64,
+    /// Whether the temperature is inside the row's fitted range.
+    pub status: HenryStatus,
+    /// The row's reported root-mean-square residual in `ln kH`.
+    pub rms_log_residual: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for IapwsHenryLawResult {
+    const CALC_ID: &'static str = "eos.iapws_henry_law";
+    const FIELDS: &'static [&'static str] = &[
+        "henry",
+        "ln_henry",
+        "d_ln_henry_d_t",
+        "status",
+        "rms_log_residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.ideal_gas_cp`.
 ///
 /// Reports the polynomial's own dimensionless value as well as the dimensioned heat

@@ -1,0 +1,135 @@
+id = "eos.iapws_henry_law"
+name = "Henry constant of a gas in water, from the IAPWS guideline"
+equation = "kH = 10*exp(ln(22.064) + S(tau)/Tr + a/Tr + b*tau**0.355/Tr + c*Tr**-0.41*exp(tau)), Tr = T/647.096, tau = 1 - Tr, S(tau) = sum_i A_i*tau**B_i, A = [-7.85951783, 1.84408259, -11.7866497, 22.6807411, -15.9618719, 1.80122502], B = [1.0, 1.5, 3.0, 3.5, 4.0, 7.5]"
+latex = '''k_H = 10 \; \exp\!\left[ \ln 22.064 + \frac{S(\tau)}{T_r} + \frac{a}{T_r} + \frac{b\, \tau^{0.355}}{T_r} + c\, T_r^{-0.41} e^{\tau} \right], \quad T_r = \frac{T}{647.096}, \; \tau = 1 - T_r'''
+assumptions = [
+    "the standard state is **limiting `f/x` at pure-water saturation**, and the arithmetic is NeqSim's own: 647.096 K, 22.064 MPa and the six-term Wagner series for water's saturation pressure. NeqSim's method returns bar and this model returns pascals, a factor of `1e5`.",
+    "the table is 14 gases with three fitted constants and a fitted window each, and `gas` is the table's vocabulary rather than the databank's: `krypton`, `xenon` and `carbon monoxide` are rows here and are not components this library carries data for.",
+    "**the branch is selected by a name, and NeqSim's aliasing is part of the selection**: a row answers to its formula (`ch4`) and to its name (`methane`), case-insensitively, so which row a string means is a lookup rule and not a chemistry one. The boundary resolves it; `gas` is already a row.",
+    "**`status` is the fitted window, not the domain.** A row is fitted over its own range and the equation over liquid water, so a temperature inside liquid water and outside the row's window is **returned** with `guideline_extrapolation` rather than refused.",
+    "the consumer decides what an extrapolation means, and NeqSim's consumers differ: `ComponentGE` turns it into the insoluble limit rather than using the number, and `ComponentGePitzer` does the same where the phase has ions.",
+    "the derivative is `d(ln kH)/dT` in `1/K`, NeqSim's `getLnHenryCoefficientTemperatureDerivative`, and it comes from the same temperature as the constant. A caller differentiating the constant takes this rather than differencing.",
+    "`rms_log_residual` is the row's own reported fit quality in `ln kH`. It is a property of the row and not of `T`, and it is returned because it is what says how far an extrapolation should be trusted.",
+    "the guideline is stated for a **pure-water** solvent. A brine changes the reference state, and the phase that reads this is where that is decided - the model has no composition input and does not pretend otherwise.",
+]
+references = [
+    "IAPWS (2004). \"Guideline on the Henry's Constant and Vapor-Liquid Distribution Constant for Gases in H2O and D2O at High Temperatures.\" IAPWS G7-04. The equation, the gas constants and the fitted ranges, which NeqSim carries as `iapws-g7-04-water-gases-v1`.",
+    "Wagner, W.; Pruss, A. (2002). \"The IAPWS Formulation 1995 for the Thermodynamic Properties of Ordinary Water Substance for General and Scientific Use.\" J. Phys. Chem. Ref. Data 31(2), 387-535. DOI 10.1063/1.1461829. The saturation series the reference pressure is built from.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/component/IapwsHenryLaw`, ported verbatim, including its two entry points (one refusing an extrapolation, one explicit about it).",
+]
+[source]
+standard = "IAPWS G7-04"
+edition = "The guideline equation as NeqSim master implements it in `IapwsHenryLaw`, with its 14 gas rows and the fitted window each row carries."
+[inputs]
+[inputs.gas]
+type = "enum"
+values = [
+    "he",
+    "ne",
+    "ar",
+    "kr",
+    "xe",
+    "h2",
+    "n2",
+    "o2",
+    "co",
+    "co2",
+    "h2s",
+    "ch4",
+    "c2h6",
+    "sf6",
+]
+description = "The gas, one of the guideline's 14 rows. The vocabulary is the table's, not the databank's - the boundary resolves a component name onto a row.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature, inside liquid water: `[273.15, 647.096)` K.\n"
+[outputs]
+[outputs.henry]
+unit = "Pa"
+description = "`kH`, the Henry constant on the limiting `f/x` standard state at pure-water saturation. Large for a sparingly soluble gas: 3.95e9 Pa for methane at 298.15 K.\n"
+[outputs.ln_henry]
+unit = "dimensionless"
+description = "`ln kH`, which is the form a phase equilibrium reads.\n"
+[outputs.d_ln_henry_d_t]
+unit = "1/K"
+description = "`d(ln kH)/dT` at the same temperature, from the guideline's own logarithmic derivative.\n"
+[outputs.status]
+type = "enum"
+values = ["within_fitted_range", "guideline_extrapolation"]
+description = "Whether `T` is inside the row's fitted range. `guideline_extrapolation` is a returned number and not a refusal; see the assumptions.\n"
+[outputs.rms_log_residual]
+unit = "dimensionless"
+description = "The row's reported root-mean-square residual in `ln kH`, a datum of the table rather than a function of `T`.\n"
+[[valid_range]]
+quantity = "T"
+min = 273.15
+min_inclusive = true
+max = 647.096
+max_inclusive = false
+severity = "error"
+rationale = "The guideline is defined over liquid water: below the triple point it is not water and at the critical temperature the reference state ceases to exist. This is the domain, which is an error; a departure from a row's own fitted window is the `status` output instead.\n"
+[worked_example]
+source = "derived from the equation above, at the constants of the guideline's methane row"
+derivation = "Methane's row is `a = -10.44708`, `b = 4.66491`, `c = 12.12986`, at T = 298.15 K:\n\n  Tr  = 298.15 / 647.096                       = 0.46075080049946215\n  tau = 1 - Tr                                 = 0.5392491995005378\n  S(tau) = sum A_i tau**B_i                    = -4.076735237780179\n\n  ln(22.064)                                   = 3.093947321050946\n  S(tau)/Tr                                    = -8.848026380770092\n  a/Tr                                         = -22.674035484420596\n  b*tau**0.355/Tr                              = 8.1313460999537\n  c*Tr**-0.41*exp(tau)                         = 28.577724143080626\n  --------------------------------------------------------------\n  ln kH (in MPa)                               = 8.280955698894584\n  kH = exp(that)*10                            = 39479.65646000571 bar\n  kH = that * 1e5                              = 3947965646.000571 Pa\n\nwhich reproduces NeqSim's `getHenryCoefficientBar(\"CH4\", 298.15)` = 39479.65646000571 bar, the `iapws_henry_bar` entry `PitzerFugacityProbe` prints for `methane-water`.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+gas = "ch4"
+T = 298.15
+[worked_example.expected]
+henry = 3947965646.000571
+[implementations]
+python = "azoth.eos.iapws_henry_law"
+rust = "azoth_eos::iapws_henry_law"
+[[tests]]
+id = "methane_at_298_15_k"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methane_at_333_15_k"
+type = "reference"
+status = "active"
+source = "The same row at 333.15 K, from `validation/neqsim/captures/pitzer_fugacity_probe.tsv`'s `methane-water-333` fluid, where NeqSim reports `iapws_henry_bar=58320.324953687494`:\n\n  Tr = 0.514837... , tau = 0.485162...\n  kH = 58320.324953687494 bar = 5832032495.36875 Pa\n\nA second temperature for the same row, so a temperature-independent error in `Tr` or `tau` cannot pass both.\n"
+tolerance = 1e-12
+[tests.inputs]
+gas = "ch4"
+T = 333.15
+[tests.expected]
+henry = 5832032495.36875
+[[tests]]
+id = "nitrogen_at_298_15_k"
+type = "reference"
+status = "active"
+source = "The nitrogen row - `a = -9.67578`, `b = 4.72162`, `c = 11.70585` - at 298.15 K, from the same capture's `nitrogen-water` fluid (`iapws_henry_bar=85599.82180232489`): `kH = 8559982180.23249 Pa`. Nitrogen's fitted window starts at 278.12 K, so this is inside it.\n"
+tolerance = 1e-12
+[tests.inputs]
+gas = "n2"
+T = 298.15
+[tests.expected]
+henry = 8559982180.23249
+[[tests]]
+id = "co2_at_298_15_k"
+type = "reference"
+status = "active"
+source = "The CO2 row - `a = -8.55445`, `b = 4.01195`, `c = 9.52345` - at 298.15 K, from the same capture (`iapws_henry_bar=1656.4458917920526`): `kH = 165644589.17920527 Pa`. **This row is never reached by NeqSim's Pitzer phase** - CO2 is sent to the database correlation there - so it is pinned here instead, which is where it belongs.\n"
+tolerance = 1e-12
+[tests.inputs]
+gas = "co2"
+T = 298.15
+[tests.expected]
+henry = 165644589.17920527
+[[tests]]
+id = "h2s_at_298_15_k"
+type = "reference"
+status = "active"
+source = "The hydrogen-sulphide row - `a = -4.51499`, `b = 5.23538`, `c = 4.42126` - at 298.15 K, from the same capture (`iapws_henry_bar=539.9279861457985`): `kH = 53992798.61457985 Pa`. Like CO2 it is unreachable through the Pitzer phase, and for the same stated reason.\n"
+tolerance = 1e-12
+[tests.inputs]
+gas = "h2s"
+T = 298.15
+[tests.expected]
+henry = 53992798.61457985
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

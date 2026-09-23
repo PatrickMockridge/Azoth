@@ -97,6 +97,7 @@ pub mod hydrate_fraction;
 pub mod hydrate_inhibitor_concentration;
 pub mod hydrate_inhibitor_wt;
 pub mod hydrogen_phase;
+pub mod iapws_henry_law;
 pub mod iapws_if97;
 pub mod ideal_gas_cp;
 pub mod kent_eisenberg_phase;
@@ -254,6 +255,7 @@ pub use hydrate_fraction::hydrate_fraction;
 pub use hydrate_inhibitor_concentration::hydrate_inhibitor_concentration;
 pub use hydrate_inhibitor_wt::hydrate_inhibitor_wt;
 pub use hydrogen_phase::hydrogen_phase;
+pub use iapws_henry_law::{Gas, gas_by_name, gas_from_name, iapws_henry_law};
 pub use ideal_gas_cp::ideal_gas_cp;
 pub use kent_eisenberg_phase::kent_eisenberg_phase;
 pub use liquid_heat_capacity::liquid_heat_capacity;
@@ -306,11 +308,12 @@ pub use results::{
     FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
     GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
     Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HydrateFormationTemperatureResult, HydrateFractionResult, HydrateStructure,
-    HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HeliumPhaseResult, HenryStatus, HydrateFormationTemperatureResult, HydrateFractionResult,
+    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
+    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, PitzerDataset,
     PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
     PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,

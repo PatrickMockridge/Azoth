@@ -42,8 +42,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- this is NeqSim's `PhasePitzer`, its `ComponentGePitzer` components and `PitzerElectrostaticMixing` - **the activity-coefficient surface**. `ComponentGePitzer.fugcoef` builds a fugacity coefficient from it in three branches, and they are a separate id's item rather than this one's.
-- **the Henry reference state is not missing machinery.** `ComponentGePitzer.fugcoef`'s second and third branches need `getActivityCoefficientInfDilWater`, which evaluates a **two-component reference phase** - the solute at `1e-10` mol, water at `10` mol - and returns the solute's `gamma`.
+- this is NeqSim's `PhasePitzer`, its `ComponentGePitzer` components and `PitzerElectrostaticMixing` - **the activity-coefficient surface**. The fugacity coefficient built over it, in `ComponentGePitzer` and `ComponentGE`, is a separate item.
+- **the reference state is not missing machinery.** The ion branch's `gamma_inf` is `getActivityCoefficientInfDilWater`: a **two-component reference phase**, the solute at `1e-10` mol and water at `10` mol, returning the solute's `gamma`. It is this model's own `x = [1e-11, 1 - 1e-11]`.
 - **which of two datasets answers is a property of the brine's topology, not of the build.** The PHREEQC catalogue applies where it covers every pair and `PitzerParameters.csv` otherwise; the two disagree on shared pairs, so the dataset is reported.
 - the brine is refused where the loaded dataset does not cover its topology. NeqSim enforces that only for a mixture with more than one cation or anion, so a single salt over an absent pair initializes there and evaluates the pair at zero; this model refuses it.
 - `getGamma`'s `pressure` argument is never read - the ion, water and neutral branches all ignore it - so this model takes no pressure input.

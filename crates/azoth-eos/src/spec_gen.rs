@@ -9,6 +9,7 @@
 //!   - specs/calcs/eos/costald_molar_volume.toml
 //!   - specs/calcs/eos/hayduk_minhas_diffusivity.toml
 //!   - specs/calcs/eos/heat_of_vaporization.toml
+//!   - specs/calcs/eos/iapws_henry_law.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
 //!   - specs/calcs/eos/matcop5_prumr_alpha.toml
@@ -1010,6 +1011,141 @@ pub static HEAT_OF_VAPORIZATION_SPEC: CalcSpec = CalcSpec {
         expected_strings: &[],
     },
     tests: HEAT_OF_VAPORIZATION_TESTS,
+};
+
+/// Registry entry for `eos.iapws_henry_law`.
+static IAPWS_HENRY_LAW_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(273.15),
+        min_inclusive: true,
+        max: Some(647.096),
+        max_inclusive: false,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "The guideline is defined over liquid water: below the triple point it is not water and at the critical temperature the reference state ceases to exist. This is the domain, which is an error; a departure from a row's own fitted window is the `status` output instead.",
+    },
+}];
+
+static IAPWS_HENRY_LAW_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "methane_at_333_15_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 333.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[("gas", "ch4")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("henry", 5832032495.36875)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "nitrogen_at_298_15_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[("gas", "n2")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("henry", 8559982180.23249)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "co2_at_298_15_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[("gas", "co2")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("henry", 165644589.17920527)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "h2s_at_298_15_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[("gas", "h2s")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("henry", 53992798.61457985)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registered spec for `eos.iapws_henry_law`.
+///
+/// Public and addressable directly, so a calc can hold `&IAPWS_HENRY_LAW_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static IAPWS_HENRY_LAW_SPEC: CalcSpec = CalcSpec {
+    id: "eos.iapws_henry_law",
+    checks: IAPWS_HENRY_LAW_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "methane_at_298_15_k",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[("gas", "ch4")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("henry", 3947965646.000571)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    tests: IAPWS_HENRY_LAW_TESTS,
 };
 
 /// Registry entry for `eos.ideal_gas_cp`.
@@ -6288,6 +6424,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &COSTALD_MOLAR_VOLUME_SPEC,
     &HAYDUK_MINHAS_DIFFUSIVITY_SPEC,
     &HEAT_OF_VAPORIZATION_SPEC,
+    &IAPWS_HENRY_LAW_SPEC,
     &IDEAL_GAS_CP_SPEC,
     &LIQUID_HEAT_CAPACITY_SPEC,
     &MATCOP5_PRUMR_ALPHA_SPEC,
