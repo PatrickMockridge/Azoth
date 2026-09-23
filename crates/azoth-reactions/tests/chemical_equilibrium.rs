@@ -20,6 +20,17 @@ use azoth_test_support as common;
 const MODEL_ID: &str = "reactions.chemical_equilibrium";
 
 fn call(case: &TestCase) -> azoth_reactions::ChemicalEquilibriumResult {
+    solve(
+        case,
+        case.vector("log_activity")
+            .expect("the case states the activity coefficients"),
+    )
+}
+
+/// The same call with the activity vector **substituted**, which is what localises the
+/// residue below: the vector is an input, so a run with a different one is a run of the
+/// same equations under the state NeqSim had.
+fn solve(case: &TestCase, log_activity: &[f64]) -> azoth_reactions::ChemicalEquilibriumResult {
     let b = case.vector("b").expect("the case states b");
     let moles = case
         .vector("moles")
@@ -48,8 +59,7 @@ fn call(case: &TestCase) -> azoth_reactions::ChemicalEquilibriumResult {
         moles,
         case.vector("chem_ref")
             .expect("the case states the reference potentials"),
-        case.vector("log_activity")
-            .expect("the case states the activity coefficients"),
+        log_activity,
         common::input(case, "T"),
         common::input(case, "max_iterations") as u32,
         common::input(case, "tolerance"),
@@ -213,5 +223,98 @@ fn a_matrix_with_the_wrong_width_is_refused() {
     assert!(
         matches!(error, azoth_core::AzothError::InvalidInput { .. }),
         "{error:?}"
+    );
+}
+
+/// **The residue is localised, and it is the activity vector the port holds fixed.**
+///
+/// The case's own reason for its loose tolerance used to be that the bordered matrix is
+/// ill-conditioned. That is not the explanation, and this measures three things:
+///
+/// * the conditioning's floor is **~1e-10**: the Rust and Python kernels agree to `5.2e-10`
+///   on this state, and a one-ulp change to an input moves the answer `6.9e-10`, so an
+///   amplification of about `4e6` is what the matrix does - three to five orders of
+///   magnitude below the `4.2e-5` the port is away from NeqSim by;
+/// * the **largest single contributor is the fixed activity vector**, which
+///   `specs/models/reactions/chemical_equilibrium.toml` already records as a divergence:
+///   `ChemicalEquilibrium.solve` refreshes `logactivityVec` on every accepted step and this
+///   port holds the caller's for the whole solve. Substituting the vector NeqSim has at its
+///   answer - which `PitzerReactionBasisProbe` now prints beside the initial one - cuts the
+///   gap `8.3x` on CO2 and `7.5x` worst case;
+/// * **a residue of `5.0e-6 .. 7.7e-3` is left and conditioning does not explain it.** The
+///   next measurement that would split it is the activity vector at *this port's* answer,
+///   which is one probe round trip away.
+#[test]
+fn the_residue_is_the_fixed_activity_vector_and_not_the_conditioning() {
+    let spec = model_gen::model(MODEL_ID).expect("the model is in its own table");
+    let case = spec
+        .cases
+        .iter()
+        .find(|case| case.id == "pitzer_solute_molality_basis")
+        .expect("the molality case is in the spec");
+    let captured = |key: &str| -> Vec<f64> {
+        let text = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../validation/neqsim/captures/pitzer_reaction_basis_probe.tsv"),
+        )
+        .expect("the capture is committed");
+        let block = &text[text
+            .find("fluid=co2-water-pitzer")
+            .expect("the block is in the capture")..];
+        block
+            .lines()
+            .find_map(|line| line.trim().strip_prefix(&format!("{key}=")))
+            .unwrap_or_else(|| panic!("no `{key}` in the capture"))
+            .split_whitespace()
+            .map(|value| value.parse().expect("a number"))
+            .collect()
+    };
+
+    let converged = captured("log_activity_after");
+    let neqsim = case
+        .expected_vector("moles")
+        .expect("the case states the answer it pins");
+
+    let worst = |moles: &[f64]| -> Vec<f64> {
+        moles
+            .iter()
+            .zip(neqsim)
+            .map(|(got, want)| (got - want).abs() / want.abs().max(f64::MIN_POSITIVE))
+            .collect()
+    };
+
+    let initial = worst(&solve(case, case.vector("log_activity").expect("the case")).moles);
+    let fixed = worst(&solve(case, &converged).moles);
+
+    // The vector NeqSim has at its answer is not the one it started with: the trace ions'
+    // activity coefficients move by a factor of about 400 between the two, which is why
+    // holding the initial one is not a small approximation.
+    let start = case.vector("log_activity").expect("the case");
+    let drift = (converged[2] - start[2]).abs() / start[2].abs().max(f64::MIN_POSITIVE);
+    assert!(
+        drift > 100.0,
+        "the ion's activity coefficient moves: {drift}"
+    );
+
+    assert!(
+        initial[1] > 4.0e-5,
+        "CO2 starts 4.2e-5 from NeqSim: {}",
+        initial[1]
+    );
+    assert!(
+        fixed[1] < 6.0e-6,
+        "the converged vector brings CO2 to 5.0e-6: {}",
+        fixed[1]
+    );
+    let factor = initial[1] / fixed[1];
+    assert!(factor > 5.0, "and that is an improvement of {factor}");
+
+    // **And the residue does not go to the kernels' own agreement**, so the vector is not
+    // the whole of it.
+    assert!(
+        fixed[1] > 1.0e-9,
+        "a residue remains: {} - if this ever reaches the conditioning's floor, the reason \
+         in the case file has been superseded and this test is the one that says so",
+        fixed[1]
     );
 }

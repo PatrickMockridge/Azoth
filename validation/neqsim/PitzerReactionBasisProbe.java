@@ -135,6 +135,25 @@ public class PitzerReactionBasisProbe {
     for (Map.Entry<String, Double> entry : residuals.entrySet()) {
       System.out.println("  residual[" + entry.getKey() + "]=" + entry.getValue());
     }
+
+    // **The activity vector at the answer.** `ChemicalEquilibrium.solve` refreshes
+    // `logactivityVec` on every accepted step and this port holds it fixed at what the
+    // caller passes - a divergence the spec already records. Printed here so it can be
+    // *tested* rather than argued: a run of the port whose fixed vector is this one is the
+    // run that says whether the fixed vector is the whole of the disagreement.
+    int solventAfter = -1;
+    for (int i = 0; i < after.getNumberOfComponents(); i++) {
+      if ("solvent".equalsIgnoreCase(after.getComponent(i).getReferenceStateType())) {
+        solventAfter = i;
+      }
+    }
+    double[] logActivityAfter = new double[components.length];
+    for (int i = 0; i < components.length; i++) {
+      int componentNumber = components[i].getComponentNumber();
+      logActivityAfter[i] = components[i].calcActivity() && solventAfter >= 0
+          ? after.getLogActivityCoefficient(componentNumber, solventAfter) : 0.0;
+    }
+    printVector("log_activity_after", logActivityAfter);
     System.out.println();
   }
 
