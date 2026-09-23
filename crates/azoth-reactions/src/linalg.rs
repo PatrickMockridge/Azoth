@@ -1,4 +1,4 @@
-//! The two linear-algebra routines the reference-potential solve needs.
+//! The linear-algebra routines the reaction solves need.
 //!
 //! NeqSim calls `Jama.Matrix.rank()` and `Jama.Matrix.solve()` here, and JAMA's rank is
 //! a singular-value count against `max(m, n) * s[0] * 2**-52`. **This does not port
@@ -208,6 +208,92 @@ pub fn solve_lu(a: &[Vec<f64>], b: &[f64]) -> Result<Vec<f64>> {
     Ok(solution)
 }
 
+/// An orthonormal basis of a matrix's **row space**, by modified Gram-Schmidt.
+///
+/// The projection the reactive hybrid flash runs is `delta - A+ A delta`, and `A+` is a
+/// pseudo-inverse. **This does not port one**, and the reason is the same kind the rank
+/// above is: the difference between the two is representational rather than numerical.
+///
+/// `A = getAmatrix()` is **rank deficient on the carbonate brine** - its oxygen row is
+/// exactly `2 C + 0.5 H - 0.5 charge`, so `A A^T` is singular and the textbook
+/// `A+ = A^T (A A^T)^-1` does not exist there. What *is* well defined whatever the rank is
+/// the orthogonal projection onto `row(A)`, and it is the projection the flash uses: only
+/// the subspace matters, and every representation of it gives the same projector. Commons
+/// Math reaches it through an SVD; this reaches it by orthonormalising the rows.
+///
+/// The coefficients are stoichiometric, so the inner products are close to integer and the
+/// orthonormalisation is stable. A row that contributes less than [`DEPENDENCE_TOLERANCE`]
+/// is dropped, which is what makes the rank deficiency a *dropped row and not a
+/// division by zero*.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] if the matrix is empty or its rows are ragged.
+pub fn row_space_basis(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return Err(AzothError::InvalidInput {
+            field: "matrix".to_string(),
+            reason: "a row space needs a matrix, and this one has no rows or no columns"
+                .to_string(),
+        });
+    }
+    let columns = matrix[0].len();
+    if let Some(bad) = matrix.iter().position(|row| row.len() != columns) {
+        return Err(AzothError::InvalidInput {
+            field: "matrix".to_string(),
+            reason: format!(
+                "row 0 has {columns} entries and row {bad} has {}",
+                matrix[bad].len()
+            ),
+        });
+    }
+
+    let mut basis: Vec<Vec<f64>> = Vec::with_capacity(matrix.len());
+    for row in matrix {
+        let mut candidate = row.clone();
+        // Modified Gram-Schmidt: each existing basis vector is taken out in turn, so the
+        // cancellation is applied to the current residual rather than to the original row.
+        for held in &basis {
+            let projection: f64 = candidate.iter().zip(held).map(|(a, b)| a * b).sum();
+            for (value, axis) in candidate.iter_mut().zip(held) {
+                *value -= projection * axis;
+            }
+        }
+        let norm = candidate
+            .iter()
+            .map(|value| value * value)
+            .sum::<f64>()
+            .sqrt();
+        if norm > DEPENDENCE_TOLERANCE {
+            basis.push(candidate.iter().map(|value| value / norm).collect());
+        }
+    }
+    Ok(basis)
+}
+
+/// The component of `delta` that lies **outside** a row space, `delta - A+ A delta`.
+///
+/// `basis` is [`row_space_basis`]'s, and the two calls are kept apart because the basis is a
+/// property of the fluid's chemistry and is computed once, while this runs once per coupled
+/// pass.
+#[must_use]
+pub fn project_onto_null_space(basis: &[Vec<f64>], delta: &[f64]) -> Vec<f64> {
+    let mut out = delta.to_vec();
+    for held in basis {
+        let projection: f64 = out.iter().zip(held).map(|(a, b)| a * b).sum();
+        for (value, axis) in out.iter_mut().zip(held) {
+            *value -= projection * axis;
+        }
+    }
+    out
+}
+
+/// How much of a row must survive orthonormalisation to count as independent.
+///
+/// The rows are stoichiometric, so a dependent one cancels exactly up to rounding; this is
+/// two orders above the `1e-15` a cancellation of integers reaches and far below the `1.0`
+/// an independent row's residual is.
+const DEPENDENCE_TOLERANCE: f64 = 1.0e-09;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -269,5 +355,97 @@ mod tests {
             matches!(error, AzothError::InvalidInput { .. }),
             "{error:?}"
         );
+    }
+
+    /// **The projection against `A+ A` as Commons Math computes it.**
+    ///
+    /// `A+ A` is the orthogonal projector onto `A`'s row space, and it is what the reactive
+    /// hybrid flash's `delta - A+ A delta` is built from. The matrix here is the *captured*
+    /// one - `HybridEosGeReactiveProbe`'s `getAmatrix` for the carbonate brine, which
+    /// `captures/hybrid_eos_ge_reactive_probe.tsv` prints - and the expected values are
+    /// `A+` from that same capture multiplied out. Two independent computations of the same
+    /// projector, one through an SVD and one through Gram-Schmidt.
+    #[test]
+    fn the_projection_is_the_captured_svd_projector() {
+        // The captured `A+`, six rows by four columns.
+        let pseudo_inverse = [
+            [
+                0.23503325942350345,
+                -0.1607538802660754,
+                0.1995565410199555,
+                0.38026607538802654,
+            ],
+            [
+                -0.07317073170731712,
+                0.1585365853658537,
+                -0.024390243902438956,
+                -0.0853658536585366,
+            ],
+            [
+                0.06651884700665198,
+                -0.0077605321507761005,
+                0.11308203991130826,
+                0.03215077605321519,
+            ],
+            [
+                -0.028824833702882594,
+                -0.013303769401330344,
+                0.05099778270509979,
+                -0.23059866962305986,
+            ],
+            [
+                -0.16851441241685158,
+                0.15299334811529935,
+                -0.08647450110864735,
+                -0.34811529933481156,
+            ],
+            [
+                0.02217294900221725,
+                0.16407982261640816,
+                0.03769401330376936,
+                0.17738359201773818,
+            ],
+        ];
+        let matrix = vec![
+            vec![1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+            vec![0.0, 2.0, 1.0, 0.0, 1.0, 3.0],
+            vec![2.0, 1.0, 3.0, 3.0, 1.0, 1.0],
+            vec![0.0, 0.0, -1.0, -2.0, -1.0, 1.0],
+        ];
+        // **Four rows and a rank of three**: the oxygen row is `2 C + 0.5 H - 0.5 charge`,
+        // so `A A^T` is singular and `A+ = A^T (A A^T)^-1` does not exist.
+        assert_eq!(rank_of_integer_matrix(&matrix).expect("rank"), 3);
+
+        let basis = row_space_basis(&matrix).expect("a basis");
+        assert_eq!(basis.len(), 3, "one row is a combination of the others");
+
+        for delta in [
+            [1.0, -0.5, 2.0, -1.0, 0.3, 0.7],
+            [0.01, 0.02, -0.03, 0.04, 0.05, 0.06],
+            [-3.0, 1.5, 0.0, 2.25, -0.125, 4.0],
+        ] {
+            let projected = project_onto_null_space(&basis, &delta);
+            // `A+ A delta`, the part that is removed, from the captured SVD inverse.
+            for i in 0..6 {
+                let removed: f64 = (0..4)
+                    .map(|row| {
+                        (0..6)
+                            .map(|k| pseudo_inverse[i][row] * matrix[row][k] * delta[k])
+                            .sum::<f64>()
+                    })
+                    .sum();
+                assert!(
+                    (projected[i] - (delta[i] - removed)).abs() < 1.0e-13,
+                    "delta[{i}]: Gram-Schmidt gives {}, the captured A+ gives {}",
+                    projected[i],
+                    delta[i] - removed
+                );
+            }
+            // And the projection really is annihilated by the matrix it projects out of.
+            for row in &matrix {
+                let residual: f64 = row.iter().zip(&projected).map(|(a, b)| a * b).sum();
+                assert!(residual.abs() < 1.0e-13, "A delta = {residual}");
+            }
+        }
     }
 }
