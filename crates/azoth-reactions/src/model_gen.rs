@@ -1273,6 +1273,40 @@ static REFERENCE_POTENTIALS_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
     },
+    TestCase {
+        id: "mdea_water_co2_takes_the_product_fallback",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 298.15)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["MDEA", "water", "CO2", "OH-", "H3O+", "HCO3-"],
+        )],
+        strings: &[("source", "standard")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("rank", 4.0)],
+        expected_vectors: &[
+            (
+                "potentials",
+                &[
+                    44289.36733828517,
+                    86061.16003668531,
+                    -135846.03262887645,
+                    72306.22849248124,
+                    199632.18316177875,
+                    -127079.60827279043,
+                ],
+            ),
+            ("independent", &[1.0, 1.0, 1.0, 1.0, 0.0, 0.0]),
+            ("survivors", &[1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]),
+        ],
+        expected_strings: &[],
+    },
 ];
 
 /// Registry entry for `reactions.reference_potentials`.

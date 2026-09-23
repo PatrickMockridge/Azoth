@@ -209,7 +209,7 @@ fn the_deadlock_fallback_seeds_one_component_and_propagates_from_it() {
 }
 
 /// **Every subset of the species the three tables' loaded reactions name answers**, and
-/// the deadlock fallback is what makes that true: 4,888 of these 14,333 subsets seed a
+/// the deadlock fallback is what makes that true: 3,320 of these 14,333 subsets seed a
 /// component the propagation cannot reach, measured.
 ///
 /// The counts are asserted rather than described, in both directions. A change that left
@@ -221,6 +221,7 @@ fn the_deadlock_fallback_seeds_one_component_and_propagates_from_it() {
 #[test]
 fn every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercised() {
     let mut subsets = 0usize;
+    let mut refused = 0usize;
     let mut seeded = 0usize;
     for source in [
         ReactionDataSource::Standard,
@@ -248,9 +249,24 @@ fn every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercise
                 .filter(|index| mask & (1 << index) != 0)
                 .map(|index| species[index].clone())
                 .collect();
-            let result = reference_potentials(&set, source, kelvins(298.15))
-                .unwrap_or_else(|error| panic!("{source:?} with {set:?} is refused: {error}"));
-            subsets += 1;
+            let result = match reference_potentials(&set, source, kelvins(298.15)) {
+                Ok(result) => {
+                    subsets += 1;
+                    result
+                }
+                Err(error) => {
+                    // **Only the pitzer source refuses**, because it is the only one whose
+                    // rows carry evidence. A refusal anywhere else is a defect, not the
+                    // gate.
+                    assert_eq!(
+                        source,
+                        ReactionDataSource::Pitzer,
+                        "{source:?} with {set:?} is refused: {error}"
+                    );
+                    refused += 1;
+                    continue;
+                }
+            };
             // A seed is visible as a potential that *is* a component's Gibbs energy of
             // formation. A zero-valued one is not counted: 36 of the databank's rows hold
             // a zero there, so equality would credit a solved-for zero to the seed.
@@ -267,12 +283,77 @@ fn every_reaction_set_the_vendored_tables_admit_answers_and_the_seed_is_exercise
             }
         }
     }
+    // The three counts, each of which a silent change would hide:
     assert_eq!(
-        subsets, 14_333,
+        subsets + refused,
+        14_333,
         "the three tables' loaded species, subset by subset"
     );
     assert_eq!(
-        seeded, 4_888,
-        "subsets where the deadlock fallback seeds a component"
+        refused, 2_496,
+        "subsets the pitzer source's evidence gate refuses - every one of them a set whose \
+         survivors include a row that is not VALIDATED"
     );
+    assert_eq!(
+        seeded, 3_320,
+        "answered subsets where the deadlock fallback seeds a component"
+    );
+}
+
+/// **The gate: the `pitzer` source refuses when any *survivor* is not `VALIDATED`.**
+///
+/// `ChemicalReactionList.requireValidatedEvidenceForActiveReactions` runs *after* both
+/// removals, so what it judges is the survivor set and not the table. The oracle is
+/// `PitzerStrictnessProbe.java` / `captures/pitzer_strictness_probe.tsv`: six `SystemPitzer`
+/// fluids, of which exactly one is refused, naming `MDEAprot`.
+///
+/// **It fires on the constructor's second pass.** `MDEAprot` names `MDEA+` among its
+/// reactants, and `MDEA+` is not in the feed - the operations constructor's own loop adds
+/// the ions its chemistry needs and re-reads the names, so the refusal is raised on a
+/// component list the fluid did not start with. That is why the case below supplies the
+/// augmented names: they are what `system.getComponentNames()` reports after the attempt.
+#[test]
+fn the_pitzer_source_refuses_an_unvalidated_active_row() {
+    let augmented: Vec<String> = ["MDEA", "water", "CO2", "OH-", "H3O+", "HCO3-"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let error = reference_potentials(&augmented, ReactionDataSource::Pitzer, kelvins(313.15))
+        .expect_err("MDEAprot is an active row and is not VALIDATED");
+    let message = error.to_string();
+    assert!(
+        message.contains("MDEAprot"),
+        "the refusal names the row it rejected: {message}"
+    );
+    assert!(
+        !message.contains("CO2water") && !message.contains("carbonate"),
+        "the four VALIDATED rows are not named: {message}"
+    );
+
+    // The same fluid on the standard source is not refused: only the pitzer table carries
+    // the evidence column, and `requiresValidatedActiveReactions` is set on that source
+    // alone.
+    reference_potentials(&augmented, ReactionDataSource::Standard, kelvins(313.15))
+        .expect("the standard source requires no evidence");
+}
+
+/// **The fluid the gate does not fire on**, from the same capture: CO2/water survives on
+/// the four `VALIDATED` rows alone - `CO2water`, `waterreac` and `carbonate` here, the
+/// fourth needing H2S the fluid does not carry. So the gate is not "the pitzer source
+/// always refuses", which is what a port that judged the *table* rather than the survivors
+/// would answer.
+#[test]
+fn the_four_validated_rows_carry_a_co2_water_fluid() {
+    let names: Vec<String> = ["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let result = reference_potentials(&names, ReactionDataSource::Pitzer, kelvins(298.15))
+        .expect("every active row is VALIDATED");
+    assert_eq!(
+        result.survivors.iter().filter(|mask| **mask == 1.0).count(),
+        3,
+        "CO2water, waterreac and carbonate survive; the capture is the oracle"
+    );
+    assert_eq!(result.rank, 3);
 }

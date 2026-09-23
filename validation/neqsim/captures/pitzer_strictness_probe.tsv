@@ -1,0 +1,68 @@
+fluid=co2-water
+gate_threw=false
+names=CO2 water OH- H3O+ HCO3- CO3--
+survivors=3
+  survivor[CO2water]=VALIDATED
+  survivor[waterreac]=VALIDATED
+  survivor[carbonate]=VALIDATED
+replayed_survivors=3
+  replayed[CO2water]=VALIDATED
+  replayed[waterreac]=VALIDATED
+  replayed[carbonate]=VALIDATED
+replayed_source=pitzer
+
+fluid=h2s-water
+gate_threw=false
+names=H2S water HS- OH- H3O+
+survivors=2
+  survivor[waterreac]=VALIDATED
+  survivor[water-H2S]=VALIDATED
+replayed_survivors=2
+  replayed[waterreac]=VALIDATED
+  replayed[water-H2S]=VALIDATED
+replayed_source=pitzer
+
+fluid=co2-h2s-water
+gate_threw=false
+names=CO2 H2S water HS- OH- H3O+ HCO3- CO3--
+survivors=4
+  survivor[CO2water]=VALIDATED
+  survivor[waterreac]=VALIDATED
+  survivor[carbonate]=VALIDATED
+  survivor[water-H2S]=VALIDATED
+replayed_survivors=4
+  replayed[CO2water]=VALIDATED
+  replayed[waterreac]=VALIDATED
+  replayed[carbonate]=VALIDATED
+  replayed[water-H2S]=VALIDATED
+replayed_source=pitzer
+
+fluid=methane-oxygen-water
+gate_threw=false
+names=methane oxygen water OH- H3O+
+survivors=1
+  survivor[waterreac]=VALIDATED
+replayed_survivors=1
+  replayed[waterreac]=VALIDATED
+replayed_source=pitzer
+
+fluid=mdea-water-co2
+gate_threw=true
+gate_message=Chemical-reaction initialization rejected unvalidated active rows for source 'pitzer': reactionsWithoutValidatedEvidence=[MDEAprot]
+names=MDEA water CO2 OH- H3O+ HCO3-
+replayed_survivors=4
+  replayed[CO2water]=VALIDATED
+  replayed[waterreac]=VALIDATED
+  replayed[carbonate]=VALIDATED
+  replayed[MDEAprot]=UNVALIDATED
+replayed_source=pitzer
+
+fluid=methane-water-nacl
+gate_threw=false
+names=methane water Na+ Cl- OH- H3O+
+survivors=1
+  survivor[waterreac]=VALIDATED
+replayed_survivors=1
+  replayed[waterreac]=VALIDATED
+replayed_source=pitzer
+

@@ -17,3 +17,42 @@ potentials_null=false
   potential[water]=49908.04579044469
   potential[H3O+]=-237129.0
   potential[OH-]=436761.1831617787
+fluid=mdea-water-co2-standard
+loaded_components=8
+  loaded[0]=MDEA
+  loaded[1]=water
+  loaded[2]=CO2
+  loaded[3]=OH-
+  loaded[4]=H3O+
+  loaded[5]=HCO3-
+  loaded[6]=CO3--
+  loaded[7]=MDEA+
+  component[0]=MDEA
+  component[1]=water
+  component[2]=CO2
+  component[3]=OH-
+  component[4]=H3O+
+  component[5]=HCO3-
+  gibbs_formation[MDEA]=57900.0
+  gibbs_formation[water]=-228572.0
+  gibbs_formation[CO2]=-394359.0
+  gibbs_formation[OH-]=-157244.0
+  gibbs_formation[H3O+]=-237129.0
+  gibbs_formation[HCO3-]=-586770.0
+reactions=4
+  reaction[0]=CO2water names=water CO2 HCO3- H3O+
+  reaction[1]=waterreac names=water OH- H3O+
+  reaction[2]=carbonate names=H3O+ CO3-- HCO3- water
+  reaction[3]=MDEAprot names=MDEA+ water MDEA H3O+
+gmatrix=4x7
+  G[0]=0.0 -2.0 -1.0 0.0 1.0 1.0 36276.287444494155
+  G[1]=0.0 -2.0 0.0 1.0 1.0 0.0 99816.09158088938
+  G[2]=0.0 -1.0 0.0 0.0 1.0 -1.0 86061.16003668531
+  G[3]=1.0 -1.0 0.0 0.0 1.0 0.0 41771.79269840014
+potentials_null=false
+  potential[MDEA]=44289.36733828517
+  potential[water]=86061.16003668531
+  potential[CO2]=-135846.03262887645
+  potential[OH-]=72306.22849248124
+  potential[H3O+]=199632.18316177875
+  potential[HCO3-]=-127079.60827279043

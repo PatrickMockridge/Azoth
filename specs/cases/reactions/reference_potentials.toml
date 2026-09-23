@@ -55,3 +55,23 @@ potentials = [
 independent = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
 survivors = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
 rank = 5.0
+[[cases]]
+id = "mdea_water_co2_takes_the_product_fallback"
+tolerance = 1e-12
+source = "NeqSim master, `ChemicalReactionList.removeJunkReactions` through `validation/neqsim/ReferenceFallbackProbe.java`, whose capture is `captures/reference_fallback_probe.tsv`. **The rule is all reactants *or* all products, and not every reactant**: `MDEAprot` names `MDEA+` as a reactant, which this component list does not carry, and `MDEA` and `H3O+` as products, which it does - so the class keeps it and the basis is four reactions rather than three. A port that required every reactant answers with three and a different `MDEA` potential. The names are the ones `chemicalReactionInit` reports after adding the ions its chemistry needs, which is the list the gate and this probe both judge.\n"
+[cases.inputs]
+components = ["MDEA", "water", "CO2", "OH-", "H3O+", "HCO3-"]
+source = "standard"
+T = 298.15
+[cases.expected]
+potentials = [
+    44289.36733828517,
+    86061.16003668531,
+    -135846.03262887645,
+    72306.22849248124,
+    199632.18316177875,
+    -127079.60827279043,
+]
+independent = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
+survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+rank = 4.0

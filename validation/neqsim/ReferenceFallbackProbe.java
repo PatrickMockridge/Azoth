@@ -36,6 +36,15 @@ public class ReferenceFallbackProbe {
     // The one order that deadlocks on the standard source: the two ions are dependent and
     // neither has a reaction whose other components are all known.
     one("water-h3o-oh", new String[] { "water", "H3O+", "OH-" }, new double[] { 10.0, 1.0e-7, 1.0e-7 });
+
+    // **`reactantsContains`' product fallback.** `MDEAprot` names `MDEA+` as a reactant -
+    // which this fluid does not carry - and `MDEA` and `H3O+` as products, which it does.
+    // The class falls through to the products when a reactant is missing, so this reaction
+    // survives `removeJunkReactions`; a port that required every *reactant* would drop it
+    // and answer with a smaller basis. The names are the ones `PitzerStrictnessProbe`
+    // reports after `chemicalReactionInit` has added the ions its chemistry needs.
+    one("mdea-water-co2-standard", new String[] { "MDEA", "water", "CO2", "OH-", "H3O+", "HCO3-" },
+        new double[] { 1.0, 10.0, 0.1, 1.0e-7, 1.0e-7, 1.0e-7 });
   }
 
   static void one(String label, String[] names, double[] moles) {

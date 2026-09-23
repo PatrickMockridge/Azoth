@@ -2,7 +2,8 @@ id = "reactions.reference_potentials"
 name = "Reference potentials from an independent reaction basis"
 kind = "direct"
 assumptions = [
-    "**the reaction set is not a parameter.** It is what the source carries, filtered to the reactions this fluid can run: a reaction is kept only if every reactant it names is a component the caller supplied, and reactants are the negative coefficients.",
+    "**the reaction set is not a parameter.** It is what the source carries, filtered to the reactions this fluid can run: a reaction is kept when every reactant it names is present **or** every product is, which is `reactantsContains`' fall-through.",
+    "**the pitzer source refuses unvalidated active rows.** `requireValidatedEvidenceForActiveReactions` runs after both removals, so it judges the survivors and not the table, and the pitzer table is the only one whose rows carry evidence: four of its 47 loaded rows are `VALIDATED`.",
     "**the basis and the reduction are both greedy, so the row order is part of the answer.** The order is the table's physical order, which is what `readReactions` sees - its query has no `ORDER BY` - so a reaction that survives in one order can be the one dropped in another.",
     "**the rank tests see only the stoichiometry.** The matrix is one column wider than the coefficients, the extra column holding `-R T ln K`, and the rank calls are on the narrower matrix. Every coefficient in the source is an integer, so the rank is exact.",
     "NeqSim's rank is a singular-value count against `max(m, n) * s[0] * 2**-52`. On the three captured fluids the smallest singular value it keeps is 0.2461 and the cutoff is 4.8e-15, so the tolerance cannot change a decision here.",

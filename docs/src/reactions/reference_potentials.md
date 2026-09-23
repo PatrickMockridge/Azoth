@@ -39,7 +39,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 ## Assumptions
 
-- **the reaction set is not a parameter.** It is what the source carries, filtered to the reactions this fluid can run: a reaction is kept only if every reactant it names is a component the caller supplied, and reactants are the negative coefficients.
+- **the reaction set is not a parameter.** It is what the source carries, filtered to the reactions this fluid can run: a reaction is kept when every reactant it names is present **or** every product is, which is `reactantsContains`' fall-through.
+- **the pitzer source refuses unvalidated active rows.** `requireValidatedEvidenceForActiveReactions` runs after both removals, so it judges the survivors and not the table, and the pitzer table is the only one whose rows carry evidence: four of its 47 loaded rows are `VALIDATED`.
 - **the basis and the reduction are both greedy, so the row order is part of the answer.** The order is the table's physical order, which is what `readReactions` sees - its query has no `ORDER BY` - so a reaction that survives in one order can be the one dropped in another.
 - **the rank tests see only the stoichiometry.** The matrix is one column wider than the coefficients, the extra column holding `-R T ln K`, and the rank calls are on the narrower matrix. Every coefficient in the source is an integer, so the rank is exact.
 - NeqSim's rank is a singular-value count against `max(m, n) * s[0] * 2**-52`. On the three captured fluids the smallest singular value it keeps is 0.2461 and the cutoff is 4.8e-15, so the tolerance cannot change a decision here.
@@ -55,6 +56,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_deadlocked_propagation_takes_the_formation_gibbs_seed` | components = ['water', 'H3O+', 'OH-'], source = standard, T = 298.15 | potentials = [49908.04579044469, -237129.0, 436761.1831617787], independent = [1.0, 0.0, 0.0], survivors = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], rank = 1.0 |
 | `co2_water_standard_at_298_15` | components = ['CO2', 'water', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], source = standard, T = 298.15 | potentials = [-135846.03262887645, 86061.16003668531, 72306.22849248124, 199632.18316177875, -127079.60827279043, -154589.47136119858], independent = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0], rank = 3.0 |
 | `co2_h2s_water_standard_at_298_15` | components = ['CO2', 'H2S', 'water', 'HS-', 'OH-', 'H3O+', 'HCO3-', 'S--', 'CO3--'], source = standard, T = 298.15 | potentials = [-135846.03262887645, -15109.3096192815, 86061.16003668531, 21019.134456794694, 72306.22849248124, 199632.18316177875, -127079.60827279043, 14528.405825181253, -154589.47136119858], independent = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0], rank = 5.0 |
+| `mdea_water_co2_takes_the_product_fallback` | components = ['MDEA', 'water', 'CO2', 'OH-', 'H3O+', 'HCO3-'], source = standard, T = 298.15 | potentials = [44289.36733828517, 86061.16003668531, -135846.03262887645, 72306.22849248124, 199632.18316177875, -127079.60827279043], independent = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0], rank = 4.0 |
 
 ## References
 

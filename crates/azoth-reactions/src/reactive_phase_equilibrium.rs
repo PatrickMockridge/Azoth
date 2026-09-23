@@ -228,13 +228,22 @@ fn certify(
         if species.is_empty() {
             continue;
         }
-        // `removeJunkReactions`: a reaction is kept only when every *reactant* the fluid
-        // could hold is one it holds. The reactants are the negative coefficients.
-        let every_reactant_present = species
-            .iter()
-            .filter(|(_, coefficient)| *coefficient < 0.0)
-            .all(|(name, _)| components.iter().any(|held| held == name));
-        if !every_reactant_present {
+        // `removeJunkReactions`: **all reactants present, or all products present** - the
+        // same rule `reference_potentials` applies, corrected there first. The class falls
+        // through to the products when a reactant is missing, so a reaction whose products
+        // the fluid holds is kept even though it cannot run forwards; it is then in the
+        // list this residual certifies, and its residual is what the gate reads.
+        let side_present = |negative: bool| {
+            let side: Vec<&(String, f64)> = species
+                .iter()
+                .filter(|(_, coefficient)| (*coefficient < 0.0) == negative)
+                .collect();
+            !side.is_empty()
+                && side
+                    .iter()
+                    .all(|(name, _)| components.iter().any(|held| held == name))
+        };
+        if !side_present(true) && !side_present(false) {
             continue;
         }
         let ln_k =
