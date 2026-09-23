@@ -16,21 +16,35 @@
 //! # What is reproduced and what is not, yet
 //!
 //! Reproduced: the potential error, the matrix and its right-hand side, the Tikhonov term,
-//! the symmetric diagonal scaling, the damped step with its backtracking line search, the
-//! damping recovery rule and the two convergence tests. **Not yet ported**: `DIISAccelerator`
-//! (`diis/`, 225 lines) and the multiphase and ionic branches - a gas-phase ion is pinned to
-//! `EPS` there, and the reference state of an electrolyte phase is corrected by
-//! `getLogInfiniteDiluteFugacity`. Those need the phase's *type* and its ions, which is the
-//! P8 seam, so this is the single-phase neutral path the captured benchmark states take.
+//! the symmetric diagonal scaling, the damped step with its backtracking line search, the two
+//! convergence tests, the single-phase damping rule and the *sliding-window* rule the
+//! multiphase branch uses, the `NR = 0` short circuit, and the DIIS extrapolation the
+//! multipliers are driven with. **Not ported**: the ionic branch - a gas-phase ion is pinned to
+//! `EPS`, and the reference state of an electrolyte phase is corrected by
+//! `getLogInfiniteDiluteFugacity`, which needs a cubic built over ions and the phase's *type*.
+//! That is the P8 seam, and this crate's callers refuse an ionic fluid before reaching here.
+//!
+//! # The split is not always determined, and the port does not pretend otherwise
+//!
+//! Where two phases converge to the *same* composition the Gibbs energy is flat along the
+//! direction that trades moles between them, so every split satisfies the equilibrium
+//! conditions and the one a run reports is decided by its path. The captured 300 K water-gas
+//! shift is such a state: NeqSim ends at `(0.0141, 0.9859)` and this port at `(0.016, 0.984)`,
+//! while both agree on the composition - the moles summed over the phases - to `1.2e-5`. The
+//! same fluid at 600 K agrees to `1e-6`. Neither code converges a split tighter than its own
+//! relaxed multiphase tolerance of `1e-4`, so that is the precision the comparison lives at.
 //!
 //! # `ln phi` is a closure, not a dependency
 //!
 //! The solver needs a fugacity coefficient at a *trial* composition, and NeqSim gets one by
-//! writing the moles into its own phase and calling `init(1)`. Here the caller supplies it -
-//! which keeps this crate free of an equation of state, and keeps the question of *which*
-//! phase model answers a separate one.
+//! writing the moles into its own phase and calling `init(1)`. Here the caller supplies it, per
+//! phase, because the class's phases each carry their own root - which keeps this crate free of
+//! an equation of state, and keeps the question of *which* phase model answers a separate one.
 
 use azoth_core::{AzothError, Result};
+
+use crate::diis::DiisAccelerator;
+use crate::formula_matrix::matrix_rank;
 
 /// The residual both the potential error and the element balance must come in under, from
 /// `ModifiedRANDSolver.TOL`.
@@ -54,6 +68,23 @@ pub const T0: f64 = 298.15;
 
 /// The singular-pivot floor `solveLinear` refuses below, from `mx < 1e-30`.
 pub const LINEAR_PIVOT_FLOOR: f64 = 1.0e-30;
+
+/// The DIIS history's length, from `DIIS_DEPTH`.
+pub const DIIS_DEPTH: usize = 6;
+
+/// The pass before DIIS may extrapolate, from `DIIS_START`.
+pub const DIIS_START: usize = 5;
+
+/// The sliding window the multiphase damping rule averages over, from the class's `WINDOW`.
+pub const DAMPING_WINDOW: u32 = 10;
+
+/// The potential error a multiphase solve accepts, from `maxE < 1.0e-4` - a looser test than
+/// [`TOL`], and the reason the same fluid can report `1e-14` on one path and `1e-5` on another.
+pub const MULTIPHASE_ERROR_TOLERANCE: f64 = 1.0e-4;
+
+/// The element residual a *neutral* multiphase solve accepts, from `elementTolerance`, which is
+/// `1e-8` when a charge row is present and `1e-4` when it is not.
+pub const MULTIPHASE_ELEMENT_TOLERANCE: f64 = 1.0e-4;
 
 /// A component's ideal-gas heat-capacity polynomial and its two formation properties.
 ///
@@ -128,11 +159,32 @@ pub fn standard_potentials(data: &[ThermoData], temperature: f64, pressure: f64)
         .collect()
 }
 
+/// A phase model: a phase's index and a mole-fraction composition in, each component's
+/// `ln(phi_i)` there out. The index is what lets a caller answer with the phase's own root.
+pub type PhaseLogPhi<'a> = &'a mut dyn FnMut(usize, &[f64]) -> Result<Vec<f64>>;
+
+/// One phase's starting state, which `initialize` reads off the phase object: the composition
+/// and the fraction the phase carries.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PhaseFeed {
+    /// `phase.getComponent(i).getx()`, one per component.
+    pub fractions: Vec<f64>,
+    /// `phase.getBeta()`, floored at [`EPS`].
+    pub beta: f64,
+}
+
 /// What the solve answers with.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RandSolution {
-    /// The equilibrium moles, one per component.
+    /// The overall moles, summed over the phases - the composition the fluid ends at.
     pub moles: Vec<f64>,
+    /// The moles in each phase, `n[j][i]`.
+    pub phase_moles: Vec<Vec<f64>>,
+    /// Each phase's share, `nPhase[j] / totalMoles` - **the solver's own split**, which is not
+    /// the phase objects' `beta` after the driver writes them back.
+    pub phase_amounts: Vec<f64>,
+    /// `totalMoles`: `nPhase` summed.
+    pub total_moles: f64,
     /// The element Lagrange multipliers at the answer, one per element row.
     pub lambda: Vec<f64>,
     /// Passes taken.
@@ -140,41 +192,100 @@ pub struct RandSolution {
     /// The largest absolute potential error over the species holding more than `1e-10` of the
     /// total.
     pub max_error: f64,
-    /// `max |sum A n - b|`, the element balance's own residual.
+    /// `computeElementResidual`: the scaled root-mean-square element deviation, which is a
+    /// *normalised* measure and not a bare difference.
     pub element_residual: f64,
-    /// Whether both came in under [`TOL`].
+    /// `getFinalResidual`: `max(max_error, element_residual)`, lowered by any extrapolated step
+    /// DIIS kept - which is why it can sit below the pair it is the maximum of.
+    pub final_residual: f64,
+    /// Whether the residual passed the convergence test that applied - the strict one, or the
+    /// relaxed multiphase one.
     pub converged: bool,
+    /// `getDiisStepsAccepted`: extrapolated steps the solve kept.
+    pub diis_steps: u32,
 }
 
-/// The single-phase neutral RAND solve.
+/// The single-phase neutral RAND solve: [`solve`] with one phase at `beta = 1`.
 ///
-/// `ln_phi` is handed a *mole-fraction* composition and answers each component's
-/// `ln(phi_i)` there - NeqSim writes the moles into its own phase and reads
-/// `getFugacityCoefficient`, and this is the same question asked of whatever phase model the
-/// caller has.
+/// The class has one `solve()`, and a one-phase system is the case where its sums over the
+/// phases collapse; the wrapper is that case named, so the callers that have a single phase do
+/// not have to build a phase list to say so.
 ///
 /// # Errors
 /// [`AzothError::InvalidInput`] where the shapes disagree, and whatever `ln_phi` raises.
-// Indexed rather than iterated, deliberately: every loop here is NeqSim's own loop, over a
-// matrix and a phase's components, and the correspondence is what makes the port checkable
-// against the class line by line.
-#[allow(clippy::needless_range_loop)]
-pub fn solve(
+pub fn solve_single_phase(
     a_matrix: &[Vec<f64>],
     g0: &[f64],
     b: &[f64],
     feed_moles: &[f64],
     ln_phi: &mut dyn FnMut(&[f64]) -> Result<Vec<f64>>,
 ) -> Result<RandSolution> {
+    let total: f64 = feed_moles.iter().sum();
+    if total <= 0.0 {
+        return Err(AzothError::InvalidInput {
+            field: "feed_moles".to_string(),
+            reason: "the feed holds no moles".to_string(),
+        });
+    }
+    let fractions: Vec<f64> = feed_moles.iter().map(|moles| moles / total).collect();
+    let mut one_phase = |_phase: usize, x: &[f64]| ln_phi(x);
+    solve(
+        a_matrix,
+        g0,
+        b,
+        total,
+        &[PhaseFeed {
+            fractions,
+            beta: 1.0,
+        }],
+        &mut one_phase,
+    )
+}
+
+/// The neutral RAND solve over a phase list, `ModifiedRANDSolver.solve`.
+///
+/// `ln_phi` is handed a phase's index and its *mole-fraction* composition and answers each
+/// component's `ln(phi_i)` there; the index is what a caller needs to pick the phase's own
+/// root. NeqSim writes the moles into its own phase objects and reads
+/// `getFugacityCoefficient` back, and this is the same question asked of whatever phase model
+/// the caller has.
+///
+/// `total_moles` is the system's `getTotalNumberOfMoles`, which scales the phase moles at
+/// `initialize`; `b` is the frozen element inventory, or the feed's own `A n` where the caller
+/// has none.
+///
+/// # The rules that only apply above one phase
+///
+/// `np > 1` changes four things and each is the class's own: the step starts at a tenth rather
+/// than the whole of the Newton direction, a *sliding window* over ten iterations replaces the
+/// iteration-to-iteration damping rule, a residual of `1e-4` counts as converged rather than
+/// [`TOL`], and DIIS is allowed to extrapolate the multipliers. The single-phase branch keeps
+/// the strict rule, which is why the same fluid can report `1.4e-14` on one path and `2.0e-5`
+/// on the other.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] where the shapes disagree, and whatever `ln_phi` raises.
+// Indexed rather than iterated, deliberately: every loop here is NeqSim's own loop, over a
+// matrix, a phase and its components, and the correspondence is what makes the port checkable
+// against the class line by line.
+#[allow(clippy::needless_range_loop, clippy::too_many_arguments)]
+pub fn solve(
+    a_matrix: &[Vec<f64>],
+    g0: &[f64],
+    b: &[f64],
+    total_moles: f64,
+    phases: &[PhaseFeed],
+    ln_phi: PhaseLogPhi<'_>,
+) -> Result<RandSolution> {
     let ne = b.len();
-    let nc = feed_moles.len();
-    if g0.len() != nc || a_matrix.len() != ne {
+    let nc = g0.len();
+    let np = phases.len();
+    if a_matrix.len() != ne || np == 0 {
         return Err(AzothError::InvalidInput {
             field: "a_matrix".to_string(),
             reason: format!(
-                "{ne} element row(s), {} potential(s) and {} component(s)",
-                g0.len(),
-                nc
+                "{ne} element row(s), {} potential(s) and {np} phase(s)",
+                g0.len()
             ),
         });
     }
@@ -186,53 +297,115 @@ pub fn solve(
             });
         }
     }
+    for phase in phases {
+        if phase.fractions.len() != nc {
+            return Err(AzothError::InvalidInput {
+                field: "phases".to_string(),
+                reason: format!(
+                    "a phase has {} entries against {nc} component(s)",
+                    phase.fractions.len()
+                ),
+            });
+        }
+    }
 
-    // `initialize`: one phase, so `beta` is 1 and the moles are the feed's, floored.
-    let mut n: Vec<f64> = feed_moles.iter().map(|moles| moles.max(EPS)).collect();
-    let mut total: f64 = n.iter().sum();
-    let mut fractions: Vec<f64> = n.iter().map(|moles| moles / total).collect();
+    // `initialize`: the moles and fractions the phase objects hold, floored.
+    let mut n = vec![vec![0.0_f64; nc]; np];
+    let mut fractions = vec![vec![0.0_f64; nc]; np];
+    let mut n_phase = vec![0.0_f64; np];
+    let mut beta = vec![0.0_f64; np];
+    for j in 0..np {
+        beta[j] = phases[j].beta.max(EPS);
+        for i in 0..nc {
+            fractions[j][i] = phases[j].fractions[i];
+            n[j][i] = (fractions[j][i] * beta[j] * total_moles).max(EPS);
+        }
+        n_phase[j] = beta[j] * total_moles;
+    }
+    let mut total: f64 = n_phase.iter().sum();
 
-    let mut ln_phi_here = ln_phi(&fractions)?;
-    let mut lambda = initial_lambda(a_matrix, g0, &fractions, &ln_phi_here);
+    let mut ln_phi_here = vec![vec![0.0_f64; nc]; np];
+    for j in 0..np {
+        ln_phi_here[j] = ln_phi(j, &fractions[j])?;
+    }
 
-    let mut damping = 1.0_f64;
+    // `NR = 0` is not an iteration: the element balance alone fixes the composition, and the
+    // class returns the feed at once rather than driving a matrix that is singular where
+    // `NE > rank(A)`.
+    let independent_reactions = nc.saturating_sub(matrix_rank(a_matrix, nc));
+    if independent_reactions == 0 {
+        let element = element_residual(a_matrix, b, &n, total);
+        return Ok(RandSolution {
+            moles: (0..nc).map(|i| (0..np).map(|j| n[j][i]).sum()).collect(),
+            phase_moles: n,
+            phase_amounts: (0..np).map(|j| n_phase[j] / total).collect(),
+            total_moles: total,
+            lambda: vec![0.0; ne],
+            iterations: 0,
+            max_error: element,
+            element_residual: element,
+            final_residual: element,
+            converged: true,
+            diis_steps: 0,
+        });
+    }
+
+    let mut lambda = initial_lambda(a_matrix, g0, &fractions[0], &ln_phi_here[0]);
+
+    // The accelerator runs on the multipliers, with the element deviation as its error.
+    let mut diis = DiisAccelerator::new(ne, DIIS_DEPTH);
+    let mut diis_steps = 0_u32;
+
+    // The class starts a multiphase solve at a tenth of the direction.
+    let mut damping = if np > 1 { 0.1 } else { 1.0 };
     let mut previous_residual = f64::MAX;
     let mut stagnation = 0_u32;
+    let mut window_residual = f64::MAX;
+    let mut iterations_since_window = 0_u32;
+    let element_tolerance = MULTIPHASE_ELEMENT_TOLERANCE;
+
     let mut final_error = f64::MAX;
     let mut final_element = f64::MAX;
+    let mut final_residual = f64::MAX;
     let mut converged = false;
     let mut iterations = 0_u32;
 
     for iteration in 0..MAX_ITERATIONS {
         iterations = iteration as u32 + 1;
 
-        // The potential error, per component.
-        let mut error = vec![0.0_f64; nc];
-        for i in 0..nc {
-            let x_i = fractions[i].max(EPS);
-            let mut row_sum = 0.0;
-            for k in 0..ne {
-                row_sum += lambda[k] * a_matrix[k][i];
+        // The potential error, per phase and component.
+        let mut error = vec![vec![0.0_f64; nc]; np];
+        for j in 0..np {
+            for i in 0..nc {
+                let x_i = fractions[j][i].max(EPS);
+                let mut row_sum = 0.0;
+                for k in 0..ne {
+                    row_sum += lambda[k] * a_matrix[k][i];
+                }
+                let value = g0[i] + x_i.ln() + ln_phi_here[j][i] - row_sum;
+                error[j][i] = if value.is_finite() { value } else { 0.0 };
             }
-            let value = g0[i] + x_i.ln() + ln_phi_here[i] - row_sum;
-            error[i] = if value.is_finite() { value } else { 0.0 };
         }
 
-        // The RAND matrix and its right-hand side.
+        // The RAND matrix and its right-hand side, summed over the phases.
         let mut c = vec![vec![0.0_f64; ne]; ne];
         let mut rhs = vec![0.0_f64; ne];
         for k in 0..ne {
             let mut element_sum = 0.0;
             let mut element_error = 0.0;
-            for i in 0..nc {
-                element_sum += a_matrix[k][i] * n[i];
-                element_error += a_matrix[k][i] * n[i] * error[i];
+            for j in 0..np {
+                for i in 0..nc {
+                    element_sum += a_matrix[k][i] * n[j][i];
+                    element_error += a_matrix[k][i] * n[j][i] * error[j][i];
+                }
             }
             rhs[k] = (b[k] - element_sum) + element_error;
             for l in 0..ne {
                 let mut value = 0.0;
-                for i in 0..nc {
-                    value += a_matrix[k][i] * a_matrix[l][i] * n[i];
+                for j in 0..np {
+                    for i in 0..nc {
+                        value += a_matrix[k][i] * a_matrix[l][i] * n[j][i];
+                    }
                 }
                 c[k][l] = value;
             }
@@ -272,29 +445,31 @@ pub fn solve(
         let mut alpha = damping;
         let mut accepted = false;
         for _ in 0..5 {
-            n.copy_from_slice(&n_old);
-            lambda.copy_from_slice(&lambda_old);
-            for i in 0..nc {
-                let mut correction = alpha * -error[i];
-                for k in 0..ne {
-                    correction += alpha * a_matrix[k][i] * delta[k];
+            n.clone_from_slice(&n_old);
+            lambda.clone_from_slice(&lambda_old);
+            for j in 0..np {
+                for i in 0..nc {
+                    let mut correction = alpha * -error[j][i];
+                    for k in 0..ne {
+                        correction += alpha * a_matrix[k][i] * delta[k];
+                    }
+                    if !correction.is_finite() {
+                        correction = 0.0;
+                    }
+                    let correction = correction.clamp(-3.0, 3.0);
+                    let stepped = n[j][i] * correction.exp();
+                    n[j][i] = if !stepped.is_finite() || stepped < EPS {
+                        EPS
+                    } else {
+                        stepped
+                    };
                 }
-                if !correction.is_finite() {
-                    correction = 0.0;
-                }
-                let correction = correction.clamp(-3.0, 3.0);
-                let stepped = n[i] * correction.exp();
-                n[i] = if !stepped.is_finite() || stepped < EPS {
-                    EPS
-                } else {
-                    stepped
-                };
             }
             for k in 0..ne {
                 lambda[k] += alpha * delta[k];
             }
-            total = n.iter().sum::<f64>().max(EPS);
-            let element_residual = element_residual(a_matrix, b, &n);
+            recalc_totals(&mut n_phase, &mut total, &n);
+            let element_residual = element_residual(a_matrix, b, &n, total);
             if element_residual < previous_residual * 1.5 || alpha < 0.05 {
                 accepted = true;
                 break;
@@ -304,91 +479,262 @@ pub fn solve(
 
         if !accepted {
             // The class's own fallback: restore and take a tenth of the step.
-            n.copy_from_slice(&n_old);
-            lambda.copy_from_slice(&lambda_old);
+            n.clone_from_slice(&n_old);
+            lambda.clone_from_slice(&lambda_old);
             let alpha = 0.1_f64;
-            for i in 0..nc {
-                let mut correction = alpha * -error[i];
-                for k in 0..ne {
-                    correction += alpha * a_matrix[k][i] * delta[k];
+            for j in 0..np {
+                for i in 0..nc {
+                    let mut correction = alpha * -error[j][i];
+                    for k in 0..ne {
+                        correction += alpha * a_matrix[k][i] * delta[k];
+                    }
+                    if !correction.is_finite() {
+                        correction = 0.0;
+                    }
+                    let correction = correction.clamp(-3.0, 3.0);
+                    let stepped = n[j][i] * correction.exp();
+                    n[j][i] = if !stepped.is_finite() || stepped < EPS {
+                        EPS
+                    } else {
+                        stepped
+                    };
                 }
-                if !correction.is_finite() {
-                    correction = 0.0;
-                }
-                let correction = correction.clamp(-3.0, 3.0);
-                let stepped = n[i] * correction.exp();
-                n[i] = if !stepped.is_finite() || stepped < EPS {
-                    EPS
-                } else {
-                    stepped
-                };
             }
             for k in 0..ne {
                 lambda[k] += alpha * delta[k];
             }
-            total = n.iter().sum::<f64>().max(EPS);
+            recalc_totals(&mut n_phase, &mut total, &n);
         }
 
-        fractions = n.iter().map(|moles| moles / total).collect();
-        ln_phi_here = ln_phi(&fractions)?;
+        for j in 0..np {
+            fractions[j] = n[j].iter().map(|moles| moles / n_phase[j]).collect();
+        }
+        for j in 0..np {
+            ln_phi_here[j] = ln_phi(j, &fractions[j])?;
+        }
 
         // The convergence test: the worst potential error among the species that matter, and
         // the element balance.
         let mut max_error = 0.0_f64;
-        for i in 0..nc {
-            if n[i] > 1.0e-10 * total {
-                max_error = max_error.max(error[i].abs());
+        for j in 0..np {
+            for i in 0..nc {
+                if n[j][i] > 1.0e-10 * total {
+                    max_error = max_error.max(error[j][i].abs());
+                }
             }
         }
-        let element = element_residual(a_matrix, b, &n);
+        let element = element_residual(a_matrix, b, &n, total);
         final_error = max_error;
         final_element = element;
         let residual = max_error.max(element);
+        final_residual = residual;
 
         if max_error < TOL && element < TOL {
             converged = true;
             break;
         }
-
-        // The damping recovery rule, single phase.
-        if residual < previous_residual * 0.9 {
-            damping = (damping * 1.5).min(1.0);
-            stagnation = 0;
-        } else if residual > previous_residual * 1.1 {
-            damping = (damping * 0.5).max(0.01);
-            stagnation += 1;
-        } else {
-            stagnation += 1;
-        }
-        previous_residual = residual;
-
-        // A long stagnation at a small residual is accepted, as the class accepts it.
-        if stagnation > 50 && max_error < 1.0e-3 && element < 1.0e-4 {
+        if np > 1 && max_error < MULTIPHASE_ERROR_TOLERANCE && element < element_tolerance {
             converged = true;
             break;
         }
+
+        if np == 1 {
+            // Single-phase: the classic per-iteration damping.
+            if residual < previous_residual * 0.9 {
+                damping = (damping * 1.5).min(1.0);
+                stagnation = 0;
+            } else if residual > previous_residual * 1.1 {
+                damping = (damping * 0.5).max(0.01);
+                stagnation += 1;
+            } else {
+                stagnation += 1;
+            }
+        } else {
+            // Multi-phase: an immediate penalty, plus a ten-iteration window, because a small
+            // damping makes under one percent of progress per pass and the per-iteration rule
+            // would then hold the damping down forever.
+            if residual > previous_residual * 1.5 {
+                damping = (damping * 0.5).max(0.01);
+                stagnation += 1;
+            } else if residual > previous_residual * 1.05 {
+                stagnation += 1;
+            }
+            iterations_since_window += 1;
+            if iterations_since_window >= DAMPING_WINDOW {
+                if residual < window_residual * 0.5 {
+                    let ceiling = if residual > 10.0 {
+                        0.3
+                    } else if residual > 1.0 {
+                        0.5
+                    } else {
+                        1.0
+                    };
+                    damping = (damping * 2.0).min(ceiling);
+                    stagnation = 0;
+                } else if residual > window_residual * 2.0 {
+                    damping = (damping * 0.25).max(0.01);
+                    stagnation += DAMPING_WINDOW;
+                }
+                window_residual = residual;
+                iterations_since_window = 0;
+            }
+        }
+
+        // A long stagnation at a small residual is accepted, as the class accepts it.
+        if stagnation > 50 && max_error < 1.0e-3 && element < element_tolerance {
+            converged = true;
+            break;
+        }
+
+        // DIIS, on the multipliers, with the element deviation as its error. **Every** pass is
+        // recorded - the class adds the entry outside the `DIIS_START` gate - and the gate only
+        // decides whether an extrapolation is tried.
+        let residual_vector = element_residual_vector(a_matrix, b, &n, total);
+        diis.add_entry(&lambda, &residual_vector)?;
+        if iteration >= DIIS_START && diis.can_extrapolate() {
+            if let Some(extrapolated) = diis.extrapolate() {
+                let saved_moles = n.clone();
+                let saved_lambda = lambda.clone();
+                for j in 0..np {
+                    for i in 0..nc {
+                        let mut correction = 0.0;
+                        for k in 0..ne {
+                            correction += (extrapolated[k] - lambda[k]) * a_matrix[k][i];
+                        }
+                        let correction = correction.clamp(-3.0, 3.0);
+                        let stepped = n[j][i] * correction.exp();
+                        n[j][i] = if !stepped.is_finite() || stepped < EPS {
+                            EPS
+                        } else {
+                            stepped
+                        };
+                    }
+                }
+                lambda.clone_from_slice(&extrapolated);
+                recalc_totals(&mut n_phase, &mut total, &n);
+                for j in 0..np {
+                    fractions[j] = n[j].iter().map(|moles| moles / n_phase[j]).collect();
+                }
+                for j in 0..np {
+                    ln_phi_here[j] = ln_phi(j, &fractions[j])?;
+                }
+
+                // The extrapolated state is judged on the whole residual - recomputed at the
+                // extrapolated composition, because the potential error is not the
+                // extrapolated one - and rolled back when it does not at least hold it.
+                let mut diis_error = 0.0_f64;
+                for j in 0..np {
+                    for i in 0..nc {
+                        if n[j][i] > 1.0e-10 * total {
+                            let x_i = fractions[j][i].max(EPS);
+                            let mut row_sum = 0.0;
+                            for k in 0..ne {
+                                row_sum += lambda[k] * a_matrix[k][i];
+                            }
+                            let value = g0[i] + x_i.ln() + ln_phi_here[j][i] - row_sum;
+                            diis_error = diis_error.max(value.abs());
+                        }
+                    }
+                }
+                let diis_element = element_residual(a_matrix, b, &n, total);
+                let diis_residual = diis_error.max(diis_element);
+                if diis_residual < residual * 1.1 {
+                    final_residual = final_residual.min(diis_residual);
+                    diis_steps += 1;
+                } else {
+                    n = saved_moles;
+                    lambda = saved_lambda;
+                    recalc_totals(&mut n_phase, &mut total, &n);
+                    for j in 0..np {
+                        fractions[j] = n[j].iter().map(|moles| moles / n_phase[j]).collect();
+                    }
+                    for j in 0..np {
+                        ln_phi_here[j] = ln_phi(j, &fractions[j])?;
+                    }
+                }
+            }
+        }
+
+        // `prevResidual` is the *last* word on the pass, after any extrapolation DIIS kept -
+        // which is what makes a kept extrapolation carry into the next pass's damping and line
+        // search rather than being compared against the value it replaced.
+        previous_residual = final_residual;
     }
 
     Ok(RandSolution {
-        moles: n,
+        moles: (0..nc).map(|i| (0..np).map(|j| n[j][i]).sum()).collect(),
+        phase_moles: n,
+        phase_amounts: (0..np).map(|j| n_phase[j] / total).collect(),
+        total_moles: total,
         lambda,
         iterations,
         max_error: final_error,
         element_residual: final_element,
+        final_residual,
         converged,
+        diis_steps,
     })
 }
 
-/// `max |sum_i A_k,i n_i - b_k|` over the element rows, from `computeElementResidual`.
-fn element_residual(a_matrix: &[Vec<f64>], b: &[f64], n: &[f64]) -> f64 {
-    let mut worst = 0.0_f64;
-    for (k, row) in a_matrix.iter().enumerate() {
-        let sum: f64 = row.iter().zip(n).map(|(a, n)| a * n).sum();
-        worst = worst.max((sum - b[k]).abs());
+/// `recalcTotals`: the phase amounts from the moles, floored, and the total. The mole
+/// fractions follow from the two and are not stored here, because the class recomputes them
+/// where it needs them.
+fn recalc_totals(n_phase: &mut [f64], total: &mut f64, n: &[Vec<f64>]) {
+    *total = 0.0;
+    for (j, phase_moles) in n.iter().enumerate() {
+        n_phase[j] = phase_moles.iter().sum::<f64>().max(EPS);
+        *total += n_phase[j];
     }
-    worst
+    *total = total.max(EPS);
 }
 
+/// `computeElementResidual`: the scaled root-mean-square deviation of `A n` from `b`.
+///
+/// **The scaling is the class's and it is not cosmetic**: each element's deviation is divided
+/// by `max(|b_k|, max(totalMoles 1e-6, 1e-10))`, so a charge row whose inventory is near zero
+/// reports a bounded number rather than amplifying its own round-off.
+#[allow(clippy::needless_range_loop)] // the class's own loops over the rows and phases
+fn element_residual(a_matrix: &[Vec<f64>], b: &[f64], n: &[Vec<f64>], total: f64) -> f64 {
+    let scale_floor = (total * 1.0e-6).max(1.0e-10);
+    let mut sum = 0.0_f64;
+    for k in 0..b.len() {
+        let mut element_sum = 0.0;
+        for phase in n {
+            for i in 0..phase.len() {
+                element_sum += a_matrix[k][i] * phase[i];
+            }
+        }
+        let scale = b[k].abs().max(scale_floor);
+        let deviation = (element_sum - b[k]) / scale;
+        sum += deviation * deviation;
+    }
+    sum.sqrt()
+}
+
+/// `computeElementResidualVector`: the same deviations, one per element row, which is what the
+/// DIIS accelerator takes as its error.
+#[allow(clippy::needless_range_loop)] // the class's own loops over the rows and phases
+fn element_residual_vector(
+    a_matrix: &[Vec<f64>],
+    b: &[f64],
+    n: &[Vec<f64>],
+    total: f64,
+) -> Vec<f64> {
+    let scale_floor = (total * 1.0e-6).max(1.0e-10);
+    (0..b.len())
+        .map(|k| {
+            let mut element_sum = 0.0;
+            for phase in n {
+                for i in 0..phase.len() {
+                    element_sum += a_matrix[k][i] * phase[i];
+                }
+            }
+            (element_sum - b[k]) / b[k].abs().max(scale_floor)
+        })
+        .collect()
+}
+
+/// `initializeLambda`: the least-squares multipliers for the initial potentials,/// `initializeLambda`: the least-squares multipliers for the initial potentials,
 /// `initializeLambda`: the least-squares multipliers for the initial potentials,
 /// `lambda = (A A^T)^-1 A h` with `h_i = g0_i + ln x_i + ln phi_i`.
 #[allow(clippy::needless_range_loop)] // the same index loops the class writes

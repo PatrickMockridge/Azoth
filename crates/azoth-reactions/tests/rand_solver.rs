@@ -22,7 +22,7 @@ use azoth_eos::databank::mixture_of;
 use azoth_eos::{Cubic, RootSide};
 use azoth_reactions::databank::formation_properties;
 use azoth_reactions::formula_matrix::FormulaMatrix;
-use azoth_reactions::rand_solver::{ThermoData, solve, standard_potentials};
+use azoth_reactions::rand_solver::{ThermoData, solve_single_phase, standard_potentials};
 
 /// The water-gas shift's fluid, in the order the capture prints it.
 const NAMES: [&str; 4] = ["CO", "water", "CO2", "hydrogen"];
@@ -91,7 +91,8 @@ fn the_water_gas_shift_reproduces_the_captured_equilibrium() {
         Ok(state.ln_phi.clone())
     };
 
-    let solution = solve(&matrix.matrix, &g0, &b, &FEED, &mut ln_phi).expect("the solve runs");
+    let solution =
+        solve_single_phase(&matrix.matrix, &g0, &b, &FEED, &mut ln_phi).expect("the solve runs");
 
     assert!(solution.converged, "the captured state converges");
     // **The band is the measurement.** The two codes stop on the same `1e-9` residual but

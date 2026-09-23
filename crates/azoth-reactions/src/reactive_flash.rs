@@ -39,17 +39,20 @@
 //!
 //! Ported: the driver's **single-phase branch** (`solveSinglePhaseChemicalEquilibrium`, in
 //! [`single_phase_equilibrium`]), its **VLE initialisation** ([`vle_initialization`]) and its
-//! **Gibbs measure** over a phase list ([`total_gibbs_energy`]).
+//! **Gibbs measure** over a phase list ([`total_gibbs_energy`]). The multiphase solve the
+//! outer loop drives is [`crate::rand_solver::solve`], and the driver's own accounting around
+//! it is the part still missing.
 //!
-//! **Not ported**: the multiphase modified-RAND solve the outer loop drives, and with it
-//! `addTrialPhases`, `removeNegligiblePhases`, the outer loop's acceptance rules and the
-//! trace-ion short circuit. No capture reaches the add or the remove: no fluid this probe
-//! drives has an unstable trial seed, and every beta stays far above the `1e-12` removal
-//! floor.
+//! **Not ported**: `addTrialPhases`, `removeNegligiblePhases`, the outer loop's acceptance
+//! rules and the trace-ion short circuit. No capture reaches the add or the remove: the pair
+//! `SystemSrkEos` constructs means the stability analysis is skipped, so no trial phase is ever
+//! added, and every beta stays far above the `1e-12` removal floor. Reaching them needs a fluid
+//! that is unstable *at one phase* - and the phase list has to be cut back to one after the
+//! last `init` for the driver to look.
 
 use azoth_core::Result;
 
-use crate::rand_solver::{RandSolution, solve};
+use crate::rand_solver::{RandSolution, solve_single_phase};
 use crate::reactive_stability::CriticalConstants;
 
 /// The floor `initializeWithVLEFlash` keeps a trial mole fraction above, which is its own
@@ -208,7 +211,7 @@ pub fn single_phase_equilibrium(
     feed_moles: &[f64],
     ln_phi: &mut dyn FnMut(&[f64]) -> Result<Vec<f64>>,
 ) -> Result<SinglePhaseOutcome> {
-    let solution = solve(a_matrix, g0, b, feed_moles, ln_phi)?;
+    let solution = solve_single_phase(a_matrix, g0, b, feed_moles, ln_phi)?;
     let total_moles: f64 = solution.moles.iter().sum();
     let fractions: Vec<f64> = solution
         .moles

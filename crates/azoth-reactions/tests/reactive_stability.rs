@@ -16,7 +16,7 @@ use azoth_eos::databank::mixture_of;
 use azoth_eos::{Cubic, RootSide};
 use azoth_reactions::databank::formation_properties;
 use azoth_reactions::formula_matrix::FormulaMatrix;
-use azoth_reactions::rand_solver::{ThermoData, solve, standard_potentials};
+use azoth_reactions::rand_solver::{ThermoData, solve_single_phase, standard_potentials};
 use azoth_reactions::reactive_stability::{
     CriticalConstants, STABLE_TPD, is_unstable, reference_potentials, run_trial, trial_seeds,
 };
@@ -98,7 +98,8 @@ fn solved_state() -> State {
         Ok(state.ln_phi.clone())
     };
 
-    let solution = solve(&matrix.matrix, &g0, &b, &FEED, &mut ln_phi).expect("the solve runs");
+    let solution =
+        solve_single_phase(&matrix.matrix, &g0, &b, &FEED, &mut ln_phi).expect("the solve runs");
     assert!(solution.converged, "the homogeneous solve converges");
     let total: f64 = solution.moles.iter().sum();
     let equilibrated: Vec<f64> = solution.moles.iter().map(|n| n / total).collect();

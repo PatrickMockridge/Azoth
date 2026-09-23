@@ -118,49 +118,9 @@ impl FormulaMatrix {
     }
 
     /// The matrix's rank, by the elimination `FormulaMatrix.getRank` runs.
-    ///
-    /// Indexed rather than iterated: a column's elimination mutates every row but the pivot's,
-    /// and the pivot is chosen *within* the pass, so the loop bounds are the matrix's own and
-    /// an iterator form would have to rebuild them.
     #[must_use]
-    #[allow(clippy::needless_range_loop)]
     pub fn rank(&self) -> usize {
-        let rows = self.matrix.len();
-        let columns = self.component_names.len();
-        let mut working = self.matrix.clone();
-        let mut row_used = vec![false; rows];
-        let mut rank = 0;
-
-        for column in 0..columns {
-            if rank == rows {
-                break;
-            }
-            // The pivot is the largest entry in the column, accepted only above the floor.
-            let mut pivot_row = None;
-            let mut largest = RANK_PIVOT_FLOOR;
-            for row in 0..rows {
-                if !row_used[row] && working[row][column].abs() > largest {
-                    largest = working[row][column].abs();
-                    pivot_row = Some(row);
-                }
-            }
-            let Some(pivot_row) = pivot_row else {
-                continue;
-            };
-            row_used[pivot_row] = true;
-            rank += 1;
-            let pivot = working[pivot_row][column];
-            let pivot_values = working[pivot_row][column..columns].to_vec();
-            for row in 0..rows {
-                if row != pivot_row && working[row][column] != 0.0 {
-                    let factor = working[row][column] / pivot;
-                    for (offset, pivot_value) in pivot_values.iter().enumerate() {
-                        working[row][column + offset] -= factor * pivot_value;
-                    }
-                }
-            }
-        }
-        rank
+        matrix_rank(&self.matrix, self.component_names.len())
     }
 
     /// How many independent reactions the fluid can run: `NC - rank(A)`.
@@ -168,6 +128,53 @@ impl FormulaMatrix {
     pub fn independent_reactions(&self) -> usize {
         self.component_names.len().saturating_sub(self.rank())
     }
+}
+
+/// The rank of a bare matrix, which is the elimination `FormulaMatrix.getRank` runs - the same
+/// one [`FormulaMatrix::rank`] delegates to, and the one the reactive solve asks for so that it
+/// can short-circuit at `NR = 0` where the class does.
+///
+/// Indexed rather than iterated: a column's elimination mutates every row but the pivot's, and
+/// the pivot is chosen *within* the pass, so the loop bounds are the matrix's own and an
+/// iterator form would have to rebuild them.
+#[must_use]
+#[allow(clippy::needless_range_loop)]
+pub fn matrix_rank(matrix: &[Vec<f64>], columns: usize) -> usize {
+    let rows = matrix.len();
+    let mut working = matrix.to_vec();
+    let mut row_used = vec![false; rows];
+    let mut rank = 0;
+
+    for column in 0..columns {
+        if rank == rows {
+            break;
+        }
+        // The pivot is the largest entry in the column, accepted only above the floor.
+        let mut pivot_row = None;
+        let mut largest = RANK_PIVOT_FLOOR;
+        for row in 0..rows {
+            if !row_used[row] && working[row][column].abs() > largest {
+                largest = working[row][column].abs();
+                pivot_row = Some(row);
+            }
+        }
+        let Some(pivot_row) = pivot_row else {
+            continue;
+        };
+        row_used[pivot_row] = true;
+        rank += 1;
+        let pivot = working[pivot_row][column];
+        let pivot_values = working[pivot_row][column..columns].to_vec();
+        for row in 0..rows {
+            if row != pivot_row && working[row][column] != 0.0 {
+                let factor = working[row][column] / pivot;
+                for (offset, pivot_value) in pivot_values.iter().enumerate() {
+                    working[row][column + offset] -= factor * pivot_value;
+                }
+            }
+        }
+    }
+    rank
 }
 
 #[cfg(test)]
