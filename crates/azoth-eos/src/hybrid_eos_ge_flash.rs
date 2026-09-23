@@ -197,7 +197,7 @@ pub fn solve_fixed_topology_from(
     for outer in 0..MAXIMUM_HYBRID_ITERATIONS {
         for step in 1..=algorithm.max_iterations {
             iterations += 1;
-            let phi = coefficients(mixture, reduced, &phases)?;
+            let phi = coefficients(mixture, reduced, phases)?;
             let inverted: Vec<Vec<f64>> = phi
                 .iter()
                 .enumerate()
@@ -301,7 +301,7 @@ pub fn solve_fixed_topology_from(
         .iter()
         .map(|phase| phase.composition.clone())
         .collect();
-    let ln_phi: Vec<Vec<f64>> = coefficients(mixture, reduced, &phases)?
+    let ln_phi: Vec<Vec<f64>> = coefficients(mixture, reduced, phases)?
         .iter()
         .map(|row| row.iter().map(|value| value.ln()).collect())
         .collect();

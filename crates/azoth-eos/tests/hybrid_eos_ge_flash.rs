@@ -18,11 +18,11 @@ fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::HybridEosGeFlashResult 
     let names = case.list("components").expect("components");
     let moles = case.vector("moles").expect("moles");
     hybrid_eos_ge_flash(
-        &names,
+        names,
         common::input_str(case, "cubic").parse().expect("cubic"),
         common::input(case, "T"),
         common::input(case, "P"),
-        &moles,
+        moles,
     )
     .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
