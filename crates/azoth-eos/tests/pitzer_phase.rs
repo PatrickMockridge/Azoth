@@ -10,6 +10,7 @@ fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::PitzerPhaseResult {
     pitzer_phase(
         case.list("components").expect("components"),
         common::input(case, "T"),
+        common::input(case, "P"),
         case.vector("x").expect("x"),
     )
     .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
@@ -82,8 +83,20 @@ fn every_case_in_the_spec() {
 /// than with the build.
 #[test]
 fn the_dataset_moves_with_the_topology() {
-    let catalogue = pitzer_phase(&["water", "na+", "cl-"], 298.15, &[0.88, 0.06, 0.06]).unwrap();
-    let legacy = pitzer_phase(&["water", "na+", "hco3-"], 298.15, &[0.88, 0.06, 0.06]).unwrap();
+    let catalogue = pitzer_phase(
+        &["water", "na+", "cl-"],
+        298.15,
+        100000.0,
+        &[0.88, 0.06, 0.06],
+    )
+    .unwrap();
+    let legacy = pitzer_phase(
+        &["water", "na+", "hco3-"],
+        298.15,
+        100000.0,
+        &[0.88, 0.06, 0.06],
+    )
+    .unwrap();
     assert_eq!(catalogue.dataset.name(), "phreeqc");
     assert_eq!(legacy.dataset.name(), "legacy");
 
@@ -118,7 +131,13 @@ fn the_dataset_moves_with_the_topology() {
 /// zero, which is the answer this library refuses to give.
 #[test]
 fn an_uncovered_pair_is_refused() {
-    let err = pitzer_phase(&["water", "nh4+", "cl-"], 298.15, &[0.98, 0.01, 0.01]).unwrap_err();
+    let err = pitzer_phase(
+        &["water", "nh4+", "cl-"],
+        298.15,
+        100000.0,
+        &[0.98, 0.01, 0.01],
+    )
+    .unwrap_err();
     assert!(
         matches!(err, AzothError::InvalidInput { .. }),
         "a pair in neither dataset should be refused: {err:?}"
@@ -134,6 +153,7 @@ fn an_uncovered_pair_is_refused() {
     let err = pitzer_phase(
         &["water", "na+", "k+", "cl-", "hco3-"],
         298.15,
+        100000.0,
         &[0.96, 0.01, 0.01, 0.01, 0.01],
     )
     .unwrap_err();
@@ -154,6 +174,7 @@ fn a_neutral_solute_takes_the_neutral_branch() {
     let brine = pitzer_phase(
         &["water", "na+", "so4--", "co2"],
         298.15,
+        100000.0,
         &[0.86, 0.06, 0.03, 0.05],
     )
     .unwrap();
@@ -170,14 +191,20 @@ fn a_neutral_solute_takes_the_neutral_branch() {
 
 #[test]
 fn a_composition_that_does_not_sum_to_one_is_refused() {
-    let err = pitzer_phase(&["water", "na+", "cl-"], 298.15, &[0.88, 0.06, 0.12]).unwrap_err();
+    let err = pitzer_phase(
+        &["water", "na+", "cl-"],
+        298.15,
+        100000.0,
+        &[0.88, 0.06, 0.12],
+    )
+    .unwrap_err();
     assert!(matches!(err, AzothError::InvalidInput { .. }), "{err:?}");
     assert_eq!(err.field(), Some("x"));
 }
 
 #[test]
 fn a_brine_with_no_water_is_refused() {
-    let err = pitzer_phase(&["na+", "cl-"], 298.15, &[0.5, 0.5]).unwrap_err();
+    let err = pitzer_phase(&["na+", "cl-"], 298.15, 100000.0, &[0.5, 0.5]).unwrap_err();
     assert!(matches!(err, AzothError::InvalidInput { .. }), "{err:?}");
 }
 
@@ -191,4 +218,55 @@ fn the_model_is_registered() {
 
 fn azoth_model_spec(id: &str) -> &'static azoth_core::spec::ModelSpec {
     azoth_eos::model_gen::model(id).expect("the model should be in its own table")
+}
+
+/// **The one captured fluid this model refuses**, and the reason is a number rather than a
+/// shortcut.
+///
+/// `water-methanol-NaCl` is the probe's fourth fluid, and NeqSim answers it: methanol has no
+/// Henry correlation, the compiled table's four zeros evaluate to `1.802 bar`, and that
+/// value goes into `gamma H (m/x) / P` to give `23.606550097141273`. `1.802` is water's own
+/// molar-mass product and not a property of methanol, so it is a unit-conversion artefact
+/// being read as a Henry constant - and this library refuses it in `eos.kent_eisenberg_phase`
+/// and `eos.desmukh_mather_phase` for the same reason.
+///
+/// **The ion branch does not refuse the same rows**, which is the reason this is a refusal
+/// of one branch and not of the model: an ion is capped by its class before the row is read,
+/// so `1e12` is what an ion's entry gives whatever its correlation says. That is why the
+/// captured ion entries pin and this one cannot.
+#[test]
+fn a_neutral_with_no_henry_correlation_is_refused_where_neqsim_answers() {
+    let err = pitzer_phase(
+        &["water", "methanol", "na+", "cl-"],
+        313.15,
+        5.0e5,
+        &[
+            0.847457627118644,
+            0.0847457627118644,
+            0.03389830508474576,
+            0.03389830508474576,
+        ],
+    )
+    .unwrap_err();
+    let message = err.to_string();
+    assert!(message.contains("methanol"), "{message}");
+    assert!(
+        message.contains("Henry coefficient"),
+        "the refusal should name what it cannot build: {message}"
+    );
+
+    // The same fluid's ions *do* answer, so the refusal is the neutral arm's alone - and
+    // the fluid is otherwise the captured one, at the captured state.
+    let brine = pitzer_phase(
+        &["water", "na+", "cl-"],
+        313.15,
+        5.0e5,
+        &[
+            0.9090909090909091,
+            0.045454545454545456,
+            0.045454545454545456,
+        ],
+    )
+    .expect("a brine of ions and water has no neutral arm to take");
+    assert!(brine.ln_phi[1] > 0.0, "the ionic arm answered");
 }

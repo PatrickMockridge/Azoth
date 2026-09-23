@@ -112,7 +112,7 @@ def salt_precipitation(
         x = [value / total for value in moles]
         # **The coefficients are the brine's own**, re-solved at the composition the extent
         # leaves: `eos.pitzer_phase` over the same names and the same state.
-        coefficients = pitzer_phase(components, T, x)
+        coefficients = pitzer_phase(components, T, P, x)
         return scale_saturation_ratio(
             salt,
             x[first],

@@ -2928,6 +2928,19 @@ pub struct PitzerPhaseResult {
     pub gamma: Vec<f64>,
     /// The natural logarithm of each activity coefficient.
     pub ln_gamma: Vec<f64>,
+    /// The natural logarithm of each fugacity coefficient.
+    ///
+    /// `ComponentGePitzer.fugcoef` is the branch structure, and the three arms are
+    /// `gamma H (m/x) / P` for a neutral that is not water, `gamma P0 / P` for water, and
+    /// `(gamma / gamma_inf) H / P` for an ion, all with the pressure in bar.
+    pub ln_phi: Vec<f64>,
+    /// The Henry coefficient each component's branch used, in bar, and **zero where the
+    /// branch reads none** - which is the water arm, whose reference is its own Antoine
+    /// row rather than a Henry constant.
+    pub henry: Vec<f64>,
+    /// The infinite-dilution activity coefficient each component's branch divided by, and
+    /// **one where the branch does not divide by one** - which is every arm but the ionic.
+    pub gamma_inf: Vec<f64>,
     /// Each component's molality `n_i / m_water`, in mol/kg.
     ///
     /// Reported beside the coefficients because it is the scale the whole model works in:
@@ -2951,6 +2964,9 @@ impl CalcResult for PitzerPhaseResult {
     const FIELDS: &'static [&'static str] = &[
         "gamma",
         "ln_gamma",
+        "ln_phi",
+        "henry",
+        "gamma_inf",
         "molality",
         "ionic_strength",
         "osmotic_coefficient",

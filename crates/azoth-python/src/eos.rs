@@ -1287,25 +1287,27 @@ pub fn kent_eisenberg_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// The activity coefficients of an electrolyte phase whose non-ideality is Pitzer's.
+/// The activity and fugacity coefficients of an electrolyte phase whose non-ideality is
+/// Pitzer's.
 ///
 /// Takes the component **names** rather than resolved arrays, because the names are what
 /// the parameter datasets are keyed by: the model resolves each one's charge, molar mass
-/// and reference state against the databank itself. `T` is the only state variable - a
-/// molality is a function of the mole fractions alone - and there is no pressure input,
-/// because the branches `getGamma` dispatches to never read the one it is given.
+/// and reference state against the databank itself. `P` moves no activity coefficient -
+/// `getGamma`'s own pressure argument is unused - and the fugacity coefficients divide by
+/// it, in bar.
 #[pyfunction]
-#[pyo3(signature = (components, T, x))]
-#[pyo3(text_signature = "(components, T, x)")]
-#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
 pub fn pitzer_phase(
     py: Python<'_>,
     components: Vec<String>,
     T: f64,
+    P: f64,
     x: Vec<f64>,
 ) -> PyResult<PyPitzerPhaseResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::pitzer_phase(&names, T, &x)
+    azoth_eos::pitzer_phase(&names, T, P, &x)
         .map(|r| PyPitzerPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

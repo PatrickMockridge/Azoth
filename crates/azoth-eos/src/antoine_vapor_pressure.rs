@@ -10,7 +10,7 @@
 //! Spec: `specs/calcs/eos/antoine_vapor_pressure.toml`, which records the four formulas,
 //! the cleaning rule, and the dead DIPPR-101 branch.
 
-use azoth_core::units::{Pressure, ThermodynamicTemperature, pascals};
+use azoth_core::units::{Pressure, ThermodynamicTemperature, kelvins, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::results::AntoineVaporPressureResult;
@@ -198,4 +198,47 @@ pub fn antoine_vapor_pressure(
         p_sat: pascals(p_sat),
         warnings,
     })
+}
+
+/// `P0_i(T)` from a component's own Antoine row, in pascals.
+///
+/// The reference state three of this crate's phase models share: a `solvent` component's
+/// fugacity coefficient is `gamma P0 / P`, so every one of them needs this and none of
+/// them has a different rule. It lives here rather than in each of them because the
+/// resolution - which label the row carries and which form that label means - is this
+/// calculation's own business.
+pub(crate) fn saturation_pressure(
+    entry: &crate::databank::Entry,
+    temperature: f64,
+    warnings: &mut Vec<azoth_core::Warning>,
+) -> azoth_core::Result<f64> {
+    let Some((coefficients, label)) = entry.antoine.as_ref() else {
+        return Err(AzothError::property_unavailable(
+            entry.name.clone(),
+            "Antoine vapour-pressure coefficients".to_string(),
+            "its reference state is `solvent`, so its fugacity coefficient is `gamma P0 / P` \
+             and there is no correlation to evaluate"
+                .to_string(),
+        ));
+    };
+    let Some(form) = crate::antoine_vapor_pressure::form_from_type(label, coefficients[4]) else {
+        return Err(AzothError::property_unavailable(
+            entry.name.clone(),
+            "Antoine vapour-pressure coefficients".to_string(),
+            format!("its row is marked `{label}`, which upstream retracted"),
+        ));
+    };
+    let pressure = crate::antoine_vapor_pressure::antoine_vapor_pressure(
+        coefficients[0],
+        coefficients[1],
+        coefficients[2],
+        coefficients[3],
+        coefficients[4],
+        form,
+        kelvins(entry.tc),
+        pascals(entry.pc),
+        kelvins(temperature),
+    )?;
+    warnings.extend(pressure.warnings);
+    Ok(pressure.p_sat.value)
 }

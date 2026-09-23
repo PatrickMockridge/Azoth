@@ -639,6 +639,9 @@ class PhFlashResult:
 class PitzerPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
+    ln_phi: list[float]
+    henry: list[Qty]
+    gamma_inf: list[float]
     molality: list[float]
     ionic_strength: float
     osmotic_coefficient: float
@@ -1930,7 +1933,12 @@ def ph_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PhFlashResult: ...
-def pitzer_phase(components: list[str], T: float, x: list[float]) -> PitzerPhaseResult: ...
+def pitzer_phase(
+    components: list[str],
+    T: float,
+    P: float,
+    x: list[float],
+) -> PitzerPhaseResult: ...
 def pr78_kappa(omega: float) -> Pr78KappaResult: ...
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult: ...
 def pr_cpa_phase(

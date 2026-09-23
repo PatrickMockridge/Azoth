@@ -100,6 +100,14 @@ ALIASES: dict[str, str] = {
 MPA_TO_BAR = 10.0
 BAR_TO_PA = 1.0e5
 
+#: Water's molar mass, in kg/mol.
+#:
+#: ``IapwsHenryLaw.WATER_MOLAR_MASS_KG_PER_MOL``, and **the factor that is not applied
+#: here**: ``ComponentGePitzer`` multiplies the constant by it to move the standard
+#: state onto the molality scale, which is a phase's decision and not this
+#: correlation's.
+WATER_MOLAR_MASS_KG_PER_MOL = 0.01801528
+
 
 def gas_from_name(name: str) -> str | None:
     """The table row a component name means, or ``None``.

@@ -3333,10 +3333,10 @@ impl From<&DesmukhMatherPhaseResult> for PyDesmukhMatherPhaseResult {
         Self {
             gamma: r.gamma.clone(),
             ln_gamma: r.ln_gamma.clone(),
+            ln_phi: r.ln_phi.clone(),
             molality: r.molality.clone(),
             ionic_strength: r.ionic_strength,
             solvent_molar_mass: r.solvent_molar_mass,
-            ln_phi: r.ln_phi.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -3398,6 +3398,15 @@ pub struct PyPitzerPhaseResult {
     /// The natural logarithm of each activity coefficient.
     #[pyo3(get)]
     pub ln_gamma: Vec<f64>,
+    /// The natural logarithm of each fugacity coefficient.
+    #[pyo3(get)]
+    pub ln_phi: Vec<f64>,
+    /// The Henry coefficient each component's arm read.
+    #[pyo3(get)]
+    pub henry: Vec<PyQty>,
+    /// The infinite-dilution activity coefficient each arm divided by.
+    #[pyo3(get)]
+    pub gamma_inf: Vec<f64>,
     /// Each component's molality, in mol/kg of solvent.
     #[pyo3(get)]
     pub molality: Vec<f64>,
@@ -3433,6 +3442,16 @@ impl From<&PitzerPhaseResult> for PyPitzerPhaseResult {
         Self {
             gamma: r.gamma.clone(),
             ln_gamma: r.ln_gamma.clone(),
+            ln_phi: r.ln_phi.clone(),
+            henry: r
+                .henry
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            gamma_inf: r.gamma_inf.clone(),
             molality: r.molality.clone(),
             ionic_strength: r.ionic_strength,
             osmotic_coefficient: r.osmotic_coefficient,

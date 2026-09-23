@@ -137,7 +137,7 @@ pub fn salt_precipitation(
         // **The coefficients are the brine's own**, re-solved at the composition the extent
         // leaves: `eos.pitzer_phase` over the same names and the same state.
         let x: Vec<f64> = (0..n).map(fraction).collect();
-        let pitzer = pitzer_phase(components, T.value, &x)?;
+        let pitzer = pitzer_phase(components, T.value, P.value, &x)?;
         let result = scale_saturation_ratio(
             salt,
             fraction(first),

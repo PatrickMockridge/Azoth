@@ -36,7 +36,6 @@
 //! branch *looks* different from Pitzer's `gamma H (m/x) / P` and is the same number, and
 //! the two agree only because the reference state's pair terms are absent.
 
-use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::results::DesmukhMatherPhaseResult;
@@ -201,7 +200,7 @@ pub fn desmukh_mather_phase(
         let solvent = entry.reference_state == crate::databank::SOLVENT;
         let neutral = entry.ionic_charge == 0.0;
         let coefficient = if entry.name.eq_ignore_ascii_case("water") {
-            let p0 = vapour_pressure(entry, T, &mut warnings)?;
+            let p0 = crate::antoine_vapor_pressure::saturation_pressure(entry, T, &mut warnings)?;
             // `exp(v (P - P0) / R T)`, with `v` the liquid molar volume. NeqSim converts
             // the pressure difference from bar with a `1e5` because its pressures are in
             // bar; everything here is SI already, so the factor is absent.
@@ -209,7 +208,7 @@ pub fn desmukh_mather_phase(
             let poynting = (molar_volume / (R * T) * (P - p0)).exp();
             ln_gamma[i].exp() * p0 / P * poynting
         } else if neutral && solvent {
-            let p0 = vapour_pressure(entry, T, &mut warnings)?;
+            let p0 = crate::antoine_vapor_pressure::saturation_pressure(entry, T, &mut warnings)?;
             ln_gamma[i].exp() * p0 / P
         } else if neutral && entry.reference_state == crate::databank::SOLUTE {
             let infinite =
@@ -323,41 +322,4 @@ fn ln_gamma_infinite_dilution(name: &str, charge: f64, diameter: f64, temperatur
     } else {
         star
     }
-}
-
-/// `P0_i(T)` from the component's own Antoine row, in pascals.
-fn vapour_pressure(
-    entry: &crate::databank::Entry,
-    temperature: f64,
-    warnings: &mut Vec<azoth_core::Warning>,
-) -> Result<f64> {
-    let Some((coefficients, label)) = entry.antoine.as_ref() else {
-        return Err(AzothError::property_unavailable(
-            entry.name.clone(),
-            "Antoine vapour-pressure coefficients".to_string(),
-            "its reference state is `solvent`, so its fugacity coefficient is `gamma P0 / P` \
-             and there is no correlation to evaluate"
-                .to_string(),
-        ));
-    };
-    let Some(form) = crate::antoine_vapor_pressure::form_from_type(label, coefficients[4]) else {
-        return Err(AzothError::property_unavailable(
-            entry.name.clone(),
-            "Antoine vapour-pressure coefficients".to_string(),
-            format!("its row is marked `{label}`, which upstream retracted"),
-        ));
-    };
-    let pressure = crate::antoine_vapor_pressure::antoine_vapor_pressure(
-        coefficients[0],
-        coefficients[1],
-        coefficients[2],
-        coefficients[3],
-        coefficients[4],
-        form,
-        kelvins(entry.tc),
-        pascals(entry.pc),
-        kelvins(temperature),
-    )?;
-    warnings.extend(pressure.warnings);
-    Ok(pressure.p_sat.value)
 }

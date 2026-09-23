@@ -46,6 +46,7 @@ import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.component.IapwsHenryLaw;
 import neqsim.thermo.phase.PhaseGE;
 import neqsim.thermo.phase.PhaseInterface;
+import neqsim.thermo.phase.PhasePitzer;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPitzer;
 
@@ -71,6 +72,15 @@ public class PitzerFugacityProbe {
         new double[] { 0.5, 10.0 });
     one("methane-water-333", 333.15, 1.01325, new String[] { "methane", "water" },
         new double[] { 0.01, 10.0 });
+    // The three brines `PitzerArithmetic.java` pins the activity coefficients on, at that
+    // probe's own state - 298.15 K and **1.0 bar** - so the cases that pin the activity
+    // surface can pin the fugacity surface at the same composition.
+    one("nacl", 298.15, 1.0, new String[] { "water", "Na+", "Cl-" },
+        new double[] { 0.88, 0.06, 0.06 });
+    one("nacl-cacl2", 298.15, 1.0, new String[] { "water", "Na+", "Ca++", "Cl-" },
+        new double[] { 0.88, 0.03, 0.03, 0.06 });
+    one("nahco3", 298.15, 1.0, new String[] { "water", "Na+", "HCO3-" },
+        new double[] { 0.88, 0.06, 0.06 });
   }
 
   static void one(String label, double temperature, double pressure, String[] names,
@@ -100,7 +110,11 @@ public class PitzerFugacityProbe {
         }
       }
       System.out.println("  phase[" + p + "]_type=" + phase.getPhaseTypeName()
-          + " density=" + phase.getPhysicalProperties().getDensity());
+          + " density=" + phase.getPhysicalProperties().getDensity()
+          // The activity-side scalars, so that a case built on a fluid this probe adds
+          // pins the whole result and not only the part this probe is about.
+          + " ionic_strength=" + ((PhasePitzer) phase).getIonicStrength()
+          + " osmotic_coefficient=" + ((PhasePitzer) phase).getOsmoticCoefficientOfWater());
       for (int i = 0; i < phase.getNumberOfComponents(); i++) {
         ComponentInterface component = phase.getComponent(i);
         System.out.println("    component[" + component.getName() + "]_x=" + component.getx()

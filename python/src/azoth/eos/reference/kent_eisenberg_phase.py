@@ -22,7 +22,7 @@ from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import _henry
-from azoth.eos.reference.antoine_vapor_pressure import antoine_vapor_pressure
+from azoth.eos.reference.antoine_vapor_pressure import saturation_pressure
 
 MODEL_ID = "eos.kent_eisenberg_phase"
 
@@ -102,7 +102,7 @@ def kent_eisenberg_phase(
     for name in components:
         entry = _components.entry(name)
         if entry.reference_state == _components.SOLVENT:
-            coefficient = _vapour_pressure(entry, t_si, warnings) / p_si
+            coefficient = saturation_pressure(entry, t_si, warnings) / p_si
         elif entry.ionic_charge == 0.0:
             # `_henry` reports in bar and this phase's `P` is in pascals, so the
             # conversion is here rather than in the correlation.
@@ -126,36 +126,3 @@ def kent_eisenberg_phase(
         ln_phi=tuple(ln_phi),
         warnings=tuple(warnings),
     )
-
-
-def _vapour_pressure(
-    entry: _components.DatabankEntry, temperature_k: float, warnings: list[Warning]
-) -> float:
-    """``P0_i(T)`` from the component's own Antoine row, in pascals."""
-    if entry.antoine is None:
-        raise PropertyUnavailableError(
-            entry.name,
-            "Antoine vapour-pressure coefficients",
-            "its reference state is `solvent`, so `ComponentKentEisenberg.fugcoef` gives it "
-            "`P0_i(T) / P` and there is no correlation to evaluate. A keycard supplies the "
-            "parameters a cubic reads and not these",
-        )
-    form = _components.form_from_type(entry.antoine_type, entry.antoine[4])
-    if not form:
-        raise PropertyUnavailableError(
-            entry.name,
-            "Antoine vapour-pressure coefficients",
-            f"its row is marked `{entry.antoine_type}`, which upstream retracted - the rows "
-            f"that carried one repeated filler tuple. NeqSim evaluates the filler and "
-            f"returns a number; this library refuses it",
-        )
-    result = antoine_vapor_pressure(*entry.antoine, form, entry.Tc, entry.Pc, _q(temperature_k))
-    warnings.extend(result.warnings)
-    return result.p_sat.to_base_units().magnitude
-
-
-def _q(value: float) -> Q:
-    """A bare kelvin quantity, for the correlation's own argument."""
-    import azoth
-
-    return azoth.ureg.Quantity(value, "K")

@@ -2,53 +2,210 @@ model = "eos.pitzer_phase"
 [[cases]]
 id = "sodium_chloride_at_298_k"
 tolerance = 1e-08
-source = "NeqSim master `ComponentGePitzer.getGamma` and `PhasePitzer.getOsmoticCoefficientOfWater`, end to end on a live `SystemPitzer`: validation/neqsim/PitzerArithmetic.java. The catalogue covers this brine, so `dataset = phreeqc`. The `gamma` entries are `exp` of the logarithms NeqSim returns; `water_activity` is `gamma_w x_w`, the conversion `getWaterGamma` documents."
+source = "NeqSim master, `PitzerFugacityProbe`'s `nacl` fluid - the composition `PitzerArithmetic.java` pins the activity coefficients on, at its own state of 298.15 K and 1.0 bar. Pinning the same fluid twice is deliberate: the fugacity surface was added to a model that already answered, so this case is the check that the addition moved nothing. The three arms are all present - water's `gamma P0 / P` at `0.9782070355447849 * 0.031787528699883306 / 1.0`, the ions' `(gamma / gamma_inf) 1e12 / 1`, with `gamma_inf` from the two-component reference phase. `henry` is zero on the water entry because that arm reads none."
 [cases.inputs]
 components = ["water", "Na+", "Cl-"]
 T = 298.15
+P = 100000.0
 x = [0.88, 0.06, 0.06]
 [cases.expected]
-gamma = [0.9782070355447849, 0.7652808165351388, 0.7652808165351388]
-ln_gamma = [-0.0220339385649971, -0.267512432075052, -0.267512432075052]
+gamma = [0.9782070355447849, 0.7652808165351391, 0.7652808165351391]
+ln_gamma = [-0.0220339385649971, -0.2675124320750516, -0.2675124320750516]
+ln_phi = [-3.4707151839323496, 27.36352827715267, 27.36352827715267]
+henry = [0.0, 1000000000000.0, 1000000000000.0]
+gamma_inf = [1.0, 0.9999804068927719, 0.9999804068927719]
 molality = [55.50929780738273, 3.784724850503368, 3.784724850503368]
 ionic_strength = 3.784724850503368
-osmotic_coefficient = 1.09902694054914
+osmotic_coefficient = 1.099026940549135
 water_activity = 0.8608221912794107
 dataset = "phreeqc"
 [[cases]]
 id = "sodium_calcium_chloride_at_298_k"
 tolerance = 1e-08
-source = "NeqSim master, same probe. The divalent calcium activates both flags the ion branch gates on - `unequal-charge-same-sign` and `non-2-2 beta2` - so this is the case the two exist for. The catalogue carries a `B2` for Ca++/Cl- where the CSV carries none."
+source = "The same probe and the same source fluid as the case above - `PitzerArithmetic.java`'s divalent brine - so the flags it exercises are exercised on the fugacity side too. **The divalent changes `gamma_inf`**: calcium's reference evaluation is `0.9998432679793476` against the monovalent ions' `0.9999804068927719`, because the two-component reference phase is that ion at `x = 1e-11` and a divalent is not the same solute. Its `phi` is the largest here, `1.5863248259410727e11`."
 [cases.inputs]
 components = ["water", "Na+", "Ca++", "Cl-"]
 T = 298.15
+P = 100000.0
 x = [0.88, 0.03, 0.03, 0.06]
 [cases.expected]
-gamma = [0.9452412202388173, 0.6039528596541243, 0.15860761980456956, 2.0680365507955862]
-ln_gamma = [-0.0563151245495846, -0.504259131023400, -1.84132192677047, 0.726599630955942]
+gamma = [
+    0.9452412202388173,
+    0.6039528596541243,
+    0.15860761980456917,
+    2.068036550795586,
+]
+ln_gamma = [
+    -0.0563151245495846,
+    -0.5042591310234001,
+    -1.8413219267704724,
+    0.7265996309559417,
+]
+ln_phi = [
+    -3.504996369916937,
+    27.126781578204323,
+    25.789855933462476,
+    28.357640340183664,
+]
+henry = [0.0, 1000000000000.0, 1000000000000.0, 1000000000000.0]
+gamma_inf = [1.0, 0.9999804068927719, 0.9998432679793476, 0.9999804068927719]
 molality = [
     55.50929780738273,
     1.892362425251684,
     1.892362425251684,
     3.784724850503368,
 ]
-ionic_strength = 6.623268488380894
+ionic_strength = 6.623268488380893
 osmotic_coefficient = 1.35042230443611
 water_activity = 0.8318122738101592
 dataset = "phreeqc"
 [[cases]]
 id = "sodium_bicarbonate_on_the_legacy_dataset_at_298_k"
 tolerance = 1e-08
-source = "NeqSim master, same probe. The catalogue carries no `C0` row for Na+/HCO3-, so this brine falls back to `PitzerParameters.csv` and reads every parameter through the two-coefficient Silvester form instead of the six. Its chloride twin above is the same ionic strength on the other dataset, and `phi` differs by 0.22 between them."
+source = "The third of `PitzerArithmetic.java`'s brines, which is the **legacy** dataset's case, so this pins the fugacity surface on the other parameter set. **The reference state does not follow the brine onto the legacy dataset**: `gamma_inf` is `0.9999804068927719` here, the same number the two phreeqc brines carry, because the reference phase is a two-component one and `Na+`/`water` is a pair the PHREEQC catalogue covers - so the dataset is chosen per phase, by that phase's own topology, and the reference phase is a different phase from the brine."
 [cases.inputs]
 components = ["water", "Na+", "HCO3-"]
 T = 298.15
+P = 100000.0
 x = [0.88, 0.06, 0.06]
 [cases.expected]
-gamma = [1.0079613527261757, 0.4564520167612656, 0.4564520167612656]
-ln_gamma = [0.00792982836473036, -0.784271695618960, -0.784271695618960]
+gamma = [1.0079613527261757, 0.45645201676126573, 0.45645201676126573]
+ln_gamma = [0.0079298283647304, -0.7842716956189597, -0.7842716956189597]
+ln_phi = [-3.440751417002622, 26.846769013608764, 26.846769013608764]
+henry = [0.0, 1000000000000.0, 1000000000000.0]
+gamma_inf = [1.0, 0.9999804068927719, 0.9999804068927719]
 molality = [55.50929780738273, 3.784724850503368, 3.784724850503368]
 ionic_strength = 3.784724850503368
-osmotic_coefficient = 0.879292649731133
+osmotic_coefficient = 0.8792926497311331
 water_activity = 0.8870059903990346
+dataset = "legacy"
+[[cases]]
+id = "carbon_dioxide_in_brine_at_10_bar"
+tolerance = 1e-08
+source = "The **neutral arm, with the database Henry correlation**, from `PitzerFugacityProbe`'s `co2-water-nacl` fluid. CO2's row is one of the two real correlations in the compiled table, and this is the case that shows the `m / x` conversion: `gamma H (m/x) / P` is `1.0 * 51.65450928785164 * 58.0090 / 10`, the captured `299.6444831649862`. **The ions are why the row and not the IAPWS table answers**: CO2 is reactive-qualified *and* the phase has ions, and either gate alone sends it here. The dataset is `legacy` - the catalogue has no `ZETA(CO2, Na+, Cl-)` row, pairing CO2 with sulphate instead - so the neutral layer here is the sparse one."
+[cases.inputs]
+components = ["CO2", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1000000.0
+x = [
+    0.008619500758516066,
+    0.9569024962074196,
+    0.017239001517032133,
+    0.017239001517032133,
+]
+[cases.expected]
+gamma = [1.0, 1.0103960248954016, 0.6544726252218924, 0.6544726252218924]
+ln_gamma = [0.0, 0.0103423578573729, -0.423925519989104, -0.423925519989104]
+ln_phi = [
+    5.702596715805247,
+    -5.740923980504025,
+    24.904530096244574,
+    24.904530096244574,
+]
+henry = [51.65450928785164, 0.0, 1000000000000.0, 1000000000000.0]
+gamma_inf = [1.0, 1.0, 0.9999804068927719, 0.9999804068927719]
+molality = [
+    0.5000116902733186,
+    55.50929780738274,
+    1.0000233805466372,
+    1.0000233805466372,
+]
+ionic_strength = 1.0000233805466372
+osmotic_coefficient = 0.9356267424413548
+water_activity = 0.9668504783804639
+dataset = "legacy"
+[[cases]]
+id = "methane_in_brine_at_10_bar"
+tolerance = 1e-08
+source = "The same arm on a substance the table fits nothing for. Methane's row is the `900` sentinel, so `exp(900)` overflows and the cap turns it into the insoluble `1e12 bar` - which is what the capture's `henry_effective` says and what makes the ion entries and this one **the same number by different routes**: `1e12` by the class clause for an ion, `1e12` by the overflow for a hydrocarbon. Its `phi` is therefore `1.0 * 1e12 * 62.51 / 10`, the captured `6.25094614712092e12`."
+[cases.inputs]
+components = ["methane", "water", "Na+", "Cl-"]
+T = 298.15
+P = 1000000.0
+x = [
+    0.07998976131055224,
+    0.8880143341652269,
+    0.01599795226211045,
+    0.01599795226211045,
+]
+[cases.expected]
+gamma = [1.0, 1.088759531518283, 0.6565502756561006, 0.6565502756561006]
+ln_gamma = [0.0, 0.0850390036980645, -0.4207560068217537, -0.4207560068217537]
+ln_phi = [
+    29.463753951758875,
+    -5.666227334663334,
+    24.907699609411925,
+    24.907699609411925,
+]
+henry = [1000000000000.0, 0.0, 1000000000000.0, 1000000000000.0]
+gamma_inf = [1.0, 1.0, 0.9999804068927719, 0.9999804068927719]
+molality = [
+    5.000116902733186,
+    55.50929780738274,
+    1.0000233805466372,
+    1.0000233805466372,
+]
+ionic_strength = 1.0000233805466372
+osmotic_coefficient = 0.9360977456136553
+water_activity = 0.9668340704472524
+dataset = "phreeqc"
+[[cases]]
+id = "hydrogen_sulphide_in_water_at_one_atmosphere"
+tolerance = 1e-08
+source = "The neutral arm **with no ions in the phase**, which is where the IAPWS table becomes reachable - and the case that shows it does not answer here. `IapwsHenryLaw.isSupportedSpecies(\"H2S\")` is true and its `henry_bar` is `539.9279861457985`, yet the phase reads `9.300854319275573e7` from the row: **CO2 and H2S are the two substances `requiresReactivePitzerQualification` excludes**, whatever the phase. Four and a half orders of magnitude separate the two arms on this fluid, which is why the gate is worth a case. The dataset is `legacy`, the salt-free fallback the case above names."
+[cases.inputs]
+components = ["H2S", "water"]
+T = 298.15
+P = 101325.0
+x = [0.000999000999000999, 0.999000999000999]
+[cases.expected]
+gamma = [1.0, 1.0]
+ln_gamma = [0.0, 0.0]
+ln_phi = [22.352588957775026, -3.4618442318936333]
+henry = [93008543.19275573, 0.0]
+gamma_inf = [1.0, 1.0]
+molality = [0.055509297807382736, 55.50929780738274]
+ionic_strength = 0.0
+osmotic_coefficient = 1.0
+water_activity = 0.999000999000999
+dataset = "legacy"
+[[cases]]
+id = "methane_in_water_at_one_atmosphere"
+tolerance = 1e-08
+source = "**The IAPWS arm, reached and answered.** No ions, no neutral interaction family for methane and water, and methane is not reactive-qualified, so all three gates open and the table's `39479.65646000571 bar` is converted by water's molar mass: `711.2370654308118`, times `m / x = 55.5648`, over `P = 1.01325 bar` is the captured `39002.96111199066`. The row's own value would give a `phi` four orders smaller, so this case is the gate rather than the arithmetic. **The dataset is `legacy`**: a salt-free water/neutral brine is not a topology the catalogue covers, and the salt-free fluids are the ones that reach the table and fall back together."
+[cases.inputs]
+components = ["methane", "water"]
+T = 298.15
+P = 101325.0
+x = [0.000999000999000999, 0.999000999000999]
+[cases.expected]
+gamma = [1.0, 1.0]
+ln_gamma = [0.0, 0.0]
+ln_phi = [10.571392848178034, -3.4618442318936333]
+henry = [711.2370654308118, 0.0]
+gamma_inf = [1.0, 1.0]
+molality = [0.055509297807382736, 55.50929780738274]
+ionic_strength = 0.0
+osmotic_coefficient = 1.0
+water_activity = 0.999000999000999
+dataset = "legacy"
+[[cases]]
+id = "carbon_dioxide_in_water_at_one_atmosphere"
+tolerance = 1e-08
+source = "The **gate's other half**: the same salt-free phase the case above reaches the table through, with CO2 instead of methane. Every gate is open except the reactive qualification, and that one alone keeps the answer on the database row - `51.65450928785164` against the table's `1656.4458917920526 bar`. Two fluids that differ only in the solute, and the two arms are told apart by the name. The dataset is `legacy`, as on the case above."
+[cases.inputs]
+components = ["CO2", "water"]
+T = 298.15
+P = 101325.0
+x = [0.047619047619047616, 0.9523809523809523]
+[cases.expected]
+gamma = [1.0, 1.0]
+ln_gamma = [0.0, 0.0]
+ln_phi = [7.9967552088819165, -3.4618442318936333]
+henry = [51.65450928785164, 0.0]
+gamma_inf = [1.0, 1.0]
+molality = [2.7754648903691366, 55.50929780738274]
+ionic_strength = 0.0
+osmotic_coefficient = 1.0
+water_activity = 0.9523809523809523
 dataset = "legacy"

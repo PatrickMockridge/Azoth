@@ -1524,42 +1524,191 @@ impl PairParameters for DatasetParameters {
     }
 }
 
-/// `eos.pitzer_phase` - the activity coefficients of a Pitzer electrolyte phase.
+/// `eos.pitzer_phase` - the activity coefficients and fugacity coefficients of a Pitzer
+/// electrolyte phase.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if a component is not in the databank, if it carries no
 ///   molar mass, if `x` is not a composition, if the mixture carries no water, or if the
 ///   dataset the selection rule chose does not cover the brine's topology.
-/// * [`AzothError::OutOfRange`] if `T` is not positive.
+/// * [`AzothError::OutOfRange`] if `T` or `P` is not positive.
+/// * [`AzothError::PropertyUnavailable`] if a component's branch needs a Henry constant its
+///   row carries no correlation for, or if a non-water solvent reaches the branch that has
+///   no reference phase.
 ///
 /// # Example
 /// ```
 /// use azoth_eos::pitzer_phase;
 ///
-/// let r = pitzer_phase(&["water", "Na+", "Cl-"], 298.15, &[0.88, 0.06, 0.06])?;
+/// let r = pitzer_phase(&["water", "Na+", "Cl-"], 298.15, 1.0e6, &[0.88, 0.06, 0.06])?;
 /// assert!((r.ionic_strength - 3.784_724_850_503_368).abs() < 1e-12);
 /// assert!((r.osmotic_coefficient - 1.099_026_940_549_14).abs() < 1e-12);
 /// assert_eq!(r.dataset.name(), "phreeqc");
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
-#[allow(non_snake_case)] // `T` and `x` are the symbols in the chemistry
+/// The activity-coefficient surface, as [`activity_of`] leaves it.
+///
+/// A named record rather than a tuple because the two surfaces are read by different
+/// callers: the model wants all of it, and the reference phase wants one `gamma`.
+struct Activity {
+    /// The resolved databank entries, in `x`'s order.
+    entries: Vec<crate::databank::Entry>,
+    /// Each component's ionic charge.
+    charge: Vec<f64>,
+    /// Each component's activity coefficient.
+    gamma: Vec<f64>,
+    /// Its natural logarithm, which is what the model computes first.
+    ln_gamma: Vec<f64>,
+    /// Each component's molality `n_i / m_water`.
+    molality: Vec<f64>,
+    /// `I = 1/2 sum m_i z_i^2`.
+    ionic_strength: f64,
+    /// The Pitzer osmotic coefficient of the water.
+    osmotic: f64,
+    /// The index of the water, which supplies every molality.
+    solvent: usize,
+    /// Whether the catalogue gave this brine a neutral interaction family.
+    neutral_interactions_active: bool,
+    /// Whether the brine carries any ion at all.
+    has_ions: bool,
+    /// Which parameter dataset answered.
+    dataset: crate::results::PitzerDataset,
+}
+
+#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
 pub fn pitzer_phase(
     names: &[&str],
     T: f64,
+    P: f64,
     x: &[f64],
 ) -> azoth_core::Result<crate::results::PitzerPhaseResult> {
-    use crate::pitzer_catalog::{Family, Selection, Species};
     let spec = &crate::model_gen::PITZER_PHASE_SPEC;
     let mut warnings = Vec::new();
     azoth_core::apply_checks(
         spec.input_checks(),
         |quantity| match quantity {
             "T" => Some(T),
+            "P" => Some(P),
             _ => None,
         },
         &mut warnings,
     )?;
 
+    let activity = activity_of(names, T, x)?;
+    let Activity {
+        entries,
+        charge,
+        gamma,
+        ln_gamma,
+        molality,
+        ionic_strength,
+        osmotic,
+        solvent,
+        neutral_interactions_active,
+        has_ions,
+        dataset,
+    } = activity;
+
+    // ---- the fugacity coefficient ------------------------------------------------
+    //
+    // `ComponentGePitzer.fugcoef` is **two methods**, and the order of the branches is
+    // the load-bearing part: the Pitzer override takes every neutral that is not water,
+    // whatever its reference state, and hands the rest to `ComponentGE`. So a neutral
+    // *solvent* - methanol, which carries an Antoine row and never uses it - takes the
+    // Henry branch, and a reader who selects by the reference state alone gets that
+    // fluid wrong.
+    let p_bar = P / BAR_TO_PA;
+    let n = names.len();
+    let mut ln_phi = Vec::with_capacity(n);
+    let mut henry = vec![0.0; n];
+    // `ComponentGE.fugcoef` initialises `activinf` to one and only the branch that
+    // divides by it reassigns it, so an untouched entry is one rather than absent.
+    let mut gamma_inf = vec![1.0; n];
+
+    for i in 0..n {
+        let entry = &entries[i];
+        let water = names[i].eq_ignore_ascii_case("water");
+        let coefficient = if charge[i].abs() < 0.5 && !water {
+            // `ComponentGePitzer.fugcoef`. `m / x` is the conversion between the
+            // molality-scale activity the model works in and the mole-fraction kernel the
+            // rest of this library evaluates, and it is **one where it cannot be taken** -
+            // a zero or non-finite ratio leaves NeqSim's own fallback rather than a NaN.
+            let ratio = if x[i] > 0.0 { molality[i] / x[i] } else { 0.0 };
+            let m_over_x = if ratio > 0.0 && ratio.is_finite() {
+                ratio
+            } else {
+                1.0
+            };
+            let h = neutral_henry(entry, names[i], T, neutral_interactions_active, has_ions)?;
+            henry[i] = h;
+            gamma[i] * h * m_over_x / p_bar
+        } else if entry.reference_state == crate::databank::SOLVENT
+            && !uses_iapws_reference(names[i])
+        {
+            // `ComponentGE.fugcoef`'s solvent arm: `gamma P0 / P`, with `P0` the
+            // component's own Antoine row in bar. Reached by water and by nothing else,
+            // because the branch above takes every other neutral.
+            let p0 = crate::antoine_vapor_pressure::saturation_pressure(entry, T, &mut warnings)?;
+            gamma[i] * p0 / BAR_TO_PA / p_bar
+        } else {
+            // The ionic arm: `(gamma / gamma_inf) H / P`, with `H` through the cap.
+            if entry.reference_state == crate::databank::SOLVENT {
+                // `initRefPhases` builds a **one-component** phase for a solvent-typed
+                // component, and the call that reads `gamma_inf` asks for two, so NeqSim
+                // throws a `NullPointerException` here rather than answering. There is no
+                // reference state to take, and the refusal is the port's analogue of it.
+                return Err(crate::AzothError::property_unavailable(
+                    entry.name.clone(),
+                    "an infinite-dilution reference state".to_string(),
+                    "its reference state is `solvent`, so its reference phase has one \
+                     component, and the infinite-dilution coefficient is read from a \
+                     two-component one. NeqSim throws where this refuses"
+                        .to_string(),
+                ));
+            }
+            let reference = reference_phase_gamma(names, i, solvent, T)?;
+            gamma_inf[i] = reference;
+            let raw = crate::henry::coefficient(entry, T);
+            let h = if crate::henry::is_capped(entry, raw) {
+                crate::henry::INSOLUBLE_HENRY_COEFFICIENT
+            } else {
+                raw
+            };
+            henry[i] = h;
+            gamma[i] / reference * h / p_bar
+        };
+        ln_phi.push(coefficient.ln());
+    }
+
+    // `a_w = gamma_w x_w`, which `getWaterGamma` documents as the conversion from the
+    // activity coefficient to the activity.
+    let water_activity = gamma[solvent] * x[solvent];
+
+    Ok(crate::results::PitzerPhaseResult {
+        gamma,
+        ln_gamma,
+        ln_phi,
+        henry,
+        gamma_inf,
+        water_activity,
+        molality,
+        ionic_strength,
+        osmotic_coefficient: osmotic,
+        dataset,
+        warnings,
+    })
+}
+
+/// The activity-coefficient surface alone, which is what the **reference phase** is.
+///
+/// Separate from [`pitzer_phase`] because the reference phase must not compute a fugacity
+/// coefficient: `getActivityCoefficientInfDilWater` evaluates its two-component phase
+/// through `getExcessGibbsEnergy`, which is the activity surface, and a port that took the
+/// whole model would recurse into itself without end. Splitting it is what NeqSim's own
+/// structure does, in the same place.
+#[allow(non_snake_case)] // `T` is the symbol in the chemistry
+fn activity_of(names: &[&str], T: f64, x: &[f64]) -> azoth_core::Result<Activity> {
+    use crate::pitzer_catalog::{Family, Selection, Species};
     let n = names.len();
     if x.len() != n {
         return Err(crate::AzothError::invalid_input(
@@ -1710,20 +1859,101 @@ pub fn pitzer_phase(
             }
         })
         .collect();
+    let gamma: Vec<f64> = ln_gamma.iter().map(|value| value.exp()).collect();
 
-    Ok(crate::results::PitzerPhaseResult {
-        gamma: ln_gamma.iter().map(|value| value.exp()).collect(),
-        water_activity: ln_gamma[solvent].exp() * x[solvent],
+    Ok(Activity {
+        entries,
+        charge,
+        gamma,
         ln_gamma,
         molality: composition.molality,
         ionic_strength: composition.ionic_strength,
-        osmotic_coefficient: osmotic,
+        osmotic,
+        solvent,
+        neutral_interactions_active,
+        has_ions: !ions.is_empty(),
         dataset: match selection {
             Selection::Phreeqc => crate::results::PitzerDataset::Phreeqc,
             Selection::Legacy(_) => crate::results::PitzerDataset::Legacy,
         },
-        warnings,
     })
+}
+
+/// Pascals per bar. The reference pressures this model divides by are in bar - NeqSim's
+/// internal unit and the unit its Antoine and Henry tables are written in.
+const BAR_TO_PA: f64 = 1.0e5;
+
+/// `ComponentGE.usesIapwsAqueousReference`: the IAPWS table overrides a legacy solvent
+/// classification for a **non-water** component the table carries rows for.
+///
+/// It matters here only as a guard: the branch that reads it is `ComponentGE.fugcoef`'s
+/// solvent arm, and every neutral has already been taken by `ComponentGePitzer`'s own
+/// override, so the flag can only be raised by an ion. It is kept because NeqSim keeps it,
+/// and dropping it would silently change which arm an ionic solvent takes.
+fn uses_iapws_reference(name: &str) -> bool {
+    !name.eq_ignore_ascii_case("water") && crate::iapws_henry_law::gas_from_name(name).is_some()
+}
+
+/// `ComponentGePitzer.getEffectiveHenryCoefficient(phase)`, in bar.
+///
+/// The method overrides `ComponentGE`'s to select the IAPWS pure-water table, and it does
+/// so **behind three gates**: the phase must carry no ions, no neutral Pitzer interaction
+/// family may be active, and the solute must not be CO2 or H2S. Where a gate closes the
+/// database correlation answers instead, and both arms are reachable on captured fluids -
+/// `methane-water` takes the table, `methane-water-NaCl` and `co2-water` take the row.
+fn neutral_henry(
+    entry: &crate::databank::Entry,
+    name: &str,
+    t: f64,
+    neutral_interactions_active: bool,
+    has_ions: bool,
+) -> azoth_core::Result<f64> {
+    use crate::iapws_henry_law::Gas;
+
+    let Some(gas) = crate::iapws_henry_law::gas_from_name(name) else {
+        return crate::henry::effective_coefficient(entry, t);
+    };
+    // `requiresReactivePitzerQualification`, which is the table's own names for CO2 and
+    // H2S and nothing else.
+    let reactive = matches!(gas, Gas::Co2 | Gas::H2s);
+    if !neutral_interactions_active && (has_ions || reactive) {
+        return crate::henry::effective_coefficient(entry, t);
+    }
+    let table = crate::iapws_henry_law::iapws_henry_law(gas, azoth_core::units::kelvins(t))?;
+    if table.status == crate::results::HenryStatus::GuidelineExtrapolation {
+        // `isUsable` fails outside the row's fitted window and the guideline's own
+        // consumer fails closed to the insoluble limit rather than extrapolating.
+        return Ok(crate::henry::INSOLUBLE_HENRY_COEFFICIENT);
+    }
+    // The table is on the mole-fraction scale and the activity is on the molality scale,
+    // so the constant is converted by water's molar mass - which is the whole content of
+    // `getEffectiveHenryCoefficient`'s override.
+    let value = table.henry.value / BAR_TO_PA * crate::iapws_henry_law::WATER_MOLAR_MASS_KG_PER_MOL;
+    Ok(if crate::henry::is_capped(entry, value) {
+        crate::henry::INSOLUBLE_HENRY_COEFFICIENT
+    } else {
+        value
+    })
+}
+
+/// `PhaseGE.getActivityCoefficientInfDilWater(k, water)`: the solute's activity coefficient
+/// in a **two-component reference phase**.
+///
+/// `Phase.initRefPhases` builds it with the solute at `1e-10` mol in slot 0 and the solvent
+/// at `10.0` mol in slot 1, so the composition is `[1e-11, 1 - 1e-11]` - and the arithmetic
+/// is **this model's own**, evaluated on those two names. `eos.pitzer_phase` therefore
+/// calls itself, which is what makes the reference state a property of this model rather
+/// than a table beside it.
+fn reference_phase_gamma(
+    names: &[&str],
+    solute: usize,
+    solvent: usize,
+    t: f64,
+) -> azoth_core::Result<f64> {
+    let dilute = [1.0e-11, 1.0 - 1.0e-11];
+    let pair = [names[solute], names[solvent]];
+    let reference = activity_of(&pair, t, &dilute)?;
+    Ok(reference.gamma[0])
 }
 
 #[cfg(test)]

@@ -23,7 +23,7 @@ from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import _henry
-from azoth.eos.reference.antoine_vapor_pressure import antoine_vapor_pressure
+from azoth.eos.reference.antoine_vapor_pressure import saturation_pressure
 
 MODEL_ID = "eos.desmukh_mather_phase"
 
@@ -149,13 +149,13 @@ def desmukh_mather_phase(
         # asks for `water` *by name* before it asks what the reference state is, so a
         # solvent-reference component that is not water gets no Poynting correction.
         if entry.name.lower() == "water":
-            p0 = _vapour_pressure(entry, t_si, warnings)
+            p0 = saturation_pressure(entry, t_si, warnings)
             mass = entry.molar_mass
             molar_volume = 1.0e-3 * (mass.to_base_units().magnitude if mass is not None else 0.0)
             poynting = math.exp(molar_volume / (R * t_si) * (p_si - p0))
             coefficient = math.exp(ln_gamma[i]) * p0 / p_si * poynting
         elif neutral and is_solvent:
-            p0 = _vapour_pressure(entry, t_si, warnings)
+            p0 = saturation_pressure(entry, t_si, warnings)
             coefficient = math.exp(ln_gamma[i]) * p0 / p_si
         elif neutral and entry.reference_state == _components.SOLUTE:
             infinite = _ln_gamma_infinite_dilution(
@@ -243,33 +243,3 @@ def _ln_gamma_infinite_dilution(
     reference_fraction = 1.0e-10 / (10.0 + 1.0e-10)
     value = molality[0] * water * math.exp(star) / reference_fraction
     return math.log(value) if value > 0.0 and math.isfinite(value) else star
-
-
-def _vapour_pressure(
-    entry: _components.DatabankEntry, temperature_k: float, warnings: list[Warning]
-) -> float:
-    """``P0_i(T)`` from the component's own Antoine row, in pascals."""
-    if entry.antoine is None:
-        raise PropertyUnavailableError(
-            entry.name,
-            "Antoine vapour-pressure coefficients",
-            "its reference state is `solvent`, so its fugacity coefficient is `gamma P0 / P` "
-            "and there is no correlation to evaluate",
-        )
-    form = _components.form_from_type(entry.antoine_type, entry.antoine[4])
-    if not form:
-        raise PropertyUnavailableError(
-            entry.name,
-            "Antoine vapour-pressure coefficients",
-            f"its row is marked `{entry.antoine_type}`, which upstream retracted",
-        )
-    result = antoine_vapor_pressure(*entry.antoine, form, entry.Tc, entry.Pc, _q(temperature_k))
-    warnings.extend(result.warnings)
-    return result.p_sat.to_base_units().magnitude
-
-
-def _q(value: float) -> Q:
-    """A bare kelvin quantity, for the correlation's own argument."""
-    import azoth
-
-    return azoth.ureg.Quantity(value, "K")

@@ -3194,6 +3194,14 @@ class PitzerPhaseResult(_HasWarnings):
     gamma: tuple[float, ...]
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
+    #: The natural logarithm of each fugacity coefficient, from the three arms the
+    #: spec's assumptions name.
+    ln_phi: tuple[float, ...]
+    #: The Henry coefficient each component's arm read, or zero where it read none.
+    henry: tuple[Q, ...]
+    #: The infinite-dilution activity coefficient each arm divided by, or one where it
+    #: divided by none.
+    gamma_inf: tuple[float, ...]
     #: Each component's molality ``n_i / m_water``, in mol/kg of solvent.
     molality: tuple[float, ...]
     #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.

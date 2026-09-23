@@ -2,12 +2,18 @@ id = "eos.pitzer_phase"
 name = "Activity coefficients of a Pitzer electrolyte phase"
 kind = "direct"
 assumptions = [
-    "this is NeqSim's `PhasePitzer`, its `ComponentGePitzer` components and `PitzerElectrostaticMixing` - **the activity-coefficient surface**. The fugacity coefficient built over it, in `ComponentGePitzer` and `ComponentGE`, is a separate item.",
-    "**the reference state is not missing machinery.** The ion branch's `gamma_inf` is `getActivityCoefficientInfDilWater`: a **two-component reference phase**, the solute at `1e-10` mol and water at `10` mol, returning the solute's `gamma`. It is this model's own `x = [1e-11, 1 - 1e-11]`.",
+    "this is NeqSim's `PhasePitzer`, its `ComponentGePitzer` components and `PitzerElectrostaticMixing`: the activity-coefficient surface, and the fugacity coefficients `ComponentGePitzer.fugcoef` and `ComponentGE.fugcoef` build over it.",
+    "**the fugacity branches are two methods and their order decides a fluid.** `ComponentGePitzer` takes every neutral that is not water, whatever its reference state; `ComponentGE` takes the rest. So a neutral *solvent* - methanol, which never reads its Antoine row - takes the **Henry** arm.",
+    "the three arms are `gamma H (m/x) / P` for a neutral, `gamma P0 / P` for water and `(gamma / gamma_inf) H / P` for an ion, all dividing by the pressure **in bar**. `m/x` is one where it cannot be taken, which is NeqSim's own fallback for a zero ratio.",
+    "`henry` is **zero where the arm reads none** and `gamma_inf` is **one where the arm divides by none**: NeqSim initialises the latter to one and never assigns it outside the ionic arm, and the former is not called for water at all.",
+    "**`H` has two arms and both are reachable.** The IAPWS table answers a neutral solute in a water phase with no ions, no active neutral interaction family and no CO2 or H2S; the rest take the row. Captured: `methane-water` takes the table, `co2-water` and `h2s-water` take the row.",
+    "**a neutral whose row carries no Henry correlation is refused.** NeqSim evaluates the four zeros as a polynomial and uses the `1.802 bar` that falls out; this library refuses that number in its other two aqueous models and here. Methanol is the captured fluid this model cannot answer.",
+    "`gamma_inf` is `getActivityCoefficientInfDilWater`: a **two-component reference phase**, the solute at `1e-10` mol and water at `10` mol, returning the solute's `gamma`. It is this model's own arithmetic at `x = [1e-11, 1 - 1e-11]`, evaluated by calling this function on the pair.",
+    "**two of NeqSim's predicates are vacuous here and both are kept.** No component in this databank is both `solvent`-classified and charged, so the guard refusing a solvent with no reference phase - NeqSim throws there - is unreachable. `usesIapwsAqueousReference` needs a non-water neutral.",
     "**which of two datasets answers is a property of the brine's topology, not of the build.** The PHREEQC catalogue applies where it covers every pair and `PitzerParameters.csv` otherwise; the two disagree on shared pairs, so the dataset is reported.",
     "the brine is refused where the loaded dataset does not cover its topology. NeqSim enforces that only for a mixture with more than one cation or anion, so a single salt over an absent pair initializes there and evaluates the pair at zero; this model refuses it.",
-    "`getGamma`'s `pressure` argument is never read - the ion, water and neutral branches all ignore it - so this model takes no pressure input.",
-    "the branch a component takes is its charge, except for water: water with the `solvent` reference state takes the osmotic route, any other neutral takes the sparse neutral layer, and an ion takes the extended Pitzer expression.",
+    "`getGamma`'s `pressure` argument is never read - the ion, water and neutral branches all ignore it - so `P` is read by the fugacity coefficients alone and `gamma` is a function of `T` and `x`.",
+    "the branch a component takes for its **activity coefficient** is its charge, except for water: water with the `solvent` reference state takes the osmotic route, any other neutral takes the sparse neutral layer, and an ion takes the extended Pitzer expression.",
     "a molality is `n_i / m_water` from the mole fractions alone, so the phase's size cancels and no density is needed. `T` is the only state variable.",
     "`x` is checked rather than renormalised.",
     "`beta2`, `theta` and `psi` are zero for a brine on the legacy dataset, whatever the CSV's columns say: that loader calls no setter for them. The coverage audit is what refuses a topology where the zero matters.",
@@ -28,6 +34,9 @@ description = "the substances the brine is made of, by name. The databank suppli
 [inputs.T]
 unit = "K"
 description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure. **The activity coefficients do not read it** - `getGamma`'s own pressure argument is unused - and the fugacity coefficients divide by it, in bar, as every NeqSim reference pressure is."
 [inputs.x]
 type = "vector"
 unit = "dimensionless"
@@ -44,6 +53,21 @@ type = "vector"
 unit = "dimensionless"
 length = "one per component"
 description = "the natural logarithm of each activity coefficient"
+[outputs.ln_phi]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the natural logarithm of each component's fugacity coefficient, from the three arms named in the assumptions. This is the surface `eos.tp_multiflash`'s third phase kind needs."
+[outputs.henry]
+type = "vector"
+unit = "Pa"
+length = "one per component"
+description = "the Henry coefficient each component's arm read, in pascals, or **zero** where the arm reads none - which is water's, whose reference is its own Antoine row. It is the standard-state constant, not a solubility."
+[outputs.gamma_inf]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the infinite-dilution activity coefficient each component's arm divided by, or **one** where the arm divides by none. The ionic arm's own entry is `getActivityCoefficientInfDilWater`."
 [outputs.molality]
 type = "vector"
 unit = "mol/kg"
@@ -65,6 +89,12 @@ description = "which parameter dataset was in force: `phreeqc` for the USGS cata
 [implementations]
 python = "azoth.eos.pitzer_phase"
 rust = "azoth_eos::pitzer_phase"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; the fugacity coefficient divides by it and zero or below is not a state"
 [[valid_range]]
 quantity = "T"
 min = 0

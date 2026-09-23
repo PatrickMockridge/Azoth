@@ -14,11 +14,12 @@ from __future__ import annotations
 import math
 
 from azoth._registry_gen import spec as _spec_for
-from azoth.core.errors import InvalidInputError, OutOfRangeError
+from azoth.core.errors import InvalidInputError, OutOfRangeError, PropertyUnavailableError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AntoineVaporPressureResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.eos import components as _components
 
 CALC_ID = "eos.antoine_vapor_pressure"
 
@@ -118,3 +119,40 @@ def antoine_vapor_pressure(
     apply_checks(checks.derived, lambda name: p_sat if name == "p_sat" else None, warnings)
 
     return AntoineVaporPressureResult(p_sat=from_si(p_sat, "Pa"), warnings=tuple(warnings))
+
+
+def saturation_pressure(
+    entry: _components.DatabankEntry, temperature_k: float, warnings: list[Warning]
+) -> float:
+    """``P0_i(T)`` from a component's own Antoine row, in pascals.
+
+    The reference state three of this library's phase models share: a ``solvent``
+    component's fugacity coefficient is ``gamma P0 / P``, so every one of them needs
+    this and none of them has a different rule. It lives here rather than in each of
+    them because the resolution - which label the row carries and which form that label
+    means - is this calculation's own business.
+    """
+    if entry.antoine is None:
+        raise PropertyUnavailableError(
+            entry.name,
+            "Antoine vapour-pressure coefficients",
+            "its reference state is `solvent`, so its fugacity coefficient is `gamma P0 / P` "
+            "and there is no correlation to evaluate",
+        )
+    form = _components.form_from_type(entry.antoine_type, entry.antoine[4])
+    if not form:
+        raise PropertyUnavailableError(
+            entry.name,
+            "Antoine vapour-pressure coefficients",
+            f"its row is marked `{entry.antoine_type}`, which upstream retracted",
+        )
+    result = antoine_vapor_pressure(*entry.antoine, form, entry.Tc, entry.Pc, _q(temperature_k))
+    warnings.extend(result.warnings)
+    return result.p_sat.to_base_units().magnitude
+
+
+def _q(value: float) -> Q:
+    """A bare kelvin quantity, for the correlation's own argument."""
+    import azoth
+
+    return azoth.ureg.Quantity(value, "K")

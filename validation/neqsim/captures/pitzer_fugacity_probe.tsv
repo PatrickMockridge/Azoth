@@ -2,7 +2,7 @@ fluid=co2-water-nacl
 phases=2
 pressure_pa=1000000.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=1.0000233805466372 osmotic_coefficient=0.9356267424413548
     component[CO2]_x=0.008619500758516066 charge=0.0 fugacity_coefficient=299.6444831649862 ln_phi=5.702596715805247
       gamma=1.0 molality=0.5000116902733186 antoine_p0=65.84275132619263
       activinf_water=1.0 henry_effective=51.65450928785164 henry_capped_1e12=false henry_capped_1=false iapws_supported=true iapws_usable=true iapws_henry_bar=1656.4458917920526
@@ -20,7 +20,7 @@ fluid=methane-water-nacl
 phases=2
 pressure_pa=1000000.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=1.0000233805466372 osmotic_coefficient=0.9360977456136553
     component[methane]_x=0.07998976131055224 charge=0.0 fugacity_coefficient=6.25094614712092E12 ln_phi=29.463753951758875
       gamma=1.0 molality=5.000116902733186 antoine_p0=NaN
       activinf_water=1.0 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=true iapws_usable=true iapws_henry_bar=39479.65646000571
@@ -38,7 +38,7 @@ fluid=h2s-water
 phases=2
 pressure_pa=101325.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=0.0 osmotic_coefficient=1.0
     component[H2S]_x=9.99000999000999E-4 charge=0.0 fugacity_coefficient=5.100421180992071E9 ln_phi=22.352588957775026
       gamma=1.0 molality=0.055509297807382736 antoine_p0=20.320322009928056
       activinf_water=1.0 henry_effective=9.300854319275573E7 henry_capped_1e12=false henry_capped_1=false iapws_supported=true iapws_usable=true iapws_henry_bar=539.9279861457985
@@ -50,7 +50,7 @@ fluid=water-methanol-nacl
 phases=2
 pressure_pa=500000.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=2.2203719122953096 osmotic_coefficient=0.9968220245025202
     component[water]_x=0.847457627118644 charge=0.0 fugacity_coefficient=0.01613298079530703 ln_phi=-4.126889605696965
       gamma=1.0895542596656966 molality=55.50929780738274 antoine_p0=0.07403477455201288
       activinf_water=threw_NullPointerException henry_effective=1.802 henry_capped_1e12=false henry_capped_1=false iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
@@ -68,7 +68,7 @@ fluid=methane-water
 phases=2
 pressure_pa=101325.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=0.0 osmotic_coefficient=1.0
     component[methane]_x=9.99000999000999E-4 charge=0.0 fugacity_coefficient=39002.96111199066 ln_phi=10.571392848178034
       gamma=1.0 molality=0.055509297807382736 antoine_p0=NaN
       activinf_water=1.0 henry_effective=711.2370654308118 henry_capped_1e12=true henry_capped_1=true iapws_supported=true iapws_usable=true iapws_henry_bar=39479.65646000571
@@ -80,7 +80,7 @@ fluid=nitrogen-water
 phases=2
 pressure_pa=101325.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=0.0 osmotic_coefficient=1.0
     component[nitrogen]_x=9.99000999000999E-4 charge=0.0 fugacity_coefficient=84566.25057848655 ln_phi=11.345290536668529
       gamma=1.0 molality=0.055509297807382736 antoine_p0=NaN
       activinf_water=1.0 henry_effective=1542.1047577189877 henry_capped_1e12=false henry_capped_1=false iapws_supported=true iapws_usable=true iapws_henry_bar=85599.82180232489
@@ -92,7 +92,7 @@ fluid=co2-water
 phases=2
 pressure_pa=101325.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=0.0 osmotic_coefficient=1.0
     component[CO2]_x=0.047619047619047616 charge=0.0 fugacity_coefficient=2971.3010768430822 ln_phi=7.9967552088819165
       gamma=1.0 molality=2.7754648903691366 antoine_p0=65.84275132619263
       activinf_water=1.0 henry_effective=51.65450928785164 henry_capped_1e12=false henry_capped_1=false iapws_supported=true iapws_usable=true iapws_henry_bar=1656.4458917920526
@@ -104,11 +104,59 @@ fluid=methane-water-333
 phases=2
 pressure_pa=101325.0
   phase[0]_type=gas is_not_a_ge_phase=true
-  phase[1]_type=aqueous density=0.0
+  phase[1]_type=aqueous density=0.0 ionic_strength=0.0 osmotic_coefficient=1.0
     component[methane]_x=9.99000999000999E-4 charge=0.0 fugacity_coefficient=57616.13879572759 ln_phi=10.961557994864643
       gamma=1.0 molality=0.055509297807382736 antoine_p0=NaN
       activinf_water=1.0 henry_effective=1050.6569837316674 henry_capped_1e12=true henry_capped_1=true iapws_supported=true iapws_usable=true iapws_henry_bar=58320.324953687494
     component[water]_x=0.999000999000999 charge=0.0 fugacity_coefficient=0.19689717184921934 ln_phi=-1.625073656826604
       gamma=1.0 molality=55.50929780738274 antoine_p0=0.19950605937622148
       activinf_water=threw_NullPointerException henry_effective=1.802 henry_capped_1e12=false henry_capped_1=false iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+
+fluid=nacl
+phases=2
+pressure_pa=100000.0
+  phase[0]_type=gas is_not_a_ge_phase=true
+  phase[1]_type=aqueous density=0.0 ionic_strength=3.784724850503368 osmotic_coefficient=1.099026940549135
+    component[water]_x=0.88 charge=0.0 fugacity_coefficient=0.03109478421680762 ln_phi=-3.4707151839323496
+      gamma=0.9782070355447849 molality=55.50929780738273 antoine_p0=0.031787528699883306
+      activinf_water=threw_NullPointerException henry_effective=1.802 henry_capped_1e12=false henry_capped_1=false iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[Na+]_x=0.06 charge=1.0 fugacity_coefficient=7.652958110580264E11 ln_phi=27.36352827715267
+      gamma=0.7652808165351391 molality=3.784724850503368 antoine_p0=NaN
+      activinf_water=0.9999804068927719 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[Cl-]_x=0.06 charge=-1.0 fugacity_coefficient=7.652958110580264E11 ln_phi=27.36352827715267
+      gamma=0.7652808165351391 molality=3.784724850503368 antoine_p0=NaN
+      activinf_water=0.9999804068927719 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+
+fluid=nacl-cacl2
+phases=2
+pressure_pa=100000.0
+  phase[0]_type=gas is_not_a_ge_phase=true
+  phase[1]_type=aqueous density=0.0 ionic_strength=6.623268488380893 osmotic_coefficient=1.35042230443611
+    component[water]_x=0.88 charge=0.0 fugacity_coefficient=0.03004688241665412 ln_phi=-3.504996369916937
+      gamma=0.9452412202388173 molality=55.50929780738273 antoine_p0=0.031787528699883306
+      activinf_water=threw_NullPointerException henry_effective=1.802 henry_capped_1e12=false henry_capped_1=false iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[Na+]_x=0.03 charge=1.0 fugacity_coefficient=6.0396469319912E11 ln_phi=27.126781578204323
+      gamma=0.6039528596541243 molality=1.892362425251684 antoine_p0=NaN
+      activinf_water=0.9999804068927719 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[Ca++]_x=0.03 charge=2.0 fugacity_coefficient=1.5863248259410727E11 ln_phi=25.789855933462476
+      gamma=0.15860761980456917 molality=1.892362425251684 antoine_p0=NaN
+      activinf_water=0.9998432679793476 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[Cl-]_x=0.06 charge=-1.0 fugacity_coefficient=2.068077070851391E12 ln_phi=28.357640340183664
+      gamma=2.068036550795586 molality=3.784724850503368 antoine_p0=NaN
+      activinf_water=0.9999804068927719 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+
+fluid=nahco3
+phases=2
+pressure_pa=100000.0
+  phase[0]_type=gas is_not_a_ge_phase=true
+  phase[1]_type=aqueous density=0.0 ionic_strength=3.784724850503368 osmotic_coefficient=0.8792926497311331
+    component[water]_x=0.88 charge=0.0 fugacity_coefficient=0.03204060042815651 ln_phi=-3.440751417002622
+      gamma=1.0079613527261757 molality=55.50929780738273 antoine_p0=0.031787528699883306
+      activinf_water=threw_NullPointerException henry_effective=1.802 henry_capped_1e12=false henry_capped_1=false iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[Na+]_x=0.06 charge=1.0 fugacity_coefficient=4.5646096024980536E11 ln_phi=26.846769013608764
+      gamma=0.45645201676126573 molality=3.784724850503368 antoine_p0=NaN
+      activinf_water=0.9999804068927719 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
+    component[HCO3-]_x=0.06 charge=-1.0 fugacity_coefficient=4.5646096024980536E11 ln_phi=26.846769013608764
+      gamma=0.45645201676126573 molality=3.784724850503368 antoine_p0=NaN
+      activinf_water=0.9999804068927719 henry_effective=1.0E12 henry_capped_1e12=true henry_capped_1=true iapws_supported=false iapws_usable=false iapws_henry_bar=threw_IllegalArgumentException
 

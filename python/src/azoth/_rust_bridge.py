@@ -2696,22 +2696,27 @@ def kent_eisenberg_phase(
     )
 
 
-def pitzer_phase(components: Sequence[str], T: Q, x: Sequence[float]) -> PitzerPhaseResult:
-    """The activity coefficients of a Pitzer electrolyte phase, computed in Rust.
+def pitzer_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[float]) -> PitzerPhaseResult:
+    """The activity and fugacity coefficients of a Pitzer electrolyte phase, computed in Rust.
 
-    Only the names and the composition cross: the Rust side resolves each component's
-    charge, molar mass and reference state against its own copy of the databank, because
-    the parameter datasets are keyed by the name and the model reads them itself.
+    Only the names, the state and the composition cross: the Rust side resolves each
+    component's charge, molar mass and reference state against its own copy of the
+    databank, because the parameter datasets are keyed by the name and the model reads
+    them itself.
     """
     spec = _models_gen.model("eos.pitzer_phase")
     result = _core.pitzer_phase(
         list(components),
         input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
         list(x),
     )
     return PitzerPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        henry=tuple(from_si(value.magnitude_si, value.unit) for value in result.henry),
+        gamma_inf=tuple(result.gamma_inf),
         molality=tuple(result.molality),
         ionic_strength=result.ionic_strength,
         osmotic_coefficient=result.osmotic_coefficient,

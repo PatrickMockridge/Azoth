@@ -2679,15 +2679,17 @@ def kent_eisenberg_phase(
 def pitzer_phase(
     components: Sequence[str],
     T: Q,
+    P: Q,
     x: Sequence[float],
 ) -> PitzerPhaseResult:
-    """The activity coefficients of an electrolyte phase whose non-ideality is Pitzer's.
+    """The activity and fugacity coefficients of an electrolyte phase whose
+    non-ideality is Pitzer's.
 
     ``components`` are names rather than a resolved record, because the parameter datasets
     are keyed by them: the model resolves each component's ionic charge, molar mass and
-    ``REFERENCESTATETYPE`` against the databank itself. ``T`` is the only state variable -
-    a molality is a function of the mole fractions alone - and there is no pressure
-    argument, because none of the branches NeqSim's ``getGamma`` dispatches to reads one.
+    ``REFERENCESTATETYPE`` against the databank itself. ``P`` does not move any activity
+    coefficient - ``getGamma``'s own pressure argument is unused - and the fugacity
+    coefficients divide by it, in bar, as every NeqSim reference pressure is.
 
     **Which dataset answers is a property of the brine's topology**: the PHREEQC catalogue
     where it covers every pair, ``PitzerParameters.csv`` otherwise. The two disagree on
@@ -2697,12 +2699,14 @@ def pitzer_phase(
         InvalidInputError: if a component is not in the databank, if ``x`` is not a
             composition, if the mixture carries no water, or if the loaded dataset does
             not cover the brine's topology.
-        OutOfRangeError: if ``T`` is not positive.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        PropertyUnavailableError: if a neutral solute's row carries no Henry
+            correlation for the arm the phase takes.
 
     See :func:`azoth.eos.reference.pitzer_phase`.
     """
     return resolve(_PITZER_PHASE)(  # type: ignore[no-any-return]
-        components=components, T=T, x=x
+        components=components, T=T, P=P, x=x
     )
 
 
