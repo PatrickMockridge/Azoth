@@ -717,3 +717,231 @@ fn mixture_and_constants_for(names: &[&str]) -> (azoth_eos::Mixture, Vec<Critica
         .collect();
     (mixture, constants)
 }
+
+/// **The driver end to end, on every branch the capture pins.**
+///
+/// `run` is the class's sequence of decisions, and the four states below reach four different
+/// ones - and each is compared against the capture's own numbers rather than against an
+/// intermediate:
+///
+/// * the class's `wgs-600K` state, two phases at the feed: `skipStability`, the outer loop, and
+///   a Gibbs measure of `-2.2595355` - **twice** one phase's worth, because both phases carry
+///   `beta = 1.0`;
+/// * the same fluid forced to one phase: the VLE initialisation finds `V = 1` and adds nothing,
+///   the stability analysis runs and finds it stable, and the single-phase branch returns
+///   **`gibbs_energy = 0.0`** because it never computes one;
+/// * the 300 K state forced to one phase: the VLE initialisation adds a phase with the captured
+///   betas, and the driver reports `-0.7162112`, one phase's worth;
+/// * methane and water, `NR = 0`: the conventional fallback, whose total iteration count the
+///   driver leaves at `0`.
+#[test]
+fn the_driver_reproduces_every_captured_branch() {
+    use azoth_reactions::rand_solver::PhaseFeed;
+    use azoth_reactions::reactive_flash::{DriverState, run};
+
+    let (mixture, constants) = mixture_and_constants();
+    let matrix =
+        FormulaMatrix::build(&NAMES.map(String::from)).expect("the components are in the databank");
+    let b: Vec<f64> = matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
+        .collect();
+    let data = formation_data();
+
+    let drive = |temperature: f64, phases: Vec<PhaseFeed>| {
+        let g0 = standard_potentials(&data, temperature, 1.0);
+        let reduced = mixture
+            .reduced_parameters(kelvins(temperature), pascals(1.0e5))
+            .expect("a state");
+        let mut phase_ln_phi = |_index: usize, x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+            Ok(mixture
+                .phase_state(&reduced, x, RootSide::Vapour)?
+                .ln_phi
+                .clone())
+        };
+        let mut single_ln_phi = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+            Ok(mixture
+                .phase_state(&reduced, x, RootSide::Vapour)?
+                .ln_phi
+                .clone())
+        };
+        let mut ce = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+            let mut model = |y: &[f64]| -> azoth_core::Result<Vec<f64>> {
+                Ok(mixture
+                    .phase_state(&reduced, y, RootSide::Vapour)?
+                    .ln_phi
+                    .clone())
+            };
+            let solved = azoth_reactions::rand_solver::solve_single_phase(
+                &matrix.matrix,
+                &g0,
+                &b,
+                x,
+                &mut model,
+            )?;
+            if !solved.converged {
+                return Ok(x.to_vec());
+            }
+            let total: f64 = solved.moles.iter().sum();
+            Ok(solved.moles.iter().map(|moles| moles / total).collect())
+        };
+        run(
+            DriverState {
+                feed_moles: &FEED,
+                a_matrix: &matrix.matrix,
+                g0: &g0,
+                b: &b,
+                total_moles: 1.0,
+                constants: &constants,
+                charges: &[0.0; 4],
+                temperature,
+                pressure: 1.0,
+                max_phases: 2,
+                phases,
+            },
+            &mut phase_ln_phi,
+            &mut single_ln_phi,
+            &mut ce,
+        )
+        .expect("the driver runs")
+    };
+
+    let pair = |feed: [f64; 4]| {
+        vec![
+            PhaseFeed {
+                fractions: feed.to_vec(),
+                beta: 1.0,
+            },
+            PhaseFeed {
+                fractions: feed.to_vec(),
+                beta: 1.0,
+            },
+        ]
+    };
+
+    // 1. The class's own state: two phases, the outer loop, the doubled Gibbs measure.
+    let outcome = drive(600.0, pair(FEED));
+    assert!(outcome.converged);
+    assert_eq!(outcome.phases.len(), 2);
+    assert!(
+        (outcome.gibbs_energy - CAPTURED_GIBBS_600K).abs() / CAPTURED_GIBBS_600K.abs() < 1.0e-5,
+        "the driver's Gibbs measure is {} against the capture's {CAPTURED_GIBBS_600K}",
+        outcome.gibbs_energy
+    );
+    let solution = outcome.solution.as_ref().expect("the outer loop solved");
+    let overall: Vec<f64> = (0..NAMES.len())
+        .map(|i| solution.phase_moles.iter().map(|phase| phase[i]).sum())
+        .collect();
+    for (index, (got, want)) in overall.iter().zip(CAPTURED_MOLES).enumerate() {
+        assert!(
+            (got - want).abs() / want.abs() < 1.0e-5,
+            "component {index} ({}): {got} against the capture's {want}",
+            NAMES[index]
+        );
+    }
+
+    // 2. One phase at 600 K: the VLE initialisation declines, the analysis finds it stable,
+    //    and the single-phase branch reports **zero** because it returns before computing one.
+    let outcome = drive(
+        600.0,
+        vec![PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        }],
+    );
+    assert!(
+        outcome.converged,
+        "the capture's forced-one-phase state converges"
+    );
+    assert_eq!(outcome.gibbs_energy, 0.0, "the branch never computes one");
+
+    // 3. One phase at 300 K: the VLE initialisation adds a phase and the driver reports one
+    //    phase's worth, because the betas it weighs by sum to one.
+    let outcome = drive(
+        300.0,
+        vec![PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        }],
+    );
+    assert!(outcome.converged);
+    assert_eq!(outcome.phases.len(), 2);
+    for (index, want) in [CAPTURED_BETA_LIQUID, CAPTURED_BETA_VAPOUR]
+        .into_iter()
+        .enumerate()
+    {
+        assert!(
+            (outcome.phases[index].beta - want).abs() < 1.0e-12,
+            "phase {index} carries {} against the capture's {want}",
+            outcome.phases[index].beta
+        );
+    }
+    assert!(
+        (outcome.gibbs_energy - CAPTURED_GIBBS_300K).abs() / CAPTURED_GIBBS_300K.abs() < 1.0e-4,
+        "the driver's Gibbs measure is {} against the capture's {CAPTURED_GIBBS_300K}",
+        outcome.gibbs_energy
+    );
+
+    // 4. `NR = 0` with two phases: the conventional fallback, and a driver that reports no
+    //    iterations at all.
+    const METHANE_WATER: [f64; 2] = [0.5, 0.5];
+    let (mw_mixture, mw_constants) = mixture_and_constants_for(&["methane", "water"]);
+    let mw_matrix = FormulaMatrix::build(&["methane".to_string(), "water".to_string()])
+        .expect("the components are in the databank");
+    let mw_b: Vec<f64> = mw_matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(METHANE_WATER).map(|(a, n)| a * n).sum())
+        .collect();
+    let mw_reduced = mw_mixture
+        .reduced_parameters(kelvins(300.0), pascals(50.0e5))
+        .expect("a state");
+    let mut phase_ln_phi = |index: usize, x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        let side = if index == 0 {
+            RootSide::Vapour
+        } else {
+            RootSide::Liquid
+        };
+        Ok(mw_mixture.phase_state(&mw_reduced, x, side)?.ln_phi.clone())
+    };
+    let mut single_ln_phi = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        Ok(mw_mixture
+            .phase_state(&mw_reduced, x, RootSide::Vapour)?
+            .ln_phi
+            .clone())
+    };
+    let mut ce = |x: &[f64]| -> azoth_core::Result<Vec<f64>> { Ok(x.to_vec()) };
+    let outcome = run(
+        DriverState {
+            feed_moles: &METHANE_WATER,
+            a_matrix: &mw_matrix.matrix,
+            g0: &[0.0; 2],
+            b: &mw_b,
+            total_moles: 1.0,
+            constants: &mw_constants,
+            charges: &[0.0; 2],
+            temperature: 300.0,
+            pressure: 50.0,
+            max_phases: 2,
+            phases: vec![
+                PhaseFeed {
+                    fractions: METHANE_WATER.to_vec(),
+                    beta: 1.0,
+                },
+                PhaseFeed {
+                    fractions: METHANE_WATER.to_vec(),
+                    beta: 1.0,
+                },
+            ],
+        },
+        &mut phase_ln_phi,
+        &mut single_ln_phi,
+        &mut ce,
+    )
+    .expect("the driver runs");
+
+    assert!(outcome.converged, "the fallback converges");
+    assert_eq!(outcome.total_iterations, 0, "and the driver counts nothing");
+    assert!((outcome.phases[0].beta - 0.500_334_895_161_083_2).abs() < 1.0e-12);
+}

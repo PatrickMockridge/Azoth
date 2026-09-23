@@ -50,16 +50,18 @@
 //!
 //! # What is ported here and what is not, yet
 //!
-//! Ported: the driver's **single-phase branch** (`solveSinglePhaseChemicalEquilibrium`, in
-//! [`single_phase_equilibrium`]), its **VLE initialisation** ([`vle_initialization`]), its
-//! **Gibbs measure** over a phase list ([`total_gibbs_energy`]), its **outer loop**
-//! ([`outer_loop`]) with its acceptance rules, [`remove_negligible_phases`] and
-//! [`add_trial_phase`]. The multiphase solve the loop drives is
-//! [`crate::rand_solver::solve`].
+//! Ported: [`run`] itself - the sequence of decisions - over [`single_phase_equilibrium`],
+//! [`vle_initialization`], [`total_gibbs_energy`], [`outer_loop`], [`remove_negligible_phases`]
+//! and [`add_trial_phase`], with the multiphase solve [`crate::rand_solver::solve`] and the
+//! stability analysis [`crate::reactive_stability::analyse`] as the two pieces the loop drives.
+//!
+//! The end-to-end test pins four of the capture's blocks: the class's own `wgs-600K` state and
+//! its **doubled** `-2.2595355`; that fluid forced to one phase, where the branch returns
+//! `0.0`; the 300 K state forced to one phase, where the driver reports `-0.7162112` with the
+//! captured betas; and methane/water, where `NR = 0` and the driver counts no iterations.
 //!
 //! **Not ported**: the trace-ion short circuit (it needs `hasIonicSpecies`, which this crate's
-//! callers refuse before reaching here) and the reactive-stability *orchestrator* the loop's
-//! recheck calls, which is [`crate::reactive_stability`] driven from outside.
+//! callers refuse before reaching here, so it is a no-op on every fluid that arrives).
 //!
 //! [`non_reactive_flash`] and [`solve_rachford_rice`] are the `NR = 0` fallback: a fluid with
 //! no independent reaction and more than one phase is flashed conventionally, and the capture's
@@ -697,4 +699,271 @@ fn compositions(feed: &[f64], log_k: &[f64], beta: f64, liquid: &mut [f64], vapo
         liquid[i] = x.max(VLE_MIN_MOLES);
         vapour[i] = (k * x).max(VLE_MIN_MOLES);
     }
+}
+
+/// What the driver's `run` needs that is not a closure: the fluid, the state, and the phase
+/// list it starts from.
+#[derive(Debug, Clone)]
+pub struct DriverState<'a> {
+    /// The overall component moles, which `NR` and the VLE initialisation's `z` both read.
+    pub feed_moles: &'a [f64],
+    /// The element-by-component matrix.
+    pub a_matrix: &'a [Vec<f64>],
+    /// The standard potentials.
+    pub g0: &'a [f64],
+    /// The **frozen** element inventory - the driver's `setElementBalance`, which it captures
+    /// from the feed before any phase work.
+    pub b: &'a [f64],
+    /// The system's total moles, which scales the phase moles at each solve.
+    pub total_moles: f64,
+    /// Each component's critical constants, for the VLE initialisation and the seeds.
+    pub constants: &'a [CriticalConstants],
+    /// Each component's ionic charge. The trace-ion short circuit and the ionic branches of
+    /// the solve are the P8 seam, which this crate's callers refuse.
+    pub charges: &'a [f64],
+    /// The temperature, in K.
+    pub temperature: f64,
+    /// The pressure, in bara.
+    pub pressure: f64,
+    /// The effective phase ceiling, the driver's `effectiveMaxPhases`.
+    pub max_phases: usize,
+    /// The phases the driver starts from - `SystemSrkEos`' pair, or whatever the caller's
+    /// system holds.
+    pub phases: Vec<PhaseFeed>,
+}
+
+/// What `run` answers with.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FlashOutcome {
+    /// The phases the driver stopped on.
+    pub phases: Vec<PhaseFeed>,
+    /// `isConverged`.
+    pub converged: bool,
+    /// `getTotalIterations`.
+    pub total_iterations: u32,
+    /// `getEquilibriumTotalMoles`.
+    pub equilibrium_total_moles: f64,
+    /// `computeGibbsEnergy` over the final phase list - which weighs each phase by the
+    /// fraction the *list* carries, and is `0.0` on the single-phase branch because that
+    /// branch returns before the driver computes one.
+    pub gibbs_energy: f64,
+    /// The last solve, where one ran.
+    pub solution: Option<RandSolution>,
+}
+
+/// `ReactiveMultiphaseTPflash.run`: the driver, composed.
+///
+/// The decisions, in the class's order: build the element matrix and its rank; **short-circuit
+/// at `NR = 0`** (one phase is already at equilibrium, more than one goes to
+/// [`non_reactive_flash`]); initialise a VLE split when more than one phase is allowed and the
+/// system holds only one; refuse the trace-ion case; collapse a system the caller limited to
+/// one phase; then ask the stability analysis. A stable answer goes to
+/// [`single_phase_equilibrium`] and returns - **with `converged = true` regardless of what that
+/// solve reported**, which is the class's own overwrite - while an unstable one adds a trial
+/// phase and runs [`outer_loop`].
+///
+/// `phase_ln_phi` answers per phase index and `single_ln_phi` per composition, because the
+/// solve handles a phase list and the stability analysis evaluates one phase at a time; `ce` is
+/// the reactive solve the analysis brings its reference and its trials to.
+///
+/// # Errors
+/// Whatever the closures raise, and [`AzothError::InvalidInput`] on a shape disagreement.
+#[allow(clippy::too_many_arguments)]
+pub fn run(
+    state: DriverState<'_>,
+    phase_ln_phi: PhaseLogPhi<'_>,
+    single_ln_phi: &mut dyn FnMut(&[f64]) -> Result<Vec<f64>>,
+    ce: crate::reactive_stability::EquilibriumSolve<'_>,
+) -> Result<FlashOutcome> {
+    let nc = state.feed_moles.len();
+    let feed_total: f64 = state.feed_moles.iter().sum();
+    let feed_fractions: Vec<f64> = state.feed_moles.iter().map(|m| m / feed_total).collect();
+
+    let mut phases = state.phases;
+
+    // `NR = 0`: the element balance fixes the composition, and the class returns at once - or,
+    // for a multi-phase neutral fluid, falls back to a conventional flash.
+    if nc.saturating_sub(crate::formula_matrix::matrix_rank(state.a_matrix, nc)) == 0 {
+        if phases.len() <= 1 || state.charges.iter().any(|charge| *charge != 0.0) {
+            return Ok(FlashOutcome {
+                phases,
+                converged: true,
+                total_iterations: 0,
+                equilibrium_total_moles: state.total_moles,
+                gibbs_energy: 0.0,
+                solution: None,
+            });
+        }
+        let flashed = non_reactive_flash(
+            &feed_fractions,
+            state.constants,
+            state.temperature,
+            state.pressure,
+            liquid_index_of(state.charges),
+            // The system's own indices, which is what the fallback's `liqIdx`/`gasIdx` are.
+            &mut *phase_ln_phi,
+        )?;
+        return Ok(FlashOutcome {
+            phases: flashed.phases,
+            converged: true,
+            total_iterations: 0,
+            equilibrium_total_moles: state.total_moles,
+            gibbs_energy: 0.0,
+            solution: None,
+        });
+    }
+
+    // `initializeWithVLEFlash`: only when more than one phase is allowed and the system holds
+    // one, and only where the Rachford-Rice root is interior.
+    if state.max_phases > 1 && phases.len() == 1 {
+        if let Some(initialisation) = vle_initialization(
+            &feed_fractions,
+            state.constants,
+            state.temperature,
+            state.pressure,
+        ) {
+            phases = vec![
+                PhaseFeed {
+                    fractions: initialisation.liquid,
+                    beta: 1.0 - initialisation.vapour_fraction,
+                },
+                PhaseFeed {
+                    fractions: initialisation.vapour,
+                    beta: initialisation.vapour_fraction,
+                },
+            ];
+        }
+    }
+
+    // The trace-ion short circuit needs `hasIonicSpecies`, which this crate's callers refuse
+    // before reaching here, so it is a no-op on every fluid that arrives.
+
+    // `effectiveMaxPhases == 1` with more turns into one phase, which the class does by
+    // dropping every phase but the first.
+    if state.max_phases == 1 && phases.len() > 1 {
+        phases.truncate(1);
+    }
+
+    let skip_stability = phases.len() >= 2 && state.max_phases >= 2;
+    let mut unstable_trials: Vec<Vec<f64>> = Vec::new();
+    if !skip_stability {
+        let outcome = crate::reactive_stability::analyse(
+            &phases[0].fractions,
+            state.constants,
+            state.temperature,
+            state.pressure,
+            state.charges,
+            ce,
+            &mut *single_ln_phi,
+        )?;
+        if !outcome.unstable {
+            let single = single_phase_equilibrium(
+                state.a_matrix,
+                state.g0,
+                state.b,
+                state.feed_moles,
+                &mut *single_ln_phi,
+            )?;
+            return Ok(FlashOutcome {
+                phases: vec![PhaseFeed {
+                    fractions: single.moles.clone(),
+                    beta: 1.0,
+                }],
+                // The class sets `converged` here whatever the solve reported.
+                converged: true,
+                total_iterations: single.iterations,
+                equilibrium_total_moles: single.total_moles,
+                gibbs_energy: 0.0,
+                solution: Some(single.solution),
+            });
+        }
+        unstable_trials = outcome.unstable_trials;
+    }
+
+    if !unstable_trials.is_empty() {
+        let _ = add_trial_phase(&mut phases, &unstable_trials, state.max_phases)?;
+    }
+
+    // The recheck the outer loop runs is the same four steps on the composition the last solve
+    // left, so the closure is built from the same two.
+    let constants = state.constants;
+    let charges = state.charges;
+    let temperature = state.temperature;
+    let pressure = state.pressure;
+    let mut stability = |current: &[PhaseFeed]| -> Result<Vec<Vec<f64>>> {
+        let reference = current
+            .first()
+            .map(|phase| phase.fractions.clone())
+            .unwrap_or_default();
+        let outcome = crate::reactive_stability::analyse(
+            &reference,
+            constants,
+            temperature,
+            pressure,
+            charges,
+            ce,
+            &mut *single_ln_phi,
+        )?;
+        Ok(outcome.unstable_trials)
+    };
+
+    let looped = outer_loop(
+        state.a_matrix,
+        state.g0,
+        state.b,
+        state.total_moles,
+        phases,
+        state.max_phases,
+        &mut *phase_ln_phi,
+        &mut stability,
+    )?;
+    let solution = Some(looped.solution.clone());
+
+    let gibbs_energy = render_phases(&looped.phases, &looped.solution, &mut *phase_ln_phi)?;
+    Ok(FlashOutcome {
+        phases: looped.phases,
+        converged: looped.converged,
+        total_iterations: looped.total_iterations,
+        equilibrium_total_moles: looped.equilibrium_total_moles,
+        gibbs_energy,
+        solution,
+    })
+}
+
+/// The index the class calls `liqIdx`: phase 0 is `GAS` in a system as NeqSim builds it, so the
+/// liquid is index 1. The port cannot read a phase's *type*, and the caller's phase list is the
+/// system's own order, so this follows the class's `getPhase(0).getType() == GAS` convention.
+fn liquid_index_of(_charges: &[f64]) -> usize {
+    1
+}
+
+/// `computeGibbsEnergy` over a solved phase list: each phase's composition is the fraction its
+/// moles imply, and the weight is the fraction **the list carries** - the stale one, which is
+/// what the class reads off its phase objects.
+fn render_phases(
+    phases: &[PhaseFeed],
+    solution: &RandSolution,
+    ln_phi: PhaseLogPhi<'_>,
+) -> Result<f64> {
+    let mut entries: Vec<PhaseGibbs> = Vec::with_capacity(phases.len());
+    for (index, phase) in phases.iter().enumerate() {
+        let moles = solution
+            .phase_moles
+            .get(index)
+            .cloned()
+            .unwrap_or_else(|| phase.fractions.clone());
+        let total: f64 = moles.iter().sum();
+        let fractions: Vec<f64> = if total > 0.0 {
+            moles.iter().map(|moles| moles / total).collect()
+        } else {
+            phase.fractions.clone()
+        };
+        let coefficients = ln_phi(index, &fractions)?;
+        entries.push(PhaseGibbs {
+            beta: phase.beta,
+            fractions,
+            ln_phi: coefficients,
+        });
+    }
+    Ok(total_gibbs_energy(&entries))
 }
