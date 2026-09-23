@@ -17,6 +17,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`reactions.chemical_equilibrium`](./chemical_equilibrium.md) | `smith_missen_newton` | NeqSim master `ChemicalEquilibrium` |
 | [`reactions.kinetic_rate_law`](./kinetic_rate_law.md) | `direct composition` | NeqSim master `ChemicalReaction` |
 | [`reactions.kinetics`](./kinetics.md) | `direct composition` | NeqSim master `Kinetics` |
+| [`reactions.reactive_hybrid_eos_ge_flash`](./reactive_hybrid_eos_ge_flash.md) | `coupled_chemistry_fraction_loop` | NeqSim master `TPHybridEosGeFlash`'s reactive route |
 | [`reactions.reactive_ph_flash`](./reactive_ph_flash.md) | `ph_flash_secant_bisection` | NeqSim master `ReactiveMultiphasePHflash` |
 | [`reactions.reactive_phase_equilibrium`](./reactive_phase_equilibrium.md) | `phase_reaction_balance` | NeqSim master `ChemicalReactionOperations` |
 | [`reactions.reactive_tp_flash`](./reactive_tp_flash.md) | `phase_add_remove_loop` | NeqSim master `ReactiveMultiphaseTPflash` |

@@ -62,6 +62,39 @@ from azoth.reactions.reference.equilibrium_constant import GAS_CONSTANT
 _COEFFICIENT_FLOOR = 1e-10
 
 
+
+def side_is_present(
+    coefficients: tuple[tuple[str, float], ...],
+    present: dict[str, int],
+    *,
+    negative: bool,
+) -> bool:
+    """One side of `reactantsContains`: every component on it is one the fluid carries.
+
+    **All reactants present, or all products present** - not "every reactant", which is what
+    this port had and what its spec said: the class falls through to the *products* when a
+    reactant is missing, so a reaction whose products the fluid can hold is kept even though it
+    cannot run forwards. ``MDEAprot`` is the measured case - ``MDEA+`` is a reactant it lacks,
+    ``MDEA`` and ``H3O+`` are products it has, so NeqSim keeps it and the basis is one larger.
+
+    Reactants are the negative coefficients and products everything else, including a zero,
+    which is how the class splits them. A side with no names does not satisfy the rule, because
+    the class's ``test`` starts false and only a completed scan sets it.
+
+    Shared with :mod:`azoth.reactions.reference.reactive_hybrid_eos_ge_flash`, which asks the
+    same question of the same rows to find out which components a fluid drives: a second copy
+    of this rule is how the two would come to different answers about one fluid.
+    """
+    seen = False
+    for name, nu in coefficients:
+        if (nu < 0.0) != negative:
+            continue
+        seen = True
+        if name not in present:
+            return False
+    return seen
+
+
 def reference_potentials(components: list[str], source: str, T: Q) -> ReferencePotentialsResult:
     """The standard-state reference potentials of a fluid's reactive components.
 
@@ -108,24 +141,9 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
         loaded += 1
 
         coefficients = _tables.stoichiometry(candidate_row.name)
-
-        # `reactantsContains`: **all reactants present, or all products present.**
-        #
-        # Not "every reactant", which is what this port had and what the spec said: the
-        # class falls through to the *products* when a reactant is missing, so a reaction
-        # whose products the fluid can hold is kept even though it cannot run forwards.
-        # `MDEAprot` is the measured case - `MDEA+` is a reactant it lacks, `MDEA` and
-        # `H3O+` are products it has, so NeqSim keeps it and the basis is one larger.
-        #
-        # Reactants are the negative coefficients and products everything else, including a
-        # zero, which is how the class splits them. A side with no names does not satisfy
-        # the rule, because the class's `test` starts false and only a completed scan sets
-        # it.
-        reactant_side = [name for name, nu in coefficients if nu < 0.0]
-        product_side = [name for name, nu in coefficients if nu >= 0.0]
-        reactants_present = bool(reactant_side) and all(name in position for name in reactant_side)
-        products_present = bool(product_side) and all(name in position for name in product_side)
-        if not reactants_present and not products_present:
+        if not side_is_present(coefficients, position, negative=True) and not side_is_present(
+            coefficients, position, negative=False
+        ):
             continue
 
         coefficient_row = [0.0] * width

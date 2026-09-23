@@ -150,6 +150,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(reactions::reference_potentials, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::chemical_equilibrium, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::reactive_phase_equilibrium, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        reactions::reactive_hybrid_eos_ge_flash,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(reactions::reactive_tp_flash, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::reactive_ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::kinetic_rate_law, m)?)?;

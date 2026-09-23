@@ -130,6 +130,7 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
+    ReactiveHybridEosGeFlashResult,
     ReactivePhaseEquilibriumResult,
     ReactivePhFlashResult,
     ReactiveTpFlashResult,
@@ -3983,6 +3984,45 @@ def pump(
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_hybrid_eos_ge_flash(
+    components: Sequence[str], cubic: str, T: Q, P: Q, moles: Sequence[float]
+) -> ReactiveHybridEosGeFlashResult:
+    """The coupled reactive hybrid flash, computed in Rust.
+
+    The names cross **unresolved**: the two EoS roles' constants, the seeding's classes and
+    the brine's ion mask all resolve on the Rust side from the same databank, so the two
+    languages cannot disagree about which substance is which.
+    """
+    spec = _models_gen.model("reactions.reactive_hybrid_eos_ge_flash")
+    result = _core.reactive_hybrid_eos_ge_flash(
+        list(components),
+        cubic,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        # The unit-carrying vector crosses as SI magnitudes element by element, for the same
+        # reason the reference converts it: a model's declared units are the boundary's.
+        [_si(spec, "moles", value) for value in moles],
+    )
+    return ReactiveHybridEosGeFlashResult(
+        beta=tuple(result.beta),
+        x=tuple(tuple(row) for row in result.x),
+        coupled_moles=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.coupled_moles
+        ),
+        aqueous_moles=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.aqueous_moles
+        ),
+        passes=result.passes,
+        chemical_deviation=result.chemical_deviation,
+        residual=result.residual,
+        max_material_balance_residual=result.max_material_balance_residual,
+        max_log_fugacity_residual=result.max_log_fugacity_residual,
+        element_residual=result.element_residual,
+        charge_residual=result.charge_residual,
         warnings=_warnings(result.warnings),
     )
 

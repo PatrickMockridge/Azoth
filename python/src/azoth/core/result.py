@@ -2613,6 +2613,52 @@ class HybridEosGeFlashResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class ReactiveHybridEosGeFlashResult(_HasWarnings):
+    """Result of ``reactions.reactive_hybrid_eos_ge_flash``.
+
+    A coupled state: the role split and the brine's chemistry solved at once, each as the
+    other's input. **A loop that does not certify is an error and not an answer**, so every
+    returned result is one whose three conditions held - the pass floor, the brine's
+    composition and the fraction solve's residual.
+    """
+
+    #: The mole fraction of the feed in each of ``[gas, oil, aqueous]``, summing to one. A
+    #: role the solve drove to nothing carries the solver's floor rather than zero.
+    beta: tuple[float, ...]
+    #: Each role's composition at the coupled state, one row per role and one column per
+    #: component. An ion's entry is ``1e-50`` in the two EoS roles.
+    x: tuple[tuple[float, ...], ...]
+    #: The reaction-adjusted overall inventory the last pass solved at. **Not the feed**
+    #: wherever the chemistry moved a species, and a spectator's entry is the feed's.
+    coupled_moles: tuple[Q, ...]
+    #: The brine's species amounts at the answer, in the reactive set's own order - the
+    #: order :func:`azoth.reactions.reference.reactive_hybrid_eos_ge_flash.reactive_components`
+    #: reports. This is the state a scale potential is computed from.
+    aqueous_moles: tuple[Q, ...]
+    #: How many coupled passes the loop made: at least three, and the class's own count
+    #: rather than the fraction solve's.
+    passes: int
+    #: The last pass's composition deviation, the sum of ``|x_old - x_new|`` over the brine.
+    #: The class's tolerance on it is ``1e-10``.
+    chemical_deviation: float
+    #: The last fraction solve's own residual, the larger of its step norm and its gradient
+    #: norm, held to ``1e-10``.
+    residual: float
+    #: The worst ``|z_i - sum_k beta_k x_ik|`` over the coupled inventory. The underlying
+    #: model's contract holds it to ``1e-7``.
+    max_material_balance_residual: float
+    #: The worst cross-role ``ln(x_i phi_i P)`` spread, held to ``1e-5``.
+    max_log_fugacity_residual: float
+    #: The worst departure of an element balance from what the phases hold, in mol. The
+    #: chemistry conserves elements by construction, so this measures the split.
+    element_residual: float
+    #: The net charge the phases fail to account for, in moles of elementary charge.
+    charge_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 class HenryStatus(StrEnum):
     """Whether the guideline's Henry constant was evaluated inside the fitted range.
 

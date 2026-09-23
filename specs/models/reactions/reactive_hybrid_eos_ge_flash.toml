@@ -1,0 +1,111 @@
+id = "reactions.reactive_hybrid_eos_ge_flash"
+name = "Reactive fixed-role gas-oil-brine flash"
+kind = "procedure"
+assumptions = [
+    "**the chemistry and the split are each other's input, so the loop stops on both.** A state is certified only where the brine's composition has stopped moving and the fraction solve has converged, and only after three passes.",
+    "**the first fraction solve is outside the loop.** Chemistry would otherwise meet the role seeds rather than a split, and NeqSim establishes a feed-balanced one before the first pass. Its residual is not the one the convergence test reads.",
+    "**the reactive set is the surviving reactions' own components, not every substance with a formula.** `Ca++` and `Cl-` are here and neither reacts, so a rule that took every formula row would give the brine a chemistry its source does not.",
+    "**the set's order is this library's and not NeqSim's.** NeqSim's is a `HashSet` iteration, a property of Java's string hash; every vector that depends on it moves with it. Here it is the fluid's own order, which on the captured fluids is the capture's.",
+    "**the reaction source is `pitzer`, from the model and not from the caller.** `SystemPitzer.getChemicalReactionDataSource()` is `PITZER`, and the hybrid route is reachable only from an EoS/GE system - and that source is the one whose evidence gate refuses an active row that is not `VALIDATED`.",
+    "**the activity vector is the phase's own, recovered from `eos.pitzer_phase`.** `solveChemEq` reads `ln phi_i - ln phi_i^reference` once before its solve. `ln_gamma - ln gamma_inf` reproduces it, with `-ln x_water` on the neutral that is not water.",
+    "**a strongly non-ideal neutral would part company there**, because `pitzer_phase` reports the neutral arm's infinite-dilution coefficient as one rather than dividing by it. No captured fluid carries such a neutral, so the divergence is named and not measured.",
+    "**the conservation projection is a shortcut on these fluids.** A raw delta that already satisfies `A delta` to `1e-8` and leaves no inventory negative is used unprojected, and every pass of both captured fluids takes that branch - so the oracle does not exercise the pseudo-inverse.",
+    "**a negative delta is scaled whole rather than clipped.** `feasibleStep` scales the entire delta when an inventory would go negative, which keeps it a reaction direction; scaling one component would take it out of the null space.",
+    "**the passes carry the fractions rather than re-running `initBeta`.** NeqSim recomputes each role's fraction from the phase objects' stored counts, which move in the eighth digit; the answer and the pass count are unaffected, because no pass below three may certify.",
+    "**the ions do not leave the brine, and the EoS roles carry none.** The confinement is exact rather than a penalty: an ion's inverse fugacity coefficient is zero in the gas and oil roles and its composition there is the `1e-50` floor.",
+    "**the certified state depends on the pass count.** The deviation measures the chemistry's half of the coupling and the fraction solve moves the other half, so two trajectories differing at `1e-8` can stop a pass apart - measured, they do, and the extra pass moves a trace species `2e-7`.",
+    "**the feed is moles, not mole fractions.** The reaction deltas are mole deltas and the ionic inventory is a mole sum, so the coupled inventory is an amount the reactions move - a normalised feed would have to be renormalised back before either is computed.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPHybridEosGeFlash.run`, `solveAqueousChemicalEquilibrium`, `updateCoupledOverallComposition` and `getConservativeReactionDeltas` are the port source; the coupled state is what `SystemHybridEosGeFlashTest` asserts.",
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part II. Phase-split calculation.\" Fluid Phase Equilibria 9(1), 21-40. DOI 10.1016/0378-3812(82)85002-4. The fraction Newton this loop re-enters each pass.",
+    "Smith, W. R.; Missen, R. W. (1982). \"Chemical Reaction Equilibrium Analysis: Theory and Algorithms.\" Wiley, New York. The conservation null space the reaction delta is projected onto.",
+    "Pitzer, K. S. (1991). \"Activity Coefficients in Electrolyte Solutions\", 2nd edition. CRC Press. The GE role's model, whose activity coefficients are the chemistry's input.",
+    "`validation/neqsim/HybridEosGeReactiveProbe.java` and `HybridEosGeReactiveLoopProbe.java` with their captures - the endpoint and the loop's interior: the per-pass deviation, residual, inventory, reaction delta and activity vector.",
+]
+[source]
+standard = "NeqSim master `TPHybridEosGeFlash`'s reactive route"
+edition = "`run`'s outer loop, `solveAqueousChemicalEquilibrium`, `updateCoupledOverallComposition` and `getConservativeReactionDeltas`, ported over `eos.hybrid_eos_ge_flash`'s fixed-topology solve."
+[algorithm]
+scheme = "coupled_chemistry_fraction_loop"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 100
+initialisation = "linear_programming_on_the_first_pass"
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the feed is made of, by name. Each one's grade for the two EoS roles, its class for the seeding, its charge and its formula row all resolve from the databank inside the two kernels, so nothing about a substance crosses this boundary but its name."
+[inputs.cubic]
+type = "enum"
+values = ["pr", "srk", "rk", "tst"]
+description = "the cubic **both** EoS roles are, as the underlying `eos.hybrid_eos_ge_flash` takes it. The oracle's system is `SystemPitzer`, whose EoS roles are SRK."
+[inputs.T]
+unit = "K"
+description = "absolute temperature. It sets the standard state the reference potentials are reduced against and it is read by the solve's own step search."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the feed's mole numbers. **The inventory the passes hand each other is not this vector**: a reaction changes the number of species moles, so the coupled inventory moves off the feed and the answer reports it."
+[outputs]
+[outputs.beta]
+type = "vector"
+unit = "dimensionless"
+length = "one per role"
+description = "the mole fraction of the feed in each of `[gas, oil, aqueous]`, summing to one. A role the solve drove to nothing carries the solver's own floor rather than zero."
+[outputs.x]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per role, one column per component"
+description = "each role's composition at the coupled state, each row summing to one. An ion's entry is `1e-50` in the two EoS roles."
+[outputs.coupled_moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the reaction-adjusted overall inventory the last pass solved at, one entry per component. **It is not the feed** wherever the chemistry moved a species, and a spectator's entry is the feed's."
+[outputs.aqueous_moles]
+type = "vector"
+unit = "mol"
+length = "one per reactive component"
+description = "the brine's species amounts at the answer, in the order `reactive_components` reports. This is the state a scale potential is computed from."
+[outputs.passes]
+unit = "dimensionless"
+description = "how many coupled passes the loop made: at least three, and the class's own count rather than the fraction solve's. **A loop that does not certify is an error and not an answer**, so a returned result is one whose three conditions all held."
+[outputs.chemical_deviation]
+unit = "dimensionless"
+description = "the last pass's composition deviation: the sum of `|x_old - x_new|` over the brine, taken after the chemistry wrote it back and before the fractions were solved again. The class's tolerance on it is `1e-10`."
+[outputs.residual]
+unit = "dimensionless"
+description = "the last fraction solve's own residual, the larger of its step norm and its gradient norm, held to `1e-10`."
+[outputs.max_material_balance_residual]
+unit = "dimensionless"
+description = "the worst `|z_i - sum_k beta_k x_ik|` over the coupled inventory. The underlying model's acceptance contract holds this to `1e-7`."
+[outputs.max_log_fugacity_residual]
+unit = "dimensionless"
+description = "the worst spread of `ln(x_i phi_i P)` over the roles that are there, held to `1e-5`."
+[outputs.element_residual]
+unit = "dimensionless"
+description = "the worst departure of an element balance from what the phases hold, in mol. **The chemistry conserves elements by construction**, so this measures the split and not the reactions; the captured fluid's endpoint is `2.19e-10`."
+[outputs.charge_residual]
+unit = "dimensionless"
+description = "the net charge the phases fail to account for, in moles of elementary charge. The reactions conserve charge exactly and the brine is electroneutral, so the captured fluids reach `1e-13` or better."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.reactions.reactive_hybrid_eos_ge_flash"
+rust = "azoth_reactions::reactive_hybrid_eos_ge_flash"

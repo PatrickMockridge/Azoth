@@ -1442,6 +1442,21 @@ class KineticsResult:
     warnings: list[Warning]
 
 @final
+class ReactiveHybridEosGeFlashResult:
+    beta: list[float]
+    x: list[list[float]]
+    coupled_moles: list[Qty]
+    aqueous_moles: list[Qty]
+    passes: int
+    chemical_deviation: float
+    residual: float
+    max_material_balance_residual: float
+    max_log_fugacity_residual: float
+    element_residual: float
+    charge_residual: float
+    warnings: list[Warning]
+
+@final
 class ReactivePhFlashResult:
     temperature: Qty
     converged: bool
@@ -2643,6 +2658,13 @@ def kinetics(
     inter_density: float,
     diffusion: list[float],
 ) -> KineticsResult: ...
+def reactive_hybrid_eos_ge_flash(
+    components: list[str],
+    cubic: str,
+    T: float,
+    P: float,
+    moles: list[float],
+) -> ReactiveHybridEosGeFlashResult: ...
 def reactive_ph_flash(
     components: list[str],
     T: float,

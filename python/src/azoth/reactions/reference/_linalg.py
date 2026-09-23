@@ -1,4 +1,4 @@
-"""The two linear-algebra routines the reference-potential solve needs.
+"""The linear-algebra routines the reaction tier needs.
 
 The Python twin of ``crates/azoth-reactions/src/linalg.rs``, and the same argument
 applies: **JAMA is not ported**, because the rank it computes here is exact.
@@ -20,6 +20,8 @@ fraction-free elimination below cannot overflow and needs no scaling.
 """
 
 from __future__ import annotations
+
+import math
 
 from azoth.core.errors import InvalidInputError
 
@@ -171,4 +173,78 @@ def solve_columns(m: list[list[float]], rhs: list[list[float]]) -> list[list[flo
         solved = solve_lu(m, [row[c] for row in rhs])
         for i, value in enumerate(solved):
             out[i][c] = value
+    return out
+
+
+#: How much of a row must survive orthonormalisation to count as independent.
+#:
+#: The rows are stoichiometric, so a dependent one cancels exactly up to rounding; this is
+#: two orders above the ``1e-15`` a cancellation of integers reaches and far below the
+#: ``1.0`` an independent row's residual is.
+DEPENDENCE_TOLERANCE = 1.0e-09
+
+
+def row_space_basis(matrix: list[list[float]]) -> list[list[float]]:
+    """An orthonormal basis of a matrix's **row space**, by modified Gram-Schmidt.
+
+    The projection the reactive hybrid flash runs is ``delta - A+ A delta``, and ``A+`` is a
+    pseudo-inverse. **This does not port one**, and the reason is the same kind the rank above
+    is: the difference between the two is representational rather than numerical.
+
+    ``A = getAmatrix()`` is **rank deficient on the carbonate brine** - its oxygen row is
+    exactly ``2 C + 0.5 H - 0.5 charge``, so ``A A^T`` is singular and the textbook
+    ``A+ = A^T (A A^T)^-1`` does not exist there. What *is* well defined whatever the rank is
+    the orthogonal projection onto ``row(A)``, and it is the projection the flash uses: only
+    the subspace matters, and every representation of it gives the same projector. Commons
+    Math reaches it through a singular-value decomposition; this reaches it by
+    orthonormalising the rows.
+
+    The coefficients are stoichiometric, so the inner products are close to integer and the
+    orthonormalisation is stable. A row that contributes less than
+    :data:`DEPENDENCE_TOLERANCE` is dropped, which is what makes the rank deficiency a
+    *dropped row and not a division by zero*.
+
+    Raises:
+        InvalidInputError: if the matrix is empty or its rows are ragged.
+    """
+    if not matrix or not matrix[0]:
+        raise InvalidInputError(
+            "matrix",
+            "a row space needs a matrix, and this one has no rows or no columns",
+        )
+    columns = len(matrix[0])
+    for index, row in enumerate(matrix):
+        if len(row) != columns:
+            raise InvalidInputError(
+                "matrix",
+                f"row 0 has {columns} entries and row {index} has {len(row)}",
+            )
+
+    basis: list[list[float]] = []
+    for row in matrix:
+        candidate = [float(value) for value in row]
+        # Modified Gram-Schmidt: each existing basis vector is taken out in turn, so the
+        # cancellation is applied to the current residual rather than to the original row.
+        for held in basis:
+            projection = sum(a * b for a, b in zip(candidate, held, strict=True))
+            for i, axis in enumerate(held):
+                candidate[i] -= projection * axis
+        norm = math.sqrt(sum(value * value for value in candidate))
+        if norm > DEPENDENCE_TOLERANCE:
+            basis.append([value / norm for value in candidate])
+    return basis
+
+
+def project_onto_null_space(basis: list[list[float]], delta: list[float]) -> list[float]:
+    """The component of ``delta`` that lies **outside** a row space, ``delta - A+ A delta``.
+
+    ``basis`` is :func:`row_space_basis`'s, and the two calls are kept apart because the basis
+    is a property of the fluid's chemistry and is computed once, while this runs once per
+    coupled pass.
+    """
+    out = [float(value) for value in delta]
+    for held in basis:
+        projection = sum(a * b for a, b in zip(out, held, strict=True))
+        for i, axis in enumerate(held):
+            out[i] -= projection * axis
     return out

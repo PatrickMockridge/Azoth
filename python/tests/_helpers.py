@@ -74,6 +74,11 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         # makes the comparison a measurement rather than an impossible strictness.
         "max_reaction_log_residual",
         "net_charge_moles",
+        # `reactive_hybrid_eos_ge_flash`'s, and the same quantity one level out: a net charge
+        # left over after the reactions have conserved it exactly. Measured, the two kernels
+        # leave `1.65e-24` and `4.96e-24` - two roundings of a number that is zero, whose
+        # *ratio* is a factor of six. The class's own gate is `1e-8` and the case records it.
+        "charge_residual",
         "max_element_residual",
         # `eos.hybrid_eos_ge_flash`'s two. Both are of order `1e-13`: one is a material
         # balance that is zero **by construction** and carries only the last ulp of the two
@@ -82,6 +87,12 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         # as such; between the two kernels what is being compared is rounding.
         "max_material_balance_residual",
         "max_log_fugacity_residual",
+        # `reactions.reactive_hybrid_eos_ge_flash`'s. It is the quantity the coupled loop
+        # *stops on* - the sum of `|x_old - x_new|` over the brine at the last pass - so the
+        # two kernels land either side of `1e-13` for the same reason an `error` does, and a
+        # relative comparison of two numbers that small measures the rounding that decided
+        # where each stopped. The loop's other stopping quantity, `residual`, is here already.
+        "chemical_deviation",
         # `reactions.reactive_tp_flash`'s two. The element residual is a scaled
         # root-mean-square of `A n - b`, so on a converged solve it is of order `1e-6` and a
         # difference in the last few digits of the arithmetic is a large fraction of it -
@@ -134,6 +145,13 @@ _UNCOMPARED_FIELDS: frozenset[str] = frozenset(
         "total_iterations",
         "outer_iterations",
         "total_inner_iterations",
+        # `reactive_hybrid_eos_ge_flash`'s pass count, which is the clearest case of the rule
+        # above: **the two kernels take three passes and four on the three-phase fluid**, and
+        # the fourth moves the brine's bicarbonate `2e-7`. The loops stop on a composition
+        # deviation that is the difference of two nearly equal numbers, so a trajectory
+        # difference of `1e-8` decides it. Each kernel's own test asserts the count against the
+        # capture where the two agree, which is where the claim belongs.
+        "passes",
     }
 )
 

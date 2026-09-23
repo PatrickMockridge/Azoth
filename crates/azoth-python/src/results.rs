@@ -64,6 +64,7 @@ use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::kinetic_rate_law::KineticRateLawResult as KernelKineticRateLawResult;
 use azoth_reactions::kinetics::KineticsResult as KernelKineticsResult;
+use azoth_reactions::reactive_hybrid_eos_ge_flash::ReactiveHybridEosGeFlashResult;
 use azoth_reactions::reactive_ph_flash::ReactivePhFlashResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
 use azoth_reactions::reactive_tp_flash::ReactiveTpFlashResult;
@@ -1188,6 +1189,97 @@ impl From<&ReactivePhFlashResult> for PyReactivePhFlashResult {
                     )
                 })
                 .collect(),
+        }
+    }
+}
+
+/// Result of `reactions.reactive_hybrid_eos_ge_flash`, transported.
+///
+/// The first result whose two mole vectors are in **different orders**: `coupled_moles` is one
+/// entry per component, in the fluid's, and `aqueous_moles` is one per *reactive* component, in
+/// the order `reactive_components` reports - which is the same fluid order with the spectators
+/// dropped, so the two are not aligned entry by entry.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ReactiveHybridEosGeFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyReactiveHybridEosGeFlashResult {
+    /// Each role's mole fraction of the feed, in `[gas, oil, aqueous]` order.
+    #[pyo3(get)]
+    pub beta: Vec<f64>,
+    /// Each role's composition, one row per role and one column per component.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// The reaction-adjusted overall inventory the last pass solved at.
+    #[pyo3(get)]
+    pub coupled_moles: Vec<PyQty>,
+    /// The brine's species amounts at the answer, in the reactive set's order.
+    #[pyo3(get)]
+    pub aqueous_moles: Vec<PyQty>,
+    /// How many coupled passes the loop made.
+    #[pyo3(get)]
+    pub passes: u32,
+    /// The last pass's composition deviation.
+    #[pyo3(get)]
+    pub chemical_deviation: f64,
+    /// The last fraction solve's own residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// The worst material-balance deviation over the coupled inventory.
+    #[pyo3(get)]
+    pub max_material_balance_residual: f64,
+    /// The worst cross-role `ln(x_i phi_i P)` spread.
+    #[pyo3(get)]
+    pub max_log_fugacity_residual: f64,
+    /// The worst element residual of the split against the coupled inventory.
+    #[pyo3(get)]
+    pub element_residual: f64,
+    /// The net charge the phases fail to account for.
+    #[pyo3(get)]
+    pub charge_residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyReactiveHybridEosGeFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ReactiveHybridEosGeFlashResult(passes={}, deviation={:e}, residual={:e})",
+            self.passes, self.chemical_deviation, self.residual
+        )
+    }
+}
+
+fn moles(values: &[f64]) -> Vec<PyQty> {
+    values
+        .iter()
+        .map(|value| PyQty {
+            magnitude_si: *value,
+            unit: "mol".to_string(),
+        })
+        .collect()
+}
+
+impl From<&ReactiveHybridEosGeFlashResult> for PyReactiveHybridEosGeFlashResult {
+    fn from(r: &ReactiveHybridEosGeFlashResult) -> Self {
+        Self {
+            beta: r.beta.clone(),
+            x: r.x.clone(),
+            coupled_moles: moles(&r.coupled_moles),
+            aqueous_moles: moles(&r.aqueous_moles),
+            passes: r.passes,
+            chemical_deviation: r.chemical_deviation,
+            residual: r.residual,
+            max_material_balance_residual: r.max_material_balance_residual,
+            max_log_fugacity_residual: r.max_log_fugacity_residual,
+            element_residual: r.element_residual,
+            charge_residual: r.charge_residual,
+            warnings: transport(&r.warnings),
         }
     }
 }
@@ -7852,6 +7944,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),
         ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
+        ReactiveHybridEosGeFlashResult::CALC_ID => ReactiveHybridEosGeFlashResult::FIELDS.to_vec(),
         ReactiveTpFlashResult::CALC_ID => ReactiveTpFlashResult::FIELDS.to_vec(),
         ReactivePhFlashResult::CALC_ID => ReactivePhFlashResult::FIELDS.to_vec(),
         KernelKineticRateLawResult::CALC_ID => KernelKineticRateLawResult::FIELDS.to_vec(),

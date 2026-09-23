@@ -17,8 +17,9 @@ use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyEquilibriumConstantResult, PyKineticRateLawResult, PyKineticsResult, PyReactivePhFlashResult,
-    PyReactivePhaseEquilibriumResult, PyReactiveTpFlashResult,
+    PyEquilibriumConstantResult, PyKineticRateLawResult, PyKineticsResult,
+    PyReactiveHybridEosGeFlashResult, PyReactivePhFlashResult, PyReactivePhaseEquilibriumResult,
+    PyReactiveTpFlashResult,
 };
 
 /// One reaction's equilibrium constant, its derivative and its heat of reaction.
@@ -201,6 +202,38 @@ pub fn reactive_tp_flash(
         max_phases as usize,
     )
     .map(|r| PyReactiveTpFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The coupled reactive hybrid flash: chemistry and a fixed gas-oil-brine topology at once.
+///
+/// `components` crosses **unresolved**: the two EoS roles' constants, the seeding's classes and
+/// the brine's ion mask all resolve on the Rust side from the same databank, so the two
+/// languages cannot disagree about which substance is which. `moles` is the feed's own mole
+/// numbers, and the inventory the loop's later passes are solved at is not it - a reaction
+/// changes the number of species moles, and `coupled_moles` is what came back.
+#[pyfunction]
+#[pyo3(signature = (components, cubic, T, P, moles))]
+#[pyo3(text_signature = "(components, cubic, T, P, moles)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the flash's own name
+pub fn reactive_hybrid_eos_ge_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    cubic: String,
+    T: f64,
+    P: f64,
+    moles: Vec<f64>,
+) -> PyResult<PyReactiveHybridEosGeFlashResult> {
+    azoth_reactions::reactive_hybrid_eos_ge_flash::reactive_hybrid_eos_ge_flash(
+        &components,
+        cubic
+            .parse()
+            .map_err(pyo3::exceptions::PyValueError::new_err)?,
+        T,
+        P,
+        &moles,
+    )
+    .map(|r| PyReactiveHybridEosGeFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

@@ -4,6 +4,7 @@
 //!   - specs/models/reactions/chemical_equilibrium.toml
 //!   - specs/models/reactions/kinetic_rate_law.toml
 //!   - specs/models/reactions/kinetics.toml
+//!   - specs/models/reactions/reactive_hybrid_eos_ge_flash.toml
 //!   - specs/models/reactions/reactive_ph_flash.toml
 //!   - specs/models/reactions/reactive_phase_equilibrium.toml
 //!   - specs/models/reactions/reactive_tp_flash.toml
@@ -606,6 +607,185 @@ pub static KINETICS_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: KINETICS_CHECKS,
     cases: KINETICS_CASES,
+};
+
+static REACTIVE_HYBRID_EOS_GE_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static REACTIVE_HYBRID_EOS_GE_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "carbonate_brine_two_phases",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-08,
+        numbers: &[("T", 313.15), ("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "methane", "CO2", "water", "Ca++", "Cl-", "HCO3-", "CO3--", "OH-", "H3O+",
+            ],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[5.0, 0.05, 55.5, 0.0006, 0.0002, 0.001, 1e-10, 1e-10, 1e-10],
+        )],
+        matrices: &[],
+        expected: &[("passes", 3.0)],
+        expected_vectors: &[
+            (
+                "coupled_moles",
+                &[
+                    5.0,
+                    0.049997206913475076,
+                    55.499994364714574,
+                    0.0006,
+                    0.0002,
+                    0.0010027670978232208,
+                    2.619878633189711e-08,
+                    1.1443550870656359e-08,
+                    2.830738529430478e-06,
+                ],
+            ),
+            (
+                "aqueous_moles",
+                &[
+                    0.005103038372766727,
+                    55.49112972066178,
+                    0.0010027670978232208,
+                    2.6198786331897105e-08,
+                    1.1443550870656359e-08,
+                    2.830738529430478e-06,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "carbonate_brine_three_phases",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 313.15), ("P", 5000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "methane",
+                "CO2",
+                "n-heptane",
+                "water",
+                "Ca++",
+                "Cl-",
+                "HCO3-",
+                "CO3--",
+                "OH-",
+                "H3O+",
+            ],
+        )],
+        strings: &[("cubic", "srk")],
+        vectors: &[(
+            "moles",
+            &[
+                5.0, 0.05, 2.0, 55.5, 0.0006, 0.0002, 0.001, 1e-10, 1e-10, 1e-10,
+            ],
+        )],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "beta",
+                &[
+                    0.07289352057955786,
+                    0.039906308796565454,
+                    0.8872001706238768,
+                ],
+            ),
+            (
+                "coupled_moles",
+                &[
+                    5.0,
+                    0.049997541814741336,
+                    2.0,
+                    55.49999502803662,
+                    0.0006,
+                    0.0002,
+                    0.0010024287512929388,
+                    2.9644120982970915e-08,
+                    1.2952594065994403e-08,
+                    2.5007922770332012e-06,
+                ],
+            ),
+            (
+                "aqueous_moles",
+                &[
+                    0.004506916293757878,
+                    55.489653563605,
+                    0.0010024287512929388,
+                    2.964412098297091e-08,
+                    1.2952594065994403e-08,
+                    2.5007922770332012e-06,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+];
+
+static REACTIVE_HYBRID_EOS_GE_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "coupled_chemistry_fraction_loop",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("linear_programming_on_the_first_pass"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `reactions.reactive_hybrid_eos_ge_flash`.
+pub static REACTIVE_HYBRID_EOS_GE_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "reactions.reactive_hybrid_eos_ge_flash",
+    kind: "procedure",
+    algorithm: Some(&REACTIVE_HYBRID_EOS_GE_FLASH_ALGORITHM),
+    checks: REACTIVE_HYBRID_EOS_GE_FLASH_CHECKS,
+    cases: REACTIVE_HYBRID_EOS_GE_FLASH_CASES,
 };
 
 static REACTIVE_PH_FLASH_CHECKS: &[SpecCheck] = &[
@@ -1329,6 +1509,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CHEMICAL_EQUILIBRIUM_SPEC,
     &KINETIC_RATE_LAW_SPEC,
     &KINETICS_SPEC,
+    &REACTIVE_HYBRID_EOS_GE_FLASH_SPEC,
     &REACTIVE_PH_FLASH_SPEC,
     &REACTIVE_PHASE_EQUILIBRIUM_SPEC,
     &REACTIVE_TP_FLASH_SPEC,

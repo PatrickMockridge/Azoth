@@ -250,6 +250,7 @@ Five sections, and the difference between them is the point:
 - [`reactions.chemical_equilibrium`](./reactions/chemical_equilibrium.md) — Reactive chemical equilibrium by the Smith-Missen method
 - [`reactions.kinetic_rate_law`](./reactions/kinetic_rate_law.md) — A reaction's kinetic rate factor
 - [`reactions.kinetics`](./reactions/kinetics.md) — The Krishna-Standart mass-transfer rate matrix
+- [`reactions.reactive_hybrid_eos_ge_flash`](./reactions/reactive_hybrid_eos_ge_flash.md) — Reactive fixed-role gas-oil-brine flash
 - [`reactions.reactive_ph_flash`](./reactions/reactive_ph_flash.md) — Reactive flash at fixed pressure and enthalpy
 - [`reactions.reactive_phase_equilibrium`](./reactions/reactive_phase_equilibrium.md) — Reactive equilibrium as an operation on one phase
 - [`reactions.reactive_tp_flash`](./reactions/reactive_tp_flash.md) — Reactive flash at fixed temperature and pressure

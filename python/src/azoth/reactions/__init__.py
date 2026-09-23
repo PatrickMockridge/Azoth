@@ -23,6 +23,7 @@ from azoth.core.result import (
     EquilibriumConstantResult,
     KineticRateLawResult,
     KineticsResult,
+    ReactiveHybridEosGeFlashResult,
     ReactivePhaseEquilibriumResult,
     ReactivePhFlashResult,
     ReactiveTpFlashResult,
@@ -35,6 +36,7 @@ __all__ = [
     "equilibrium_constant",
     "kinetic_rate_law",
     "kinetics",
+    "reactive_hybrid_eos_ge_flash",
     "reactive_ph_flash",
     "reactive_phase_equilibrium",
     "reactive_tp_flash",
@@ -43,6 +45,7 @@ __all__ = [
 
 _CHEMICAL_EQUILIBRIUM = "reactions.chemical_equilibrium"
 _EQUILIBRIUM_CONSTANT = "reactions.equilibrium_constant"
+_REACTIVE_HYBRID_EOS_GE_FLASH = "reactions.reactive_hybrid_eos_ge_flash"
 _REACTIVE_PHASE_EQUILIBRIUM = "reactions.reactive_phase_equilibrium"
 _REACTIVE_PH_FLASH = "reactions.reactive_ph_flash"
 _REACTIVE_TP_FLASH = "reactions.reactive_tp_flash"
@@ -328,4 +331,43 @@ def kinetics(
         inter_fractions=inter_fractions,
         inter_density=inter_density,
         diffusion=diffusion,
+    )
+
+
+def reactive_hybrid_eos_ge_flash(
+    components: Sequence[str],
+    cubic: str,
+    T: Q,
+    P: Q,
+    moles: Sequence[float],
+) -> ReactiveHybridEosGeFlashResult:
+    """Simultaneous chemical and phase equilibrium on a fixed gas-oil-brine topology.
+
+    ``eos.hybrid_eos_ge_flash`` solves the three roles at a *fixed* species inventory, and this
+    couples the brine's chemistry into it: each pass re-equilibrates the brine, projects the
+    reaction delta onto the stoichiometric conservation null space, writes the adjusted
+    inventory back, and solves the fractions again.
+
+    **The coupled inventory is not the feed.** A reaction changes the number of species moles,
+    so the inventory the later passes are solved at moves off the feed; ``coupled_moles`` is
+    what they were solved at, and ``aqueous_moles`` is the brine's species amounts - the state
+    a scale potential is computed from.
+
+    **A loop that does not certify is an error and not an answer.** The result is returned only
+    where the pass floor, the brine's composition deviation and the fraction solve's residual
+    all held, so there is no ``converged`` flag to read here.
+
+    Raises:
+        InvalidInputError: for a shape disagreement, an unknown name, or a component with no
+            formula or no charge row.
+        SolverNotConvergedError: if the coupled loop reaches its cap without certifying.
+
+    See :func:`azoth.reactions.reference.reactive_hybrid_eos_ge_flash.reactive_hybrid_eos_ge_flash`.
+    """
+    return resolve(_REACTIVE_HYBRID_EOS_GE_FLASH)(  # type: ignore[no-any-return]
+        components=list(components),
+        cubic=cubic,
+        T=T,
+        P=P,
+        moles=list(moles),
     )

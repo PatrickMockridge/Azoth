@@ -1,0 +1,36 @@
+model = "reactions.reactive_hybrid_eos_ge_flash"
+
+[[cases]]
+id = "carbonate_brine_two_phases"
+tolerance = 1e-08
+source = "NeqSim master, from `validation/neqsim/captures/hybrid_eos_ge_reactive_probe.tsv` and `hybrid_eos_ge_reactive_loop_probe.tsv`: `SystemHybridEosGeFlashTest.createReactiveScaleSystem(false)` - methane 5 / CO2 0.05 / water 55.5 / Ca++ 6e-4 / Cl- 2e-4 / HCO3- 1e-3 mol at 313.15 K and 50 bar - through `TPflash`'s reactive hybrid route. **The split is not pinned and the coupled inventory is.** The fluid ends with two active phases, gas `0.08346174755576197` and brine `0.916538252444238`, while this model always reports three roles - the vanished one carries the solver's floor, which is not a number the oracle printed. What the oracle did print is the adjusted inventory the last pass solved at, and the brine's species amounts, which are what `getNumberOfMolesInPhase` reports and what the calcite scale potential is computed from. **The loop ran three passes**, which is `MINIMUM_REACTIVE_ITERATIONS` exactly, with the composition deviation `3.84e-13` against the class's `1e-10`.\n"
+[cases.inputs]
+components = ["methane", "CO2", "water", "Ca++", "Cl-", "HCO3-", "CO3--", "OH-", "H3O+"]
+cubic = "srk"
+T = 313.15
+P = 5000000.0
+moles = [5.0, 0.05, 55.5, 0.0006, 0.0002, 0.001, 1e-10, 1e-10, 1e-10]
+[cases.expected]
+coupled_moles = [5.0, 0.049997206913475076, 55.499994364714574, 0.0006, 0.0002, 0.0010027670978232208, 2.619878633189711e-08, 1.1443550870656359e-08, 2.830738529430478e-06]
+aqueous_moles = [0.005103038372766727, 55.49112972066178, 0.0010027670978232208, 2.6198786331897105e-08, 1.1443550870656359e-08, 2.830738529430478e-06]
+passes = 3.0
+
+[[cases]]
+id = "carbonate_brine_three_phases"
+tolerance = 1e-06
+source = "The same feed with the oil former: `createReactiveScaleSystem(true)`, so methane 5 / CO2 0.05 / n-heptane 2 / water 55.5 / Ca++ 6e-4 / Cl- 2e-4 / HCO3- 1e-3 mol at 313.15 K and 50 bar - all three roles active, and every row of the capture's three phase blocks is pinned here: `beta` `0.07289352057955786 / 0.039906308796565454 / 0.8872001706238768`, the compositions, the coupled inventory and the brine's species amounts. **The ions sit at the `1e-50` floor outside the brine**, and the two EoS roles' entries for them are that floor and not a computed number - the assertion of `1e-40` in `SystemHybridEosGeFlashTest` is the tolerance that floor is read at, and it is a different number from the floor itself. Three passes again, deviation `4.48e-14`. **The band here is `1e-6` and not the two-phase case's `1e-8`, and the reason is measured rather than generous**: the certified state depends on *how many passes the loop took*, because the composition the deviation measures is half of the coupling and the fraction solve moves the other half. The two kernels stop at three passes and four on this fluid - their trajectories differ at `1e-8`, which is enough to move a stopping quantity that is a difference of near-equal numbers - and the fourth pass moves the brine's bicarbonate `2e-7` from the capture while the three-pass answer sits `1e-10` from it. **`passes` is not pinned on this case**, for that reason: the count is a path quantity, the capture took three and the two kernels take three and four - so what this case asserts is the state, and the count is left where its meaning is stated, in the loop's own spec.\n"
+[cases.inputs]
+components = ["methane", "CO2", "n-heptane", "water", "Ca++", "Cl-", "HCO3-", "CO3--", "OH-", "H3O+"]
+cubic = "srk"
+T = 313.15
+P = 5000000.0
+moles = [5.0, 0.05, 2.0, 55.5, 0.0006, 0.0002, 0.001, 1e-10, 1e-10, 1e-10]
+[cases.expected]
+beta = [0.07289352057955786, 0.039906308796565454, 0.8872001706238768]
+x = [
+    [0.9836054266812523, 0.007866506309922036, 0.006771276499459865, 0.0017567905093657345, 1.0000000000011015e-50, 1.0000000000011015e-50, 1.0000000000011015e-50, 1.0000000000011015e-50, 1.0000000000011015e-50, 1.0000000000011015e-50],
+    [0.20636565706101218, 0.003854777839083051, 0.7888456834468124, 0.0009338816530924252, 1.0000000000004763e-50, 1.0000000000004763e-50, 1.0000000000004763e-50, 1.0000000000004763e-50, 1.0000000000004763e-50, 1.0000000000004763e-50],
+    [8.289996143082835e-13, 8.121160262810666e-05, 2.3885538056525247e-15, 0.999886264011649, 1.0811596755047636e-05, 3.6038655850158797e-06, 1.806309239107532e-05, 5.341671370428799e-10, 2.333970399555906e-10, 4.5062596112367253e-08],
+]
+coupled_moles = [5.0, 0.049997541814741336, 2.0, 55.49999502803662, 0.0006, 0.0002, 0.0010024287512929388, 2.9644120982970915e-08, 1.2952594065994403e-08, 2.5007922770332012e-06]
+aqueous_moles = [0.004506916293757878, 55.489653563605, 0.0010024287512929388, 2.964412098297091e-08, 1.2952594065994403e-08, 2.5007922770332012e-06]

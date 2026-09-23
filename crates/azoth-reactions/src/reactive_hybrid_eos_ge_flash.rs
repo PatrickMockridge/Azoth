@@ -96,6 +96,13 @@ pub const REACTION_DELTA_CONSERVATION_TOLERANCE_MOLES: f64 = 1.0e-8;
 /// The negative overall amount that is a failure rather than rounding, `-1.0e-9`.
 pub const NEGATIVE_INVENTORY_TOLERANCE_MOLES: f64 = 1.0e-9;
 
+/// The brine Newton's pass cap, `ChemicalEquilibrium`'s own default - `solveChemEq` is called
+/// without one, so the class's is what runs.
+pub const CHEMISTRY_MAX_ITERATIONS: u32 = 100;
+
+/// The error that Newton is trying to reach, the class's own default for the same reason.
+pub const CHEMISTRY_TOLERANCE: f64 = 1.0e-8;
+
 /// The water the class's two-component reference phase holds, in mol, from `initRefPhases`.
 pub const REFERENCE_SOLVENT_MOLES: f64 = 10.0;
 
@@ -117,13 +124,12 @@ pub struct ReactiveHybridEosGeFlashResult {
     pub coupled_moles: Vec<f64>,
     /// The brine's species amounts at the answer, in the reactive set's own order.
     pub aqueous_moles: Vec<f64>,
-    /// The reactive components, in the order every vector here is stated in.
-    pub reactive_components: Vec<String>,
     /// Coupled passes taken, the class's own count and not the fraction solve's.
+    ///
+    /// **A loop that does not certify is an error and not an answer**, which is NeqSim's own
+    /// `IllegalStateException`: a returned result is one where all three conditions held, so
+    /// there is no flag to report beside it.
     pub passes: u32,
-    /// Whether the loop certified a coupled state: the minimum pass count, the composition
-    /// deviation and the fraction residual, all three.
-    pub converged: bool,
     /// The last pass's composition deviation - the sum of `|x_old - x_new|` over the brine.
     pub chemical_deviation: f64,
     /// The last fraction solve's own residual: the larger of its step norm and its gradient norm.
@@ -148,9 +154,7 @@ impl CalcResult for ReactiveHybridEosGeFlashResult {
         "x",
         "coupled_moles",
         "aqueous_moles",
-        "reactive_components",
         "passes",
-        "converged",
         "chemical_deviation",
         "residual",
         "max_material_balance_residual",
@@ -179,7 +183,55 @@ pub struct CoupledAlgorithm<'a> {
     pub chemistry_tolerance: f64,
 }
 
-/// The coupled reactive flash: chemistry and a fixed gas-oil-brine topology at once.
+/// The coupled reactive flash, as the model `reactions.reactive_hybrid_eos_ge_flash`.
+///
+/// The boundary the spec declares: names rather than resolved records, and the model's own
+/// checks applied before anything is solved. Everything below it is [`solve_coupled`].
+///
+/// # Errors
+/// [`AzothError::OutOfRange`] if `T` or `P` is outside the declared range, and every error
+/// [`solve_coupled`] raises.
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the model's own name
+pub fn reactive_hybrid_eos_ge_flash(
+    components: &[String],
+    cubic: Cubic,
+    T: f64,
+    P: f64,
+    moles: &[f64],
+) -> Result<ReactiveHybridEosGeFlashResult> {
+    let spec = &crate::model_gen::REACTIVE_HYBRID_EOS_GE_FLASH_SPEC;
+    let mut warnings = Vec::new();
+    azoth_core::apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(T),
+            "P" => Some(P),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let mut result = solve_coupled(
+        &names,
+        cubic,
+        T,
+        P,
+        moles,
+        CoupledAlgorithm {
+            // The fraction solve's own algorithm, which is the underlying model's: this loop
+            // re-enters it rather than running a second one.
+            algorithm: azoth_eos::algorithm_of(&azoth_eos::model_gen::HYBRID_EOS_GE_FLASH_SPEC)?,
+            chemistry_max_iterations: CHEMISTRY_MAX_ITERATIONS,
+            chemistry_tolerance: CHEMISTRY_TOLERANCE,
+        },
+    )?;
+    warnings.extend(result.warnings);
+    result.warnings = warnings;
+    Ok(result)
+}
+
+/// The coupled loop itself, over names already resolved against the databank.
 ///
 /// # Errors
 /// * [`AzothError::InvalidInput`] if the feed is not a mole vector, a component has no formula
@@ -188,7 +240,7 @@ pub struct CoupledAlgorithm<'a> {
 ///   or the source's evidence gate refuses an active reaction row.
 /// * [`AzothError::SolverNotConverged`] if a Newton correction cannot be solved, if the brine
 ///   cannot hold its ions, or if the coupled loop reaches its cap without converging.
-pub fn reactive_hybrid_eos_ge_flash(
+pub fn solve_coupled(
     names: &[&str],
     cubic: Cubic,
     t: f64,
@@ -257,7 +309,7 @@ pub fn reactive_hybrid_eos_ge_flash(
 
     let mut coupled = moles.to_vec();
     let mut passes = 0;
-    let mut converged = false;
+    let mut coupled_converged = false;
     let mut chemical_deviation = f64::INFINITY;
     let mut residual = seeded.residual;
     let mut last = seeded;
@@ -284,16 +336,16 @@ pub fn reactive_hybrid_eos_ge_flash(
             solve_fixed_topology_from(&mixture, &reduced, &coupled, &ion, algorithm, &mut phases)?;
         residual = last.residual;
 
-        converged = passes >= MINIMUM_REACTIVE_PASSES
+        coupled_converged = passes >= MINIMUM_REACTIVE_PASSES
             && chemical_deviation <= REACTIVE_COMPOSITION_TOLERANCE
             && residual.is_finite()
             && residual <= HYBRID_SOLVER_TOLERANCE;
-        if converged {
+        if coupled_converged {
             break;
         }
     }
 
-    if !converged {
+    if !coupled_converged {
         return Err(AzothError::SolverNotConverged {
             iterations: passes,
             residual: residual.max(chemical_deviation),
@@ -319,9 +371,7 @@ pub fn reactive_hybrid_eos_ge_flash(
         x: last.x,
         coupled_moles: coupled,
         aqueous_moles,
-        reactive_components: reactive,
         passes,
-        converged,
         chemical_deviation,
         residual,
         max_material_balance_residual: last.max_material_balance_residual,
