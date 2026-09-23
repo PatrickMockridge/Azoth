@@ -60,6 +60,180 @@ public class ReactiveFlashProbe {
     stabilityOnly("methane-water-co2-hydrogen-1000K", 1000.0, 1.0,
         new String[] { "methane", "water", "CO2", "hydrogen" },
         new double[] { 0.4, 0.2, 0.2, 0.2 });
+    // The phase bookkeeping: what the system holds before the driver touches it, and the
+    // second initialisation path - the one where `initializeWithVLEFlash` is reachable.
+    forcedOnePhase("wgs-600K", 600.0, 1.0,
+        new String[] { "CO", "water", "CO2", "hydrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25 });
+    forcedOnePhase("wgs-300K", 300.0, 1.0,
+        new String[] { "CO", "water", "CO2", "hydrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25 });
+  }
+
+  /// The driver reached from a forced one-phase state, with the phase bookkeeping printed.
+  ///
+  /// `SystemSrkEos` **constructs with two phase objects**, each at `beta = 1.0` and each
+  /// holding the whole feed, so a flash run on a system that has only been initialised takes
+  /// the multiphase outer loop without any trial phase ever being added - which is where the
+  /// two identical phases and the doubled Gibbs energy in the blocks above come from.
+  /// `setNumberOfPhases(1)` after `init(1)` is the one thing that reaches
+  /// `initializeWithVLEFlash`, and what that method then does - add a phase or return - is
+  /// what decides which of the driver's two branches runs.
+  static void forcedOnePhase(String label, double temperature, double pressure, String[] names,
+      double[] moles) {
+    System.out.println("fluid=" + label + "-forced-one-phase");
+    System.out.println("temperature_K=" + temperature);
+    System.out.println("pressure_bara=" + pressure);
+
+    SystemInterface system = new SystemSrkEos(temperature, pressure);
+    for (int i = 0; i < names.length; i++) {
+      System.out.println("  feed[" + names[i] + "]=" + moles[i]);
+      system.addComponent(names[i], moles[i]);
+    }
+    system.setMixingRule("classic");
+    counts("phases_at_construction", system);
+    system.init(0);
+    counts("after_init0", system);
+    system.init(1);
+    counts("after_init1", system);
+    system.setNumberOfPhases(1);
+    counts("after_force_one_phase", system);
+
+    // `initializeWithVLEFlash`'s own Wilson ln K and Rachford-Rice, recomputed because the
+    // class keeps neither.
+    int nc = names.length;
+    double[] lnK = new double[nc];
+    boolean hasVolatile = false;
+    for (int i = 0; i < nc; i++) {
+      ComponentInterface component = system.getPhase(0).getComponent(i);
+      double tc = component.getTC();
+      double pc = component.getPC();
+      double omega = component.getAcentricFactor();
+      if (pc > 0 && tc > 0) {
+        lnK[i] = Math.log(pc / pressure) + 5.373 * (1.0 + omega) * (1.0 - tc / temperature);
+        if (Math.abs(lnK[i]) > 0.1) {
+          hasVolatile = true;
+        }
+      }
+    }
+    printVector("wilson_lnk", lnK);
+    System.out.println("has_volatile=" + hasVolatile);
+    double vapour = 0.5;
+    if (hasVolatile) {
+      for (int iter = 0; iter < 100; iter++) {
+        double f = 0.0;
+        double derivative = 0.0;
+        for (int i = 0; i < nc; i++) {
+          double ki = Math.exp(lnK[i]);
+          double denominator = 1.0 + vapour * (ki - 1.0);
+          if (Math.abs(denominator) < 1e-30) {
+            continue;
+          }
+          f += moles[i] * (ki - 1.0) / denominator;
+          derivative -= moles[i] * (ki - 1.0) * (ki - 1.0) / (denominator * denominator);
+        }
+        if (Math.abs(f) < 1e-10) {
+          break;
+        }
+        if (Math.abs(derivative) > 1e-30) {
+          vapour -= f / derivative;
+        }
+        vapour = Math.max(0.0, Math.min(1.0, vapour));
+      }
+    }
+    System.out.println("rachford_rice_v=" + vapour);
+
+    // **The class's own `initializeWithVLEFlash`, on a fresh one-phase system.** It is private
+    // and it mutates the system, so calling it is the only way to see the compositions it sets
+    // - the flash below overwrites them, and recomputing its arithmetic here would be a
+    // different implementation's answer to the same question.
+    SystemInterface fresh = new SystemSrkEos(temperature, pressure);
+    for (int i = 0; i < nc; i++) {
+      fresh.addComponent(names[i], moles[i]);
+    }
+    fresh.setMixingRule("classic");
+    fresh.init(0);
+    fresh.init(1);
+    fresh.setNumberOfPhases(1);
+    try {
+      java.lang.reflect.Method initialize =
+          ReactiveMultiphaseTPflash.class.getDeclaredMethod("initializeWithVLEFlash");
+      initialize.setAccessible(true);
+      initialize.invoke(new ReactiveMultiphaseTPflash(fresh));
+      counts("after_vle_init", fresh);
+      for (int phase = 0; phase < fresh.getNumberOfPhases(); phase++) {
+        StringBuilder composition = new StringBuilder("  vle_x[" + phase + "]=");
+        for (int i = 0; i < nc; i++) {
+          composition.append(fresh.getPhase(phase).getComponent(i).getx())
+              .append(i + 1 < nc ? " " : "");
+        }
+        System.out.println(composition);
+      }
+    } catch (ReflectiveOperationException ex) {
+      System.out.println("vle_init_failed=" + ex);
+    }
+
+    FormulaMatrix matrix = new FormulaMatrix(system);
+    System.out.println("independent_reactions=" + matrix.getNumberOfIndependentReactions());
+
+    ReactiveMultiphaseTPflash flash = new ReactiveMultiphaseTPflash(system);
+    flash.run();
+
+    System.out.println("converged=" + flash.isConverged());
+    System.out.println("total_iterations=" + flash.getTotalIterations());
+    System.out.println("final_residual=" + flash.getFinalResidual());
+    System.out.println("final_element_residual=" + flash.getFinalElementResidual());
+    System.out.println("equilibrium_total_moles=" + flash.getEquilibriumTotalMoles());
+    System.out.println("final_gibbs_energy=" + flash.getFinalGibbsEnergy());
+    printVector("lagrange_multipliers", flash.getLagrangeMultipliers());
+    counts("after_flash", system);
+    for (int phase = 0; phase < system.getNumberOfPhases(); phase++) {
+      StringBuilder composition = new StringBuilder("  phase_x[" + phase + "]=");
+      for (int i = 0; i < nc; i++) {
+        composition.append(system.getPhase(phase).getComponent(i).getx())
+            .append(i + 1 < nc ? " " : "");
+      }
+      System.out.println(composition);
+    }
+    double[][] equilibriumMoles = flash.getEquilibriumMoles();
+    for (int phase = 0; phase < equilibriumMoles.length; phase++) {
+      printVector("equilibrium_moles[" + phase + "]", equilibriumMoles[phase]);
+    }
+    // **The solver's own phase amounts against the phase objects' betas.** `updateSystem`
+    // writes each phase's beta and then calls `system.init(1)`, which re-initialises the
+    // phase from the *system's* beta array - and the system's copy is only refreshed on the
+    // ionic branch. So the two can disagree, and `computeGibbsEnergy` weighs the phases by
+    // the phase object's number.
+    try {
+      java.lang.reflect.Field held = ReactiveMultiphaseTPflash.class.getDeclaredField("solver");
+      held.setAccessible(true);
+      Object solver = held.get(flash);
+      if (solver != null) {
+        java.lang.reflect.Method amounts =
+            solver.getClass().getDeclaredMethod("getPhaseAmounts");
+        amounts.setAccessible(true);
+        printVector("solver_phase_amounts", (double[]) amounts.invoke(solver));
+        java.lang.reflect.Method total =
+            solver.getClass().getDeclaredMethod("getTotalMoles");
+        total.setAccessible(true);
+        System.out.println("solver_total_moles=" + total.invoke(solver));
+      } else {
+        System.out.println("solver=null");
+      }
+      printVector("system_beta", new double[] { system.getBeta(0), system.getBeta(1) });
+    } catch (ReflectiveOperationException ex) {
+      System.out.println("solver_reflection_failed=" + ex);
+    }
+    System.out.println();
+  }
+
+  static void counts(String label, SystemInterface system) {
+    StringBuilder out = new StringBuilder(label + "_phases=" + system.getNumberOfPhases()
+        + " max_phases=" + system.getMaxNumberOfPhases());
+    for (int phase = 0; phase < system.getNumberOfPhases(); phase++) {
+      out.append(" beta[").append(phase).append("]=").append(system.getPhase(phase).getBeta());
+    }
+    System.out.println(out);
   }
 
   /// The matrix alone, for a fluid whose flash needs the ionic branch this port refuses.

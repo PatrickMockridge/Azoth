@@ -6,10 +6,12 @@
 //! the equilibrium constant is about 14, so the products are strongly favoured and the
 //! direction of the answer is not in doubt.
 //!
-//! **The answer is `getEquilibriumMoles()[0]`**, the moles the RAND solve leaves in the single
-//! phase - not the phase composition, which the flash's own trial-phase removal leaves in two
-//! near-identical copies. The element inventory `b` is the feed's own `A n`, which is what
-//! `FormulaMatrix.computeElementVector` builds when the flash has no frozen target to hand.
+//! **The answer is `getEquilibriumMoles()[0]`**, the moles the RAND solve leaves in the first
+//! phase. The driver ran its outer loop on that state rather than its single-phase branch -
+//! `SystemSrkEos` constructs with two phase objects, so `np = 2` and `maxPhases = 2` when the
+//! flash is handed the system, and both phases end up holding the same answer. The element
+//! inventory `b` is the feed's own `A n`, which is what `FormulaMatrix.computeElementVector`
+//! builds when the flash has no frozen target to hand.
 //!
 //! The fugacity coefficients come from `azoth-eos`' SRK, which is the cubic the probe's
 //! `SystemSrkEos` carries; the standard potentials come from the component databank's three
@@ -160,11 +162,12 @@ fn the_drivers_single_phase_answer_is_the_captured_one() {
     );
 
     // `final_gibbs_energy` from the capture: `sum_i x_i (ln x_i + ln phi_i)`, dimensionless -
-    // **and exactly twice this port's**, because the capture's system still holds two phase
-    // objects with the same composition and `beta = 1.0` each, so the driver's sum counts the
-    // one phase twice. The port models the phase the solve leaves, so it reports the
-    // thermodynamic value; the ratio is asserted rather than the number, which is what makes
-    // the duplicate a measurement instead of a rounding difference.
+    // **and exactly twice this port's**, because the driver weighs each phase by
+    // `phase.getBeta()` and the capture's two phases - the pair `SystemSrkEos` constructs, both
+    // at `beta = 1.0` - sum to two. The port models the phase the solve leaves, so it reports
+    // the thermodynamic value; `reactive_flash.rs` reproduces the capture's number from those
+    // two phases and their weights. The ratio is asserted here rather than the number, which is
+    // what makes the doubling a measurement instead of a rounding difference.
     let captured_gibbs = -2.259_535_542_715_054_7_f64;
     let ratio = captured_gibbs / outcome.gibbs_energy;
     assert!(
