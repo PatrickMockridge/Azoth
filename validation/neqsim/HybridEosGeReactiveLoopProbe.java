@@ -116,7 +116,19 @@ public class HybridEosGeReactiveLoopProbe {
     for (int outer = 0; outer < MAXIMUM_REACTIVE_ITERATIONS; outer++) {
       passes = outer + 1;
       double[] beforeChemistry = amounts(system.getPhase(aqueousPhase));
+      // What `ChemicalEquilibrium.calcRefPot` reads once, before the solve: the phase's log
+      // activity coefficient for each component with `calcActivity()`, against water. This is
+      // the live-phase quantity the port has to produce from its own GE phase, so it is
+      // captured at the state the chemistry is handed rather than at the pass's end.
+      System.out.println("  log_activity_before=" + join(logActivities(system, aqueousPhase)));
       chemicalDeviation = (Double) chemicalStep.invoke(flash, outer == 0);
+      // What `initBeta` and `normalizeBeta` left behind, which is the split the next pass
+      // starts from - the one thing the pass-to-pass state carries besides the inventory.
+      System.out.println("  beta_after_chemistry=" + betas(system) + " total_moles="
+          + system.getTotalNumberOfMoles());
+      System.out.println("  phase_moles_after_chemistry=" + phaseMoles(system));
+      System.out.println("  coupled_times_old_x="
+          + coupledTimesComposition(system, (double[]) coupled.get(flash)));
       double[] after = amounts(system.getPhase(aqueousPhase));
       residual = (Double) fractionStep.invoke(flash);
       coupledConverged = outer + 1 >= MINIMUM_REACTIVE_ITERATIONS
@@ -205,6 +217,66 @@ public class HybridEosGeReactiveLoopProbe {
       values[i] = phase.getComponent(i).getx();
     }
     return values;
+  }
+
+  /**
+   * `ChemicalEquilibrium.calcRefPot`'s own vector, per component, zero where nothing is asked.
+   *
+   * The reference is the **water** component's index, which is how `waterNumb` is found there -
+   * the component named `water`, not the first one.
+   */
+  static double[] logActivities(SystemInterface system, int aqueousPhase) {
+    ChemicalReactionOperations operations = system.getChemicalReactionOperations();
+    ComponentInterface[] reactive = operations.getComponents();
+    PhaseInterface phase = system.getPhase(aqueousPhase);
+    int water = 0;
+    for (int i = 0; i < reactive.length; i++) {
+      if (reactive[i].getName().equalsIgnoreCase("water")) {
+        water = reactive[i].getComponentNumber();
+      }
+    }
+    double[] values = new double[reactive.length];
+    for (int i = 0; i < reactive.length; i++) {
+      values[i] = reactive[i].calcActivity()
+          ? phase.getLogActivityCoefficient(reactive[i].getComponentNumber(), water)
+          : 0.0;
+    }
+    return values;
+  }
+
+  /** Each active phase's own stored mole count, which is what `initBeta` divides. */
+  static String phaseMoles(SystemInterface system) {
+    StringBuilder line = new StringBuilder();
+    for (int p = 0; p < system.getNumberOfPhases(); p++) {
+      if (p > 0) {
+        line.append(" ");
+      }
+      line.append(system.getPhase(p).getNumberOfMolesInPhase());
+    }
+    return line.toString();
+  }
+
+  /**
+   * `sum_i inventory_i * x_ik` per phase.
+   *
+   * The alternative hypothesis for what `initBeta` reads: the phase's stored moles are the
+   * reaction-adjusted inventory weighed by the composition the last fraction solve wrote,
+   * which is a different quantity from the phase's own previous mole count. Printing both
+   * beside `beta_after_chemistry` says which one the projection consumed.
+   */
+  static String coupledTimesComposition(SystemInterface system, double[] inventory) {
+    StringBuilder line = new StringBuilder();
+    for (int p = 0; p < system.getNumberOfPhases(); p++) {
+      double total = 0.0;
+      for (int i = 0; i < inventory.length; i++) {
+        total += inventory[i] * system.getPhase(p).getComponent(i).getx();
+      }
+      if (p > 0) {
+        line.append(" ");
+      }
+      line.append(total);
+    }
+    return line.toString();
   }
 
   static double[] delta(double[] from, double[] to) {

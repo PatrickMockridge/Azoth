@@ -15,10 +15,10 @@
 //! and strings, so it is asserted here - which is where a flag belongs anyway.
 
 use azoth_core::spec::TestCase;
+use azoth_reactions::chemical_equilibrium::ConcentrationBasis;
 use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::model_gen;
 use azoth_reactions::reactive_phase::reactive_phase_index;
-use azoth_reactions::chemical_equilibrium::ConcentrationBasis;
 use azoth_reactions::reactive_phase_equilibrium::{
     ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES, REACTION_LOG_RESIDUAL_TOLERANCE,
     REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES, ReactionSeed, ReactivePhaseEquilibriumResult,
