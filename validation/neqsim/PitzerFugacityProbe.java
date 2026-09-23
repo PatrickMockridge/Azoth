@@ -1,21 +1,37 @@
 // The Pitzer phase's fugacity coefficients, for `eos.pitzer_phase`.
 //
-// `ComponentGePitzer.fugcoef` has three branches and the port carries none of them: this
-// model is the **activity-coefficient surface only**, and its spec says so. The branches are
+// `ComponentGePitzer.fugcoef(phase)` is where the coefficient is built, and it is **two
+// methods rather than three branches in one**:
 //
-//   water (or a solvent)          gamma_i * P0_i / P
-//   a neutral that is not water   gamma_i * H_m * (m_i / x_i) / P, with H_m Henry on the
-//                                 molality scale - `getEffectiveHenryCoefficient` converts
-//                                 the bar-scale coefficient to bar kg/mol
-//   an ion                        activinf * H_capped / P, with `H_capped = 1e12` because
-//                                 `isHenryCoefficientCapped` includes `isIsIon()`, and
-//                                 `activinf = gamma / getActivityCoefficientInfDilWater`
+//   a neutral that is not water   gamma * H * (m / x) / P        `ComponentGePitzer`
+//   anything else                 `super.fugcoef`, i.e. `ComponentGE`, which is
+//                                 `gamma * P0 / P` for a solvent (water) and
+//                                 `(gamma / gamma_inf) * H / P` otherwise (an ion)
 //
-// The second and third need `PhaseGE.getActivityCoefficientInfDilWater`, the one piece of
-// the GE surface this library does not have. `getEffectiveHenryCoefficient` and
-// `isHenryCoefficientCapped` are `protected`, so they are read through reflection up the
-// class hierarchy - the alternative would be re-deriving them and checking a derivation
-// against itself.
+// so the branch a component takes is `|z| < 0.5 && name != water` first, and only then the
+// reference state. Pressure divides in **bar**, which is NeqSim's internal unit: the ion
+// branch is `(gamma / gamma_inf) * 1e12 / P_bar`.
+//
+// **`H` has two arms and the second one is reachable.** `ComponentGE.getEffectiveHenryCoefficient`
+// prefers the IAPWS pure-water table for a supported neutral solute in a water-bearing
+// phase, and `ComponentGePitzer` overrides it with three gates in front: the IAPWS table
+// only applies where the phase has **no ions**, the phase carries **no active neutral
+// Pitzer interaction family**, and the solute is **not CO2 or H2S**. So every ion-bearing
+// fluid in this capture takes the database correlation, and the IAPWS table is reached by
+// the four **salt-free** fluids at the end. `IapwsHenryLaw` is a public class, so its
+// support and range predicates and its own coefficient are printed beside the effective
+// one - which is what makes the branch each component took readable off the capture rather
+// than inferred.
+//
+// `gamma_inf` is `PhaseGE.getActivityCoefficientInfDilWater(k, waterIndex)`, which builds a
+// **two-component reference phase** - the solute at `1e-10` mol in slot 0, the solvent at
+// `10.0` mol in slot 1 (`Phase.initRefPhases`) - and returns the *solute's* gamma there.
+//
+// `getEffectiveHenryCoefficient` and `isHenryCoefficientCapped` are `protected`, so they are
+// read through reflection up the class hierarchy - the alternative would be re-deriving them
+// and checking a derivation against itself. `getActivityCoefficientInfDilWater` is read
+// defensively: it re-inits the phase and throws a `NullPointerException` where a component
+// array entry is unset, which is a fact about the class and not about this file.
 //
 // **No flash and no reaction initialisation**: the fluids are read at their constructed
 // state, because `SystemPitzer`'s constructor already puts `PhasePitzer` in slot 1 and
@@ -27,6 +43,7 @@
 
 import java.lang.reflect.Method;
 import neqsim.thermo.component.ComponentInterface;
+import neqsim.thermo.component.IapwsHenryLaw;
 import neqsim.thermo.phase.PhaseGE;
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemInterface;
@@ -43,6 +60,17 @@ public class PitzerFugacityProbe {
         new double[] { 0.01, 10.0 });
     one("water-methanol-nacl", 313.15, 5.0, new String[] { "water", "methanol", "Na+", "Cl-" },
         new double[] { 50.0, 5.0, 2.0, 2.0 });
+    // The four above all carry ions, and `ComponentGePitzer.getEffectiveHenryCoefficient` sends
+    // an ion-bearing phase to the database correlation. These four have **no salt**, which is
+    // the only way the IAPWS table is reached at all.
+    one("methane-water", 298.15, 1.01325, new String[] { "methane", "water" },
+        new double[] { 0.01, 10.0 });
+    one("nitrogen-water", 298.15, 1.01325, new String[] { "nitrogen", "water" },
+        new double[] { 0.01, 10.0 });
+    one("co2-water", 298.15, 1.01325, new String[] { "CO2", "water" },
+        new double[] { 0.5, 10.0 });
+    one("methane-water-333", 333.15, 1.01325, new String[] { "methane", "water" },
+        new double[] { 0.01, 10.0 });
   }
 
   static void one(String label, double temperature, double pressure, String[] names,
@@ -85,7 +113,12 @@ public class PitzerFugacityProbe {
         System.out.println("      activinf_water=" + activinf(phase, i, waterIndex)
             + " henry_effective=" + henry(component, phase)
             + " henry_capped_1e12=" + capped(component, 1.0e12)
-            + " henry_capped_1=" + capped(component, 1.0));
+            + " henry_capped_1=" + capped(component, 1.0)
+            + " iapws_supported=" + IapwsHenryLaw.isSupportedSpecies(component.getName())
+            + " iapws_usable=" + IapwsHenryLaw.isUsable(component.getName(),
+                phase.getTemperature())
+            + " iapws_henry_bar=" + iapwsHenry(component.getName(),
+                phase.getTemperature()));
       }
     }
     System.out.println();
@@ -122,6 +155,17 @@ public class PitzerFugacityProbe {
   static Object capped(ComponentInterface component, double value) {
     return call(component, "isHenryCoefficientCapped", new Class<?>[] { double.class },
         new Object[] { value });
+  }
+
+  /// The IAPWS mole-fraction Henry constant in bar, with the extrapolation allowed inside the
+  /// liquid-water equation domain. Throws for the species the table does not carry - which is
+  /// most of them, water included - so the throw is reported rather than propagated.
+  static Object iapwsHenry(String name, double temperature) {
+    try {
+      return IapwsHenryLaw.getHenryCoefficientBarAllowExtrapolation(name, temperature);
+    } catch (RuntimeException e) {
+      return "threw_" + e.getClass().getSimpleName();
+    }
   }
 
   /// `PhaseGE.getActivityCoefficientInfDilWater(k, solventIndex)`.
