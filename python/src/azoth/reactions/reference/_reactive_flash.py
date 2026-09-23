@@ -482,6 +482,32 @@ class DriverState(NamedTuple):
     phases: list[PhaseFeed]
 
 
+#: The ionic overall mole fraction below which a multiphase fluid takes the trace-ion short
+#: circuit, from ``isTraceIonMultiphaseCase``'s ``ionZTotal < 1.0e-8``.
+TRACE_ION_Z_TOLERANCE = 1.0e-8
+
+
+def _has_ionic_species(charges: list[float]) -> bool:
+    """``hasIonicSpecies``: whether any component carries a charge."""
+    return any(charge != 0.0 for charge in charges)
+
+
+def _phase_gibbs(
+    phases: list[PhaseFeed],
+    ln_phi: Callable[[int, list[float]], list[float]],
+) -> list[tuple[float, list[float], list[float]]]:
+    """The Gibbs measure over a phase list **with no solve under it**.
+
+    The trace-ion short circuit is the one branch that reports a Gibbs energy without a solve,
+    so the coefficients come from the phases' own compositions rather than from a
+    ``RandSolution`` that does not exist.
+    """
+    return [
+        (phase.beta, list(phase.fractions), ln_phi(index, phase.fractions))
+        for index, phase in enumerate(phases)
+    ]
+
+
 def run(
     state: DriverState,
     phase_ln_phi: Callable[[int, list[float]], list[float]],
@@ -527,6 +553,31 @@ def run(
                 ),
                 PhaseFeed(fractions=initialisation.vapour, beta=initialisation.vapour_fraction),
             ]
+
+    # ``isTraceIonMultiphaseCase``: **a multiphase fluid whose ions are all traces is answered
+    # by the split it already has.** The class's comment gives the reason - the RAND solve "can
+    # spend thousands of iterations polishing near-zero ion amounts" - and the measured cost is
+    # the whole solve: the captured trace case reports ``total_iterations = 0`` where the same
+    # fluid with a mole of salt takes 69.
+    #
+    # **The sum is over the ions' overall mole *fractions*, not over their charges**, so a
+    # trace-ion fluid is one where the charged component is itself a trace.
+    if state.max_phases >= 2 and len(phases) >= 2 and _has_ionic_species(state.charges):
+        ion_fraction = sum(
+            abs(fraction)
+            for fraction, charge in zip(feed_fractions, state.charges, strict=True)
+            if charge != 0.0
+        )
+        if ion_fraction < TRACE_ION_Z_TOLERANCE:
+            entries = _phase_gibbs(phases, phase_ln_phi)
+            return FlashOutcome(
+                phases=phases,
+                converged=True,
+                total_iterations=0,
+                equilibrium_total_moles=state.total_moles,
+                gibbs_energy=total_gibbs_energy(entries),
+                solution=None,
+            )
 
     if state.max_phases == 1 and len(phases) > 1:
         phases = phases[:1]

@@ -60,8 +60,13 @@
 //! `0.0`; the 300 K state forced to one phase, where the driver reports `-0.7162112` with the
 //! captured betas; and methane/water, where `NR = 0` and the driver counts no iterations.
 //!
-//! **Not ported**: the trace-ion short circuit (it needs `hasIonicSpecies`, which this crate's
-//! callers refuse before reaching here, so it is a no-op on every fluid that arrives).
+//! The **trace-ion short circuit** is ported: a multiphase fluid whose ionic overall mole
+//! fractions sum below `1e-8` is answered by the split it already has, with no solve at all.
+//! Its oracle is `TraceIonProbe` and `captures/trace_ion_probe.tsv` - carbonated water with
+//! `1e-12` mol of salt takes it and reports zero iterations, the same fluid with a mole of salt
+//! does not and takes 69. It is a no-op on the fluids `reactions.reactive_tp_flash` admits,
+//! because that model's phase model is a cubic and it refuses a charged component, but the
+//! driver carries it for the caller that does not.
 //!
 //! [`non_reactive_flash`] and [`solve_rachford_rice`] are the `NR = 0` fallback: a fluid with
 //! no independent reaction and more than one phase is flashed conventionally, and the capture's
@@ -77,6 +82,10 @@
 use azoth_core::{AzothError, Result};
 
 use crate::rand_solver::{IonicPhase, PhaseFeed, PhaseLogPhi, RandSolution, solve_single_phase};
+
+/// The ionic overall mole fraction below which a multiphase fluid takes the trace-ion short
+/// circuit, from `isTraceIonMultiphaseCase`'s `ionZTotal < 1.0e-8`.
+pub const TRACE_ION_Z_TOLERANCE: f64 = 1.0e-8;
 use crate::reactive_stability::CriticalConstants;
 
 /// The floor `initializeWithVLEFlash` keeps a trial mole fraction above, which is its own
@@ -837,8 +846,35 @@ pub fn run(
         }
     }
 
-    // The trace-ion short circuit needs `hasIonicSpecies`, which this crate's callers refuse
-    // before reaching here, so it is a no-op on every fluid that arrives.
+    // `isTraceIonMultiphaseCase`: **a multiphase fluid whose ions are all traces is answered
+    // by the split it already has.** The class's comment gives the reason - the RAND solve
+    // "can spend thousands of iterations polishing near-zero ion amounts" - and the measured
+    // cost is the whole solve: the captured trace case reports `total_iterations = 0` where
+    // the same fluid with a mole of salt takes 69.
+    //
+    // The answer is the *VLE pair* and not a solve's, which is why that capture's two phases
+    // carry the same composition: `SystemSrkEos` constructs with two phase objects each
+    // holding the whole feed, and no VLE initialisation runs over a system that already has
+    // two.
+    if state.max_phases >= 2 && phases.len() >= 2 && has_ionic_species(state.charges) {
+        let ion_fraction: f64 = feed_fractions
+            .iter()
+            .zip(state.charges)
+            .filter(|(_, charge)| **charge != 0.0)
+            .map(|(fraction, _)| fraction.abs())
+            .sum();
+        if ion_fraction < TRACE_ION_Z_TOLERANCE {
+            let entries = phase_gibbs(&phases, &mut *phase_ln_phi)?;
+            return Ok(FlashOutcome {
+                phases,
+                converged: true,
+                total_iterations: 0,
+                equilibrium_total_moles: state.total_moles,
+                gibbs_energy: total_gibbs_energy(&entries),
+                solution: None,
+            });
+        }
+    }
 
     // `effectiveMaxPhases == 1` with more turns into one phase, which the class does by
     // dropping every phase but the first.
@@ -972,4 +1008,28 @@ fn render_phases(
         });
     }
     Ok(total_gibbs_energy(&entries))
+}
+
+/// The Gibbs measure over a phase list **with no solve under it**, which is
+/// `computeGibbsEnergy` on the phases the driver already holds.
+///
+/// The trace-ion short circuit is the one branch that reports a Gibbs energy without a solve,
+/// so the coefficients come from the phase's own composition rather than from a `RandSolution`
+/// that does not exist.
+fn phase_gibbs(phases: &[PhaseFeed], ln_phi: PhaseLogPhi<'_>) -> Result<Vec<PhaseGibbs>> {
+    let mut entries: Vec<PhaseGibbs> = Vec::with_capacity(phases.len());
+    for (index, phase) in phases.iter().enumerate() {
+        let coefficients = ln_phi(index, &phase.fractions)?;
+        entries.push(PhaseGibbs {
+            beta: phase.beta,
+            fractions: phase.fractions.clone(),
+            ln_phi: coefficients,
+        });
+    }
+    Ok(entries)
+}
+
+/// `hasIonicSpecies`: whether any component carries a charge.
+fn has_ionic_species(charges: &[f64]) -> bool {
+    charges.iter().any(|charge| *charge != 0.0)
 }

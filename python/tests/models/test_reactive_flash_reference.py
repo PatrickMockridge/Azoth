@@ -364,3 +364,98 @@ def test_the_ph_loop_finds_its_temperature_back() -> None:
     recovered, _outer = round_trip(600.0, 500.0)
     captured = 600.000_039_758_328_5
     assert abs(recovered - captured) / captured < 1.0e-5, (recovered, captured)
+
+
+def test_a_trace_ion_fluid_is_answered_by_the_split_it_has() -> None:
+    """**The trace-ion short circuit**: a multiphase fluid whose ions are all traces is
+    answered by the split it already has, and no solve runs at all.
+
+    The oracle is ``TraceIonProbe`` and ``captures/trace_ion_probe.tsv``: two ``SystemSrkEos``
+    fluids differing only in how much salt they carry, where ``1e-12`` mol takes the circuit
+    (``total_iterations = 0``, the split untouched) and a mole does not (69 iterations).
+
+    **The sum is over the ions' overall mole *fractions*, not over their charges**, which is why
+    the trace fluid here carries a trace *amount* of the charged component.
+    """
+    from azoth.eos.components import from_names
+    from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
+    from azoth.reactions.reference import _reactive_flash as driver
+    from azoth.reactions.reference._rand_solver import (
+        PhaseFeed,
+        solve_single_phase,
+        standard_potentials,
+    )
+    from azoth.reactions.reference._reactive_stability import CriticalConstants
+
+    mixture = from_names(NAMES, eos="srk")
+    reduced = reduced_parameters(mixture, 600.0, 1.0e5)
+    matrix, _names = _element_matrix(NAMES)
+    g0 = standard_potentials(_formation(NAMES), 600.0, 1.0)
+    constants = [
+        CriticalConstants(
+            tc=component.Tc.to("K").magnitude,
+            pc=component.Pc.to("bar").magnitude,
+            omega=component.omega,
+        )
+        for component in mixture.components
+    ]
+
+    def ln_phi_at(x: list[float]) -> list[float]:
+        return list(phase_state(reduced, mixture.kij, x, liquid=False).ln_phi)
+
+    def phase_ln_phi(_index: int, x: list[float]) -> list[float]:
+        return ln_phi_at(x)
+
+    def one(feed: list[float], charges: list[float]) -> Any:
+        b = [sum(row[i] * feed[i] for i in range(len(feed))) for row in matrix]
+
+        def ce(x: list[float]) -> list[float]:
+            solved = solve_single_phase(matrix, g0, b, x, ln_phi_at)
+            if not solved.converged:
+                return list(x)
+            total = sum(solved.moles)
+            return [moles / total for moles in solved.moles]
+
+        phases = [
+            PhaseFeed(fractions=list(feed), beta=1.0),
+            PhaseFeed(fractions=list(feed), beta=1.0),
+        ]
+        return driver.run(
+            driver.DriverState(
+                feed_moles=feed,
+                a_matrix=matrix,
+                g0=g0,
+                b=b,
+                total_moles=1.0,
+                constants=constants,
+                charges=charges,
+                temperature=600.0,
+                pressure=1.0,
+                max_phases=2,
+                phases=phases,
+            ),
+            phase_ln_phi,
+            ln_phi_at,
+            ce,
+        )
+
+    trace_feed = [0.25, 0.25, 0.25, 1.0e-12]
+    trace_charges = [0.0, 0.0, 0.0, 1.0]
+    ion_fraction = sum(
+        abs(fraction)
+        for fraction, charge in zip(trace_feed, trace_charges, strict=True)
+        if charge != 0.0
+    )
+    assert ion_fraction < driver.TRACE_ION_Z_TOLERANCE
+    # The fractions are the feed's own and not normalised by the driver, so `0.25` here is the
+    # component's share of the *feed* - which for the trace fluid sums to 1.000000000001.
+    traced = one([0.25, 0.25, 0.25, 1.0e-12], trace_charges)
+    assert traced.converged
+    assert traced.total_iterations == 0, "no solve runs"
+    assert traced.solution is None, "and none is reported"
+    assert traced.phases[0].fractions == trace_feed, "the split is untouched"
+    assert traced.phases[1].fractions == trace_feed
+
+    # A quarter mole of the same charged component is not a trace, and the driver runs.
+    molar = one(FEED, [0.0, 0.0, 0.0, 1.0])
+    assert molar.total_iterations > 0, "a molar ion takes the solve"

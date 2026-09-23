@@ -950,3 +950,136 @@ fn the_driver_reproduces_every_captured_branch() {
     assert_eq!(outcome.total_iterations, 0, "and the driver counts nothing");
     assert!((outcome.phases[0].beta - 0.500_334_895_161_083_2).abs() < 1.0e-12);
 }
+
+/// **The trace-ion short circuit**: a multiphase fluid whose ions are all traces is answered by
+/// the split it already has, and no solve runs at all.
+///
+/// The oracle is `TraceIonProbe` and `captures/trace_ion_probe.tsv`. Two `SystemSrkEos` fluids
+/// differing only in how much salt they carry: `1e-12` mol takes the circuit
+/// (`total_iterations = 0`, the split untouched) and one mole does not (69 iterations, a real
+/// split). The threshold is `ionZTotal < 1e-8` over the ions' *overall* mole fractions.
+///
+/// The phases here are the driver's own pair, which is what the captured branch returns: the
+/// class's constructor leaves two phase objects each holding the whole feed, so the answer's
+/// two phases carry the same composition.
+#[test]
+fn a_trace_ion_fluid_is_answered_by_the_split_it_has() {
+    use azoth_reactions::rand_solver::PhaseFeed;
+    use azoth_reactions::reactive_flash::{DriverState, TRACE_ION_Z_TOLERANCE, run};
+
+    let (mixture, constants) = mixture_and_constants();
+    let matrix =
+        FormulaMatrix::build(&NAMES.map(String::from)).expect("the components are in the databank");
+    let b: Vec<f64> = matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
+        .collect();
+    let g0 = standard_potentials(&formation_data(), 600.0, 1.0, &[], &[]);
+    let reduced = mixture
+        .reduced_parameters(kelvins(600.0), pascals(1.0e5))
+        .expect("a state");
+    let mut phase_ln_phi = |_phase: usize, x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        Ok(mixture
+            .phase_state(&reduced, x, RootSide::Vapour)?
+            .ln_phi
+            .clone())
+    };
+    let mut single_ln_phi = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        Ok(mixture
+            .phase_state(&reduced, x, RootSide::Vapour)?
+            .ln_phi
+            .clone())
+    };
+    let mut ce = |x: &[f64]| -> azoth_core::Result<Vec<f64>> { Ok(x.to_vec()) };
+    let pair = [
+        PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        },
+        PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        },
+    ];
+
+    // **The sum is over the ions' overall mole *fractions*, not over their charges** - so a
+    // trace-ion fluid is one where the charged component is itself a trace, which is what the
+    // captured `1e-12` mol of salt in ten moles of water is.
+    let trace_feed: [f64; 4] = [0.25, 0.25, 0.25, 1.0e-12];
+    let trace_charges = [0.0, 0.0, 0.0, 1.0];
+    let ion_fraction: f64 = trace_feed
+        .iter()
+        .zip(trace_charges)
+        .filter(|(_, charge)| *charge != 0.0)
+        .map(|(fraction, _)| (*fraction).abs())
+        .sum();
+    assert!(ion_fraction < TRACE_ION_Z_TOLERANCE, "{ion_fraction}");
+    let trace_b: Vec<f64> = matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(trace_feed).map(|(a, n)| a * n).sum())
+        .collect();
+
+    let outcome = run(
+        DriverState {
+            feed_moles: &trace_feed,
+            a_matrix: &matrix.matrix,
+            g0: &g0,
+            b: &trace_b,
+            total_moles: 1.0,
+            constants: &constants,
+            charges: &trace_charges,
+            temperature: 600.0,
+            pressure: 1.0,
+            max_phases: 2,
+            phases: pair.to_vec(),
+        },
+        &mut phase_ln_phi,
+        &mut single_ln_phi,
+        &mut ce,
+        None,
+    )
+    .expect("the shortcut runs");
+
+    assert!(outcome.converged);
+    assert_eq!(outcome.total_iterations, 0, "no solve runs");
+    assert!(outcome.solution.is_none(), "and none is reported");
+    assert_eq!(outcome.phases.len(), 2);
+    for (phase, original) in outcome.phases.iter().zip(&pair) {
+        assert_eq!(
+            phase.fractions, original.fractions,
+            "the split is untouched"
+        );
+        assert_eq!(phase.beta, original.beta);
+    }
+
+    // A quarter mole of the same charged component is not a trace, and the same driver then
+    // runs the whole stack.
+    let molar = [0.0, 0.0, 0.0, 1.0];
+    let outcome = run(
+        DriverState {
+            feed_moles: &FEED,
+            a_matrix: &matrix.matrix,
+            g0: &g0,
+            b: &b,
+            total_moles: 1.0,
+            constants: &constants,
+            charges: &molar,
+            temperature: 600.0,
+            pressure: 1.0,
+            max_phases: 2,
+            phases: pair.to_vec(),
+        },
+        &mut phase_ln_phi,
+        &mut single_ln_phi,
+        &mut ce,
+        None,
+    )
+    .expect("the full driver runs");
+    assert!(
+        outcome.total_iterations > 0,
+        "a molar ion takes the solve: {}",
+        outcome.total_iterations
+    );
+}
