@@ -60,6 +60,8 @@ use azoth_process::{
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
+use azoth_reactions::kinetic_rate_law::KineticRateLawResult as KernelKineticRateLawResult;
+use azoth_reactions::kinetics::KineticsResult as KernelKineticsResult;
 use azoth_reactions::reactive_ph_flash::ReactivePhFlashResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
 use azoth_reactions::reactive_tp_flash::ReactiveTpFlashResult;
@@ -7705,6 +7707,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
         ReactiveTpFlashResult::CALC_ID => ReactiveTpFlashResult::FIELDS.to_vec(),
         ReactivePhFlashResult::CALC_ID => ReactivePhFlashResult::FIELDS.to_vec(),
+        KernelKineticRateLawResult::CALC_ID => KernelKineticRateLawResult::FIELDS.to_vec(),
+        KernelKineticsResult::CALC_ID => KernelKineticsResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
@@ -8583,6 +8587,83 @@ impl From<&azoth_eos::results::UmrCpaPhaseResult> for PyUmrCpaPhaseResult {
             ln_phi: r.ln_phi.clone(),
             h_res: qty(r.h_res.value, "J/mol"),
             s_res: qty(r.s_res.value, "J/(mol*K)"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `reactions.kinetic_rate_law`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "KineticRateLawResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyKineticRateLawResult {
+    /// The reaction's rate factor at `T`, by the selected law.
+    #[pyo3(get)]
+    pub rate_factor: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyKineticRateLawResult {
+    fn __repr__(&self) -> String {
+        format!("KineticRateLawResult(rate_factor={})", self.rate_factor)
+    }
+}
+
+impl From<&azoth_reactions::KineticRateLawResult> for PyKineticRateLawResult {
+    fn from(r: &azoth_reactions::KineticRateLawResult) -> Self {
+        Self {
+            rate_factor: r.rate_factor,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `reactions.kinetics`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "KineticsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyKineticsResult {
+    /// `reacCoef` per component.
+    #[pyo3(get)]
+    pub coefficient: Vec<f64>,
+    /// `getPhiInfinite` per component, zero where no reaction produced one.
+    #[pyo3(get)]
+    pub phi_infinite: Vec<f64>,
+    /// Whether the irreversibility test fired while each component's row was built.
+    #[pyo3(get)]
+    pub irreversible: Vec<f64>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyKineticsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "KineticsResult(coefficient={:?}, irreversible={:?})",
+            self.coefficient, self.irreversible
+        )
+    }
+}
+
+impl From<&azoth_reactions::KineticsResult> for PyKineticsResult {
+    fn from(r: &azoth_reactions::KineticsResult) -> Self {
+        Self {
+            coefficient: r.coefficient.clone(),
+            phi_infinite: r.phi_infinite.clone(),
+            irreversible: r.irreversible.clone(),
             warnings: transport(&r.warnings),
         }
     }

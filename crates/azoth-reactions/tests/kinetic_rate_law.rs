@@ -11,7 +11,10 @@
 //! `rateFactor` of `0.003` is not read by it. The test asserts that sameness deliberately: it is
 //! the property that makes the Arrhenius branch a migration rather than a variant.
 
-use azoth_reactions::kinetic_rate_law::{KineticRateLaw, ReferenceKinetics, rate_factor};
+use azoth_reactions::kinetic_rate_law::{
+    KineticRateLaw, ReferenceKinetics, kinetic_rate_law, rate_factor,
+};
+use azoth_test_support as common;
 
 /// From `captures/kinetics_probe.tsv`, read rather than transcribed: the capture is the oracle
 /// and a number copied out of it is a number that can drift from it.
@@ -151,4 +154,44 @@ fn the_selector_answers_the_legacy_law() {
         KineticRateLaw::ReferenceArrhenius
     );
     assert!(KineticRateLaw::parse("something else").is_err());
+}
+
+// ---------------------------------------------------------------------------
+// The registered model: `reactions.kinetic_rate_law`, against the cases its spec declares.
+// ---------------------------------------------------------------------------
+
+/// The model's id, so the table can be asked for it rather than the cases transcribed.
+const MODEL_ID: &str = "reactions.kinetic_rate_law";
+
+fn call_case(case: &azoth_core::spec::TestCase) -> azoth_reactions::KineticRateLawResult {
+    kinetic_rate_law(
+        case.string("law").expect("law"),
+        common::input(case, "T"),
+        common::input(case, "reference_rate"),
+        common::input(case, "activation_energy"),
+        common::input(case, "reference_temperature"),
+    )
+    .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
+}
+
+#[test]
+fn every_case_in_the_spec() {
+    let spec =
+        azoth_reactions::model_gen::model(MODEL_ID).expect("the model should be in its table");
+    assert!(!spec.cases.is_empty(), "the model should have cases");
+
+    for case in spec.cases {
+        let result = call_case(case);
+        let context = &format!("{}::{}", spec.id, case.id);
+        let expected = case
+            .expected_value("rate_factor")
+            .unwrap_or_else(|| panic!("the case `{}` declares rate_factor", case.id));
+        common::assert_close(
+            result.rate_factor,
+            expected,
+            case.tolerance,
+            &format!("{context} (rate_factor)"),
+        );
+        common::assert_consistent(&result, context);
+    }
 }

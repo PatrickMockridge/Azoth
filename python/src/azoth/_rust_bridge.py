@@ -79,6 +79,8 @@ from azoth.core.result import (
     KComponent,
     KentEisenbergPhaseResult,
     KFactorsResult,
+    KineticRateLawResult,
+    KineticsResult,
     LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
@@ -3991,5 +3993,75 @@ def reactive_ph_flash(
         converged=result.converged,
         outer_iterations=result.outer_iterations,
         total_inner_iterations=result.total_inner_iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def kinetic_rate_law(
+    law: str,
+    T: Q,
+    reference_rate: float,
+    activation_energy: Q,
+    reference_temperature: Q,
+) -> KineticRateLawResult:
+    """The kinetic rate factor, computed in Rust.
+
+    The selector is parsed on the Rust side, so the law this library carries is decided in
+    one place; the three Arrhenius parameters cross as magnitudes whether or not the branch
+    reads them, because the legacy one ignores all three.
+    """
+    spec = _models_gen.model("reactions.kinetic_rate_law")
+    result = _core.kinetic_rate_law(
+        law,
+        input_to_si(spec, "T", T),
+        float(reference_rate),
+        input_to_si(spec, "activation_energy", activation_energy),
+        input_to_si(spec, "reference_temperature", reference_temperature),
+    )
+    return KineticRateLawResult(
+        rate_factor=result.rate_factor,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def kinetics(
+    components: Sequence[str],
+    reaction_components: Sequence[str],
+    reaction_lengths: Sequence[float],
+    reaction_coefficients: Sequence[float],
+    rate_factors: Sequence[float],
+    equilibrium_constants: Sequence[float],
+    fractions: Sequence[float],
+    molar_masses: Sequence[float],
+    density: Q,
+    inter_fractions: Sequence[float],
+    inter_density: Q,
+    diffusion: Sequence[float],
+) -> KineticsResult:
+    """The Krishna-Standart rate matrix, computed in Rust.
+
+    Every species and every reaction name crosses **unresolved**, as a string: which
+    species a phase carries and which side of a reaction they sit on are read on the Rust
+    side, so the two languages cannot disagree about which row answered.
+    """
+    spec = _models_gen.model("reactions.kinetics")
+    result = _core.kinetics(
+        list(components),
+        list(reaction_components),
+        [float(value) for value in reaction_lengths],
+        [float(value) for value in reaction_coefficients],
+        [float(value) for value in rate_factors],
+        [float(value) for value in equilibrium_constants],
+        [float(value) for value in fractions],
+        [_si(spec, "molar_masses", value) for value in molar_masses],
+        _si(spec, "density", density),
+        [float(value) for value in inter_fractions],
+        _si(spec, "inter_density", inter_density),
+        [_si(spec, "diffusion", value) for value in diffusion],
+    )
+    return KineticsResult(
+        coefficient=tuple(result.coefficient),
+        phi_infinite=tuple(result.phi_infinite),
+        irreversible=tuple(result.irreversible),
         warnings=_warnings(result.warnings),
     )

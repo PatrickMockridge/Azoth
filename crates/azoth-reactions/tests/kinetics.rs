@@ -11,7 +11,8 @@
 //! density and molar masses) and that pairing is pinned by the source rather than by a number.
 //! The docstring on the three concentration helpers says which field comes from which.
 
-use azoth_reactions::kinetics::{KineticPhase, KineticReaction, rate_matrix};
+use azoth_reactions::kinetics::{KineticPhase, KineticReaction, kinetics, rate_matrix};
+use azoth_test_support as common;
 
 /// The capture's values, read from the file rather than transcribed.
 fn capture() -> String {
@@ -174,4 +175,62 @@ fn an_absent_species_is_refused() {
         rate_matrix(&reactions, &phase, &short, "CO2", &diffusion()).is_err(),
         "the interface is missing the reaction's species"
     );
+}
+
+// ---------------------------------------------------------------------------
+// The registered model: `reactions.kinetics`, against the cases its spec declares.
+// ---------------------------------------------------------------------------
+
+/// The model's id, so the table can be asked for it rather than the cases transcribed.
+const MODEL_ID: &str = "reactions.kinetics";
+
+fn call_case(case: &azoth_core::spec::TestCase) -> azoth_reactions::KineticsResult {
+    kinetics(
+        case.list("components").expect("components"),
+        case.list("reaction_components")
+            .expect("reaction_components"),
+        case.vector("reaction_lengths").expect("reaction_lengths"),
+        case.vector("reaction_coefficients")
+            .expect("reaction_coefficients"),
+        case.vector("rate_factors").expect("rate_factors"),
+        case.vector("equilibrium_constants")
+            .expect("equilibrium_constants"),
+        case.vector("fractions").expect("fractions"),
+        case.vector("molar_masses").expect("molar_masses"),
+        common::input(case, "density"),
+        case.vector("inter_fractions").expect("inter_fractions"),
+        common::input(case, "inter_density"),
+        case.vector("diffusion").expect("diffusion"),
+    )
+    .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
+}
+
+#[test]
+fn every_case_in_the_spec() {
+    let spec =
+        azoth_reactions::model_gen::model(MODEL_ID).expect("the model should be in its table");
+    assert!(!spec.cases.is_empty(), "the model should have cases");
+
+    for case in spec.cases {
+        let result = call_case(case);
+        let context = &format!("{}::{}", spec.id, case.id);
+        for (name, actual) in [
+            ("coefficient", &result.coefficient),
+            ("phi_infinite", &result.phi_infinite),
+            ("irreversible", &result.irreversible),
+        ] {
+            let expected = case
+                .expected_vector(name)
+                .unwrap_or_else(|| panic!("the case `{}` declares {name}", case.id));
+            for (i, (&got, &want)) in actual.iter().zip(expected).enumerate() {
+                common::assert_close(
+                    got,
+                    want,
+                    case.tolerance,
+                    &format!("{context} ({name}[{i}])"),
+                );
+            }
+        }
+        common::assert_consistent(&result, context);
+    }
 }

@@ -17,8 +17,8 @@ use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyEquilibriumConstantResult, PyReactivePhFlashResult, PyReactivePhaseEquilibriumResult,
-    PyReactiveTpFlashResult,
+    PyEquilibriumConstantResult, PyKineticRateLawResult, PyKineticsResult, PyReactivePhFlashResult,
+    PyReactivePhaseEquilibriumResult, PyReactiveTpFlashResult,
 };
 
 /// One reaction's equilibrium constant, its derivative and its heat of reaction.
@@ -226,5 +226,94 @@ pub fn reactive_ph_flash(
         max_phases as usize,
     )
     .map(|r| PyReactivePhFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// A reaction's kinetic rate factor, by the law its selector names.
+///
+/// `law` is parsed by the kernel rather than matched here, so a branch this library does
+/// not carry is refused by the same code path the Rust tests exercise.
+#[pyfunction]
+#[pyo3(signature = (law, T, reference_rate, activation_energy, reference_temperature))]
+#[pyo3(text_signature = "(law, T, reference_rate, activation_energy, reference_temperature)")]
+#[allow(non_snake_case)] // `T` is the symbol in the published equation
+pub fn kinetic_rate_law(
+    py: Python<'_>,
+    law: &str,
+    T: f64,
+    reference_rate: f64,
+    activation_energy: f64,
+    reference_temperature: f64,
+) -> PyResult<PyKineticRateLawResult> {
+    azoth_reactions::kinetic_rate_law::kinetic_rate_law(
+        law,
+        T,
+        reference_rate,
+        activation_energy,
+        reference_temperature,
+    )
+    .map(|r| PyKineticRateLawResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The Krishna-Standart mass-transfer rate matrix of one phase's reactions.
+///
+/// The reactions cross as **concatenated name lists** rather than a matrix over the
+/// phase's species, because a reaction's own name order decides which sibling's
+/// `phiInfinite` it keeps - and the coefficient a matrix would encode is not enough to
+/// recover that order.
+#[pyfunction]
+#[pyo3(signature = (
+    components,
+    reaction_components,
+    reaction_lengths,
+    reaction_coefficients,
+    rate_factors,
+    equilibrium_constants,
+    fractions,
+    molar_masses,
+    density,
+    inter_fractions,
+    inter_density,
+    diffusion
+))]
+#[pyo3(
+    text_signature = "(components, reaction_components, reaction_lengths, \
+                        reaction_coefficients, rate_factors, equilibrium_constants, fractions, \
+                        molar_masses, density, inter_fractions, inter_density, diffusion)"
+)]
+#[allow(clippy::too_many_arguments)] // the class's own parameter list, one input per fact
+pub fn kinetics(
+    py: Python<'_>,
+    components: Vec<String>,
+    reaction_components: Vec<String>,
+    reaction_lengths: Vec<f64>,
+    reaction_coefficients: Vec<f64>,
+    rate_factors: Vec<f64>,
+    equilibrium_constants: Vec<f64>,
+    fractions: Vec<f64>,
+    molar_masses: Vec<f64>,
+    density: f64,
+    inter_fractions: Vec<f64>,
+    inter_density: f64,
+    diffusion: Vec<f64>,
+) -> PyResult<PyKineticsResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let reaction_names: Vec<&str> = reaction_components.iter().map(String::as_str).collect();
+    azoth_reactions::kinetics::kinetics(
+        &names,
+        &reaction_names,
+        &reaction_lengths,
+        &reaction_coefficients,
+        &rate_factors,
+        &equilibrium_constants,
+        &fractions,
+        &molar_masses,
+        density,
+        &inter_fractions,
+        inter_density,
+        &diffusion,
+    )
+    .map(|r| PyKineticsResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }

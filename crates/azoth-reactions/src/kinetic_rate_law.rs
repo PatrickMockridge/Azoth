@@ -24,7 +24,7 @@
 //! `ThermodynamicConstantsInterface.R` - the same `8.3144621` the equilibrium constant is built
 //! with, and not the `8.314462` the RAND solver carries.
 
-use azoth_core::{AzothError, Result};
+use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
 use crate::equilibrium_constant::GAS_CONSTANT;
 
@@ -120,4 +120,65 @@ pub fn rate_factor(kinetics: &ReferenceKinetics, temperature: f64) -> Result<f64
         * (-kinetics.activation_energy / GAS_CONSTANT
             * (1.0 / temperature - 1.0 / kinetics.reference_temperature))
             .exp())
+}
+
+/// Result of `reactions.kinetic_rate_law`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct KineticRateLawResult {
+    /// The reaction's rate factor at `T`, by the selected law.
+    pub rate_factor: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for KineticRateLawResult {
+    const CALC_ID: &'static str = "reactions.kinetic_rate_law";
+    const FIELDS: &'static [&'static str] = &["rate_factor", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// `reactions.kinetic_rate_law`: the rate factor a reaction's own law answers at a state.
+///
+/// `law` is the selector's name, parsed by [`KineticRateLaw::parse`], and **the three
+/// Arrhenius parameters are taken whether or not the legacy branch reads them** - NeqSim's
+/// object carries them either way, and the legacy law ignores all three.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a law this library does not carry, a temperature that is
+/// not finite and positive, and on the reference branch an Arrhenius parameter the law
+/// cannot use.
+#[allow(non_snake_case)] // `T` is the symbol in the published equation
+pub fn kinetic_rate_law(
+    law: &str,
+    T: f64,
+    reference_rate: f64,
+    activation_energy: f64,
+    reference_temperature: f64,
+) -> Result<KineticRateLawResult> {
+    let spec = &crate::model_gen::KINETIC_RATE_LAW_SPEC;
+    let mut warnings = Vec::new();
+    apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "T" => Some(T),
+            "reference_temperature" => Some(reference_temperature),
+            "reference_rate" => Some(reference_rate),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let kinetics = ReferenceKinetics {
+        law: KineticRateLaw::parse(law)?,
+        reference_rate,
+        activation_energy,
+        reference_temperature,
+    };
+    Ok(KineticRateLawResult {
+        rate_factor: rate_factor(&kinetics, T)?,
+        warnings,
+    })
 }

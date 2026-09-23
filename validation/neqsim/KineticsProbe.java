@@ -34,6 +34,51 @@ public class KineticsProbe {
     rateLaw("co2-water-298K", 298.15, new String[] { "CO2", "water" }, new double[] { 0.01, 10.0 });
     rateMatrix("co2-water-298K", 298.15, new String[] { "CO2", "water" },
         new double[] { 0.01, 10.0 });
+    freshKinetics("co2-water-298K", 298.15, new String[] { "CO2", "water" },
+        new double[] { 0.01, 10.0 });
+  }
+
+  /// **`phiInfinite` and `isIrreversible` are fields of the object, and neither is reset.**
+  ///
+  /// `Kinetics.calcReacMatrix` assigns `phiInfinite` per sibling and sets `isIrreversible`
+  /// once any reaction's scaled `1/K` comes in under `1e-3`; both are read back off the
+  /// object afterwards, so on a shared instance the value a caller sees is the *last* one
+  /// any call produced. The port answers per call, so the two are only comparable against
+  /// a fresh object - which is what this block is for.
+  ///
+  /// The shared object's values are printed first, beside them, because a reader who takes
+  /// `operations.getKinetics()` gets those and the difference is the point.
+  static void freshKinetics(String label, double temperature, String[] names, double[] moles) {
+    System.out.println("fluid=" + label + "-fresh-kinetics");
+    SystemInterface system = build(temperature, names, moles);
+    ThermodynamicOperations flash = new ThermodynamicOperations(system);
+    flash.TPflash();
+    system.init(1);
+    PhaseInterface aqueous = system.getPhase(1);
+    ChemicalReactionOperations operations = system.getChemicalReactionOperations();
+
+    // The shared instance, after every row has been taken from it.
+    for (int comp = 0; comp < aqueous.getNumberOfComponents(); comp++) {
+      operations.solveKinetics(1, aqueous, comp);
+    }
+    for (int comp = 0; comp < aqueous.getNumberOfComponents(); comp++) {
+      String name = aqueous.getComponent(comp).getName();
+      System.out.println("shared_phi_infinite[" + name + "]="
+          + operations.getKinetics().getPhiInfinite());
+      System.out.println("shared_irreversible[" + name + "]="
+          + operations.getKinetics().isIrreversible());
+    }
+
+    // A fresh object per component: the per-call answer.
+    for (int comp = 0; comp < aqueous.getNumberOfComponents(); comp++) {
+      String name = aqueous.getComponent(comp).getName();
+      neqsim.chemicalreactions.kinetics.Kinetics fresh =
+          new neqsim.chemicalreactions.kinetics.Kinetics(operations);
+      fresh.calcReacMatrix(aqueous, aqueous, comp);
+      System.out.println("fresh_phi_infinite[" + name + "]=" + fresh.getPhiInfinite());
+      System.out.println("fresh_irreversible[" + name + "]=" + fresh.isIrreversible());
+    }
+    System.out.println();
   }
 
   /// **The two rate laws**, per reaction, at two temperatures.

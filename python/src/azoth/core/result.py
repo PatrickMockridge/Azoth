@@ -666,6 +666,38 @@ class ReferencePotentialsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class KineticRateLawResult(_HasWarnings):
+    """Result of ``reactions.kinetic_rate_law``."""
+
+    #: The reaction's rate factor at ``T``, by the selected law - a bare number, as the
+    #: class stores and returns it.
+    rate_factor: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class KineticsResult(_HasWarnings):
+    """Result of ``reactions.kinetics``.
+
+    One entry per component of the phase, in the order it was given.
+    """
+
+    #: ``reacCoef`` per component: the pseudo-first-order coefficient, the sum of every
+    #: reaction's own contribution.
+    coefficient: tuple[float, ...]
+    #: ``getPhiInfinite`` per component, **zero where no reaction produced one** - the
+    #: value the class's field is constructed with, which is what a fresh object reads
+    #: back.
+    phi_infinite: tuple[float, ...]
+    #: A mask: 1.0 where any reaction's scaled ``1/K`` came in under ``1e-3`` while this
+    #: component's row was built.
+    irreversible: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PureSaturationResult(_HasWarnings):
     """Result of ``eos.pure_saturation``.
 

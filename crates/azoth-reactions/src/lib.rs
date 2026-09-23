@@ -44,6 +44,8 @@ pub mod spec_gen;
 
 pub use chemical_equilibrium::{ChemicalEquilibriumResult, chemical_equilibrium};
 pub use equilibrium_constant::{EquilibriumConstantResult, equilibrium_constant};
+pub use kinetic_rate_law::{KineticRateLawResult, kinetic_rate_law};
+pub use kinetics::{KineticsResult, kinetics};
 pub use reactive_phase::{is_reactive_phase, reactive_phase_index};
 pub use reactive_phase_equilibrium::{ReactivePhaseEquilibriumResult, reactive_phase_equilibrium};
 pub use reference_potentials::{ReferencePotentialsResult, reference_potentials};

@@ -170,6 +170,8 @@
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)
+  - [A reaction's kinetic rate factor](./reactions/kinetic_rate_law.md)
+  - [The Krishna-Standart mass-transfer rate matrix](./reactions/kinetics.md)
   - [Reactive flash at fixed pressure and enthalpy](./reactions/reactive_ph_flash.md)
   - [Reactive equilibrium as an operation on one phase](./reactions/reactive_phase_equilibrium.md)
   - [Reactive flash at fixed temperature and pressure](./reactions/reactive_tp_flash.md)

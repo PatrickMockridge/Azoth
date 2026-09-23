@@ -1,0 +1,106 @@
+id = "reactions.kinetics"
+name = "The Krishna-Standart mass-transfer rate matrix"
+kind = "direct"
+assumptions = [
+    "**one component's row is a sum over the fluid's reactions**, each contributing its rate factor times the reactant concentrations raised to the negative stoichiometry and the same-side siblings to the ratios of their coefficients.",
+    "**the sibling rule is `nu_k * nu_j > 0`** - the same side of the reaction as the component asked about - excluding water by name and excluding the component itself. It was found by transcribing the matrix against the capture's numbers, not by reading the source.",
+    "**each reaction names its own species in its own order, and that order is part of the answer.** `phiInfinite` is *assigned* per sibling, so where a reaction has two same-side siblings the last in its order wins - which a matrix over the phase's species could not state.",
+    "**the class builds its concentrations from two phases at once, and pairs them three ways.** The rate law's is the interface's mole fraction over the *bulk* density and molar mass; the reactive one is the interface's fraction and density over the bulk's molar mass; the sibling's is the bulk's.",
+    "**the two phases of the film are the same object on every fluid the oracle has**, because that is what NeqSim's own film caller passes when the film is not resolved. So the pairing is pinned by the source and not by a number here.",
+    "**`phiInfinite` and `isIrreversible` are object fields that nothing resets.** On a shared instance `phiInfinite` is the last value any call produced and `isIrreversible` is the union over every call. This model answers per call, which is a fresh object's answer.",
+    "**the irreversibility threshold does not fire on the captured fluid.** On an equilibrated phase `prod c_j^(-nu_j)` is `1/K`, so the test is near `|1/K^2|` and this fluid's constants are 4.4e-7, 3.3e-18 and 8.4e-16 - it needs a `K` above about 31.6.",
+    "**the diffusion vector is an input rather than assembled here.** `calcEffectiveDiffusionCoefficients` is a second model, and its binary matrix is not reachable from outside its class: the getter that would expose it returns a diagonal one.",
+    "**a reaction naming a species the phase does not carry is a refusal**, not a zero. A matrix built from fewer species than the reactions name would be a smaller answer that still looks like one.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `neqsim.chemicalreactions.kinetics.Kinetics.calcReacMatrix` is the port source.",
+    "Krishna, R.; Standart, G. L. (1976). \"A multicomponent film model incorporating a general matrix method of solution to the Maxwell-Stefan equations.\" AIChE Journal 22(2), 383-389.",
+    "`validation/neqsim/KineticsProbe.java` and `validation/neqsim/captures/kinetics_probe.tsv` - the capture all six rows are pinned against.",
+]
+[source]
+standard = "NeqSim master `Kinetics`"
+edition = "`calcReacMatrix`, ported verbatim: the pseudo-first-order coefficient, the `phiInfinite` assignment and the irreversibility test, on the two-phase pairing the class reads."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the bulk phase's substances, by name, in the order `fractions`, `molar_masses` and `diffusion` are given in. The reaction species are looked up in this phase by name.\n"
+[inputs.reaction_components]
+type = "components"
+description = "**the reactions' own species, concatenated in reaction order and in each reaction's own order**, `reaction_lengths[i]` of them for reaction `i`. A name list rather than a stoichiometric matrix, because the class iterates each reaction's own names and `phiInfinite` takes the last.\n"
+[inputs.reaction_lengths]
+type = "vector"
+unit = "dimensionless"
+length = "one per reaction"
+description = "how many species each reaction names, so the concatenated list can be cut into reactions. A reaction with no species is refused.\n"
+[inputs.reaction_coefficients]
+type = "vector"
+unit = "dimensionless"
+length = "one per entry of `reaction_components`, in the same order"
+description = "the signed stoichiometric coefficients, negatives for reactants, aligned one for one with `reaction_components`.\n"
+[inputs.rate_factors]
+type = "vector"
+unit = "dimensionless"
+length = "one per reaction"
+description = "each reaction's rate factor at the interface's temperature, which the caller computes - `reactions.kinetic_rate_law` is that law.\n"
+[inputs.equilibrium_constants]
+type = "vector"
+unit = "dimensionless"
+length = "one per reaction"
+description = "each reaction's `K` at the bulk phase's state, which the caller computes - `reactions.equilibrium_constant` is that id. Its reciprocal enters the irreversibility test whether or not the component appears in the reaction.\n"
+[inputs.fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the bulk phase's mole fractions.\n"
+[inputs.molar_masses]
+type = "vector"
+unit = "kg/mol"
+length = "one per component"
+description = "the **bulk** phase's molar masses, which is the phase the class reads them from - a concentration is `x rho / M` in mol per cubic metre.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "the **bulk** phase's mass density.\n"
+[inputs.inter_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the interface phase's mole fractions. On every fluid the oracle has, these are the bulk phase's own numbers: the class's film caller passes one phase for both when the film is not resolved.\n"
+[inputs.inter_density]
+unit = "kg/m**3"
+description = "the interface phase's mass density, read by the reactive concentration and by nothing else.\n"
+[inputs.diffusion]
+type = "vector"
+unit = "m**2/s"
+length = "one per component, in `components`' order"
+description = "the effective diffusion coefficients, read by index rather than by name, which is how the class reads them off the physical properties object.\n"
+[outputs]
+[outputs.coefficient]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`reacCoef`: each component's pseudo-first-order coefficient, the sum of every reaction's own contribution. `1/s` in the units the concentrations carry, and reported as the class reports it.\n"
+[outputs.phi_infinite]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "`getPhiInfinite` per component, **the field's initial zero where no reaction produced one** - which is what a fresh object reports, and the capture holds that beside the shared object's stale value.\n"
+[outputs.irreversible]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "a mask: 1 where any reaction's scaled `1/K` came in under `1e-3` while this component's row was built, 0 otherwise. A mask over the components because the class's own field is a single boolean for the whole object.\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a concentration divides by the density, so a non-positive one is not a state\n"
+[[valid_range]]
+quantity = "inter_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the reactive concentration divides by it\n"
+[implementations]
+python = "azoth.reactions.kinetics"
+rust = "azoth_reactions::kinetics"

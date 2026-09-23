@@ -21,6 +21,8 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     ChemicalEquilibriumResult,
     EquilibriumConstantResult,
+    KineticRateLawResult,
+    KineticsResult,
     ReactivePhaseEquilibriumResult,
     ReactivePhFlashResult,
     ReactiveTpFlashResult,
@@ -31,6 +33,8 @@ from azoth.core.units import Q
 __all__ = [
     "chemical_equilibrium",
     "equilibrium_constant",
+    "kinetic_rate_law",
+    "kinetics",
     "reactive_ph_flash",
     "reactive_phase_equilibrium",
     "reactive_tp_flash",
@@ -43,6 +47,8 @@ _REACTIVE_PHASE_EQUILIBRIUM = "reactions.reactive_phase_equilibrium"
 _REACTIVE_PH_FLASH = "reactions.reactive_ph_flash"
 _REACTIVE_TP_FLASH = "reactions.reactive_tp_flash"
 _REFERENCE_POTENTIALS = "reactions.reference_potentials"
+_KINETIC_RATE_LAW = "reactions.kinetic_rate_law"
+_KINETICS = "reactions.kinetics"
 
 
 def equilibrium_constant(source: str, reaction: str, T: Q) -> EquilibriumConstantResult:
@@ -247,4 +253,77 @@ def reactive_ph_flash(
         moles=list(moles),
         enthalpy=enthalpy,
         max_phases=max_phases,
+    )
+
+
+def kinetic_rate_law(
+    law: str,
+    T: Q,
+    reference_rate: float,
+    activation_energy: Q,
+    reference_temperature: Q,
+) -> KineticRateLawResult:
+    """A reaction's kinetic rate factor, by the law its selector names.
+
+    ``law`` is ``"legacy"`` or ``"arrhenius"``. **The legacy branch is what a fluid's own
+    reactions answer** - ``getKineticRateLaw`` falls back to it when its field is unset -
+    and it reads none of the three parameters, which is why they are required inputs it
+    ignores rather than optional ones.
+
+    Raises:
+        InvalidInputError: for a law this library does not carry, a temperature that is not
+            finite and positive, and on the reference branch an Arrhenius parameter the law
+            cannot use.
+
+    See :func:`azoth.reactions.reference.kinetic_rate_law`.
+    """
+    return resolve(_KINETIC_RATE_LAW)(  # type: ignore[no-any-return]
+        law=law,
+        T=T,
+        reference_rate=reference_rate,
+        activation_energy=activation_energy,
+        reference_temperature=reference_temperature,
+    )
+
+
+def kinetics(
+    components: Sequence[str],
+    reaction_components: Sequence[str],
+    reaction_lengths: Sequence[float],
+    reaction_coefficients: Sequence[float],
+    rate_factors: Sequence[float],
+    equilibrium_constants: Sequence[float],
+    fractions: Sequence[float],
+    molar_masses: Sequence[float],
+    density: Q,
+    inter_fractions: Sequence[float],
+    inter_density: Q,
+    diffusion: Sequence[float],
+) -> KineticsResult:
+    """The Krishna-Standart mass-transfer rate matrix of one phase's reactions.
+
+    ``reaction_components`` is the reactions' own species **concatenated in reaction order
+    and in each reaction's own order**, ``reaction_lengths[i]`` of them for reaction ``i``:
+    a reaction's own order decides which sibling's ``phiInfinite`` it keeps, so a matrix
+    over the phase's species could not state it.
+
+    Raises:
+        InvalidInputError: where the lengths disagree, or where a reaction names a species
+            the phase does not carry.
+
+    See :func:`azoth.reactions.reference.kinetics`.
+    """
+    return resolve(_KINETICS)(  # type: ignore[no-any-return]
+        components=components,
+        reaction_components=reaction_components,
+        reaction_lengths=reaction_lengths,
+        reaction_coefficients=reaction_coefficients,
+        rate_factors=rate_factors,
+        equilibrium_constants=equilibrium_constants,
+        fractions=fractions,
+        molar_masses=molar_masses,
+        density=density,
+        inter_fractions=inter_fractions,
+        inter_density=inter_density,
+        diffusion=diffusion,
     )

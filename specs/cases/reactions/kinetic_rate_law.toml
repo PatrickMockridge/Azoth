@@ -1,0 +1,49 @@
+model = "reactions.kinetic_rate_law"
+[[cases]]
+id = "the_legacy_law_at_298_15"
+tolerance = 1e-12
+source = "NeqSim master, `ChemicalReaction.getRateFactor` on the water-gas-shift fluid's first reaction, from `validation/neqsim/captures/kinetics_probe.tsv`. **The three parameters are set and the answer ignores all three**: the capture's legacy rows were printed before `setReferenceKinetics` was called, and the answer is the method's own literal `2.576e9 * exp(-6024 / 298.15) / 1000` rather than the `reference_rate` supplied here - which is the Arrhenius cases' own value, so the two laws are compared at one parameter set.\n"
+[cases.inputs]
+law = "legacy"
+T = 298.15
+reference_rate = 0.001
+activation_energy = 50000.0
+reference_temperature = 298.15
+[cases.expected]
+rate_factor = 0.004327147905576517
+[[cases]]
+id = "the_legacy_law_at_373_15"
+tolerance = 1e-12
+source = "The capture's second temperature. The same literal, `exp(-6024 / T)` away - so a port that read `ACTENERGY` here would agree at neither temperature.\n"
+[cases.inputs]
+law = "legacy"
+T = 373.15
+reference_rate = 0.001
+activation_energy = 50000.0
+reference_temperature = 298.15
+[cases.expected]
+rate_factor = 0.2511026144636955
+[[cases]]
+id = "the_reference_arrhenius_law_at_its_own_reference_temperature"
+tolerance = 1e-12
+source = "The same probe, after `setReferenceKinetics(1.0e-3, 50000.0, 298.15)`. **At the reference temperature the law returns exactly its own rate**, which is what says the branch is a reference form rather than a correlation with a fitted constant.\n"
+[cases.inputs]
+law = "arrhenius"
+T = 298.15
+reference_rate = 0.001
+activation_energy = 50000.0
+reference_temperature = 298.15
+[cases.expected]
+rate_factor = 0.001
+[[cases]]
+id = "the_reference_arrhenius_law_at_373_15"
+tolerance = 1e-12
+source = "The capture's second temperature, on the reference branch: `1e-3 * exp(-50000 / 8.3144621 * (1/373.15 - 1/298.15))`. The gas constant is the one `reactions.equilibrium_constant` carries; the RAND solver's `8.314462` moves the fourth digit.\n"
+[cases.inputs]
+law = "arrhenius"
+T = 373.15
+reference_rate = 0.001
+activation_energy = 50000.0
+reference_temperature = 298.15
+[cases.expected]
+rate_factor = 0.057624873947522956

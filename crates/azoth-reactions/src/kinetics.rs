@@ -37,7 +37,7 @@
 //! film's interface, which in the capture are the same object because that is what the probe
 //! passed - and nothing here knows which is which.
 
-use azoth_core::{AzothError, Result};
+use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
 /// The floor on `|1/K|` scaled by the reactant concentrations below which the class calls a
 /// reaction irreversible, from `if (Math.abs(irr) < 1e-3)`.
@@ -140,6 +140,10 @@ pub struct RateMatrix {
     pub phi_infinite: Option<f64>,
     /// `isIrreversible`: whether any reaction's scaled `1/K` came in under
     /// [`IRREVERSIBLE_THRESHOLD`] while the component's row was being built.
+    ///
+    /// **The class's field is never reset**, so read off a shared object it is the union
+    /// over every row taken from it so far. This is the per-call answer, which is what a
+    /// fresh object reports - the capture holds both.
     pub irreversible: bool,
 }
 
@@ -233,4 +237,178 @@ pub fn rate_matrix(
         phi_infinite,
         irreversible,
     })
+}
+
+/// Result of `reactions.kinetics`: one entry per component of `components`, in that order.
+#[derive(Debug, Clone, PartialEq)]
+pub struct KineticsResult {
+    /// `reacCoef` per component.
+    pub coefficient: Vec<f64>,
+    /// `getPhiInfinite` per component, **zero where no reaction produced one** - the value
+    /// the class's field is constructed with, which is what a fresh object reads back.
+    pub phi_infinite: Vec<f64>,
+    /// A mask: 1 where any reaction's scaled `1/K` came in under
+    /// [`IRREVERSIBLE_THRESHOLD`] while this component's row was built.
+    pub irreversible: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for KineticsResult {
+    const CALC_ID: &'static str = "reactions.kinetics";
+    const FIELDS: &'static [&'static str] =
+        &["coefficient", "phi_infinite", "irreversible", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// `reactions.kinetics`: the whole phase's mass-transfer rate matrix.
+///
+/// The reactions cross as **concatenated name lists** rather than a matrix over
+/// `components`, because a reaction's own name order decides which sibling's phi it keeps
+/// and a rectangular matrix cannot state that order. `reaction_lengths[i]` is how many
+/// names reaction `i` contributes, and the two flattened vectors are aligned one for one
+/// with `reaction_components`.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] where the lengths disagree, where `diffusion` is not one
+/// value per component, or where a reaction names a species the phase does not carry.
+#[allow(clippy::too_many_arguments)] // the class's own parameter list, one input per fact
+pub fn kinetics(
+    components: &[&str],
+    reaction_components: &[&str],
+    reaction_lengths: &[f64],
+    reaction_coefficients: &[f64],
+    rate_factors: &[f64],
+    equilibrium_constants: &[f64],
+    fractions: &[f64],
+    molar_masses: &[f64],
+    density: f64,
+    inter_fractions: &[f64],
+    inter_density: f64,
+    diffusion: &[f64],
+) -> Result<KineticsResult> {
+    let spec = &crate::model_gen::KINETICS_SPEC;
+    let mut warnings = Vec::new();
+    apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "density" => Some(density),
+            "inter_density" => Some(inter_density),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    let count = components.len();
+    for (field, length) in [
+        ("fractions", fractions.len()),
+        ("molar_masses", molar_masses.len()),
+        ("diffusion", diffusion.len()),
+        ("inter_fractions", inter_fractions.len()),
+    ] {
+        if length != count {
+            return Err(AzothError::InvalidInput {
+                field: field.to_string(),
+                reason: format!("{length} value(s) against {count} component(s)"),
+            });
+        }
+    }
+    if reaction_components.len() != reaction_coefficients.len() {
+        return Err(AzothError::InvalidInput {
+            field: "reaction_coefficients".to_string(),
+            reason: format!(
+                "{} name(s) and {} coefficient(s)",
+                reaction_components.len(),
+                reaction_coefficients.len()
+            ),
+        });
+    }
+    if rate_factors.len() != reaction_lengths.len()
+        || equilibrium_constants.len() != reaction_lengths.len()
+    {
+        return Err(AzothError::InvalidInput {
+            field: "rate_factors".to_string(),
+            reason: format!(
+                "{} reaction(s) and {} rate factor(s) against {} equilibrium constant(s)",
+                reaction_lengths.len(),
+                rate_factors.len(),
+                equilibrium_constants.len()
+            ),
+        });
+    }
+
+    // Cut the concatenated lists into the reactions the class iterates, each with its own
+    // names in its own order.
+    let mut reactions = Vec::with_capacity(reaction_lengths.len());
+    let mut cursor = 0usize;
+    for (index, length) in reaction_lengths.iter().enumerate() {
+        if !length.is_finite() || *length < 1.0 || length.fract() != 0.0 {
+            return Err(AzothError::InvalidInput {
+                field: "reaction_lengths".to_string(),
+                reason: format!("reaction {index} names {length} species, which is not a count"),
+            });
+        }
+        let length = *length as usize;
+        if cursor + length > reaction_components.len() {
+            return Err(AzothError::InvalidInput {
+                field: "reaction_lengths".to_string(),
+                reason: format!(
+                    "reaction {index} runs past the {count}-species reaction list at {cursor}",
+                    count = reaction_components.len()
+                ),
+            });
+        }
+        reactions.push(KineticReaction {
+            names: reaction_components[cursor..cursor + length]
+                .iter()
+                .map(|name| (*name).to_string())
+                .collect(),
+            stoc_coefs: reaction_coefficients[cursor..cursor + length].to_vec(),
+            rate_factor: rate_factors[index],
+            equilibrium_constant: equilibrium_constants[index],
+        });
+        cursor += length;
+    }
+    if cursor != reaction_components.len() {
+        return Err(AzothError::InvalidInput {
+            field: "reaction_lengths".to_string(),
+            reason: format!(
+                "the lengths sum to {cursor} and the reaction list has {} species",
+                reaction_components.len()
+            ),
+        });
+    }
+
+    let names: Vec<String> = components.iter().map(|name| (*name).to_string()).collect();
+    let phase = KineticPhase {
+        names: names.clone(),
+        fractions: fractions.to_vec(),
+        molar_masses: molar_masses.to_vec(),
+        density,
+    };
+    let inter_phase = KineticPhase {
+        names,
+        fractions: inter_fractions.to_vec(),
+        molar_masses: molar_masses.to_vec(),
+        density: inter_density,
+    };
+
+    let mut result = KineticsResult {
+        coefficient: Vec::with_capacity(count),
+        phi_infinite: Vec::with_capacity(count),
+        irreversible: Vec::with_capacity(count),
+        warnings,
+    };
+    for name in components {
+        let row = rate_matrix(&reactions, &phase, &inter_phase, name, diffusion)?;
+        result.coefficient.push(row.coefficient);
+        result.phi_infinite.push(row.phi_infinite.unwrap_or(0.0));
+        result
+            .irreversible
+            .push(if row.irreversible { 1.0 } else { 0.0 });
+    }
+    Ok(result)
 }

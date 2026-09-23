@@ -1386,6 +1386,18 @@ class EquilibriumConstantResult:
     warnings: list[Warning]
 
 @final
+class KineticRateLawResult:
+    rate_factor: float
+    warnings: list[Warning]
+
+@final
+class KineticsResult:
+    coefficient: list[float]
+    phi_infinite: list[float]
+    irreversible: list[float]
+    warnings: list[Warning]
+
+@final
 class ReactivePhFlashResult:
     temperature: Qty
     converged: bool
@@ -2541,6 +2553,27 @@ def chemical_equilibrium(
     phase_moles: float,
 ) -> ChemicalEquilibriumResult: ...
 def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
+def kinetic_rate_law(
+    law: str,
+    T: float,
+    reference_rate: float,
+    activation_energy: float,
+    reference_temperature: float,
+) -> KineticRateLawResult: ...
+def kinetics(
+    components: list[str],
+    reaction_components: list[str],
+    reaction_lengths: list[float],
+    reaction_coefficients: list[float],
+    rate_factors: list[float],
+    equilibrium_constants: list[float],
+    fractions: list[float],
+    molar_masses: list[float],
+    density: float,
+    inter_fractions: list[float],
+    inter_density: float,
+    diffusion: list[float],
+) -> KineticsResult: ...
 def reactive_ph_flash(
     components: list[str],
     T: float,
