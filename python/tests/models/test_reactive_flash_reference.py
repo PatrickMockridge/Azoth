@@ -241,3 +241,126 @@ def test_the_vle_initialisation_sets_the_captured_betas() -> None:
     assert abs(outcome.phases[1].beta - 0.789_403_682_026_609) < 1.0e-12
     captured_gibbs = -0.716_211_225_797_898_8
     assert abs(outcome.gibbs_energy - captured_gibbs) / abs(captured_gibbs) < 1.0e-4
+
+
+# --- the PH flash's outer loop ----------------------------------------------------------
+
+
+def _ideal_gas() -> Any:
+    """The mixture's heat-capacity polynomial, from the same component rows `_formation` reads."""
+    from azoth.eos import IdealGasModel
+    from azoth.eos.components import entry
+
+    coefficients = []
+    for name in NAMES:
+        cp = entry(name).cp
+        assert cp is not None, name
+        coefficients.append(cp)
+    return IdealGasModel(
+        cp_a=tuple(c[0] for c in coefficients),
+        cp_b=tuple(c[1] for c in coefficients),
+        cp_c=tuple(c[2] for c in coefficients),
+        cp_d=tuple(c[3] for c in coefficients),
+        cp_e=tuple(c[4] for c in coefficients),
+    )
+
+
+def _thermochemical(temperature: float, outcome: Any) -> float:
+    """The state's thermochemical enthalpy: the phases' sensible enthalpies plus the formation
+    inventory, which is what the class's own residual compares."""
+    import azoth
+    from azoth.eos import molar_enthalpy_entropy
+    from azoth.eos.components import from_names
+    from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
+    from azoth.reactions.reference import _tables
+
+    mixture = from_names(NAMES, eos="srk")
+    reduced = reduced_parameters(mixture, temperature, 1.0e5)
+    ideal = _ideal_gas()
+    total = 0.0
+    inventory = 0.0
+    assert outcome.solution is not None
+    for row in outcome.solution.phase_moles:
+        held = sum(row)
+        if held <= 0.0:
+            continue
+        composition = [moles / held for moles in row]
+        z = phase_state(reduced, mixture.kij, composition, liquid=False).z
+        state = molar_enthalpy_entropy(
+            mixture,
+            ideal,
+            azoth.ureg.Quantity(temperature, "K"),
+            azoth.ureg.Quantity(1.0, "bar"),
+            composition,
+            z,
+        )
+        total += held * float(state.h.to("J/mol").magnitude)
+        for index, moles in enumerate(row):
+            formation = _tables.formation_properties(NAMES[index])
+            assert formation is not None
+            inventory += moles * formation.enthalpy_of_formation
+    return total + inventory
+
+
+def _heat_capacity(temperature: float, outcome: Any) -> float:
+    """The system's heat capacity, `sum_j n_j cp_j` over the phases."""
+    import azoth
+    from azoth.eos import molar_enthalpy_entropy
+    from azoth.eos.components import from_names
+    from azoth.eos.reference._mixture_state import phase_state, reduced_parameters
+
+    mixture = from_names(NAMES, eos="srk")
+    reduced = reduced_parameters(mixture, temperature, 1.0e5)
+    ideal = _ideal_gas()
+    total = 0.0
+    assert outcome.solution is not None
+    for row in outcome.solution.phase_moles:
+        held = sum(row)
+        if held <= 0.0:
+            continue
+        composition = [moles / held for moles in row]
+        z = phase_state(reduced, mixture.kij, composition, liquid=False).z
+        state = molar_enthalpy_entropy(
+            mixture,
+            ideal,
+            azoth.ureg.Quantity(temperature, "K"),
+            azoth.ureg.Quantity(1.0, "bar"),
+            composition,
+            z,
+        )
+        total += held * float(state.cp.to("J/K/mol").magnitude)
+    return total
+
+
+def test_the_ph_loop_finds_its_temperature_back() -> None:
+    """The class's own round trip, in Python: the WGS equilibrium at 600 K sets the
+    specification, the search starts from 500 K and has to come back.
+
+    **The recovered temperature is the capture's to `1e-5` relative** (`600.0000398 K`), and
+    the outer pass count is *reported* rather than pinned: the loop is a secant, so its step
+    count is a path quantity.
+    """
+    from azoth.reactions.reference._reactive_ph_flash import PhState, reactive_ph_flash
+
+    def round_trip(flash_temperature: float, perturbed: float) -> tuple[float, int]:
+        from azoth.reactions.reference._rand_solver import PhaseFeed
+
+        # The specification: the reactive equilibrium at the flash temperature.
+        reference = _driver(flash_temperature, [PhaseFeed(fractions=list(FEED), beta=1.0)] * 2)
+        specified = _thermochemical(flash_temperature, reference)
+
+        def inner(temperature: float) -> PhState:
+            outcome = _driver(temperature, [PhaseFeed(fractions=list(FEED), beta=1.0)] * 2)
+            return PhState(
+                iterations=outcome.total_iterations,
+                thermochemical_enthalpy=_thermochemical(temperature, outcome),
+                cp=_heat_capacity(temperature, outcome),
+            )
+
+        result = reactive_ph_flash(perturbed, specified, inner)
+        assert result.converged
+        return result.temperature, result.outer_iterations
+
+    recovered, _outer = round_trip(600.0, 500.0)
+    captured = 600.000_039_758_328_5
+    assert abs(recovered - captured) / captured < 1.0e-5, (recovered, captured)
