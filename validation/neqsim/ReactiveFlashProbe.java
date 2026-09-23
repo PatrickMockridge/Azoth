@@ -60,6 +60,12 @@ public class ReactiveFlashProbe {
     stabilityOnly("methane-water-co2-hydrogen-1000K", 1000.0, 1.0,
         new String[] { "methane", "water", "CO2", "hydrogen" },
         new double[] { 0.4, 0.2, 0.2, 0.2 });
+    // A component the feed carries at 1e-40 and the equilibrium leaves there: nitrogen is inert
+    // and its mole fraction stays under the class's `MIN_MOLES`, so its reference potential
+    // takes the class's sentinel rather than a logarithm.
+    stabilityOnly("wgs-600K-trace-nitrogen", 600.0, 1.0,
+        new String[] { "CO", "water", "CO2", "hydrogen", "nitrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25, 1.0e-40 });
     // The phase bookkeeping: what the system holds before the driver touches it, and the
     // second initialisation path - the one where `initializeWithVLEFlash` is reachable.
     forcedOnePhase("wgs-600K", 600.0, 1.0,
@@ -454,6 +460,17 @@ public class ReactiveFlashProbe {
       }
     } catch (ReflectiveOperationException ex) {
       System.out.println("reflection_failed=" + ex);
+    }
+
+    // **The reference potentials the trials are run against**, which the class keeps in a
+    // private field and never prints: `d_i = ln x_i + ln phi_i` at the equilibrated feed, with
+    // `-100.0` for a component at or below its `MIN_MOLES` floor and `-1000.0` for an ion.
+    try {
+      java.lang.reflect.Field potentials = ReactiveStabilityAnalysis.class.getDeclaredField("d");
+      potentials.setAccessible(true);
+      printVector("reference_potentials", (double[]) potentials.get(stability));
+    } catch (ReflectiveOperationException ex) {
+      System.out.println("reference_potentials_failed=" + ex);
     }
 
     // What the class leaves in the phase: if its CE step wrote the equilibrated composition

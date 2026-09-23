@@ -169,7 +169,8 @@ fn every_captured_seed_is_stable() {
         Ok(phase.ln_phi.clone())
     };
     let ln_phi_feed = ln_phi(&state.equilibrated).expect("the feed's coefficients");
-    let d = reference_potentials(&state.equilibrated, &ln_phi_feed).expect("the potentials");
+    let d =
+        reference_potentials(&state.equilibrated, &ln_phi_feed, &[0.0; 4]).expect("the potentials");
 
     let seeds = trial_seeds(
         &state.equilibrated,
@@ -190,4 +191,74 @@ fn every_captured_seed_is_stable() {
         }
     }
     assert_eq!(unstable, 0, "the captured verdict is stable");
+}
+
+/// **The reference potentials, and the branch a trace component does *not* take.**
+///
+/// `computeReferencePotentials` has three branches: the logarithm for a component the feed
+/// holds, `-100.0` for one at or below `MIN_MOLES`, and `-1000.0` for an ion. The probe's
+/// trace-nitrogen fluid carries `1e-40` of an inert component, and what the class leaves in the
+/// phase is `1.0001516e-30` - *above* the `1e-30` floor - so the **logarithm** runs and the
+/// capture's `-69.0768` is `ln(1.0001516e-30)` plus that component's fugacity coefficient. The
+/// port reproduces it from the captured composition, which is what pins the branch order.
+///
+/// The absent branch itself is not reached by any captured fluid; it is asserted directly, at
+/// the floor and below it, where the class's own answer is a constant.
+#[test]
+fn the_reference_potentials_are_the_classes_three_branches() {
+    use azoth_reactions::reactive_stability::{
+        REFERENCE_ABSENT, REFERENCE_ION, reference_potentials,
+    };
+
+    // The trace-nitrogen block: `phase_x_after_run` and `reference_potentials`, in the capture's
+    // order (CO, water, CO2, hydrogen, nitrogen).
+    let equilibriated = [
+        0.079_140_531_089_050_75,
+        0.079_140_531_089_050_89,
+        0.420_859_468_910_949_2,
+        0.420_859_468_910_949_1,
+        1.000_151_672_217_491_5e-30,
+    ];
+    let captured = [
+        -2.535_945_213_718_570_7,
+        -2.537_323_477_797_878,
+        -0.865_452_653_324_643_4,
+        -0.864_974_018_712_630_2,
+        -69.076_841_192_751_1,
+    ];
+
+    let names = ["CO", "water", "CO2", "hydrogen", "nitrogen"];
+    let (mixture, _) = mixture_of(&names, Cubic::Srk, None).expect("the databank carries them");
+    let reduced = mixture
+        .reduced_parameters(kelvins(600.0), pascals(1.0e5))
+        .expect("a state");
+    let ln_phi = mixture
+        .phase_state(&reduced, &equilibriated, RootSide::Vapour)
+        .expect("the coefficients")
+        .ln_phi
+        .clone();
+
+    let potentials =
+        reference_potentials(&equilibriated, &ln_phi, &[0.0; 5]).expect("the shapes agree");
+    for (index, (got, want)) in potentials.iter().zip(captured).enumerate() {
+        // All five come in to `1e-12` **absolute**, the nitrogen one included: its value is a
+        // logarithm of `1.0001516e-30` and the capture's composition is the input, so the only
+        // difference left is the `ln` and the cubic's own rounding.
+        assert!(
+            (got - want).abs() < 1.0e-12,
+            "component {index} ({}): {got} against the capture's {want}",
+            names[index]
+        );
+    }
+    // A component that *is* at the floor is not a logarithm of it.
+    assert_eq!(REFERENCE_ABSENT, -100.0);
+    assert_eq!(REFERENCE_ION, -1000.0);
+    let floored = reference_potentials(&[1.0e-30, 0.5], &[0.1, 0.2], &[0.0, 0.0]).expect("a shape");
+    assert_eq!(floored[0], REFERENCE_ABSENT, "at the floor is absent");
+    assert!(
+        floored[1].is_finite(),
+        "and a held component is a logarithm"
+    );
+    let ionic = reference_potentials(&[0.4, 0.6], &[0.1, 0.2], &[0.0, -1.0]).expect("a shape");
+    assert_eq!(ionic[1], REFERENCE_ION, "an ion does not partition");
 }

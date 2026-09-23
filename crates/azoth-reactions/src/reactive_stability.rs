@@ -136,26 +136,58 @@ pub fn trial_seeds(
     seeds
 }
 
+/// The value `computeReferencePotentials` gives a component whose mole fraction is at or below
+/// [`MIN_MOLES`]: "effectively absent", and **not** a logarithm of the floor.
+pub const REFERENCE_ABSENT: f64 = -100.0;
+
+/// The value it gives an ion, which does not participate in phase equilibrium.
+pub const REFERENCE_ION: f64 = -1000.0;
+
 /// The reference potentials `d_i = ln x_i + ln phi_i` of the equilibrated feed, from
 /// `computeReferencePotentials`.
 ///
+/// Three branches, and the middle one is easy to get wrong: a component the feed holds takes
+/// the logarithm, one at or below [`MIN_MOLES`] takes [`REFERENCE_ABSENT`], and an ion takes
+/// [`REFERENCE_ION`]. Writing the absent case as `ln(max(x, MIN_MOLES))` is a *different
+/// number* - `-69.08` and not `-100` - and the difference does not show on any fluid whose
+/// components are all present.
+///
+/// **The absent branch is not reached by any captured fluid.** The probe's trace-nitrogen case
+/// carries `1e-40` and the class's own floor leaves the phase holding `1.0001516e-30`, which is
+/// *above* `MIN_MOLES`, so the logarithm runs there and the capture pins that instead. `charges`
+/// is the per-component ionic charge, zero for the neutral fluids this crate's callers admit.
+///
 /// # Errors
-/// Whatever `ln_phi` raises, and [`AzothError::InvalidInput`] on a shape disagreement.
-pub fn reference_potentials(fractions: &[f64], ln_phi: &[f64]) -> Result<Vec<f64>> {
-    if fractions.len() != ln_phi.len() {
+/// [`AzothError::InvalidInput`] on a shape disagreement.
+pub fn reference_potentials(
+    fractions: &[f64],
+    ln_phi: &[f64],
+    charges: &[f64],
+) -> Result<Vec<f64>> {
+    if fractions.len() != ln_phi.len() || fractions.len() != charges.len() {
         return Err(AzothError::InvalidInput {
             field: "fractions".to_string(),
             reason: format!(
-                "{} composition entr(ies) against {} fugacity coefficient(s)",
+                "{} composition entr(ies) against {} fugacity coefficient(s) and {} charge(s)",
                 fractions.len(),
-                ln_phi.len()
+                ln_phi.len(),
+                charges.len()
             ),
         });
     }
-    Ok(fractions
-        .iter()
-        .zip(ln_phi)
-        .map(|(x, phi)| x.max(MIN_MOLES).ln() + phi)
+    Ok((0..fractions.len())
+        .map(|i| {
+            if charges[i] != 0.0 {
+                // The ion override comes last in the class, so it wins over the logarithm.
+                return REFERENCE_ION;
+            }
+            let x = fractions[i];
+            if x > MIN_MOLES {
+                x.ln() + ln_phi[i]
+            } else {
+                REFERENCE_ABSENT
+            }
+        })
         .collect())
 }
 
