@@ -124,12 +124,16 @@ reaches equilibrium through.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
   `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
-  **The brine operations are not ported.** `CO2BrinePhaseEquilibrium`,
-  `ReactiveCO2BrinePhaseEquilibrium`, `SaturateWithWater` and `CalcIonicComposition` all
-  need the EoS/GE hybrid seam — `SystemEosGE`, `HybridEosGeFlashModel` and
-  `TPHybridEosGeFlash`, 1,636 lines between them — which is a flash whose two phases run
-  *different models*. azoth's `Mixture` carries one mixing rule for the whole system, so
-  closing this is a change in the flash and not in the electrolyte physics.
+  **The brine operations are not ported, and the reason this entry gave was wrong.**
+  `CO2BrinePhaseEquilibrium`, `ReactiveCO2BrinePhaseEquilibrium`, `SaturateWithWater` and
+  `CalcIonicComposition` were said to need the EoS/GE hybrid seam. They do not: their gate is
+  `fluid instanceof SystemElectrolyteCPAstatoil`, which extends `SystemFurstElectrolyteEos`
+  extends `SystemSrkEos` — so the hybrid route, whose dispatch needs a `SystemEosGE`, is not in
+  the chain at all. What they need is the **electrolyte CPA** route and their own 576 lines:
+  `CO2BrinePhaseEquilibrium`'s supported composition is CO2, water and ions alone with
+  `water > CO2`, and `SaturateWithWater` and `CalcIonicComposition` are operations of their own.
+  **The seam those four were recorded as waiting on is ported** — `eos.hybrid_eos_ge_flash` and
+  `reactions.reactive_hybrid_eos_ge_flash` — and it was never the blocker here.
 - **Electrolytes.** Ported, each with the id that carries it: `ComponentGePitzer`,
   `PhasePitzer` (`eos.pitzer_phase`) and `SystemPitzer`, with the `Pitzer*` machinery
   (`PitzerNeutralInteraction`, `PitzerElectrostaticMixing`, `PitzerTemperatureFunction`,
@@ -248,8 +252,11 @@ The specialist physics.
   whether a phase's hydrocarbons outweigh its aqueous components - which `eos.hydrate_inhibitor_wt`
   carries because it is the only model here that asks which phase is the aqueous one.
   **Not ported**: `PitzerHydrateFlash` with `ComponentHydratePitzer`, which is reachable through
-  the model name and is gated on the EoS/GE hybrid seam P8 did not close - a flash whose two
-  phases run different models, and `SystemPitzer` configures exactly that. `HydrateEquilibriumDiagnostics` is an audit of a
+  the model name. It was recorded as gated on the EoS/GE hybrid seam P8 did not close - **and
+  that seam is now closed** (`eos.hybrid_eos_ge_flash`, with the reactive coupling over it in
+  `reactions.reactive_hybrid_eos_ge_flash`), so `SystemPitzer`'s two-models-in-one-flash route
+  exists here. What is left is the flash itself and the Pitzer hydrate component, which is this
+  tier's. `HydrateEquilibriumDiagnostics` is an audit of a
   state rather than a model, and what it asserts belongs in a test. **Carried as unreachable
   upstream**: `ComponentHydrateKluda`, which has no construction site anywhere in `src/main`,
   `ComponentHydrateStatoil` and `ComponentHydrateBallard`, whose only sites are two
