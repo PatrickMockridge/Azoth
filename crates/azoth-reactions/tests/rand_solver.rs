@@ -80,7 +80,7 @@ fn the_water_gas_shift_reproduces_the_captured_equilibrium() {
     // The pressure is in **bara**, which is the unit NeqSim's `PP` is in against a `P_REF` of
     // one - so at one bar the `ln(P/P_ref)` term is zero and the potentials are the standard
     // ones.
-    let g0 = standard_potentials(&thermo_data(), TEMPERATURE, PRESSURE_BARA);
+    let g0 = standard_potentials(&thermo_data(), TEMPERATURE, PRESSURE_BARA, &[], &[]);
 
     let (mixture, _) = mixture_of(&NAMES, Cubic::Srk, None).expect("the databank carries them");
     let reduced = mixture
@@ -137,7 +137,7 @@ fn the_drivers_single_phase_answer_is_the_captured_one() {
         .iter()
         .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
         .collect();
-    let g0 = standard_potentials(&thermo_data(), TEMPERATURE, PRESSURE_BARA);
+    let g0 = standard_potentials(&thermo_data(), TEMPERATURE, PRESSURE_BARA, &[], &[]);
 
     let (mixture, _) = mixture_of(&NAMES, Cubic::Srk, None).expect("the databank carries them");
     let reduced = mixture

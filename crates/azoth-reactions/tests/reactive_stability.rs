@@ -88,7 +88,7 @@ fn solved_state() -> State {
         .iter()
         .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
         .collect();
-    let g0 = standard_potentials(&data, TEMPERATURE, PRESSURE_BARA);
+    let g0 = standard_potentials(&data, TEMPERATURE, PRESSURE_BARA, &[], &[]);
 
     let reduced = mixture
         .reduced_parameters(kelvins(TEMPERATURE), pascals(PRESSURE_BARA * 1.0e5))
@@ -308,7 +308,7 @@ fn the_four_steps_compose_to_the_captured_verdict() {
             }
         })
         .collect();
-    let g0 = standard_potentials(&data, TEMPERATURE, PRESSURE_BARA);
+    let g0 = standard_potentials(&data, TEMPERATURE, PRESSURE_BARA, &[], &[]);
     let reduced = state.reduced;
 
     // `ce`: the homogeneous solve, which returns its input when it does not converge - the

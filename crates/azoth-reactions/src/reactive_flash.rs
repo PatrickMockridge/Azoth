@@ -76,7 +76,7 @@
 
 use azoth_core::{AzothError, Result};
 
-use crate::rand_solver::{PhaseFeed, PhaseLogPhi, RandSolution, solve_single_phase};
+use crate::rand_solver::{IonicPhase, PhaseFeed, PhaseLogPhi, RandSolution, solve_single_phase};
 use crate::reactive_stability::CriticalConstants;
 
 /// The floor `initializeWithVLEFlash` keeps a trial mole fraction above, which is its own
@@ -459,6 +459,7 @@ pub fn outer_loop(
     max_phases: usize,
     ln_phi: PhaseLogPhi<'_>,
     stability: StabilityCheck<'_>,
+    ions: Option<&IonicPhase>,
 ) -> Result<OuterLoopOutcome> {
     let mut phases = initial;
     let mut converged = false;
@@ -468,7 +469,7 @@ pub fn outer_loop(
 
     for _ in 0..MAX_OUTER_ITERATIONS {
         let solution =
-            crate::rand_solver::solve(a_matrix, g0, b, total_moles, &phases, &mut *ln_phi)?;
+            crate::rand_solver::solve(a_matrix, g0, b, total_moles, &phases, &mut *ln_phi, ions)?;
         total_iterations += solution.iterations;
         equilibrium_total_moles = solution.total_moles;
         let rand_converged = solution.converged;
@@ -774,6 +775,7 @@ pub fn run(
     phase_ln_phi: PhaseLogPhi<'_>,
     single_ln_phi: &mut dyn FnMut(&[f64]) -> Result<Vec<f64>>,
     ce: crate::reactive_stability::EquilibriumSolve<'_>,
+    ions: Option<&IonicPhase>,
 ) -> Result<FlashOutcome> {
     let nc = state.feed_moles.len();
     let feed_total: f64 = state.feed_moles.iter().sum();
@@ -919,6 +921,7 @@ pub fn run(
         state.max_phases,
         &mut *phase_ln_phi,
         &mut stability,
+        ions,
     )?;
     let solution = Some(looped.solution.clone());
 

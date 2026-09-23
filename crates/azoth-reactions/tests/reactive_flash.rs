@@ -413,7 +413,7 @@ fn solved(
 ) -> azoth_reactions::rand_solver::RandSolution {
     use azoth_reactions::rand_solver::solve;
 
-    let g0 = standard_potentials(formation, temperature, 1.0);
+    let g0 = standard_potentials(formation, temperature, 1.0, &[], &[]);
     let reduced = mixture
         .reduced_parameters(kelvins(temperature), pascals(1.0e5))
         .expect("a state");
@@ -430,6 +430,8 @@ fn solved(
         FEED.iter().sum::<f64>(),
         phases,
         &mut ln_phi,
+        // The neutral fluids these tests drive: no ion, so no constraint.
+        None,
     )
     .expect("the solve runs")
 }
@@ -455,7 +457,7 @@ fn the_captured_state_converges_at_the_phase_ceiling() {
         .iter()
         .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
         .collect();
-    let g0 = standard_potentials(&formation_data(), 600.0, 1.0);
+    let g0 = standard_potentials(&formation_data(), 600.0, 1.0, &[], &[]);
     let reduced = mixture
         .reduced_parameters(kelvins(600.0), pascals(1.0e5))
         .expect("a state");
@@ -491,6 +493,7 @@ fn the_captured_state_converges_at_the_phase_ceiling() {
         2,
         &mut ln_phi,
         &mut stability,
+        None,
     )
     .expect("the loop runs");
 
@@ -750,7 +753,7 @@ fn the_driver_reproduces_every_captured_branch() {
     let data = formation_data();
 
     let drive = |temperature: f64, phases: Vec<PhaseFeed>| {
-        let g0 = standard_potentials(&data, temperature, 1.0);
+        let g0 = standard_potentials(&data, temperature, 1.0, &[], &[]);
         let reduced = mixture
             .reduced_parameters(kelvins(temperature), pascals(1.0e5))
             .expect("a state");
@@ -803,6 +806,7 @@ fn the_driver_reproduces_every_captured_branch() {
             &mut phase_ln_phi,
             &mut single_ln_phi,
             &mut ce,
+            None,
         )
         .expect("the driver runs")
     };
@@ -938,6 +942,7 @@ fn the_driver_reproduces_every_captured_branch() {
         &mut phase_ln_phi,
         &mut single_ln_phi,
         &mut ce,
+        None,
     )
     .expect("the driver runs");
 

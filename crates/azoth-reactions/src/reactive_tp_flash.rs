@@ -160,7 +160,10 @@ pub fn reactive_tp_flash(
         return Err(AzothError::InvalidInput {
             field: "components".to_string(),
             reason: format!(
-                "`{}` is charged, and the RAND solver's ionic branch is not ported",
+                "`{}` is charged, and this model's phase model is a cubic: an ion's critical \
+                 constants are the component table's filler rather than a measurement, and its \
+                 reference state needs an electrolyte phase. The solver carries the ionic \
+                 branch - see `rand_solver::IonicPhase` - and this model supplies none of it",
                 components[index]
             ),
         });
@@ -212,7 +215,12 @@ pub fn reactive_tp_flash(
     // NeqSim's `getPressure()` is in bara, which is the unit its `ln(P/P_ref)` term is taken
     // against; the model's pressure is in Pa and is converted here and nowhere else.
     let pressure_bar = pressure / 1.0e5;
-    let g0 = standard_potentials(&data, temperature, pressure_bar);
+    // The ionic branch's three facts are not supplied: this model refuses a charged component
+    // before it reaches here, so every potential takes the neutral branch. The solver carries
+    // the branch - see `rand_solver::IonicPhase` - and what keeps it out of *this* model is the
+    // cubic's own parameters, which are the databank's filler for an ion rather than a
+    // measurement.
+    let g0 = standard_potentials(&data, temperature, pressure_bar, &[], &[]);
     let reduced = mixture.reduced_parameters(kelvins(temperature), pascals(pressure))?;
 
     let feed_fractions: Vec<f64> = moles.iter().map(|moles| moles / total_moles).collect();
@@ -272,6 +280,7 @@ pub fn reactive_tp_flash(
         &mut phase_ln_phi,
         &mut single_ln_phi,
         &mut ce,
+        None,
     )?;
 
     // The moles per phase are the solve's own `n[j][i]`; the phases the *single-phase* branch

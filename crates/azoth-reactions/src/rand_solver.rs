@@ -19,10 +19,23 @@
 //! the symmetric diagonal scaling, the damped step with its backtracking line search, the two
 //! convergence tests, the single-phase damping rule and the *sliding-window* rule the
 //! multiphase branch uses, the `NR = 0` short circuit, and the DIIS extrapolation the
-//! multipliers are driven with. **Not ported**: the ionic branch - a gas-phase ion is pinned to
-//! `EPS`, and the reference state of an electrolyte phase is corrected by
-//! `getLogInfiniteDiluteFugacity`, which needs a cubic built over ions and the phase's *type*.
-//! That is the P8 seam, and this crate's callers refuse an ionic fluid before reaching here.
+//! multipliers are driven with.
+//!
+//! # The ionic branch, as three rules the caller states
+//!
+//! An ionic fluid changes three things, and each is a property of the *model* rather than of
+//! the solve - so each is part of [`IonicPhase`] rather than something this module works out:
+//! an ion's potential is its aqueous formation Gibbs energy less its reference-state log
+//! fugacity coefficient, an ion's mole number in a gas phase is the floor, and the Lagrange
+//! multipliers start from a non-gas phase because an ion exists only in solution.
+//!
+//! **What that costs is the reference itself.** `lnPhiRef` is
+//! `ph.getLogInfiniteDiluteFugacity(i, solvent)`, and NeqSim computes it only when
+//! `system instanceof SystemFurstElectrolyteEos` - on every other system the correction is
+//! zero and an ion's potential is its formation Gibbs energy alone. The measurement is
+//! `captures/rand_solver_ionic_probe.tsv`: a `SystemFurstElectrolyteEos` brine reaches
+//! `ln_phi_ref = [0, -127.4, -171.5, -173.4, -160.8]` while a neutral control reports zeros
+//! and `is_electrolyte_eos = false` on the same solver.
 //!
 //! # The split is not always determined, and the port does not pretend otherwise
 //!
@@ -117,12 +130,28 @@ pub struct ThermoData {
 /// the polynomial is dropped, with only `dGf298` the Gibbs energy is used directly, and with
 /// nothing at all the potential is `ln(P/P_ref)` alone - which is the ideal-gas potential of a
 /// substance whose formation data the databank does not carry.
+/// **An ion takes a different branch**, and it is NeqSim's own: `g0_i = dGf_aq / (R T) -
+/// lnPhiRef_i`, with no Cp integration and no entropy term, because an ion's standard state is
+/// the aqueous one its formation Gibbs energy is already measured against. `is_ion` empty
+/// means a fluid with no ion and `ln_phi_ref` empty means every reference is zero - the
+/// non-electrolyte case, where the class uses `dGf_aq / (R T)` alone.
 #[must_use]
-pub fn standard_potentials(data: &[ThermoData], temperature: f64, pressure: f64) -> Vec<f64> {
+pub fn standard_potentials(
+    data: &[ThermoData],
+    temperature: f64,
+    pressure: f64,
+    is_ion: &[bool],
+    ln_phi_ref: &[f64],
+) -> Vec<f64> {
     let rt = R_GAS * temperature;
     let ln_p = (pressure / P_REF).ln();
     data.iter()
-        .map(|entry| {
+        .enumerate()
+        .map(|(index, entry)| {
+            if is_ion.get(index).copied().unwrap_or(false) {
+                let reference = ln_phi_ref.get(index).copied().unwrap_or(0.0);
+                return entry.gibbs_energy_of_formation / rt - reference;
+            }
             let [cp_a, cp_b, cp_c, cp_d, cp_e] = entry.cp;
             let has_cp_data = cp_a.abs() > 1.0e-10 || cp_b.abs() > 1.0e-10;
             let has_thermo = entry.enthalpy_of_formation.abs() > 1.0e-10
@@ -162,6 +191,25 @@ pub fn standard_potentials(data: &[ThermoData], temperature: f64, pressure: f64)
 /// A phase model: a phase's index and a mole-fraction composition in, each component's
 /// `ln(phi_i)` there out. The index is what lets a caller answer with the phase's own root.
 pub type PhaseLogPhi<'a> = &'a mut dyn FnMut(usize, &[f64]) -> Result<Vec<f64>>;
+
+/// What only an ionic fluid's caller knows, from `hasIonicSpecies`' three uses.
+///
+/// Three facts, and each is a property of the *model* rather than of the solve: which
+/// components are ions, which phases are gas, and each ion's reference-state log fugacity
+/// coefficient. The last is `computeLnPhiRef`'s `lnPhiRef`, which NeqSim computes only when
+/// `isElectrolyteEOS` - `system instanceof SystemFurstElectrolyteEos` - and leaves at zero
+/// everywhere else, because for a plain cubic the infinite-dilution coefficient of an ion is
+/// not a number its parameters can produce.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IonicPhase {
+    /// `isIon[i]`: whether a component carries a charge.
+    pub is_ion: Vec<bool>,
+    /// `isGasPhase[j]`: whether a phase is a gas, which is where an ion may not be.
+    pub is_gas: Vec<bool>,
+    /// `lnPhiRef[i]`: an ion's `ln(phi_i)` at infinite dilution in the solvent, zero wherever
+    /// the phase model is not an electrolyte one.
+    pub ln_phi_ref: Vec<f64>,
+}
 
 /// One phase's starting state, which `initialize` reads off the phase object: the composition
 /// and the fraction the phase carries.
@@ -239,6 +287,7 @@ pub fn solve_single_phase(
             beta: 1.0,
         }],
         &mut one_phase,
+        None,
     )
 }
 
@@ -276,6 +325,7 @@ pub fn solve(
     total_moles: f64,
     phases: &[PhaseFeed],
     ln_phi: PhaseLogPhi<'_>,
+    ions: Option<&IonicPhase>,
 ) -> Result<RandSolution> {
     let ne = b.len();
     let nc = g0.len();
@@ -322,6 +372,10 @@ pub fn solve(
         }
         n_phase[j] = beta[j] * total_moles;
     }
+    // `initialize`'s own pin, and `recalcTotals`' before every pass: **an ion is not in a gas
+    // phase**. NeqSim floors such a mole number at `EPS` rather than removing it, so the
+    // component keeps its column and the constraint is a value rather than a shape.
+    pin_ions_in_gas(&mut n, ions);
     let mut total: f64 = n_phase.iter().sum();
 
     let mut ln_phi_here = vec![vec![0.0_f64; nc]; np];
@@ -350,7 +404,17 @@ pub fn solve(
         });
     }
 
-    let mut lambda = initial_lambda(a_matrix, g0, &fractions[0], &ln_phi_here[0]);
+    // `initializeLambda` starts from a **non-gas** phase when ions are present: an ion exists
+    // only in solution, and a gas phase's ionic mole fraction is the floor rather than a state.
+    let reference_phase = ions
+        .and_then(|constraints| constraints.is_gas.iter().position(|gas| !gas))
+        .unwrap_or(0);
+    let mut lambda = initial_lambda(
+        a_matrix,
+        g0,
+        &fractions[reference_phase],
+        &ln_phi_here[reference_phase],
+    );
 
     // The accelerator runs on the multipliers, with the element deviation as its error.
     let mut diis = DiisAccelerator::new(ne, DIIS_DEPTH);
@@ -468,7 +532,7 @@ pub fn solve(
             for k in 0..ne {
                 lambda[k] += alpha * delta[k];
             }
-            recalc_totals(&mut n_phase, &mut total, &n);
+            recalc_totals(&mut n_phase, &mut total, &mut n, ions);
             let element_residual = element_residual(a_matrix, b, &n, total);
             if element_residual < previous_residual * 1.5 || alpha < 0.05 {
                 accepted = true;
@@ -503,7 +567,7 @@ pub fn solve(
             for k in 0..ne {
                 lambda[k] += alpha * delta[k];
             }
-            recalc_totals(&mut n_phase, &mut total, &n);
+            recalc_totals(&mut n_phase, &mut total, &mut n, ions);
         }
 
         for j in 0..np {
@@ -611,7 +675,7 @@ pub fn solve(
                     }
                 }
                 lambda.clone_from_slice(&extrapolated);
-                recalc_totals(&mut n_phase, &mut total, &n);
+                recalc_totals(&mut n_phase, &mut total, &mut n, ions);
                 for j in 0..np {
                     fractions[j] = n[j].iter().map(|moles| moles / n_phase[j]).collect();
                 }
@@ -644,7 +708,7 @@ pub fn solve(
                 } else {
                     n = saved_moles;
                     lambda = saved_lambda;
-                    recalc_totals(&mut n_phase, &mut total, &n);
+                    recalc_totals(&mut n_phase, &mut total, &mut n, ions);
                     for j in 0..np {
                         fractions[j] = n[j].iter().map(|moles| moles / n_phase[j]).collect();
                     }
@@ -679,13 +743,36 @@ pub fn solve(
 /// `recalcTotals`: the phase amounts from the moles, floored, and the total. The mole
 /// fractions follow from the two and are not stored here, because the class recomputes them
 /// where it needs them.
-fn recalc_totals(n_phase: &mut [f64], total: &mut f64, n: &[Vec<f64>]) {
+fn recalc_totals(
+    n_phase: &mut [f64],
+    total: &mut f64,
+    n: &mut [Vec<f64>],
+    ions: Option<&IonicPhase>,
+) {
+    pin_ions_in_gas(n, ions);
     *total = 0.0;
     for (j, phase_moles) in n.iter().enumerate() {
         n_phase[j] = phase_moles.iter().sum::<f64>().max(EPS);
         *total += n_phase[j];
     }
     *total = total.max(EPS);
+}
+
+/// `enforceIonPhaseConstraints`: every ion's mole number in a gas phase is the floor.
+fn pin_ions_in_gas(n: &mut [Vec<f64>], ions: Option<&IonicPhase>) {
+    let Some(constraints) = ions else {
+        return;
+    };
+    for (j, phase) in n.iter_mut().enumerate() {
+        if !constraints.is_gas.get(j).copied().unwrap_or(false) {
+            continue;
+        }
+        for (i, moles) in phase.iter_mut().enumerate() {
+            if constraints.is_ion.get(i).copied().unwrap_or(false) {
+                *moles = EPS;
+            }
+        }
+    }
 }
 
 /// `computeElementResidual`: the scaled root-mean-square deviation of `A n` from `b`.
@@ -844,8 +931,13 @@ mod tests {
             cp: [0.0; 5],
         };
 
-        let potentials =
-            standard_potentials(&[with_cp, without_cp, only_gibbs, nothing], 600.0, 1.0);
+        let potentials = standard_potentials(
+            &[with_cp, without_cp, only_gibbs, nothing],
+            600.0,
+            1.0,
+            &[],
+            &[],
+        );
         // The Cp polynomial and the constant-Cp fallback are different numbers, which is the
         // point of integrating it; the last two are the `dGf` and `ln(P)` branches.
         assert!(
@@ -854,5 +946,118 @@ mod tests {
         );
         assert!((potentials[2] - (-137_168.0 / (R_GAS * 600.0))).abs() < 1e-12);
         assert_eq!(potentials[3], 0.0, "ln(P/P_ref) at the reference pressure");
+    }
+
+    /// **An ion takes the aqueous branch and no other.**
+    ///
+    /// `computeG0`'s two: a neutral is `(h_T - T s_T)/(R T) + ln(P/P_ref)` from its Cp
+    /// polynomial, an ion is `dGf_aq/(R T) - lnPhiRef` with no integration at all - its
+    /// standard state is the aqueous one its formation Gibbs energy is already measured
+    /// against. The last assertion is the class's own degenerate case: with no electrolyte
+    /// phase model `lnPhiRef` is zero, and the correction is the bare formation term.
+    #[test]
+    fn an_ion_takes_the_aqueous_standard_state() {
+        let neutral = ThermoData {
+            enthalpy_of_formation: -110_500.0,
+            absolute_entropy: 197.7,
+            gibbs_energy_of_formation: -137_168.0,
+            cp: [30.87, -1.29e-2, 2.79e-5, -1.27e-8, 0.0],
+        };
+        let ion = ThermoData {
+            enthalpy_of_formation: -240_100.0,
+            absolute_entropy: 111.0,
+            gibbs_energy_of_formation: -261_905.0,
+            cp: [0.0; 5],
+        };
+        let data = [neutral, ion];
+        let reference = -127.398_508_666_942_85;
+        let rt = R_GAS * 298.15;
+
+        let with_reference =
+            standard_potentials(&data, 298.15, 1.01325, &[false, true], &[0.0, reference]);
+        assert!(
+            (with_reference[1] - (data[1].gibbs_energy_of_formation / rt - reference)).abs()
+                < 1.0e-12,
+            "{}",
+            with_reference[1]
+        );
+
+        // Without an electrolyte phase model the reference is zero, and the ion's potential is
+        // its formation Gibbs energy alone.
+        let without_reference = standard_potentials(&data, 298.15, 1.01325, &[false, true], &[]);
+        assert!((without_reference[1] - data[1].gibbs_energy_of_formation / rt).abs() < 1.0e-12);
+
+        // And a mask that names no ion leaves every potential on the neutral branch.
+        let all_neutral = standard_potentials(&data, 298.15, 1.01325, &[], &[]);
+        assert!((all_neutral[1] - without_reference[1]).abs() > 1.0e-6);
+    }
+
+    /// **An ion is not in a gas phase**, which is `enforceIonPhaseConstraints`: its mole number
+    /// there is the floor rather than a computed amount.
+    ///
+    /// The constraint is a *value* and not a shape - the component keeps its column - so it is
+    /// asserted on the phase's moles.
+    #[test]
+    fn an_ion_is_pinned_out_of_a_gas_phase() {
+        let a_matrix = vec![vec![1.0, 1.0]];
+        let g0 = vec![0.0, 0.0];
+        let b = vec![1.0];
+        let phases = vec![
+            PhaseFeed {
+                fractions: vec![0.5, 0.5],
+                beta: 0.5,
+            },
+            PhaseFeed {
+                fractions: vec![0.5, 0.5],
+                beta: 0.5,
+            },
+        ];
+        let mut ln_phi = |_phase: usize, x: &[f64]| -> Result<Vec<f64>> { Ok(vec![0.0; x.len()]) };
+
+        let with_gas = IonicPhase {
+            is_ion: vec![true, false],
+            is_gas: vec![true, false],
+            ln_phi_ref: vec![0.0, 0.0],
+        };
+        let solution = solve(
+            &a_matrix,
+            &g0,
+            &b,
+            1.0,
+            &phases,
+            &mut ln_phi,
+            Some(&with_gas),
+        )
+        .expect("the ionic solve runs");
+        assert_eq!(
+            solution.phase_moles[0][0], EPS,
+            "the gas phase holds no ion"
+        );
+        assert!(
+            solution.phase_moles[1][0] > 1.0e-9,
+            "and the condensed phase holds it: {}",
+            solution.phase_moles[1][0]
+        );
+
+        // The same fluid with no gas phase keeps the ion where the solve puts it.
+        let condensed = IonicPhase {
+            is_ion: vec![true, false],
+            is_gas: vec![false, false],
+            ln_phi_ref: vec![0.0, 0.0],
+        };
+        let free = solve(
+            &a_matrix,
+            &g0,
+            &b,
+            1.0,
+            &phases,
+            &mut ln_phi,
+            Some(&condensed),
+        )
+        .expect("the ionic solve runs");
+        assert!(
+            free.phase_moles[0][0] > 1.0e-9,
+            "nothing pins it where no phase is a gas"
+        );
     }
 }
