@@ -94,6 +94,40 @@ public class KineticsProbe {
     }
     System.out.println(effective.toString().trim());
 
+    // **The binary matrix the effective vector is assembled from**, by index: `D_eff_i` is
+    // `(1 - x_i) / sum_{j != i} x_j / D_ij`, so the vector is not reproducible without it.
+    // **The binary matrix, and the reason the effective vector cannot be reproduced from it.**
+    // `getFickDiffusionCoefficient` is declared on `PhysicalProperties` and not on the interface
+    // the phase hands back - so a caller needs the concrete cast - and what it returns is
+    // **diagonal**: only the `i == i` entries are non-zero, so the assembly's
+    // `sum_{j != i} x_j / D_ij` divides by zero and the recomputation below comes out empty.
+    // The array `calcEffectiveDiffusionCoefficients` consumed is the model's own private one, and
+    // no public getter returns it.
+    neqsim.physicalproperties.system.PhysicalProperties properties =
+        (neqsim.physicalproperties.system.PhysicalProperties) aqueous.getPhysicalProperties();
+    StringBuilder binaryLine = new StringBuilder("binary_diffusion=");
+    for (int i = 0; i < aqueous.getNumberOfComponents(); i++) {
+      for (int j = 0; j < aqueous.getNumberOfComponents(); j++) {
+        binaryLine.append(properties.getFickDiffusionCoefficient(i, j)).append(" ");
+      }
+    }
+    System.out.println(binaryLine.toString().trim());
+
+    // **The assembly, recomputed from that matrix**, beside the vector the class holds: if the
+    // two agree then the matrix printed above is the one `calcEffectiveDiffusionCoefficients`
+    // consumed, and the formula is `(1 - x_i) / sum_{j != i} x_j / D_ij`.
+    StringBuilder recomputed = new StringBuilder("effective_recomputed=");
+    for (int i = 0; i < aqueous.getNumberOfComponents(); i++) {
+      double sum = 0.0;
+      for (int j = 0; j < aqueous.getNumberOfComponents(); j++) {
+        if (i != j) {
+          sum += aqueous.getComponent(j).getx() / properties.getFickDiffusionCoefficient(i, j);
+        }
+      }
+      recomputed.append((1.0 - aqueous.getComponent(i).getx()) / sum).append(" ");
+    }
+    System.out.println(recomputed.toString().trim());
+
     // **The context the matrix is built from**: the phases' densities, each component's mole
     // fraction and molar mass, and each reaction's equilibrium constant at the state. Without
     // them the matrix is a number with nothing behind it.
