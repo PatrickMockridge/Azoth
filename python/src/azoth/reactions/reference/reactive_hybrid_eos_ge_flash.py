@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from typing import Any, TypedDict
 
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
@@ -24,6 +25,7 @@ from azoth.core.units import Q, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import hybrid_eos_ge_flash as _hybrid
+from azoth.eos.reference._mixture_state import reduced_parameters
 from azoth.eos.reference.pitzer_phase import pitzer_phase
 from azoth.reactions.reference import _linalg, _tables
 from azoth.reactions.reference.reactive_phase_equilibrium import (
@@ -134,7 +136,7 @@ def reactive_hybrid_eos_ge_flash(
             "moles", f"{len(moles)} entry(ies) against {len(components)} component(s)"
         )
 
-    fraction_algorithm = _fraction_algorithm()
+    tolerance, cap = _fraction_algorithm()
     outcome = solve_coupled(
         components,
         cubic,
@@ -143,8 +145,8 @@ def reactive_hybrid_eos_ge_flash(
         # A model's declared units are the boundary's: the vector carries a unit, so it crosses
         # as SI magnitudes element by element and no arithmetic is done on a quantity.
         [_si(spec, "moles", value) for value in moles],
-        tolerance=float(fraction_algorithm["tolerance"]),
-        cap=int(fraction_algorithm["max_iterations"]),
+        tolerance=tolerance,
+        cap=cap,
     )
 
     return ReactiveHybridEosGeFlashResult(
@@ -163,15 +165,32 @@ def reactive_hybrid_eos_ge_flash(
     )
 
 
-def _fraction_algorithm() -> dict[str, object]:
-    """The fraction solve's own algorithm, which is the underlying model's.
+def _fraction_algorithm() -> tuple[float, int]:
+    """The fraction solve's own tolerance and cap, which are the underlying model's.
 
-    This loop re-enters that solve rather than running a second one, so it takes its tolerance
-    and cap from ``eos.hybrid_eos_ge_flash``'s spec instead of declaring a second copy.
+    This loop re-enters that solve rather than running a second one, so it takes both from
+    ``eos.hybrid_eos_ge_flash``'s spec instead of declaring a second copy.
     """
     from azoth._models_gen import model
 
-    return model("eos.hybrid_eos_ge_flash")["algorithm"]
+    algorithm = model("eos.hybrid_eos_ge_flash")["algorithm"]
+    return float(algorithm["tolerance"]), int(algorithm["max_iterations"])
+
+
+class _Outcome(TypedDict):
+    """What one coupled solve answers with, before it is put into the result."""
+
+    beta: list[float]
+    x: list[list[float]]
+    coupled_moles: list[float]
+    aqueous_moles: list[float]
+    passes: int
+    chemical_deviation: float
+    residual: float
+    max_material_balance_residual: float
+    max_log_fugacity_residual: float
+    element_residual: float
+    charge_residual: float
 
 
 def solve_coupled(
@@ -185,7 +204,7 @@ def solve_coupled(
     cap: int,
     chemistry_max_iterations: int = CHEMISTRY_MAX_ITERATIONS,
     chemistry_tolerance: float = CHEMISTRY_TOLERANCE,
-) -> dict[str, object]:
+) -> _Outcome:
     """The coupled loop itself, over names resolved inside it.
 
     Kept separate from the public function so the two kernels' difference is the arithmetic
@@ -197,7 +216,7 @@ def solve_coupled(
     entries = _hybrid._resolved(components)
     ion = [_hybrid._is_ion(entry) for entry in entries]
     mixture, _ = _components.mixture_of_with_ions(components, eos=cubic)
-    reduced = _hybrid.reduced_parameters(mixture, t_si, p_si)
+    reduced = reduced_parameters(mixture, t_si, p_si)
 
     reactive = reactive_components(components)
     if not reactive:
@@ -288,7 +307,7 @@ def _chemical_step(
     components: list[str],
     reactive: list[str],
     reactive_at: list[int],
-    phases: list[object],
+    phases: list[_hybrid._Phase],
     coupled: list[float],
     a_matrix: list[list[float]],
     basis: list[list[float]],
@@ -500,7 +519,7 @@ def _conservation_residuals(
     components: list[str],
     a_matrix: list[list[float]],
     reactive_at: list[int],
-    phases: list[object],
+    phases: list[_hybrid._Phase],
     coupled: list[float],
 ) -> tuple[float, float]:
     """The split's element and charge residuals against the coupled inventory it was solved at.
@@ -528,7 +547,7 @@ def _conservation_residuals(
     return worst, abs(charge)
 
 
-def _phase_sums(phases: list[object], components: list[str], total: float) -> list[float]:
+def _phase_sums(phases: list[_hybrid._Phase], components: list[str], total: float) -> list[float]:
     """Each component's amount summed over the roles, `sum_k beta_k x_ik n`."""
     return [
         sum(phase.fraction * phase.composition[index] for phase in phases) * total
@@ -536,7 +555,7 @@ def _phase_sums(phases: list[object], components: list[str], total: float) -> li
     ]
 
 
-def _material_balance(phases: list[object], coupled: list[float]) -> float:
+def _material_balance(phases: list[_hybrid._Phase], coupled: list[float]) -> float:
     """The worst `|z_i - sum_k beta_k x_ik|` over the coupled inventory."""
     total = sum(coupled)
     z = [value / total for value in coupled]
@@ -547,9 +566,9 @@ def _material_balance(phases: list[object], coupled: list[float]) -> float:
 
 
 def _log_fugacity_residual(
-    mixture: object,
-    reduced: object,
-    phases: list[object],
+    mixture: Any,
+    reduced: Any,
+    phases: list[_hybrid._Phase],
     components: list[str],
     coupled: list[float],
     t_si: float,

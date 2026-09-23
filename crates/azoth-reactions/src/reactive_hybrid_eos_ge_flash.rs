@@ -706,3 +706,136 @@ fn conservation_residuals(
     }
     Ok((worst, charge.abs()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The captured conservation matrix, whose oxygen row is dependent on the other three.
+    fn captured_matrix() -> Vec<Vec<f64>> {
+        vec![
+            vec![1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+            vec![0.0, 2.0, 1.0, 0.0, 1.0, 3.0],
+            vec![2.0, 1.0, 3.0, 3.0, 1.0, 1.0],
+            vec![0.0, 0.0, -1.0, -2.0, -1.0, 1.0],
+        ]
+    }
+
+    /// The captured coupled inventory, in the fluid's order.
+    fn captured_inventory() -> Vec<f64> {
+        vec![
+            5.0,
+            0.049997206913475076,
+            55.499994364714574,
+            6.0e-4,
+            2.0e-4,
+            0.0010027670978232208,
+            2.619878633189711e-8,
+            1.1443550870656359e-8,
+            2.830738529430478e-6,
+        ]
+    }
+
+    /// The reactive components' positions in that inventory: `CO2, water, OH-, H3O+, HCO3-,
+    /// CO3--` - the fluid's order, spectators dropped.
+    const REACTIVE_AT: [usize; 6] = [1, 2, 5, 6, 7, 8];
+
+    fn conservation(matrix: &[Vec<f64>], delta: &[f64]) -> f64 {
+        matrix
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .zip(delta)
+                    .map(|(coefficient, value)| coefficient * value)
+                    .sum::<f64>()
+                    .abs()
+            })
+            .fold(0.0_f64, f64::max)
+    }
+
+    /// **The projection runs where the raw delta is not conservative.**
+    ///
+    /// No captured fluid exercises this: on all six passes of both, `max|A delta|` is
+    /// `2.0e-10` against a `1e-8` shortcut, so the unprojected delta is used and the
+    /// pseudo-inverse's stand-in never runs. This is the branch that does, on a delta with a
+    /// component normal to the conservation space: the answer satisfies `A delta = 0` and is
+    /// not the delta that went in.
+    #[test]
+    fn a_non_conservative_delta_is_projected_onto_the_null_space() {
+        let matrix = captured_matrix();
+        let basis = row_space_basis(&matrix).expect("a basis");
+        let coupled = captured_inventory();
+        // A unit step on water: the element rows it violates are carbon's and oxygen's.
+        let raw = vec![0.0, 0.0, 1.0e-3, 0.0, 0.0, 0.0];
+        assert!(
+            conservation(&matrix, &raw) > REACTION_DELTA_CONSERVATION_TOLERANCE_MOLES,
+            "this delta has to be the one the shortcut refuses"
+        );
+
+        let projected = conservative_delta(&matrix, &basis, &coupled, &REACTIVE_AT, &raw);
+        assert!(
+            conservation(&matrix, &projected) < 1.0e-16,
+            "the projected delta conserves to rounding: {}",
+            conservation(&matrix, &projected)
+        );
+        assert!(
+            projected
+                .iter()
+                .zip(&raw)
+                .any(|(value, original)| (value - original).abs() > 1.0e-6),
+            "and it is not the delta that went in"
+        );
+    }
+
+    /// **The shortcut is taken where the raw delta already conserves**, which is the branch
+    /// the captured fluids take on every pass.
+    #[test]
+    fn a_conservative_delta_is_used_as_it_stands() {
+        let matrix = captured_matrix();
+        let basis = row_space_basis(&matrix).expect("a basis");
+        let coupled = captured_inventory();
+        // `A`'s own row space: its fourth row is `2 C + 0.5 H - 0.5 charge`, so a combination
+        // of the rows is a direction the elements already allow.
+        let mut raw = vec![0.0; 6];
+        for (column, coefficient) in matrix[2].iter().enumerate() {
+            raw[column] = coefficient * 1.0e-10;
+        }
+        assert!(conservation(&matrix, &raw) < REACTION_DELTA_CONSERVATION_TOLERANCE_MOLES);
+
+        let delta = conservative_delta(&matrix, &basis, &coupled, &REACTIVE_AT, &raw);
+        assert_eq!(delta, raw, "the delta is used as it stands");
+    }
+
+    /// **A delta that would take an inventory negative is scaled whole.**
+    ///
+    /// `feasibleStep`: the carbonate sits at `2.6e-8` and a step of `-1e-6` on it is not
+    /// admissible. Scaling one component would take the delta out of the null space, so the
+    /// whole step is scaled and the direction survives.
+    #[test]
+    fn a_negative_inventory_scales_the_whole_delta() {
+        let matrix = captured_matrix();
+        let basis = row_space_basis(&matrix).expect("a basis");
+        let coupled = captured_inventory();
+        let mut raw = vec![0.0; 6];
+        raw[5] = -1.0e-6;
+
+        let delta = conservative_delta(&matrix, &basis, &coupled, &REACTIVE_AT, &raw);
+        for (position, value) in delta.iter().enumerate() {
+            let index = REACTIVE_AT[position];
+            assert!(
+                coupled[index] + value >= -NEGATIVE_INVENTORY_TOLERANCE_MOLES,
+                "component {index} would go negative: {} + {value}",
+                coupled[index]
+            );
+        }
+        // The step a feasible delta may take is bounded by the carbonate's own inventory over
+        // the size of its negative step, so the scaled delta cannot be larger than that.
+        let available = coupled[REACTIVE_AT[5]] - MINIMUM_COUPLED_MOLES;
+        assert!(delta[5] >= -available * (1.0 + 1.0e-12));
+        assert!(delta[5] < 0.0, "the direction survives the scaling");
+        assert!(
+            conservation(&matrix, &delta) < 1.0e-16,
+            "and the scaled delta still conserves"
+        );
+    }
+}

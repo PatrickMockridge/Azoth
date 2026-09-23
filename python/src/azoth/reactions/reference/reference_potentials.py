@@ -62,7 +62,6 @@ from azoth.reactions.reference.equilibrium_constant import GAS_CONSTANT
 _COEFFICIENT_FLOOR = 1e-10
 
 
-
 def side_is_present(
     coefficients: tuple[tuple[str, float], ...],
     present: dict[str, int],
