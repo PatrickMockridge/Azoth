@@ -45,24 +45,26 @@ use crate::reactive_stability::CriticalConstants;
 /// The cubic this model flashes with, from the oracle's `SystemSrkEos`.
 pub const CUBIC: Cubic = Cubic::Srk;
 
-/// One phase of the answer: the moles it holds and the fraction of the fluid it is.
-#[derive(Debug, Clone, PartialEq)]
-pub struct FlashPhase {
-    /// Each component's moles in this phase, `n[j][i]`.
-    pub moles: Vec<f64>,
-    /// Its share of the fluid, the fraction the driver weighs it by.
-    pub fraction: f64,
-}
-
 /// What the flash answers with.
+///
+/// **Flat, because the transport layer's field names are**: a matrix and a vector rather than a
+/// list of phase objects, so that `phase_moles[j][i]` crosses to Python as the spec's matrix
+/// output and the three-way name agreement can be asserted.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReactiveTpFlashResult {
-    /// The phases, in the driver's own order and with **no type promised**.
-    pub phases: Vec<FlashPhase>,
+    /// How many phases the driver stopped on.
+    pub phase_count: usize,
+    /// Each phase's moles, one row per phase and one column per component, in the driver's own
+    /// phase order - **and no phase type is promised**, because a type is NeqSim's system
+    /// bookkeeping and not a state this model computes.
+    pub phase_moles: Vec<Vec<f64>>,
+    /// Each phase's share of the fluid, the fraction the driver weighs it by.
+    pub phase_fraction: Vec<f64>,
     /// `isConverged`. True on the branches that accept an answer without a converged solve,
     /// which is the class's own overwriting.
     pub converged: bool,
-    /// Every solve's passes, summed.
+    /// Every solve's passes, summed. **Zero on the `NR = 0` fallback**, which the driver never
+    /// counts.
     pub total_iterations: u32,
     /// The last solve's total moles, which one mole of feed does not fix: a reaction that
     /// splits one species into two moves it.
@@ -250,12 +252,12 @@ pub fn reactive_tp_flash(
 
     // The moles per phase are the solve's own `n[j][i]`; the phases the *single-phase* branch
     // returns have a solve too, so the two branches are read the same way.
-    let phases = outcome
+    let phases: Vec<Vec<f64>> = outcome
         .phases
         .iter()
         .enumerate()
         .map(|(index, phase)| {
-            let held = outcome
+            outcome
                 .solution
                 .as_ref()
                 .and_then(|solution| solution.phase_moles.get(index).cloned())
@@ -265,11 +267,7 @@ pub fn reactive_tp_flash(
                         .iter()
                         .map(|x| x * total_moles * phase.beta)
                         .collect()
-                });
-            FlashPhase {
-                moles: held,
-                fraction: phase.beta,
-            }
+                })
         })
         .collect();
 
@@ -280,12 +278,14 @@ pub fn reactive_tp_flash(
         .unwrap_or((0.0, 0.0));
 
     Ok(ReactiveTpFlashResult {
-        phases,
+        phase_count: phases.len(),
+        phase_moles: phases,
+        phase_fraction: outcome.phases.iter().map(|phase| phase.beta).collect(),
         converged: outcome.converged,
-        residual,
-        element_residual,
         total_iterations: outcome.total_iterations,
         equilibrium_total_moles: outcome.equilibrium_total_moles,
         gibbs_energy: outcome.gibbs_energy,
+        residual,
+        element_residual,
     })
 }

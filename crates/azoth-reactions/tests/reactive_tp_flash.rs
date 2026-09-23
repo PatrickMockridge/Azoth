@@ -18,9 +18,9 @@ const BAR: f64 = 1.0e5;
 
 /// Sum the phases back into the fluid's composition.
 fn overall(result: &azoth_reactions::reactive_tp_flash::ReactiveTpFlashResult) -> Vec<f64> {
-    let components = result.phases[0].moles.len();
+    let components = result.phase_moles[0].len();
     (0..components)
-        .map(|i| result.phases.iter().map(|phase| phase.moles[i]).sum())
+        .map(|i| result.phase_moles.iter().map(|phase| phase[i]).sum())
         .collect()
 }
 
@@ -36,7 +36,7 @@ fn the_water_gas_shift_is_the_captured_composition() {
     let result = reactive_tp_flash(&components, 600.0, BAR, &[0.25; 4], 2).expect("the flash runs");
 
     assert!(result.converged, "the captured state converges");
-    assert_eq!(result.phases.len(), 2, "the constructor's pair survives");
+    assert_eq!(result.phase_count, 2, "the constructor's pair survives");
     let captured = [
         0.079_140_502_548_023_4,
         0.079_140_502_560_693_7,
@@ -126,14 +126,14 @@ fn the_non_reactive_fluid_takes_the_fallback() {
     assert!(result.converged);
     assert_eq!(result.total_iterations, 0, "the fallback counts none");
     assert!(
-        (result.phases[0].fraction - 0.500_334_895_161_083_2).abs() < 1.0e-12,
+        (result.phase_fraction[0] - 0.500_334_895_161_083_2).abs() < 1.0e-12,
         "the vapour fraction is {} against the capture's 0.5003348951610832",
-        result.phases[0].fraction
+        result.phase_fraction[0]
     );
     // The phase's *composition*, from its own moles: the gas is methane-rich, and the
     // capture's `phase_x[0]` is that number.
-    let held: f64 = result.phases[0].moles.iter().sum();
-    let methane = result.phases[0].moles[0] / held;
+    let held: f64 = result.phase_moles[0].iter().sum();
+    let methane = result.phase_moles[0][0] / held;
     assert!(
         (methane - 0.999_330_366_296_782).abs() < 1.0e-4,
         "the gas is {methane} methane against the capture's 0.999330366296782"
