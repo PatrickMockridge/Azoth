@@ -5,7 +5,7 @@ assumptions = [
     "**the element rows are sorted and NeqSim's are not.** `getAllElements` collects them into a `HashSet` and iterates it, so its order is Java's hash order - the capture's `C S H O` against this library's `C H O S`. The two matrices differ by a row permutation.",
     "**the charge row is a correction, not a zero.** `b`'s last entry is the negation of the charge the ions outside the reaction set carry, and it is zero only when every ion in the phase is reactive. The captured bicarbonate brine is the fluid where it is not.",
     "**the spectator ions are inputs.** The phase's own charge and mole count are summed over *every* component it holds, which this operation cannot see: `components` is the reaction set. They are what the correction and its tolerance are read from.",
-    "**azoth's flashes do not take this branch.** NeqSim calls `solveChemEq` from inside `TPflash`, `TPmultiflash`, `TPmultiflashWAX` and the bubble and dew operations; here the caller owns the coupling. The blocker is the chemical-system dispatch, at `SystemEosGE`'s seam.",
+    "**azoth's flashes do not take this branch.** NeqSim calls `solveChemEq` from inside `TPflash`, `TPmultiflash` and the bubble and dew operations. **The measured blocker is the fluids**: the dispatch fires only where `isChemicalSystem()` is true, and every such fluid carries ions.",
     "**the LP estimate is ported, and NeqSim's own answer is not a solution of its program.** `A n = b` with `n >= 0` has no exact solution on the captured fluids, while Commons Math returns an epsilon-feasible vertex missing the oxygen row by `1.5e-10`; this answers the program as stated.",
     "**the estimate changes no converged composition here.** With it and without it the solve lands on the same answer to every printed digit - on the unflashed fluid, where the estimate exists, and on the flashed ones, where it does not.",
     "**one refinement, not two, and the second is measured to do nothing.** NeqSim switches `useAdaptiveDerivatives` on from the second; on three portable fluids that pass converges on none of them and leaves the first refinement's answer where it was.",
@@ -24,7 +24,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `ChemicalReactionOperations`"
-edition = "The facade as an operation on one phase: the phase search and its skip, the element matrix with its charge row, the element amounts, the reference potentials, the solve, and the write-back floor. The linear-program estimate is the starting composition; the second refinement is refused."
+edition = "The facade as an operation on one phase: the phase search and its skip, the element matrix with its charge row, the element amounts, the reference potentials, the solve, and the write-back floor. The LP estimate is the starting composition; the second refinement is measured not to converge."
 [algorithm]
 scheme = "phase_reaction_balance"
 initialisation = "caller_supplied"
