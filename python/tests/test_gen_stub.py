@@ -132,3 +132,85 @@ def test_the_committed_stub_is_current() -> None:
     assert STUB.read_text(encoding="utf-8") == tool.render(), (
         "python/src/azoth/_core.pyi is out of date; run tools/gen_stub.py"
     )
+
+
+#: The functions whose stub signature is not the extension's, by name, and **nothing reads
+#: this list except the test below**.
+#:
+#: Two causes, both systematic and neither of them a typo. **`alpha_params`**: the generator
+#: renders a `params` *record*'s fields as top-level arguments (`parameter_record_fields`),
+#: which is right where the transport passes the record that way and wrong where the pyfunction
+#: names the model instead - so the stub advertises a keyword no function accepts and a keyword
+#: call `mypy` allows raises `TypeError`. **`held`**: the extension's parameter for the phase a
+#: calc is handed, where the stub renders the spec's own symbol (`x`, `y`) - so the stub's name
+#: is the reference kernel's and not the extension's.
+#:
+#: This is a **ratchet and not a fix**: the stub is generated in the `docs-drift` job, which
+#: does not build the extension, so it cannot ask it. The alternative is renaming nineteen
+#: pyfunction parameters or teaching the generator a per-model vocabulary, and until one of
+#: those is done this list is what stops the drift growing unnoticed - which is how it got to
+#: nineteen.
+KNOWN_SIGNATURE_DRIFT = frozenset(
+    {
+        "bubble_pressure",
+        "bubble_temperature",
+        "capillary_dew_point",
+        "critical_point",
+        "dew_pressure",
+        "dew_temperature",
+        "ge_nrtl_flash",
+        "ge_wilson_phase",
+        "hydrogen_phase",
+        "molar_enthalpy_entropy",
+        "ph_flash",
+        "ps_flash",
+        "pt_flash",
+        "pt_phase_envelope",
+        "stability_test",
+        "thermal_conductivity",
+        "tp_multiflash",
+        "viscosity",
+        "wilson_activity_coefficients",
+    }
+)
+
+
+@pytest.mark.requires_rust
+def test_the_stub_describes_the_extension_it_is_a_stub_for() -> None:
+    """**The drift the `--check` gate cannot see**, measured against the built extension.
+
+    `--check` proves the file is what the generator emits; it says nothing about whether what
+    the generator emits is what the extension *is*. So every function's rendered parameter list
+    is compared here with the extension's own `__text_signature__`, and the disagreements are
+    held to [`KNOWN_SIGNATURE_DRIFT`] - a name that leaves that list without being fixed is a
+    new one, and a name that joins it is a decision somebody has to make in the open.
+    """
+    import re
+
+    from azoth import _core
+
+    rendered: dict[str, list[str]] = {}
+    pattern = r"^def (\w+)\(\n(.*?)^\) ->"
+    for name, body in re.findall(pattern, STUB.read_text(), re.M | re.S):
+        names = [
+            line.strip().split(":")[0].rstrip(",") for line in body.split("\n") if line.strip()
+        ]
+        rendered[name] = names
+    assert rendered, "the stub parses into no signatures"
+
+    drifted: set[str] = set()
+    for name, params in rendered.items():
+        function = getattr(_core, name, None)
+        text = getattr(function, "__text_signature__", None) if function else None
+        if not text:
+            continue
+        real = [
+            piece.split("=")[0].strip() for piece in text.strip("()").split(",") if piece.strip()
+        ]
+        if real != params:
+            drifted.add(name)
+
+    assert drifted == set(KNOWN_SIGNATURE_DRIFT), (
+        f"new drift: {sorted(drifted - KNOWN_SIGNATURE_DRIFT)}; fixed: "
+        f"{sorted(KNOWN_SIGNATURE_DRIFT - drifted)}"
+    )

@@ -14,6 +14,26 @@ and `test_the_stub_matches_the_rust_transport_types` holds it to the Rust source
 Usage:
     python tools/gen_stub.py            # write the file
     python tools/gen_stub.py --check    # fail if it is out of date
+
+# Known gap: nineteen signatures are not the extension's
+
+**Measured, and ratcheted rather than fixed.** `--check` proves the file is what this generator
+emits; it says nothing about whether what it emits is what the extension *is*. Two systematic
+causes, and neither is a typo:
+
+* **a `params` record rendered as loose arguments.** `parameter_record_fields` expands a
+  record's fields into top-level parameters, which is what the transport does for some models
+  and not for others - where it is not, the stub advertises a keyword no pyfunction accepts, so
+  a keyword call `mypy` allows raises `TypeError`.
+* **`held`.** The extension's parameter for the phase a calc is handed, where this renders the
+  spec's own symbol (`x`, `y`) - the reference kernel's name and not the extension's.
+
+`python/tests/test_gen_stub.py::test_the_stub_describes_the_extension_it_is_a_stub_for` compares
+every rendered signature with the extension's `__text_signature__` and holds the disagreements
+to a named list, so this cannot grow unnoticed - which is how it reached nineteen. Fixing it
+means either renaming the pyfunctions or teaching this tool which records cross expanded, and
+that is a design pass rather than a patch: the reference kernels' signatures differ from their
+transports in more than one field on several of the nineteen.
 """
 
 from __future__ import annotations
