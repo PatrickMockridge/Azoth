@@ -433,3 +433,183 @@ fn solved(
     )
     .expect("the solve runs")
 }
+
+/// **The captured states take the outer loop's "already at the ceiling" branch**, and the
+/// stability analysis is never consulted on them.
+///
+/// `SystemSrkEos` hands the driver two phases and `maxPhases = 2`, so the loop solves once,
+/// finds nothing to remove (both fractions are `1.0`), and accepts the phase list at the
+/// ceiling - which is `skipStability` showing through: the class never reaches
+/// `ReactiveStabilityAnalysis` on these fluids, and the capture's `unstable=false` came from
+/// the separate probe that runs the analysis on a forced one-phase state.
+#[test]
+fn the_captured_state_converges_at_the_phase_ceiling() {
+    use azoth_reactions::rand_solver::PhaseFeed;
+    use azoth_reactions::reactive_flash::outer_loop;
+
+    let (mixture, _) = mixture_and_constants();
+    let matrix =
+        FormulaMatrix::build(&NAMES.map(String::from)).expect("the components are in the databank");
+    let b: Vec<f64> = matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
+        .collect();
+    let g0 = standard_potentials(&formation_data(), 600.0, 1.0);
+    let reduced = mixture
+        .reduced_parameters(kelvins(600.0), pascals(1.0e5))
+        .expect("a state");
+
+    let pair = [
+        PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        },
+        PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        },
+    ];
+    let mut ln_phi = |_phase: usize, x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        Ok(mixture
+            .phase_state(&reduced, x, RootSide::Vapour)?
+            .ln_phi
+            .clone())
+    };
+    let mut asked = 0_u32;
+    let mut stability = |_phases: &[PhaseFeed]| -> azoth_core::Result<Vec<Vec<f64>>> {
+        asked += 1;
+        Ok(Vec::new())
+    };
+
+    let outcome = outer_loop(
+        &matrix.matrix,
+        &g0,
+        &b,
+        FEED.iter().sum::<f64>(),
+        pair.to_vec(),
+        2,
+        &mut ln_phi,
+        &mut stability,
+    )
+    .expect("the loop runs");
+
+    assert!(outcome.converged, "the captured state converges");
+    assert_eq!(asked, 0, "the stability analysis is never consulted");
+    assert_eq!(outcome.phases.len(), 2, "both phases are kept");
+    assert_eq!(
+        outcome.total_iterations, outcome.solution.iterations,
+        "one solve ran, and the loop counted its passes"
+    );
+    assert_eq!(
+        outcome.phases[0].beta, 1.0,
+        "the stale fractions are untouched"
+    );
+
+    let overall: Vec<f64> = (0..NAMES.len())
+        .map(|i| {
+            outcome
+                .solution
+                .phase_moles
+                .iter()
+                .map(|phase| phase[i])
+                .sum()
+        })
+        .collect();
+    for (index, (got, want)) in overall.iter().zip(CAPTURED_MOLES).enumerate() {
+        let relative = (got - want).abs() / want.abs();
+        assert!(
+            relative < 1.0e-5,
+            "component {index} ({}): {got} against the capture's {want}, a relative {relative:.3e}",
+            NAMES[index]
+        );
+    }
+}
+
+/// **The removal step's floor and its renormalisation.** A phase under `1e-12` goes, and the
+/// fractions that remain are divided by their sum. The class calls `normalizeBeta` only when
+/// something was removed, which is why nothing moves on the captured states.
+///
+/// **No capture reaches this with a removal** - the fraction it tests is the *system's* stale
+/// array, which on the captured states is `(1.0, 1.0)` or `(0.2106, 0.7894)`, both far above
+/// the floor. The test is of the port's own construction and says so.
+#[test]
+fn the_removal_floor_and_the_renormalisation() {
+    use azoth_reactions::rand_solver::PhaseFeed;
+    use azoth_reactions::reactive_flash::{
+        MIN_PHASE_FRACTION, normalise_betas, remove_negligible_phases,
+    };
+
+    let phase = |beta: f64| PhaseFeed {
+        fractions: FEED.to_vec(),
+        beta,
+    };
+    assert_eq!(MIN_PHASE_FRACTION, 1.0e-12);
+
+    let mut phases = vec![phase(0.5), phase(1.0e-13), phase(0.25)];
+    assert!(remove_negligible_phases(&mut phases), "one was removed");
+    assert_eq!(phases.len(), 2);
+    assert!(
+        (phases[0].beta - 0.5 / 0.75).abs() < 1.0e-15
+            && (phases[1].beta - 0.25 / 0.75).abs() < 1.0e-15,
+        "the remaining fractions renormalise: {:?}",
+        phases.iter().map(|phase| phase.beta).collect::<Vec<f64>>()
+    );
+
+    // Nothing to remove leaves the list alone, and the last phase is never dropped.
+    let mut phases = vec![phase(0.5), phase(0.5)];
+    assert!(!remove_negligible_phases(&mut phases));
+    assert_eq!(phases.len(), 2);
+    let mut only = vec![phase(1.0e-13)];
+    assert!(!remove_negligible_phases(&mut only), "the last phase stays");
+    assert_eq!(only.len(), 1);
+
+    let mut zero = vec![phase(0.0), phase(0.0)];
+    assert!(normalise_betas(&mut zero).is_err(), "a zero sum is refused");
+}
+
+/// **The trial-phase addition**: one phase, the first of the trials, at `0.01`, with every
+/// fraction renormalised - and a refusal at the ceiling that leaves the list untouched.
+///
+/// **No capture reaches this.** The driver's own two-phase start skips the stability analysis,
+/// so no trial is ever produced on the captured fluids; the class's own `addTrialPhases` is
+/// guarded on `system.getMaxNumberOfPhases()`, which is what the port takes as the ceiling.
+#[test]
+fn the_trial_phase_is_added_at_the_guard() {
+    use azoth_reactions::rand_solver::PhaseFeed;
+    use azoth_reactions::reactive_flash::{TRIAL_PHASE_BETA, add_trial_phase};
+
+    let pair = vec![
+        PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        },
+        PhaseFeed {
+            fractions: FEED.to_vec(),
+            beta: 1.0,
+        },
+    ];
+    let trial = vec![0.1, 0.2, 0.3, 0.4];
+
+    let mut phases = pair.clone();
+    assert!(
+        add_trial_phase(&mut phases, std::slice::from_ref(&trial), 3).expect("the shapes agree"),
+        "there is room for a third"
+    );
+    assert_eq!(phases.len(), 3);
+    assert_eq!(TRIAL_PHASE_BETA, 0.01);
+    let total: f64 = phases.iter().map(|phase| phase.beta).sum();
+    assert!((total - 1.0).abs() < 1.0e-15, "the fractions renormalise");
+    assert!(
+        (phases[2].fractions[3] - 0.4).abs() < 1.0e-15,
+        "the trial is kept"
+    );
+
+    // At the ceiling, and with no trials at all, the list is returned unchanged.
+    let mut phases = pair.clone();
+    assert!(!add_trial_phase(&mut phases, &[trial], 2).expect("the shapes agree"));
+    assert_eq!(phases.len(), 2);
+    let mut phases = pair;
+    assert!(!add_trial_phase(&mut phases, &[], 3).expect("nothing to add"));
+    assert_eq!(phases.len(), 2);
+}
