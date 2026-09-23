@@ -20,7 +20,7 @@ def runtime() -> Any:
 
     Raises:
         ImportError: if `deepseek-harness-sdk` is not installed. The skill export
-            (`tools/export_dsh_skills.py`) does not need it; only running an
+            (`tools/export_skills.py --target dsh`) does not need it; only running an
             orchestration does, which is why it is the optional `agent` extra rather
             than a dependency.
     """

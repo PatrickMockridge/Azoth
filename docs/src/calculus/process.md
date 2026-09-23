@@ -80,15 +80,13 @@ the pure evaluation of `f`:
 U  ≅  f(x₁, …, xₘ)
 ```
 
-*Status: **specified**. The tier this claim is about has returned, in part: an early
-one was deleted in `1118aa9` for asserting a process simulator this library did not have,
-and it was re-founded on this page's own calculus — `crates/azoth-process` carries the
-channel types, the stream record, the palette loader and the checker, `specs/unit_ops/`
-declares 24 unit operations, and six of them carry kernels. So the claim is no longer that
-there is nothing to check. It is that **nothing checks it**: `lean/Azoth/` has no
-`Process.lean`, and an implementation agreeing with a port declaration is exactly what this
-claim asserts and nothing tests. `Azoth.Process.unit_op_is_extensional` is for the tranche
-that proves it.*
+*Status: **specified**. The tier this claim is about half-exists: `crates/azoth-process`
+carries the channel types, the stream record, the palette loader and the checker,
+`specs/unit_ops/` declares 24 unit operations, and six of them carry kernels. So the claim
+is no longer that there is nothing to check. It is that **nothing checks it**:
+`lean/Azoth/` has no `Process.lean`, and an implementation agreeing with a port declaration
+is exactly what this claim asserts and nothing tests.
+`Azoth.Process.unit_op_is_extensional` is for the tranche that proves it.*
 
 Three hypotheses, and each is doing work: *only its declared channels*, so `U`
 cannot read anything the caller did not supply; *total*, so it cannot fail on a

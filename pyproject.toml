@@ -46,7 +46,7 @@ dev = [
 ]
 agent = [
   # Running an orchestration needs the DeepSeek Harness runtime; exporting the
-  # skills (`tools/export_dsh_skills.py`) and using the library do not.
+  # skills (`tools/export_skills.py --target dsh`) and using the library do not.
   "deepseek-harness-sdk",
 ]
 

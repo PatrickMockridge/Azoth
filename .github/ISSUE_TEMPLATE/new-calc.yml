@@ -16,7 +16,7 @@ body:
       description: |
         The standard, textbook or paper the equation comes from, with an edition
         and equation number where you have one. A proposed calc without a source
-        cannot be merged - see docs/src/spec.md.
+        cannot be merged - see docs/src/architecture/specification.md.
     validations:
       required: true
   - type: textarea
