@@ -1,18 +1,19 @@
 # NeqSim port roadmap
 
-The order in which azoth ports [NeqSim](https://github.com/equinor/neqsim), from
-the physics the most callers need to the physics the fewest do. Impact first: a property
-or model that ordinary oil, gas and water work uses is ported before one only a
-specialist reaches for.
+What azoth has ported of [NeqSim](https://github.com/equinor/neqsim), what it has not,
+and the order the rest is taken in — the physics the most callers need before the
+physics the fewest do, so a property ordinary oil, gas and water work uses comes
+before one only a specialist reaches for.
 
-This maps NeqSim's physics **one to one**. Every class under NeqSim's `thermo/`,
-`thermodynamicoperations/` and `physicalproperties/` trees is assigned to a tier below.
-The trees that are not physics are named at the end rather than silently dropped, and they
-are of two kinds: **`process/`** — unit operations and the flowsheet — is not physics but is
-a port target in its own right, the specification putting it at tranche P11 and P12; while
-**`fluidmechanics/`** (azoth has its own hydraulics) and the support packages are not ported
-at all. The column-by-column record is `databank/manifest.toml`, which this file orders; it
-does not re-inventory it.
+The mapping is one to one. Every class under NeqSim's `thermo/`, `thermodynamicoperations/`
+and `physicalproperties/` trees is assigned to a tier below, each bullet naming the azoth
+id that carries it where it is ported, the NeqSim class that would close it where it is
+not, and the measurement where neither applies. The trees that are not physics are named
+at the end rather than silently dropped, and they are of two kinds: **`process/`** — unit
+operations and the flowsheet — is not physics but is a port target in its own right, the
+specification putting it at tranche P11 and P12; while **`fluidmechanics/`** (azoth has
+its own hydraulics) and the support packages are not ported at all. The column-by-column
+record is `databank/manifest.toml`, which this file orders; it does not re-inventory it.
 
 ## The rules every port follows
 
@@ -31,13 +32,17 @@ would close it named — never "out of scope".
 
 ## The tiers
 
+The tiers are the order the port is taken in, and each carries what is ported and what
+is not, so that "azoth does not do this" and "azoth has not reached this" stay different
+statements.
+
 ### Tier 0 — the one data path
 
 The cubic Peng-Robinson core is ported: `ComponentPR`, `AttractiveTermPr`,
 `PhasePrEos`, `SystemPrEos`, `TPflash`, `PHflash`, `PSFlash`, the tangent-plane
 stability test, `CriticalPointFlash`, the phase envelope, `RachfordRice` and the
-classical vdW1f mixing rule, reading 14 of the databank's columns. What remains is the
-foundation the rest stands on:
+classical vdW1f mixing rule, reading 14 of the databank's columns. What is still open on
+it is what the rest of the port stands on:
 
 - the single `databank → keycard → every calculation` path, so a calculation names its
   components and every constant it reads comes through one route;
@@ -360,10 +365,9 @@ complete rather than silent about them:
 
 **`process/` is not in this list.** It is not physics, but it *is* a port target: the
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
-at P12. An early tier was deleted in `1118aa9` for asserting a process simulator this library
-did not have, and it has since been re-founded on the process calculus — `crates/azoth-process`
-carries the channel types, the stream record, the palette loader and the checker,
-`specs/unit_ops/` declares 24 unit operations, and six of them carry kernels.
+at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
+types, the stream record, the palette loader and the checker, `specs/unit_ops/` declares 24
+unit operations, and six of them carry kernels.
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.
@@ -372,22 +376,12 @@ carries the channel types, the stream record, the palette loader and the checker
 
 ## Beyond the port
 
-The interoperation surface — the middleware that a flowsheet editor, a notebook and an
-agent all drive — is built after the port, not beside it. Its shape is
-[The middleware](docs/src/architecture/middleware.md), and it gates on the backend closing
-in this order:
+The interoperation surface — the middleware a flowsheet editor, a notebook and an agent
+all drive — is built after the port, not beside it. Its shape is
+[The middleware](docs/src/architecture/middleware.md), and the order it gates on is
+[the specification](docs/src/architecture/specification.md)'s, which states it once.
 
-1. **Tier 0** — the one data path closes: the `not-yet` ideal-gas Cp and reference-state
-   columns that `eos.ideal_gas_cp` and `eos.molar_enthalpy_entropy` still take from the
-   caller.
-2. **P1** — transport properties; the pipe and equipment kernels need density and
-   viscosity from a mixture.
-3. **P2–P10** — the physics.
-4. **P11** — a kernel for every palette entry, not six of 24.
-5. **P12** — the flowsheet executor: topological order, a recycle fixed point, a session,
-   structured diagnostics, the TOML/JSON round trip and a result codec.
-
-Known blockers that gate P11/P12 kernels:
+What the P11/P12 kernels are waiting on is measured, and it is:
 
 - `pipe` waits on density and viscosity assembled from a `Mixture` — the P1 transport
   models that read the collision and liquid-viscosity columns the manifest marks
@@ -395,5 +389,3 @@ Known blockers that gate P11/P12 kernels:
   are carried.
 - `compressor`/`expander` wait on the **molar-entropy field `s`** on the stream record;
   the `entropy_at` helper already exists (`ps_flash`).
-- `eos.pt_phase_envelope`'s dew branch and critical point need NeqSim's analytic Jacobian
-  and `calcCrit` for a tight port; the central-difference version is approximate.
