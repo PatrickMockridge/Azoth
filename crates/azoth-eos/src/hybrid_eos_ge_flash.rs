@@ -149,7 +149,41 @@ pub(crate) fn solve_fixed_topology(
     }
     let z: Vec<f64> = feed.iter().map(|value| value / total).collect();
 
-    let mut phases = seed(mixture, &z, ion)?;
+    let mut phases = seed_phases(mixture, &z, ion)?;
+    solve_fixed_topology_from(mixture, reduced, feed, ion, algorithm, &mut phases)
+}
+
+/// The fixed-topology Newton **from a split the caller already has**.
+///
+/// Split out of [`solve_fixed_topology`] because the reactive coupling re-enters it: that loop
+/// re-equilibrates the brine's chemistry, writes the adjusted species inventory back into the
+/// roles and solves the fractions again, and each pass starts from the fractions the last one
+/// converged on rather than from the seed. Upstream's `run` is arranged the same way - its
+/// `system` carries the split between passes - and re-seeding each pass would throw away the
+/// only thing the passes share.
+///
+/// `phases` is the split, in and out, in `[gas, oil, aqueous]` order and with the kinds
+/// [`seed_phases`] gives it.
+///
+/// # Errors
+/// The same as [`solve_fixed_topology`], less the feed checks - the caller has made those.
+pub fn solve_fixed_topology_from(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    feed: &[f64],
+    ion: &[bool],
+    algorithm: &ModelAlgorithm,
+    phases: &mut [MultiphasePhase],
+) -> Result<HybridEosGeFlashResult> {
+    let n = feed.len();
+    let total: f64 = feed.iter().sum();
+    if !total.is_finite() || total <= 0.0 {
+        return Err(AzothError::invalid_input(
+            "moles",
+            format!("the feed sums to {total}, which is not a mole count"),
+        ));
+    }
+    let z: Vec<f64> = feed.iter().map(|value| value / total).collect();
     let aqueous = 2;
 
     let mut iterations = 0;
@@ -246,9 +280,9 @@ pub(crate) fn solve_fixed_topology(
             for phase in phases.iter_mut() {
                 phase.fraction /= total;
             }
-            enforce_aqueous_fraction_bounds(&mut phases, ion, &z, aqueous, previous_aqueous)?;
+            enforce_aqueous_fraction_bounds(&mut *phases, ion, &z, aqueous, previous_aqueous)?;
 
-            set_compositions(&mut phases, &z, &e, &inverted, ion, aqueous)?;
+            set_compositions(&mut *phases, &z, &e, &inverted, ion, aqueous)?;
 
             if step >= 2 && residual <= algorithm.tolerance && gradient_norm <= GRADIENT_TOLERANCE {
                 break;
@@ -297,7 +331,7 @@ pub(crate) fn solve_fixed_topology(
 /// heavy hydrocarbon starts in the oil, water and the polar solvents start in the aqueous
 /// phase, and an ion starts in the aqueous phase with the `1e-50` floor in the other two.
 /// The fractions are the feed's own shares of those three groups, floored at `1e-5`.
-fn seed(mixture: &Mixture, z: &[f64], ion: &[bool]) -> Result<Vec<MultiphasePhase>> {
+pub fn seed_phases(mixture: &Mixture, z: &[f64], ion: &[bool]) -> Result<Vec<MultiphasePhase>> {
     let n = z.len();
     let names = mixture.names().ok_or_else(|| {
         AzothError::invalid_input(
