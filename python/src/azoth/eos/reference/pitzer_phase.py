@@ -360,10 +360,10 @@ def _neutral_henry(
     """
     gas = _iapws.gas_from_name(name)
     if gas is None:
-        return effective_coefficient(entry, temperature_k)
+        return _database_henry(entry, temperature_k)
     reactive = gas in ("co2", "h2s")
     if not neutral_active and (has_ions or reactive):
-        return effective_coefficient(entry, temperature_k)
+        return _database_henry(entry, temperature_k)
     table = _iapws.iapws_henry_law(name, _kelvin(temperature_k))
     if table.status is HenryStatus.GUIDELINE_EXTRAPOLATION:
         # `isUsable` fails outside the row's fitted window, and the guideline's own
@@ -373,6 +373,31 @@ def _neutral_henry(
     # the constant is converted by water's molar mass.
     value = table.henry.to_base_units().magnitude / _BAR_TO_PA * _iapws.WATER_MOLAR_MASS_KG_PER_MOL
     return INSOLUBLE_HENRY_COEFFICIENT if is_capped(entry, value) else value
+
+
+def _database_henry(entry: Any, temperature_k: float) -> float:
+    """The database arm of the neutral branch, **with this model's own cap**.
+
+    ``ComponentGePitzer.isHenryCoefficientCapped`` is ``ComponentGE``'s plus two clauses of
+    its own - ``isHydrocarbon()`` and ``isIsTBPfraction()`` - so a hydrocarbon is capped to
+    the insoluble limit **whatever its row says**. n-heptane's row carries no correlation at
+    all, and the cap is what turns the four zeros into the ``1e12 bar`` an aqueous phase
+    reads for it.
+
+    The order matters as much as the clause: the cap is asked **first**, and the fittedness
+    refusal second, because the cap is what resolves the degenerate value for the
+    substances it covers. A solvent whose row carries none is what is left, and that is the
+    refusal this library makes where NeqSim uses the ``1.802 bar`` the zeros fall out as.
+    """
+    raw = coefficient(entry.henry, temperature_k)
+    if is_capped(entry, raw) or _is_pitzer_insoluble(entry):
+        return INSOLUBLE_HENRY_COEFFICIENT
+    return effective_coefficient(entry, temperature_k)
+
+
+def _is_pitzer_insoluble(entry: Any) -> bool:
+    """``ComponentGePitzer.isHenryCoefficientCapped``'s own two clauses."""
+    return entry.component_type == "hc" or catalog.is_hydrocarbon_formula(entry.formula or "")
 
 
 def _kelvin(value: float) -> Q:

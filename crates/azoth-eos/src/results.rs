@@ -2292,6 +2292,54 @@ impl CalcResult for IapwsHenryLawResult {
     }
 }
 
+/// Result of `eos.hybrid_eos_ge_flash`.
+///
+/// The three roles are **fixed before the fractions are solved** - gas, oil and a GE aqueous
+/// phase - so the order of every vector here is the model's and not the answer's, and no
+/// `role` output is needed to say which phase is which.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HybridEosGeFlashResult {
+    /// The mole fraction of the feed in each role, in `[gas, oil, aqueous]` order.
+    pub beta: Vec<f64>,
+    /// The composition of each role, one vector per role, each summing to one.
+    pub x: Vec<Vec<f64>>,
+    /// `ln phi_i` in each role, one vector per role.
+    pub ln_phi: Vec<Vec<f64>>,
+    /// Fraction-solve steps taken.
+    pub iterations: u32,
+    /// The larger of the last step's norm and the last gradient's, which is the solver's own
+    /// convergence measure and not the acceptance contract's.
+    pub residual: f64,
+    /// The worst `|z_i - sum_k beta_k x_ik|`, which the contract holds to `1e-7`.
+    pub max_material_balance_residual: f64,
+    /// The worst `|ln(x_i phi_i P)|` spread over the phases that are there, which the contract
+    /// holds to `1e-5`. Ions and empty components take no part.
+    pub max_log_fugacity_residual: f64,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for HybridEosGeFlashResult {
+    const CALC_ID: &'static str = "eos.hybrid_eos_ge_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "beta",
+        "x",
+        "ln_phi",
+        "iterations",
+        "residual",
+        "max_material_balance_residual",
+        "max_log_fugacity_residual",
+        "min_t_over_tc",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.ideal_gas_cp`.
 ///
 /// Reports the polynomial's own dimensionless value as well as the dimensioned heat

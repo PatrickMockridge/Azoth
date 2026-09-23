@@ -69,6 +69,7 @@ from azoth.core.result import (
     HeatExchangerResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HybridEosGeFlashResult,
     HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
@@ -3282,6 +3283,38 @@ def freezing_point(
         component=result.component,
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hybrid_eos_ge_flash(
+    components: Sequence[str], cubic: str, T: Q, P: Q, moles: Sequence[float]
+) -> HybridEosGeFlashResult:
+    """The fixed-role gas-oil-brine flash, computed in Rust.
+
+    The names cross **unresolved**: the two EoS roles' constants, the seeding's classes and
+    the brine's ion mask all resolve on the Rust side from the same databank, so the two
+    languages cannot disagree about which substance is which.
+    """
+    spec = _models_gen.model("eos.hybrid_eos_ge_flash")
+    result = _core.hybrid_eos_ge_flash(
+        list(components),
+        cubic,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        # The unit-carrying vectors cross as SI magnitudes element by element, for the same
+        # reason the reference converts them: a model's declared units are the boundary's.
+        [_si(spec, "moles", value) for value in moles],
+    )
+    return HybridEosGeFlashResult(
+        beta=tuple(result.beta),
+        x=tuple(tuple(row) for row in result.x),
+        ln_phi=tuple(tuple(row) for row in result.ln_phi),
+        iterations=result.iterations,
+        residual=result.residual,
+        max_material_balance_residual=result.max_material_balance_residual,
+        max_log_fugacity_residual=result.max_log_fugacity_residual,
+        min_t_over_tc=result.min_t_over_tc,
         warnings=_warnings(result.warnings),
     )
 

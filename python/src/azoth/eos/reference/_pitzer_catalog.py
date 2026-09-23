@@ -146,13 +146,22 @@ def is_hydrocarbon(species: Species) -> bool:
     and ``isPlusFraction`` are set through the API rather than read from the databank, and
     the components they mark are typed ``HC`` in the table anyway.
     """
-    if species.hydrocarbon:
-        return True
-    if not species.formula:
+    return species.hydrocarbon or is_hydrocarbon_formula(species.formula)
+
+
+def is_hydrocarbon_formula(formula: str) -> bool:
+    """``ComponentGePitzer.hasHydrocarbonFormula``: carbon, hydrogen and digits, both present.
+
+    Public because ``ComponentGePitzer.isHydrocarbon`` is ``super.isHydrocarbon() ||
+    hasHydrocarbonFormula()``, and that method decides whether a Henry coefficient is
+    **capped to the insoluble limit whatever its row says**: a hydrocarbon whose row carries
+    no correlation is not the same state as a solvent whose row carries none.
+    """
+    if not formula:
         return False
     carbon = False
     hydrogen = False
-    for character in species.formula:
+    for character in formula:
         if character == "C":
             carbon = True
         elif character == "H":

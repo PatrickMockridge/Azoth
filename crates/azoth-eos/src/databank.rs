@@ -199,6 +199,14 @@ pub const SOLUTE: &str = "solute";
 /// [`mixture_of`] refuses rather than reading the filler.
 pub const ION: &str = "ion";
 
+/// The `COMPTYPE` value NeqSim classes a hydrocarbon under.
+///
+/// `PhaseEos.init` labels a phase from it - a hydrocarbon outweighing the aqueous components
+/// is an oil - and `SystemEosGE`'s own phase-role seeding reads it to send a light hydrocarbon
+/// to a gas role and a heavy one to an oil role. The comparison is against the compiled
+/// table's lower-cased field, so the two spellings are `hc` and nothing else.
+pub const HYDROCARBON: &str = "hc";
+
 /// One substance's constants, in the units the compiled table holds them in.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
@@ -3351,17 +3359,7 @@ pub fn mixture_of(
     cubic: Cubic,
     overlay: Option<&Overlay>,
 ) -> Result<(Mixture, IdealGasModel)> {
-    if names.is_empty() {
-        return Err(AzothError::invalid_input(
-            "components",
-            "a mixture needs at least one component",
-        ));
-    }
-    let entries: Vec<Entry> = names
-        .iter()
-        .map(|name| entry(name, overlay))
-        .collect::<Result<_>>()?;
-
+    let entries = resolved(names, overlay)?;
     let ions: Vec<&str> = entries
         .iter()
         .filter(|e| e.class == ION)
@@ -3382,7 +3380,47 @@ pub fn mixture_of(
             ),
         ));
     }
+    assemble(&entries, cubic, overlay)
+}
 
+/// The same mixture **with its ions left in**, for a flash whose EoS roles exclude them.
+///
+/// The refusal [`mixture_of`] makes is about a cubic being *used* over an ion: its critical
+/// constants are filler, so a fugacity coefficient built from them is a plausible-looking
+/// wrong number. `eos.hybrid_eos_ge_flash` uses one only where the coefficient is multiplied
+/// by an inverse that is **exactly zero** - `TPHybridEosGeFlash.inverseFugacityCoefficient`
+/// excludes an ion from the EoS roles rather than penalising it - so the filler never reaches
+/// a number, while the ion still has to occupy its column in the composition vectors the
+/// material balance and the aqueous phase's inventory are stated over.
+///
+/// # Errors
+/// The same as [`mixture_of`], minus the ion refusal.
+pub fn mixture_of_with_ions(
+    names: &[&str],
+    cubic: Cubic,
+    overlay: Option<&Overlay>,
+) -> Result<(Mixture, IdealGasModel)> {
+    let entries = resolved(names, overlay)?;
+    assemble(&entries, cubic, overlay)
+}
+
+/// The databank entries a name list resolves to, or the refusal that names the miss.
+fn resolved(names: &[&str], overlay: Option<&Overlay>) -> Result<Vec<Entry>> {
+    if names.is_empty() {
+        return Err(AzothError::invalid_input(
+            "components",
+            "a mixture needs at least one component",
+        ));
+    }
+    names.iter().map(|name| entry(name, overlay)).collect()
+}
+
+/// The mixture a set of resolved entries is, in the order they are given.
+fn assemble(
+    entries: &[Entry],
+    cubic: Cubic,
+    overlay: Option<&Overlay>,
+) -> Result<(Mixture, IdealGasModel)> {
     let missing: Vec<&str> = entries
         .iter()
         .filter(|e| e.cp.is_none())
@@ -3442,7 +3480,7 @@ pub fn mixture_of(
     Ok((
         Mixture::new(components, matrix)?
             .with_cubic(cubic)
-            .with_names(names.iter().map(|name| (*name).to_string()).collect()),
+            .with_names(entries.iter().map(|entry| entry.name.clone()).collect()),
         ideal_gas,
     ))
 }

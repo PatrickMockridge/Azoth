@@ -2850,7 +2850,6 @@ def soreide_whitson_mixture_of(
     resolved = [name.strip().lower() for name in names]
     entries = [entry(name, card=card) for name in resolved]
     _refuse_ions([e.name for e in entries if e.component_type == ION])
-
     missing = [e.name for e in entries if e.cp is None]
     if missing:
         raise InvalidInputError(
@@ -2874,6 +2873,70 @@ def soreide_whitson_mixture_of(
     )
     return (
         fluid,
+        IdealGasModel(
+            cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
+            cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
+            cp_c=tuple(e.cp[2] for e in entries),  # type: ignore[index]
+            cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
+            cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
+        ),
+    )
+
+
+def mixture_of_with_ions(
+    names: list[str],
+    *,
+    card: keycard.Keycard | None = None,
+    eos: str = "pr",
+    alpha: str | None = None,
+    associating: bool = False,
+) -> tuple[Mixture, IdealGasModel]:
+    """The same mixture **with its ions left in**, for a flash whose EoS roles exclude them.
+
+    The refusal :func:`mixture_of` makes is about a cubic being *used* over an ion: its
+    critical constants are filler, so a fugacity coefficient built from them is a
+    plausible-looking wrong number. ``eos.hybrid_eos_ge_flash`` uses one only where the
+    coefficient is multiplied by an inverse that is **exactly zero**, so the filler never
+    reaches a number - while the ion still occupies its column in the composition vectors
+    the material balance and the aqueous phase's inventory are stated over.
+
+    Raises:
+        The same as :func:`mixture_of`, minus the ion refusal.
+    """
+    resolved = [name.strip().lower() for name in names]
+    entries = [entry(name, card=card) for name in resolved]
+    return _assemble(
+        entries, eos=eos, alpha=alpha, associating=associating, card=card, resolved=resolved
+    )
+
+
+def _assemble(
+    entries: list[DatabankEntry],
+    *,
+    eos: str,
+    alpha: str | None,
+    associating: bool,
+    card: keycard.Keycard | None,
+    resolved: list[str],
+) -> tuple[Mixture, IdealGasModel]:
+    """The mixture a set of resolved entries is, with the interaction pairs they need."""
+    missing = [e.name for e in entries if e.cp is None]
+    if missing:
+        raise InvalidInputError(
+            "components",
+            f"no heat-capacity coefficients for {missing}. The databank carries them for "
+            f"every substance it ships; one a keycard adds needs its own, because a cubic "
+            f"needs `Tc`, `Pc` and `omega` and an enthalpy needs the polynomial as well",
+        )
+
+    return (
+        mixture(
+            tuple(e.component(alpha=_alpha_name(eos, alpha)) for e in entries),
+            kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
+            cubic=_cubic(eos),
+            alpha=_alpha_name(eos, alpha),
+            associating=associating,
+        ),
         IdealGasModel(
             cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
             cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
@@ -3019,31 +3082,8 @@ def mixture_of(
     resolved = [name.strip().lower() for name in names]
     entries = [entry(name, card=card) for name in resolved]
     _refuse_ions([e.name for e in entries if e.component_type == ION])
-
-    missing = [e.name for e in entries if e.cp is None]
-    if missing:
-        raise InvalidInputError(
-            "components",
-            f"no heat-capacity coefficients for {missing}. The databank carries them for "
-            f"every substance it ships; one a keycard adds needs its own, because a cubic "
-            f"needs `Tc`, `Pc` and `omega` and an enthalpy needs the polynomial as well",
-        )
-
-    return (
-        mixture(
-            tuple(e.component(alpha=_alpha_name(eos, alpha)) for e in entries),
-            kij=_interaction_pairs(resolved, eos, associating=associating, card=card),
-            cubic=_cubic(eos),
-            alpha=_alpha_name(eos, alpha),
-            associating=associating,
-        ),
-        IdealGasModel(
-            cp_a=tuple(e.cp[0] for e in entries),  # type: ignore[index]
-            cp_b=tuple(e.cp[1] for e in entries),  # type: ignore[index]
-            cp_c=tuple(e.cp[2] for e in entries),  # type: ignore[index]
-            cp_d=tuple(e.cp[3] for e in entries),  # type: ignore[index]
-            cp_e=tuple(e.cp[4] for e in entries),  # type: ignore[index]
-        ),
+    return _assemble(
+        entries, eos=eos, alpha=alpha, associating=associating, card=card, resolved=resolved
     )
 
 

@@ -102,6 +102,7 @@ from azoth.core.result import (
     HaydukMinhasDiffusivityResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HybridEosGeFlashResult,
     HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
@@ -268,6 +269,7 @@ __all__ = [
     "hayduk_minhas_diffusivity",
     "heat_of_vaporization",
     "helium_phase",
+    "hybrid_eos_ge_flash",
     "hydrate_equilibrium_line",
     "hydrate_formation_pressure",
     "hydrate_formation_temperature",
@@ -383,6 +385,7 @@ _HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _IAPWS_HENRY_LAW = "eos.iapws_henry_law"
+_HYBRID_EOS_GE_FLASH = "eos.hybrid_eos_ge_flash"
 _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
@@ -2448,6 +2451,38 @@ def freezing_point(components: list[str], z: list[float], solid: str, P: Q) -> F
     """
     return resolve(_FREEZING_POINT)(  # type: ignore[no-any-return]
         components=components, z=z, solid=solid, P=P
+    )
+
+
+def hybrid_eos_ge_flash(
+    components: Sequence[str],
+    cubic: str,
+    T: Q,
+    P: Q,
+    moles: Sequence[float],
+) -> HybridEosGeFlashResult:
+    """The isothermal flash of a fixed gas-oil-brine topology.
+
+    **The three roles are fixed before the fractions are solved** - an EoS gas, an EoS oil
+    and a GE aqueous phase - so this is a fraction Newton over a topology the caller already
+    knows and not a stability analysis. It is the seam between the two kinds of phase: the
+    equilibrium it converges is between a cubic's ``phi`` and ``eos.pitzer_phase``'s.
+
+    ``moles`` is a **mole vector and not a composition**: the material balance and the ionic
+    inventory are both mole sums. An ion is the databank's own classification, so it is not
+    a second input, and it is confined to the brine by two exact rules rather than a penalty.
+
+    Raises:
+        InvalidInputError: if a name is unknown, or a component has no heat-capacity
+            coefficients.
+        OutOfRangeError: if ``T`` or ``P`` is not positive.
+        SolverNotConvergedError: if a Newton correction cannot be solved at an iterate, or
+            the brine cannot hold the ionic inventory.
+
+    See :func:`azoth.eos.reference.hybrid_eos_ge_flash`.
+    """
+    return resolve(_HYBRID_EOS_GE_FLASH)(  # type: ignore[no-any-return]
+        components=components, cubic=cubic, T=T, P=P, moles=moles
     )
 
 

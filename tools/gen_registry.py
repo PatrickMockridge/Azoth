@@ -179,6 +179,13 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # `test_cross_impl`, which reads the field off both results, so a shape one side
         # got wrong is caught there rather than here.
         "products_z",
+        # `hybrid_eos_ge_flash`'s per-role compositions and coefficients, which are
+        # matrices for the reason `stability_test`'s are. The model's own test reads them
+        # through `TestCase::matrix` and compares them row by row against the result, and
+        # the two kernels are compared with each other by `test_cross_impl`, which reads
+        # the field off both.
+        "x",
+        "ln_phi",
         # `reactive_phase_equilibrium`'s boolean, which `TestCase` carries for an input but
         # not for an expectation: a flag on the *result* is read by the model's own test,
         # which asserts the case's value against the field.

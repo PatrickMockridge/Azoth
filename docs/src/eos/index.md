@@ -93,6 +93,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.ge_wilson_phase`](./ge_wilson_phase.md) | `direct composition` | NeqSim master `PhaseGEWilson` |
 | [`eos.gerg2008_phase`](./gerg2008_phase.md) | `log_volume_newton` | Kunz, O.; Wagner, W. (2012) |
 | [`eos.helium_phase`](./helium_phase.md) | `newton_density_solve` | Vega (NIST IR 8474) helium equation of state |
+| [`eos.hybrid_eos_ge_flash`](./hybrid_eos_ge_flash.md) | `fixed_topology_fraction_newton` | NeqSim master `SystemEosGE`'s hybrid route |
 | [`eos.hydrate_equilibrium_line`](./hydrate_equilibrium_line.md) | `hydrate_equilibrium_grid` | NeqSim master `HydrateEquilibriumLine` |
 | [`eos.hydrate_formation_pressure`](./hydrate_formation_pressure.md) | `hydrate_pressure_bisection` | NeqSim master `HydrateFormationPressureFlash` |
 | [`eos.hydrate_formation_temperature`](./hydrate_formation_temperature.md) | `hydrate_temperature_bisection` | NeqSim master `HydrateFormationTemperatureFlash` |

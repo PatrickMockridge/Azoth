@@ -449,6 +449,18 @@ class HeliumPhaseResult:
     warnings: list[Warning]
 
 @final
+class HybridEosGeFlashResult:
+    beta: list[float]
+    x: list[list[float]]
+    ln_phi: list[list[float]]
+    iterations: int
+    residual: float
+    max_material_balance_residual: float
+    max_log_fugacity_residual: float
+    min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
 class HydrateEquilibriumLineResult:
     temperature: list[float]
     pressure: list[float]
@@ -1753,6 +1765,13 @@ def heat_of_vaporization(
     T: float,
 ) -> HeatOfVaporizationResult: ...
 def helium_phase(T: float, P: float) -> HeliumPhaseResult: ...
+def hybrid_eos_ge_flash(
+    components: list[str],
+    cubic: str,
+    T: float,
+    P: float,
+    moles: list[float],
+) -> HybridEosGeFlashResult: ...
 def hydrate_equilibrium_line(
     components: list[str],
     P_min: float,

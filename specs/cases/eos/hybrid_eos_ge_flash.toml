@@ -1,0 +1,59 @@
+model = "eos.hybrid_eos_ge_flash"
+[[cases]]
+id = "gas_oil_brine_at_313_15_k"
+tolerance = 1e-06
+source = "NeqSim master, `HybridEosGeProbe` - `SystemHybridEosGeFlashTest.createGasOilAqueousSystem`'s fluid through `TPflash`'s hybrid route: methane 5 / n-heptane 2 / water 55.5 / Na+ 1 / Cl- 1 mol at 313.15 K and 50 bar. **The rows are `[gas, oil, aqueous]`**, which is the solver's own order and not the creation order. `beta` is `0.07008764819933958 / 0.038592834945752996 / 0.8913195168549075`, the ions are at `1.0000000000053307e-50` in both EoS roles, and the contract's own residuals are `3.40e-13` on the material balance and `1.68e-11` on the log fugacity. n-heptane's brine coefficient is `1.1501997885022712e12`, which is the Henry branch of `eos.pitzer_phase` and not a cubic's number: the test asserts it exceeds `1e6` for exactly that reason."
+[cases.inputs]
+components = ["methane", "n-heptane", "water", "Na+", "Cl-"]
+cubic = "srk"
+T = 313.15
+P = 5000000.0
+moles = [5.0, 2.0, 55.5, 1.0, 1.0]
+[cases.expected]
+beta = [0.07008764819933958, 0.038592834945752996, 0.8913195168549075]
+x = [
+    [
+    0.9915399558747073,
+    0.006767159616988142,
+    0.0016928845083045395,
+    1.0000000000053307e-50,
+    1.0000000000053307e-50,
+],
+    [
+    0.20793176383303005,
+    0.7911690778357301,
+    0.0008991583312398502,
+    9.999999999887734e-51,
+    9.999999999887734e-51,
+],
+    [
+    8.066795286995786e-13,
+    2.3122275018428384e-15,
+    0.9652114069619849,
+    0.017394296518603025,
+    0.017394296518603025,
+],
+]
+ln_phi = [
+    [
+    -0.0663971141110165,
+    -0.9339344416834806,
+    -0.1678378589968444,
+    0.17521092053908,
+    0.17521092053908,
+],
+    [
+    1.495652164047997,
+    -5.695364694103316,
+    0.4648921653546185,
+    3.731975839055109,
+    3.731975839055109,
+],
+    [
+    27.77095677234696,
+    27.77095677234696,
+    -6.513751127281414,
+    23.3019591244544,
+    23.3019591244544,
+],
+]

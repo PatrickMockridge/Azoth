@@ -312,15 +312,25 @@ pub enum LegacyReason {
 /// them. Recording that rather than inventing a flag.
 #[must_use]
 pub fn is_hydrocarbon(species: &Species<'_>) -> bool {
-    if species.hydrocarbon {
-        return true;
-    }
-    if species.formula.is_empty() {
+    species.hydrocarbon || is_hydrocarbon_formula(species.formula)
+}
+
+/// `ComponentGePitzer.hasHydrocarbonFormula`: a formula of carbon, hydrogen and digits with
+/// both elements present.
+///
+/// Public because `ComponentGePitzer.isHydrocarbon` is `super.isHydrocarbon() ||
+/// hasHydrocarbonFormula()`, and that method is what decides whether a Henry coefficient is
+/// **capped to the insoluble limit whatever its row says**. A hydrocarbon whose row carries no
+/// correlation is therefore not the same state as a solvent whose row carries none: the first
+/// has a coefficient of `1e12`, the second has none.
+#[must_use]
+pub fn is_hydrocarbon_formula(formula: &str) -> bool {
+    if formula.is_empty() {
         return false;
     }
     let mut carbon = false;
     let mut hydrogen = false;
-    for character in species.formula.chars() {
+    for character in formula.chars() {
         match character {
             'C' => carbon = true,
             'H' => hydrogen = true,

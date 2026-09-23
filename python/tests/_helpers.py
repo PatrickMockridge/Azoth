@@ -75,6 +75,13 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         "max_reaction_log_residual",
         "net_charge_moles",
         "max_element_residual",
+        # `eos.hybrid_eos_ge_flash`'s two. Both are of order `1e-13`: one is a material
+        # balance that is zero **by construction** and carries only the last ulp of the two
+        # kernels' arithmetic, the other a cross-role fugacity spread the same size. The
+        # contract's `1e-7` and `1e-5` are what the model claims and the case records them
+        # as such; between the two kernels what is being compared is rounding.
+        "max_material_balance_residual",
+        "max_log_fugacity_residual",
         # `reactions.reactive_tp_flash`'s two. The element residual is a scaled
         # root-mean-square of `A n - b`, so on a converged solve it is of order `1e-6` and a
         # difference in the last few digits of the arithmetic is a large fraction of it -

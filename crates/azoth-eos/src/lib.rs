@@ -89,6 +89,7 @@ pub mod heat_of_vaporization;
 pub mod helium_phase;
 pub mod henry;
 pub mod hv_ge;
+pub mod hybrid_eos_ge_flash;
 pub mod hydrate;
 pub mod hydrate_equilibrium_line;
 pub mod hydrate_formation_pressure;
@@ -247,6 +248,7 @@ pub use gerg2008_phase::gerg2008_phase;
 pub use hayduk_minhas_diffusivity::{HaydukMinhasForm, hayduk_minhas_diffusivity};
 pub use heat_of_vaporization::heat_of_vaporization;
 pub use helium_phase::helium_phase;
+pub use hybrid_eos_ge_flash::hybrid_eos_ge_flash;
 pub use hydrate::hydrate_mixture_of;
 pub use hydrate_equilibrium_line::hydrate_equilibrium_line;
 pub use hydrate_formation_pressure::hydrate_formation_pressure;
@@ -308,12 +310,12 @@ pub use results::{
     FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
     GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
     Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HenryStatus, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
-    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HeliumPhaseResult, HenryStatus, HybridEosGeFlashResult, HydrateFormationTemperatureResult,
+    HydrateFractionResult, HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult,
+    IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, Phase, PitzerDataset,
     PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
     PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,

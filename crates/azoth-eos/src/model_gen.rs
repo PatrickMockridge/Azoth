@@ -26,6 +26,7 @@
 //!   - specs/models/eos/ge_wilson_phase.toml
 //!   - specs/models/eos/gerg2008_phase.toml
 //!   - specs/models/eos/helium_phase.toml
+//!   - specs/models/eos/hybrid_eos_ge_flash.toml
 //!   - specs/models/eos/hydrate_equilibrium_line.toml
 //!   - specs/models/eos/hydrate_formation_pressure.toml
 //!   - specs/models/eos/hydrate_formation_temperature.toml
@@ -3348,6 +3349,88 @@ pub static HELIUM_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&HELIUM_PHASE_ALGORITHM),
     checks: HELIUM_PHASE_CHECKS,
     cases: HELIUM_PHASE_CASES,
+};
+
+static HYBRID_EOS_GE_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static HYBRID_EOS_GE_FLASH_CASES: &[TestCase] = &[TestCase {
+    id: "gas_oil_brine_at_313_15_k",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 1e-06,
+    numbers: &[("T", 313.15), ("P", 5000000.0)],
+    flags: &[],
+    lists: &[(
+        "components",
+        &["methane", "n-heptane", "water", "Na+", "Cl-"],
+    )],
+    strings: &[("cubic", "srk")],
+    vectors: &[("moles", &[5.0, 2.0, 55.5, 1.0, 1.0])],
+    matrices: &[],
+    expected: &[],
+    expected_vectors: &[(
+        "beta",
+        &[
+            0.07008764819933958,
+            0.038592834945752996,
+            0.8913195168549075,
+        ],
+    )],
+    expected_strings: &[],
+}];
+
+static HYBRID_EOS_GE_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "fixed_topology_fraction_newton",
+    convergence: "absolute",
+    tolerance: 1e-12,
+    max_iterations: 50,
+    bracket: None,
+    initialisation: Some("component_class_roles"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.hybrid_eos_ge_flash`.
+pub static HYBRID_EOS_GE_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.hybrid_eos_ge_flash",
+    kind: "procedure",
+    algorithm: Some(&HYBRID_EOS_GE_FLASH_ALGORITHM),
+    checks: HYBRID_EOS_GE_FLASH_CHECKS,
+    cases: HYBRID_EOS_GE_FLASH_CASES,
 };
 
 static HYDRATE_EQUILIBRIUM_LINE_CHECKS: &[SpecCheck] = &[
@@ -9363,6 +9446,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &GE_WILSON_PHASE_SPEC,
     &GERG2008_PHASE_SPEC,
     &HELIUM_PHASE_SPEC,
+    &HYBRID_EOS_GE_FLASH_SPEC,
     &HYDRATE_EQUILIBRIUM_LINE_SPEC,
     &HYDRATE_FORMATION_PRESSURE_SPEC,
     &HYDRATE_FORMATION_TEMPERATURE_SPEC,

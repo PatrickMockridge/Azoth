@@ -117,6 +117,13 @@ pub enum PhaseKind {
     /// The wax solid, whose coefficient is [`crate::wax_solid_fugacity`]'s for a component
     /// the fluid marks as a wax former and NeqSim's `1e50` marker for everything else.
     Wax,
+    /// A GE aqueous phase, whose coefficients are [`crate::pitzer_phase`]'s at its own
+    /// composition.
+    ///
+    /// The one kind whose model is keyed by **name**: the Pitzer parameters resolve
+    /// against a dataset keyed by the component, so a mixture built from constants alone
+    /// cannot answer for it and [`Mixture::names`] is what this reads.
+    Ge,
 }
 
 /// One phase of a multiphase split.
@@ -135,7 +142,11 @@ pub struct MultiphasePhase {
 }
 
 /// The fugacity coefficients of every component in every phase, row-major by phase.
-fn coefficients(
+///
+/// The dispatch the two multiphase loops share: what a phase's coefficients *are* is a
+/// property of its kind, and both the ordinary solve and the hybrid's fixed-topology one ask
+/// this rather than each deciding for itself.
+pub(crate) fn coefficients(
     mixture: &Mixture,
     reduced: &ReducedParameters,
     phases: &[MultiphasePhase],
@@ -148,9 +159,43 @@ fn coefficients(
                 out.push(state.ln_phi.iter().map(|value| value.exp()).collect());
             }
             PhaseKind::Wax => out.push(wax_coefficients(mixture, reduced)?),
+            PhaseKind::Ge => out.push(ge_coefficients(mixture, reduced, &phase.composition)?),
         }
     }
     Ok(out)
+}
+
+/// A GE aqueous phase's fugacity coefficients, from `eos.pitzer_phase`.
+///
+/// The model is the *activity* one over the same names, so the composition is the phase's
+/// own in the caller's order - the two agree because both are indexed by the fluid's
+/// component order.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if the mixture carries no names, which is what the
+///   parameter datasets are keyed by, or if the brine's topology is one the loaded dataset
+///   does not cover.
+fn ge_coefficients(
+    mixture: &Mixture,
+    reduced: &ReducedParameters,
+    composition: &[f64],
+) -> Result<Vec<f64>> {
+    let names = mixture.names().ok_or_else(|| {
+        AzothError::invalid_input(
+            "components",
+            "a GE phase resolves its parameters by name, and this mixture carries none: a \
+             fluid built from constants cannot answer for one"
+                .to_string(),
+        )
+    })?;
+    let borrowed: Vec<&str> = names.iter().map(String::as_str).collect();
+    let coefficients =
+        crate::pitzer_phase(&borrowed, reduced.t_kelvin, reduced.pressure, composition)?;
+    Ok(coefficients
+        .ln_phi
+        .iter()
+        .map(|value| value.exp())
+        .collect())
 }
 
 /// NeqSim's marker for a component that cannot be in a wax phase.

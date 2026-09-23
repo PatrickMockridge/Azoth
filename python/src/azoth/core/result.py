@@ -2583,6 +2583,36 @@ class DewTemperatureResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class HybridEosGeFlashResult(_HasWarnings):
+    """Result of ``eos.hybrid_eos_ge_flash``.
+
+    The three roles are **fixed before the fractions are solved** - gas, oil and a GE
+    aqueous phase - so the order of every vector here is the model's and not the answer's,
+    and no ``role`` field is needed to say which phase is which.
+    """
+
+    #: The mole fraction of the feed in each role, in ``[gas, oil, aqueous]`` order.
+    beta: tuple[float, ...]
+    #: The composition of each role, one row per role, each summing to one.
+    x: tuple[tuple[float, ...], ...]
+    #: ``ln phi_i`` in each role, from the cubic for the first two and ``eos.pitzer_phase``
+    #: for the brine.
+    ln_phi: tuple[tuple[float, ...], ...]
+    #: Newton steps taken, summed over the fixed-topology passes.
+    iterations: int
+    #: The larger of the last step's norm and the last gradient's.
+    residual: float
+    #: The worst material-balance residual. The contract holds it to ``1e-7``.
+    max_material_balance_residual: float
+    #: The worst cross-role ``ln(x_i phi_i P)`` spread. The contract holds it to ``1e-5``.
+    max_log_fugacity_residual: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 class HenryStatus(StrEnum):
     """Whether the guideline's Henry constant was evaluated inside the fitted range.
 

@@ -21,20 +21,21 @@ use crate::results::{
     PyDesmukhMatherPhaseResult, PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult,
     PyGeUnifacPhaseResult, PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult,
     PyGeWilsonPhaseResult, PyGerg2008PhaseResult, PyHaydukMinhasDiffusivityResult,
-    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHydrogenPhaseResult, PyIapwsHenryLawResult,
-    PyIdealGasCpResult, PyKentEisenbergPhaseResult, PyLiquidHeatCapacityResult,
-    PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult, PyMatcopAlphaResult,
-    PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult, PyMatcopPrumrNewAlphaResult,
-    PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult, PyNitricSulfuricAcidVaporPressureResult,
-    PyNrtlActivityCoefficientsResult, PyParachorSurfaceTensionResult,
-    PyParahydrogenSolidPhaseResult, PyPhFlashResult, PyPhaseBoundaryResult,
-    PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult, PyPitzerPhaseResult,
-    PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult, PyPrDelft1998AlphaResult,
-    PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult, PyPrLeeKeslerAlphaResult,
-    PyPrMassDensityResult, PyPrMolarVolumeResult, PyPrPenelouxShiftResult, PyPrZFactorResult,
-    PyPrsvKappaResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult,
-    PyRachfordRiceResult, PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
+    PyHeatOfVaporizationResult, PyHeliumPhaseResult, PyHybridEosGeFlashResult,
+    PyHydrogenPhaseResult, PyIapwsHenryLawResult, PyIdealGasCpResult, PyKentEisenbergPhaseResult,
+    PyLiquidHeatCapacityResult, PyMasonSaxenaConductivityResult, PyMatcop5PrumrAlphaResult,
+    PyMatcopAlphaResult, PyMatcopPrAlphaResult, PyMatcopPrumrAlphaResult,
+    PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
+    PyNitricSulfuricAcidVaporPressureResult, PyNrtlActivityCoefficientsResult,
+    PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
+    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
+    PyPitzerPhaseResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
+    PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
+    PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrPenelouxShiftResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
+    PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceBinaryResult, PyRachfordRiceResult,
+    PyRackettMolarVolumeResult, PyRkAlphaAbResult, PyRkDepartureResult,
     PySchwartzentruberAlphaResult, PySiddiqiLucasDiffusivityResult, PySoreideWhitsonAlphaResult,
     PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult, PySrkPenelouxShiftResult,
     PySrkZFactorResult, PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult,
@@ -3181,6 +3182,37 @@ pub fn helium_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyHeliumPhaseRes
     azoth_eos::helium_phase(kelvins(T), pascals(P))
         .map(|r| PyHeliumPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fixed-role gas-oil-brine flash, computed in Rust.
+///
+/// The component **names** cross unresolved: the two EoS roles' constants, the seeding's
+/// classes and the brine's ion mask all resolve here from the same databank, so the two
+/// languages cannot disagree about which substance is which.
+#[pyfunction]
+#[pyo3(signature = (components, cubic, T, P, moles))]
+#[pyo3(text_signature = "(components, cubic, T, P, moles)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+pub fn hybrid_eos_ge_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    cubic: &str,
+    T: f64,
+    P: f64,
+    moles: Vec<f64>,
+) -> PyResult<PyHybridEosGeFlashResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::hybrid_eos_ge_flash(
+        &names,
+        cubic
+            .parse()
+            .map_err(pyo3::exceptions::PyValueError::new_err)?,
+        T,
+        P,
+        &moles,
+    )
+    .map(|r| PyHybridEosGeFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// The Henry constant of a gas in water, computed in Rust.

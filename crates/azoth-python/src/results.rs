@@ -26,13 +26,13 @@ use azoth_eos::results::{
     FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
     GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
     Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HydrateEquilibriumLineResult, HydrateFormationPressureResult,
-    HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
-    HydrateInhibitorWtResult, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
-    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    HeliumPhaseResult, HybridEosGeFlashResult, HydrateEquilibriumLineResult,
+    HydrateFormationPressureResult, HydrateFormationTemperatureResult, HydrateFractionResult,
+    HydrateInhibitorConcentrationResult, HydrateInhibitorWtResult, HydrogenPhaseResult,
+    IapwsHenryLawResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
     PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
     PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
@@ -5825,6 +5825,73 @@ impl From<&HeliumPhaseResult> for PyHeliumPhaseResult {
     }
 }
 
+/// Result of `eos.hybrid_eos_ge_flash`, transported.
+///
+/// The three roles are fixed before the fractions are solved, so the vector order is the
+/// model's own - `[gas, oil, aqueous]` - and no role field crosses beside it.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HybridEosGeFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHybridEosGeFlashResult {
+    /// The mole fraction of the feed in each role.
+    #[pyo3(get)]
+    pub beta: Vec<f64>,
+    /// The composition of each role, one row per role.
+    #[pyo3(get)]
+    pub x: Vec<Vec<f64>>,
+    /// `ln phi_i` in each role.
+    #[pyo3(get)]
+    pub ln_phi: Vec<Vec<f64>>,
+    /// Newton steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The solver's own convergence measure.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// The worst material-balance residual.
+    #[pyo3(get)]
+    pub max_material_balance_residual: f64,
+    /// The worst cross-role log-fugacity spread.
+    #[pyo3(get)]
+    pub max_log_fugacity_residual: f64,
+    /// The smallest `T / Tc_i`.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHybridEosGeFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HybridEosGeFlashResult(beta={:?}, iterations={})",
+            self.beta, self.iterations
+        )
+    }
+}
+
+impl From<&HybridEosGeFlashResult> for PyHybridEosGeFlashResult {
+    fn from(r: &HybridEosGeFlashResult) -> Self {
+        Self {
+            beta: r.beta.clone(),
+            x: r.x.clone(),
+            ln_phi: r.ln_phi.clone(),
+            iterations: r.iterations,
+            residual: r.residual,
+            max_material_balance_residual: r.max_material_balance_residual,
+            max_log_fugacity_residual: r.max_log_fugacity_residual,
+            min_t_over_tc: r.min_t_over_tc,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `eos.iapws_henry_law`, transported.
 ///
 /// The status crosses as the spec's spelling, so the adapter rebuilds the enum and a caller
@@ -7939,6 +8006,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
         CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
         DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
+        HybridEosGeFlashResult::CALC_ID => HybridEosGeFlashResult::FIELDS.to_vec(),
         IapwsHenryLawResult::CALC_ID => IapwsHenryLawResult::FIELDS.to_vec(),
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),

@@ -98,6 +98,7 @@
   - [Fugacity coefficients of a Wilson activity-coefficient liquid](./eos/ge_wilson_phase.md)
   - [GERG-2008 phase state](./eos/gerg2008_phase.md)
   - [Helium reference phase state](./eos/helium_phase.md)
+  - [Isothermal flash of a fixed gas-oil-brine topology](./eos/hybrid_eos_ge_flash.md)
   - [Hydrate equilibrium line](./eos/hydrate_equilibrium_line.md)
   - [Hydrate formation pressure](./eos/hydrate_formation_pressure.md)
   - [Hydrate formation temperature](./eos/hydrate_formation_temperature.md)

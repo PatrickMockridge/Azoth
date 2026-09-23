@@ -1911,13 +1911,13 @@ fn neutral_henry(
     use crate::iapws_henry_law::Gas;
 
     let Some(gas) = crate::iapws_henry_law::gas_from_name(name) else {
-        return crate::henry::effective_coefficient(entry, t);
+        return database_henry(entry, t);
     };
     // `requiresReactivePitzerQualification`, which is the table's own names for CO2 and
     // H2S and nothing else.
     let reactive = matches!(gas, Gas::Co2 | Gas::H2s);
     if !neutral_interactions_active && (has_ions || reactive) {
-        return crate::henry::effective_coefficient(entry, t);
+        return database_henry(entry, t);
     }
     let table = crate::iapws_henry_law::iapws_henry_law(gas, azoth_core::units::kelvins(t))?;
     if table.status == crate::results::HenryStatus::GuidelineExtrapolation {
@@ -1934,6 +1934,44 @@ fn neutral_henry(
     } else {
         value
     })
+}
+
+/// The database arm of the neutral branch, **with this model's own cap**.
+///
+/// `ComponentGePitzer.isHenryCoefficientCapped` is `ComponentGE`'s plus two clauses of its
+/// own - `isHydrocarbon()` and `isIsTBPfraction()` - so a hydrocarbon is capped to the
+/// insoluble limit **whatever its row says**. That is not a detail: n-heptane's row carries
+/// no correlation at all, and the cap is what turns the four zeros into the `1e12 bar` an
+/// aqueous phase reads for it. Applying the parent's cap alone would refuse the substance the
+/// tranche's own fluid is built from.
+///
+/// The order matters as much as the clause. The cap is asked **first**, and the fittedness
+/// refusal second, because the cap is what resolves the degenerate value for the substances
+/// it covers; a solvent whose row carries none is the state that is left, and that is the
+/// refusal this library makes where NeqSim uses the `1.802 bar` the zeros fall out as.
+fn database_henry(entry: &crate::databank::Entry, t: f64) -> azoth_core::Result<f64> {
+    let raw = crate::henry::coefficient(entry, t);
+    if crate::henry::is_capped(entry, raw) || is_pitzer_insoluble(entry) {
+        return Ok(crate::henry::INSOLUBLE_HENRY_COEFFICIENT);
+    }
+    if !entry.henry.is_fitted() {
+        return Err(crate::AzothError::property_unavailable(
+            entry.name.clone(),
+            "a Henry coefficient".to_string(),
+            "the compiled table carries `HenryCoef1..4` as zeros for it, which is the \
+             table's marker for a substance it fits no correlation for. Evaluating the \
+             zeros as a polynomial gives 1.802 bar for every such substance, which is a \
+             number rather than an absence"
+                .to_string(),
+        ));
+    }
+    Ok(raw)
+}
+
+/// `ComponentGePitzer.isHenryCoefficientCapped`'s own two clauses.
+fn is_pitzer_insoluble(entry: &crate::databank::Entry) -> bool {
+    entry.class == crate::databank::HYDROCARBON
+        || crate::pitzer_catalog::is_hydrocarbon_formula(&entry.formula)
 }
 
 /// `PhaseGE.getActivityCoefficientInfDilWater(k, water)`: the solute's activity coefficient
