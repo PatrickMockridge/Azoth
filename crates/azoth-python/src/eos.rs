@@ -4048,3 +4048,28 @@ pub fn effective_diffusion(
         .map(|r| crate::results::PyEffectiveDiffusionResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
+
+/// The generalised gamma-phi flash: a cubic vapour over a named activity-coefficient liquid.
+///
+/// The names cross **unresolved** and both halves resolve on the Rust side - the liquid's
+/// parameters through `liquid_model` and the vapour's constants through `cubic` - so the two
+/// languages cannot disagree about which row answered, and a caller cannot pair a liquid
+/// with a vapour built from a different component list.
+#[pyfunction]
+#[pyo3(signature = (components, cubic, liquid_model, T, P, z))]
+#[pyo3(text_signature = "(components, cubic, liquid_model, T, P, z)")]
+#[allow(non_snake_case)] // `T`, `P` and `z` are the symbols in the chemistry
+pub fn ge_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    cubic: &str,
+    liquid_model: &str,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::results::PyGeFlashResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::ge_flash::ge_flash(&names, cubic, liquid_model, kelvins(T), pascals(P), &z)
+        .map(|r| crate::results::PyGeFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}

@@ -70,6 +70,7 @@ from collections.abc import Sequence
 from azoth import keycard
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    GeFlashResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     ArgonSolidPhaseResult,
@@ -255,6 +256,7 @@ __all__ = [
     "from_names",
     "furst_electrolyte_mod2004_phase",
     "furst_electrolyte_phase",
+    "ge_flash",
     "ge_nrtl_flash",
     "ge_nrtl_phase",
     "ge_unifac_phase",
@@ -391,6 +393,7 @@ _UMR_CPA_PHASE = "eos.umr_cpa_phase"
 _SOREIDE_WHITSON_PHASE = "eos.soreide_whitson_phase"
 _FURST_ELECTROLYTE_PHASE = "eos.furst_electrolyte_phase"
 _FURST_ELECTROLYTE_MOD2004_PHASE = "eos.furst_electrolyte_mod2004_phase"
+_GE_FLASH = "eos.ge_flash"
 _GE_NRTL_FLASH = "eos.ge_nrtl_flash"
 _GE_UNIFAC_PHASE = "eos.ge_unifac_phase"
 _GE_UNIQUAC_PHASE = "eos.ge_uniquac_phase"
@@ -3490,4 +3493,34 @@ def effective_diffusion(
     return resolve(_EFFECTIVE_DIFFUSION)(  # type: ignore[no-any-return]
         binary_diffusion=binary_diffusion,
         x=x,
+    )
+
+
+def ge_flash(
+    components: Sequence[str],
+    cubic: str,
+    liquid_model: str,
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> GeFlashResult:
+    """The isothermal flash of a cubic vapour over a named activity-coefficient liquid.
+
+    ``cubic`` names the vapour's equation of state and ``liquid_model`` one of ``"nrtl"``,
+    ``"unifac"``, ``"wilson"`` or ``"van_laar_acid"`` - the four NeqSim's own EoS/GE systems
+    configure - which decides the phase model that supplies ``phi_i^L``.
+
+    **``van_laar_acid`` is the one NeqSim's direct gamma-phi route is reachable through**,
+    and its system tunes that route in three ways this model does not carry, so the vapour
+    is reproduced approximately while the liquid is exact. See the model's spec.
+
+    See :func:`azoth.eos.reference.ge_flash`.
+    """
+    return resolve(_GE_FLASH)(  # type: ignore[no-any-return]
+        components=components,
+        cubic=cubic,
+        liquid_model=liquid_model,
+        T=T,
+        P=P,
+        z=z,
     )

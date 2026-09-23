@@ -17,6 +17,7 @@
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
 //!   - specs/models/eos/furst_electrolyte_phase.toml
+//!   - specs/models/eos/ge_flash.toml
 //!   - specs/models/eos/ge_nrtl_flash.toml
 //!   - specs/models/eos/ge_nrtl_phase.toml
 //!   - specs/models/eos/ge_unifac_phase.toml
@@ -2225,6 +2226,172 @@ pub static FURST_ELECTROLYTE_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: FURST_ELECTROLYTE_PHASE_CHECKS,
     cases: FURST_ELECTROLYTE_PHASE_CASES,
+};
+
+static GE_FLASH_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static GE_FLASH_CASES: &[TestCase] = &[
+    TestCase {
+        id: "van_laar_acid_fluid_at_273_15_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[("T", 273.15), ("P", 100000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "nitric acid", "sulfuric acid"],
+        )],
+        strings: &[("liquid_model", "van_laar_acid"), ("cubic", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.9090909090909091,
+                0.06363636363636363,
+                0.013636363636363636,
+                0.013636363636363636,
+            ],
+        )],
+        matrices: &[],
+        expected: &[
+            ("beta", 0.9101615466858757),
+            ("z_vapour", 0.993446874971783),
+        ],
+        expected_vectors: &[
+            (
+                "x",
+                &[
+                    9.923246171795144e-13,
+                    0.7011681817398651,
+                    0.14704421358299002,
+                    0.15178760467615265,
+                ],
+            ),
+            (
+                "ln_phi_liquid",
+                &[
+                    27.631021115928547,
+                    -6.9114435631978655,
+                    -5.765979127979182,
+                    -31.749973352727675,
+                ],
+            ),
+        ],
+        expected_strings: &[("phase", "two_phase")],
+    },
+    TestCase {
+        id: "the_same_fluid_vapour_at_its_own_tolerance",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.01,
+        numbers: &[("T", 273.15), ("P", 100000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["CO2", "water", "nitric acid", "sulfuric acid"],
+        )],
+        strings: &[("liquid_model", "van_laar_acid"), ("cubic", "srk")],
+        vectors: &[(
+            "z",
+            &[
+                0.9090909090909091,
+                0.06363636363636363,
+                0.013636363636363636,
+                0.013636363636363636,
+            ],
+        )],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "y",
+                &[
+                    0.9988236839943918,
+                    0.000708114595836434,
+                    0.0004682014097692246,
+                    2.570656866497064e-15,
+                ],
+            ),
+            (
+                "k",
+                &[
+                    1006549335471.8438,
+                    0.0010099069157407177,
+                    0.0031840859178384282,
+                    1.6935881371747747e-14,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+];
+
+static GE_FLASH_INNER: ModelAlgorithm = ModelAlgorithm {
+    scheme: "rachford_rice_bisection",
+    convergence: "absolute",
+    tolerance: 1e-14,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+static GE_FLASH_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "successive_substitution_flash",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 300,
+    bracket: None,
+    initialisation: Some("wilson"),
+    initial_temperature: None,
+    inner: Some(&GE_FLASH_INNER),
+    fallback: None,
+};
+
+/// Registry entry for `eos.ge_flash`.
+pub static GE_FLASH_SPEC: ModelSpec = ModelSpec {
+    id: "eos.ge_flash",
+    kind: "procedure",
+    algorithm: Some(&GE_FLASH_ALGORITHM),
+    checks: GE_FLASH_CHECKS,
+    cases: GE_FLASH_CASES,
 };
 
 static GE_NRTL_FLASH_CHECKS: &[SpecCheck] = &[
@@ -8900,6 +9067,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &FREEZING_POINT_SPEC,
     &FURST_ELECTROLYTE_MOD2004_PHASE_SPEC,
     &FURST_ELECTROLYTE_PHASE_SPEC,
+    &GE_FLASH_SPEC,
     &GE_NRTL_FLASH_SPEC,
     &GE_NRTL_PHASE_SPEC,
     &GE_UNIFAC_PHASE_SPEC,

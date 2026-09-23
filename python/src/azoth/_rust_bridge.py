@@ -60,6 +60,7 @@ from azoth.core.result import (
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
+    GeFlashResult,
     GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
@@ -4089,5 +4090,43 @@ def effective_diffusion(
         effective_diffusion=tuple(
             from_si(value.magnitude_si, value.unit) for value in result.effective_diffusion
         ),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_flash(
+    components: Sequence[str],
+    cubic: str,
+    liquid_model: str,
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> GeFlashResult:
+    """The generalised gamma-phi flash, computed in Rust.
+
+    The names cross **unresolved**, as they do for `eos.ge_nrtl_flash`'s parameters: the
+    Rust side resolves whichever liquid model is named against its own databank, so the two
+    languages cannot disagree about which row answered.
+    """
+    result = _core.ge_flash(
+        list(components),
+        cubic,
+        liquid_model,
+        input_to_si(_models_gen.model("eos.ge_flash"), "T", T),
+        input_to_si(_models_gen.model("eos.ge_flash"), "P", P),
+        list(z),
+    )
+    return GeFlashResult(
+        beta=result.beta,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        ln_phi_liquid=tuple(result.ln_phi_liquid),
+        ln_phi_vapour=tuple(result.ln_phi_vapour),
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )

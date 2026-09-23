@@ -347,6 +347,21 @@ class FurstElectrolytePhaseResult:
     warnings: list[Warning]
 
 @final
+class GeFlashResult:
+    beta: float | None
+    x: list[float]
+    y: list[float]
+    k: list[float]
+    ln_phi_liquid: list[float]
+    ln_phi_vapour: list[float]
+    z_vapour: float
+    min_t_over_tc: float
+    phase: str
+    iterations: int
+    residual: float
+    warnings: list[Warning]
+
+@final
 class GeNrtlFlashResult:
     beta: float | None
     x: list[float]
@@ -1614,6 +1629,14 @@ def furst_electrolyte_phase(
     x: list[float],
     compressed_phase: str,
 ) -> FurstElectrolytePhaseResult: ...
+def ge_flash(
+    components: list[str],
+    liquid_model: str,
+    T: float,
+    P: float,
+    z: list[float],
+    cubic: str,
+) -> GeFlashResult: ...
 def ge_nrtl_flash(
     Tc: list[float],
     Pc: list[float],

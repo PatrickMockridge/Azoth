@@ -88,6 +88,7 @@
   - [Freezing-point temperature](./eos/freezing_point.md)
   - [Phase state of a Furst electrolyte fluid, 2004 revision](./eos/furst_electrolyte_mod2004_phase.md)
   - [Phase state of a Furst electrolyte fluid](./eos/furst_electrolyte_phase.md)
+  - [Gamma-phi flash with a named activity-coefficient liquid](./eos/ge_flash.md)
   - [Gamma-phi flash with an NRTL liquid](./eos/ge_nrtl_flash.md)
   - [Fugacity coefficients of an NRTL activity-coefficient liquid](./eos/ge_nrtl_phase.md)
   - [Fugacity coefficients of a UNIFAC activity-coefficient liquid](./eos/ge_unifac_phase.md)

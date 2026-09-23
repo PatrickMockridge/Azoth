@@ -73,6 +73,7 @@ pub mod furst_electrolyte_mod2004_phase;
 pub mod furst_electrolyte_phase;
 pub mod furst_mixing;
 pub mod furst_terms;
+pub mod ge_flash;
 pub mod ge_nrtl_flash;
 pub mod ge_nrtl_phase;
 pub mod ge_phase;
@@ -302,10 +303,10 @@ pub use results::{
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EffectiveDiffusionResult,
     EosCgPhaseResult, FreezingPointResult, FurstElectrolyteMod2004PhaseResult,
-    FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
-    GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrateFormationTemperatureResult, HydrateFractionResult, HydrateStructure,
+    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
+    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
+    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
+    HeliumPhaseResult, HydrateFormationTemperatureResult, HydrateFractionResult, HydrateStructure,
     HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
     MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
     MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,

@@ -23,10 +23,10 @@ use azoth_eos::results::{
     ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
     CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
     EosCgPhaseResult, FreezingPointResult, FurstElectrolyteMod2004PhaseResult,
-    FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
-    GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HydrateEquilibriumLineResult, HydrateFormationPressureResult,
+    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
+    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
+    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
+    HeliumPhaseResult, HydrateEquilibriumLineResult, HydrateFormationPressureResult,
     HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult, HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult,
     LiquidHeatCapacityResult, MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult,
@@ -7849,6 +7849,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
         GeNrtlPhaseResult::CALC_ID => GeNrtlPhaseResult::FIELDS.to_vec(),
         GeNrtlFlashResult::CALC_ID => GeNrtlFlashResult::FIELDS.to_vec(),
+        GeFlashResult::CALC_ID => GeFlashResult::FIELDS.to_vec(),
         GeUnifacPhaseResult::CALC_ID => GeUnifacPhaseResult::FIELDS.to_vec(),
         GeUniquacPhaseResult::CALC_ID => GeUniquacPhaseResult::FIELDS.to_vec(),
         GeVanLaarAcidPhaseResult::CALC_ID => GeVanLaarAcidPhaseResult::FIELDS.to_vec(),
@@ -8712,6 +8713,82 @@ impl From<&azoth_eos::EffectiveDiffusionResult> for PyEffectiveDiffusionResult {
                     unit: "m**2/s".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.ge_flash`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GeFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGeFlashResult {
+    /// The vapour fraction, or `None` when there is none to report.
+    #[pyo3(get)]
+    pub beta: Option<f64>,
+    /// Liquid-phase mole fractions.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Vapour-phase mole fractions.
+    #[pyo3(get)]
+    pub y: Vec<f64>,
+    /// `K_i = y_i / x_i`.
+    #[pyo3(get)]
+    pub k: Vec<f64>,
+    /// `ln phi_i` in the liquid.
+    #[pyo3(get)]
+    pub ln_phi_liquid: Vec<f64>,
+    /// `ln phi_i` in the vapour.
+    #[pyo3(get)]
+    pub ln_phi_vapour: Vec<f64>,
+    /// The vapour root of the cubic.
+    #[pyo3(get)]
+    pub z_vapour: f64,
+    /// The smallest `T / Tc_i`.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// The converged state, as its spec spelling.
+    #[pyo3(get)]
+    pub phase: String,
+    /// Successive-substitution steps taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The convergence residual.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGeFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GeFlashResult(phase={}, beta={:?}, x={:?}, y={:?})",
+            self.phase, self.beta, self.x, self.y
+        )
+    }
+}
+
+impl From<&azoth_eos::GeFlashResult> for PyGeFlashResult {
+    fn from(r: &azoth_eos::GeFlashResult) -> Self {
+        Self {
+            beta: r.beta,
+            x: r.x.clone(),
+            y: r.y.clone(),
+            k: r.k.clone(),
+            ln_phi_liquid: r.ln_phi_liquid.clone(),
+            ln_phi_vapour: r.ln_phi_vapour.clone(),
+            z_vapour: r.z_vapour,
+            min_t_over_tc: r.min_t_over_tc,
+            phase: r.phase.as_str().to_string(),
+            iterations: r.iterations,
+            residual: r.residual,
             warnings: transport(&r.warnings),
         }
     }

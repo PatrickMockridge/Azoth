@@ -1,0 +1,120 @@
+id = "eos.ge_flash"
+name = "Gamma-phi flash with a named activity-coefficient liquid"
+kind = "procedure"
+assumptions = [
+    "**the vapour is a cubic and the liquid is whichever phase `liquid_model` names.** The K-value is `K_i = phi_i^L / phi_i^V`, which is `TPflash.sucsSubsGammaPhi`; what this adds to `eos.ge_nrtl_flash` is that the liquid is a parameter and not NRTL by name.",
+    "**the four liquids are the ones NeqSim configures and this library carries a phase id for**: `SystemNRTL`, `SystemUNIFAC` and `SystemGEWilson` take the two-phase route with `PhaseGENRTL`, `PhaseGEUnifac` and `PhaseGEWilson`, and `SystemVanLaarActivitySRK` with `PhaseGEVanLaarAcid`.",
+    "**`uniquac` is not a member, and that is a measurement.** Eight systems extend `SystemEosGE` and none is a UNIQUAC one; the others are the hybrids of `SystemPitzer`, `SystemDesmukhMather` and `SystemKentEisenberg`, plus a PSRK liquid this crate has no phase id for.",
+    "**`van_laar_acid` is the one NeqSim's own direct gamma-phi route is reachable through.** `SystemVanLaarActivitySRK` is the only system in `src/main` that overrides `requiresDirectGammaPhiFlash()` to `true`, and `TPflash.java:226` selects the direct model from that predicate.",
+    "**that liquid covers three substances and penalises the rest.** `P0_i` is `eos.nitric_sulfuric_acid_vapor_pressure`'s for water and the two acids and Antoine's elsewhere, and an uncovered species gets `1e12` - which is why CO2 leaves the liquid, at a captured K of `1.0065493354718438e12`.",
+    "no damping and no acceleration: plain successive substitution, as `eos.ge_nrtl_flash`. Wilson K-values open it, and they are a cubic's estimate used only as a starting point.",
+    "no stability test, and the two phases are at the feed's temperature and pressure: a flash, not a rigorous column stage. Nothing here does an energy balance.",
+    "**NeqSim's two acceptance refusals are not reproduced.** `finishGammaPhiFlash` rejects a converged state whose material split is fugacity-inconsistent or whose K is zero; a zero K is refused here as a diverged iteration, and the other is the system's own consistency gate.",
+    "**the model builds its own mixture from the names and `cubic`**, rather than taking one from the boundary: the liquid's parameters resolve by name too, and a mixture that arrived pre-built could not say which liquid it was for.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPflash.sucsSubsGammaPhi` is the port source for the update rule, and `EosGeFlashModel.requiresDirectGammaPhiFlash` for the dispatch.",
+    "Rachford, H. H.; Rice, J. D. (1952). \"Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium.\" Journal of Petroleum Technology 4(10), 19-3. DOI 10.2118/952327-G",
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. DOI 10.1016/0378-3812(82)85001-2.",
+    "Van Laar, J. J. (1910). \"Ueber die Schmelz- oder Umwandlungskurven von Gleichgewichtssystemen.\" Zeitschrift fuer physikalische Chemie 72, 723-751. The two-parameter activity model the acid phase is built on.",
+    "`validation/neqsim/VanLaarGammaPhiProbe.java` and `captures/van_laar_gamma_phi_probe.tsv` - the acid fluid's split, its K-values and the bubble and dew pressures the same route gives.",
+]
+[source]
+standard = "NeqSim master `SystemEosGE`"
+edition = "the direct gamma-phi branch of `TPflash`, `sucsSubsGammaPhi`, generalised over the liquid phase: `phi_i^L` is whichever `PhaseGE` subclass is named, `phi_i^V` is the cubic's."
+[algorithm]
+scheme = "successive_substitution_flash"
+initialisation = "wilson"
+convergence = "absolute"
+tolerance = 1e-10
+max_iterations = 300
+[algorithm.inner]
+scheme = "rachford_rice_bisection"
+convergence = "absolute"
+tolerance = 1e-14
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name. The liquid's own parameters - whichever model is named - and each component's Antoine correlation resolve against the databank, and the cubic resolves `Tc`, `Pc`, `omega` and the `kij` pairs for the vapour.\n"
+[inputs.liquid_model]
+type = "enum"
+values = ["nrtl", "unifac", "wilson", "van_laar_acid"]
+description = "which activity-coefficient phase is the liquid. Each names an existing id whose own `ln phi` is what the loop reads, so a liquid this library does not carry is not a member of this enum.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature\n"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions. Checked rather than renormalised: the entries must be non-negative and sum to one to within a tolerance.\n"
+[inputs.cubic]
+type = "enum"
+values = ["pr", "srk", "rk", "tst"]
+description = "the cubic the vapour is. **A gamma-phi flash is defined by the pair**, so the cubic is an input rather than the caller's convenience: the vapour's `Tc`, `Pc`, `omega` and `kij` resolve from the same names through the databank, and another member is a different vapour from the same liquid.\n"
+[outputs]
+[outputs.beta]
+unit = "dimensionless"
+optional = true
+description = "The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction.\n"
+[outputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "liquid-phase mole fractions\n"
+[outputs.y]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "vapour-phase mole fractions\n"
+[outputs.k]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "K-values, `K_i = y_i / x_i = phi_i^L / phi_i^V`, the iterate the loop converges on.\n"
+[outputs.ln_phi_liquid]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid's fugacity coefficients as logarithms, from whichever phase model `liquid_model` named.\n"
+[outputs.ln_phi_vapour]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vapour's fugacity coefficients as logarithms, from the cubic at the vapour composition.\n"
+[outputs.z_vapour]
+unit = "dimensionless"
+description = "the vapour root of the cubic at the vapour composition, the largest admissible one. There is no liquid root: the liquid is not a cubic and has no compressibility factor.\n"
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = "the smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point. A cubic's vapour is what it is reading.\n"
+[outputs.phase]
+type = "enum"
+values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
+description = "What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`).\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "successive-substitution steps taken, including the final evaluation of the converged state.\n"
+[outputs.residual]
+unit = "dimensionless"
+description = "`rms_i |ln K_i - ln K_i_previous|` at the last step the loop completed. NaN when no step completed.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states\n"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states\n"
+[implementations]
+python = "azoth.eos.ge_flash"
+rust = "azoth_eos::ge_flash"

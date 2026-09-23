@@ -83,6 +83,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.freezing_point`](./freezing_point.md) | `freezing_point_bracket_bisection` | NeqSim master `FreezingPointTemperatureFlash` |
 | [`eos.furst_electrolyte_mod2004_phase`](./furst_electrolyte_mod2004_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEosMod2004` |
 | [`eos.furst_electrolyte_phase`](./furst_electrolyte_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEos` |
+| [`eos.ge_flash`](./ge_flash.md) | `successive_substitution_flash` | NeqSim master `SystemEosGE` |
 | [`eos.ge_nrtl_flash`](./ge_nrtl_flash.md) | `successive_substitution_flash` | NeqSim master `SystemEosGE` |
 | [`eos.ge_nrtl_phase`](./ge_nrtl_phase.md) | `direct composition` | NeqSim master `PhaseGENRTL` |
 | [`eos.ge_unifac_phase`](./ge_unifac_phase.md) | `direct composition` | NeqSim master `PhaseGEUnifac` |

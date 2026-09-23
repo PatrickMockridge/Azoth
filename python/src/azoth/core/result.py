@@ -3293,3 +3293,47 @@ class EffectiveDiffusionResult(_HasWarnings):
     effective_diffusion: tuple[Q, ...]
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class GeFlashResult(_HasWarnings):
+    """Result of ``eos.ge_flash``.
+
+    The same shape as :class:`PtFlashResult`, and the same rule about ``beta``: it is
+    ``None`` where there is genuinely no vapour fraction - a feed whose K-values are all
+    on one side of one, so Rachford-Rice has no root - and a number, possibly outside
+    ``[0, 1]``, where the flash converged to one.
+
+    What differs is where the two phases come from. ``ln_phi_liquid`` is whichever
+    activity-coefficient phase ``liquid_model`` named, as ``ln(gamma_i P0_i / P)``, and
+    ``ln_phi_vapour`` is the cubic's, so the two are not the same kind of number and are
+    reported apart for the same reason the phase model reports ``p_sat`` beside
+    ``ln_phi``.
+    """
+
+    #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
+    beta: float | None
+    #: Liquid-phase mole fractions.
+    x: tuple[float, ...]
+    #: Vapour-phase mole fractions.
+    y: tuple[float, ...]
+    #: ``K_i = y_i / x_i``, the iterate the loop converges on.
+    k: tuple[float, ...]
+    #: ``ln phi_i`` in the liquid, from the named activity-coefficient phase.
+    ln_phi_liquid: tuple[float, ...]
+    #: ``ln phi_i`` in the vapour, from the cubic.
+    ln_phi_vapour: tuple[float, ...]
+    #: The vapour root of the cubic, the largest admissible one. There is no liquid
+    #: root: the liquid is not a cubic.
+    z_vapour: float
+    #: The smallest ``T / Tc_i`` over the components.
+    min_t_over_tc: float
+    #: What the converged state is.
+    phase: Phase
+    #: Successive-substitution steps taken.
+    iterations: int
+    #: ``rms_i |ln K_i - ln K_i_previous|`` at the last step the loop completed, or
+    #: ``NaN`` when no step completed.
+    residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
