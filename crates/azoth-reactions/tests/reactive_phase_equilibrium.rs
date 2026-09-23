@@ -18,6 +18,7 @@ use azoth_core::spec::TestCase;
 use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::model_gen;
 use azoth_reactions::reactive_phase::reactive_phase_index;
+use azoth_reactions::chemical_equilibrium::ConcentrationBasis;
 use azoth_reactions::reactive_phase_equilibrium::{
     ELEMENT_BALANCE_RESIDUAL_TOLERANCE_MOLES, REACTION_LOG_RESIDUAL_TOLERANCE,
     REACTIVE_PHASE_CHARGE_TOLERANCE_MOLES, ReactionSeed, ReactivePhaseEquilibriumResult,
@@ -66,6 +67,9 @@ fn call(case: &TestCase) -> ReactivePhaseEquilibriumResult {
         common::input(case, "max_iterations") as u32,
         common::input(case, "tolerance"),
         seed,
+        common::input_str(case, "concentration_basis")
+            .parse()
+            .expect("the case states the basis"),
     )
     .unwrap_or_else(|e| panic!("test `{}` should compute but failed: {e}", case.id))
 }
@@ -291,6 +295,7 @@ fn a_substance_outside_the_element_table_is_refused() {
         100,
         1e-8,
         ReactionSeed::None,
+        ConcentrationBasis::MoleFraction,
     )
     .expect_err("MEG has no formula row");
     assert!(error.to_string().contains("MEG"), "{error}");

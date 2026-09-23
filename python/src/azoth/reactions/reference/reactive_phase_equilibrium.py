@@ -34,6 +34,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReactivePhaseEquilibriumResult
 from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
+from azoth.eos import components as _components
 from azoth.reactions.reference import _lp_seed, _tables
 from azoth.reactions.reference.chemical_equilibrium import MIN_MOLES, chemical_equilibrium
 from azoth.reactions.reference.equilibrium_constant import (
@@ -104,6 +105,7 @@ def reactive_phase_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str = "mole_fraction",
     seed: str = "none",
 ) -> ReactivePhaseEquilibriumResult:
     """The reactive equilibrium composition of one phase.
@@ -237,11 +239,15 @@ def reactive_phase_equilibrium(
         else [max(value, MIN_WRITTEN_MOLES) for value in seed_moles]
     )
 
-    # **The mole-fraction basis, because this operation cannot state the other one.** NeqSim
-    # reads the basis off its system, and the molality branch's two data - the reference-state
-    # split and the solvent's own mass - are properties of a phase this operation is handed
-    # only as vectors. Reaching it needs the P8 seam; until then a Pitzer phase through this
-    # id is a divergence the spec's assumptions name.
+    # **The basis is the caller's, and its other two facts are derived here.** NeqSim reads
+    # all three off its system; this operation is handed vectors, so the mask is the
+    # components whose reference state is `solvent` and the solvent's mass is `sum(n_j M_j)`
+    # over them - both properties of the moles and the component databank, and neither
+    # something a caller should have to restate.
+    mask = _solvent_mask(components)
+    solvent_weight = _solvent_weight(
+        components, [value.to("mol").magnitude for value in moles], mask
+    )
     solved = chemical_equilibrium(
         a_matrix,
         b,
@@ -252,9 +258,9 @@ def reactive_phase_equilibrium(
         T,
         max_iterations,
         tolerance,
-        "mole_fraction",
-        from_si(0.0, "kg"),
-        (),
+        concentration_basis,
+        from_si(solvent_weight, "kg"),
+        mask,
         phase_moles,
     )
     warnings.extend(solved.warnings)
@@ -445,3 +451,28 @@ def _spec() -> dict[str, object]:
     from azoth._models_gen import model
 
     return model("reactions.reactive_phase_equilibrium")
+
+
+def _solvent_mask(components: list[str]) -> tuple[float, ...]:
+    """Which components keep the mole-fraction form on the solute-molality basis.
+
+    The reference state is the component databank's, for the reason the ionic charge is: a
+    caller that stated the mask could state a different one from the table's, and the branch
+    it selects is a property of the substance.
+    """
+    return tuple(
+        1.0 if _components.entry(name).reference_state == _components.SOLVENT else 0.0
+        for name in components
+    )
+
+
+def _solvent_weight(components: list[str], moles: list[float], mask: tuple[float, ...]) -> float:
+    """``sum(n_j M_j)`` over the masked components, in kg."""
+    weight = 0.0
+    for name, amount, marked in zip(components, moles, mask, strict=True):
+        if marked < 0.5:
+            continue
+        record = _components.entry(name)
+        if record.molar_mass is not None:
+            weight += max(amount, 0.0) * record.molar_mass.to("kg/mol").magnitude
+    return weight

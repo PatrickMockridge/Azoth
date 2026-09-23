@@ -769,6 +769,7 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             &["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"],
         )],
         strings: &[
+            ("concentration_basis", "mole_fraction"),
             ("source", "standard"),
             ("seed", "linear_programming"),
             ("phase", "aqueous"),
@@ -865,6 +866,7 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             &["CO2", "water", "HCO3-", "CO3--", "OH-", "H3O+"],
         )],
         strings: &[
+            ("concentration_basis", "mole_fraction"),
             ("source", "standard"),
             ("seed", "none"),
             ("phase", "aqueous"),
@@ -949,7 +951,12 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             "components",
             &["CO2", "water", "OH-", "H3O+", "HCO3-", "CO3--"],
         )],
-        strings: &[("source", "standard"), ("seed", "none"), ("phase", "gas")],
+        strings: &[
+            ("concentration_basis", "mole_fraction"),
+            ("source", "standard"),
+            ("seed", "none"),
+            ("phase", "gas"),
+        ],
         vectors: &[
             (
                 "moles",

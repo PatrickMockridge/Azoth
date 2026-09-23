@@ -49,7 +49,7 @@
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
 use crate::chemical_equilibrium::{
-    ChemicalEquilibriumResult, ConcentrationBasis, MIN_MOLES, chemical_equilibrium,
+    ChemicalEquilibriumResult, MIN_MOLES, chemical_equilibrium,
 };
 use crate::databank::{
     ReactionDataSource, element_composition, ionic_charge, reactions, stoichiometry,
@@ -312,6 +312,7 @@ pub fn reactive_phase_equilibrium(
     max_iterations: u32,
     tolerance: f64,
     seed: ReactionSeed,
+    concentration_basis: crate::chemical_equilibrium::ConcentrationBasis,
 ) -> Result<ReactivePhaseEquilibriumResult> {
     let spec = &model_gen::REACTIVE_PHASE_EQUILIBRIUM_SPEC;
     let mut warnings = Vec::new();
@@ -410,11 +411,14 @@ pub fn reactive_phase_equilibrium(
         moles.to_vec()
     };
 
-    // **The mole-fraction basis, because this operation cannot state the other one.**
-    // NeqSim's operation reads the basis off its system, and the molality branch's two
-    // data - the reference-state split and the solvent's own mass - are properties of a
-    // phase this operation is handed only as vectors. Reaching it needs the P8 seam; until
-    // then a Pitzer phase through *this* id is a divergence the spec's assumptions name.
+    // **The basis is the caller's, and its other two facts are derived here.** NeqSim reads
+    // all three off its system; this operation is handed vectors, so the solvent mask is the
+    // components whose reference state is `solvent` and the solvent's mass is `sum(n_j M_j)`
+    // over them - both of them properties of `moles` and the component databank, and neither
+    // of them something a caller should have to restate. On the mole-fraction basis the mass
+    // is computed and never read, which is what the solver's own spec says of it.
+    let solvent_mask = solvent_mask(components)?;
+    let solvent_weight = solvent_weight(components, moles, &solvent_mask);
     let solved: ChemicalEquilibriumResult = chemical_equilibrium(
         &a_matrix,
         &b,
@@ -425,9 +429,9 @@ pub fn reactive_phase_equilibrium(
         temperature,
         max_iterations,
         tolerance,
-        ConcentrationBasis::MoleFraction,
-        0.0,
-        &[],
+        concentration_basis,
+        solvent_weight,
+        &solvent_mask,
         phase_moles,
     )?;
     warnings.extend(solved.warnings.iter().cloned());
@@ -483,6 +487,46 @@ pub fn reactive_phase_equilibrium(
 /// # Errors
 /// [`AzothError::InvalidInput`] for a component with no element row or no charge, which
 /// are the two absences that would otherwise become a silent zero.
+/// Which components keep the mole-fraction form on the solute-molality basis.
+///
+/// The reference state is the component databank's, for the reason the ionic charge is: a
+/// caller that had to state the mask could state a different one from the table's, and the
+/// branch it selects is a property of the substance.
+///
+/// # Errors
+/// [`AzothError::PropertyUnavailable`] if a component has no databank row.
+pub(crate) fn solvent_mask(components: &[String]) -> Result<Vec<f64>> {
+    components
+        .iter()
+        .map(|name| {
+            let entry = azoth_eos::databank::entry(name, None)?;
+            Ok(f64::from(
+                u8::from(entry.reference_state == azoth_eos::databank::SOLVENT),
+            ))
+        })
+        .collect()
+}
+
+/// `sum(n_j M_j)` over the components the mask marks, in kg.
+///
+/// NeqSim's `getPhase().getTotalVolume()`-side quantity is the phase's own; this is the
+/// reactive subset's, which is the only part of the phase this operation can see.
+#[must_use]
+pub(crate) fn solvent_weight(components: &[String], moles: &[f64], mask: &[f64]) -> f64 {
+    let mut weight = 0.0;
+    for ((name, amount), marked) in components.iter().zip(moles).zip(mask) {
+        if *marked < 0.5 {
+            continue;
+        }
+        if let Ok(entry) = azoth_eos::databank::entry(name, None) {
+            if let Some(mass) = entry.molar_mass {
+                weight += amount.max(0.0) * mass;
+            }
+        }
+    }
+    weight
+}
+
 fn element_matrix(components: &[String]) -> Result<Vec<Vec<f64>>> {
     let mut elements: Vec<String> = Vec::new();
     let mut composition = Vec::with_capacity(components.len());

@@ -17,6 +17,7 @@ assumptions = [
     "**the ionic charge is read from the component databank rather than taken from the caller.** A keycard that overrides `ionic_charge` is not seen here, so a fluid whose charge was corrected diverges in the charge row and nowhere else.",
     "**the reaction machinery changes the phase split.** A CO2-water fluid at 400 K and 1.01325 bar is one gas phase without `chemicalReactionInit()` and gas plus aqueous with it, so a caller that flashes first classifies a different phase.",
     "**the reaction set is fixed by the substances and not by the phase.** The skipped fluid still carries six reactive components: `removeJunkReactions` reads component names, so a gas with no aqueous phase has a reaction set and nowhere to solve it.",
+    "**the concentration basis is an input and the other two facts are derived.** The solvent's mass is `sum(n_j M_j)` over the `solvent`-reference components and the mask is which those are, both properties of `moles` and the component databank - so a caller states the basis and nothing else.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionOperations` is the port source: `getReactivePhaseIndex`, `calcNVector`, `calcBVector`, `calcAmatrix`, `calcChemRefPot`, `updateMoles` and `solveChemEq`.",
@@ -71,6 +72,10 @@ description = "the solve's pass cap, passed through. NeqSim's default is 100 and
 [inputs.tolerance]
 unit = "dimensionless"
 description = "the error the solve is trying to reach, passed through. NeqSim's default is 1e-8.\n"
+[inputs.concentration_basis]
+type = "enum"
+values = ["mole_fraction", "solute_molality"]
+description = "which standard state the activity term is on. **The operation reads it where NeqSim does**: `SystemPitzer.getChemicalReactionConcentrationBasis()` is `SOLUTE_MOLALITY`. The molality branch's other two facts - the solvent's mass and the reference-state split - are read from `moles` and the databank."
 [inputs.seed]
 type = "enum"
 values = ["none", "linear_programming"]

@@ -144,6 +144,7 @@ def reactive_phase_equilibrium(
     T: Q,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str = "mole_fraction",
     seed: str = "none",
 ) -> ReactivePhaseEquilibriumResult:
     """The reactive equilibrium composition of one phase, from its own state.
@@ -172,6 +173,7 @@ def reactive_phase_equilibrium(
         moles=moles,
         phase_charge=phase_charge,
         seed=seed,
+        concentration_basis=concentration_basis,
         phase_moles=phase_moles,
         whole_system=whole_system,
         log_activity=log_activity,

@@ -4,6 +4,7 @@ id = "co2_water_aqueous_phase"
 tolerance = 1e-06
 source = "NeqSim master, from `validation/neqsim/captures/reaction_operations_probe.tsv`: the CO2-water fluid's aqueous phase after a flash, with the element matrix and the element amounts the facade built for it and the ideal Newton solve's own answer. **The seed is on and does nothing here**: `LinearProgrammingChemicalEquilibrium`'s program has no exact solution on this state, so the estimate is absent and the two paths start from the same composition - the divergence this case records is the adaptive-derivative refinement and the certification, and the case pins the absence as well as the answer. The phase charge is summed from the capture's `n_before`, which is the state the caller is holding. The composition agrees to `1.5e-7` relative, worst on the trace ions, at the same pass count. **`error` is not pinned**: it is the quantity the loop stops on, and the bordered matrix's conditioning (`2.5e13` here) spreads it - the capture has `3.37e-8`, the reference `2.27e-8` and the extension `3.72e-8`, which is why `converged` crosses with it.\n"
 [cases.inputs]
+concentration_basis = "mole_fraction"
 source = "standard"
 seed = "linear_programming"
 phase = "aqueous"
@@ -69,6 +70,7 @@ id = "bicarbonate_brine_carries_its_spectator_charge"
 tolerance = 1e-02
 source = "The capture's bicarbonate brine, where the charge row is **not** zero. `HCO3-` and `CO3--` are in the reaction set and `Na+` is in no reaction the table carries, so the sodium's 0.02 mol of charge stays outside the reactive set and `b`'s last entry carries it. A port that assumed the electroneutrality row was zero passes the first case and fails here. **The composition is pinned loosely on purpose**: the bordered Lagrange matrix here has a condition number of `6.7e16`, past the double-precision limit, so its multipliers are not determined and the three trace ions land `1.99e-3` from the capture in *both* kernels and no closer. NeqSim's own two implementations part by as much. The matrix, the amounts and the potentials are exact and are pinned exactly. **`error` is not pinned**, for the reason the first case gives: the capture has `4.55e-9`, and the two kernels land either side of it.\n"
 [cases.inputs]
+concentration_basis = "mole_fraction"
 source = "standard"
 seed = "none"
 phase = "aqueous"
@@ -125,6 +127,7 @@ id = "a_single_gas_phase_is_skipped"
 tolerance = 1e-09
 source = "The capture's gas-condensate fluid at 400 K: one gas phase after the flash, so `getReactivePhaseIndex` returns -1 and the solve is skipped. **The matrix, the element amounts and the reference potentials are still built**, as NeqSim's constructor builds them, and the composition comes back untouched - which is why this case pins all four. Whether the solve was skipped is a boolean and is asserted in the model's own test. **`b` is pinned from the capture's `b_from_moles` and not from its `b`**: the facade's `calcBVector` reads a cached `nVector` that only a solve getting past the phase search refreshes, so on this fluid it is the constructor's stale one - `3.2e-12` where the phase holds `0.01` mol of carbon.\n"
 [cases.inputs]
+concentration_basis = "mole_fraction"
 source = "standard"
 seed = "none"
 phase = "gas"

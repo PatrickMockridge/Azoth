@@ -2663,6 +2663,7 @@ def reactive_phase_equilibrium(
     T: float,
     max_iterations: float,
     tolerance: float,
+    concentration_basis: str,
     seed: str,
 ) -> ReactivePhaseEquilibriumResult: ...
 def reactive_tp_flash(
