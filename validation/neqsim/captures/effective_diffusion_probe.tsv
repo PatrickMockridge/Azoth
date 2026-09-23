@@ -1,0 +1,24 @@
+fluid=co2-water-298K
+phase_index=1
+phase_type=aqueous
+components=2
+model=neqsim.physicalproperties.methods.liquidphysicalproperties.diffusivity.SiddiqiLucasMethod
+binary_diffusion=1.3298101098167177E-7 1.32981826012159E-7 1.329826410361882E-7 2.0568595403496719E-7
+binary_entries=1.3298101098167177E-7 0.0 0.0 2.0568595403496719E-7
+effective_diffusion=1.32981826012159E-7 1.3298264103573872E-7
+effective_recomputed=1.32981826012159E-7 1.3298264103573872E-7
+  x[CO2]=1.4052475102269458E-5
+  x[water]=0.9999859475248978
+
+fluid=methane-nheptane-313K
+phase_index=1
+phase_type=oil
+components=2
+model=neqsim.physicalproperties.methods.liquidphysicalproperties.diffusivity.SiddiqiLucasMethod
+binary_diffusion=1.4366530998185989E-7 1.432289958431809E-7 1.427958072195365E-7 6.89737792946623E-8
+binary_entries=1.4366530998185989E-7 0.0 0.0 6.89737792946623E-8
+effective_diffusion=1.432289958431809E-7 1.4279580721953783E-7
+effective_recomputed=1.432289958431809E-7 1.4279580721953783E-7
+  x[methane]=0.004145278302387163
+  x[n-heptane]=0.9958547216976128
+

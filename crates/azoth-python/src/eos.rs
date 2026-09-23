@@ -4031,3 +4031,20 @@ pub fn srk_cpa_phase(
         .map(|r| crate::results::PySrkCpaPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
+
+/// The effective diffusion coefficients of a phase, from its binary matrix.
+///
+/// The matrix crosses row-major and unresolved: which pair coefficient is which is the
+/// caller's matrix, and this is the eight-line assembly and nothing else.
+#[pyfunction]
+#[pyo3(signature = (binary_diffusion, x))]
+#[pyo3(text_signature = "(binary_diffusion, x)")]
+pub fn effective_diffusion(
+    py: Python<'_>,
+    binary_diffusion: Vec<Vec<f64>>,
+    x: Vec<f64>,
+) -> PyResult<crate::results::PyEffectiveDiffusionResult> {
+    azoth_eos::effective_diffusion::effective_diffusion(&binary_diffusion, &x)
+        .map(|r| crate::results::PyEffectiveDiffusionResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}

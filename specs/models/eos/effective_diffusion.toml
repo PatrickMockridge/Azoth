@@ -1,0 +1,45 @@
+id = "eos.effective_diffusion"
+name = "Effective diffusion coefficients from a binary matrix"
+kind = "direct"
+assumptions = [
+    "**the assembly is eight lines and this is all of it**: `D_eff_i = (1 - x_i) / sum_{j != i} x_j / D_ij`, over one row of the binary matrix per component. `PhysicalProperties.calcEffectiveDiffusionCoefficients` delegates to the diffusivity model, and every model in the family writes the same loop.",
+    "**the binary matrix is the diffusivity model's, and it is an input.** Its entries are `calcBinaryDiffusionCoefficient(i, j, method)`, whose live model on a liquid phase is `SiddiqiLucasMethod` - the coefficient `eos.siddiqi_lucas_diffusivity` carries.",
+    "**the assembly reads the matrix directly, not the Fick getter.** `getFickBinaryDiffusionCoefficient` on a liquid phase multiplies the entry by a Maxwell-Stefan correction, so with the derivative uninitialised it returns a diagonal - which a first reading mistook for the matrix.",
+    "**the matrix is not symmetric**: `D_ij` and `D_ji` are different numbers, because each is the infinite-dilution coefficient of one substance in the other. Row `i` alone decides `D_eff_i`, so an asymmetric matrix is the normal case and not a defect.",
+    "**fewer than two components is refused.** NeqSim divides `(1 - x_i)` by an empty sum there, so it returns a NaN; a phase with one substance has no effective diffusion coefficient and this refuses rather than reporting one.",
+    "`x` is checked (non-negative) rather than renormalised, and the sum is over every other component's fraction, so a composition that does not sum to one gives an answer that does not mean one.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhysicalProperties.calcEffectiveDiffusionCoefficients` and `Diffusivity.calcEffectiveDiffusionCoefficients` are the port source.",
+    "Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966). \"A new method for prediction of binary gas-phase diffusion coefficients.\" Industrial & Engineering Chemistry 58(5), 18-27. The pair-coefficient form the binary matrix is assembled from.",
+    "`validation/neqsim/EffectiveDiffusionProbe.java` and `captures/effective_diffusion_probe.tsv` - the capture, which holds the matrix, the vector and the vector recomputed from the matrix.",
+]
+[source]
+standard = "NeqSim master `Diffusivity`"
+edition = "`calcEffectiveDiffusionCoefficients`, the same eight lines in `commonphasephysicalproperties/diffusivity/Diffusivity` and in `liquidphysicalproperties/diffusivity/Diffusivity`."
+[inputs]
+[inputs.binary_diffusion]
+type = "matrix"
+unit = "m**2/s"
+shape = "one row per component, one column per component, not symmetric"
+description = "the pair coefficients, **row-major and not symmetric**. `D_ij` is the coefficient of component `i` at infinite dilution in `j`; only row `i` is read for `D_eff_i`.\n"
+[inputs.x]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions. Every other component's fraction divides its pair coefficient, so this is the composition the effective coefficients are for.\n"
+[outputs]
+[outputs.effective_diffusion]
+type = "vector"
+unit = "m**2/s"
+length = "one per component"
+description = "each component's effective coefficient, in the same order as `x`.\n"
+[[valid_range]]
+quantity = "x"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a mole fraction cannot be negative; the class does not check it, and a negative one silently subtracts from a sum\n"
+[implementations]
+python = "azoth.eos.effective_diffusion"
+rust = "azoth_eos::effective_diffusion"

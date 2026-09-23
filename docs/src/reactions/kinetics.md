@@ -30,7 +30,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `density` | kg/m**3 | the **bulk** phase's mass density. |
 | `inter_fractions` | dimensionless | the interface phase's mole fractions. On every fluid the oracle has, these are the bulk phase's own numbers: the class's film caller passes one phase for both when the film is not resolved. |
 | `inter_density` | kg/m**3 | the interface phase's mass density, read by the reactive concentration and by nothing else. |
-| `diffusion` | m**2/s | the effective diffusion coefficients, read by index rather than by name, which is how the class reads them off the physical properties object. |
+| `diffusion` | m**2/s | the effective diffusion coefficients, read by index rather than by name, which is how the class reads them off the physical properties object. `eos.effective_diffusion` assembles them from the diffusivity model's binary pair matrix, which is where they come from. |
 
 
 ## Outputs

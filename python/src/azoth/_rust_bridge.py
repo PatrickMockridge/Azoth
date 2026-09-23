@@ -49,6 +49,7 @@ from azoth.core.result import (
     DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
+    EffectiveDiffusionResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
     FlowRegime,
@@ -4063,5 +4064,30 @@ def kinetics(
         coefficient=tuple(result.coefficient),
         phi_infinite=tuple(result.phi_infinite),
         irreversible=tuple(result.irreversible),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def effective_diffusion(
+    binary_diffusion: Sequence[Sequence[Q]],
+    x: Sequence[float],
+) -> EffectiveDiffusionResult:
+    """The effective diffusion coefficients, computed in Rust.
+
+    The matrix's entries carry a unit, so each one crosses as its SI magnitude; which pair
+    coefficient is which is the caller's matrix and the Rust side adds nothing to it.
+    """
+    spec = _models_gen.model("eos.effective_diffusion")
+    result = _core.effective_diffusion(
+        [
+            [_si(spec, "binary_diffusion", value) for value in row]
+            for row in binary_diffusion
+        ],
+        [float(value) for value in x],
+    )
+    return EffectiveDiffusionResult(
+        effective_diffusion=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.effective_diffusion
+        ),
         warnings=_warnings(result.warnings),
     )

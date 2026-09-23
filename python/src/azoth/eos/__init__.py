@@ -86,6 +86,7 @@ from azoth.core.result import (
     DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
+    EffectiveDiffusionResult,
     EosCgPhaseResult,
     FreezingPointResult,
     FurstElectrolyteMod2004PhaseResult,
@@ -248,6 +249,7 @@ __all__ = [
     "desmukh_mather_phase",
     "dew_pressure",
     "dew_temperature",
+    "effective_diffusion",
     "eos_cg_phase",
     "from_model",
     "from_names",
@@ -412,6 +414,7 @@ _CAPILLARY_DEW_POINT = "eos.capillary_dew_point"
 _PH_FLASH = "eos.ph_flash"
 _KENT_EISENBERG_PHASE = "eos.kent_eisenberg_phase"
 _DESMUKH_MATHER_PHASE = "eos.desmukh_mather_phase"
+_EFFECTIVE_DIFFUSION = "eos.effective_diffusion"
 _PITZER_PHASE = "eos.pitzer_phase"
 _PS_FLASH = "eos.ps_flash"
 _TH_FLASH = "eos.th_flash"
@@ -3465,4 +3468,26 @@ def srk_cpa_phase(
     """
     return resolve(_SRK_CPA_PHASE)(  # type: ignore[no-any-return]
         components=components, T=T, P=P, z=z, compressed_phase=compressed_phase
+    )
+
+
+def effective_diffusion(
+    binary_diffusion: Sequence[Sequence[Q]],
+    x: Sequence[float],
+) -> EffectiveDiffusionResult:
+    """The effective diffusion coefficients of a phase, from its binary pair matrix.
+
+    ``binary_diffusion[i][j]`` is ``D_ij`` - the coefficient of component ``i`` at infinite
+    dilution in ``j`` - and the matrix is **not symmetric**, because the two directions are
+    different coefficients. Only row ``i`` is read for ``D_eff_i``.
+
+    Raises:
+        InvalidInputError: for fewer than two components or a matrix that is not square.
+        OutOfRangeError: for a zero pair coefficient a sum divides by.
+
+    See :func:`azoth.eos.reference.effective_diffusion`.
+    """
+    return resolve(_EFFECTIVE_DIFFUSION)(  # type: ignore[no-any-return]
+        binary_diffusion=binary_diffusion,
+        x=x,
     )

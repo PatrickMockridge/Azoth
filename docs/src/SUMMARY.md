@@ -83,6 +83,7 @@
   - [Activity coefficients of a Desmukh-Mather electrolyte phase](./eos/desmukh_mather_phase.md)
   - [Dew-point pressure](./eos/dew_pressure.md)
   - [Dew-point temperature](./eos/dew_temperature.md)
+  - [Effective diffusion coefficients from a binary matrix](./eos/effective_diffusion.md)
   - [EOS-CG phase state](./eos/eos_cg_phase.md)
   - [Freezing-point temperature](./eos/freezing_point.md)
   - [Phase state of a Furst electrolyte fluid, 2004 revision](./eos/furst_electrolyte_mod2004_phase.md)

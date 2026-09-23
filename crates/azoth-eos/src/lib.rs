@@ -58,6 +58,7 @@ pub mod desmukh_mather_phase;
 pub mod dew_pressure;
 pub mod dew_temperature;
 pub mod dual;
+pub mod effective_diffusion;
 pub mod electrolyte;
 pub mod eos_cg;
 mod eos_cg_data;
@@ -230,6 +231,7 @@ pub use cubic::Cubic;
 pub use desmukh_mather_phase::desmukh_mather_phase;
 pub use dew_pressure::dew_pressure;
 pub use dew_temperature::dew_temperature;
+pub use effective_diffusion::effective_diffusion;
 pub use eos_cg_phase::eos_cg_phase;
 pub use freezing_point::freezing_point;
 pub use furst_electrolyte_mod2004_phase::furst_electrolyte_mod2004_phase;
@@ -298,10 +300,10 @@ pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
     Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
-    FreezingPointResult, FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EffectiveDiffusionResult,
+    EosCgPhaseResult, FreezingPointResult, FurstElectrolyteMod2004PhaseResult,
+    FurstElectrolytePhaseResult, GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult,
+    GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
     HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
     HydrateFormationTemperatureResult, HydrateFractionResult, HydrateStructure,
     HydrogenPhaseResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,

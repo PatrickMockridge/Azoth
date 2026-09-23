@@ -311,6 +311,11 @@ class DewTemperatureResult:
     warnings: list[Warning]
 
 @final
+class EffectiveDiffusionResult:
+    effective_diffusion: list[Qty]
+    warnings: list[Warning]
+
+@final
 class EosCgPhaseResult:
     z_factor: float
     u: Qty
@@ -1584,6 +1589,10 @@ def dew_temperature(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> DewTemperatureResult: ...
+def effective_diffusion(
+    binary_diffusion: list[list[float]],
+    x: list[float],
+) -> EffectiveDiffusionResult: ...
 def eos_cg_phase(components: list[str], T: float, P: float, z: list[float]) -> EosCgPhaseResult: ...
 def freezing_point(
     components: list[str],

@@ -145,6 +145,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Equations of state.
     m.add_function(wrap_pyfunction!(eos::pr_kappa, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::effective_diffusion, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::equilibrium_constant, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::reference_potentials, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::chemical_equilibrium, m)?)?;

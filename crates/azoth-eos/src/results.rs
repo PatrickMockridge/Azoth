@@ -3905,3 +3905,21 @@ impl CalcResult for UmrCpaPhaseResult {
         &self.warnings
     }
 }
+
+/// Result of `eos.effective_diffusion`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EffectiveDiffusionResult {
+    /// One effective coefficient per component, in `x`'s order, in m²/s.
+    pub effective_diffusion: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for EffectiveDiffusionResult {
+    const CALC_ID: &'static str = "eos.effective_diffusion";
+    const FIELDS: &'static [&'static str] = &["effective_diffusion", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

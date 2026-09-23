@@ -12,6 +12,7 @@
 //!   - specs/models/eos/desmukh_mather_phase.toml
 //!   - specs/models/eos/dew_pressure.toml
 //!   - specs/models/eos/dew_temperature.toml
+//!   - specs/models/eos/effective_diffusion.toml
 //!   - specs/models/eos/eos_cg_phase.toml
 //!   - specs/models/eos/freezing_point.toml
 //!   - specs/models/eos/furst_electrolyte_mod2004_phase.toml
@@ -1557,6 +1558,90 @@ pub static DEW_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
     algorithm: Some(&DEW_TEMPERATURE_ALGORITHM),
     checks: DEW_TEMPERATURE_CHECKS,
     cases: DEW_TEMPERATURE_CASES,
+};
+
+static EFFECTIVE_DIFFUSION_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "x",
+        min: Some(0.0),
+        min_inclusive: true,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "a mole fraction cannot be negative; the class does not check it, and a negative one silently subtracts from a sum",
+    },
+}];
+
+static EFFECTIVE_DIFFUSION_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_aqueous_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[("x", &[1.4052475102269458e-05, 0.9999859475248978])],
+        matrices: &[(
+            "binary_diffusion",
+            &[
+                1.3298101098167177e-07,
+                1.32981826012159e-07,
+                1.329826410361882e-07,
+                2.0568595403496719e-07,
+            ],
+        )],
+        expected: &[],
+        expected_vectors: &[(
+            "effective_diffusion",
+            &[1.32981826012159e-07, 1.3298264103573872e-07],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "methane_n_heptane_oil_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[("x", &[0.004145278302387163, 0.9958547216976128])],
+        matrices: &[(
+            "binary_diffusion",
+            &[
+                1.4366530998185989e-07,
+                1.432289958431809e-07,
+                1.427958072195365e-07,
+                6.89737792946623e-08,
+            ],
+        )],
+        expected: &[],
+        expected_vectors: &[(
+            "effective_diffusion",
+            &[1.432289958431809e-07, 1.4279580721953783e-07],
+        )],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.effective_diffusion`.
+pub static EFFECTIVE_DIFFUSION_SPEC: ModelSpec = ModelSpec {
+    id: "eos.effective_diffusion",
+    kind: "direct",
+    algorithm: None,
+    checks: EFFECTIVE_DIFFUSION_CHECKS,
+    cases: EFFECTIVE_DIFFUSION_CASES,
 };
 
 static EOS_CG_PHASE_CHECKS: &[SpecCheck] = &[
@@ -8810,6 +8895,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &DESMUKH_MATHER_PHASE_SPEC,
     &DEW_PRESSURE_SPEC,
     &DEW_TEMPERATURE_SPEC,
+    &EFFECTIVE_DIFFUSION_SPEC,
     &EOS_CG_PHASE_SPEC,
     &FREEZING_POINT_SPEC,
     &FURST_ELECTROLYTE_MOD2004_PHASE_SPEC,

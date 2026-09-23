@@ -72,7 +72,7 @@ description = "the interface phase's mass density, read by the reactive concentr
 type = "vector"
 unit = "m**2/s"
 length = "one per component, in `components`' order"
-description = "the effective diffusion coefficients, read by index rather than by name, which is how the class reads them off the physical properties object.\n"
+description = "the effective diffusion coefficients, read by index rather than by name, which is how the class reads them off the physical properties object. `eos.effective_diffusion` assembles them from the diffusivity model's binary pair matrix, which is where they come from.\n"
 [outputs]
 [outputs.coefficient]
 type = "vector"

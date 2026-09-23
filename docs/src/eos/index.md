@@ -78,6 +78,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.desmukh_mather_phase`](./desmukh_mather_phase.md) | `direct composition` | NeqSim master `PhaseDesmukhMather` |
 | [`eos.dew_pressure`](./dew_pressure.md) | `dew_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.dew_temperature`](./dew_temperature.md) | `dew_temperature_successive_substitution` | Michelsen, M. L. (1982) |
+| [`eos.effective_diffusion`](./effective_diffusion.md) | `direct composition` | NeqSim master `Diffusivity` |
 | [`eos.eos_cg_phase`](./eos_cg_phase.md) | `log_volume_newton` | Gernert, J.; Span, R. (2016) |
 | [`eos.freezing_point`](./freezing_point.md) | `freezing_point_bracket_bisection` | NeqSim master `FreezingPointTemperatureFlash` |
 | [`eos.furst_electrolyte_mod2004_phase`](./furst_electrolyte_mod2004_phase.md) | `direct composition` | NeqSim master `SystemFurstElectrolyteEosMod2004` |

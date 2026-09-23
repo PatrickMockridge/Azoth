@@ -3283,3 +3283,13 @@ class HeliumPhaseResult(_HasWarnings):
     g: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class EffectiveDiffusionResult(_HasWarnings):
+    """Result of ``eos.effective_diffusion``."""
+
+    #: One effective coefficient per component, in ``x``'s order, in m**2/s.
+    effective_diffusion: tuple[Q, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]

@@ -16,6 +16,7 @@ use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
+use azoth_eos::EffectiveDiffusionResult as KernelEffectiveDiffusionResult;
 use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
@@ -7709,6 +7710,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ReactivePhFlashResult::CALC_ID => ReactivePhFlashResult::FIELDS.to_vec(),
         KernelKineticRateLawResult::CALC_ID => KernelKineticRateLawResult::FIELDS.to_vec(),
         KernelKineticsResult::CALC_ID => KernelKineticsResult::FIELDS.to_vec(),
+        KernelEffectiveDiffusionResult::CALC_ID => KernelEffectiveDiffusionResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
@@ -8664,6 +8666,52 @@ impl From<&azoth_reactions::KineticsResult> for PyKineticsResult {
             coefficient: r.coefficient.clone(),
             phi_infinite: r.phi_infinite.clone(),
             irreversible: r.irreversible.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.effective_diffusion`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EffectiveDiffusionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEffectiveDiffusionResult {
+    /// One effective coefficient per component, in m²/s.
+    #[pyo3(get)]
+    pub effective_diffusion: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEffectiveDiffusionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EffectiveDiffusionResult(effective_diffusion={:?})",
+            self.effective_diffusion
+                .iter()
+                .map(|value| value.magnitude_si)
+                .collect::<Vec<f64>>()
+        )
+    }
+}
+
+impl From<&azoth_eos::EffectiveDiffusionResult> for PyEffectiveDiffusionResult {
+    fn from(r: &azoth_eos::EffectiveDiffusionResult) -> Self {
+        Self {
+            effective_diffusion: r
+                .effective_diffusion
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "m**2/s".to_string(),
+                })
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }

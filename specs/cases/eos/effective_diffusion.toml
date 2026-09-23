@@ -1,0 +1,25 @@
+model = "eos.effective_diffusion"
+[[cases]]
+id = "co2_water_aqueous_phase"
+tolerance = 1e-12
+source = "NeqSim master, `PhysicalProperties.calcEffectiveDiffusionCoefficients` on the aqueous phase of a CO2-water fluid, from `validation/neqsim/captures/effective_diffusion_probe.tsv`. The matrix is `SiddiqiLucasMethod`'s, printed by the interface's returning method `calcDiffusionCoefficients(0, 0)`, and the vector beside it was recomputed from that matrix in the same run - so the two halves of this case are one measurement and not two.\n"
+[cases.inputs]
+binary_diffusion = [
+    [1.3298101098167177e-7, 1.32981826012159e-7],
+    [1.329826410361882e-7, 2.0568595403496719e-7],
+]
+x = [1.4052475102269458e-5, 0.9999859475248978]
+[cases.expected]
+effective_diffusion = [1.32981826012159e-7, 1.3298264103573872e-7]
+[[cases]]
+id = "methane_n_heptane_oil_phase"
+tolerance = 1e-12
+source = "The capture's second fluid: a methane/n-heptane **oil** phase, so the assembly is pinned on a phase type other than the aqueous one and on a pair whose two rows differ by 0.6%. **The matrix is not symmetric here either** - `D_01 = 1.432289958431809e-7` against `D_10 = 1.427958072195365e-7` - and `D_eff_0` follows row 0 alone.\n"
+[cases.inputs]
+binary_diffusion = [
+    [1.4366530998185989e-7, 1.432289958431809e-7],
+    [1.427958072195365e-7, 6.89737792946623e-8],
+]
+x = [0.004145278302387163, 0.9958547216976128]
+[cases.expected]
+effective_diffusion = [1.432289958431809e-7, 1.4279580721953783e-7]
