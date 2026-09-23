@@ -94,7 +94,26 @@ public class KineticsProbe {
     }
     System.out.println(effective.toString().trim());
 
+    // **The context the matrix is built from**: the phases' densities, each component's mole
+    // fraction and molar mass, and each reaction's equilibrium constant at the state. Without
+    // them the matrix is a number with nothing behind it.
+    for (int phase = 0; phase < system.getNumberOfPhases(); phase++) {
+      PhaseInterface held = system.getPhase(phase);
+      System.out.println("density[" + phase + "]=" + held.getPhysicalProperties().getDensity());
+      for (int i = 0; i < held.getNumberOfComponents(); i++) {
+        System.out.println("  component[" + phase + "][" + held.getComponent(i).getName()
+            + "]_x=" + held.getComponent(i).getx()
+            + " molar_mass=" + held.getComponent(i).getMolarMass());
+      }
+    }
     ChemicalReactionOperations operations = system.getChemicalReactionOperations();
+    for (ChemicalReaction reaction : operations.getReactionList().getChemicalReactionList()) {
+      System.out.println("reaction_k[" + String.join("_", reaction.getNames()) + "]="
+          + reaction.getK(aqueous));
+      System.out.println("reaction_rate_factor[" + String.join("_", reaction.getNames()) + "]="
+          + reaction.getRateFactor(aqueous));
+    }
+
     for (int comp = 0; comp < aqueous.getNumberOfComponents(); comp++) {
       String name = aqueous.getComponent(comp).getName();
       double matrix = operations.solveKinetics(1, aqueous, comp);

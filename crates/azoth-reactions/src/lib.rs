@@ -15,6 +15,7 @@
 //! * [`reactive_phase`] - which phase a fluid solves its reactions in
 //! * [`reactive_phase_equilibrium`] - that solve as an operation on one phase
 //! * [`kinetic_rate_law`] - the two kinetic laws `ChemicalReaction.getRateFactor` selects between
+//! * [`kinetics`] - the Krishna-Standart mass-transfer matrix that consumes one of them
 //! * [`linalg`] - the exact rank and the LU solve those two rest on
 //! * [`reactive_tp_flash`] - the reactive flash stack as a model, over `azoth-eos`
 //! * [`reactive_ph_flash`] - that search as a model, over the same two
@@ -26,6 +27,7 @@ pub mod diis;
 pub mod equilibrium_constant;
 pub mod formula_matrix;
 pub mod kinetic_rate_law;
+pub mod kinetics;
 pub mod linalg;
 pub mod lp_seed;
 pub mod model_gen;

@@ -30,6 +30,26 @@ phases=2
   phase[0]=gas
   phase[1]=aqueous
 effective_diffusion=1.3273085673495432E-9 1.2949443034517625E-9 1.873193606363133E-9 1.7615254560250475E-9 9.308800234111773E-10 9.395402172459193E-10
+density[0]=0.0
+  component[0][CO2]_x=0.9765102141001941 molar_mass=0.04401
+  component[0][water]_x=0.02348978589980592 molar_mass=0.018015
+  component[0][OH-]_x=1.000009665115536E-51 molar_mass=0.017001000000000002
+  component[0][H3O+]_x=1.000009665115536E-51 molar_mass=0.01902
+  component[0][HCO3-]_x=1.000009665115536E-51 molar_mass=0.061
+  component[0][CO3--]_x=1.000009665115536E-51 molar_mass=0.059982
+density[1]=1001.7345003123514
+  component[1][CO2]_x=1.1772872314229393E-5 molar_mass=0.04401
+  component[1][water]_x=0.9999836689077933 molar_mass=0.018015
+  component[1][OH-]_x=1.4298146909556775E-12 molar_mass=0.017001000000000002
+  component[1][H3O+]_x=2.2790899484670708E-6 molar_mass=0.01902
+  component[1][HCO3-]_x=2.2791285133966227E-6 molar_mass=0.061
+  component[1][CO3--]_x=8.374388127330817E-16 molar_mass=0.059982
+reaction_k[water_CO2_HCO3-_H3O+]=4.412340363006617E-7
+reaction_rate_factor[water_CO2_HCO3-_H3O+]=0.004327147905576517
+reaction_k[water_OH-_H3O+]=3.2581887406912058E-18
+reaction_rate_factor[water_OH-_H3O+]=0.004327147905576517
+reaction_k[H3O+_CO3--_HCO3-_water]=8.370205822785757E-16
+reaction_rate_factor[H3O+_CO3--_HCO3-_water]=0.004327147905576517
 reac_matrix[CO2]=0.012981443716729553
   phi_infinite=0.0
 reac_matrix[water]=0.006729079680068898
