@@ -12,10 +12,12 @@ worked example, then call it as the page shows or over arrays with
 
 Every calculation in this book ships with its equation, where the equation came
 from, the range in which it is validated, its assumptions, a worked example, and
-the tests that exercise it. Nothing here is prose written alongside code: the
-pages under [Hydraulics](./hydraulics/index.md) are **generated from the same
-specification files the code is generated from**, so they cannot drift from it.
-CI regenerates them and fails on any difference.
+the tests that exercise it. Nothing here is prose written alongside code: every
+page under [Equations of state](./eos/index.md), [Hydraulics](./hydraulics/index.md),
+[Unit operations](./process/index.md), [Reactions](./reactions/index.md) and
+[Heat transfer](./thermal/index.md) is **generated from the same specification files
+the code is generated from**, so they cannot drift from it. CI regenerates them and
+fails on any difference.
 
 **[Architecture](./architecture/index.md)** is the structure: the pipeline from a
 spec to the Rust, Python and Lean that are made from it, and what is true of azoth and
@@ -57,15 +59,20 @@ Each page has the same shape, and the order is deliberate:
 
 ## What is implemented
 
-Four sections, and the difference between them is the point:
+Five sections, and the difference between them is the point:
 
-- **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
-  pressure drop.
-- **Heat transfer** — steady conduction through a plane wall: a domain with no pipe in
-  it, running through the same specs, generators, tests and documentation as the rest.
 - **Equations of state** — where the model stops being a correlation: an equation of
   state is implicit, mixture-valued, and written in reduced variables rather than in
   quantities with units.
+- **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
+  pressure drop.
+- **Unit operations** — the palette and the flowsheet: 24 unit operations declared on
+  typed channels, six of them with kernels, and the checker that holds a flowsheet to
+  the calculus's rules. The executor that runs one is P12 and is not built.
+- **Reactions** — chemical equilibrium, the reactive flashes, and the kinetics rate law
+  behind them.
+- **Heat transfer** — steady conduction through a plane wall: a domain with no pipe in
+  it, running through the same specs, generators, tests and documentation as the rest.
 
 <!-- BEGIN GENERATED: implemented -->
 **Equations of state** - [`eos/index.md`](./eos/index.md):
@@ -263,7 +270,8 @@ still true of every id in the list above, and it is why each one has a worked ex
 reader can retrace by hand. A **unit-operation tier** and the **flowsheets** that
 compose them sit above this, and they compose for you; what that gives up in exchange,
 and what replaces the guarantee, is set out in [the specification](./architecture/specification.md) rather
-than left to be discovered. Neither is built - see P11 and P12 there.
+than left to be discovered. The tier is partly built - the palette, the checker and six
+kernels - and the executor that runs a flowsheet is P12.
 
 The `azoth pipe` command performs the composition shown here, and reports the two
 pressure drop contributions separately rather than only their sum - they come from
@@ -319,13 +327,13 @@ both implementations run, and the list of what exists on this page are all deriv
 from that one file. What the spec does not write is the arithmetic, or the glue that
 names it in each language.
 
-Nothing is registered. For a while a calculation had to be added to a dozen places —
-an id-to-function table, a result-type table, four PyO3 declaration lists, a type
-stub, and this page — and each of those is now either derived from the calculation's
-own id or emitted by a generator. What is left is the boilerplate that attaches a Rust
-function to a Python name, plus **a batch arm in each language**, which is hand-written
-because a wrapper's signature and result class carry judgement the spec does not.
-The [PR template](../../.github/PULL_REQUEST_TEMPLATE.md) is the checklist for that
+Nothing is registered. There is no id-to-function table to add a calculation to, no
+result-type table, no PyO3 declaration list, no type-stub entry and no line on this
+page: each is either derived from the calculation's own id or emitted by a generator.
+What is left is the boilerplate that attaches a Rust function to a Python name, plus
+**a batch arm in each language**, which is hand-written because a wrapper's signature
+and result class carry judgement the spec does not. The
+[PR template](../../.github/PULL_REQUEST_TEMPLATE.md) is the checklist for that
 remaining boilerplate.
 
 [the specification](./architecture/specification.md) carries the same decision table for the

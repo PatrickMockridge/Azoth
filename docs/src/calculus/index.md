@@ -18,52 +18,53 @@ inlet and an outlet, and "the mole balance closes" is either a consequence of ho
 its channels are used or it is a sentence in a specification that nothing checks.
 That is the second thing.
 
-Five layers, each a Lean module and a page here. **Three of the modules exist in
-full, and two in part.** `Azoth/Dim.lean`, `Azoth/Vocabulary.lean` and
-`Azoth/Capability.lean` are the full ones — the keycard's claims are all proved, by
-`run_deterministic`, `run_derives_in_grant` and the two gate theorems.
-`Azoth/Rho.lean` carries the process calculus and reflection, and `Azoth/Barb.lean`
-the barbs and barbed bisimulation, each with claims on its page stated rather than
-proved. `Azoth/Process.lean` is the one not written:
+Nine layers, each a page here and the Lean module it is stated against:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
 | Dimensions | what a unit's dimension is, and when two are equal | `Azoth/Dim.lean` ✅ | [Dimensions](./dimensions.md) |
-| Vocabulary | which units a spec may declare, and what each one is | `Azoth/Vocabulary.lean` ✅ | [The vocabulary table](./vocabulary.md) |
-| Numerics | which partial functions are total, and what a fractional exponent means | `Azoth/Pow.lean` ✅ | [Numerical safety](./numerics.md) |
-| Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (barbed bisimulation) | [Barbs](./barbs.md) |
-| Processes | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` | [Processes](./process.md) |
-| Reflection | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` (binder-free) | [Reflection](./rho.md) |
-| Capability | the keycard as authority a process holds rather than a global it reads | `Azoth/Capability.lean` ✅ | [The keycard](./capability.md) |
+| The vocabulary table | which units a spec may declare, and what each one is | `Azoth/Vocabulary.lean` ✅ | [The vocabulary table](./vocabulary.md) |
+| Numerical safety | which partial functions are total, and what a fractional exponent means | `Azoth/Pow.lean` ✅ | [Numerical safety](./numerics.md) |
+| Raw and normalised variables | the derivative between a raw and a normalised variable | `Azoth/Normalisation.lean` ✅ | [Raw and normalised variables](./normalisation.md) |
+| The sensitivity of a solution | how a solution moves with the equations that define it | `Azoth/Implicit.lean` (first order) | [The sensitivity of a solution](./implicit.md) |
+| Reflection and feedback | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` ✅ | [Reflection and feedback](./rho.md) |
+| The keycard as a capability | authority a process holds rather than a global it reads | `Azoth/Capability.lean` ✅ | [The keycard as a capability](./capability.md) |
+| Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (general barbs) | [Barbs](./barbs.md) |
+| Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (not written) | [Processes and channels](./process.md) |
 
-The two that exist are the ones written against a **vocabulary** — the canonical
-unit strings a spec may declare. That vocabulary is data rather than proof: one
-hand-written table, compiled into Rust, Python, JSON Schema and Lean. It is
-specified separately, in [The vocabulary table](./vocabulary.md), because it is the
-one part of this whose authority is a generator rather than a proof.
+Two further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
+`#print axioms` line for each general theorem, and the generated `Azoth/Gate.lean` the
+one per canonical unit. Ten modules in all, and `Azoth/Process.lean` is the only one a
+layer is waiting on.
 
-## Status: the vocabulary is proved, the rest is specification
+The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
+Python, JSON Schema and Lean. It is specified separately, in
+[The vocabulary table](./vocabulary.md), because it is the one part of this whose
+authority is a generator rather than a proof.
 
-**The vocabulary is proved.** The development is in `lean/`, and
-`tools/check_lean_axioms.py` refuses a gap in any theorem it claims — twenty-nine
-today: four about the dimension group, that its exponent vectors name it and read
-back unchanged, and one per canonical unit checking that the table's exponents name
-the dimension `lean-units` calls by that name. That is
-[The vocabulary table](./vocabulary.md), and it is the whole of what this section
-has checked against anything.
+## Status: what the gate covers, and what is still specified
 
-**The rest is partly specification, partly proved fragments.** [The keycard](./capability.md)
-is proved: `crates/azoth-eos/src/card.rs` carries the card a caller holds and passes, and
-`Azoth/Capability`'s theorems hold it to the grant.
-[Reflection](./rho.md) and [Barbs](./barbs.md) are different: `Azoth/Rho.lean`
-proves the process calculus, the round trip, and the communication reduction, and
-`Azoth/Barb.lean` proves barbed bisimulation is an equivalence — the general
-machinery, before the thermodynamic channels that would falsify the stronger
-claims. [Processes](./process.md) is where the layer half-exists and nothing proves it:
-`azoth_process::channel` is the channel type, 24 unit operations declare ports against it,
-and `azoth_process::validate` holds a flowsheet to the calculus's rules — all of it in
-Rust, with no `Azoth/Process.lean` behind it, which is why that page's two claims stay
-specifications. A proof about a layer that does not exist is a proof about nothing.
+**The axiom gate is what makes a proof count.** `tools/check_lean_axioms.py` refuses a
+theorem resting on anything outside the three axioms Lean permits — 41 claims in
+`Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, and 37 in the generated
+`Azoth/Gate.lean`, one per canonical unit, checking that the table's exponents name the
+dimension `lean-units` calls by that name.
+
+Most of the nine are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
+[Raw and normalised variables](./normalisation.md) and [Reflection and
+feedback](./rho.md) are complete, and [The keycard as a capability](./capability.md) is
+proved against the grant a caller holds and passes (`crates/azoth-eos/src/card.rs`).
+[The sensitivity of a solution](./implicit.md) is proved to first order.
+
+Two are not. [Barbs](./barbs.md) proves a barbed bisimulation to be an equivalence —
+the general machinery, before the *dimensional* barb that would give those two claims
+something to be about, which is a later tranche — so they stay specifications.
+[Processes and channels](./process.md) is where the layer half-exists and
+nothing proves it: `azoth_process::channel` is the channel type, 24 unit operations
+declare ports against it, and `azoth_process::validate` holds a flowsheet to the
+calculus's rules — all of it in Rust, with no `Azoth/Process.lean` behind it, which is
+why that page's two claims stay specifications. A proof about a layer that does not
+exist is a proof about nothing.
 
 So each claim names its theorem and says which of three things it is:
 
