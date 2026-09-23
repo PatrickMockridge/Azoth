@@ -1386,6 +1386,14 @@ class EquilibriumConstantResult:
     warnings: list[Warning]
 
 @final
+class ReactivePhFlashResult:
+    temperature: Qty
+    converged: bool
+    outer_iterations: int
+    total_inner_iterations: int
+    warnings: list[Warning]
+
+@final
 class ReactivePhaseEquilibriumResult:
     skipped: bool
     a_matrix: list[list[float]]
@@ -2533,6 +2541,14 @@ def chemical_equilibrium(
     phase_moles: float,
 ) -> ChemicalEquilibriumResult: ...
 def equilibrium_constant(reaction: str, source: str, T: float) -> EquilibriumConstantResult: ...
+def reactive_ph_flash(
+    components: list[str],
+    T: float,
+    P: float,
+    moles: list[float],
+    enthalpy: float,
+    max_phases: float,
+) -> ReactivePhFlashResult: ...
 def reactive_phase_equilibrium(
     components: list[str],
     source: str,

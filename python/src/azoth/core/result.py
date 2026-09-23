@@ -573,6 +573,29 @@ class ReactivePhaseEquilibriumResult(_HasWarnings):
     warnings: tuple[Warning, ...]
 
 
+@dataclass(frozen=True, slots=True, eq=True)
+class ReactivePhFlashResult(_HasWarnings):
+    """Result of ``reactions.reactive_ph_flash``.
+
+    The temperature at which a reactive fluid's thermochemical enthalpy matches a
+    specification, and the cost of finding it. **The pass counts are path quantities**: the
+    loop is a secant, so two implementations - and NeqSim itself - reach the same temperature
+    in a different number of steps.
+    """
+
+    #: ``getEquilibriumTemperature``: the temperature the loop stopped at.
+    temperature: Q
+    #: ``isConverged``. **Also true where the *bracket* closed rather than the residual**,
+    #: which the flag does not distinguish.
+    converged: bool
+    #: ``getOuterIterations``: the temperature steps taken.
+    outer_iterations: int
+    #: ``getTotalInnerIterations``: every inner flash's passes, summed.
+    total_inner_iterations: int
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
 @dataclass(frozen=True, slots=True, eq=False)
 class ReactiveTpFlashResult(_HasWarnings):
     """Result of ``reactions.reactive_tp_flash``.

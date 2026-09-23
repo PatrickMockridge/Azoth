@@ -36,6 +36,7 @@ pub const DIMENSION_IDS: &[&str] = &[
     "surface_tension",
     "molar_mass",
     "molar_volume",
+    "energy",
     "molar_energy",
     "attraction_parameter",
     "molar_heat_capacity",
@@ -74,6 +75,7 @@ pub const DIMENSION_EXPONENTS: &[(&str, [i8; 7])] = &[
     ("surface_tension", [0, 1, -2, 0, 0, 0, 0]),
     ("molar_mass", [0, 1, 0, 0, 0, -1, 0]),
     ("molar_volume", [3, 0, 0, 0, 0, -1, 0]),
+    ("energy", [2, 1, -2, 0, 0, 0, 0]),
     ("molar_energy", [2, 1, -2, 0, 0, -1, 0]),
     ("attraction_parameter", [5, 1, -2, 0, 0, -2, 0]),
     ("molar_heat_capacity", [2, 1, -2, 0, -1, -1, 0]),
@@ -139,6 +141,7 @@ pub const UNIT_NAMES: &[&str] = &[
     "N/m",
     "kg/mol",
     "m**3/mol",
+    "J",
     "J/mol",
     "Pa*m**6/mol**2",
     "J/(mol*K)",
@@ -179,6 +182,7 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("N/m", [0, 1, -2, 0, 0, 0, 0]),
     ("kg/mol", [0, 1, 0, 0, 0, -1, 0]),
     ("m**3/mol", [3, 0, 0, 0, 0, -1, 0]),
+    ("J", [2, 1, -2, 0, 0, 0, 0]),
     ("J/mol", [2, 1, -2, 0, 0, -1, 0]),
     ("Pa*m**6/mol**2", [5, 1, -2, 0, 0, -2, 0]),
     ("J/(mol*K)", [2, 1, -2, 0, -1, -1, 0]),
@@ -242,6 +246,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("N/m", |v| crate::units::newtons_per_meter(v).value),
     ("kg/mol", |v| crate::units::kilograms_per_mole(v).value),
     ("m**3/mol", |v| crate::units::cubic_meters_per_mole(v).value),
+    ("J", |v| crate::units::joules(v).value),
     ("J/mol", |v| crate::units::joules_per_mole(v).value),
     ("Pa*m**6/mol**2", |v| v),
     ("J/(mol*K)", |v| {
@@ -323,6 +328,7 @@ mod dimension_assertions {
         let _: uom::si::f64::SurfaceTension = crate::units::newtons_per_meter(1.0);
         let _: uom::si::f64::MolarMass = crate::units::kilograms_per_mole(1.0);
         let _: uom::si::f64::MolarVolume = crate::units::cubic_meters_per_mole(1.0);
+        let _: uom::si::f64::Energy = crate::units::joules(1.0);
         let _: uom::si::f64::MolarEnergy = crate::units::joules_per_mole(1.0);
         let _: uom::si::f64::MolarHeatCapacity = crate::units::joules_per_mole_kelvin(1.0);
         let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);

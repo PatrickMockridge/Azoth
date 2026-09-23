@@ -1,0 +1,87 @@
+id = "reactions.reactive_ph_flash"
+name = "Reactive flash at fixed pressure and enthalpy"
+kind = "procedure"
+assumptions = [
+    "**the outer loop is a secant on `T`, and its docstring says it is a Newton on `1/T`.** `solveEnthalpySpec` steps by the heat capacity first and interpolates the last two `(T, error)` pairs after that, bracketed on `[50, 5000] K`. `1/T` is in the comments only.",
+    "**and the `1/T` derivative the docstring describes is dead code.** `computeEnthalpyDerivative` computes `dQ/d(1/T) = -T**2 Cp / |H_spec|` and is called from nowhere in the file. The class carries the derivative for a loop it does not run.",
+    "**the class's enthalpy counts the fluid twice.** The two phase objects its constructor leaves each report the whole fluid's moles, so `getEnthalpy()` and `getFormationEnthalpyInventory()` both sum it twice - the same bookkeeping the TP flash's Gibbs measure doubles.",
+    "**and the factor cancels.** The residual is `(H_T + inv_T - H_spec - inv_0) / |H_0|` and both halves of it carry the two, so the loop's answer and its path are unaffected. The capture's `-364017.4239 J` is twice the fluid's own `-182008.71`, which is what the case below states.",
+    "**the specification here is thermochemical, and the caller states it.** NeqSim's `getEnthalpy()` is a sensible enthalpy without the formation enthalpies; the class's constructor adds the inventory `sum n_i dHf_i` at the system's composition when it is built, which its own test flashes first.",
+    "**a model has no system to read that composition from**, so this takes the thermochemical specification directly and adds nothing. A caller with a sensible enthalpy adds the inventory at their own composition first, which is the class's arithmetic with the composition stated rather than assumed.",
+    "**SRK, and the vapour root on every phase**, for the reason `reactions.reactive_tp_flash` gives: the oracle's systems are `SystemSrkEos` and NeqSim's reactive phases are all `gas`-typed there.",
+    "**the initial temperature is an input and the answer can depend on it.** The loop is a secant, and where the fluid has more than one state at the specified enthalpy the path decides which one is found. The class's own test perturbs the temperature deliberately to make the search a search.",
+    "**the outer pass count is a path quantity.** The capture takes 3 passes where this port takes 2 on the water-gas shift, and 8 against 11 at 1000 K - the same temperature either way, arrived at along a different path. It is reported and not pinned.",
+    "**the inner flash is `reactions.reactive_tp_flash`**, whose own relaxations apply: a multiphase answer stops at `1e-4` rather than `1e-9`, so the enthalpy curve the outer loop walks is only as smooth as that tolerance.",
+    "**the convergence test is a bracket as well as a residual.** A bracket narrower than `1e-6 K` is accepted with the residual still above `1e-8`, so `converged` is true in a second way that the flag does not distinguish.",
+]
+references = [
+    "Michelsen, M. L. (1987). \"Multiphase isenthalpic and isentropic flash algorithms.\" Fluid Phase Equilibria 33(1), 13-27. DOI 10.1016/0378-3812(87)87022-5. The reference the class's docstring cites and its code does not follow.",
+    "White, W. B.; Johnson, S. M.; Dantzig, G. B. (1958). \"Chemical Equilibrium in Complex Mixtures.\" The Journal of Chemical Physics 28(5), 751-755. DOI 10.1063/1.1744264. The non-stoichiometric solve the inner flash runs.",
+    "Smith, W. R.; Missen, R. W. (1982). \"Chemical Reaction Equilibrium Analysis: Theory and Algorithms.\" Wiley, New York.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `flashops/reactiveflash/ReactiveMultiphasePHflash`: `solveEnthalpySpec` is the loop, `runInnerTPflash` the inner step, and the two enthalpy readers the thermochemical convention.",
+    "`validation/neqsim/ReactivePhFlashProbe.java` and `captures/reactive_ph_flash_probe.tsv` - the oracle: three round trips, the recovered temperatures, and the class's own formation inventory.",
+]
+[source]
+standard = "NeqSim master `ReactiveMultiphasePHflash`"
+edition = "`solveEnthalpySpec` ported as the loop, with the inner step left to `reactions.reactive_tp_flash` and the enthalpy to `azoth-eos`' `molar_enthalpy_entropy`. The entropy-specified variant and the `NR = 0` delegation to a standard PH flash are not ported."
+[algorithm]
+scheme = "ph_flash_secant_bisection"
+initialisation = "inner_reactive_flash"
+convergence = "absolute"
+tolerance = 1e-08
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+description = "the substances the fluid is made of, by name. **A charged one is refused**, because the inner flash's ionic branch is not ported."
+[inputs.T]
+unit = "K"
+description = "the temperature the search starts from. It is not a bound and not a guess at the answer: the loop is a secant, and where the enthalpy curve is not monotone the path decides which of its crossings is found."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure, held fixed while the temperature moves. It sets the standard state the potentials are reduced against and it is the state the cubic is evaluated at."
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the overall component amounts, the same input `reactions.reactive_tp_flash` takes. Not a composition and not renormalised."
+[inputs.enthalpy]
+unit = "J"
+description = "**the thermochemical specification**: the fluid's sensible enthalpy plus the formation inventory `sum n_i dHf_i`, which the class's constructor forms and a caller here states. A sensible enthalpy without the inventory is a different number and finds a different temperature."
+[inputs.max_phases]
+unit = "dimensionless"
+description = "the inner flash's phase ceiling, passed through. Two is the captured states' own."
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "`getEquilibriumTemperature`: the temperature the loop stopped at."
+[outputs.converged]
+type = "boolean"
+description = "`isConverged`. **Also true where the *bracket* closed rather than the residual**, which the flag does not distinguish."
+[outputs.outer_iterations]
+unit = "dimensionless"
+description = "`getOuterIterations`: the temperature steps taken. **A path quantity** - the two kernels and NeqSim take different counts to the same temperature - reported rather than pinned."
+[outputs.total_inner_iterations]
+unit = "dimensionless"
+description = "`getTotalInnerIterations`: every inner flash's passes, summed over the outer loop. A path quantity too, and the larger half of the cost."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "max_phases"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a phase ceiling below one is not a ceiling"
+[implementations]
+python = "azoth.reactions.reactive_ph_flash"
+rust = "azoth_reactions::reactive_ph_flash"

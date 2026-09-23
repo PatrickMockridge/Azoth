@@ -125,6 +125,7 @@ from azoth.core.result import (
     RachfordRiceResult,
     RackettMolarVolumeResult,
     ReactivePhaseEquilibriumResult,
+    ReactivePhFlashResult,
     ReactiveTpFlashResult,
     ReferencePotentialsResult,
     ReynoldsNumberResult,
@@ -3959,5 +3960,36 @@ def reactive_tp_flash(
         gibbs_energy=result.gibbs_energy,
         residual=result.residual,
         element_residual=result.element_residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_ph_flash(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    moles: Sequence[Q],
+    enthalpy: Q,
+    max_phases: float,
+) -> ReactivePhFlashResult:
+    """The reactive PH flash, computed in Rust.
+
+    The component names cross **unresolved**, as they do for the TP flash: the Rust side
+    reads the element table, the formation columns and the heat-capacity polynomial itself.
+    """
+    spec = _models_gen.model("reactions.reactive_ph_flash")
+    result = _core.reactive_ph_flash(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [_si(spec, "moles", value) for value in moles],
+        input_to_si(spec, "enthalpy", enthalpy),
+        float(max_phases),
+    )
+    return ReactivePhFlashResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        converged=result.converged,
+        outer_iterations=result.outer_iterations,
+        total_inner_iterations=result.total_inner_iterations,
         warnings=_warnings(result.warnings),
     )

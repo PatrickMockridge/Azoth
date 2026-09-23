@@ -44,6 +44,7 @@ def units : List (String × Units.Dimension) :=
     ("N/m", Dim.ofExponents [0, 1, -2, 0, 0, 0, 0]),
     ("kg/mol", Dim.ofExponents [0, 1, 0, 0, 0, -1, 0]),
     ("m**3/mol", Dim.ofExponents [3, 0, 0, 0, 0, -1, 0]),
+    ("J", Dim.ofExponents [2, 1, -2, 0, 0, 0, 0]),
     ("J/mol", Dim.ofExponents [2, 1, -2, 0, 0, -1, 0]),
     ("Pa*m**6/mol**2", Dim.ofExponents [5, 1, -2, 0, 0, -2, 0]),
     ("J/(mol*K)", Dim.ofExponents [2, 1, -2, 0, -1, -1, 0]),
@@ -205,6 +206,12 @@ theorem u_kg_per_mol_dimension :
     `Dimension.Volume / Dimension.AmountOfSubstance`. -/
 theorem u_m_pow_3_per_mol_dimension :
     dimOf "m**3/mol" = some (Dimension.Volume / Dimension.AmountOfSubstance) := by
+  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
+
+/-- "J" carries the dimension `lean-units` calls
+    `Dimension.Energy`. -/
+theorem u_J_dimension :
+    dimOf "J" = some (Dimension.Energy) := by
   simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
 
 /-- "J/mol" carries the dimension `lean-units` calls

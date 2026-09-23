@@ -15,6 +15,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | Model | Scheme | Source |
 |---|---|---|
 | [`reactions.chemical_equilibrium`](./chemical_equilibrium.md) | `smith_missen_newton` | NeqSim master `ChemicalEquilibrium` |
+| [`reactions.reactive_ph_flash`](./reactive_ph_flash.md) | `ph_flash_secant_bisection` | NeqSim master `ReactiveMultiphasePHflash` |
 | [`reactions.reactive_phase_equilibrium`](./reactive_phase_equilibrium.md) | `phase_reaction_balance` | NeqSim master `ChemicalReactionOperations` |
 | [`reactions.reactive_tp_flash`](./reactive_tp_flash.md) | `phase_add_remove_loop` | NeqSim master `ReactiveMultiphaseTPflash` |
 | [`reactions.reference_potentials`](./reference_potentials.md) | `direct composition` | NeqSim master `ChemicalReactionList` |

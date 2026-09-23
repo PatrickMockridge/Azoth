@@ -170,6 +170,7 @@
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)
+  - [Reactive flash at fixed pressure and enthalpy](./reactions/reactive_ph_flash.md)
   - [Reactive equilibrium as an operation on one phase](./reactions/reactive_phase_equilibrium.md)
   - [Reactive flash at fixed temperature and pressure](./reactions/reactive_tp_flash.md)
   - [Reference potentials from an independent reaction basis](./reactions/reference_potentials.md)

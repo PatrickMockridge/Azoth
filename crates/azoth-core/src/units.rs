@@ -15,14 +15,15 @@
 //! resistance coefficient - are plain `f64`, here and in the Python API.
 
 pub use uom::si::f64::{
-    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, HeatTransfer,
-    Length, Mass, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity, MolarMass,
-    MolarVolume, Power, Pressure, SpecificHeatCapacity, SurfaceTension, TemperatureInterval,
-    ThermalConductance, ThermalConductivity, ThermodynamicTemperature, Velocity, VolumeRate,
+    AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy,
+    HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity,
+    MolarMass, MolarVolume, Power, Pressure, SpecificHeatCapacity, SurfaceTension,
+    TemperatureInterval, ThermalConductance, ThermalConductivity, ThermodynamicTemperature,
+    Velocity, VolumeRate,
 };
 pub use uom::si::{
     amount_of_substance::mole, area::square_meter, diffusion_coefficient::square_meter_per_second,
-    dynamic_viscosity::pascal_second, electric_charge::coulomb,
+    dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::joule,
     heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::meter,
     length::millimeter, mass::kilogram, mass_density::kilogram_per_cubic_meter,
     mass_rate::kilogram_per_second, molality::mole_per_kilogram, molar_energy::joule_per_mole,
@@ -93,6 +94,12 @@ pub fn kilograms_per_cubic_meter(value: f64) -> MassDensity {
 #[must_use]
 pub fn kilograms(value: f64) -> Mass {
     Mass::new::<kilogram>(value)
+}
+
+/// An energy in joules, which is a *total* and not a molar quantity.
+#[must_use]
+pub fn joules(value: f64) -> Energy {
+    Energy::new::<joule>(value)
 }
 
 /// A dynamic viscosity in pascal seconds.

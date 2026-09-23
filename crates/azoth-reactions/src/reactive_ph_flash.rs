@@ -1,215 +1,190 @@
-//! The reactive PH flash, from `flashops/reactiveflash/ReactiveMultiphasePHflash.java`.
+//! The reactive PH flash as a model: `reactions.reactive_ph_flash`.
 //!
-//! Given a pressure and a total enthalpy, it looks for the temperature: an outer loop on `T`
-//! wraps the reactive TP flash, and each pass asks the inner flash what the fluid's enthalpy
-//! is at that temperature and steps towards the one that was specified.
+//! The class's outer loop is [`crate::ph_flash_loop::solve_enthalpy_spec`], and everything it
+//! needs comes from the pieces this crate already carries: [`crate::reactive_tp_flash`] for the
+//! inner flash at a trial temperature, and `azoth-eos`' `molar_enthalpy_entropy` for the state's
+//! sensible enthalpy and its heat capacity. **SRK and the vapour root on every phase**, for the
+//! reason the TP model gives - the oracle's systems are `SystemSrkEos` and NeqSim's reactive
+//! phases are all `gas`-typed.
 //!
-//! # The loop is not the one its docstring describes
-//!
-//! **The class's own docstring says the outer loop is a Newton on `1/T` "following Michelsen
-//! 1987". The code is not that.** `solveEnthalpySpec` is a secant on `T` with a bisection
-//! fallback, bracketed on `[50, 5000] K`: the first pass - and any pass whose predecessor
-//! moved less than `1e-12` - takes a heat-capacity Newton step, and every other pass
-//! interpolates between the last two `(T, error)` pairs. The `1/T` variable appears nowhere in
-//! the file. The docstring is a comment about an intention; this port follows the code, and
-//! the capture records what the code does: three outer passes for the water-gas shift at 600 K.
-//!
-//! # The enthalpy is thermochemical, and the formation inventory is what makes it so
+//! # What the specification is, and where the class reads it from
 //!
 //! NeqSim's process-stream enthalpy is a *sensible* one and excludes the ideal-gas formation
-//! enthalpies. A reactive calculation cannot: the composition moves, and the heat that moving
-//! it releases is part of the balance. So both sides of the comparison carry the inventory
-//! `sum_i n_i dHf_i` - the specification adds it once at construction, and every trial state
-//! adds its own - and the residual is the difference of the two thermochemical enthalpies over
-//! the magnitude of the specification. The inventories do not cancel, because the composition
-//! they are built from is not the same at the trial temperature as it was at the specification.
+//! enthalpies, which a reactive calculation cannot: the composition moves, so the heat that
+//! moving it releases belongs in the balance. The class's constructor therefore takes the
+//! caller's sensible enthalpy and adds the inventory `sum_i n_i dHf_i` **at whatever
+//! composition the system happens to hold when it is constructed** - and its own test constructs
+//! it after a flash, so that is the flashed composition and not the feed.
 //!
-//! # The inner flash is the caller's
-//!
-//! A pass needs three things from the state at a trial temperature: the flash's own pass count,
-//! its **thermochemical** enthalpy and its heat capacity. All three come back through
-//! [`InnerFlash`], so this module carries neither an equation of state nor the reactive flash
-//! itself - [`crate::reactive_tp_flash`] and `azoth-eos`' enthalpy are the caller's business.
+//! A model has no such system to read. This takes the **thermochemical** specification directly
+//! and adds nothing, which makes the caller responsible for the same convention on both sides of
+//! the comparison - and makes the number the case pins unambiguous. A caller with a sensible
+//! enthalpy adds the inventory at their own composition before calling, which is the class's own
+//! arithmetic with the composition stated rather than assumed.
 
-use azoth_core::Result;
+use azoth_core::units::{kelvins, pascals};
+use azoth_core::warning::Warning;
+use azoth_core::{AzothError, CalcResult, Result};
+use azoth_eos::databank::mixture_of;
+use azoth_eos::{Cubic, IdealGasModel, Mixture, RootSide, molar_enthalpy_entropy};
 
-/// The outer loop's pass cap, from `MAX_OUTER_ITER`.
-pub const MAX_OUTER_ITERATIONS: usize = 200;
+use crate::databank::formation_properties;
+use crate::ph_flash_loop::{PhState, solve_enthalpy_spec};
+use crate::reactive_tp_flash::{ReactiveTpFlashResult, reactive_tp_flash};
 
-/// The tolerance on the normalised enthalpy residual, from `TOL`.
-pub const TOL: f64 = 1.0e-8;
+/// The cubic this model flashes with, from the oracle's `SystemSrkEos`.
+pub const CUBIC: Cubic = Cubic::Srk;
 
-/// The largest temperature step a pass may take, from `MAX_T_STEP`.
-pub const MAX_TEMPERATURE_STEP: f64 = 50.0;
-
-/// The lowest temperature the loop will try, from `T_MIN`.
-pub const T_MIN: f64 = 50.0;
-
-/// The highest, from `T_MAX`.
-pub const T_MAX: f64 = 5000.0;
-
-/// The bracket width below which the loop declares convergence, from `(tHigh - tLow) < 1e-6`.
-pub const BRACKET_TOLERANCE: f64 = 1.0e-6;
-
-/// What one pass of the inner flash answers with.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PhState {
-    /// The flash's own passes at this temperature, which the loop reports summed.
-    pub iterations: u32,
-    /// The state's **thermochemical** enthalpy: its sensible enthalpy plus the formation
-    /// inventory at this composition.
-    pub thermochemical_enthalpy: f64,
-    /// The state's heat capacity at constant pressure, which the first pass steps by.
-    pub cp: f64,
-}
-
-/// The inner flash: a temperature in, the solved state's own numbers out.
-pub type InnerFlash<'a> = &'a mut dyn FnMut(f64) -> Result<PhState>;
-
-/// What the PH flash answers with.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PhFlashOutcome {
-    /// The temperature the loop stopped at - `getEquilibriumTemperature`.
-    pub temperature: f64,
-    /// `isConverged`. **Also true where the *bracket* closed rather than the residual**: the
-    /// loop accepts a bracket narrower than [`BRACKET_TOLERANCE`] as an answer.
-    pub converged: bool,
-    /// `getOuterIterations`.
-    pub outer_iterations: u32,
-    /// `getTotalInnerIterations`: every inner flash's passes, summed over the outer loop.
-    pub total_inner_iterations: u32,
-}
-
-/// `ReactiveMultiphasePHflash.solveEnthalpySpec`: the secant-with-bisection loop on `T`.
+/// What the model answers with.
 ///
-/// `initial_temperature` is where the loop starts - the system's temperature as the class
-/// finds it, which its own test perturbs to make the search a search - and
-/// `thermochemical_enthalpy_spec` is the specification **with the formation inventory already
-/// added**, which is what the class's constructor builds.
+/// The loop's own [`crate::ph_flash_loop::PhFlashOutcome`] plus the warnings every registered
+/// model carries; the fields are the same four because the loop's answer *is* the model's.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReactivePhFlashResult {
+    /// The temperature the loop stopped at.
+    pub temperature: f64,
+    /// `isConverged`. Also true where the bracket closed rather than the residual.
+    pub converged: bool,
+    /// `getOuterIterations`: the temperature steps taken, a path quantity.
+    pub outer_iterations: u32,
+    /// `getTotalInnerIterations`: every inner flash's passes, summed.
+    pub total_inner_iterations: u32,
+    /// Caveats. This model has no range check of its own, so it is empty wherever the
+    /// caller's state was accepted.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ReactivePhFlashResult {
+    const CALC_ID: &'static str = "reactions.reactive_ph_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "converged",
+        "outer_iterations",
+        "total_inner_iterations",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// `reactions.reactive_ph_flash`: the temperature at which a reactive fluid's thermochemical
+/// enthalpy matches a specification, at fixed pressure.
+///
+/// `initial_temperature` is where the search starts, and it matters: the loop is a secant, so a
+/// different start is a different path to the same answer - and where the fluid is stable the
+/// answer may be one the path never reaches.
 ///
 /// # Errors
-/// Whatever `inner` raises.
+/// [`AzothError::InvalidInput`] for a charged component, a shape disagreement, or a component
+/// the databank does not carry; whatever the inner flash and the enthalpy raise.
+#[allow(clippy::too_many_arguments)]
 pub fn reactive_ph_flash(
+    components: &[String],
     initial_temperature: f64,
-    thermochemical_enthalpy_spec: f64,
-    inner: InnerFlash<'_>,
-) -> Result<PhFlashOutcome> {
-    let mut absolute_spec = thermochemical_enthalpy_spec.abs();
-    if absolute_spec < 1.0e-10 {
-        // The class's own guard: a near-zero enthalpy would divide by nothing.
-        absolute_spec = 1.0;
-    }
-
-    // Step 1: the inner flash at the starting temperature.
-    let first = inner(initial_temperature)?;
-    let mut total_inner_iterations = first.iterations;
-    let mut temperature = initial_temperature;
-    let mut error = (first.thermochemical_enthalpy - thermochemical_enthalpy_spec) / absolute_spec;
-    let mut state = first;
-
-    if error.abs() < TOL {
-        return Ok(PhFlashOutcome {
-            temperature,
-            converged: true,
-            outer_iterations: 0,
-            total_inner_iterations,
+    pressure: f64,
+    moles: &[f64],
+    thermochemical_enthalpy: f64,
+    max_phases: usize,
+) -> Result<ReactivePhFlashResult> {
+    if components.len() != moles.len() {
+        return Err(AzothError::InvalidInput {
+            field: "moles".to_string(),
+            reason: format!(
+                "{} entry(ies) against {} component(s)",
+                moles.len(),
+                components.len()
+            ),
         });
     }
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, ideal) = mixture_of(&names, CUBIC, None)?;
 
-    // The bracket, tracked on the sign of the residual: `H(T)` rises with `T`, so a positive
-    // residual means the temperature is too high.
-    let mut low = T_MIN;
-    let mut high = T_MAX;
-    if error > 0.0 {
-        high = temperature;
-    } else {
-        low = temperature;
+    // The formation column, which the thermochemical convention is built on. Read here rather
+    // than beside the enthalpy because it is the caller's number that carries it.
+    let mut formation = Vec::with_capacity(components.len());
+    for component in components {
+        let properties =
+            formation_properties(component)?.ok_or_else(|| AzothError::InvalidInput {
+                field: "components".to_string(),
+                reason: format!(
+                    "the component databank carries no formation row for `{component}`"
+                ),
+            })?;
+        formation.push(properties.enthalpy_of_formation);
     }
 
-    let mut previous_temperature = temperature;
-    let mut previous_error = f64::NAN;
-    let mut converged = false;
-    let mut outer_iterations = 0_u32;
+    let components = components.to_vec();
+    let moles = moles.to_vec();
+    let mut inner = |temperature: f64| -> Result<PhState> {
+        let outcome = reactive_tp_flash(&components, temperature, pressure, &moles, max_phases)?;
+        let (enthalpy, cp) = state_enthalpy(
+            &mixture,
+            &ideal,
+            &outcome,
+            temperature,
+            pressure,
+            &formation,
+        )?;
+        Ok(PhState {
+            iterations: outcome.total_iterations,
+            thermochemical_enthalpy: enthalpy,
+            cp,
+        })
+    };
 
-    for iteration in 0..MAX_OUTER_ITERATIONS {
-        outer_iterations = iteration as u32 + 1;
-
-        let has_bracket = low > T_MIN && high < T_MAX;
-        let newton = |state: &PhState, temperature: f64| {
-            let cp = if state.cp.abs() < 1.0e-20 {
-                100.0
-            } else {
-                state.cp
-            };
-            temperature - (state.thermochemical_enthalpy - thermochemical_enthalpy_spec) / cp
-        };
-
-        let mut next = if iteration == 0
-            || previous_error.is_nan()
-            || (temperature - previous_temperature).abs() < 1.0e-12
-        {
-            // The first pass, and any pass that did not move: a heat-capacity Newton step.
-            newton(&state, temperature)
-        } else {
-            // The secant step, which is what captures `dH/dT` including the reaction's own
-            // contribution - the heat the shifting equilibrium absorbs or releases.
-            let slope = (error - previous_error) / (temperature - previous_temperature);
-            if slope.abs() > 1.0e-30 {
-                temperature - error / slope
-            } else {
-                newton(&state, temperature)
-            }
-        };
-
-        // A step larger than the cap is trimmed to it, and a step that leaves the bracket is
-        // replaced by the bracket's midpoint - the guaranteed-convergence fallback.
-        if (next - temperature).abs() > MAX_TEMPERATURE_STEP {
-            next = temperature + (next - temperature).signum() * MAX_TEMPERATURE_STEP;
-        }
-        if has_bracket && (next <= low || next >= high) {
-            next = 0.5 * (low + high);
-        }
-        next = next.clamp(T_MIN, T_MAX);
-
-        // A step that went nowhere: bisect if there is a bracket, else move a kelvin the way
-        // the residual points.
-        if (next - temperature).abs() < 1.0e-12 {
-            next = if has_bracket {
-                0.5 * (low + high)
-            } else {
-                temperature + if error < 0.0 { 1.0 } else { -1.0 }
-            };
-        }
-
-        previous_temperature = temperature;
-        previous_error = error;
-
-        state = inner(next)?;
-        total_inner_iterations += state.iterations;
-        temperature = next;
-        error = (state.thermochemical_enthalpy - thermochemical_enthalpy_spec) / absolute_spec;
-
-        if error > 0.0 && temperature < high {
-            high = temperature;
-        } else if error < 0.0 && temperature > low {
-            low = temperature;
-        }
-
-        if error.abs() < TOL {
-            converged = true;
-            break;
-        }
-        let has_bracket = low > T_MIN && high < T_MAX;
-        if has_bracket && (high - low) < BRACKET_TOLERANCE {
-            converged = true;
-            break;
-        }
-    }
-
-    Ok(PhFlashOutcome {
-        temperature,
-        converged,
-        outer_iterations,
-        total_inner_iterations,
+    let outcome = solve_enthalpy_spec(initial_temperature, thermochemical_enthalpy, &mut inner)?;
+    Ok(ReactivePhFlashResult {
+        temperature: outcome.temperature,
+        converged: outcome.converged,
+        outer_iterations: outcome.outer_iterations,
+        total_inner_iterations: outcome.total_inner_iterations,
+        warnings: Vec::new(),
     })
+}
+
+/// One flashed state's thermochemical enthalpy and its heat capacity.
+///
+/// Each phase's molar enthalpy is taken at its own composition and the cubic's vapour root, and
+/// weighted by its moles; the formation inventory is added over the same rows. The class's own
+/// `getFormationEnthalpyInventory` and `getThermochemicalEnthalpy` are this, one phase object at
+/// a time.
+fn state_enthalpy(
+    mixture: &Mixture,
+    ideal: &IdealGasModel,
+    outcome: &ReactiveTpFlashResult,
+    temperature: f64,
+    pressure: f64,
+    formation: &[f64],
+) -> Result<(f64, f64)> {
+    let reduced = mixture.reduced_parameters(kelvins(temperature), pascals(pressure))?;
+    let mut sensible = 0.0_f64;
+    let mut heat_capacity = 0.0_f64;
+    let mut inventory = 0.0_f64;
+
+    for row in &outcome.phase_moles {
+        let total: f64 = row.iter().sum();
+        if total <= 0.0 {
+            continue;
+        }
+        let composition: Vec<f64> = row.iter().map(|moles| moles / total).collect();
+        let z = mixture
+            .phase_state(&reduced, &composition, RootSide::Vapour)?
+            .z;
+        let state = molar_enthalpy_entropy(
+            mixture,
+            ideal,
+            kelvins(temperature),
+            pascals(pressure),
+            &composition,
+            z,
+        )?;
+        sensible += total * state.h.value;
+        heat_capacity += total * state.cp.value;
+        for (moles, d_hf) in row.iter().zip(formation) {
+            inventory += moles * d_hf;
+        }
+    }
+    Ok((sensible + inventory, heat_capacity))
 }

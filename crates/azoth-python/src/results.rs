@@ -60,6 +60,7 @@ use azoth_process::{
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
+use azoth_reactions::reactive_ph_flash::ReactivePhFlashResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
 use azoth_reactions::reactive_tp_flash::ReactiveTpFlashResult;
 use azoth_reactions::reference_potentials::ReferencePotentialsResult;
@@ -1120,6 +1121,70 @@ impl PyReactivePhaseEquilibriumResult {
             "ReactivePhaseEquilibriumResult(skipped={}, converged={}, iterations={})",
             self.skipped, self.converged, self.iterations
         )
+    }
+}
+
+/// Result of `reactions.reactive_ph_flash`, transported.
+///
+/// The temperature a reactive fluid's enthalpy asks for, and the passes it cost. **The two
+/// counts are path quantities** and cross as they are.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ReactivePhFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyReactivePhFlashResult {
+    /// The temperature the loop stopped at.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// `isConverged`, also true where the bracket closed rather than the residual.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// The temperature steps taken.
+    #[pyo3(get)]
+    pub outer_iterations: u32,
+    /// Every inner flash's passes, summed.
+    #[pyo3(get)]
+    pub total_inner_iterations: u32,
+    /// Caveats, as `(code, field, message)` triples.
+    #[pyo3(get)]
+    pub warnings: Vec<(String, String, String)>,
+}
+
+#[pymethods]
+impl PyReactivePhFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ReactivePhFlashResult(temperature={}, converged={}, outer_iterations={})",
+            self.temperature.magnitude_si, self.converged, self.outer_iterations
+        )
+    }
+}
+
+impl From<&ReactivePhFlashResult> for PyReactivePhFlashResult {
+    fn from(r: &ReactivePhFlashResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature,
+                unit: "K".to_string(),
+            },
+            converged: r.converged,
+            outer_iterations: r.outer_iterations,
+            total_inner_iterations: r.total_inner_iterations,
+            warnings: r
+                .warnings
+                .iter()
+                .map(|w| {
+                    (
+                        format!("{:?}", w.code),
+                        w.field.clone().unwrap_or_default(),
+                        w.message.clone(),
+                    )
+                })
+                .collect(),
+        }
     }
 }
 
@@ -7639,6 +7704,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),
         ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
         ReactiveTpFlashResult::CALC_ID => ReactiveTpFlashResult::FIELDS.to_vec(),
+        ReactivePhFlashResult::CALC_ID => ReactivePhFlashResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),

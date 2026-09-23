@@ -74,6 +74,7 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
     (0, 0, 0, 0, 0, 0, 0): None,  # dimensionless: a ratio, carried as a bare f64
     (1, 0, 0, 0, 0, 0, 0): "Length",
     (0, 0, 0, 0, 0, 1, 0): "AmountOfSubstance",
+    (2, 1, -2, 0, 0, 0, 0): "Energy",
     (0, 1, 0, 0, 0, 0, 0): "Mass",
     (2, 0, 0, 0, 0, 0, 0): "Area",
     (3, 0, -1, 0, 0, 0, 0): "VolumeRate",
@@ -172,6 +173,7 @@ LEAN_DIMENSIONS: dict[str, str] = {
     "N/m": "Dimension.Force / Dimension.Length",
     "kg/mol": "Dimension.Mass / Dimension.AmountOfSubstance",
     "m**3/mol": "Dimension.Volume / Dimension.AmountOfSubstance",
+    "J": "Dimension.Energy",
     "J/mol": "Dimension.Energy / Dimension.AmountOfSubstance",
     "Pa*m**6/mol**2": "Dimension.Pressure * Dimension.Length ^ 6 / Dimension.AmountOfSubstance ^ 2",
     "J/(mol*K)": "Dimension.Energy / (Dimension.AmountOfSubstance * Dimension.Temperature)",

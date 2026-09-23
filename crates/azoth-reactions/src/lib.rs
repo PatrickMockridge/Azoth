@@ -16,7 +16,8 @@
 //! * [`reactive_phase_equilibrium`] - that solve as an operation on one phase
 //! * [`linalg`] - the exact rank and the LU solve those two rest on
 //! * [`reactive_tp_flash`] - the reactive flash stack as a model, over `azoth-eos`
-//! * [`reactive_ph_flash`] - the temperature search around that flash at fixed enthalpy
+//! * [`reactive_ph_flash`] - that search as a model, over the same two
+//! * [`ph_flash_loop`] - the temperature search itself, at fixed enthalpy
 
 pub mod chemical_equilibrium;
 pub mod databank;
@@ -26,6 +27,7 @@ pub mod formula_matrix;
 pub mod linalg;
 pub mod lp_seed;
 pub mod model_gen;
+pub mod ph_flash_loop;
 pub mod rand_solver;
 pub mod reactive_flash;
 pub mod reactive_ph_flash;

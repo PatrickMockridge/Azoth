@@ -237,6 +237,7 @@ Four sections, and the difference between them is the point:
 *Models* — whose specs fix a procedure rather than an equation:
 
 - [`reactions.chemical_equilibrium`](./reactions/chemical_equilibrium.md) — Reactive chemical equilibrium by the Smith-Missen method
+- [`reactions.reactive_ph_flash`](./reactions/reactive_ph_flash.md) — Reactive flash at fixed pressure and enthalpy
 - [`reactions.reactive_phase_equilibrium`](./reactions/reactive_phase_equilibrium.md) — Reactive equilibrium as an operation on one phase
 - [`reactions.reactive_tp_flash`](./reactions/reactive_tp_flash.md) — Reactive flash at fixed temperature and pressure
 - [`reactions.reference_potentials`](./reactions/reference_potentials.md) — Reference potentials from an independent reaction basis

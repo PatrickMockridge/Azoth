@@ -112,8 +112,22 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
 #: NeqSim's name for it: the passes every inner solve took, summed over the outer loop. The
 #: two kernels take 35 and 37 of them on the water-gas shift and agree on the composition to
 #: `1e-7`, which is what a path quantity looks like - the loop it counts is not the answer.
+#:
+#: `reactive_ph_flash`'s two are the fifth and sixth, and they are the same quantity one level
+#: out: the secant's temperature steps and every inner flash's passes summed. On the water-gas
+#: shift the two kernels take 21 and 11 outer passes to temperatures that agree to `0.06 K` on
+#: `600 K`, because a secant's path depends on both enthalpy curves and those are built by
+#: different implementations. The spec says so and the case reports the counts rather than
+#: pinning them.
 _UNCOMPARED_FIELDS: frozenset[str] = frozenset(
-    {"iterations", "error", "converged", "total_iterations"}
+    {
+        "iterations",
+        "error",
+        "converged",
+        "total_iterations",
+        "outer_iterations",
+        "total_inner_iterations",
+    }
 )
 
 

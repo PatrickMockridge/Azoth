@@ -1,0 +1,15 @@
+model = "reactions.reactive_ph_flash"
+[[cases]]
+id = "wgs_600k_the_capture_specification_halved"
+tolerance = 1e-03
+source = "NeqSim master, the class's own round trip: the water-gas shift brought to reactive equilibrium at 600 K and 1 bar, its enthalpy recorded, the temperature perturbed to 500 K, and the PH flash asked for the temperature back. **The specification is the capture's `-364017.4239 J` halved**, because NeqSim's own counts the fluid twice - the two phase objects its constructor leaves each report the whole fluid's moles, so `getEnthalpy()` and `getFormationEnthalpyInventory()` both sum it. The factor cancels in the loop's residual, which is a ratio of two quantities that carry it, so the temperature that comes back is the capture's own `600.0000398 K`. **`outer_iterations` and `total_inner_iterations` are deliberately not pinned**: a secant's step count is a path quantity, and the two codes take 3 and 2 passes to the same temperature. **The `1e-3` tolerance is a measurement too**: the specification is NeqSim's enthalpy and the curve the loop walks is `azoth-eos`', so the crossing sits where the two enthalpy implementations agree - measured, `600.0553 K` in Rust and `600.0610 K` in Python against NeqSim's `600.0000398`, which is `0.06 K` on `4.5 J` of enthalpy at a heat capacity of `75 J/K`.\n"
+[cases.inputs]
+components = ["CO", "water", "CO2", "hydrogen"]
+T = 500.0
+P = 100000.0
+moles = [0.25, 0.25, 0.25, 0.25]
+enthalpy = -182008.71195353585
+max_phases = 2
+[cases.expected]
+temperature = 600.0000397583285
+converged = true

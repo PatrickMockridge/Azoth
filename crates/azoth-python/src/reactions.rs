@@ -17,7 +17,8 @@ use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyEquilibriumConstantResult, PyReactivePhaseEquilibriumResult, PyReactiveTpFlashResult,
+    PyEquilibriumConstantResult, PyReactivePhFlashResult, PyReactivePhaseEquilibriumResult,
+    PyReactiveTpFlashResult,
 };
 
 /// One reaction's equilibrium constant, its derivative and its heat of reaction.
@@ -196,5 +197,34 @@ pub fn reactive_tp_flash(
         max_phases as usize,
     )
     .map(|r| PyReactiveTpFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The reactive PH flash: the temperature a specified enthalpy asks for.
+///
+/// `enthalpy` is the **thermochemical** specification - the fluid's sensible enthalpy plus the
+/// formation inventory - and `T` is where the secant search starts.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, moles, enthalpy, max_phases))]
+#[pyo3(text_signature = "(components, T, P, moles, enthalpy, max_phases)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the flash's own name
+pub fn reactive_ph_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    moles: Vec<f64>,
+    enthalpy: f64,
+    max_phases: f64,
+) -> PyResult<PyReactivePhFlashResult> {
+    azoth_reactions::reactive_ph_flash::reactive_ph_flash(
+        &components,
+        T,
+        P,
+        &moles,
+        enthalpy,
+        max_phases as usize,
+    )
+    .map(|r| PyReactivePhFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }

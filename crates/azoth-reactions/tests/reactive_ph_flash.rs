@@ -34,7 +34,7 @@ use azoth_core::units::{kelvins, pascals};
 use azoth_eos::databank::mixture_of;
 use azoth_eos::{Cubic, IdealGasModel, RootSide, molar_enthalpy_entropy};
 use azoth_reactions::databank::formation_properties;
-use azoth_reactions::reactive_ph_flash::{PhState, reactive_ph_flash};
+use azoth_reactions::ph_flash_loop::{PhState, solve_enthalpy_spec};
 use azoth_reactions::reactive_tp_flash::{ReactiveTpFlashResult, reactive_tp_flash};
 
 const NAMES: [&str; 4] = ["CO", "water", "CO2", "hydrogen"];
@@ -101,7 +101,7 @@ fn round_trip(
     label: &str,
     flash_temperature: f64,
     perturbed: f64,
-) -> (azoth_reactions::reactive_ph_flash::PhFlashOutcome, f64, u32) {
+) -> (azoth_reactions::ph_flash_loop::PhFlashOutcome, f64, u32) {
     let components: Vec<String> = NAMES.iter().map(|name| (*name).to_string()).collect();
     let (mixture, ideal) = mixture_of(&NAMES, Cubic::Srk, None).expect("the databank carries them");
     let formation = formation_enthalpies();
@@ -121,7 +121,7 @@ fn round_trip(
             cp,
         })
     };
-    let result = reactive_ph_flash(perturbed, specified, &mut inner).expect("the search runs");
+    let result = solve_enthalpy_spec(perturbed, specified, &mut inner).expect("the search runs");
     let (captured_temperature, captured_outer) = captured_round_trip(label);
 
     // The specification itself: the capture's is **twice** this one, which is the measurement
@@ -269,4 +269,46 @@ fn captured_value(label: &str, key: &str) -> String {
         }
     }
     panic!("no `{key}` for `{label}` in the capture");
+}
+
+/// **The model, on the capture's own specification.** The class's thermochemical specification
+/// counts the fluid twice, so the input here is the capture's number **halved** - the stated
+/// transformation, not a second measurement - and the temperature that comes back is the
+/// capture's own.
+///
+/// This is the whole model rather than the loop: the inner flash, the enthalpy and the heat
+/// capacity all come from the crate's own pieces, and only the temperature is asked of the
+/// capture.
+#[test]
+fn the_model_finds_the_captured_temperature() {
+    use azoth_reactions::reactive_ph_flash::reactive_ph_flash;
+
+    let components: Vec<String> = NAMES.iter().map(|name| (*name).to_string()).collect();
+    let captured_spec = captured_specification("wgs-600K-from-500K");
+
+    let outcome = reactive_ph_flash(
+        &components,
+        500.0,
+        PRESSURE_PA,
+        &FEED,
+        captured_spec / 2.0,
+        2,
+    )
+    .expect("the search runs");
+
+    assert!(outcome.converged, "the captured search converges");
+    let captured_temperature: f64 =
+        captured_value("wgs-600K-from-500K", "equilibrium_temperature_K")
+            .parse()
+            .expect("a temperature");
+    // **`1e-4` is where the two enthalpy implementations meet.** The specification is
+    // NeqSim's and the curve the loop walks is `azoth-eos`', so the crossing sits where they
+    // agree: measured, `600.0553 K` against the capture's `600.0000398`, which is `0.06 K` on
+    // `4.5 J` of enthalpy at a heat capacity of `75 J/K`.
+    let relative = (outcome.temperature - captured_temperature).abs() / captured_temperature;
+    assert!(
+        relative < 5.0e-4,
+        "the model found {} against the capture's {captured_temperature}, a relative {relative:.3e}",
+        outcome.temperature
+    );
 }

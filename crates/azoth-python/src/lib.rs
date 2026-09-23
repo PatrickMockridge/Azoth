@@ -150,6 +150,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(reactions::chemical_equilibrium, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::reactive_phase_equilibrium, m)?)?;
     m.add_function(wrap_pyfunction!(reactions::reactive_tp_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(reactions::reactive_ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(eos::pr_lee_kesler_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::matcop5_prumr_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::matcop_alpha, m)?)?;

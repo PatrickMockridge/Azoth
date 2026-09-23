@@ -67,6 +67,9 @@ exponents = [0, 1, 0, 0, 0, -1, 0]
 id = "molar_volume"
 exponents = [3, 0, 0, 0, 0, -1, 0]
 [[dimensions]]
+id = "energy"
+exponents = [2, 1, -2, 0, 0, 0, 0]
+[[dimensions]]
 id = "molar_energy"
 exponents = [2, 1, -2, 0, 0, -1, 0]
 [[dimensions]]
@@ -221,6 +224,12 @@ dimension = "molar_volume"
 pint = "meter**3/mole"
 uom = "molar_volume::cubic_meter_per_mole"
 rust_ctor = "cubic_meters_per_mole"
+[[units]]
+id = "J"
+dimension = "energy"
+pint = "joule"
+uom = "energy::joule"
+rust_ctor = "joules"
 [[units]]
 id = "J/mol"
 dimension = "molar_energy"
