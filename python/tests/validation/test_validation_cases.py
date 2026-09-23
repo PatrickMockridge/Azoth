@@ -120,7 +120,7 @@ def _enthalpy_kwargs(case: dict[str, Any]) -> dict[str, Any]:
 
 #: Ids whose call arguments are not a straight copy of the case's `inputs`.
 #:
-#: One entry today. It grows by one line per model whose arguments are objects
+#: Four entries. It grows by one line per model whose arguments are objects
 #: rather than numbers, which is the point of it being a table rather than a branch
 #: buried in `_call` - a reader can see the whole of the exception list at once.
 def _vector_model_kwargs(case: dict[str, Any]) -> dict[str, Any]:

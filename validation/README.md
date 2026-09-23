@@ -44,8 +44,10 @@ K-value per component), an enum member as its spec spelling, or `null` for an
 output that is genuinely absent - `eos.pt_flash` reports no vapour fraction when a
 feed has no two-phase solution, and a case can assert that. And an input that is an
 *object* rather than a number needs an entry in the runner's `ARGUMENT_BUILDERS`,
-which today holds one: `eos.pt_flash` takes a `Mixture`, so its case names its
-components and the runner resolves them through the databank.
+which holds four: `eos.pt_flash` and `eos.molar_enthalpy_entropy` take a `Mixture`,
+so their cases name their components and the runner resolves them through the
+databank, and `eos.wilke_viscosity` and `eos.mason_saxena_conductivity` take
+parallel per-component vectors built from the case's numbers.
 
 ## NeqSim is the ground truth, and `neqsim/` is how to reach it
 
@@ -61,7 +63,7 @@ carries the two commands at the top.
 
 The jar is not vendored. `databank/sources/neqsim/` carries NeqSim's *data files*,
 because those are what the databank is compiled from and they are small; the jar is
-20 MB of compiled Java that nothing here links against.
+58 MB of compiled Java that nothing here links against.
 
 `source.verification` is one of:
 

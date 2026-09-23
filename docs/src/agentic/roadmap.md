@@ -2,93 +2,114 @@
 
 The skill catalog grows in two directions that move at different speeds. The
 cross-cutting and `azoth`-basis skills are written as the library implements the
-calculation they drive; the rest of NeqSim's catalog is a set of placeholders that
+calculation they drive; the rest of the catalog is a set of placeholders that
 become real in the same commit that lands their backing tranche. This page records
 the mapping, so an agent can tell "validated" from "placeholder" at a glance.
 
-## What is blocked, and why
+## What is `azoth`-basis, and what is still a placeholder
 
-A skill whose `calculation_basis` is `azoth` drives the validated library. Most of
-NeqSim's 77 community skills are thermo skills, and the library does not yet compute
-the physics behind them:
+A skill whose `calculation_basis` is `azoth` drives the validated library. Fifteen
+are: the four `library/` skills, four under `eos/`, four under `flow-assurance/`,
+two under `hydraulics/` and one under `thermal/`, driving the 67 calculations and
+93 models the library implements.
 
-- **Associating models (CPA, PC-SAFT, SAFT-VR-Mie)** — no flow-assurance hydrate or
-  process skill can be `azoth`-basis until tranche P7.
+The remaining 75 are placeholders — 47 `screening`, 18 `advisory` and 10
+`data-retrieval` — and each `screening` one names the single tranche that will
+back its physics:
+
+- **Unit operations and the flowsheet** — 39 skills wait on P11: 30 under
+  `process/` and 9 under `safety/`. The specification places the tier after the
+  physics, and it is partly built: `specs/unit_ops/` declares 24 palette entries
+  and six carry kernels, so the skills are waiting on the remaining kernels and on
+  the P12 executor rather than on the tier's existence.
+- **Reference equations of state, and the PVT chain** — 7 skills wait on P4: six
+  under `pvt/` and `azoth-near-well-and-injectivity` under `subsurface/`.
+- **Cooldown** — `azoth-surf-cooldown-screening` is the one skill waiting on P9,
+  which it keeps for the hydrate temperature it compares against. The cooldown
+  itself is long-tail work under Tier 4 rather than a tranche's.
+
+Three tranches that once gated a block of skills no longer do, and the skills
+naming them have been re-based:
+
+- **Activity-coefficient models (NRTL, UNIFAC, UNIQUAC, Wilson, Van Laar)** — P5
+  is closed: all five activity models are ported, and all five have a phase
+  (`eos.ge_nrtl_phase`, `eos.ge_unifac_phase`, `eos.ge_uniquac_phase`,
+  `eos.ge_wilson_phase`, `eos.ge_van_laar_acid_phase`) with the NRTL one also
+  carrying a gamma-phi flash. One of the five phases has no differential oracle,
+  and the reason is a withdrawal rather than an absence: upstream commit `c5ec5fb`
+  gave Wilson a published coefficient, which is now compared against, and withdrew
+  `PhaseGEUniquac` outright — its `getGamma` throws and both standalone
+  constructors refuse — so UNIQUAC cannot be compared against anything.
+- **Associating models (CPA, PC-SAFT, SAFT-VR-Mie)** — P7 has landed the phases:
+  `eos.pr_cpa_phase`, `eos.srk_cpa_phase` and `eos.umr_cpa_phase` for the cubic
+  association, and `eos.pcsaft_rahmat_phase`, `eos.saft_vr_mie_phase` and
+  `eos.tp_flash_saft` for SAFT. No skill has been promoted on them, because none
+  of the placeholders drives an associating phase directly.
 - **Electrolytes** — P8 is closed: `eos.pitzer_phase`, `eos.kent_eisenberg_phase`,
   `eos.desmukh_mather_phase`, `eos.soreide_whitson_phase` and the Fürst pair
-  (`eos.furst_electrolyte_phase`, `eos.furst_electrolyte_mod2004_phase`) are ported. The one
-  skill built on them, `azoth-produced-water-scale-screening`, was promoted when P9 landed
-  `eos.scale_saturation_ratio` and `eos.salt_precipitation`; both dehydration skills still
-  wait on P11.
-- **Activity-coefficient models (NRTL, UNIFAC, UNIQUAC, Wilson, Van Laar)** — P5 is
-  closed: all five activity models are ported, and all five have a phase
-  (`eos.ge_nrtl_phase`, `eos.ge_unifac_phase`, `eos.ge_uniquac_phase`,
-  `eos.ge_wilson_phase`, `eos.ge_van_laar_acid_phase`) with the NRTL one also carrying a
-  gamma-phi flash. One of the five phases has no differential oracle, and the reason is a
-  withdrawal rather than an absence: upstream commit `c5ec5fb` gave Wilson a published
-  coefficient, which is now compared against, and withdrew `PhaseGEUniquac` outright —
-  its `getGamma` throws and both standalone constructors refuse — so UNIQUAC still cannot
-  be compared against anything.
-- **Unit operations and the flowsheet** — the 30 process skills wait on P11 and P12,
-  which the specification places after the physics tiers.
-- **Reference equations of state (GERG, IAPWS-95, Span-Wagner, …)** — pvt benchmark
-  and reference-data skills wait on P4.
-- **Transport properties** beyond heat capacity and heat of vaporisation — viscosity,
-  conductivity, diffusivity, surface tension, density — wait on P1.
-- **Petroleum-fraction characterisation** — pvt pseudocomponent and regression skills
-  wait on Tier 1 of [`ROADMAP.md`](../../../ROADMAP.md).
-- **Hydrates, wax, asphaltene and solids** — P9 has landed hydrate, wax, scale and freezing.
-  Four skills were waiting on it and have been promoted to `azoth`-basis:
-  `azoth-hydrate-margin-check` and `azoth-hydrate-screening`
-  (`eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure`,
-  `eos.hydrate_fraction`), `azoth-wax-margin-check` (`eos.tp_multiflash_wax`,
-  `eos.wax_solid_fugacity`) and `azoth-produced-water-scale-screening`
-  (`eos.scale_saturation_ratio`, `eos.salt_precipitation`).
-  **The hydrate ids carry a caveat worth stating**: they reproduce NeqSim's non-Pitzer route,
-  and NeqSim answers a `SystemPitzer` brine from `PitzerHydrateFlash` instead — a path that
-  needs a flash whose two phases run different models, which this library does not have. So a
-  hydrate margin on a brine is not what these three compute, and the difference is the
-  electrolyte coupling rather than the hydrate physics.
-  **Three of the eight that carried `P9` were never waiting on solids physics and are
-  re-based**: `two-phase-flow-regime-screening` and `multiphase-flow-slug-screening` are
-  `advisory` — their maps are NeqSim's `fluidmechanics/`, which is not a port source, so no
-  tranche backs them — and `olga-multiphase-simulator` is `data-retrieval`, because it drives
-  a commercial simulator rather than computing anything. `surf-cooldown-screening` keeps P9
-  for the hydrate temperature it compares against, and states that the cooldown itself is
-  long-tail work under Tier 4 rather than a tranche's.
-  **Asphaltene is carried rather than pending**: the reachable pair of onset flashes scans
-  over a flash that upstream collapses to the feed, so there is nothing to drive, and
-  [`ROADMAP.md`](../../../ROADMAP.md) records the defect and what would have to change. No
-  skill is blocked on it.
+  (`eos.furst_electrolyte_phase`, `eos.furst_electrolyte_mod2004_phase`) are
+  ported. The one skill built on them, `azoth-produced-water-scale-screening`, was
+  promoted when P9 landed `eos.scale_saturation_ratio` and
+  `eos.salt_precipitation`; both dehydration skills still wait on P11.
+
+P9 has landed hydrate, wax, scale and freezing, and four skills were promoted to
+`azoth`-basis on it: `azoth-hydrate-margin-check` and `azoth-hydrate-screening`
+(`eos.hydrate_formation_temperature`, `eos.hydrate_formation_pressure`,
+`eos.hydrate_fraction`), `azoth-wax-margin-check` (`eos.tp_multiflash_wax`,
+`eos.wax_solid_fugacity`) and `azoth-produced-water-scale-screening`
+(`eos.scale_saturation_ratio`, `eos.salt_precipitation`).
+**The hydrate ids carry a caveat worth stating**: they reproduce NeqSim's non-Pitzer
+route, and NeqSim answers a `SystemPitzer` brine from `PitzerHydrateFlash` instead
+— a path that needs a flash whose two phases run different models, which this
+library does not have. So a hydrate margin on a brine is not what these three
+compute, and the difference is the electrolyte coupling rather than the hydrate
+physics.
+**Three of the eight that carried `P9` were never waiting on solids physics and are
+re-based**: `azoth-two-phase-flow-regime-screening` and
+`azoth-multiphase-flow-slug-screening` are `advisory` — their maps are NeqSim's
+`fluidmechanics/`, which is not a port source, so no tranche backs them — and
+`azoth-olga-multiphase-simulator` is `data-retrieval`, because it drives a
+commercial simulator rather than computing anything.
+**Asphaltene is carried rather than pending**: the reachable pair of onset flashes
+scans over a flash that upstream collapses to the feed, so there is nothing to
+drive, and [`ROADMAP.md`](../../../ROADMAP.md) records the defect and what would
+have to change. No skill is blocked on it.
+
+**Petroleum-fraction characterisation** is the fourth block, and it is not a
+tranche's: the `pvt/` pseudocomponent and regression skills wait on Tier 1 of
+[`ROADMAP.md`](../../../ROADMAP.md).
 
 ## Tranche → domain → skills
+
+The `tranche` field in `skills.toml` is the machine-readable form of this table,
+and `tools/validate_skills.py` requires a `screening` skill to name exactly one.
+A domain's `azoth`-basis skills carry none, because they drive the library rather
+than wait on it:
 
 | Domain | Basis now | Backed by tranche |
 |---|---|---|
 | `library` | `azoth` | P0 (done) |
 | `eos`, `hydraulics`, `thermal` | `azoth` | P0–P2 (done) |
-| `pvt` | `screening` | P1, P3 (mixing), P4 (reference EOS), Tier 1 (characterisation) |
-| `process` | `screening` | P1, P5, P6, P10, P11 (unit ops), P12 (flowsheet) |
-| `flow-assurance` | `azoth`, `screening` | P7, P9 |
-| `safety` | `screening` | P1, P6, P11 |
-| `subsurface` | `screening` | Tier 1 (PVT) |
+| `process` | `screening` | P11 |
+| `safety` | `screening` | P11 |
+| `pvt` | `screening` | P4 |
+| `subsurface` | `screening` | P4 |
+| `flow-assurance` | `azoth`, `screening`, `advisory`, `data-retrieval` | P9 |
+| `subsea` | `data-retrieval` | none needed |
 | `environment` | `advisory` | none needed |
 | `field-development` | `advisory` | none needed |
-| `subsea` | `data-retrieval` | none needed |
 | `reporting` | `advisory` | none needed |
 | `engineering-data` | `data-retrieval` | none needed |
 
 The tranches are the P0–P12 order in
 [The specification](../architecture/specification.md), mapped one-to-one to NeqSim's
 classes in [`ROADMAP.md`](../../../ROADMAP.md). `(done)` means the `azoth`-basis skills
-for that domain are written, not that every class in the tranche is ported — the 25
-alpha functions of P2, for example, are still ahead.
+for that domain are written, not that every class in the tranche is ported — of P2's
+25 alpha functions, 24 are ported.
 
-## The two speeds
+## How a placeholder becomes real
 
-- **Now, at `azoth`-basis**: the four `azoth`-basis `library/` skills, and the `eos/`,
-  `flow-assurance/`, `hydraulics/` and `thermal/` skills that drive the 66 implemented
-  calculations and 81 models.
+- **At `azoth`-basis**: the fifteen skills named above.
 - **As a tranche lands**: the `screening` placeholder for a domain is promoted to
   `azoth`-basis in the same commit, and its `tranche` field is removed.
 

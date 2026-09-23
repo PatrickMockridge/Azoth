@@ -35,9 +35,10 @@ for that path.
 
 ## Run the HAZOP team
 
-The team runs through `python/azoth/agents`, the one place that imports
-`deepseek_harness_sdk` — so the dev-preview runtime stays behind a thin boundary. The
-agent definition is [`agents/hazop/README.md`](hazop/README.md); the formal spec is
+`python/azoth/agents` is the boundary to that runtime — the one place that imports
+`deepseek_harness_sdk`, so the dev-preview churn stays contained. It is a shim today:
+the orchestration API lands with the runtime, and the runtime is not built. The agent
+definition is [`agents/hazop/README.md`](hazop/README.md); the formal spec is
 [`docs/src/agentic/orchestration.md`](../docs/src/agentic/orchestration.md).
 
 ## Caveats
@@ -47,4 +48,5 @@ agent definition is [`agents/hazop/README.md`](hazop/README.md); the formal spec
   churn stays in one place.
 - The team's formal logic is the rho-calculus
   ([`docs/src/calculus/rho.md`](../docs/src/calculus/rho.md)). Barbed *congruence* — the
-  context closure of barbed bisimulation — is a P11 item, not yet built.
+  context closure of barbed bisimulation — is stated in
+  [`docs/src/calculus/barbs.md`](../docs/src/calculus/barbs.md) and not yet proved.

@@ -114,7 +114,7 @@ on vectors of one entry per slot.
 
 This is the one statement in this section a change could break, and breaking it
 would be silent. The vocabulary table, the generated Rust, the generated Python and
-the twenty-four unit theorems all carry vectors; if a vector could name two
+the thirty-seven unit theorems all carry vectors; if a vector could name two
 different dimensions, or two vectors the same one, every one of those would agree
 with a table that meant nothing. The three theorems beside it —
 `ofExponentsOn_nil`, `ofExponents_nil` and `ofExponentsOn_singleton` — are the

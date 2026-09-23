@@ -32,8 +32,8 @@ skill has no logic of its own — the normal case, because the method is azoth's
 Skills are grouped under `skills/<domain>/`:
 
 - `library/` — cross-cutting skills about using and extending azoth itself.
-- `eos/`, `hydraulics/`, `thermal/` — `azoth`-basis skills for the calculations the
-  library implements today.
+- `eos/`, `flow-assurance/`, `hydraulics/`, `thermal/` — `azoth`-basis skills for the
+  calculations the library implements today.
 - NeqSim's ten engineering domains — `process/`, `safety/`, `flow-assurance/`,
   `pvt/`, `subsea/`, `field-development/`, `environment/`, `subsurface/`,
   `reporting/`, `engineering-data/` — where a `screening`/`advisory`/`data-retrieval`
