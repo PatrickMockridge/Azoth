@@ -1,0 +1,50 @@
+neutrality CO+water+CO2+hydrogen -> components=8 chemical=true charged=true | CO water CO2 hydrogen OH- H3O+ HCO3- CO3--
+neutrality CO2+water -> components=6 chemical=true charged=true | CO2 water OH- H3O+ HCO3- CO3--
+neutrality CO2+hydrogen+CO+water -> components=8 chemical=true charged=true | CO2 hydrogen CO water OH- H3O+ HCO3- CO3--
+neutrality nitrogen+hydrogen -> components=2 chemical=false charged=false | nitrogen hydrogen
+neutrality nitrogen+hydrogen+ammonia -> components=3 chemical=false charged=false | nitrogen hydrogen ammonia
+neutrality CO2+hydrogen -> components=2 chemical=false charged=false | CO2 hydrogen
+neutrality methane+ethane+propane -> components=3 chemical=false charged=false | methane ethane propane
+neutrality methanol+CO+hydrogen -> components=3 chemical=false charged=false | methanol CO hydrogen
+neutrality oxygen+nitrogen+CO2 -> components=3 chemical=false charged=false | oxygen nitrogen CO2
+
+fluid=co2-water-298K
+temperature_K=298.15
+pressure_bara=1.01325
+  feed[CO2]=0.01
+  feed[water]=10.0
+is_chemical_system=true
+phases=2
+total_moles=10.0100000004
+  phase[0]=gas beta=0.0010086563658606718 moles=0.010096650222668787
+x=CO2:0.9765102141001941 water:0.02348978589980592 OH-:1.000009665115536E-51 H3O+:1.000009665115536E-51 HCO3-:1.000009665115536E-51 CO3--:1.000009665115536E-51
+  phase[1]=aqueous beta=0.9989890668346043 moles=9.999880559413985
+x=CO2:1.1772872314229393E-5 water:0.9999836689077933 OH-:1.4298146909556775E-12 H3O+:2.2790899484670708E-6 HCO3-:2.2791285133966227E-6 CO3--:8.374388127330817E-16
+
+fluid=co2-h2s-water-298K
+temperature_K=298.15
+pressure_bara=1.01325
+  feed[CO2]=0.01
+  feed[H2S]=0.01
+  feed[water]=10.0
+is_chemical_system=true
+phases=2
+total_moles=10.020003322838049
+  phase[0]=gas beta=0.00184008204767494 moles=0.01843762823199754
+x=CO2:0.5381544939504451 H2S:0.43832568528425797 water:0.02351982076529691 HS-:9.99843786618171E-52 OH-:9.99843786618171E-52 H3O+:3.321819056252495E-47 HCO3-:9.99843786618171E-52 S--:9.99843786618171E-52 CO3--:9.99843786618171E-52
+  phase[1]=aqueous beta=0.9981585065718949 moles=10.00155155256945
+x=CO2:6.189831488298038E-6 H2S:1.918018820447552E-4 water:0.9997986820758465 HS-:4.926692147295376E-25 OH-:1.7916056072541209E-12 H3O+:1.8291665909963106E-6 HCO3-:1.4970422372010378E-6 S--:8.233835464911103E-30 CO3--:6.895507252721586E-16
+
+fluid=co2-water-313K-10bar
+temperature_K=313.15
+pressure_bara=10.0
+  feed[CO2]=0.1
+  feed[water]=10.0
+is_chemical_system=true
+phases=2
+total_moles=10.1000000004
+  phase[0]=gas beta=0.009797563825467481 moles=0.09895539464114059
+x=CO2:0.9935567332398252 water:0.006443266760174766 OH-:9.998955503745755E-52 H3O+:9.998955503745755E-52 HCO3-:9.998955503745755E-52 CO3--:9.998955503745755E-52
+  phase[1]=aqueous beta=0.990193583236 moles=10.000955191079678
+x=CO2:1.5926347120826185E-4 water:0.9998228552887715 OH-:1.0493830425047142E-12 H3O+:8.940610011361966E-6 HCO3-:8.940628958560222E-6 CO3--:1.0865059562342067E-15
+
