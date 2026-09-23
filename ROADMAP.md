@@ -151,16 +151,21 @@ reaches equilibrium through.
   reactive. **The three sources are different standard states and are not interchangeable**:
   `CO2water`'s `K1` is `253.235548` in `REACTIONDATA.csv` against `653.705141388` in
   `REACTIONDATAPITZER.csv`, which is why the source is an input rather than a default.
-  **Not ported, each with its blocker in the spec**: the LP initial estimate
-  (`LinearProgrammingChemicalEquilibrium`'s `SimplexSolver`), the second refinement
-  (`useAdaptiveDerivatives` needs `d(ln phi_i)/d(n_j)`), NeqSim's three-residual certification
-  (measured, it fails on all five captured fluids), and the branch NeqSim takes from *inside*
-  `TPflash`, `TPmultiflash`, `TPmultiflashWAX` and the bubble and dew operations - azoth's
-  flashes carry no chemical dispatch, which is the same seam named below.
-  **`Kinetics` has no reachable consumer**: `ChemicalReactionOperations` builds it, and the only
-  site that reaches it is `EnhancementFactorAlg` in `fluidmechanics/`'s reactive film model,
-  which is not a port target; it also stands on `calcEffectiveDiffusionCoefficients`, which is
-  P1's transport machinery rather than this tier's.
+  **Not ported, each with a measured blocker**: the second refinement, which switches
+  `useAdaptiveDerivatives` on and **converges on none of the three portable fluids** its oracle
+  walks - two iterations, its loop's minimum, and the first refinement's answer left where it
+  was; the **sequential chemical dispatch** inside `TPflash`, and the 100-line
+  `ChemicalEquilibrium` that loops a system's phases, which are reachable only where
+  `isChemicalSystem()` is true - and **every fluid that predicate accepts carries ions**, because
+  NeqSim's reaction tables are water chemistry; and the trace-ion short circuit, which needs the
+  same ions. The ionic branch of the solve is refused by azoth's own component rules, so this is
+  the P8 seam rather than work this tier owes.
+  **`Kinetics` is ported as far as it can be pinned**: its rate law (two laws behind a selector)
+  and its Krishna-Standart mass-transfer matrix are ids, both oracled on a real fluid, and the
+  effective-diffusion assembly the matrix would otherwise need is eight lines whose input - the
+  diffusivity model's binary matrix - is not observable from outside its class. `Kinetics` has no
+  consumer outside `fluidmechanics/`'s reactive film model, which is not a port target, so its
+  two ids have no in-tree caller and that is stated rather than hidden.
 - **Duan-Sun, unreachable.** `ComponentGeDuanSun`, `PhaseDuanSun`, `SystemDuanSun` and
   `thermo/util/empiric/DuanSun.java` are **not ported, and no state they accept exists**:
   `SystemDuanSun.addComponent` throws for every name but `CO2`, and the phase it would build
@@ -333,18 +338,18 @@ Port on demand, as a caller needs them:
 - **Sulfur.** `thermo/util/sulfur/SulfurThermodynamics`.
 - **Amines.** `thermo/util/amines/` (`AmineSystem`, `AmineKentEisenberg`), and the
   amine viscosity and diffusivity methods.
-- **Reactive and equilibrium, the rest.** `thermodynamicoperations/flashops/reactiveflash/`
-  (`ReactiveMultiphaseTPflash`, `ReactiveMultiphasePHflash`, `ReactiveStabilityAnalysis`,
-  `ModifiedRANDSolver`, `DIISAccelerator`, with `FormulaMatrix`) and
-  `thermodynamicoperations/chemicalequilibrium/ChemicalEquilibrium`. **The last is a name
-  collision**: two classes are called `ChemicalEquilibrium`, and this one is a 100-line
-  operation that loops `solveChemEq` over a system's phases until the composition stops
-  moving, while the 1,211-line solver Tier 2 ports is the other. It is **reachable** -
-  `ThermodynamicOperations` builds it - so it is a port nobody has done rather than a class
-  with no site, and what it needs is the chemical-system dispatch: an operation over a
-  *system* that solves reactions as part of its own state, which azoth's per-calc operations
-  and reaction-free flashes do not have. `chemicalreactions/`'s live path is Tier 2's now,
-  with its four ids.
+- **Reactive and equilibrium, the rest.** `thermodynamicoperations/chemicalequilibrium/ChemicalEquilibrium`
+  - **a name collision**: two classes are called `ChemicalEquilibrium`, and this one is a 100-line
+  operation that loops `solveChemEq` over a system's phases until the composition stops moving,
+  while the 1,211-line solver Tier 2 ports is the other. It is **reachable** -
+  `ThermodynamicOperations` builds it - and it is **blocked on the same predicate as the flash's
+  dispatch**: its whole body sits inside `if (system.isChemicalSystem())`, so on every fluid azoth
+  admits it is the empty operation, and on the fluids it acts on the flash has already solved the
+  chemistry. Its loop over phases is also a fiction - `solveChemEq` discards the caller's index -
+  which its oracle records. `flashops/reactiveflash/` is **no longer here**:
+  `ReactiveMultiphaseTPflash` and `ReactiveMultiphasePHflash` are Tier 2's
+  `reactions.reactive_tp_flash` and `reactions.reactive_ph_flash`, with the stability analysis,
+  the modified-RAND solve and the DIIS accelerator behind them.
 - **Black oil.** `blackoil/`.
 - **Standards.** `standards/` — standard and regulatory calculations.
 

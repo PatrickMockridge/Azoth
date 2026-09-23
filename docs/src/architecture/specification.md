@@ -115,7 +115,7 @@ are vendored and reachable.
 | P7 | Associating — CPA, UMR-CPA, PC-SAFT, SAFT-VR-Mie | `thermo/phase/` |
 | P8 | Electrolytes | `thermo/phase/` |
 | P9 | Solids and flow assurance — hydrates, wax, asphaltene, scale, freezing | `flashops/`, `pvtsimulation/flowassurance/` |
-| P10 | Reactions | `chemicalreactions/` |
+| P10 | Reactions | `chemicalreactions/`, `flashops/reactiveflash/`, `thermodynamicoperations/chemicalequilibrium/` |
 | P11 | Unit operations | `process/equipment/` |
 | P12 | Flowsheets | — |
 
@@ -137,17 +137,35 @@ of the tree is the simulation suite (`DifferentialLiberation`, `ConstantVolumeDe
 `SwellingTest`, `SaturationPressure`, `SeparatorTest`, `GOR`, `MMPCalculator`), the model
 tuning and the reservoir properties, and it is here.
 
-**P10 is four ids and not the whole tree.** `reactions.equilibrium_constant` is
+**P10 is six ids and not the whole tree.** `reactions.equilibrium_constant` is
 `ChemicalReaction`'s `ln K`, its temperature derivative and its heat of reaction over each of
 the three standard states; `reactions.reference_potentials` is the independent basis
 `ChemicalReactionList` reduces the reaction set to and the potentials `sum(nu_i mu_i) = -RT ln K`
 gives; `reactions.chemical_equilibrium` is `ChemicalEquilibrium`'s Smith-Missen Newton solve,
 with the electroneutrality row among the element constraints; and
 `reactions.reactive_phase_equilibrium` is `ChemicalReactionOperations`'s facade over one phase,
-where the phase search's `-1` is a **skip reported as a result** and not a failure. The other
-two thirds are not ported and [the port roadmap](../../../ROADMAP.md) names each blocker:
-`Kinetics` has no consumer outside `fluidmechanics/`, and `flashops/reactiveflash/` is gated on
-a flash that carries a chemical branch.
+where the phase search's `-1` is a **skip reported as a result** and not a failure. The
+**reactive flash stack** is two more: `reactions.reactive_tp_flash` is
+`ReactiveMultiphaseTPflash` with the modified-RAND solve, the tangent-plane analysis and the
+DIIS accelerator behind it, and `reactions.reactive_ph_flash` is the temperature search
+`ReactiveMultiphasePHflash` wraps around it. The same tier carries `Kinetics`'s rate law
+(two laws behind a selector, the legacy one being the only one a fluid's own reactions reach)
+and the Krishna-Standart mass-transfer matrix that consumes it.
+
+**What is not ported has a reason that is measured rather than assumed.**
+`flashops/reactiveflash/`'s remaining pieces are the adaptive-derivative refinement - which
+converges on **none** of the portable fluids its oracle walks - and the trace-ion short
+circuit, which needs ions this library refuses. The chemical dispatch inside `TPflash` and the
+100-line operation over a system's phases are reachable only where `isChemicalSystem()` is
+true, and **every fluid that predicate accepts is a fluid carrying ions**: NeqSim's reaction
+tables are water chemistry, so `nitrogen`/`hydrogen`, `CO2`/`hydrogen` and the cracking,
+methanol-synthesis and combustion sets are not chemical systems at all. The effective-diffusion
+assembly the rate matrix would need is eight lines whose input is not observable from outside
+its class. `Kinetics` itself has no consumer outside `fluidmechanics/`, which is not a port
+target, and the classes NeqSim does not run - `ChemEq`, `ChemicalReactionFactory`,
+`ChemicalReactionModelAudit`, `PloadingCurve` and `DiffusivityModelSelector` - have no
+`src/main` caller in the checkout at all, so they are carried rather than owed.
+[The port roadmap](../../../ROADMAP.md) names each.
 
 The middleware's shape is [The middleware](./middleware.md), and it is deferred until P12
 closes — an interoperation surface sits on top of the kernels and the executor, not beside
