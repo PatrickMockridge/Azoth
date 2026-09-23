@@ -159,12 +159,18 @@ reaches equilibrium through.
   **Not ported, each with a measured blocker**: the second refinement, which switches
   `useAdaptiveDerivatives` on and **converges on none of the three portable fluids** its oracle
   walks - two iterations, its loop's minimum, and the first refinement's answer left where it
-  was; the **sequential chemical dispatch** inside `TPflash`, and the 100-line
+  was; and the **sequential chemical dispatch** inside `TPflash` with the 100-line
   `ChemicalEquilibrium` that loops a system's phases, which are reachable only where
   `isChemicalSystem()` is true - and **every fluid that predicate accepts carries ions**, because
-  NeqSim's reaction tables are water chemistry; and the trace-ion short circuit, which needs the
-  same ions. The ionic branch of the solve is refused by azoth's own component rules, so this is
-  the P8 seam rather than work this tier owes.
+  NeqSim's reaction tables are water chemistry. **That second blocker was measured and it is
+  sharper than "it needs ions"**: on a `SystemSrkEos` chemical system the ions are cubic
+  components, so those two dispatches take their activity coefficients from a cubic built over
+  the ion rows' *filler* critical constants - `IonFillerSensitivityProbe` perturbs them and the
+  CO2-water brine's bicarbonate moves by a factor of thirteen at `1.1x`, and to `0.687` mol at
+  `2x`. `mixture_of` refuses a cubic over an `ION` by decision, so porting them would rest the
+  answer on invented data. **The trace-ion short circuit is ported** (it is a predicate over the
+  composition the driver already has), and so is **the RAND solver's ionic branch**, which
+  crosses as the three facts only an ionic fluid's caller knows.
   **`Kinetics` is ported as far as it can be pinned**: its rate law (two laws behind a selector)
   and its Krishna-Standart mass-transfer matrix are ids, both oracled on a real fluid, and the
   effective-diffusion assembly the matrix would otherwise need is eight lines whose input - the

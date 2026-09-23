@@ -26,8 +26,15 @@ reason = """\
     filler** - `Pc` is 290.89 bar on 27 of the 62, `omega` 0.344 on 29, `CRITVOL` \
     99.0 cm3/mol on 38, one shared default per column over different row sets, and the \
     rest inherit a neutral parent's numbers (`MDEA+` carries MDEA's). None of it is a \
-    property of an ion. `mixture_of` refuses a cubic over one, so the filler is never \
-    read as data."""
+    property of an ion. `mixture_of` refuses a cubic over one, so *azoth* never reads the \
+    filler as data. **NeqSim does.** On a `SystemSrkEos` chemical system the ions the \
+    reaction machinery adds are cubic components like any other, so `TPflash`'s sequential \
+    chemistry and `chemicalequilibrium/ChemicalEquilibrium` take their activity \
+    coefficients from a cubic built over these rows - and the filler is load-bearing \
+    there. `IonFillerSensitivityProbe` perturbs every ion's `Tc`, `Pc` and `omega` \
+    together on a CO2-water fluid and the brine's bicarbonate moves from `1.478e-6` to \
+    `1.958e-5` at `1.1x`, to `2.18e-7` at `0.9x`, and to `0.687` mol at `2x`. Those two \
+    dispatches are not ported, and that is the measured reason."""
 [[upstreams.files.rows]]
 selector = "COMPTYPE == '0' (the column is empty)"
 count = 18

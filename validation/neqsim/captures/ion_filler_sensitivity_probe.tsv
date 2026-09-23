@@ -1,0 +1,72 @@
+fluid=unperturbed
+perturbed_tc_before_init=717.3 factor=1.0
+perturbed_tc_after_init=717.3
+aqueous_perturbed_tc=717.3
+components=CO2 water OH- H3O+ HCO3- CO3--
+aqueous_phase_class=PhaseSrkEos
+phases=2
+phase_x[0]=CO2:0.9765102141001941 water:0.023489785899805927 OH-:1.0E-50 H3O+:1.0E-50 HCO3-:1.0E-50 CO3--:1.0E-50
+phase_x[1]=CO2:1.2573495564533831E-5 water:0.9999821956875534 OH-:8.690166898188861E-13 H3O+:3.7523639561030204E-6 HCO3-:1.4784520569479148E-6 CO3--:2.6728452426956014E-22
+  log_activity[CO2]=-3.103049063746255E-4
+  log_activity[water]=2.6910509376421032E-9
+  log_activity[OH-]=1.634010624664839E-4
+  log_activity[H3O+]=-4.453335591492191E-4
+  log_activity[HCO3-]=1.289633290548764E-4
+  log_activity[CO3--]=-1.999719764622654E-5
+delta_reaction_heat=0.0
+hco3_moles_overall=1.0E-10
+
+fluid=tc-x1.1
+perturbed_tc_before_init=867.933 factor=1.1
+perturbed_tc_after_init=954.7263
+aqueous_perturbed_tc=867.933
+components=CO2 water OH- H3O+ HCO3- CO3--
+aqueous_phase_class=PhaseSrkEos
+phases=2
+phase_x[0]=CO2:0.976510213931592 water:0.023489786068407962 OH-:9.999999999999995E-51 H3O+:9.999999999999995E-51 HCO3-:9.999999999999995E-51 CO3--:9.999999999999995E-51
+phase_x[1]=CO2:5.3002073360356135E-6 water:0.9999663671536023 OH-:2.7262384959904738E-11 H3O+:8.748763667569887E-6 HCO3-:1.9583848129779896E-5 CO3--:1.874544422573909E-15
+  log_activity[CO2]=1.6468149853210434E-4
+  log_activity[water]=5.688105986223491E-9
+  log_activity[OH-]=-4.292256490790333
+  log_activity[H3O+]=-0.00105963174891599
+  log_activity[HCO3-]=-4.292894398518371
+  log_activity[CO3--]=-4.292347911787424
+delta_reaction_heat=0.0
+hco3_moles_overall=1.0E-10
+
+fluid=tc-x0.9
+perturbed_tc_before_init=581.0129999999999 factor=0.9
+perturbed_tc_after_init=522.9117
+aqueous_perturbed_tc=581.0129999999999
+components=CO2 water OH- H3O+ HCO3- CO3--
+aqueous_phase_class=PhaseSrkEos
+phases=2
+phase_x[0]=CO2:0.9765102141060711 water:0.023489785893928906 OH-:1.0000000000000001E-50 H3O+:1.0000000000000001E-50 HCO3-:1.0000000000000001E-50 CO3--:1.0000000000000001E-50
+phase_x[1]=CO2:1.3834175565635418E-5 water:0.9999853786676107 OH-:1.1699060056722079E-13 H3O+:5.688736019141225E-7 HCO3-:2.1828310465222027E-7 CO3--:2.6026811151344153E-22
+  log_activity[CO2]=-2.948782304343922E-4
+  log_activity[water]=2.110526864385065E-9
+  log_activity[OH-]=3.895000780764261
+  log_activity[H3O+]=-2.998641801745805E-4
+  log_activity[HCO3-]=3.8949972409824456
+  log_activity[CO3--]=3.8948324138137354
+delta_reaction_heat=0.0
+hco3_moles_overall=1.0E-10
+
+fluid=tc-x2.0
+perturbed_tc_before_init=2869.2 factor=2.0
+perturbed_tc_after_init=5738.4
+aqueous_perturbed_tc=2869.2
+components=CO2 water OH- H3O+ HCO3- CO3--
+aqueous_phase_class=PhaseSrkEos
+phases=2
+phase_x[0]=CO2:9.990009990009994E-4 water:0.999000999000999 OH-:1.0E-50 H3O+:1.0E-50 HCO3-:1.0E-50 CO3--:1.0E-50
+phase_x[1]=CO2:0.03171083302350198 water:3.3959341689671577E-37 OH-:7.45059384093923E-49 H3O+:0.28090673207253775 HCO3-:0.6873824349039602 CO3--:1.2344110235537162E-49
+  log_activity[CO2]=323.2053223662139
+  log_activity[water]=167.33201347659082
+  log_activity[OH-]=91.72089986619794
+  log_activity[H3O+]=-222.2787649398176
+  log_activity[HCO3-]=-198.761671642156
+  log_activity[CO3--]=89.50541394370256
+delta_reaction_heat=0.0
+hco3_moles_overall=1.0E-10
+
