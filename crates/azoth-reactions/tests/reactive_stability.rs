@@ -262,3 +262,125 @@ fn the_reference_potentials_are_the_classes_three_branches() {
     let ionic = reference_potentials(&[0.4, 0.6], &[0.1, 0.2], &[0.0, -1.0]).expect("a shape");
     assert_eq!(ionic[1], REFERENCE_ION, "an ion does not partition");
 }
+
+/// **The four steps composed, on the fluid that is stable.** `analyse` brings the feed to
+/// homogeneous equilibrium, takes the reference potentials from *that* composition, builds the
+/// seeds and runs a trial from each. The capture's verdict for this fluid is `unstable=false`
+/// with `number_of_unstable_trials=0` and `most_unstable_trial=null`, and the potentials it
+/// prints are the ones this asserts - the same numbers the earlier test pins, reached here
+/// through the orchestrator rather than by hand.
+///
+/// The two closures are the crate's boundary: `ce` is the single-phase RAND solve and `ln_phi`
+/// is the cubic, both supplied by the test exactly as the driver would supply them.
+#[test]
+fn the_four_steps_compose_to_the_captured_verdict() {
+    use azoth_reactions::rand_solver::solve_single_phase;
+    use azoth_reactions::reactive_stability::analyse;
+
+    let state = solved_state();
+    let matrix =
+        FormulaMatrix::build(&NAMES.map(String::from)).expect("the components are in the databank");
+    let b: Vec<f64> = matrix
+        .matrix
+        .iter()
+        .map(|row| row.iter().zip(FEED).map(|(a, n)| a * n).sum())
+        .collect();
+    let data: Vec<ThermoData> = NAMES
+        .iter()
+        .enumerate()
+        .map(|(index, name)| {
+            let formation = formation_properties(name)
+                .expect("the component table parses")
+                .expect("the component databank carries it");
+            let (_, ideal) =
+                mixture_of(&NAMES, Cubic::Srk, None).expect("the databank carries them");
+            ThermoData {
+                enthalpy_of_formation: formation.enthalpy_of_formation,
+                absolute_entropy: formation.absolute_entropy,
+                gibbs_energy_of_formation: formation.gibbs_energy_of_formation,
+                cp: [
+                    ideal.cp_a[index],
+                    ideal.cp_b[index],
+                    ideal.cp_c[index],
+                    ideal.cp_d[index],
+                    ideal.cp_e[index],
+                ],
+            }
+        })
+        .collect();
+    let g0 = standard_potentials(&data, TEMPERATURE, PRESSURE_BARA);
+    let reduced = state.reduced;
+
+    // `ce`: the homogeneous solve, which returns its input when it does not converge - the
+    // class's own behaviour in `solveHomogeneousChemicalEquilibrium`.
+    let mut ln_phi = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        Ok(state
+            .mixture
+            .phase_state(&reduced, x, RootSide::Vapour)?
+            .ln_phi
+            .clone())
+    };
+    let mut ce = |x: &[f64]| -> azoth_core::Result<Vec<f64>> {
+        let mut one_phase = |y: &[f64]| -> azoth_core::Result<Vec<f64>> {
+            Ok(state
+                .mixture
+                .phase_state(&reduced, y, RootSide::Vapour)?
+                .ln_phi
+                .clone())
+        };
+        let solved = solve_single_phase(&matrix.matrix, &g0, &b, x, &mut one_phase)?;
+        if !solved.converged {
+            return Ok(x.to_vec());
+        }
+        let total: f64 = solved.moles.iter().sum();
+        Ok(solved.moles.iter().map(|moles| moles / total).collect())
+    };
+
+    let outcome = analyse(
+        &FEED,
+        &state.constants,
+        TEMPERATURE,
+        PRESSURE_BARA,
+        &[0.0; 4],
+        &mut ce,
+        &mut ln_phi,
+    )
+    .expect("the analysis runs");
+
+    assert!(!outcome.unstable, "the captured verdict is stable");
+    assert!(outcome.unstable_trials.is_empty(), "no trial was added");
+    assert!(outcome.tpd_values.is_empty(), "and none was recorded");
+    // The reference is the *equilibrated* feed, which is what the capture's
+    // `phase_x_after_run` records - `0.0791` and not the feed's `0.25`.
+    let captured_reference = [
+        0.079_140_531_089_050_75,
+        0.079_140_531_089_050_89,
+        0.420_859_468_910_949_2,
+        0.420_859_468_910_949_1,
+    ];
+    for (index, (got, want)) in outcome.reference.iter().zip(captured_reference).enumerate() {
+        assert!(
+            (got - want).abs() / want.abs() < 1.0e-5,
+            "reference component {index} ({}): {got} against the capture's {want}",
+            NAMES[index]
+        );
+    }
+    // And the potentials are taken from that composition, not from the feed.
+    let captured_potentials = [
+        -2.535_945_213_718_570_7,
+        -2.537_323_477_797_878,
+        -0.865_452_653_324_643_4,
+        -0.864_974_018_712_630_2,
+    ];
+    for (index, (got, want)) in outcome
+        .potentials
+        .iter()
+        .zip(captured_potentials)
+        .enumerate()
+    {
+        assert!(
+            (got - want).abs() < 1.0e-6,
+            "potential {index}: {got} against the capture's {want}"
+        );
+    }
+}

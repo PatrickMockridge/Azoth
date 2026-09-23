@@ -187,7 +187,8 @@ pub fn vle_initialization(
 /// A stability analysis: a phase list in, the **unstable trial compositions** out - empty where
 /// the analysis found nothing. That is `ReactiveStabilityAnalysis.run` and
 /// `getUnstableTrialCompositions` in one call, because the driver's two branches on them both
-/// end its loop.
+/// end its loop; [`crate::reactive_stability::analyse`] answers in exactly this shape, on the
+/// composition the caller hands it.
 pub type StabilityCheck<'a> = &'a mut dyn FnMut(&[PhaseFeed]) -> Result<Vec<Vec<f64>>>;
 
 /// The outer loop's pass cap, from `MAX_OUTER_ITER`.

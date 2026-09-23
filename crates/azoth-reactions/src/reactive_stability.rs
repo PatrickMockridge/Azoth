@@ -8,6 +8,11 @@
 //! A trial whose distance comes in under [`TPD_THRESHOLD`] is a phase the fluid is unstable
 //! with respect to.
 //!
+//! All four are composed in [`analyse`], which takes the reactive solve and the phase model as
+//! closures so that this crate carries neither; the driver hands the second of them back for
+//! its stability *recheck* as well, because the class runs the same four steps there - on the
+//! composition its last solve left rather than on the feed.
+//!
 //! # The trial is a successive substitution on the log-composition
 //!
 //! ```text
@@ -42,6 +47,11 @@ pub const STABLE_TPD: f64 = 10.0;
 /// The composition difference below which a trial is the reference's own solution, from
 /// `trivialCheck < 1e-4`.
 pub const TRIVIAL_TOLERANCE: f64 = 1.0e-4;
+
+/// The mole fraction above which the reference holds a component, from the trial's own
+/// `x > 1e-100` - **a looser test than [`MIN_MOLES`]**, and the one that decides whether a
+/// trial's log-composition is updated for that component at all.
+pub const TRIAL_ABSENT_FLOOR: f64 = 1.0e-100;
 
 /// One component's critical constants, which the Wilson seed reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -191,6 +201,108 @@ pub fn reference_potentials(
         .collect())
 }
 
+/// A single-phase reactive solve: a composition in, its chemical equilibrium out - and the
+/// **input again** where the solve did not converge, which is what both of the class's callers
+/// do with a failed solve (the homogeneous step keeps the feed, the trial step keeps the trial).
+pub type EquilibriumSolve<'a> = &'a mut dyn FnMut(&[f64]) -> Result<Vec<f64>>;
+
+/// What `ReactiveStabilityAnalysis.run` answers with.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StabilityOutcome {
+    /// The composition the reference potentials came from: the feed brought to homogeneous
+    /// chemical equilibrium, or the feed itself where that solve failed.
+    pub reference: Vec<f64>,
+    /// `d_i`, the reference potentials.
+    pub potentials: Vec<f64>,
+    /// Each unstable trial **brought to chemical equilibrium**, in seed order - which is what
+    /// the driver adds as a phase. Empty where the fluid is stable.
+    pub unstable_trials: Vec<Vec<f64>>,
+    /// The distances of those trials, one each, in the same order.
+    pub tpd_values: Vec<f64>,
+    /// Whether any trial came in under [`TPD_THRESHOLD`].
+    pub unstable: bool,
+}
+
+/// `ReactiveStabilityAnalysis.run`: the four steps, composed.
+///
+/// 1. bring the feed to **homogeneous** chemical equilibrium - the `ce` closure, whose failure
+///    returns its input;
+/// 2. take the reference potentials `d_i` from *that* composition, with the two sentinels
+///    [`REFERENCE_ABSENT`] and [`REFERENCE_ION`];
+/// 3. build the Wilson and pure-component seeds, from the same composition;
+/// 4. run a tangent-plane trial from each, and bring every trial that comes in under
+///    [`TPD_THRESHOLD`] to equilibrium before reporting it.
+///
+/// The two closures are the crate's boundary again: `ln_phi` is the *single-phase* model the
+/// trials are evaluated against - the class clones its system and removes every phase but the
+/// first for each trial - and `ce` is the reactive solve, so this crate carries neither an
+/// equation of state nor a solver into the analysis.
+///
+/// `charges` is the per-component ionic charge; the neutral fluids this crate's callers admit
+/// pass zeros, and the class's ion branches - a pinned `-1000.0` potential and a trial that
+/// skips the ion - follow from it.
+///
+/// # Errors
+/// Whatever `ln_phi` or `ce` raises, and [`AzothError::InvalidInput`] on a shape disagreement.
+#[allow(clippy::too_many_arguments)]
+pub fn analyse(
+    fractions: &[f64],
+    constants: &[CriticalConstants],
+    temperature: f64,
+    pressure: f64,
+    charges: &[f64],
+    ce: EquilibriumSolve<'_>,
+    ln_phi: &mut dyn FnMut(&[f64]) -> Result<Vec<f64>>,
+) -> Result<StabilityOutcome> {
+    let reference = ce(fractions)?;
+    if reference.len() != fractions.len() || charges.len() != fractions.len() {
+        return Err(AzothError::InvalidInput {
+            field: "ce".to_string(),
+            reason: format!(
+                "{} entries back against {} composition(s)",
+                reference.len(),
+                fractions.len()
+            ),
+        });
+    }
+
+    let ln_phi_reference = ln_phi(&reference)?;
+    let potentials = reference_potentials(&reference, &ln_phi_reference, charges)?;
+
+    let mut outcome = StabilityOutcome {
+        potentials: potentials.clone(),
+        reference: reference.clone(),
+        unstable_trials: Vec::new(),
+        tpd_values: Vec::new(),
+        unstable: false,
+    };
+
+    for seed in trial_seeds(&reference, constants, temperature, pressure) {
+        let tpd = run_trial(&potentials, &seed, &reference, ln_phi)?;
+        if is_unstable(tpd) {
+            outcome
+                .unstable_trials
+                .push(solve_trial_equilibrium(&seed, ce)?);
+            outcome.tpd_values.push(tpd);
+        }
+    }
+    outcome.unstable = !outcome.unstable_trials.is_empty();
+    Ok(outcome)
+}
+
+/// `solveTrialChemicalEquilibrium`: normalise the trial, then bring it to equilibrium - and
+/// where that solve fails, or where the fluid has no independent reaction to run, the trial
+/// itself is the answer.
+///
+/// # Errors
+/// Whatever `ce` raises.
+pub fn solve_trial_equilibrium(trial: &[f64], ce: EquilibriumSolve<'_>) -> Result<Vec<f64>> {
+    let floored: Vec<f64> = trial.iter().map(|w| w.max(MIN_MOLES)).collect();
+    let total: f64 = floored.iter().sum();
+    let normalised: Vec<f64> = floored.iter().map(|w| w / total).collect();
+    ce(&normalised)
+}
+
 /// One tangent-plane trial, returning its distance or [`STABLE_TPD`].
 ///
 /// `ln_phi` is the same closure [`crate::rand_solver::solve`] takes: a mole-fraction
@@ -221,7 +333,12 @@ pub fn run_trial(
         let mut error = 0.0_f64;
         sum_w = 0.0;
         for i in 0..nc {
-            log_w[i] = d[i] - ln_phi_here[i];
+            // A component the *reference* does not hold keeps the log-composition it had: the
+            // class updates only where `x > 1e-100`, and still counts the value it kept in the
+            // error and the sum. `TRIAL_ABSENT_FLOOR` is a looser test than [`MIN_MOLES`].
+            if fractions[i] > TRIAL_ABSENT_FLOOR {
+                log_w[i] = d[i] - ln_phi_here[i];
+            }
             error += (log_w[i] - previous[i]).abs();
             sum_w += log_w[i].exp();
         }
