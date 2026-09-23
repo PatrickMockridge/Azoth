@@ -65,7 +65,9 @@ not an equation, and both implementations read it from here.
 - the merge drops a phase below `1.1e-12` of the feed and folds a pair within `1e-6` of each other into one, **whatever roots were labelled**: a seeded phase can land on a composition sitting on one root only, where the labels differ but the phases do not. Upstream compares densities.
 - the phases are reported in the solve's own order and **no order is promised**; upstream sorts by density and this does not. `z_factor` identifies a phase physically.
 - the aqueous seeds are not ported: `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` add a hydrocarbon phase to a water-bearing feed, gated on a water component alone, and they are the whole of the water/n-hexane divergence. A water-bearing feed gets the phases the trial finds.
-- the ionic rules, the CPA rules and the hydrate coupling are not ported either - they are P8, P7 and P9, and each is gated on a component family or a system type this crate does not carry.
+- **the ionic rules are gated on a chemical system and not on the seam.** `solveReactiveAqueousEquilibrium` and `solveLegacyAqueousEquilibrium` run where `isChemicalSystem()` and an aqueous phase hold - and this model's feed is a `Mixture`, which `mixture_of` refuses to build over an `ION`.
+- **and the coupled half of them is hydrate-gated.** `isCoupledReactiveHydrateFlash()` is `isChemicalSystem() && getHydrateCheck()`, so the inventory-propagating coupling is P9's; the legacy path solves the brine each outer pass and propagates nothing. Neither is ported.
+- the CPA rules and the hydrate coupling are not ported either - they are P7 and P9, and each is gated on a component family or a system type this crate does not carry.
 - the cubic, the alpha function and the mixing rule are `eos.pt_flash`'s; this is not a property of the mixture alone.
 - `z` is checked (non-negative, sums to one) rather than renormalised.
 
