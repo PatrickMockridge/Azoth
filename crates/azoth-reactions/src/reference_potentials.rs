@@ -75,6 +75,42 @@ use crate::model_gen;
 /// `calcReferencePotentials`.
 const COEFFICIENT_FLOOR: f64 = 1e-10;
 
+/// One side of `reactantsContains`: every component on this side is one the caller supplied,
+/// and the side is not empty.
+///
+/// **All reactants present, or all products present** - not "every reactant", which is what
+/// this port had and what its spec said. The class falls through to the *products* when a
+/// reactant is missing, so a reaction whose products the fluid can hold is kept even though it
+/// cannot run forwards. Measured on `SystemPitzer` for a `MDEA`/`water`/`CO2` fluid: `MDEAprot`
+/// names `MDEA+` as a reactant, which the fluid does not carry, and `MDEA` and `H3O+` as
+/// products, which it does - so NeqSim keeps it, and the pitzer source's evidence gate then
+/// refuses the fluid over it.
+///
+/// Reactants are the negative coefficients and products everything else, including a zero,
+/// which is how the class splits them. A side with no names does not satisfy it, because the
+/// class's `test` starts false and only a completed scan sets it.
+///
+/// Shared with [`crate::reactive_hybrid_eos_ge_flash`], which asks the same question of the
+/// same rows to find out which components a fluid drives: a second copy of this rule is how the
+/// two would come to different answers about one fluid.
+pub(crate) fn side_is_present(
+    coefficients: &[(String, f64)],
+    present: &HashMap<&str, usize>,
+    negative: bool,
+) -> bool {
+    let mut seen = false;
+    for (component, nu) in coefficients {
+        if (*nu < 0.0) != negative {
+            continue;
+        }
+        seen = true;
+        if !present.contains_key(component.as_str()) {
+            return false;
+        }
+    }
+    seen
+}
+
 /// Result of `reactions.reference_potentials`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReferencePotentialsResult {
@@ -190,22 +226,9 @@ pub fn reference_potentials(
         // a zero, which is how the class splits them. A reaction with no names on a side
         // does not satisfy that side, because the class's `test` starts false and only a
         // completed scan sets it.
-        let side_present = |negative: bool| {
-            let mut seen = false;
-            let mut all = true;
-            for (component, nu) in &coefficients {
-                if (*nu < 0.0) != negative {
-                    continue;
-                }
-                seen = true;
-                if !index_of.contains_key(component.as_str()) {
-                    all = false;
-                    break;
-                }
-            }
-            seen && all
-        };
-        if !side_present(true) && !side_present(false) {
+        if !side_is_present(&coefficients, &index_of, true)
+            && !side_is_present(&coefficients, &index_of, false)
+        {
             continue;
         }
 

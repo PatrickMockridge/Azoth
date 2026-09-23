@@ -48,9 +48,7 @@
 
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
-use crate::chemical_equilibrium::{
-    ChemicalEquilibriumResult, MIN_MOLES, chemical_equilibrium,
-};
+use crate::chemical_equilibrium::{ChemicalEquilibriumResult, MIN_MOLES, chemical_equilibrium};
 use crate::databank::{
     ReactionDataSource, element_composition, ionic_charge, reactions, stoichiometry,
 };
@@ -500,9 +498,9 @@ pub(crate) fn solvent_mask(components: &[String]) -> Result<Vec<f64>> {
         .iter()
         .map(|name| {
             let entry = azoth_eos::databank::entry(name, None)?;
-            Ok(f64::from(
-                u8::from(entry.reference_state == azoth_eos::databank::SOLVENT),
-            ))
+            Ok(f64::from(u8::from(
+                entry.reference_state == azoth_eos::databank::SOLVENT,
+            )))
         })
         .collect()
 }
@@ -527,7 +525,7 @@ pub(crate) fn solvent_weight(components: &[String], moles: &[f64], mask: &[f64])
     weight
 }
 
-fn element_matrix(components: &[String]) -> Result<Vec<Vec<f64>>> {
+pub(crate) fn element_matrix(components: &[String]) -> Result<Vec<Vec<f64>>> {
     let mut elements: Vec<String> = Vec::new();
     let mut composition = Vec::with_capacity(components.len());
     let mut charge = Vec::with_capacity(components.len());
@@ -582,7 +580,7 @@ fn element_matrix(components: &[String]) -> Result<Vec<Vec<f64>>> {
 }
 
 /// `A n`: the element amounts the composition carries.
-fn element_amounts(a_matrix: &[Vec<f64>], moles: &[f64]) -> Vec<f64> {
+pub(crate) fn element_amounts(a_matrix: &[Vec<f64>], moles: &[f64]) -> Vec<f64> {
     a_matrix
         .iter()
         .map(|row| {
