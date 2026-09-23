@@ -61,6 +61,7 @@ use azoth_process::{
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
+use azoth_reactions::reactive_tp_flash::ReactiveTpFlashResult;
 use azoth_reactions::reference_potentials::ReferencePotentialsResult;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
@@ -1119,6 +1120,103 @@ impl PyReactivePhaseEquilibriumResult {
             "ReactivePhaseEquilibriumResult(skipped={}, converged={}, iterations={})",
             self.skipped, self.converged, self.iterations
         )
+    }
+}
+
+/// Result of `reactions.reactive_tp_flash`, transported.
+///
+/// The first result carrying a **matrix of moles**, one row per phase, and the first whose
+/// rows are the driver's own phase order - with **no phase type**, because NeqSim's types
+/// are its system's bookkeeping and not a state the model computes.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ReactiveTpFlashResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyReactiveTpFlashResult {
+    /// How many phases the driver stopped on.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// Each phase's mole numbers, one row per phase and one column per component.
+    #[pyo3(get)]
+    pub phase_moles: Vec<Vec<PyQty>>,
+    /// Each phase's share of the fluid.
+    #[pyo3(get)]
+    pub phase_fraction: Vec<f64>,
+    /// `isConverged`, true on the branches that accept an answer without a converged solve.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// Every solve's passes, summed. Zero on the `NR = 0` fallback.
+    #[pyo3(get)]
+    pub total_iterations: u32,
+    /// The last solve's total moles.
+    #[pyo3(get)]
+    pub equilibrium_total_moles: PyQty,
+    /// `computeGibbsEnergy`, dimensionless.
+    #[pyo3(get)]
+    pub gibbs_energy: f64,
+    /// What the solve stopped on.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// The element residual on its own.
+    #[pyo3(get)]
+    pub element_residual: f64,
+    /// Caveats, as `(code, field, message)` triples.
+    #[pyo3(get)]
+    pub warnings: Vec<(String, String, String)>,
+}
+
+#[pymethods]
+impl PyReactiveTpFlashResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ReactiveTpFlashResult(phase_count={}, converged={}, iterations={})",
+            self.phase_count, self.converged, self.total_iterations
+        )
+    }
+}
+
+impl From<&ReactiveTpFlashResult> for PyReactiveTpFlashResult {
+    fn from(r: &ReactiveTpFlashResult) -> Self {
+        Self {
+            phase_count: r.phase_count as u32,
+            phase_moles: r
+                .phase_moles
+                .iter()
+                .map(|phase| {
+                    phase
+                        .iter()
+                        .map(|value| PyQty {
+                            magnitude_si: *value,
+                            unit: "mol".to_string(),
+                        })
+                        .collect()
+                })
+                .collect(),
+            phase_fraction: r.phase_fraction.clone(),
+            converged: r.converged,
+            total_iterations: r.total_iterations,
+            equilibrium_total_moles: PyQty {
+                magnitude_si: r.equilibrium_total_moles,
+                unit: "mol".to_string(),
+            },
+            gibbs_energy: r.gibbs_energy,
+            residual: r.residual,
+            element_residual: r.element_residual,
+            warnings: r
+                .warnings
+                .iter()
+                .map(|w| {
+                    (
+                        format!("{:?}", w.code),
+                        w.field.clone().unwrap_or_default(),
+                        w.message.clone(),
+                    )
+                })
+                .collect(),
+        }
     }
 }
 
@@ -7540,6 +7638,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),
         ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
+        ReactiveTpFlashResult::CALC_ID => ReactiveTpFlashResult::FIELDS.to_vec(),
         PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
         Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
         MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),

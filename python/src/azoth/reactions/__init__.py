@@ -22,6 +22,7 @@ from azoth.core.result import (
     ChemicalEquilibriumResult,
     EquilibriumConstantResult,
     ReactivePhaseEquilibriumResult,
+    ReactiveTpFlashResult,
     ReferencePotentialsResult,
 )
 from azoth.core.units import Q
@@ -30,12 +31,14 @@ __all__ = [
     "chemical_equilibrium",
     "equilibrium_constant",
     "reactive_phase_equilibrium",
+    "reactive_tp_flash",
     "reference_potentials",
 ]
 
 _CHEMICAL_EQUILIBRIUM = "reactions.chemical_equilibrium"
 _EQUILIBRIUM_CONSTANT = "reactions.equilibrium_constant"
 _REACTIVE_PHASE_EQUILIBRIUM = "reactions.reactive_phase_equilibrium"
+_REACTIVE_TP_FLASH = "reactions.reactive_tp_flash"
 _REFERENCE_POTENTIALS = "reactions.reference_potentials"
 
 
@@ -166,4 +169,43 @@ def reactive_phase_equilibrium(
         T=T,
         max_iterations=max_iterations,
         tolerance=tolerance,
+    )
+
+
+def reactive_tp_flash(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    moles: Sequence[Q],
+    max_phases: float,
+) -> ReactiveTpFlashResult:
+    """Simultaneous chemical and phase equilibrium at fixed temperature and pressure.
+
+    ``moles`` is the **overall component amounts and not a composition**, which is what
+    the driver's ``getOverallMoles`` reads and what its frozen element inventory is built
+    from. ``max_phases`` is its effective phase ceiling; a ceiling of one skips the VLE
+    initialisation and collapses the phase list, so it changes the answer rather than the
+    format.
+
+    **The composition is the answer and the split is not.** Where two phases converge to
+    the same composition the Gibbs energy is flat along the direction that trades moles
+    between them, and the split a run reports is decided by its path. The moles summed
+    over the returned rows are what the element balance and the equilibrium fix.
+
+    ``gibbs_energy`` is ``computeGibbsEnergy``, which weighs each phase by the fraction
+    its list carries - so on the class's own two-phase states it is twice one phase's
+    worth, and on the single-phase branch it is ``0.0``.
+
+    Raises:
+        InvalidInputError: for a charged component, a shape disagreement, or a component
+            the databank does not carry.
+
+    See :func:`azoth.reactions.reference.reactive_tp_flash`.
+    """
+    return resolve(_REACTIVE_TP_FLASH)(  # type: ignore[no-any-return]
+        components=list(components),
+        T=T,
+        P=P,
+        moles=list(moles),
+        max_phases=max_phases,
     )

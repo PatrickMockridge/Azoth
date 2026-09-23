@@ -183,6 +183,10 @@ SELF_ASSERTED_EXPECTATIONS: frozenset[str] = frozenset(
         # not for an expectation: a flag on the *result* is read by the model's own test,
         # which asserts the case's value against the field.
         "seed_applied",
+        # `reactive_tp_flash`'s, for the same reason and read the same way - and it is worth
+        # asserting rather than dropping, because the flag is `true` on two branches that
+        # accept an answer without a converged solve.
+        "converged",
     }
 )
 

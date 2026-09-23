@@ -16,7 +16,9 @@ use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
-use crate::results::{PyEquilibriumConstantResult, PyReactivePhaseEquilibriumResult};
+use crate::results::{
+    PyEquilibriumConstantResult, PyReactivePhaseEquilibriumResult, PyReactiveTpFlashResult,
+};
 
 /// One reaction's equilibrium constant, its derivative and its heat of reaction.
 ///
@@ -166,5 +168,33 @@ pub fn reactive_phase_equilibrium(
         parsed_seed,
     )
     .map(|r| PyReactivePhaseEquilibriumResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The reactive flash: simultaneous chemical and phase equilibrium at fixed `T` and `P`.
+///
+/// `moles` is the **overall component amounts and not a composition**, which is what the
+/// driver's `getOverallMoles` reads and what its frozen element inventory is built from.
+/// A charged component is refused: the RAND solve's ionic branch is not ported.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, moles, max_phases))]
+#[pyo3(text_signature = "(components, T, P, moles, max_phases)")]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the flash's own name
+pub fn reactive_tp_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    moles: Vec<f64>,
+    max_phases: f64,
+) -> PyResult<PyReactiveTpFlashResult> {
+    azoth_reactions::reactive_tp_flash::reactive_tp_flash(
+        &components,
+        T,
+        P,
+        &moles,
+        max_phases as usize,
+    )
+    .map(|r| PyReactiveTpFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }

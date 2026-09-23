@@ -75,6 +75,13 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         "max_reaction_log_residual",
         "net_charge_moles",
         "max_element_residual",
+        # `reactions.reactive_tp_flash`'s two. The element residual is a scaled
+        # root-mean-square of `A n - b`, so on a converged solve it is of order `1e-6` and a
+        # difference in the last few digits of the arithmetic is a large fraction of it -
+        # measured, the water-gas shift comes out `9.7e-7` in Rust and `1.7e-6` in Python
+        # while the compositions agree to `1e-7`. `residual` is `max` of that and the worst
+        # potential error, and is the same kind of quantity one level along.
+        "element_residual",
     }
 )
 
@@ -100,7 +107,14 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
 #: first case the reference reports `2.27e-8` and the extension `3.72e-8` against a relaxed
 #: bound of `3.375e-8`, and the flag crosses with it. **It is still asserted** - by the
 #: model's own crate test, per case, and by `reactions.chemical_equilibrium`'s.
-_UNCOMPARED_FIELDS: frozenset[str] = frozenset({"iterations", "error", "converged"})
+#:
+#: `reactive_tp_flash`'s `total_iterations` is the fourth and is the same quantity under
+#: NeqSim's name for it: the passes every inner solve took, summed over the outer loop. The
+#: two kernels take 35 and 37 of them on the water-gas shift and agree on the composition to
+#: `1e-7`, which is what a path quantity looks like - the loop it counts is not the answer.
+_UNCOMPARED_FIELDS: frozenset[str] = frozenset(
+    {"iterations", "error", "converged", "total_iterations"}
+)
 
 
 def spec(calc_id: str) -> dict[str, Any]:
@@ -372,6 +386,32 @@ def assert_results_equal(
             # only by luck, so exact equality here reports a rounding difference as a
             # divergence in the physics.
             _assert_nested(a, b, tolerance, f"{context}.{field}")
+        elif isinstance(a, (tuple, list)) and _is_quantity_nested(a):
+            # A **matrix of quantities** - `reactions.reactive_tp_flash`'s per-phase mole
+            # numbers are the first - which is neither of the two branches above: the
+            # vector branch expects quantities one level down and the numeric one expects
+            # plain numbers at every level. Each entry is converted to base SI and
+            # compared within the tolerance, as the vector branch does, because the two
+            # sides may state the same amount in different units.
+            assert isinstance(b, (tuple, list)) and len(a) == len(b), (
+                f"{context}.{field}: {len(a)} rows against "
+                f"{len(b) if isinstance(b, (tuple, list)) else type(b).__name__}"
+            )
+            for index, (row_a, row_b) in enumerate(zip(a, b, strict=True)):
+                assert isinstance(row_b, (tuple, list)) and len(row_a) == len(row_b), (
+                    f"{context}.{field}[{index}]: one side is not a row"
+                )
+                for column, (qa, qb) in enumerate(zip(row_a, row_b, strict=True)):
+                    assert isinstance(qb, pint.Quantity), (
+                        f"{context}.{field}[{index}][{column}]: one side is a bare number "
+                        f"and the other a quantity"
+                    )
+                    assert_close(
+                        float(qa.to_base_units().magnitude),
+                        float(qb.to_base_units().magnitude),
+                        tolerance,
+                        f"{context}.{field}[{index}][{column}]",
+                    )
         elif isinstance(a, (int, float)) and isinstance(b, (int, float)):
             assert_close(float(a), float(b), tolerance, f"{context}.{field}")
         else:
@@ -407,6 +447,24 @@ def _both_nan(a: Any, b: Any) -> bool:
         return False
 
     return one(a) and one(b)
+
+
+def _is_quantity_nested(value: Any) -> bool:
+    """Whether a sequence is sequences of quantities, at any depth below one row.
+
+    A matrix of amounts: rows of quantities. Kept apart from `_is_numeric_nested`, which
+    would answer ``False`` for every quantity - a pint quantity is not an ``int`` or a
+    ``float`` - so without this branch a matrix of units falls through to exact equality
+    and a rounding difference between the two kernels reads as a divergence.
+    """
+    if not isinstance(value, (tuple, list)) or not value:
+        return False
+    for row in value:
+        if not isinstance(row, (tuple, list)):
+            return False
+        if not all(isinstance(item, pint.Quantity) for item in row):
+            return False
+    return True
 
 
 def _is_numeric_nested(value: Any) -> bool:

@@ -125,6 +125,7 @@ from azoth.core.result import (
     RachfordRiceResult,
     RackettMolarVolumeResult,
     ReactivePhaseEquilibriumResult,
+    ReactiveTpFlashResult,
     ReferencePotentialsResult,
     ReynoldsNumberResult,
     RkAlphaAbResult,
@@ -3916,5 +3917,47 @@ def pump(
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_tp_flash(
+    components: Sequence[str],
+    T: Q,
+    P: Q,
+    moles: Sequence[Q],
+    max_phases: float,
+) -> ReactiveTpFlashResult:
+    """The reactive flash, computed in Rust.
+
+    The component names cross **unresolved**, as the reference potentials' and the phase
+    operation's do: the Rust side reads the element table, the component table and the
+    formation columns itself, so no coefficient reaches Python and the two languages cannot
+    disagree about which row answered.
+    """
+    spec = _models_gen.model("reactions.reactive_tp_flash")
+    result = _core.reactive_tp_flash(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [_si(spec, "moles", value) for value in moles],
+        float(max_phases),
+    )
+    return ReactiveTpFlashResult(
+        phase_count=result.phase_count,
+        phase_moles=tuple(
+            tuple(from_si(value.magnitude_si, value.unit) for value in row)
+            for row in result.phase_moles
+        ),
+        phase_fraction=tuple(result.phase_fraction),
+        converged=result.converged,
+        total_iterations=result.total_iterations,
+        equilibrium_total_moles=from_si(
+            result.equilibrium_total_moles.magnitude_si,
+            result.equilibrium_total_moles.unit,
+        ),
+        gibbs_energy=result.gibbs_energy,
+        residual=result.residual,
+        element_residual=result.element_residual,
         warnings=_warnings(result.warnings),
     )

@@ -1,0 +1,112 @@
+id = "reactions.reactive_tp_flash"
+name = "Reactive flash at fixed temperature and pressure"
+kind = "procedure"
+assumptions = [
+    "**the phases are the system's two and no trial phase is added.** `SystemSrkEos` constructs with two phase objects at `beta = 1.0`, `init(0)` restores that count, and `skipStability` sends the driver into the outer loop at once.",
+    "**the Gibbs measure is weighed by a stale fraction.** `updateSystem` writes the solved fractions into the phases and then `system.init(1)` re-initialises them from the *system's* array, refreshed only on the ionic branch - so the weights stay `(1.0, 1.0)` and the number is doubled.",
+    "**the split is a flat direction and is not reproduced.** Both phases converge to the *same* composition, so any split satisfies the equilibrium conditions and the one reported is path-decided: NeqSim lands at `(0.014138, 0.985862)` and this at `(0.016, 0.984)`.",
+    "**the composition is the answer and it is pinned.** The moles summed over the phases agree with the capture to `1e-6` at 600 K and `1.2e-5` at 300 K; the per-phase rows are reported and no agreement is claimed for them.",
+    "**the removal step reads the stale array too.** `removeNegligiblePhases` tests `system.getBeta(j)`, so a phase the solve drove to nothing is not removed; and the next iterate re-reads it, so the fraction a solve starts from never moves.",
+    "**`removePhaseKeepTotalComposition` touches no moles.** The name describes an intent the method does not carry out: it shifts the phase *index* array and decrements the count. That is what a phase leaving the list is here.",
+    "**SRK, and every phase takes the vapour root.** The oracle's systems are `SystemSrkEos`, and NeqSim clones phase 0 - a `gas` phase - for a phase it adds. Rooting the water-rich phase liquid collapses the 300 K split; the vapour root reproduces it.",
+    "**no phase type is reported.** NeqSim's types come from `init(1)`'s assignment - `gas`, then `oil` for the second phase, `aqueous` for a water-bearing fallback - and are its bookkeeping, not a quantity this model computes.",
+    "**`NR = 0` is a different flash.** A fluid with no independent reaction and more than one phase goes to a conventional VLE flash: Wilson K-values, then `K_i = phi_liq / phi_vap` by successive substitution, to `1e-12`.",
+    "**the single-phase branch reports no Gibbs energy.** Where the analysis finds the fluid stable the driver returns before `computeGibbsEnergy`, so `gibbs_energy` is `0.0` - and `converged` is `true` whatever the solve reported, which is the class's own overwriting.",
+    "**the relaxed multiphase tolerance is what a multiphase answer is worth.** Such a solve stops at `maxE < 1e-4` against `1e-9` for one phase, so two codes can stop at different points inside it: the 1000 K fluid does.",
+    "**the ionic branch is refused, not approximated.** NeqSim pins a gas-phase ion to `EPS` and corrects an electrolyte phase's reference state through `getLogInfiniteDiluteFugacity`; neither is ported, so a charged component is an error.",
+    "**the element inventory is frozen from the feed.** `setElementBalance` captures `A n` before any phase work and it constrains the whole solve, so a recomputation from a phase's current moles is a different constraint.",
+    "**`moles` is an amount, not a composition.** The driver's `getOverallMoles` reads component amounts, and the total moves through the solve wherever a reaction changes the number of moles. It is not required to be one, and it is not renormalised.",
+]
+references = [
+    "White, W. B.; Johnson, S. M.; Dantzig, G. B. (1958). \"Chemical Equilibrium in Complex Mixtures.\" The Journal of Chemical Physics 28(5), 751-755. DOI 10.1063/1.1744264. The non-stoichiometric formulation the solve minimises.",
+    "Smith, W. R.; Missen, R. W. (1982). \"Chemical Reaction Equilibrium Analysis: Theory and Algorithms.\" Wiley, New York. The element balance as the constraint set.",
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. DOI 10.1016/0378-3812(82)85001-2. The tangent-plane criterion the trial phases are measured against.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `flashops/reactiveflash/`: `ReactiveMultiphaseTPflash` is the driver, `ModifiedRANDSolver` the solve, `ReactiveStabilityAnalysis` the trial phases, `DIISAccelerator` the multiplier extrapolation.",
+    "`validation/neqsim/ReactiveFlashProbe.java` and `captures/reactive_flash_probe.tsv` - the oracle: the class's own benchmark fluids, the driver's interior, the phase bookkeeping, and the DIIS accelerator fed a scripted sequence.",
+]
+[source]
+standard = "NeqSim master `ReactiveMultiphaseTPflash`"
+edition = "The whole stack as one procedure: the formula matrix, the `NR = 0` dispatch, the VLE initialisation, the tangent-plane analysis, the outer loop with its removal and trial-phase rules, the modified-RAND solve with DIIS, and the Gibbs measure. The ionic branch is refused."
+[algorithm]
+scheme = "phase_add_remove_loop"
+initialisation = "wilson_vle"
+convergence = "absolute"
+tolerance = 1e-04
+max_iterations = 20
+[algorithm.inner]
+scheme = "multiphase_rand_newton"
+initialisation = "phase_composition"
+convergence = "absolute"
+tolerance = 1e-09
+max_iterations = 500
+[inputs]
+[inputs.components]
+type = "components"
+description = "the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. **A charged one is refused**: the solve's ionic branch is not ported."
+[inputs.T]
+unit = "K"
+description = "absolute temperature. It sets the standard state the potentials are reduced against, and it is what the Wilson seeds and the Rachford-Rice loops are built at."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure. Converted to bara for the potentials, which is the unit NeqSim's `ln(P/P_ref)` is taken against, and taken in pascals by the cubic."
+[inputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per component"
+description = "the overall component amounts, which is what the driver's `getOverallMoles` reads and what its frozen element inventory is built from. Not a composition and not renormalised."
+[inputs.max_phases]
+unit = "dimensionless"
+description = "the driver's effective phase ceiling. Two is the captured states' own, and **one changes the answer rather than the format**: a ceiling of one skips the VLE initialisation and collapses the phase list."
+[outputs]
+[outputs.phase_count]
+unit = "dimensionless"
+description = "How many phases the driver stopped on: one where the analysis found the fluid stable or a ceiling of one collapsed it, two otherwise."
+[outputs.phase_moles]
+type = "matrix"
+unit = "mol"
+shape = "one row per phase, one column per component"
+description = "Each phase's mole numbers, `n[j][i]`. Rows are in the driver's own order and **no phase type is promised** - NeqSim's types are its system's bookkeeping, not a state this model computes."
+[outputs.phase_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per phase"
+description = "Each phase's share of the fluid, and **the fraction the driver weighs it by**: on a neutral fluid that is the one its bookkeeping left rather than the solve's own, so the two do not agree."
+[outputs.converged]
+type = "boolean"
+description = "`isConverged`. **True on two branches that accept an answer without a converged solve** - the single-phase one and the `NR = 0` fallback - which is the class's own overwriting of the solve's flag."
+[outputs.total_iterations]
+unit = "dimensionless"
+description = "Every solve's passes summed over the outer iterations. **Zero on the `NR = 0` fallback**, whose successive substitution the driver never counts."
+[outputs.equilibrium_total_moles]
+unit = "mol"
+description = "`getEquilibriumTotalMoles`, the last solve's total. One mole of feed does not fix it: a reaction that splits one species into two moves it."
+[outputs.gibbs_energy]
+unit = "dimensionless"
+description = "`computeGibbsEnergy`, the beta-weighted `sum_i x_i (ln x_i + ln phi_i)` over the phase list. **Zero on the single-phase branch**, which returns before the driver computes one, and twice one phase's worth where the weights are the constructor's `(1.0, 1.0)`."
+[outputs.residual]
+unit = "dimensionless"
+description = "`getFinalResidual`: the worst potential error against the element balance, which is what the solve stopped on. **The answer is only as tight as this**, and a relaxed multiphase stop is `1e-4` rather than `1e-9`."
+[outputs.element_residual]
+unit = "dimensionless"
+description = "`getFinalElementResidual` on its own: the scaled root-mean-square element deviation, each row divided by `max(|b_k|, max(totalMoles 1e-6, 1e-10))`."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "max_phases"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a phase ceiling below one is not a ceiling; the driver has no way to answer it"
+[implementations]
+python = "azoth.reactions.reactive_tp_flash"
+rust = "azoth_reactions::reactive_tp_flash"

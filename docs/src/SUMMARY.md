@@ -171,6 +171,7 @@
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)
   - [Reactive chemical equilibrium by the Smith-Missen method](./reactions/chemical_equilibrium.md)
   - [Reactive equilibrium as an operation on one phase](./reactions/reactive_phase_equilibrium.md)
+  - [Reactive flash at fixed temperature and pressure](./reactions/reactive_tp_flash.md)
   - [Reference potentials from an independent reaction basis](./reactions/reference_potentials.md)
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)

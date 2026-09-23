@@ -1,0 +1,31 @@
+model = "reactions.reactive_tp_flash"
+[[cases]]
+id = "wgs_600k_the_class_own_two_phase_state"
+tolerance = 1e-04
+source = "NeqSim master, the water-gas shift at 600 K where `CO + H2O = CO2 + H2` has one independent reaction and its products are strongly favoured. **What is pinned is the fluid and not the split**: both of the driver's phases converge to the *same* composition, so the Gibbs energy is flat along the direction that trades moles between them and the split a run reports is decided by its path. NeqSim lands at `(0.014138, 0.985862)` and this port at `(0.016, 0.984)`; the moles summed over the phases agree to `1e-6` and that sum is what the element balance fixes. **`gibbs_energy` is the capture's own `-2.2595355`, which is twice one phase's worth**, because `computeGibbsEnergy` weighs each phase by the fraction its list carries and the constructor leaves both at one; reproducing it is reproducing the class. `residual` and `total_iterations` are deliberately not pinned: the two codes stop at different points inside the relaxed multiphase tolerance (`5.8e-5` there against `7.2e-5` here), which is a stopping point and not an answer.\n"
+[cases.inputs]
+components = ["CO", "water", "CO2", "hydrogen"]
+T = 600.0
+P = 100000.0
+moles = [0.25, 0.25, 0.25, 0.25]
+max_phases = 2
+[cases.expected]
+phase_count = 2.0
+converged = true
+equilibrium_total_moles = 0.999999128896382
+gibbs_energy = -2.2595355427150547
+[[cases]]
+id = "methane_water_has_no_reaction_to_run"
+tolerance = 1e-09
+source = "The capture's methane/water block at 300 K and 50 bar: rank 2 over three elements, so `NR = 0`, and the driver takes the conventional VLE flash instead of the reactive solve. **The fractions are pinned exactly and the compositions are not**: this path is a Wilson seed and six successive substitutions over the same cubic, and both compositions and the vapour fraction come back to `1e-12` - the tightest agreement in the stack. `total_iterations` is `0` because the driver never counts those passes, and `phase_count` is two because the fluid is immiscible.\n"
+[cases.inputs]
+components = ["methane", "water"]
+T = 300.0
+P = 5000000.0
+moles = [0.5, 0.5]
+max_phases = 2
+[cases.expected]
+phase_count = 2.0
+converged = true
+total_iterations = 0.0
+phase_fraction = [0.5003348951610832, 0.4996651048389168]

@@ -1405,6 +1405,19 @@ class ReactivePhaseEquilibriumResult:
     warnings: list[Warning]
 
 @final
+class ReactiveTpFlashResult:
+    phase_count: int
+    phase_moles: list[list[Qty]]
+    phase_fraction: list[float]
+    converged: bool
+    total_iterations: int
+    equilibrium_total_moles: Qty
+    gibbs_energy: float
+    residual: float
+    element_residual: float
+    warnings: list[Warning]
+
+@final
 class ReferencePotentialsResult:
     potentials: list[Qty]
     independent: list[float]
@@ -2534,6 +2547,13 @@ def reactive_phase_equilibrium(
     tolerance: float,
     seed: str,
 ) -> ReactivePhaseEquilibriumResult: ...
+def reactive_tp_flash(
+    components: list[str],
+    T: float,
+    P: float,
+    moles: list[float],
+    max_phases: float,
+) -> ReactiveTpFlashResult: ...
 def reference_potentials(
     components: list[str],
     source: str,

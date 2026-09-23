@@ -32,7 +32,8 @@
 //! on the first call, where phase 0 holds the feed, and differ where a recheck runs.
 
 use azoth_core::units::{kelvins, pascals};
-use azoth_core::{AzothError, Result};
+use azoth_core::warning::Warning;
+use azoth_core::{AzothError, CalcResult, Result};
 use azoth_eos::databank::mixture_of;
 use azoth_eos::{Cubic, RootSide};
 
@@ -78,6 +79,29 @@ pub struct ReactiveTpFlashResult {
     pub residual: f64,
     /// `getFinalElementResidual`, the scaled root-mean-square element deviation on its own.
     pub element_residual: f64,
+    /// Caveats. This model has no range check of its own, so it is empty wherever the
+    /// caller's state was accepted.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ReactiveTpFlashResult {
+    const CALC_ID: &'static str = "reactions.reactive_tp_flash";
+    const FIELDS: &'static [&'static str] = &[
+        "phase_count",
+        "phase_moles",
+        "phase_fraction",
+        "converged",
+        "total_iterations",
+        "equilibrium_total_moles",
+        "gibbs_energy",
+        "residual",
+        "element_residual",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
 }
 
 /// `reactions.reactive_tp_flash`: simultaneous chemical and phase equilibrium at fixed
@@ -287,5 +311,6 @@ pub fn reactive_tp_flash(
         gibbs_energy: outcome.gibbs_energy,
         residual,
         element_residual,
+        warnings: Vec::new(),
     })
 }

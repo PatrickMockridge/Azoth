@@ -574,6 +574,49 @@ class ReactivePhaseEquilibriumResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ReactiveTpFlashResult(_HasWarnings):
+    """Result of ``reactions.reactive_tp_flash``.
+
+    **The composition is the answer and the split is not.** Where two phases converge to
+    the *same* composition the Gibbs energy is flat along the direction that trades moles
+    between them, so every split satisfies the equilibrium conditions and the one a run
+    reports is decided by its path. The rows below are that run's own; the moles summed
+    over them are what the element balance and the equilibrium fix.
+    """
+
+    #: How many phases the driver stopped on.
+    phase_count: int
+    #: Each phase's mole numbers, one row per phase and one column per component, in the
+    #: driver's own order. **No phase type is promised**: NeqSim's types are its system's
+    #: bookkeeping - `gas`, `oil`, `aqueous` - and not a state this model computes.
+    phase_moles: tuple[tuple[Q, ...], ...]
+    #: Each phase's share of the fluid, and **the fraction the driver weighs it by**: on a
+    #: neutral fluid that is the one its bookkeeping left rather than the solve's own.
+    phase_fraction: tuple[float, ...]
+    #: ``isConverged``. **True on two branches that accept an answer without a converged
+    #: solve** - the single-phase one and the ``NR = 0`` fallback - which is the class's
+    #: own overwriting of the solve's flag.
+    converged: bool
+    #: Every solve's passes summed over the outer iterations. **Zero on the ``NR = 0``
+    #: fallback**, whose successive substitution the driver never counts.
+    total_iterations: int
+    #: ``getEquilibriumTotalMoles``, the last solve's total. One mole of feed does not fix
+    #: it: a reaction that splits one species into two moves it.
+    equilibrium_total_moles: Q
+    #: ``computeGibbsEnergy``, the beta-weighted ``sum_i x_i (ln x_i + ln phi_i)``. **Zero
+    #: on the single-phase branch**, which returns before the driver computes one, and
+    #: twice one phase's worth where the weights are the constructor's ``(1.0, 1.0)``.
+    gibbs_energy: float
+    #: ``getFinalResidual``: what the solve stopped on. A relaxed multiphase stop is
+    #: ``1e-4`` rather than ``1e-9``, and the answer is only as tight as this.
+    residual: float
+    #: ``getFinalElementResidual`` on its own.
+    element_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ReferencePotentialsResult(_HasWarnings):
     """Result of ``reactions.reference_potentials``.
 
