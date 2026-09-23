@@ -864,9 +864,12 @@ pub fn run(
                 state.feed_moles,
                 &mut *single_ln_phi,
             )?;
+            // The phase carries the answer's *fractions*; its moles are the solve's own, which
+            // the outcome keeps in `solution.phase_moles`.
+            let total: f64 = single.moles.iter().sum();
             return Ok(FlashOutcome {
                 phases: vec![PhaseFeed {
-                    fractions: single.moles.clone(),
+                    fractions: single.moles.iter().map(|moles| moles / total).collect(),
                     beta: 1.0,
                 }],
                 // The class sets `converged` here whatever the solve reported.

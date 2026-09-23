@@ -178,14 +178,14 @@ pressure_bara=1.0
   feed[water]=0.25
   feed[CO2]=0.25
   feed[hydrogen]=0.25
-phases_at_construction_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
-after_init0_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
-after_init1_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
-after_force_one_phase_phases=1 max_phases=2 beta[0]=1.0
+phases_at_construction_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=gas beta[1]=1.0
+after_init0_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=liquid beta[1]=1.0
+after_init1_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=oil beta[1]=1.0
+after_force_one_phase_phases=1 max_phases=2 type[0]=gas beta[0]=1.0
 wilson_lnk=8.126399596589328 4.828384744048735 7.553448030966052 6.521680318328353
 has_volatile=true
 rachford_rice_v=1.0
-after_vle_init_phases=1 max_phases=2 beta[0]=1.0
+after_vle_init_phases=1 max_phases=2 type[0]=gas beta[0]=1.0
   vle_x[0]=0.25 0.25 0.25 0.25
 independent_reactions=1
 converged=true
@@ -196,7 +196,7 @@ diis_steps_accepted=0
 equilibrium_total_moles=1.0
 final_gibbs_energy=0.0
 lagrange_multipliers=8.093585484807246 -57.25657263680605 -8.635181642421648
-after_flash_phases=1 max_phases=2 beta[0]=1.0
+after_flash_phases=1 max_phases=2 type[0]=gas beta[0]=1.0
   phase_x[0]=0.07914053108905064 0.07914053108905078 0.42085946891094933 0.4208594689109492
 equilibrium_moles[0]=0.07914053108905064 0.07914053108905078 0.42085946891094933 0.4208594689109492
 solver_phase_amounts=1.0
@@ -210,14 +210,14 @@ pressure_bara=1.0
   feed[water]=0.25
   feed[CO2]=0.25
   feed[hydrogen]=0.25
-phases_at_construction_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
-after_init0_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
-after_init1_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
-after_force_one_phase_phases=1 max_phases=2 beta[0]=1.0
+phases_at_construction_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=gas beta[1]=1.0
+after_init0_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=liquid beta[1]=1.0
+after_init1_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=oil beta[1]=1.0
+after_force_one_phase_phases=1 max_phases=2 type[0]=gas beta[0]=1.0
 wilson_lnk=6.825119327591084 -2.962207351951264 4.209439298946052 6.289781638328353
 has_volatile=true
 rachford_rice_v=0.789403682026609
-after_vle_init_phases=2 max_phases=2 beta[0]=0.21059631797339096 beta[1]=0.789403682026609
+after_vle_init_phases=2 max_phases=2 type[0]=gas beta[0]=0.21059631797339096 type[1]=oil beta[1]=0.789403682026609
   vle_x[0]=3.4387719474992867E-4 0.9943830581126222 0.0046858343124472806 5.87230380180666E-4
   vle_x[1]=0.31660300859946905 0.05141423865879465 0.31544466565959206 0.31653808708214426
 independent_reactions=1
@@ -229,7 +229,7 @@ diis_steps_accepted=19
 equilibrium_total_moles=1.0000118327113505
 final_gibbs_energy=-0.7162112257978988
 lagrange_multipliers=35.158184128372795 -109.66682698329916 -8.20729842553234
-after_flash_phases=2 max_phases=2 beta[0]=0.21059631797339096 beta[1]=0.789403682026609
+after_flash_phases=2 max_phases=2 type[0]=gas beta[0]=0.21059631797339096 type[1]=oil beta[1]=0.789403682026609
   phase_x[0]=0.0016279236124131667 0.0016279247943230394 0.4983721092355497 0.4983720423577141
   phase_x[1]=0.0016279238024838653 0.0016279238053538993 0.4983720694882294 0.49837208290393287
 equilibrium_moles[0]=2.3015300640172004E-5 2.3015317349808035E-5 0.007045898122781015 0.007045897177273817
@@ -290,12 +290,12 @@ temperature_K=300.0
 pressure_bara=50.0
   feed[methane]=0.5
   feed[water]=0.5
-before_flash_phases=2 max_phases=2 beta[0]=1.0 beta[1]=1.0
+before_flash_phases=2 max_phases=2 type[0]=gas beta[0]=1.0 type[1]=aqueous beta[1]=1.0
 independent_reactions=0
 phase0_type=GAS
 converged=true
 total_iterations=0
-after_flash_phases=2 max_phases=2 beta[0]=0.5003348951610832 beta[1]=0.4996651048389168
+after_flash_phases=2 max_phases=2 type[0]=gas beta[0]=0.5003348951610832 type[1]=aqueous beta[1]=0.4996651048389168
   phase_x[0]=0.999330366296782 6.696337032181276E-4
   phase_x[1]=2.9209086496247944E-7 0.9999997079091351
 

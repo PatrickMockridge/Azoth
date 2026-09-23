@@ -12,12 +12,13 @@ azoth-core.workspace = true
 csv.workspace = true
 serde.workspace = true
 toml.workspace = true
+# `reactions.reactive_tp_flash` needs a fugacity coefficient at a trial composition, and the
+# model is where the equation of state is chosen; every other id in this crate takes `ln phi`
+# as a closure and carries no EoS of its own.
+azoth-eos.workspace = true
 
 [dev-dependencies]
 azoth-test-support.workspace = true
-# Only the tests: the RAND solve takes `ln phi` as a closure so the crate needs no equation
-# of state, and a cubic is what the oracle's fugacity coefficients came from.
-azoth-eos.workspace = true
 # Only the tests: the crate itself is dimensionless and needs no units library.
 uom.workspace = true
 

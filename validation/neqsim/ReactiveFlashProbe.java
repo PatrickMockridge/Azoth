@@ -339,7 +339,10 @@ public class ReactiveFlashProbe {
     StringBuilder out = new StringBuilder(label + "_phases=" + system.getNumberOfPhases()
         + " max_phases=" + system.getMaxNumberOfPhases());
     for (int phase = 0; phase < system.getNumberOfPhases(); phase++) {
-      out.append(" beta[").append(phase).append("]=").append(system.getPhase(phase).getBeta());
+      // The phase *type* as well as the fraction: the driver's own code branches on it
+      // (`liqIdx` is the index that is not `GAS`), and no azoth result carries a type.
+      out.append(" type[").append(phase).append("]=").append(system.getPhase(phase).getPhaseTypeName())
+          .append(" beta[").append(phase).append("]=").append(system.getPhase(phase).getBeta());
     }
     System.out.println(out);
   }
