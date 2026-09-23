@@ -418,6 +418,73 @@ def hybrid_eos_ge_flash(
 
     phases = _seed(entries, z, ion)
     aqueous = 2
+    iterations, residual, gradient_norm = solve_fixed_topology_from(
+        reduced,
+        kij,
+        phases,
+        moles,
+        ion,
+        components,
+        t_si,
+        p_si,
+        tolerance,
+        cap,
+    )
+
+    beta = [phase.fraction for phase in phases]
+    composition = [list(phase.composition) for phase in phases]
+    ln_phi = [
+        [math.log(value) for value in row]
+        for row in _coefficients(reduced, kij, phases, components, t_si, p_si, aqueous)
+    ]
+
+    balance, fugacity = _acceptance(beta, composition, ln_phi, z, ion, p_si)
+    min_t_over_tc = min(reduced.reduced_temperatures)
+
+    return HybridEosGeFlashResult(
+        beta=tuple(beta),
+        x=tuple(tuple(row) for row in composition),
+        ln_phi=tuple(tuple(row) for row in ln_phi),
+        iterations=iterations,
+        residual=max(residual, gradient_norm),
+        max_material_balance_residual=balance,
+        max_log_fugacity_residual=fugacity,
+        min_t_over_tc=min_t_over_tc,
+        warnings=tuple(warnings),
+    )
+
+
+def solve_fixed_topology_from(
+    reduced: Any,
+    kij: Any,
+    phases: list[_Phase],
+    feed: list[float],
+    ion: list[bool],
+    components: list[str],
+    t_si: float,
+    p_si: float,
+    tolerance: float,
+    cap: int,
+) -> tuple[int, float, float]:
+    """The fixed-topology solve **from a split the caller already has**.
+
+    Split out of :func:`hybrid_eos_ge_flash` because the reactive coupling re-enters it: that
+    loop re-equilibrates the brine's chemistry, writes the adjusted species inventory back into
+    the roles and solves the fractions again, and each pass starts from the fractions the last
+    one converged on rather than from the seed. NeqSim's ``run`` is arranged the same way - its
+    ``system`` carries the split between passes - and re-seeding each pass would throw away the
+    only thing the passes have in common.
+
+    ``feed`` is the **reaction-adjusted overall inventory and not the feed constant**: the
+    chemistry changes species amounts, and what the material balance is stated over moves with
+    them. ``phases`` is in and out, in ``[gas, oil, aqueous]`` order.
+
+    Returns the steps taken, the last step's norm and the last gradient's, which is what the
+    caller's own convergence test reads.
+    """
+    aqueous = 2
+    n = len(feed)
+    z = [value / sum(feed) for value in feed]
     iterations = 0
     residual = math.nan
     gradient_norm = math.inf
@@ -489,28 +556,7 @@ def hybrid_eos_ge_flash(
             and gradient_norm <= GRADIENT_TOLERANCE
         ):
             break
-
-    beta = [phase.fraction for phase in phases]
-    composition = [list(phase.composition) for phase in phases]
-    ln_phi = [
-        [math.log(value) for value in row]
-        for row in _coefficients(reduced, kij, phases, components, t_si, p_si, aqueous)
-    ]
-
-    balance, fugacity = _acceptance(beta, composition, ln_phi, z, ion, p_si)
-    min_t_over_tc = min(reduced.reduced_temperatures)
-
-    return HybridEosGeFlashResult(
-        beta=tuple(beta),
-        x=tuple(tuple(row) for row in composition),
-        ln_phi=tuple(tuple(row) for row in ln_phi),
-        iterations=iterations,
-        residual=max(residual, gradient_norm),
-        max_material_balance_residual=balance,
-        max_log_fugacity_residual=fugacity,
-        min_t_over_tc=min_t_over_tc,
-        warnings=tuple(warnings),
-    )
+    return iterations, residual, gradient_norm
 
 
 def _coefficients(
