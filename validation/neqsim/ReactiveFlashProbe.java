@@ -68,6 +68,64 @@ public class ReactiveFlashProbe {
     forcedOnePhase("wgs-300K", 300.0, 1.0,
         new String[] { "CO", "water", "CO2", "hydrogen" },
         new double[] { 0.25, 0.25, 0.25, 0.25 });
+    diis();
+  }
+
+  /// The DIIS accelerator's own answers, on a sequence it is fed rather than one a solve
+  /// produces.
+  ///
+  /// `DIISAccelerator` is reached only from inside the RAND solve, so its extrapolation is
+  /// not visible in any flash's numbers - and it is **load-bearing** there: the 300 K
+  /// forced-one-phase run accepts 19 extrapolated steps out of its 35 iterations, which the
+  /// capture's `diis_steps_accepted` records. Feeding it directly is what makes the port
+  /// checkable: the Pulay system it solves, the rolling buffer's wrap and the `null` it
+  /// returns on a singular matrix all become readable.
+  static void diis() {
+    System.out.println("fluid=diis-accelerator");
+    int vectorLength = 3;
+    int maxHistory = 4;
+    neqsim.thermodynamicoperations.flashops.reactiveflash.DIISAccelerator diis =
+        new neqsim.thermodynamicoperations.flashops.reactiveflash.DIISAccelerator(vectorLength,
+            maxHistory);
+    System.out.println("vector_length=" + vectorLength);
+    System.out.println("max_history=" + maxHistory);
+    System.out.println("count_at_construction=" + diis.getCount());
+    System.out.println("can_extrapolate_at_construction=" + diis.canExtrapolate());
+    // Seven entries against a history of four, so the circular buffer wraps and `bufferIndex`
+    // has to be right for the extrapolation to be.
+    for (int step = 0; step < 7; step++) {
+      double[] iterate = new double[vectorLength];
+      double[] residual = new double[vectorLength];
+      for (int i = 0; i < vectorLength; i++) {
+        iterate[i] = 0.5 * (step + 1) * (i + 1);
+        residual[i] = 1.0 / (step + 1) * (i + 1) + 0.1 * step;
+      }
+      printVector("  iterate[" + step + "]", iterate);
+      printVector("  residual[" + step + "]", residual);
+      diis.addEntry(iterate, residual);
+      System.out.println("  count[" + step + "]=" + diis.getCount());
+      System.out.println("  can_extrapolate[" + step + "]=" + diis.canExtrapolate());
+      double[] extrapolated = diis.extrapolate();
+      System.out.println("  extrapolated[" + step + "]="
+          + (extrapolated == null ? "null" : java.util.Arrays.toString(extrapolated)));
+    }
+    diis.reset();
+    System.out.println("count_after_reset=" + diis.getCount());
+    System.out.println("can_extrapolate_after_reset=" + diis.canExtrapolate());
+    System.out.println("extrapolated_after_reset=" + (diis.extrapolate() == null ? "null" : "vector"));
+
+    // Two entries whose residuals are identical: the overlap matrix's rows are then equal, the
+    // elimination leaves a zero pivot, and the class returns null rather than a combination.
+    neqsim.thermodynamicoperations.flashops.reactiveflash.DIISAccelerator singular =
+        new neqsim.thermodynamicoperations.flashops.reactiveflash.DIISAccelerator(3, 4);
+    double[] same = { 1.0, 2.0, 3.0 };
+    singular.addEntry(new double[] { 1.0, 1.0, 1.0 }, same);
+    singular.addEntry(new double[] { 2.0, 2.0, 2.0 }, same);
+    System.out.println("singular_count=" + singular.getCount());
+    System.out.println("singular_can_extrapolate=" + singular.canExtrapolate());
+    System.out.println("singular_extrapolated="
+        + (singular.extrapolate() == null ? "null" : "vector"));
+    System.out.println();
   }
 
   /// The driver reached from a forced one-phase state, with the phase bookkeeping printed.
@@ -183,6 +241,7 @@ public class ReactiveFlashProbe {
     System.out.println("total_iterations=" + flash.getTotalIterations());
     System.out.println("final_residual=" + flash.getFinalResidual());
     System.out.println("final_element_residual=" + flash.getFinalElementResidual());
+    System.out.println("diis_steps_accepted=" + flash.getDiisStepsAccepted());
     System.out.println("equilibrium_total_moles=" + flash.getEquilibriumTotalMoles());
     System.out.println("final_gibbs_energy=" + flash.getFinalGibbsEnergy());
     printVector("lagrange_multipliers", flash.getLagrangeMultipliers());

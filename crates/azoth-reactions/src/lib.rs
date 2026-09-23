@@ -8,6 +8,7 @@
 //! by the caller rather than read from a live system.
 //!
 //! * [`databank`] - the element table, the stoichiometry, and the reaction rows
+//! * [`diis`] - the Pulay accelerator the multiphase RAND solve drives
 //! * [`equilibrium_constant`] - `ln K`, its derivative and the heat of reaction
 //! * [`reference_potentials`] - the independent basis, and the potentials from it
 //! * [`chemical_equilibrium`] - the Smith-Missen reactive solve
@@ -17,6 +18,7 @@
 
 pub mod chemical_equilibrium;
 pub mod databank;
+pub mod diis;
 pub mod equilibrium_constant;
 pub mod formula_matrix;
 pub mod linalg;
