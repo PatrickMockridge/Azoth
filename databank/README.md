@@ -4,7 +4,7 @@ Everything azoth ships as *input*: the upstream data it vendors, the record of w
 took from each and why it took no more, and in time the baseline keycard both derive
 into and the compiled files that come out of it.
 
-Specified in [the specification, S5](../docs/src/architecture/specification.md#s5-it-ships-data-and-the-keycard-extends-it).
+Specified in [the specification](../docs/src/architecture/specification.md#the-keycard-is-where-responsibility-sits).
 This page is the operational half: what is here now, what is not, and how to check it.
 
 ## The stages, and which of them exist

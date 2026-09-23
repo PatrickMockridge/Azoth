@@ -80,7 +80,7 @@ server is a projection of the same schema, already [beyond P12](./specification.
 
 ## What it gates on
 
-The middleware waits on the backend, in the order [the roadmap](../../../ROADMAP.md)
-fixes: the one data path (Tier 0), transport properties (P1), the physics (P2–P10), a
-kernel for every unit op (P11), and the executor — ordering, recycle fixed point, session,
-round trip (P12).
+The middleware waits on the backend, in the order
+[the specification's tranche table](./specification.md) fixes — the one data path first,
+then transport properties, the physics, a kernel for every unit op, and the executor.
+That order is stated there and is not repeated here.

@@ -63,8 +63,8 @@ MAX_SENSIBLE_TOLERANCE = 0.05
 # it is verified would be the library grading the engineer's judgement, which is not
 # its job: the choice of which equation of state and which data apply to a situation
 # belongs to the engineer and to their keycard. See
-# `docs/src/architecture/specification.md` S6, "The library implements; the engineer
-# decides". A schema edit is the only way a new
+# `docs/src/architecture/specification.md`, "What the library owes instead of a
+# status field". A schema edit is the only way a new
 # spec field can appear at all - every spec schema sets `additionalProperties: false`
 # - so if you are here to add a `status` or a `provenance` key to one, that edit is
 # the thing to not make.
