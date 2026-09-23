@@ -8,7 +8,7 @@ assumptions = [
     "**azoth's flashes do not take this branch.** NeqSim calls `solveChemEq` from inside `TPflash`, `TPmultiflash`, `TPmultiflashWAX` and the bubble and dew operations; here the caller owns the coupling. The blocker is the chemical-system dispatch, at `SystemEosGE`'s seam.",
     "**the LP estimate is ported, and NeqSim's own answer is not a solution of its program.** `A n = b` with `n >= 0` has no exact solution on the captured fluids, while Commons Math returns an epsilon-feasible vertex missing the oxygen row by `1.5e-10`; this answers the program as stated.",
     "**the estimate changes no converged composition here.** With it and without it the solve lands on the same answer to every printed digit - on the unflashed fluid, where the estimate exists, and on the flashed ones, where it does not.",
-    "**one refinement, not two.** NeqSim runs two and switches `useAdaptiveDerivatives` on from the second, which needs `d(ln phi_i)/d(n_j)` against a live phase - a coupling neither this id nor `reactions.chemical_equilibrium` can express, because both hold `log_activity` fixed.",
+    "**one refinement, not two, and the second is measured to do nothing.** NeqSim switches `useAdaptiveDerivatives` on from the second; on three portable fluids that pass converges on none of them and leaves the first refinement's answer where it was.",
     "**NeqSim's certification is not reproduced, and it fails on every captured fluid.** After a refinement it requires a reaction log residual under `2e-6`; the five captures sit between `13.9` and `29.6`, so `solveChemEq` returns false on all of them.",
     "**`b` is built from the composition the caller hands over.** NeqSim's `calcBVector` reads a cached `nVector`, which only a solve that gets past the phase search refreshes - so a skipped phase's element amounts are the constructor's stale ones there, and the capture prints both lines.",
     "**`updateMoles`'s floor is applied to the answer.** NeqSim writes `max(n_i, 1e-45)` back to the phase, and the composition returned here carries it. No captured state reaches the floor, so nothing pinned from the capture moved.",
@@ -108,7 +108,7 @@ length = "one per component, in the caller's order"
 description = "the composition the solve started from: the estimate where one exists, the caller's `moles` where none does.\n"
 [outputs.refinements]
 unit = "dimensionless"
-description = "NeqSim's `MAXIMUM_EQUILIBRIUM_REFINEMENTS` loop: how many refinements ran. **This takes the first and not the second**, which switches on `useAdaptiveDerivatives` and needs a live phase, so it is 1 wherever a solve ran and 0 on a skip.\n"
+description = "NeqSim's `MAXIMUM_EQUILIBRIUM_REFINEMENTS` loop: how many refinements ran. **This takes the first and not the second**, which switches on `useAdaptiveDerivatives` and is measured never to converge on a portable fluid, so it is 1 wherever a solve ran and 0 on a skip.\n"
 [outputs.certified]
 type = "boolean"
 description = "whether all three residuals came in under their tolerances: `2e-6` on the reaction log residual, `1e-8` mol on the net charge, `1e-8` mol on the element balance. **NeqSim's own gate**, and false on every captured fluid.\n"
