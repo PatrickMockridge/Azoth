@@ -4,7 +4,7 @@ use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_process::Stream;
 use azoth_process::kernels::{
     FlowRegime, compressor, expander, filter, heat_exchanger, heater, mixer, pipe, pump, separator,
-    splitter, throttling_valve,
+    shortcut_distillation_column, splitter, throttling_valve,
 };
 
 fn close(a: f64, b: f64) {
@@ -480,4 +480,368 @@ fn a_manifold_joins_and_divides() {
         outs[0].n, outs[0].t.value, outs[0].h.value, outs[0].z
     );
     println!("neqsim: n=1.0, T=299.9999999999398, h=-10824.760384299883, z=0.3/0.7");
+}
+
+// ==================== the shortcut distillation column ====================
+
+/// A four-component PR feed at 20 bara, the shape every row below shares.
+fn column_feed(t: f64) -> Stream {
+    Stream::from_pt(
+        vec![
+            "methane".into(),
+            "ethane".into(),
+            "propane".into(),
+            "n-butane".into(),
+        ],
+        vec![0.1, 0.3, 0.4, 0.2],
+        1.0,
+        pascals(20.0e5),
+        kelvins(t),
+    )
+    .expect("the fluid resolves")
+}
+
+fn relative(a: f64, b: f64, tolerance: f64, what: &str) {
+    let scale = 1.0 + a.abs().max(b.abs());
+    assert!(
+        (a - b).abs() <= tolerance * scale,
+        "{what}: {a} vs {b}, {} relative",
+        (a - b).abs() / scale
+    );
+}
+
+/// An absolute comparison, for a quantity that is a difference and can sit near zero.
+///
+/// **The two libraries' enthalpies differ by a systematic offset that is absolute, not
+/// relative** - `tests/stream.rs` measures it at -0.0634 J/mol at 300 K, linear in
+/// temperature - so a relative bound is the wrong measure wherever the value is small. A
+/// product whose enthalpy is -13 J/mol would fail at one part in ten thousand while being
+/// 0.06 J/mol out.
+fn absolute(a: f64, b: f64, tolerance: f64, what: &str) {
+    assert!(
+        (a - b).abs() <= tolerance,
+        "{what}: {a} vs {b}, {} absolute",
+        (a - b).abs()
+    );
+}
+
+/// **The capture's first row, and the whole FUG chain on it.** A two-phase feed, so the
+/// K-values are the flash's `y/x` and every number below is a rearrangement of them:
+/// measured against NeqSim, the relative volatility through to the duties agree to `3e-12`.
+/// That is the point of porting this class first - it is closed form, so an agreement this
+/// tight is plumbing and a disagreement would be a plumbing bug rather than a physics one.
+///
+/// **The two enthalpies are the one place the two libraries part**, and by the systematic
+/// ideal-gas offset `tests/stream.rs` records rather than by anything here: azoth is 0.0636
+/// J/mol below NeqSim on the distillate at 300 K, which is that offset to three figures.
+/// `reboiler_duty` inherits a thousandth of it, because the class's own estimate adds one per
+/// cent of the feed's enthalpy.
+#[test]
+fn a_shortcut_column_splits_a_four_component_feed() {
+    let out = shortcut_distillation_column(
+        &column_feed(300.0),
+        "propane",
+        "n-butane",
+        0.98,
+        0.98,
+        1.2,
+        None,
+        None,
+    )
+    .expect("the column solves");
+
+    relative(
+        out.relative_volatility,
+        2.7769364052320538,
+        1e-6,
+        "relative_volatility",
+    );
+    relative(
+        out.minimum_stages,
+        7.620946291100026,
+        1e-6,
+        "minimum_stages",
+    );
+    relative(
+        out.minimum_reflux_ratio,
+        0.44008894984866465,
+        1e-6,
+        "minimum_reflux_ratio",
+    );
+    relative(
+        out.actual_reflux_ratio,
+        0.5281067398183975,
+        1e-6,
+        "actual_reflux_ratio",
+    );
+    relative(out.actual_stages, 20.510953860048968, 1e-6, "actual_stages");
+    assert_eq!(out.feed_tray_number, 14, "the feed tray, which is a count");
+    relative(
+        out.condenser_duty.value,
+        -36472.85166598551,
+        1e-6,
+        "condenser_duty",
+    );
+    relative(
+        out.reboiler_duty.value,
+        36378.53354647986,
+        1e-6,
+        "reboiler_duty",
+    );
+
+    relative(out.distillate.n, 0.7956000000005571, 1e-6, "distillate_n");
+    let expected_z = [
+        0.12556561086035364,
+        0.3766968325795219,
+        0.49270990447366647,
+        0.005027652086458033,
+    ];
+    for (value, expected) in out.distillate.z.iter().zip(expected_z) {
+        relative(*value, expected, 1e-6, "distillate_z");
+    }
+    assert_eq!(out.distillate.p.value, 20.0e5, "the feed's pressure");
+    assert_eq!(out.distillate.t.value, 300.0, "the feed's temperature");
+    relative(
+        out.distillate.h.value,
+        -2243.812676863934,
+        1e-4,
+        "distillate_h",
+    );
+
+    relative(out.bottoms.n, 0.20439999999944294, 1e-6, "bottoms_n");
+    let expected_bottoms_z = [
+        0.0004892367906107846,
+        0.0014677103718262435,
+        0.03913894324859146,
+        0.9589041095889715,
+    ];
+    for (value, expected) in out.bottoms.z.iter().zip(expected_bottoms_z) {
+        relative(*value, expected, 1e-6, "bottoms_z");
+    }
+    relative(out.bottoms.h.value, -18697.707831107058, 1e-4, "bottoms_h");
+
+    // The balance the class's own split fractions close, component by component.
+    for i in 0..4 {
+        relative(
+            out.distillate.n * out.distillate.z[i] + out.bottoms.n * out.bottoms.z[i],
+            column_feed(300.0).n * column_feed(300.0).z[i],
+            1e-9,
+            "the component balance",
+        );
+    }
+}
+
+/// The same feed and keys with both product pressures stated.
+///
+/// **Every FUG number is identical**, because the class reads the two pressures only where it
+/// creates the products. What moves is the products' state, and the distillate's enthalpy
+/// goes from -2243.81 to -13.32 J/mol - not two bar of compression, but a phase change: at 18
+/// bara the distillate flashes to a single vapour, at the feed's own temperature.
+#[test]
+fn a_stated_product_pressure_moves_the_product_phase() {
+    let out = shortcut_distillation_column(
+        &column_feed(300.0),
+        "propane",
+        "n-butane",
+        0.98,
+        0.98,
+        1.2,
+        Some(pascals(18.0e5)),
+        Some(pascals(21.0e5)),
+    )
+    .expect("the column solves");
+
+    relative(
+        out.minimum_stages,
+        7.620946291100026,
+        1e-6,
+        "minimum_stages",
+    );
+    assert_eq!(out.distillate.p.value, 18.0e5);
+    assert_eq!(out.bottoms.p.value, 21.0e5);
+    assert_eq!(
+        out.distillate.t.value, 300.0,
+        "the flash holds the temperature"
+    );
+    // An absolute bound, because the distillate is nearly a gas here and its enthalpy is
+    // close to zero: azoth is -13.385 against NeqSim's -13.322, which is the libraries'
+    // ideal-gas offset and a *relative* error of four parts in a thousand.
+    absolute(
+        out.distillate.h.value,
+        -13.322032609178178,
+        0.1,
+        "distillate_h",
+    );
+    relative(out.bottoms.h.value, -18694.58756409396, 1e-4, "bottoms_h");
+}
+
+/// **The Wilson branch.** At 450 K the flash finds one phase, so the class has no `y` to
+/// divide by an `x` and estimates the K-values instead - `(Pc/P) exp(5.373 (1 + omega) (1 -
+/// Tc/T))`, with the class's own `5.373`. The feed quality is zero, because the one phase is
+/// a gas.
+#[test]
+fn a_single_phase_feed_takes_the_wilson_estimates() {
+    let out = shortcut_distillation_column(
+        &column_feed(450.0),
+        "propane",
+        "n-butane",
+        0.98,
+        0.98,
+        1.2,
+        None,
+        None,
+    )
+    .expect("the column solves");
+
+    relative(
+        out.relative_volatility,
+        2.360742641862776,
+        1e-6,
+        "relative_volatility",
+    );
+    relative(
+        out.minimum_stages,
+        9.061531808008356,
+        1e-6,
+        "minimum_stages",
+    );
+    relative(
+        out.minimum_reflux_ratio,
+        0.8355991286740769,
+        1e-6,
+        "minimum_reflux_ratio",
+    );
+    relative(out.actual_stages, 22.4423070346342, 1e-6, "actual_stages");
+    assert_eq!(out.feed_tray_number, 15);
+    assert_eq!(out.distillate.t.value, 450.0);
+}
+
+/// A binary, which is the row a reader can check by hand.
+#[test]
+fn a_shortcut_column_solves_a_binary() {
+    let feed = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into()],
+        vec![0.5, 0.5],
+        1.0,
+        pascals(20.0e5),
+        kelvins(300.0),
+    )
+    .expect("the fluid resolves");
+    let out =
+        shortcut_distillation_column(&feed, "methane", "n-butane", 0.99, 0.99, 1.2, None, None)
+            .expect("the column solves");
+
+    relative(
+        out.relative_volatility,
+        46.648767420893286,
+        1e-6,
+        "relative_volatility",
+    );
+    relative(
+        out.minimum_stages,
+        2.391643282325193,
+        1e-6,
+        "minimum_stages",
+    );
+    relative(out.actual_stages, 8.193966146245264, 1e-6, "actual_stages");
+    assert_eq!(out.feed_tray_number, 5);
+    relative(out.distillate.z[0], 0.99, 1e-9, "the light key's recovery");
+    relative(out.bottoms.z[1], 0.99, 1e-9, "the heavy key's recovery");
+}
+
+/// **The class's refusal, and the two degeneracies it does not refuse.** A light key less
+/// volatile than the heavy key is `solved = false` with every answer at its field
+/// initialiser, which is a refusal and not an answer. A reflux multiplier of exactly one
+/// leaves Gilliland's `X` at zero and the class returns `actual_stages = Infinity` with a
+/// feed tray of zero - `(int) Math.round(Infinity) + 1` wrapping through `Integer.MIN_VALUE` -
+/// and below one it silently takes its `Y = 0.5` fallback. Neither is a column, so both are
+/// refused here, and both rows stay in the capture as evidence.
+#[test]
+fn a_shortcut_column_refuses_what_the_class_cannot_answer() {
+    let swapped = shortcut_distillation_column(
+        &column_feed(300.0),
+        "n-butane",
+        "propane",
+        0.98,
+        0.98,
+        1.2,
+        None,
+        None,
+    );
+    assert!(swapped.is_err(), "a light key below the heavy key");
+
+    let multiplier_one = shortcut_distillation_column(
+        &column_feed(300.0),
+        "propane",
+        "n-butane",
+        0.98,
+        0.98,
+        1.0,
+        None,
+        None,
+    );
+    assert!(
+        multiplier_one.is_err(),
+        "a reflux multiplier at the minimum"
+    );
+
+    let unknown_key = shortcut_distillation_column(
+        &column_feed(300.0),
+        "butane",
+        "n-butane",
+        0.98,
+        0.98,
+        1.2,
+        None,
+        None,
+    );
+    assert!(unknown_key.is_err(), "a key that is not a component");
+}
+
+/// The component splitter's rows, printed so the case can be written from azoth's numbers.
+#[test]
+fn a_component_splitter_routes_each_component() {
+    let feed = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into(), "n-pentane".into()],
+        vec![0.5, 0.3, 0.2],
+        1.0,
+        pascals(20.0e5),
+        kelvins(300.0),
+    )
+    .expect("the three components resolve");
+    let (overhead, bottoms) =
+        azoth_process::kernels::component_splitter::component_splitter(&feed, &[0.98, 0.05, 0.02])
+            .expect("component splitter");
+
+    println!(
+        "overhead n={} t={} h={} z={:?}",
+        overhead.n, overhead.t.value, overhead.h.value, overhead.z
+    );
+    println!(
+        "bottoms n={} t={} h={} z={:?}",
+        bottoms.n, bottoms.t.value, bottoms.h.value, bottoms.z
+    );
+    println!(
+        "neqsim overhead n=0.509 z=0.962671905697446/0.029469548133595282/0.007858546168958742 h=551.7022676649342"
+    );
+    println!(
+        "neqsim bottoms n=0.491 z=0.02036659877800409/0.5804480651731161/0.39918533604887985 h=-14431.31737097011"
+    );
+    assert_eq!(overhead.z.len(), 3);
+    assert_eq!(bottoms.z.len(), 3);
+    // ---- and the other two rows, which the case pins too ----
+    let (even_h, even_b) =
+        azoth_process::kernels::component_splitter::component_splitter(&feed, &[0.5, 0.5, 0.5])
+            .expect("component splitter");
+    println!(
+        "even: n={} h={} z={:?} | n={} h={} z={:?}",
+        even_h.n, even_h.h.value, even_h.z, even_b.n, even_b.h.value, even_b.z
+    );
+    let (all_h, all_b) =
+        azoth_process::kernels::component_splitter::component_splitter(&feed, &[1.0, 0.5, 0.0])
+            .expect("component splitter");
+    println!(
+        "all-of-one: n={} h={} z={:?} | n={} h={} z={:?}",
+        all_h.n, all_h.h.value, all_h.z, all_b.n, all_b.h.value, all_b.z
+    );
 }

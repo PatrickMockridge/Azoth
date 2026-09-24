@@ -1,7 +1,7 @@
 //! `unit_ops.gas_scrubber` - `unit_ops.separator`'s arithmetic, under the other entry.
 
-use azoth_core::units::{Power, Pressure};
 use azoth_core::Result;
+use azoth_core::units::{Power, Pressure};
 
 use crate::kernels::separator::separator;
 use crate::stream::Stream;

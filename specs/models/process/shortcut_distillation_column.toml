@@ -1,0 +1,174 @@
+id = "process.shortcut_distillation_column"
+name = "Shortcut distillation column"
+kind = "procedure"
+assumptions = [
+    "**the K-values come from a TP flash of the feed, and from Wilson when the flash finds one phase.** `K_i = y_i/x_i`, or `1e10` where a liquid mole fraction is at or below `1e-20`.",
+    "**the Wilson fallback is `(Pc_i/P) exp(5.373 (1 + omega_i) (1 - Tc_i/T))`**, on the flashed fluid's own temperature and pressure. The `5.373` is the class's, not Wilson's own `5.37`.",
+    "**`alpha_i = K_i / K_HK`, and `alpha_LK/HK <= 1` is refused.** The class logs an error, sets `solved = false` and returns with every answer at its field initialiser - zeros rather than `NaN`.",
+    "**a refusal is what that is, so this model returns an error and has no `solved` field.** A flag saying whether a refusal happened cannot be an output of a computation that refuses.",
+    "**the feed quality `q` is the flash's own split**: one phase gives `0` for a gas and `1` otherwise, and two give the liquid's mole share, which on a molar flash is `1 - beta`. It enters Underwood as `1 - q`.",
+    "**Underwood's root is bisected on `[1 + 1e-6, alpha_LK/HK - 1e-6]`**, stopping at `|f| < 1e-10` or a bracket under `1e-12`, over at most 200 iterations.",
+    "**no `[algorithm.bracket]` block is declared**, because the bracket's upper end is a computed relative volatility and not a literal. This assumption is the bracket.",
+    "**Gilliland is Molokanov's fit**, `Y = 1 - exp[((1 + 54.4X)/(11 + 117.2X))((X - 1)/sqrt(X))]` with `X = (R - Rmin)/(R + 1)`, inverted by `N = (Y + Nmin)/(1 - Y)`.",
+    "**a reflux multiplier at or below one is refused.** At one, `X` is zero and the class returns `actual_stages = Infinity` with the feed tray at `(int) Math.round(Infinity) + 1`, which is zero.",
+    "**below one it silently takes its `Y = 0.5` fallback.** Both are degenerate, and neither is a column.",
+    "**the Kirkbride argument is not the correlation's as usually quoted.** The class computes `((z_HK,F/z_LK,F)(xLK_bottoms/xHK_distillate)(B/D)^2)^0.206` - the square on `B/D`, where the correlation squares the composition ratio.",
+    "**`xLK_bottoms` and `xHK_distillate` are the class's own**, `(1 - r_LK) z_LK,F` and `(1 - r_HK) z_HK,F`: recovery-weighted feed fractions rather than the product mole fractions the correlation is written in.",
+    "**NeqSim wins where the two disagree**, so this reproduces the class and says which expression the feed tray came from.",
+    "**the duties are estimates and not an energy balance.** `D = n_feed clamp(sum_i z_i s_i, 0.001, 0.999)`, `V = D (R + 1)`, and a hard-coded **`avgHvap = 30000` J/mol** gives `condenser_duty = -V avgHvap`.",
+    "**the reboiler's is `-condenser_duty + 0.01 h_feed`**, a per cent of the feed's total enthalpy. The condenser's figure does not depend on the fluid, and both are reported as the class reports them.",
+    "**the split fractions are the class's own estimate, and its constants are kept.** The light key takes `light_key_recovery_distillate`, the heavy key `1 - heavy_key_recovery_bottoms`, anything lighter than the light key **0.999**, anything heavier than the heavy key **0.001**.",
+    "**a component between the keys takes `1/(1 + (alpha_i/alpha_LK_HK)^(-Nmin) (1 - r_LK)/r_LK)`**, and every fraction is clamped into `[1e-12, 1 - 1e-12]`, with a non-finite one replaced by `0.5`.",
+    "**the products are the feed's fluid with the split's moles at the stated pressure, flashed at the feed's temperature.** A stated product pressure can move a product across a phase boundary at a fixed temperature.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route. NeqSim's own distillation tests are on SRK, so the capture is re-cased.",
+    "**what is not ported**: `setNumberOfTrays` is inert on this class - its own override logs `calculates stages; setNumberOfTrays ignored` and returns - and the tray hydraulics, the tray optimization and `getResultsJson` are not.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/ShortcutDistillationColumn.java` is the port source, through its `run`. **The class names its methods and cites no paper**: the references below are those methods' papers.",
+    "Fenske, M. R. (1932). \"Fractionation of Straight-Run Pennsylvania Gasoline.\" Industrial & Engineering Chemistry 24(5), 482-485. DOI 10.1021/ie50269a003. The minimum-stage equation.",
+    "Underwood, A. J. V. (1948). \"Fractional Distillation of Multicomponent Mixtures.\" Chemical Engineering Progress 44(8), 603-614. The minimum-reflux root.",
+    "Gilliland, E. R. (1940). \"Multicomponent Rectification: Estimation of the Number of Theoretical Plates as a Function of the Reflux Ratio.\" Industrial & Engineering Chemistry 32(9), 1220-1223. The stages-against-reflux correlation Molokanov's fit approximates.",
+    "Molokanov, Yu. K.; Korabina, T. P.; Mazurina, N. I.; Nikiforov, G. A. (1972). \"An Approximation Method for Calculating the Basic Parameters of Multicomponent Fractionation.\" International Chemical Engineering 12, 209. The closed form the class evaluates.",
+    "Kirkbride, C. G. (1944). \"Process Design Procedure for Multicomponent Fractionators.\" Petroleum Refiner 23(9), 321-336. The feed-stage correlation whose argument the class rearranges - see the assumptions.",
+    "Wilson, G. M. (1964). \"Vapor-Liquid Equilibrium. XI. A New Expression for the Excess Free Energy of Mixing.\" Journal of the American Chemical Society 86(2), 127-130. DOI 10.1021/ja01056a002. The K-value estimate the class falls back to when the flash finds one phase.",
+    "`validation/neqsim/captures/process_shortcut_distillation_column.tsv` - six rows: a four-component propane/n-butane split, the same with both product pressures stated, one at a reflux multiplier of one, a superheated gas feed for the Wilson branch, a binary, and the swapped-key refusal.",
+]
+[source]
+standard = "NeqSim process/equipment/distillation/ShortcutDistillationColumn.java"
+edition = "Its `run`: the feed's TP flash, the Wilson fallback, `alpha_i = K_i/K_HK`, Fenske, Underwood's root by bisection, Gilliland through Molokanov, Kirkbride's feed tray, and both products from the split fractions."
+[algorithm]
+scheme = "underwood_bisection"
+convergence = "absolute"
+tolerance = 1.0e-10
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. The order is the order of `feed_z`, and the light and heavy keys are named against it.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the feed's molar flow, which scales both products and both duties and enters the FUG arithmetic nowhere else.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed composition, which sets `alpha_i`'s weights in Underwood's sum, the Kirkbride argument and the split fractions.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the feed's pressure, which is the flash's and the default for both product pressures.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the feed's temperature, which is the flash's and is what decides whether the K-values come from a two-phase flash or from Wilson.\n"
+[inputs.light_key]
+type = "string"
+description = "the light key's name, which must be one of `components`; the class refuses to run without it.\n"
+[inputs.heavy_key]
+type = "string"
+description = "the heavy key's name, which must be one of `components`; `alpha_LK/HK` is their K-value ratio, and a ratio at or below one is refused.\n"
+[inputs.light_key_recovery_distillate]
+unit = "dimensionless"
+description = "the fraction of the light key's feed that leaves in the distillate. NeqSim defaults it to 0.99 and the palette state it.\n"
+[inputs.heavy_key_recovery_bottoms]
+unit = "dimensionless"
+description = "the fraction of the heavy key's feed that leaves in the bottoms. NeqSim defaults it to 0.99.\n"
+[inputs.reflux_ratio_multiplier]
+unit = "dimensionless"
+description = "the actual reflux as a multiple of Underwood's minimum, which is the Gilliland correlation's argument. At or below one the class returns an infinity or its silent fallback, so this model refuses it.\n"
+[inputs.condenser_pressure]
+unit = "Pa"
+optional = true
+description = "the distillate's pressure. Omitted means the feed's, which is what the class's own unset default does - `setCondenserPressure` takes bara, and a value below zero is the feed's.\n"
+[inputs.reboiler_pressure]
+unit = "Pa"
+optional = true
+description = "the bottoms' pressure. Omitted means the feed's, as the condenser's is.\n"
+[outputs]
+[outputs.distillate_n]
+unit = "mol/s"
+description = "the distillate's molar flow: the feed's times the summed split fractions, component by component.\n"
+[outputs.distillate_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the distillate's composition: each component's split fraction times its feed mole fraction, normalised over the components that stayed.\n"
+[outputs.distillate_p]
+unit = "Pa"
+description = "the distillate's pressure: `condenser_pressure` where stated, otherwise the feed's.\n"
+[outputs.distillate_t]
+unit = "K"
+description = "the distillate's temperature, which is the feed's: the product is the feed's fluid re-flashed at a stated pressure, and NeqSim's flash does not move it.\n"
+[outputs.distillate_h]
+unit = "J/mol"
+description = "the distillate's molar enthalpy at its own state. **A stated `condenser_pressure` can move this by a phase change** rather than by the pressure difference - see the assumptions.\n"
+[outputs.bottoms_n]
+unit = "mol/s"
+description = "the bottoms' molar flow: the feed's less the distillate's, component by component.\n"
+[outputs.bottoms_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the bottoms' composition, normalised like the distillate's.\n"
+[outputs.bottoms_p]
+unit = "Pa"
+description = "the bottoms' pressure: `reboiler_pressure` where stated, otherwise the feed's.\n"
+[outputs.bottoms_t]
+unit = "K"
+description = "the bottoms' temperature, which is the feed's, for the reason the distillate's is.\n"
+[outputs.bottoms_h]
+unit = "J/mol"
+description = "the bottoms' molar enthalpy at its own state.\n"
+[outputs.minimum_stages]
+unit = "dimensionless"
+description = "Fenske's minimum theoretical stages at total reflux: `ln[(xLK_D/xHK_D)(xHK_B/xLK_B)] / ln(alpha_LK/HK)`, on the recovery bounds clamped away from zero and one.\n"
+[outputs.minimum_reflux_ratio]
+unit = "dimensionless"
+description = "Underwood's minimum reflux: `sum_i alpha_i xD_i/(alpha_i - theta) - 1`, floored at zero, on the distillate composition the split fractions imply.\n"
+[outputs.actual_stages]
+unit = "dimensionless"
+description = "the stages Molokanov's fit gives at `reflux_ratio_multiplier` times the minimum, which is not a whole number and is not rounded here.\n"
+[outputs.actual_reflux_ratio]
+unit = "dimensionless"
+description = "the reflux ratio the correlation was evaluated at: `minimum_reflux_ratio * reflux_ratio_multiplier`.\n"
+[outputs.feed_tray_number]
+unit = "dimensionless"
+description = "the feed stage counted from the top: `round(N_rectifying) + 1`, where the rectifying count is `actual_stages / (1 + kirkbride_ratio)`.\n"
+[outputs.condenser_duty]
+unit = "W"
+description = "the condenser duty the class reports: `-V * 30000` J/mol with `V = D(R + 1)`. **An estimate, not an energy balance** - it does not depend on the fluid.\n"
+[outputs.reboiler_duty]
+unit = "W"
+description = "the reboiler duty the class reports: the condenser's with its sign changed, plus one per cent of the feed's enthalpy.\n"
+[outputs.relative_volatility]
+unit = "dimensionless"
+description = "`alpha_LK/HK`, the K-value ratio the whole calculation is written in. **The one intermediate the class exposes**, and what makes the capture's K-values checkable against the class's own flash.\n"
+[[valid_range]]
+quantity = "reflux_ratio_multiplier"
+min = 1
+min_inclusive = false
+severity = "error"
+rationale = "at one the reflux equals the minimum, Gilliland's X is zero and the class returns an infinite stage count; below one it silently takes its Y = 0.5 fallback\n"
+[[valid_range]]
+quantity = "light_key_recovery_distillate"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a recovery is a fraction of the feed, and the class's own clamp takes either bound to just inside it rather than refusing\n"
+[[valid_range]]
+quantity = "heavy_key_recovery_bottoms"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "as the light key's recovery: the class clamps a bound rather than refusing it\n"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.shortcut_distillation_column"
+rust = "azoth_process::shortcut_distillation_column"

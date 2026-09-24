@@ -1,0 +1,139 @@
+model = "process.shortcut_distillation_column"
+[[cases]]
+id = "propane_nbutane_split"
+tolerance = 0.0001
+source = "NeqSim master, `ShortcutDistillationColumn.run` on a two-phase PR feed, from `validation/neqsim/captures/process_shortcut_distillation_column.tsv`. Four components so every branch of the class's own split-fraction estimate is reached: methane and ethane are more volatile than the light key (the `0.999` branch), propane is the light key, n-butane the heavy key, and nothing sits between the keys. The feed's flash finds two phases, so the K-values are the flash's `y/x` and not Wilson's. **The feed tray is where the port and the published correlation part**: this argument is the class's, and the assumptions give the expression. **Tolerance**: the worst field is `distillate_h` at `2.8e-5` relative, which is the libraries' ideal-gas enthalpy offset and not this arithmetic - the FUG chain agrees to `3e-12` or better. Azoth is `0.0636` J/mol below NeqSim on these products, the offset `tests/stream.rs` measures.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.1, 0.3, 0.4, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+light_key = "propane"
+heavy_key = "n-butane"
+light_key_recovery_distillate = 0.98
+heavy_key_recovery_bottoms = 0.98
+reflux_ratio_multiplier = 1.2
+[cases.expected]
+relative_volatility = 2.7769364052320538
+minimum_stages = 7.620946291100026
+minimum_reflux_ratio = 0.44008894984866465
+actual_reflux_ratio = 0.5281067398183975
+actual_stages = 20.510953860048968
+feed_tray_number = 14.0
+condenser_duty = -36472.85166598551
+reboiler_duty = 36378.53354647986
+distillate_n = 0.7956000000005571
+distillate_z = [0.12556561086035364, 0.3766968325795219, 0.49270990447366647, 0.005027652086458033]
+distillate_p = 2000000.0
+distillate_t = 300.0
+distillate_h = -2243.812676863934
+bottoms_n = 0.20439999999944294
+bottoms_z = [0.0004892367906107846, 0.0014677103718262435, 0.03913894324859146, 0.9589041095889715]
+bottoms_p = 2000000.0
+bottoms_t = 300.0
+bottoms_h = -18697.707831107058
+[[cases]]
+id = "pressures_stated_move_the_product_phase"
+tolerance = 0.005
+source = "The same feed and the same keys with both product pressures stated - 18 bara on the distillate and 21 on the bottoms. **Every FUG number is identical**, because the class reads the two pressures only where it creates the products; what moves is the products' state. The distillate's enthalpy goes from -2243.81 to -13.32 J/mol, which is not two bar of compression but a phase change: at 18 bara the distillate flashes to a single vapour, and this row is the measurement of that. **Tolerance**: the worst field is `distillate_h` at `4.8e-3` relative, because a distillate at -13 J/mol divides a 0.063 J/mol offset by almost nothing, which is the libraries' ideal-gas enthalpy offset and not this arithmetic - the FUG chain agrees to `3e-12` or better. Azoth is `0.0634` J/mol below NeqSim on these products, the offset `tests/stream.rs` measures.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.1, 0.3, 0.4, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+light_key = "propane"
+heavy_key = "n-butane"
+light_key_recovery_distillate = 0.98
+heavy_key_recovery_bottoms = 0.98
+reflux_ratio_multiplier = 1.2
+condenser_pressure = 1800000.0
+reboiler_pressure = 2100000.0
+[cases.expected]
+relative_volatility = 2.7769364052320538
+minimum_stages = 7.620946291100026
+minimum_reflux_ratio = 0.44008894984866465
+actual_reflux_ratio = 0.5281067398183975
+actual_stages = 20.510953860048968
+feed_tray_number = 14.0
+condenser_duty = -36472.85166598551
+reboiler_duty = 36378.53354647986
+distillate_n = 0.7956000000005571
+distillate_z = [0.12556561086035364, 0.3766968325795219, 0.49270990447366647, 0.005027652086458033]
+distillate_p = 1800000.0
+distillate_t = 300.0
+distillate_h = -13.322032609178178
+bottoms_n = 0.20439999999944294
+bottoms_z = [0.0004892367906107846, 0.0014677103718262435, 0.03913894324859146, 0.9589041095889715]
+bottoms_p = 2100000.0
+bottoms_t = 300.0
+bottoms_h = -18694.58756409396
+[[cases]]
+id = "wilson_fallback_superheated_gas"
+tolerance = 0.0001
+source = "The same mixture at 450 K, where the flash finds **one** phase. This is the row that reaches the Wilson branch: the class has no `y` and no `x` to divide, so it estimates `K_i = (Pc_i/P) exp(5.373 (1 + omega_i) (1 - Tc_i/T))` on the flashed fluid's own temperature and pressure, and the feed quality is `0` because the single phase is a gas. The `5.373` is the class's constant. **Tolerance**: the worst field is `distillate_h` at `7.6e-5` relative, which is the libraries' ideal-gas enthalpy offset and not this arithmetic - the FUG chain agrees to `3e-12` or better. Azoth is `0.886` J/mol below NeqSim on these products, the offset `tests/stream.rs` measures.\n"
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.1, 0.3, 0.4, 0.2]
+feed_p = 2000000.0
+feed_t = 450.0
+light_key = "propane"
+heavy_key = "n-butane"
+light_key_recovery_distillate = 0.98
+heavy_key_recovery_bottoms = 0.98
+reflux_ratio_multiplier = 1.2
+[cases.expected]
+relative_volatility = 2.360742641862776
+minimum_stages = 9.061531808008356
+minimum_reflux_ratio = 0.8355991286740769
+actual_reflux_ratio = 1.0027189544088924
+actual_stages = 22.4423070346342
+feed_tray_number = 15.0
+condenser_duty = -47800.89600383143
+reboiler_duty = 47931.163544252726
+distillate_n = 0.7956
+distillate_z = [0.1255656108597285, 0.3766968325791855, 0.4927099044746104, 0.005027652086475621]
+distillate_p = 2000000.0
+distillate_t = 450.0
+distillate_h = 11686.336029445352
+bottoms_n = 0.20440000000000003
+bottoms_z = [0.0004892367906066676, 0.0014677103718200707, 0.03913894324853232, 0.958904109589041]
+bottoms_p = 2000000.0
+bottoms_t = 450.0
+bottoms_h = 17894.58448158318
+[[cases]]
+id = "binary_methane_nbutane"
+tolerance = 0.0002
+source = "A binary, which is the row a reader can check by hand: with the light key more than forty times as volatile as the heavy key and both recoveries at 0.99, the split fractions are `0.99` and `1 - 0.99` and the products come out at 0.99/0.01 either way. The distillate and the bottoms each carry half the feed, so the Kirkbride argument's `B/D` is one and the square's placement does not show up here. **Tolerance**: the worst field is `distillate_h` at `1.1e-4` relative, which is the libraries' ideal-gas enthalpy offset and not this arithmetic - the FUG chain agrees to `3e-12` or better. Azoth is `0.0634` J/mol below NeqSim on these products, the offset `tests/stream.rs` measures.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.5, 0.5]
+feed_p = 2000000.0
+feed_t = 300.0
+light_key = "methane"
+heavy_key = "n-butane"
+light_key_recovery_distillate = 0.99
+heavy_key_recovery_bottoms = 0.99
+reflux_ratio_multiplier = 1.2
+[cases.expected]
+relative_volatility = 46.648767420893286
+minimum_stages = 2.391643282325193
+minimum_reflux_ratio = 0.21184536162652234
+actual_reflux_ratio = 0.2542144339518268
+actual_stages = 8.193966146245264
+feed_tray_number = 5.0
+condenser_duty = -18813.2165092774
+reboiler_duty = 18737.84467755389
+distillate_n = 0.5
+distillate_z = [0.99, 0.010000000000000009]
+distillate_p = 2000000.0
+distillate_t = 300.0
+distillate_h = 588.2035463850532
+bottoms_n = 0.5
+bottoms_z = [0.010000000000000009, 0.99]
+bottoms_p = 2000000.0
+bottoms_t = 300.0
+bottoms_h = -18733.17152906549
