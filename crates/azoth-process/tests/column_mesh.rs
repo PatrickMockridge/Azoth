@@ -350,3 +350,79 @@ fn a_specification_is_refused_by_name() {
         "the refusal names the class that would close it: {message}"
     );
 }
+
+/// **Every strategy this port does not carry is refused with the class that would close it.**
+///
+/// The eight are `ColumnSolverFactory`'s own nested solvers, and the refusal names the one the
+/// caller asked for rather than the family: a caller who states `wegstein` is owed
+/// `WegsteinSolver`, not "the inside-out family". The boundary is the model layer, so this
+/// calls it rather than the kernel - the strategy never reaches the kernel at all.
+#[test]
+fn an_unported_strategy_is_refused_by_its_class() {
+    for (strategy, class) in [
+        ("damped_substitution", "DampedSubstitutionSolver"),
+        ("inside_out", "InsideOutSolver"),
+        ("matrix_inside_out", "MatrixInsideOutSolver"),
+        ("wegstein", "WegsteinSolver"),
+        ("sum_rates", "SumRatesSolver"),
+        ("newton", "TemperatureNewtonSolver"),
+        ("mesh_residual", "MeshResidualSolver"),
+        ("auto", "AutoSolver"),
+    ] {
+        let error = model(binary(SolverType::DirectSubstitution), Some(strategy), None)
+            .expect_err("the boundary refuses it");
+        let message = error.to_string();
+        assert!(
+            message.contains(class),
+            "{strategy} must name {class}: {message}"
+        );
+        assert!(
+            message.contains("path variants"),
+            "the refusal carries the measurement: {message}"
+        );
+    }
+}
+
+/// The Murphree efficiency is the palette's other declared-and-refused parameter.
+#[test]
+fn a_murphree_efficiency_is_refused_by_name() {
+    let error = model(binary(SolverType::DirectSubstitution), None, Some(0.7))
+        .expect_err("the boundary refuses it");
+    assert!(
+        error.to_string().contains("setMurphreeEfficiency"),
+        "{error}"
+    );
+}
+
+/// The model layer's own entry, which is where a declared parameter is refused.
+fn model(
+    setup: ColumnSetup,
+    solver_type: Option<&str>,
+    murphree_efficiency: Option<f64>,
+) -> azoth_core::Result<azoth_process::DistillationColumnResult> {
+    azoth_process::distillation_column(
+        &setup.feed.components,
+        setup.feed.n,
+        &setup.feed.z,
+        setup.feed.p,
+        setup.feed.t,
+        setup.number_of_stages,
+        setup.feed_stage,
+        setup.has_reboiler,
+        setup.has_condenser,
+        setup.top_pressure,
+        setup.bottom_pressure,
+        setup.reboiler_temperature,
+        setup.condenser_temperature,
+        setup.temperature_tolerance,
+        setup.max_iterations,
+        murphree_efficiency,
+        solver_type,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+}

@@ -172,10 +172,15 @@ pub fn distillation_column(
             return Err(AzothError::invalid_input(
                 "solver_type",
                 format!(
-                    "solver_type = {other} is not ported. `direct_substitution` is the \
-                     class's own default and `naphtali_sandholm` is `NaphtaliSandholmSolver`; \
-                     the rest are `ColumnSolverFactory`'s inside-out family and damping \
-                     strategies, where `auto` is a ladder over them rather than one method"
+                    "solver_type = {other} is not ported: `ColumnSolverFactory.{}` is the class \
+                     that would close it. **The capture measures why it is refused rather than \
+                     ported**: `validation/neqsim/captures/process_column_solvers.tsv` runs the \
+                     binary column under all ten strategies and puts every one of them within \
+                     `2.5e-6` K of every other on tray 1 and within `1.1e-7` relative on the \
+                     distillate, so they are path variants rather than different physics - the \
+                     ten land on three bit-identical states, and each state is where a solve \
+                     stopped.",
+                    unported_class(other)
                 ),
             ));
         }
@@ -222,6 +227,32 @@ pub fn distillation_column(
         energy_residual: out.energy_residual,
         warnings,
     })
+}
+
+/// The `ColumnSolverFactory` class behind each strategy this port does not carry.
+///
+/// **Named per strategy, because that is what a refusal owes a caller.** `columnSolver` hands
+/// back one of these for each `SolverType`, and `AutoSolver` is the ladder rather than a
+/// method: `candidateSolvers` returns `NAPHTALI_SANDHOLM` first, then `MATRIX_INSIDE_OUT`,
+/// `INSIDE_OUT` and `DAMPED_SUBSTITUTION`, and this port has the first and the last of those.
+///
+/// **The eight are refused as path variants rather than as physics**, which the capture
+/// measures: on the binary column every one of the ten lands within `2.5e-6` K of every other
+/// on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states -
+/// and `inside_out`, `matrix_inside_out`, `mesh_residual` and a fallen-back `wegstein` land on
+/// the substitution core's own state exactly. That is a measured non-port, the shape `P10` used
+/// for the adaptive-derivative refinement that converges on nothing.
+fn unported_class(strategy: &str) -> &'static str {
+    match strategy {
+        "damped_substitution" => "DampedSubstitutionSolver",
+        "inside_out" => "InsideOutSolver",
+        "matrix_inside_out" => "MatrixInsideOutSolver",
+        "wegstein" => "WegsteinSolver",
+        "sum_rates" => "SumRatesSolver",
+        "newton" => "TemperatureNewtonSolver",
+        "mesh_residual" => "MeshResidualSolver",
+        _ => "AutoSolver",
+    }
 }
 
 /// Refuse every parameter the palette declares and this tranche does not implement.

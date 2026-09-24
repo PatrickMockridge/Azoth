@@ -22,6 +22,9 @@ assumptions = [
     "**this port's flash refuses to converge there** rather than landing on a state its own equations do not place.",
     "**`murphree_efficiency` is declared and refused.** The palette declares it because it is the machine's; its arithmetic is not ported, and `SimpleTray.setMurphreeEfficiency` would close it. A refused parameter is refused by name rather than answered with the ideal stage.",
     "**two of `solver_type`'s ten strategies are ported**: `direct_substitution`, the class's own default, and `naphtali_sandholm`, the simultaneous MESH correction. The other eight are refused by name.",
+    "**the eight unported strategies are a measured non-port.** On the captured binary column all ten land within `2.5e-6` K of each other on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states - each one where a solve stopped.",
+    "**four of them land on the substitution core's own state exactly**: `inside_out`, `matrix_inside_out`, `mesh_residual`, and `wegstein`, which reports `direct_substitution` because it fell back to it.",
+    "**`auto` reports `damped_substitution`** on the captured binary column although `candidateSolvers` lists the mesh solve first: it is a ladder over the others rather than a method.",
     "**the second solve linearises the whole column at once**: `N` tray blocks of `C + 2` variables, `C` component balances, the energy equation and `sum(K x) = 1`, with a finite-difference Jacobian and a block-tridiagonal solve.",
     "**its seed is the class's warm start**: the substitution core's converged trays, which `initializeTrayStateFromColumn` maps onto the MESH variables.",
     "**the class's cold seed is not ported**, and that is measured: without `runBostonSullivanRefinement` its first Newton step moves the variables by `1e11` times their own size.",
@@ -102,7 +105,7 @@ description = "**not ported**: the column-wide Murphree tray efficiency, which `
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]
 optional = true
-description = "**`direct_substitution` and `naphtali_sandholm` are ported**; the rest are refused by name - `ColumnSolverFactory`'s inside-out family, its damping strategies, `sum_rates` and `newton` - and `auto` is a ladder rather than one method.\n"
+description = "**`direct_substitution` and `naphtali_sandholm` are ported**; the other eight are refused by name, each with the `ColumnSolverFactory` solver behind it, and the capture measures that they are path variants rather than different physics.\n"
 [inputs.top_specification_type]
 type = "enum"
 values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
