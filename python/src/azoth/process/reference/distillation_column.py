@@ -15,9 +15,17 @@ the caller-owned feed, which is why the sweeps see the feed's own state.
 **The reboiler's ``init`` inlet is the feed stage's liquid**, not the first tray's - ``init``
 links it that way and the sweeps then replace it with the first tray's.
 
-**The ends are pinned by temperature.** ``setCondenserTemperature`` reaches the tray's own
-``outTemperature``, so that tray's flash is a ``TPflash`` at the pin rather than at the mixed
-enthalpy; a middle tray has no pin and flashes at its enthalpy.
+**The ends are pinned by temperature, or by a specification.** ``setCondenserTemperature``
+reaches the tray's own ``outTemperature``, so that tray's flash is a ``TPflash`` at the pin
+rather than at the mixed enthalpy; a middle tray has no pin and flashes at its enthalpy. A
+specification is the end's other route, and ``ColumnSpecification``'s five types split in two:
+a ``reflux_ratio`` and a ``duty`` are written onto the end itself, and a purity, a recovery
+and a flow rate are driven by an **outer secant on the end's temperature**.
+
+**There is no specification homotopy here, and that is a measurement.**
+``getEffectiveSpecificationHomotopySteps`` returns three staged targets only when the solver
+is ``AUTO``, and the field it otherwise reads is one - so the continuation the class carries
+belongs to the solver this port refuses.
 
 # What this does not carry
 
@@ -37,7 +45,7 @@ from azoth.core.result import DistillationColumnResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.process.reference import _column_stage as _stage
-from azoth.process.reference._column_stage import stage
+from azoth.process.reference._column_stage import StreamRecord, stage
 
 #: The class's own adaptive-relaxation constants, from `DistillationColumn`'s initialisers.
 MIN_SEQUENTIAL_RELAXATION = 0.5
@@ -49,6 +57,26 @@ MIN_TEMPERATURE_RELAXATION = 0.2
 #: `DEFAULT_MASS_BALANCE_TOLERANCE` and `DEFAULT_ENTHALPY_BALANCE_TOLERANCE`.
 MASS_BALANCE_TOLERANCE = 1.6e-2
 ENTHALPY_BALANCE_TOLERANCE = 1.6e-2
+
+#: `ColumnSpecification`'s five types, by the names the model's enum declares.
+SPECIFICATION_KINDS = (
+    "product_purity",
+    "component_recovery",
+    "product_flow_rate",
+    "reflux_ratio",
+    "duty",
+)
+#: The two the outer loop does not drive: `needsAdjustment` is false for both, because
+#: `applyDirectSpecification` writes them onto the end itself.
+DIRECT_KINDS = ("reflux_ratio", "duty")
+#: `ColumnSpecification`'s own convergence defaults.
+SPECIFICATION_TOLERANCE = 1.0e-4
+SPECIFICATION_MAX_ITERATIONS = 20
+#: `secantStep`'s step cap, its temperature window, and its first iteration's offset.
+SECANT_MAX_STEP = 50.0
+SECANT_MIN_TEMPERATURE = 100.0
+SECANT_MAX_TEMPERATURE = 1000.0
+SECANT_FIRST_OFFSET = 5.0
 
 #: The nine strategies the class carries and this port does not.
 UNPORTED_SOLVERS = (
@@ -62,6 +90,53 @@ UNPORTED_SOLVERS = (
     "mesh_residual",
     "auto",
 )
+
+
+class Specification(NamedTuple):
+    """One product specification: the type, the target and the component.
+
+    `kind` is one of :data:`SPECIFICATION_KINDS`; the target is in the unit its type implies -
+    dimensionless for a purity, a recovery or a ratio, **mol/hr** for a flow rate, W for a duty.
+
+    **Its location is the end it is handed to, and not a field.** NeqSim's
+    `ColumnSpecification` carries a `ProductLocation`, but `validateColumnSpecification` refuses
+    a `TOP` one given to `setBottomSpecification`, so the field can only agree with its slot -
+    which is why the model's inputs name the end and there are two of them.
+    """
+
+    #: One of `SPECIFICATION_KINDS`.
+    kind: str
+    #: The target value.
+    target: float
+    #: The component a purity or a recovery constrains; unread by the other three.
+    component: str | None = None
+
+    def value(self, product: StreamRecord, feed: StreamRecord) -> float:
+        """The value the product currently has, which is what the error is measured against."""
+        if self.kind == "product_purity":
+            index = _component_index(product, self.component)
+            return float(product["z"][index])
+        if self.kind == "component_recovery":
+            index = _component_index(product, self.component)
+            supplied = feed["n"] * feed["z"][index]
+            if abs(supplied) <= 1.0e-12:
+                return 0.0
+            return float(product["n"] * product["z"][index] / supplied)
+        if self.kind == "product_flow_rate":
+            # `getFlowRate("mol/hr")`: the class's own target unit for this type.
+            return float(product["n"] * 3600.0)
+        return 0.0
+
+
+def _component_index(product: StreamRecord, name: str | None) -> int:
+    """The position of a named component, or a refusal naming what was asked for."""
+    if name is None:
+        raise InvalidInputError(
+            "component", "a purity or a recovery constrains a component, and none was stated"
+        )
+    if name not in product["components"]:
+        raise InvalidInputError("component", f"{name} is not one of this fluid's components")
+    return list(product["components"]).index(name)
 
 
 class _States(NamedTuple):
@@ -81,12 +156,20 @@ class _States(NamedTuple):
     distillate_z: tuple[float, ...]
     #: The distillate's molar enthalpy, J/mol.
     distillate_h: float
+    #: The distillate's own temperature, K, which is the end's and not the caller's pin.
+    distillate_t: float
+    #: The distillate's own pressure, Pa.
+    distillate_p: float
     #: The bottoms' molar flow.
     bottoms_n: float
     #: The bottoms' composition.
     bottoms_z: tuple[float, ...]
     #: The bottoms' molar enthalpy, J/mol.
     bottoms_h: float
+    #: The bottoms' own temperature, K.
+    bottoms_t: float
+    #: The bottoms' own pressure, Pa.
+    bottoms_p: float
     #: The condenser's duty, W.
     condenser_duty: float
     #: The reboiler's duty, W.
@@ -113,10 +196,10 @@ def distillation_column(
     has_condenser: bool,
     top_pressure: Q,
     bottom_pressure: Q,
-    reboiler_temperature: Q,
-    condenser_temperature: Q,
-    temperature_tolerance: float,
-    max_iterations: int,
+    reboiler_temperature: Q | None = None,
+    condenser_temperature: Q | None = None,
+    temperature_tolerance: float = 1.0e-6,
+    max_iterations: int = 200,
     murphree_efficiency: float | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
@@ -141,18 +224,25 @@ def distillation_column(
         has_condenser: whether the top stage is a condenser.
         top_pressure: the pressure at the top stage.
         bottom_pressure: the pressure at stage 0.
-        reboiler_temperature: the reboiler's temperature, which pins the bottom tray.
-        condenser_temperature: the condenser's temperature, which pins the top tray.
+        reboiler_temperature: the reboiler's temperature, which pins the bottom tray. ``None``
+            leaves the end to flash at its own enthalpy, which is what makes a duty
+            specification reachable at all.
+        condenser_temperature: the condenser's temperature, which pins the top tray. ``None`` as
+            the reboiler's is. **A pin wins over a directly-applied duty**, because the tray
+            tests its stated outlet temperature before it reads a heat input.
         temperature_tolerance: the gate on the mean tray-temperature change.
         max_iterations: the iteration cap.
         murphree_efficiency: **not ported**; omitted is the ideal stage.
         solver_type: **only ``direct_substitution`` is ported**, which is the class's default.
-        top_specification_type: **not ported**; the top is pinned by temperature instead.
-        top_specification_target: **not ported**.
-        top_specification_component: **not ported**.
-        bottom_specification_type: **not ported**.
-        bottom_specification_target: **not ported**.
-        bottom_specification_component: **not ported**.
+        top_specification_type: the top product's degree of freedom, one of
+            :data:`SPECIFICATION_KINDS`; omitted, the top is pinned by temperature instead.
+        top_specification_target: its target, in the unit its type implies: dimensionless for a
+            purity or a recovery, **mol/hr** for a flow rate, W for a duty.
+        top_specification_component: the component a purity or a recovery constrains, which the
+            class refuses to see omitted; the other three types do not read it.
+        bottom_specification_type: the bottom product's degree of freedom, as the top's.
+        bottom_specification_target: its target, in the unit its type implies.
+        bottom_specification_component: the component a purity or a recovery constrains.
 
     Returns:
         The tray profile, both products, both duties and the three residuals.
@@ -185,15 +275,16 @@ def distillation_column(
         >>> round(r.distillate_n.to("mol/s").magnitude, 4)
         3.7915
     """
-    _refuse_unported(
-        murphree_efficiency,
-        solver_type,
-        top_specification_type,
-        top_specification_target,
-        top_specification_component,
+    _refuse_unported(murphree_efficiency, solver_type)
+
+    top_specification = _build_specification(
+        top_specification_type, top_specification_target, top_specification_component, "top"
+    )
+    bottom_specification = _build_specification(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        "bottom",
     )
 
     spec = _spec()
@@ -205,8 +296,18 @@ def distillation_column(
     t = input_to_si(spec, "feed_t", feed_t)
     top = input_to_si(spec, "top_pressure", top_pressure)
     bottom = input_to_si(spec, "bottom_pressure", bottom_pressure)
-    t_reb = input_to_si(spec, "reboiler_temperature", reboiler_temperature)
-    t_cond = input_to_si(spec, "condenser_temperature", condenser_temperature)
+    # **Absent means no pin**, which is what `setCondenserTemperature` not having been called
+    # does - and what makes a duty specification reachable at all.
+    t_reb = (
+        None
+        if reboiler_temperature is None
+        else input_to_si(spec, "reboiler_temperature", reboiler_temperature)
+    )
+    t_cond = (
+        None
+        if condenser_temperature is None
+        else input_to_si(spec, "condenser_temperature", condenser_temperature)
+    )
 
     # **A declared input arrives in one of two shapes.** A dimensionless one comes as the bare
     # number it is, and a unit-carrying one as a quantity; `input_to_si` refuses the first, so
@@ -244,22 +345,24 @@ def distillation_column(
         t_cond,
         tolerance,
         iterations_cap,
+        top_specification,
+        bottom_specification,
     )
 
     return DistillationColumnResult(
-        tray_temperature=[from_si(value, "K") for value in states.tray_temperature],
-        tray_pressure=[from_si(value, "Pa") for value in states.tray_pressure],
-        tray_gas_n=[from_si(value, "mol/s") for value in states.tray_gas_n],
-        tray_liquid_n=[from_si(value, "mol/s") for value in states.tray_liquid_n],
+        tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
+        tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
+        tray_gas_n=tuple(from_si(value, "mol/s") for value in states.tray_gas_n),
+        tray_liquid_n=tuple(from_si(value, "mol/s") for value in states.tray_liquid_n),
         distillate_n=from_si(states.distillate_n, "mol/s"),
         distillate_z=states.distillate_z,
-        distillate_p=from_si(top if has_condenser else p, "Pa"),
-        distillate_t=from_si(t_cond if has_condenser else t, "K"),
+        distillate_p=from_si(states.distillate_p, "Pa"),
+        distillate_t=from_si(states.distillate_t, "K"),
         distillate_h=from_si(states.distillate_h, "J/mol"),
         bottoms_n=from_si(states.bottoms_n, "mol/s"),
         bottoms_z=states.bottoms_z,
-        bottoms_p=from_si(bottom if has_reboiler else p, "Pa"),
-        bottoms_t=from_si(t_reb if has_reboiler else t, "K"),
+        bottoms_p=from_si(states.bottoms_p, "Pa"),
+        bottoms_t=from_si(states.bottoms_t, "K"),
         bottoms_h=from_si(states.bottoms_h, "J/mol"),
         condenser_duty=from_si(states.condenser_duty, "W"),
         reboiler_duty=from_si(states.reboiler_duty, "W"),
@@ -283,10 +386,12 @@ def _states(
     has_condenser: bool,
     top_pressure: float,
     bottom_pressure: float,
-    reboiler_temperature: float,
-    condenser_temperature: float,
+    reboiler_temperature: float | None,
+    condenser_temperature: float | None,
     temperature_tolerance: float,
     max_iterations: int,
+    top_specification: Specification | None = None,
+    bottom_specification: Specification | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share."""
     tray_count = number_of_stages + int(has_reboiler) + int(has_condenser)
@@ -307,8 +412,7 @@ def _states(
         )
 
     pressures = [
-        bottom_pressure
-        + (top_pressure - bottom_pressure) * i / (tray_count - 1)
+        bottom_pressure + (top_pressure - bottom_pressure) * i / (tray_count - 1)
         for i in range(tray_count)
     ]
 
@@ -319,20 +423,76 @@ def _states(
             return condenser_temperature
         return None
 
-    gas: list[dict | None] = [None] * tray_count
-    liquid: list[dict | None] = [None] * tray_count
+    def end_mode(i: int, specification: Specification | None) -> tuple[str, float]:
+        """How a tray is run: its temperature, its own reflux flash, or a duty.
 
-    def run_with(i: int, inlets: list[dict]) -> None:
-        out = stage(inlets, pressures[i], pin(i), 0.0)
+        **A pin wins over a directly-applied duty**, which is NeqSim's own order of tests: the
+        tray `run` checks its stated outlet temperature first and takes a `TPflash` there, so a
+        heat input a `DUTY` specification wrote is never read. A reflux ratio does win, because
+        the end's own `run` tests `refluxIsSet` before anything else.
+        """
+        stated = pin(i)
+        if specification is not None:
+            if specification.kind == "reflux_ratio":
+                return ("reflux", specification.target)
+            if specification.kind == "duty" and stated is None:
+                return ("duty", specification.target)
+        return ("temperature", stated if stated is not None else float("nan"))
+
+    def specification_at(i: int) -> Specification | None:
+        if i == tray_count - 1:
+            return top_specification
+        if i == 0:
+            return bottom_specification
+        return None
+
+    modes = [end_mode(i, specification_at(i)) for i in range(tray_count)]
+
+    def end_temperature(i: int) -> float | None:
+        """The temperature the tray's own mode states, where it states a finite one.
+
+        The seed reads the *tray's* mode rather than the caller's optional pin: an end run on
+        a duty or on a reflux ratio states no temperature, and its step then falls back to the
+        class's own, which is one kelvin below the feed's.
+        """
+        kind, value = modes[i]
+        if kind != "temperature" or value != value or value in (float("inf"), float("-inf")):
+            return None
+        return value
+
+    gas: list[StreamRecord | None] = [None] * tray_count
+    liquid: list[StreamRecord | None] = [None] * tray_count
+
+    def present(stream: StreamRecord | None, what: str) -> StreamRecord:
+        """A stream the seed needs, refused rather than carried as an absent phase.
+
+        Both reads mirror a kernel `expect`: by the time `init` seeds a tray, the tray below it
+        has run, so an absent phase there is a broken link and not a state.
+        """
+        if stream is None:
+            raise InvalidInputError("column", what)
+        return stream
+
+    def run_with(i: int, inlets: list[StreamRecord]) -> None:
+        kind, value = modes[i]
+        if kind == "temperature":
+            # A middle tray carries a NaN here and no pin, so its flash is at its own enthalpy.
+            out = stage(inlets, pressures[i], value if value == value else None, 0.0)
+        elif kind == "duty":
+            out = stage(inlets, pressures[i], None, value)
+        else:
+            out = _stage.reflux_end(
+                inlets, pressures[i], value, "vapour" if i == tray_count - 1 else "liquid"
+            )
         gas[i], liquid[i] = out["gas"], out["liquid"]
 
-    def at_temperature(stream: dict, temperature: float) -> dict:
+    def at_temperature(stream: StreamRecord, temperature: float) -> StreamRecord:
         if temperature != temperature:  # NaN
             return stream
         return _restate(components, stream, temperature)
 
-    def inlets_of(i: int, seed: list[float] | None) -> list[dict]:
-        inlets: list[dict] = []
+    def inlets_of(i: int, seed: list[float] | None) -> list[StreamRecord]:
+        inlets: list[StreamRecord] = []
         at = (lambda s: at_temperature(s, seed[i])) if seed is not None else (lambda s: s)
         if i > 0 and gas[i - 1] is not None:
             inlets.append(at(gas[i - 1]))
@@ -349,12 +509,15 @@ def _states(
     # ---- `init` ----
     run_with(feed_stage, [_feed(components, feed_n, feed_z, feed_t, feed_p)])
     if has_reboiler:
-        run_with(0, [liquid[feed_stage]])
+        run_with(
+            0,
+            [present(liquid[feed_stage], "the feed stage has a liquid after its flash")],
+        )
 
     feed_temperature = temperature(feed_stage)
-    cond_temperature = (
-        condenser_temperature if has_condenser else feed_temperature - 1.0
-    )
+    cond_temperature = end_temperature(tray_count - 1)
+    if cond_temperature is None:
+        cond_temperature = feed_temperature - 1.0
     reb_temperature = liquid[0]["t"] if liquid[0] is not None else feed_temperature
     temperatures = [float("nan")] * tray_count
     temperatures[feed_stage] = feed_temperature
@@ -369,66 +532,159 @@ def _states(
         delta += delta_down
         temperatures[i] = feed_temperature + delta
     for i in range(tray_count):
-        if pin(i) is not None:
-            temperatures[i] = pin(i)
+        pinned = pin(i)
+        if pinned is not None:
+            temperatures[i] = pinned
 
     for i in range(1, tray_count):
-        inlets = [at_temperature(gas[i - 1], temperatures[i])]
+        inlets = [at_temperature(present(gas[i - 1], "the tray below has run"), temperatures[i])]
         if i == feed_stage:
             inlets.append(_feed(components, feed_n, feed_z, feed_t, feed_p))
         run_with(i, inlets)
     for i in range(tray_count - 2, 0, -1):
         inlets = [
-            at_temperature(gas[i - 1], temperatures[i]),
-            at_temperature(liquid[i + 1], temperatures[i]),
+            at_temperature(present(gas[i - 1], "the tray below has run"), temperatures[i]),
+            at_temperature(present(liquid[i + 1], "the tray above has run"), temperatures[i]),
         ]
         if i == feed_stage:
             inlets.append(_feed(components, feed_n, feed_z, feed_t, feed_p))
         run_with(i, inlets)
     if has_reboiler:
-        run_with(0, [at_temperature(liquid[1], temperatures[0])])
+        run_with(
+            0,
+            [at_temperature(present(liquid[1], "the first tray has run"), temperatures[0])],
+        )
 
-    # ---- the sweeps ----
-    relaxation = 1.0
-    previous_combined = float("inf")
-    temperature_residual = float("inf")
-    iterations = 0
-    for iteration in range(1, max_iterations + 1):
-        iterations = iteration
-        old = [temperature(i) for i in range(tray_count)]
+    # ---- the sweeps, once, or under the outer specification loop ----
+    def sweep(temperatures: list[float]) -> tuple[int, float]:
+        """`solveSequential`: the sweeps, once, to the temperature gate."""
+        relaxation = 1.0
+        previous_combined = float("inf")
+        temperature_residual = float("inf")
+        took = 0
+        for iteration in range(1, max_iterations + 1):
+            took = iteration
+            old = [temperature(i) for i in range(tray_count)]
 
-        for i in range(feed_stage, 1, -1):
-            run_with(i - 1, inlets_of(i - 1, None))
-        if has_reboiler:
-            run_with(0, inlets_of(0, None))
-        for i in range(1, tray_count):
-            run_with(i, inlets_of(i, None))
-        for i in range(tray_count - 2, feed_stage - 1, -1):
-            run_with(i, inlets_of(i, None))
+            for i in range(feed_stage, 1, -1):
+                run_with(i - 1, inlets_of(i - 1, None))
+            if has_reboiler:
+                run_with(0, inlets_of(0, None))
+            for i in range(1, tray_count):
+                run_with(i, inlets_of(i, None))
+            for i in range(tray_count - 2, feed_stage - 1, -1):
+                run_with(i, inlets_of(i, None))
 
-        effective = min(max(relaxation, MIN_TEMPERATURE_RELAXATION), 1.0)
-        total = 0.0
-        for i in range(tray_count):
-            updated = temperature(i)
-            if updated != updated or updated in (float("inf"), float("-inf")):
-                updated = old[i]
-            total += abs(updated - old[i])
-            temperatures[i] = old[i] + effective * (updated - old[i])
-        temperature_residual = total / tray_count
+            effective = min(max(relaxation, MIN_TEMPERATURE_RELAXATION), 1.0)
+            total = 0.0
+            for i in range(tray_count):
+                updated = temperature(i)
+                if updated != updated or updated in (float("inf"), float("-inf")):
+                    updated = old[i]
+                total += abs(updated - old[i])
+                temperatures[i] = old[i] + effective * (updated - old[i])
+            temperature_residual = total / tray_count
 
-        combined = temperature_residual / temperature_tolerance
-        if combined > previous_combined * 1.05:
-            relaxation = max(
-                MIN_SEQUENTIAL_RELAXATION, relaxation * RELAXATION_DECREASE_FACTOR
+            combined = temperature_residual / temperature_tolerance
+            if combined > previous_combined * 1.05:
+                relaxation = max(MIN_SEQUENTIAL_RELAXATION, relaxation * RELAXATION_DECREASE_FACTOR)
+            elif combined < previous_combined * 0.98:
+                relaxation = min(MAX_ADAPTIVE_RELAXATION, relaxation * RELAXATION_INCREASE_FACTOR)
+            previous_combined = combined
+
+            if temperature_residual <= temperature_tolerance:
+                break
+
+        return took, temperature_residual
+
+    def product_of(level: int) -> StreamRecord:
+        """The product an end publishes: the top's vapour, the bottom's liquid.
+
+        **The top's vapour falls back to its liquid**, which is how the kernel's own
+        `end_product` reads a total condenser's distillate.
+        """
+        vapour = gas[tray_count - 1]
+        if level == 1:
+            stream = vapour if vapour is not None else liquid[tray_count - 1]
+        else:
+            stream = liquid[0]
+        if stream is None:
+            raise InvalidInputError(
+                "column", "an end has no product, which is a column whose ends did not solve"
             )
-        elif combined < previous_combined * 0.98:
-            relaxation = min(
-                MAX_ADAPTIVE_RELAXATION, relaxation * RELAXATION_INCREASE_FACTOR
-            )
-        previous_combined = combined
+        return stream
 
-        if temperature_residual <= temperature_tolerance:
-            break
+    def adjustable() -> bool:
+        """`hasAdjustableSpecifications`: whether any end's specification needs the outer loop."""
+        return any(
+            spec is not None and spec.kind not in DIRECT_KINDS
+            for spec in (top_specification, bottom_specification)
+        )
+
+    if adjustable():
+        # `solveWithSpecificationTargets`: the outer secant on the ends' temperatures.
+        #
+        # **There is no homotopy here, and that is a measurement.**
+        # `getEffectiveSpecificationHomotopySteps` returns three stages only when
+        # `solverType == AUTO`, and the field it otherwise reads is one - so the staged
+        # continuation the class carries belongs to the solver this port refuses.
+        adjust_top = top_specification is not None and top_specification.kind not in DIRECT_KINDS
+        adjust_bottom = (
+            bottom_specification is not None and bottom_specification.kind not in DIRECT_KINDS
+        )
+        top_start = condenser_temperature if condenser_temperature is not None else feed_t - 20.0
+        bottom_start = reboiler_temperature if reboiler_temperature is not None else feed_t + 20.0
+        top_pair = (top_start, top_start - SECANT_FIRST_OFFSET)
+        bottom_pair = (bottom_start, bottom_start + SECANT_FIRST_OFFSET)
+        top_errors = (float("nan"), float("nan"))
+        bottom_errors = (float("nan"), float("nan"))
+        feed_record = _feed(components, feed_n, feed_z, feed_t, feed_p)
+
+        for outer in range(SPECIFICATION_MAX_ITERATIONS):
+            if adjust_top:
+                modes[-1] = ("temperature", top_pair[0] if outer == 0 else top_pair[1])
+            if adjust_bottom:
+                modes[0] = ("temperature", bottom_pair[0] if outer == 0 else bottom_pair[1])
+
+            iterations, temperature_residual = sweep(temperatures)
+
+            top_error = 0.0
+            bottom_error = 0.0
+            if adjust_top and top_specification is not None:
+                top_error = (
+                    top_specification.value(product_of(1), feed_record) - top_specification.target
+                )
+            if adjust_bottom and bottom_specification is not None:
+                bottom_error = (
+                    bottom_specification.value(product_of(0), feed_record)
+                    - bottom_specification.target
+                )
+            if (
+                abs(top_error) < SPECIFICATION_TOLERANCE
+                and abs(bottom_error) < SPECIFICATION_TOLERANCE
+            ):
+                break
+            if adjust_top:
+                if outer == 0:
+                    top_errors = (top_error, float("nan"))
+                else:
+                    top_pair = (top_pair[1], secant_step(top_pair, (top_errors[0], top_error)))
+                    top_errors = (top_error, float("nan"))
+            if adjust_bottom:
+                if outer == 0:
+                    bottom_errors = (bottom_error, float("nan"))
+                else:
+                    bottom_pair = (
+                        bottom_pair[1],
+                        secant_step(bottom_pair, (bottom_errors[0], bottom_error)),
+                    )
+                    bottom_errors = (bottom_error, float("nan"))
+        else:
+            from azoth.core.errors import SolverNotConvergedError
+
+            raise SolverNotConvergedError(iterations, temperature_residual, SPECIFICATION_TOLERANCE)
+    else:
+        iterations, temperature_residual = sweep(temperatures)
 
     def outlet_enthalpy(i: int) -> float:
         total = 0.0
@@ -440,20 +696,17 @@ def _states(
     def inlet_enthalpy(i: int) -> float:
         return sum(s["n"] * s["h"] for s in inlets_of(i, None))
 
-    distillate = gas[tray_count - 1] if has_condenser else liquid[tray_count - 1]
-    bottoms = liquid[0] if has_reboiler else gas[0]
+    distillate = product_of(1)
+    bottoms = product_of(0)
     reboiler_duty = (outlet_enthalpy(0) - inlet_enthalpy(0)) if has_reboiler else 0.0
     condenser_duty = (
-        outlet_enthalpy(tray_count - 1) - inlet_enthalpy(tray_count - 1)
-        if has_condenser
-        else 0.0
+        outlet_enthalpy(tray_count - 1) - inlet_enthalpy(tray_count - 1) if has_condenser else 0.0
     )
 
     feed_enthalpy = feed_n * _feed(components, feed_n, feed_z, feed_t, feed_p)["h"]
     products_enthalpy = distillate["n"] * distillate["h"] + bottoms["n"] * bottoms["h"]
     energy_residual = (
-        abs(feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy)
-        / abs(feed_enthalpy)
+        abs(feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy) / abs(feed_enthalpy)
         if abs(feed_enthalpy) > 0.0
         else 0.0
     )
@@ -481,16 +734,22 @@ def _states(
     return _States(
         tray_temperature=tuple(temperature(i) for i in range(tray_count)),
         tray_pressure=tuple(pressures),
-        tray_gas_n=tuple(gas[i]["n"] if gas[i] is not None else 0.0 for i in range(tray_count)),
+        tray_gas_n=tuple(
+            stream["n"] if (stream := gas[i]) is not None else 0.0 for i in range(tray_count)
+        ),
         tray_liquid_n=tuple(
-            liquid[i]["n"] if liquid[i] is not None else 0.0 for i in range(tray_count)
+            stream["n"] if (stream := liquid[i]) is not None else 0.0 for i in range(tray_count)
         ),
         distillate_n=distillate["n"],
         distillate_z=tuple(distillate["z"]),
         distillate_h=distillate["h"],
+        distillate_t=float(distillate["t"]),
+        distillate_p=float(distillate["p"]),
         bottoms_n=bottoms["n"],
         bottoms_z=tuple(bottoms["z"]),
         bottoms_h=bottoms["h"],
+        bottoms_t=float(bottoms["t"]),
+        bottoms_p=float(bottoms["p"]),
         condenser_duty=condenser_duty,
         reboiler_duty=reboiler_duty,
         iterations=iterations,
@@ -500,28 +759,31 @@ def _states(
     )
 
 
-def _feed(
-    components: list[str], n: float, z: list[float], t: float, p: float
-) -> dict[str, object]:
+def secant_step(guess: tuple[float, float], error: tuple[float, float]) -> float:
+    """`secantStep`, with its two guards: a step cap and a physically reasonable window."""
+    denominator = error[1] - error[0]
+    if abs(denominator) < 1.0e-15:
+        next_guess = guess[1] + 2.0
+    else:
+        next_guess = guess[1] - error[1] * (guess[1] - guess[0]) / denominator
+    if next_guess - guess[1] > SECANT_MAX_STEP:
+        next_guess = guess[1] + SECANT_MAX_STEP
+    elif next_guess - guess[1] < -SECANT_MAX_STEP:
+        next_guess = guess[1] - SECANT_MAX_STEP
+    return min(max(next_guess, SECANT_MIN_TEMPERATURE), SECANT_MAX_TEMPERATURE)
+
+
+def _feed(components: list[str], n: float, z: list[float], t: float, p: float) -> StreamRecord:
     """The external feed, rebuilt so a seed can never reach it."""
     return _stage.stream_at(components, n, list(z), t, p)
 
 
-def _restate(components: list[str], stream: dict, temperature: float) -> dict[str, object]:
+def _restate(components: list[str], stream: StreamRecord, temperature: float) -> StreamRecord:
     """A stream at another temperature, at its own pressure and composition."""
     return _stage.stream_at(components, stream["n"], list(stream["z"]), temperature, stream["p"])
 
 
-def _refuse_unported(
-    murphree_efficiency: float | None,
-    solver_type: str | None,
-    top_specification_type: str | None,
-    top_specification_target: float | None,
-    top_specification_component: str | None,
-    bottom_specification_type: str | None,
-    bottom_specification_target: float | None,
-    bottom_specification_component: str | None,
-) -> None:
+def _refuse_unported(murphree_efficiency: float | None, solver_type: str | None) -> None:
     """Refuse every parameter the palette declares and this tranche does not implement.
 
     **Declared and refused, rather than withdrawn.** The palette declares them because they
@@ -544,20 +806,6 @@ def _refuse_unported(
             f"the rest are `ColumnSolverFactory`'s inside-out family, where `auto` is a ladder "
             f"rather than one method",
         )
-    for which, end_temperature, spec_type, target, component in (
-        ("top", "condenser_temperature", top_specification_type, top_specification_target,
-         top_specification_component),
-        ("bottom", "reboiler_temperature", bottom_specification_type, bottom_specification_target,
-         bottom_specification_component),
-    ):
-        if spec_type is not None or target is not None or component is not None:
-            raise InvalidInputError(
-                "specification",
-                f"a {which} product specification is not ported: `ColumnSpecification`'s five "
-                f"types and two locations, and the outer loop that drives one to its target, "
-                f"are what would close it. The {which} is pinned by `{end_temperature}` "
-                f"instead, which is the class's other route",
-            )
 
 
 def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
@@ -572,3 +820,38 @@ def _spec() -> dict[str, object]:
     from azoth._models_gen import model
 
     return model("process.distillation_column")
+
+
+def _build_specification(
+    kind: str | None, target: float | None, component: str | None, which: str
+) -> Specification | None:
+    """One end's specification from its three declared parameters.
+
+    `None` where no type was stated, which is the temperature-pinned route the model takes by
+    default. A target without a type, or a type without a target, is a declaration that cannot
+    be read rather than a default worth guessing.
+    """
+    if kind is None:
+        if target is not None or component is not None:
+            raise InvalidInputError(
+                "specification",
+                f"the {which} has a target or a component and no type, so nothing says what it "
+                f"constrains",
+            )
+        return None
+    if kind not in SPECIFICATION_KINDS:
+        raise InvalidInputError(
+            "specification",
+            f"{kind} is not one of `ColumnSpecification`'s five types: "
+            f"{', '.join(SPECIFICATION_KINDS)}",
+        )
+    if target is None:
+        raise InvalidInputError(
+            "specification", f"the {which} specification states a type and no target"
+        )
+    if kind in ("product_purity", "component_recovery") and component is None:
+        raise InvalidInputError(
+            "specification",
+            f"a {which} purity or recovery constrains a component, and none was stated",
+        )
+    return Specification(kind=kind, target=float(target), component=component)

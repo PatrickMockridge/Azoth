@@ -87,14 +87,130 @@ pub struct ColumnSetup {
     pub top_pressure: Pressure,
     /// The pressure at the bottom stage.
     pub bottom_pressure: Pressure,
-    /// The condenser's temperature, which pins the top tray.
-    pub condenser_temperature: ThermodynamicTemperature,
-    /// The reboiler's temperature, which pins the bottom tray.
-    pub reboiler_temperature: ThermodynamicTemperature,
+    /// The condenser's temperature, which pins the top tray. **Absent means no pin**, and the
+    /// end's flash is then at its own enthalpy - which is what `setCondenserTemperature` not
+    /// having been called does, and what makes a duty specification reachable at all.
+    pub condenser_temperature: Option<ThermodynamicTemperature>,
+    /// The reboiler's temperature, which pins the bottom tray. Absent as the condenser's is.
+    pub reboiler_temperature: Option<ThermodynamicTemperature>,
     /// The convergence tolerance on the mean tray-temperature change.
     pub temperature_tolerance: f64,
     /// The iteration cap.
     pub max_iterations: usize,
+    /// The top product's specification, or `None` where the top is pinned by temperature.
+    pub top_specification: Option<Specification>,
+    /// The bottom product's specification, or `None`.
+    pub bottom_specification: Option<Specification>,
+}
+
+/// Which of `ColumnSpecification`'s five types a specification is.
+///
+/// The two the outer loop does not drive are the two the class applies **directly** to the end
+/// itself: a reflux ratio and a duty are settings rather than targets, so
+/// `applyDirectSpecification` writes them onto the condenser or the reboiler and no temperature
+/// is searched for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpecificationKind {
+    /// Mole fraction of a named component in the product.
+    ProductPurity,
+    /// The fraction of a named component's feed that leaves in the product.
+    ComponentRecovery,
+    /// The product's molar flow, in **mol/hr** - `ColumnSpecification.defaultTargetUnit`'s own
+    /// unit for this type, and the one the class's `evaluateSpecError` reads it in.
+    ProductFlowRate,
+    /// The end's reflux ratio or boilup ratio, applied directly.
+    RefluxRatio,
+    /// The end's duty, in W, applied directly.
+    Duty,
+}
+
+impl SpecificationKind {
+    /// Whether the outer loop drives it, which is `needsAdjustment`'s own split.
+    #[must_use]
+    pub fn is_adjusted(self) -> bool {
+        !matches!(self, Self::RefluxRatio | Self::Duty)
+    }
+}
+
+/// One product specification: the type, the target and the component.
+///
+/// **A specification's location is the slot it is handed to, and not a field.** NeqSim's
+/// `ColumnSpecification` carries a `ProductLocation`, but `validateColumnSpecification` refuses
+/// a `TOP` specification given to `setBottomSpecification` - "Use setTopSpecification() for TOP
+/// specs and setBottomSpecification() for BOTTOM specs" - so the field can only ever agree with
+/// the slot it sits in. That is why the model's inputs name the end (`top_specification_*`,
+/// `bottom_specification_*`) rather than carrying a location, and why there are two of them
+/// rather than a list: the class holds exactly `topSpecification` and `bottomSpecification`.
+#[derive(Debug, Clone)]
+pub struct Specification {
+    /// Which of the five types.
+    pub kind: SpecificationKind,
+    /// The target value, in the unit its type implies: dimensionless for a purity, a recovery
+    /// or a ratio, mol/hr for a flow rate, W for a duty.
+    pub target: f64,
+    /// The component a purity or a recovery constrains. Unread by the other three types.
+    pub component: Option<String>,
+}
+
+impl Specification {
+    /// The value the product currently has, which is what the error is measured against.
+    fn value(&self, product: &Stream, feed: &Stream) -> Result<f64> {
+        let index_of = |name: &str| -> Result<usize> {
+            product
+                .components
+                .iter()
+                .position(|c| c == name)
+                .ok_or_else(|| {
+                    AzothError::invalid_input(
+                        "component",
+                        format!("{name} is not one of this fluid's components"),
+                    )
+                })
+        };
+        match self.kind {
+            SpecificationKind::ProductPurity => {
+                let name = self.component.as_deref().ok_or_else(|| {
+                    AzothError::invalid_input(
+                        "component",
+                        "a purity specification constrains a component, and none was stated",
+                    )
+                })?;
+                Ok(product.z[index_of(name)?])
+            }
+            SpecificationKind::ComponentRecovery => {
+                let name = self.component.as_deref().ok_or_else(|| {
+                    AzothError::invalid_input(
+                        "component",
+                        "a recovery specification constrains a component, and none was stated",
+                    )
+                })?;
+                let index = index_of(name)?;
+                let supplied = feed.n * feed.z[index];
+                if supplied.abs() <= 1.0e-12 {
+                    return Ok(0.0);
+                }
+                Ok(product.n * product.z[index] / supplied)
+            }
+            // `getFlowRate("mol/hr")`: the class's own target unit for this type.
+            SpecificationKind::ProductFlowRate => Ok(product.n * 3600.0),
+            SpecificationKind::RefluxRatio | SpecificationKind::Duty => Ok(0.0),
+        }
+    }
+}
+
+/// How one end of the column is run.
+///
+/// A **temperature** is the default and the outer loop's knob: the end's tray flashes at it.
+/// The other two are what a *direct* specification writes - a reflux ratio replaces the tray
+/// with the end's own reflux flash, and a duty replaces the pin with a heat input.
+#[derive(Debug, Clone, Copy)]
+enum EndMode {
+    /// A pinned outlet temperature, which the outer loop moves while it searches.
+    Temperature(f64),
+    /// The end's reflux or boilup ratio, from a `RefluxRatio` specification.
+    RefluxRatio(f64),
+    /// A heat input, from a `Duty` specification.
+    Duty(f64),
 }
 
 /// The network a solve carries between its steps.
@@ -111,8 +227,8 @@ struct Network {
     tray_count: usize,
     /// The feed.
     feed: Stream,
-    /// The pinned temperature of each end, if it has one.
-    pins: Vec<Option<ThermodynamicTemperature>>,
+    /// How each end is run.
+    modes: Vec<EndMode>,
 }
 
 impl Network {
@@ -161,7 +277,54 @@ impl Network {
     /// first tray's, which is what the sweeps use - so the inlet list is the class's sequence
     /// of calls rather than a rule about the geometry.
     fn run_with(&mut self, i: usize, inlets: &[Stream]) -> Result<TrayOutcome> {
-        let out = stage::tray(inlets, Some(self.pressures[i]), self.pins[i], watts(0.0))?;
+        let pressure = Some(self.pressures[i]);
+        let out = match self.modes[i] {
+            // The default: the tray's flash at the end's temperature, which the outer loop
+            // moves while it searches. **A middle tray carries a NaN here and no pin**, so its
+            // flash is at its own enthalpy - the same distinction the endpoints' temperatures
+            // make everywhere else in this tier.
+            EndMode::Temperature(t) => {
+                let pin = if t.is_finite() {
+                    Some(kelvins(t))
+                } else {
+                    None
+                };
+                stage::tray(inlets, pressure, pin, watts(0.0))?
+            }
+            // A heat input and no pin, which is what a DUTY specification writes.
+            EndMode::Duty(duty) => stage::tray(inlets, pressure, None, watts(duty))?,
+            // The end's own reflux flash, which is what a REFLUX_RATIO specification writes -
+            // `unit_ops.distillation_column`'s ends rather than its stage.
+            EndMode::RefluxRatio(ratio) => {
+                if i == 0 {
+                    let out = crate::column::reboiler(
+                        inlets,
+                        pressure,
+                        None,
+                        watts(0.0),
+                        crate::column::ReboilerMode::VaporBoilupRatio(ratio),
+                    )?;
+                    TrayOutcome {
+                        temperature: out.temperature,
+                        pressure: out.pressure,
+                        gas: out.vapour,
+                        liquid: out.liquid,
+                    }
+                } else {
+                    let out = crate::column::condenser(
+                        inlets,
+                        pressure,
+                        crate::column::CondenserMode::RefluxRatio(ratio),
+                    )?;
+                    TrayOutcome {
+                        temperature: out.temperature,
+                        pressure: out.pressure,
+                        gas: out.distillate,
+                        liquid: out.reflux,
+                    }
+                }
+            }
+        };
         self.gas[i] = out.gas.clone();
         self.liquid[i] = out.liquid.clone();
         Ok(out)
@@ -252,14 +415,37 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             )
         })
         .collect();
-    let pins: Vec<Option<ThermodynamicTemperature>> = (0..tray_count)
+    // **An end's mode, and a direct specification is what changes it.** `applyDirectSpecification`
+    // writes a reflux ratio or a duty onto the end itself, so those two types never reach the
+    // outer loop; everything else is driven by moving the end's temperature.
+    // **A pin wins over a directly-applied duty, and that is a measurement.** NeqSim's tray
+    // `run` tests its stated outlet temperature first and takes a `TPflash` there, so a
+    // condenser with both a pin and a `DUTY` specification never reads the heat input: the
+    // capture's `spec_top_duty_under_a_pin_is_inert` row reports the pinned `-21323.04` W for a
+    // target of `-20000`. A reflux ratio *does* win, because the end's own `run` tests
+    // `refluxIsSet` before anything else. Reproducing the first is the port rule; quietly
+    // honouring the duty would be an improvement NeqSim does not make.
+    let end_mode = |specification: Option<&Specification>, pin: Option<f64>| -> EndMode {
+        match specification.map(|s| (s.kind, s.target)) {
+            Some((SpecificationKind::RefluxRatio, ratio)) => EndMode::RefluxRatio(ratio),
+            Some((SpecificationKind::Duty, duty)) if pin.is_none() => EndMode::Duty(duty),
+            _ => EndMode::Temperature(pin.unwrap_or(f64::NAN)),
+        }
+    };
+    let modes: Vec<EndMode> = (0..tray_count)
         .map(|i| {
             if i == 0 && setup.has_reboiler {
-                Some(setup.reboiler_temperature)
+                end_mode(
+                    setup.bottom_specification.as_ref(),
+                    setup.reboiler_temperature.map(|t| t.value),
+                )
             } else if i == tray_count - 1 && setup.has_condenser {
-                Some(setup.condenser_temperature)
+                end_mode(
+                    setup.top_specification.as_ref(),
+                    setup.condenser_temperature.map(|t| t.value),
+                )
             } else {
-                None
+                EndMode::Temperature(f64::NAN)
             }
         })
         .collect();
@@ -271,149 +457,15 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         feed_stage: setup.feed_stage,
         tray_count,
         feed: setup.feed.clone(),
-        pins,
+        modes,
     };
-    let first_feed = setup.feed_stage;
 
-    // ---- `init` ----
-    // The feed tray, from its feed alone.
-    net.run_with(first_feed, std::slice::from_ref(&setup.feed))?;
-
-    // The reboiler, against the *feed stage's* liquid and not the first tray's - which is
-    // `init`'s own link (`trays.get(0).addStream(getTray(firstFeedTrayNumber).getLiquidOutStream())`)
-    // and a different inlet from the one the sweeps give it.
-    if setup.has_reboiler {
-        let from_feed = net.liquid[first_feed]
-            .clone()
-            .expect("the feed stage has a liquid after its flash");
-        net.run_with(0, &[from_feed])?;
-    }
-
-    // The linear temperature profile: the feed tray's temperature with a step towards each
-    // end. The condenser's step divides by the trays above the feed and the reboiler's by the
-    // trays below it, which is the class's own arithmetic and is why the two steps differ.
-    let feed_temperature = net.temperature(first_feed);
-    let condenser_temperature =
-        net.pins[tray_count - 1].map_or(feed_temperature - 1.0, |t| t.value);
-    let reboiler_temperature = net
-        .liquid
-        .first()
-        .and_then(Option::as_ref)
-        .map_or(feed_temperature, |s| s.t.value);
-    let mut temperatures = vec![f64::NAN; tray_count];
-    temperatures[first_feed] = feed_temperature;
-    let delta_up =
-        (feed_temperature - condenser_temperature) / (tray_count as f64 - first_feed as f64 - 1.0);
-    let delta_down = (reboiler_temperature - feed_temperature) / first_feed as f64;
-    let mut delta = 0.0;
-    for temperature in temperatures.iter_mut().skip(first_feed + 1) {
-        delta += delta_up;
-        *temperature = feed_temperature - delta;
-    }
-    let mut delta = 0.0;
-    for temperature in temperatures[..first_feed].iter_mut().rev() {
-        delta += delta_down;
-        *temperature = feed_temperature + delta;
-    }
-    for (i, pin) in net.pins.iter().enumerate() {
-        if let Some(t) = pin {
-            temperatures[i] = t.value;
-        }
-    }
-
-    // Link upward, then downward, then the reboiler against the first tray's liquid. Each
-    // link is seeded to the tray's own temperature, which is `SimpleTray.init()`'s mechanism
-    // - it re-states every inlet the tray holds, the external feed included, and the class
-    // restores the feed afterwards, which is why the sweeps below see the feed's own state.
-    for (i, &temperature) in temperatures.iter().enumerate().skip(1) {
-        let mut inlets = vec![at_temperature(
-            net.gas[i - 1].as_ref().expect("the tray below has run"),
-            temperature,
-        )];
-        if i == first_feed {
-            inlets.push(setup.feed.clone());
-        }
-        net.run_with(i, &inlets)?;
-    }
-    for (i, &temperature) in temperatures
-        .iter()
-        .enumerate()
-        .take(tray_count - 1)
-        .skip(1)
-        .rev()
-    {
-        let mut inlets = vec![at_temperature(
-            net.gas[i - 1].as_ref().expect("the tray below has run"),
-            temperature,
-        )];
-        inlets.push(at_temperature(
-            net.liquid[i + 1].as_ref().expect("the tray above has run"),
-            temperature,
-        ));
-        if i == first_feed {
-            inlets.push(setup.feed.clone());
-        }
-        net.run_with(i, &inlets)?;
-    }
-    if setup.has_reboiler {
-        let inlets = vec![at_temperature(
-            net.liquid[1].as_ref().expect("the first tray has run"),
-            temperatures[0],
-        )];
-        net.run_with(0, &inlets)?;
-    }
-
-    // ---- `solveSequential` ----
-    let mut relaxation = 1.0_f64;
-    let mut previous_combined = f64::INFINITY;
-    let mut temperature_residual = f64::INFINITY;
-    let mut iterations = 0_u32;
-
-    for iter in 1..=setup.max_iterations {
-        iterations = iter as u32;
-        let old: Vec<f64> = (0..tray_count).map(|i| net.temperature(i)).collect();
-
-        // Down the column: each tray takes the liquid from the one above it.
-        for i in (2..=first_feed).rev() {
-            net.run(i - 1, None)?;
-        }
-        // The reboiler takes the first stage's liquid.
-        if setup.has_reboiler {
-            net.run(0, None)?;
-        }
-        // Up the column: each tray takes the vapour from the one below it.
-        for i in 1..tray_count {
-            net.run(i, None)?;
-        }
-        // And down again, from below the condenser to the feed stage.
-        for i in (first_feed..tray_count.saturating_sub(1)).rev() {
-            net.run(i, None)?;
-        }
-
-        // The temperature update, with the class's own floor on the step.
-        let effective = relaxation.clamp(MIN_TEMPERATURE_RELAXATION, 1.0);
-        let mut sum = 0.0;
-        for i in 0..tray_count {
-            let updated = net.temperature(i);
-            let updated = if updated.is_finite() { updated } else { old[i] };
-            sum += (updated - old[i]).abs();
-            temperatures[i] = old[i] + effective * (updated - old[i]);
-        }
-        temperature_residual = sum / tray_count as f64;
-
-        // The adaptive controller, on the combined residual the class scales each term of.
-        let combined = temperature_residual / setup.temperature_tolerance;
-        if combined > previous_combined * 1.05 {
-            relaxation = (relaxation * RELAXATION_DECREASE_FACTOR).max(MIN_SEQUENTIAL_RELAXATION);
-        } else if combined < previous_combined * 0.98 {
-            relaxation = (relaxation * RELAXATION_INCREASE_FACTOR).min(MAX_ADAPTIVE_RELAXATION);
-        }
-        previous_combined = combined;
-
-        if temperature_residual <= setup.temperature_tolerance {
-            break;
-        }
-    }
+    let mut temperatures = seed_network(&mut net, setup)?;
+    let (iterations, temperature_residual) = if adjustable_specification(setup) {
+        specification_loop(&mut net, setup, &mut temperatures)?
+    } else {
+        sweep(&mut net, setup, &mut temperatures)?
+    };
 
     // ---- The products, the duties and the closure ----
     let distillate = end_product(&net, tray_count - 1, "condenser")?;
@@ -524,4 +576,315 @@ fn at_temperature(stream: &Stream, temperature: f64) -> Stream {
 /// A stream's mole fraction of one component.
 fn fraction_of(stream: &Stream, component: usize) -> f64 {
     stream.z.get(component).copied().unwrap_or(0.0)
+}
+
+/// `DistillationColumn.init`: the feed-stage flash, the linear temperature seed and the two
+/// links.
+///
+/// Returns the seeded profile, which the sweeps then evolve. **The seed is the class's own
+/// arithmetic**: a step towards each end, the condenser's divided by the trays above the feed
+/// and the reboiler's by the trays below it, which is why the two differ.
+fn seed_network(net: &mut Network, setup: &ColumnSetup) -> Result<Vec<f64>> {
+    let first_feed = setup.feed_stage;
+    let tray_count = net.tray_count;
+    // The feed tray, from its feed alone.
+    net.run_with(first_feed, std::slice::from_ref(&setup.feed))?;
+
+    // The reboiler, against the *feed stage's* liquid and not the first tray's - which is
+    // `init`'s own link (`trays.get(0).addStream(getTray(firstFeedTrayNumber).getLiquidOutStream())`)
+    // and a different inlet from the one the sweeps give it.
+    if setup.has_reboiler {
+        let from_feed = net.liquid[first_feed]
+            .clone()
+            .expect("the feed stage has a liquid after its flash");
+        net.run_with(0, &[from_feed])?;
+    }
+
+    // The linear temperature profile: the feed tray's temperature with a step towards each
+    // end. The condenser's step divides by the trays above the feed and the reboiler's by the
+    // trays below it, which is the class's own arithmetic and is why the two steps differ.
+    let feed_temperature = net.temperature(first_feed);
+    let pin_of = |mode: EndMode| match mode {
+        EndMode::Temperature(t) if t.is_finite() => Some(t),
+        _ => None,
+    };
+    let condenser_temperature = pin_of(net.modes[tray_count - 1]).unwrap_or(feed_temperature - 1.0);
+    let reboiler_temperature = net
+        .liquid
+        .first()
+        .and_then(Option::as_ref)
+        .map_or(feed_temperature, |s| s.t.value);
+    let mut temperatures = vec![f64::NAN; tray_count];
+    temperatures[first_feed] = feed_temperature;
+    let delta_up =
+        (feed_temperature - condenser_temperature) / (tray_count as f64 - first_feed as f64 - 1.0);
+    let delta_down = (reboiler_temperature - feed_temperature) / first_feed as f64;
+    let mut delta = 0.0;
+    for temperature in temperatures.iter_mut().skip(first_feed + 1) {
+        delta += delta_up;
+        *temperature = feed_temperature - delta;
+    }
+    let mut delta = 0.0;
+    for temperature in temperatures[..first_feed].iter_mut().rev() {
+        delta += delta_down;
+        *temperature = feed_temperature + delta;
+    }
+    for (i, mode) in net.modes.iter().enumerate() {
+        if let Some(t) = pin_of(*mode) {
+            temperatures[i] = t;
+        }
+    }
+
+    // Link upward, then downward, then the reboiler against the first tray's liquid. Each
+    // link is seeded to the tray's own temperature, which is `SimpleTray.init()`'s mechanism
+    // - it re-states every inlet the tray holds, the external feed included, and the class
+    // restores the feed afterwards, which is why the sweeps below see the feed's own state.
+    for (i, &temperature) in temperatures.iter().enumerate().skip(1) {
+        let mut inlets = vec![at_temperature(
+            net.gas[i - 1].as_ref().expect("the tray below has run"),
+            temperature,
+        )];
+        if i == first_feed {
+            inlets.push(setup.feed.clone());
+        }
+        net.run_with(i, &inlets)?;
+    }
+    for (i, &temperature) in temperatures
+        .iter()
+        .enumerate()
+        .take(tray_count - 1)
+        .skip(1)
+        .rev()
+    {
+        let mut inlets = vec![at_temperature(
+            net.gas[i - 1].as_ref().expect("the tray below has run"),
+            temperature,
+        )];
+        inlets.push(at_temperature(
+            net.liquid[i + 1].as_ref().expect("the tray above has run"),
+            temperature,
+        ));
+        if i == first_feed {
+            inlets.push(setup.feed.clone());
+        }
+        net.run_with(i, &inlets)?;
+    }
+    if setup.has_reboiler {
+        let inlets = vec![at_temperature(
+            net.liquid[1].as_ref().expect("the first tray has run"),
+            temperatures[0],
+        )];
+        net.run_with(0, &inlets)?;
+    }
+    Ok(temperatures)
+}
+
+/// `DistillationColumn.solveSequential`: the sweeps, once, to the temperature gate.
+///
+/// Returns the iterations taken and the mean tray-temperature change at the last one. A call
+/// after an earlier one starts from where the last stopped, which is what the class's outer
+/// specification loop relies on - it passes `setDoInitializion(false)` after its first pass and
+/// keeps the profile.
+fn sweep(net: &mut Network, setup: &ColumnSetup, temperatures: &mut [f64]) -> Result<(u32, f64)> {
+    let first_feed = setup.feed_stage;
+    let tray_count = net.tray_count;
+    let mut relaxation = 1.0_f64;
+    let mut previous_combined = f64::INFINITY;
+    let mut temperature_residual = f64::INFINITY;
+    let mut iterations = 0_u32;
+
+    for iter in 1..=setup.max_iterations {
+        iterations = iter as u32;
+        let old: Vec<f64> = (0..tray_count).map(|i| net.temperature(i)).collect();
+
+        // Down the column: each tray takes the liquid from the one above it.
+        for i in (2..=first_feed).rev() {
+            net.run(i - 1, None)?;
+        }
+        // The reboiler takes the first stage's liquid.
+        if setup.has_reboiler {
+            net.run(0, None)?;
+        }
+        // Up the column: each tray takes the vapour from the one below it.
+        for i in 1..tray_count {
+            net.run(i, None)?;
+        }
+        // And down again, from below the condenser to the feed stage.
+        for i in (first_feed..tray_count.saturating_sub(1)).rev() {
+            net.run(i, None)?;
+        }
+
+        // The temperature update, with the class's own floor on the step.
+        let effective = relaxation.clamp(MIN_TEMPERATURE_RELAXATION, 1.0);
+        let mut sum = 0.0;
+        for i in 0..tray_count {
+            let updated = net.temperature(i);
+            let updated = if updated.is_finite() { updated } else { old[i] };
+            sum += (updated - old[i]).abs();
+            temperatures[i] = old[i] + effective * (updated - old[i]);
+        }
+        temperature_residual = sum / tray_count as f64;
+
+        // The adaptive controller, on the combined residual the class scales each term of.
+        let combined = temperature_residual / setup.temperature_tolerance;
+        if combined > previous_combined * 1.05 {
+            relaxation = (relaxation * RELAXATION_DECREASE_FACTOR).max(MIN_SEQUENTIAL_RELAXATION);
+        } else if combined < previous_combined * 0.98 {
+            relaxation = (relaxation * RELAXATION_INCREASE_FACTOR).min(MAX_ADAPTIVE_RELAXATION);
+        }
+        previous_combined = combined;
+
+        if temperature_residual <= setup.temperature_tolerance {
+            break;
+        }
+    }
+    Ok((iterations, temperature_residual))
+}
+
+/// Whether any specification needs the outer loop, which is `hasAdjustableSpecifications`.
+fn adjustable_specification(setup: &ColumnSetup) -> bool {
+    [&setup.top_specification, &setup.bottom_specification]
+        .into_iter()
+        .flatten()
+        .any(|spec| spec.kind.is_adjusted())
+}
+
+/// The class's own defaults for a specification's convergence, from `ColumnSpecification`.
+const SPECIFICATION_TOLERANCE: f64 = 1.0e-4;
+const SPECIFICATION_MAX_ITERATIONS: usize = 20;
+/// `secantStep`'s step cap and its physically reasonable window.
+const SECANT_MAX_STEP: f64 = 50.0;
+const SECANT_MIN_TEMPERATURE: f64 = 100.0;
+const SECANT_MAX_TEMPERATURE: f64 = 1000.0;
+/// The first iteration's second guess, an offset from the first - `topTemp1 = topTemp0 - 5.0`.
+const SECANT_FIRST_OFFSET: f64 = 5.0;
+
+/// `solveWithSpecificationTargets`: the outer secant on the ends' temperatures.
+///
+/// **One specification at each end, each driven by its own secant**, and both ends solved
+/// together at every outer iteration: the class changes the condenser's and the reboiler's
+/// temperatures and re-runs the whole column, then reads both errors off its products.
+///
+/// **There is no homotopy here, and that is a measurement.** `getEffectiveSpecificationHomotopySteps`
+/// returns three stages only when `solverType == AUTO`, and the field it otherwise reads is
+/// one - so the staged continuation the class does carry belongs to the solver this port
+/// refuses, and the secant loop is the whole of the specification machinery it needs.
+fn specification_loop(
+    net: &mut Network,
+    setup: &ColumnSetup,
+    temperatures: &mut [f64],
+) -> Result<(u32, f64)> {
+    let tray_count = net.tray_count;
+    let top = setup.top_specification.clone();
+    let bottom = setup.bottom_specification.clone();
+    let adjust_top = top.as_ref().is_some_and(|s| s.kind.is_adjusted());
+    let adjust_bottom = bottom.as_ref().is_some_and(|s| s.kind.is_adjusted());
+
+    // The guesses, from the stated temperatures - the class's own starting point.
+    // `estimateFeedTemperature` plus the class's own 20 K offsets where an end is unpinned.
+    let feed_temperature = setup.feed.t.value;
+    let top_start = setup
+        .condenser_temperature
+        .map_or(feed_temperature - 20.0, |t| t.value);
+    let bottom_start = setup
+        .reboiler_temperature
+        .map_or(feed_temperature + 20.0, |t| t.value);
+    let mut top_pair = (top_start, top_start - SECANT_FIRST_OFFSET);
+    let mut bottom_pair = (bottom_start, bottom_start + SECANT_FIRST_OFFSET);
+    let mut top_errors = (f64::NAN, f64::NAN);
+    let mut bottom_errors = (f64::NAN, f64::NAN);
+
+    let mut iterations = 0_u32;
+    let mut temperature_residual = f64::INFINITY;
+    for outer in 0..SPECIFICATION_MAX_ITERATIONS {
+        if adjust_top {
+            let guess = if outer == 0 { top_pair.0 } else { top_pair.1 };
+            net.modes[tray_count - 1] = EndMode::Temperature(guess);
+        }
+        if adjust_bottom {
+            let guess = if outer == 0 {
+                bottom_pair.0
+            } else {
+                bottom_pair.1
+            };
+            net.modes[0] = EndMode::Temperature(guess);
+        }
+        let (taken, residual) = sweep(net, setup, temperatures)?;
+        // **The *last* inner solve's count, which is the class's own `lastIterationCount`** -
+        // it is overwritten by every `solveSequential` call and the outer loop makes twenty of
+        // them. Summing them here would report a number the capture has no counterpart for.
+        iterations = taken;
+        temperature_residual = residual;
+
+        let top_error = match (&top, adjust_top) {
+            (Some(spec), true) => {
+                let product = net.gas[tray_count - 1].clone().ok_or_else(no_product)?;
+                spec.value(&product, &setup.feed)? - spec.target
+            }
+            _ => 0.0,
+        };
+        let bottom_error = match (&bottom, adjust_bottom) {
+            (Some(spec), true) => {
+                let product = net.liquid[0].clone().ok_or_else(no_product)?;
+                spec.value(&product, &setup.feed)? - spec.target
+            }
+            _ => 0.0,
+        };
+
+        let converged = (!adjust_top || top_error.abs() < SPECIFICATION_TOLERANCE)
+            && (!adjust_bottom || bottom_error.abs() < SPECIFICATION_TOLERANCE);
+        if converged {
+            return Ok((iterations, temperature_residual));
+        }
+
+        if adjust_top {
+            if outer == 0 {
+                top_errors.0 = top_error;
+            } else {
+                top_errors.1 = top_error;
+                let next = secant_step(top_pair, top_errors);
+                top_pair = (top_pair.1, next);
+                top_errors = (top_errors.1, f64::NAN);
+            }
+        }
+        if adjust_bottom {
+            if outer == 0 {
+                bottom_errors.0 = bottom_error;
+            } else {
+                bottom_errors.1 = bottom_error;
+                let next = secant_step(bottom_pair, bottom_errors);
+                bottom_pair = (bottom_pair.1, next);
+                bottom_errors = (bottom_errors.1, f64::NAN);
+            }
+        }
+    }
+    Err(AzothError::SolverNotConverged {
+        iterations,
+        residual: temperature_residual,
+        tolerance: SPECIFICATION_TOLERANCE,
+    })
+}
+
+/// `secantStep`, with its two guards: a step cap and a physically reasonable window.
+fn secant_step(guess: (f64, f64), error: (f64, f64)) -> f64 {
+    let denominator = error.1 - error.0;
+    let mut next = if denominator.abs() < 1.0e-15 {
+        guess.1 + 2.0
+    } else {
+        guess.1 - error.1 * (guess.1 - guess.0) / denominator
+    };
+    if next - guess.1 > SECANT_MAX_STEP {
+        next = guess.1 + SECANT_MAX_STEP;
+    } else if next - guess.1 < -SECANT_MAX_STEP {
+        next = guess.1 - SECANT_MAX_STEP;
+    }
+    next.clamp(SECANT_MIN_TEMPERATURE, SECANT_MAX_TEMPERATURE)
+}
+
+/// An end with no product is an end whose solve did not produce one.
+fn no_product() -> AzothError {
+    AzothError::invalid_input(
+        "column",
+        "an end has no product, which is a column whose ends did not solve",
+    )
 }

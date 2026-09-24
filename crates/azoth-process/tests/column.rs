@@ -33,10 +33,12 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         has_condenser: true,
         top_pressure: pascals(19.0e5),
         bottom_pressure: pascals(20.0e5),
-        condenser_temperature: kelvins(253.15),
-        reboiler_temperature: kelvins(373.15),
+        condenser_temperature: Some(kelvins(253.15)),
+        reboiler_temperature: Some(kelvins(373.15)),
         temperature_tolerance: tolerance,
         max_iterations: 200,
+        top_specification: None,
+        bottom_specification: None,
     }
 }
 
@@ -259,10 +261,12 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         has_condenser: true,
         top_pressure: pascals(24.0e5),
         bottom_pressure: pascals(25.0e5),
-        condenser_temperature: kelvins(273.15),
-        reboiler_temperature: kelvins(353.15),
+        condenser_temperature: Some(kelvins(273.15)),
+        reboiler_temperature: Some(kelvins(353.15)),
         temperature_tolerance: 1.0e-5,
         max_iterations: 80,
+        top_specification: None,
+        bottom_specification: None,
     });
 
     let out = out.expect(

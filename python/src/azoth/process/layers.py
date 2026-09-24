@@ -416,6 +416,24 @@ def _component_splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _spec_of(inputs: Mapping[str, Any], which: str) -> Any:
+    """One end's specification from a case's own inputs, or ``None`` where none is stated."""
+    from azoth.process.reference.distillation_column import Specification
+
+    kind = inputs.get(f"{which}_specification_type")
+    if kind is None:
+        return None
+    return Specification(
+        kind=str(kind),
+        target=float(inputs[f"{which}_specification_target"]),
+        component=(
+            None
+            if inputs.get(f"{which}_specification_component") is None
+            else str(inputs[f"{which}_specification_component"])
+        ),
+    )
+
+
 def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.distillation_column`'s layers, from the reference's own factored arithmetic.
 
@@ -443,10 +461,12 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
         bool(inputs["has_condenser"]),
         float(inputs["top_pressure"]),
         float(inputs["bottom_pressure"]),
-        float(inputs["reboiler_temperature"]),
-        float(inputs["condenser_temperature"]),
+        float(inputs["reboiler_temperature"]) if "reboiler_temperature" in inputs else None,
+        float(inputs["condenser_temperature"]) if "condenser_temperature" in inputs else None,
         float(inputs["temperature_tolerance"]),
         int(inputs["max_iterations"]),
+        _spec_of(inputs, "top"),
+        _spec_of(inputs, "bottom"),
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -704,6 +724,42 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    # The specification rows. **Four are cases and three are declared uncased**, and the split
+    # is the measurement: a purity, a flow rate, a duty and a purity at the *bottom* location
+    # converge, while a recovery specification does not converge in NeqSim at all, a reflux
+    # ratio lands on a state this port's own flash cannot find, and a duty under a temperature
+    # pin is inert.
+    LayerCase(
+        model="process.distillation_column",
+        case="spec_top_purity",
+        capture="process_column.tsv",
+        block=4,
+        identified_by=("#label", "spec_top_purity_0_98_methane"),
+    ),
+    LayerCase(
+        model="process.distillation_column",
+        case="spec_top_flow_rate",
+        capture="process_column.tsv",
+        block=6,
+        identified_by=("#label", "spec_top_flow_rate_14000_mol_per_hour"),
+    ),
+    LayerCase(
+        model="process.distillation_column",
+        case="spec_top_duty",
+        capture="process_column.tsv",
+        block=9,
+        identified_by=("#label", "spec_top_duty_minus_20000"),
+    ),
+    # **The one row at the other location**, whose secant drives the reboiler's temperature
+    # rather than the condenser's - so it is the row that fails if a location is ever treated
+    # as a field rather than the slot a specification sits in.
+    LayerCase(
+        model="process.distillation_column",
+        case="spec_bottom_purity",
+        capture="process_column.tsv",
+        block=10,
+        identified_by=("#label", "spec_bottom_purity_0_98_n_butane"),
+    ),
     # The column's converged rows. **Both are cases, and the second is there because a looser
     # gate is a different measurement** rather than a sloppier version of the first: where a
     # solve stops is what its answer is.
@@ -990,7 +1046,7 @@ UNCASED_ROWS: dict[str, int] = {
     # its state is not NeqSim's and the rows are evidence rather than oracles: what the port's
     # own test asserts about them is self-consistency, and this is why they are declared here
     # rather than paired with a case.
-    "process_column.tsv": 2,
+    "process_column.tsv": 5,
 }
 
 

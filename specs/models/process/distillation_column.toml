@@ -12,8 +12,15 @@ assumptions = [
     "**pressures run linearly** from `bottom_pressure` at stage 0 to `top_pressure` at the top stage, which is the class's own rule and is why the two are both declared.",
     "**`number_of_stages` counts the trays between the ends**, so a reboiler or a condenser adds one stage each: the stage a feed enters is 0-based over the trays *including* them, and stage 0 is the reboiler where there is one.",
     "**the mass and energy residuals are the closure, not the class's.** They are the products' worst component imbalance against the feed, and the enthalpy balance; `getLastMassResidual` is a norm over the MESH equations. The capture prints both, and they are not comparable.",
-    "**`murphree_efficiency` and the two product specifications are declared and refused.** The palette declares them because they are the machine's; their arithmetic is not ported, and `SimpleTray.setMurphreeEfficiency` and `ColumnSpecification` would close them.",
-    "**a refused parameter is refused by name**, rather than answered with the ideal stage or the wrong degree of freedom.",
+    "**the product specifications are `ColumnSpecification`'s five types**, and the class splits them in two: a **reflux ratio** and a **duty** are written straight onto the end, and the other three by an **outer secant on the end's temperature**.",
+    "**a specification's location follows its slot.** `validateColumnSpecification` refuses a `TOP` spec handed to `setBottomSpecification`, so the location is a spelling of the slot; both ends are reachable, the top's secant on the condenser and the bottom's on the reboiler.",
+    "**that secant takes two guesses five kelvin apart**, then steps capped at 50 K and clamped to `[100, 1000]` K, and it converges when the product's value is within `1e-4` of the target.",
+    "**there is no specification homotopy here, and that is a measurement.** `getEffectiveSpecificationHomotopySteps` returns three staged targets only when the solver is `AUTO`, and the field it otherwise reads is one - so the continuation the class carries belongs to the solver this port refuses.",
+    "**a pin wins over a directly-applied duty.** The tray tests its stated outlet temperature first and takes a `TPflash` there, so a heat input a `DUTY` wrote is never read: the capture's inert row reports `-21323.04` W for a target of `-20000`.",
+    "**nothing reports that gap**: a `DUTY` is not *adjusted*, so its residual is zero by construction - a zero that means \"not checked\" rather than \"satisfied\".",
+    "**a reflux-ratio specification is not reproduced, and the reason is measured.** The end's `PVrefluxflash` searches for the state whose vapour fraction is `1/(1 + ratio)`; NeqSim lands on `402.24` K, beyond the dew point of a 19 bara mixture that is 82 per cent methane.",
+    "**this port's flash refuses to converge there** rather than landing on a state its own equations do not place.",
+    "**`murphree_efficiency` is declared and refused.** The palette declares it because it is the machine's; its arithmetic is not ported, and `SimpleTray.setMurphreeEfficiency` would close it. A refused parameter is refused by name rather than answered with the ideal stage.",
     "**`solver_type` is refused for everything but `direct_substitution`**, which is the class's own default. The other nine are `NaphtaliSandholmSolver`, `ColumnSolverFactory`'s inside-out family and the rest.",
     "**`AUTO` is a ladder and not one method** - the parking note's finding - so it is refused with them rather than silently resolved.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
@@ -21,7 +28,7 @@ assumptions = [
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/DistillationColumn.java` is the port source, through `init` and `solveSequential`; the stage is `SimpleTray.java`, ported as `crates/azoth-process/src/column/tray.rs`.",
-    "`validation/neqsim/captures/process_column.tsv` - four rows: a converged binary column, the same at a looser tolerance, and NeqSim's own deethanizer taken to 80 and to 200 iterations.",
+    "`validation/neqsim/captures/process_column.tsv` - eleven rows: NeqSim's own deethanizer taken to 80 and to 200 iterations, the binary column at a `1e-6` and at a `1e-2` gate, one row per specification type, and the bottom location on the same purity its top case asks for.",
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
@@ -70,10 +77,12 @@ unit = "Pa"
 description = "the pressure at stage 0. The two fix the profile the tray pressures interpolate.\n"
 [inputs.reboiler_temperature]
 unit = "K"
-description = "the reboiler's temperature, which pins the bottom tray's flash.\n"
+optional = true
+description = "the reboiler's temperature, which pins the bottom tray's flash. **Absent means no pin**, and the end's flash is then at its own enthalpy - which is what `setReboilerTemperature` not having been called does, and what makes a duty specification reachable at all.\n"
 [inputs.condenser_temperature]
 unit = "K"
-description = "the condenser's temperature, which pins the top tray's flash.\n"
+optional = true
+description = "the condenser's temperature, which pins the top tray's flash. Absent as the reboiler's is. **A pin wins over a directly-applied duty**: the tray tests its stated outlet temperature first and takes a `TPflash` there, so a heat input a duty specification wrote is never read.\n"
 [inputs.temperature_tolerance]
 unit = "K"
 description = "the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
@@ -93,28 +102,28 @@ description = "**only `direct_substitution` is ported**, which is the class's ow
 type = "enum"
 values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
 optional = true
-description = "**not ported**: the top product's degree of freedom, which `ColumnSpecification` carries. Omitted, the top is pinned by `condenser_temperature` instead, which is the class's other route and the one this model takes.\n"
+description = "the top product's degree of freedom, which `ColumnSpecification` carries. Omitted, the top is pinned by temperature - the class's other route. **The end is the parameter's name and not a value**, because the class holds exactly two specifications.\n"
 [inputs.top_specification_target]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: the target value, in the unit its type implies.\n"
+description = "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a ratio, **mol/hr** for a flow rate, W for a duty - which is `ColumnSpecification.defaultTargetUnit`'s own convention.\n"
 [inputs.top_specification_component]
 type = "string"
 optional = true
-description = "**not ported**: the component a purity or a recovery constrains.\n"
+description = "the component a purity or a recovery constrains; the class's own `validate` refuses such a specification without one, and the other three types do not read it.\n"
 [inputs.bottom_specification_type]
 type = "enum"
 values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
 optional = true
-description = "**not ported**: the bottom product's degree of freedom, as the top's.\n"
+description = "the bottom product's degree of freedom, which `ColumnSpecification` carries. Omitted, the bottom is pinned by temperature - the class's other route. **The end is the parameter's name and not a value**, because the class holds exactly two specifications.\n"
 [inputs.bottom_specification_target]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: the target value, in the unit its type implies.\n"
+description = "the target value, in the unit its type implies, as the top specification's is.\n"
 [inputs.bottom_specification_component]
 type = "string"
 optional = true
-description = "**not ported**: the component a purity or a recovery constrains.\n"
+description = "the component a purity or a recovery constrains; unread by the other three types.\n"
 [outputs]
 [outputs.tray_temperature]
 type = "vector"

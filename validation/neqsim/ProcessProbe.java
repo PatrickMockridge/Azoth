@@ -556,6 +556,112 @@ public class ProcessProbe {
     columnRow("binary_methane_butane_loose", new String[] { "methane", "n-butane" },
         new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-2, 200,
         true, false);
+    // **The five specification types, one row each**, on the same binary column. The first three
+    // are *adjusted* - `needsAdjustment` is true for everything but the last two - so each is
+    // driven by an outer secant on the end's temperature; the last two are applied directly to
+    // the end itself. That split is the class's own, and it is why a reflux ratio is a
+    // specification at the end rather than a duty parameter.
+    specificationRow("spec_top_purity_0_98_methane", "methane", 0.98, null, null);
+    // **The one adjustable row that does not converge**, kept as evidence: the secant on the
+    // condenser temperature drives this column to `D = 7.25` - the whole feed - and stops.
+    specificationRow("spec_top_recovery_0_97_not_converged", "methane", 0.97, true, null);
+    // **The flow-rate target is in mol/hr, which is `ColumnSpecification.defaultTargetUnit`'s
+    // own unit for this type** - the class's constructor says so, and a target in mol/s would
+    // be a column asked for a millionth of its flow.
+    specificationRow("spec_top_flow_rate_14000_mol_per_hour", null, 14000.0, null, null);
+    specificationRow("spec_top_reflux_ratio_1_5", null, 1.5, null, null);
+    // **A duty specification under a temperature pin, which is inert** - and measured. The
+    // condenser's own temperature is stated, so its flash is a TP one and `setHeatInput` is
+    // never read: the row reports the pinned `-21323.04` W for a specification of `-20000`. The
+    // residual is `0.0` because a DUTY is not *adjusted*, so nothing in the class reports this.
+    specificationRow("spec_top_duty_under_a_pin_is_inert", null, -20000.0, null, null);
+    // **The same duty without a pin**, where it bites: the condenser's temperature is the
+    // flash's own answer and the duty lands on the target to `4e-5` W.
+    specificationRow("spec_top_duty_minus_20000", null, -20000.0, null, null);
+    // **The same machine at the other location.** `setBottomSpecification` drives the
+    // *reboiler's* temperature where the top's drives the condenser's, and its product is the
+    // bottom's - so this is the row that says a location is a degree of freedom rather than a
+    // mirrored spelling of the top's. The condenser stays pinned at -20 C here.
+    specificationRow("spec_bottom_purity_0_98_n_butane", "n-butane", 0.98, null, true);
+  }
+
+  static void specificationRow(String label, String component, double target, Boolean recovery,
+      Boolean bottom) {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.5, 0.5 };
+    SystemInterface fluid = new SystemPrEos(300.0, 20.0);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(1000.0, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", 4, true, true);
+    column.addFeedStream(inlet, 2);
+    column.setReboilerTemperature(100.0, "C");
+    column.setTopPressure(19.0);
+    column.setBottomPressure(20.0);
+    column.setTemperatureTolerance(1.0e-6);
+    column.setMaxNumberOfIterations(200, true);
+    neqsim.process.equipment.distillation.ColumnSpecification.SpecificationType type;
+    if (label.contains("reflux")) {
+      type = neqsim.process.equipment.distillation.ColumnSpecification.SpecificationType.REFLUX_RATIO;
+    } else if (label.contains("duty")) {
+      type = neqsim.process.equipment.distillation.ColumnSpecification.SpecificationType.DUTY;
+    } else if (component != null) {
+      // A purity or a recovery, which the type tells apart by whether it needs a component name.
+      type = recovery != null
+          ? neqsim.process.equipment.distillation.ColumnSpecification.SpecificationType.COMPONENT_RECOVERY
+          : neqsim.process.equipment.distillation.ColumnSpecification.SpecificationType.PRODUCT_PURITY;
+    } else {
+      type = neqsim.process.equipment.distillation.ColumnSpecification.SpecificationType.PRODUCT_FLOW_RATE;
+    }
+    // **A location follows its slot.** `validateColumnSpecification` refuses a `TOP` spec handed
+    // to `setBottomSpecification` and names the setter to use, so the field is a spelling of the
+    // slot rather than a third degree of freedom - which is why the port's inputs name the end.
+    neqsim.process.equipment.distillation.ColumnSpecification.ProductLocation location =
+        Boolean.TRUE.equals(bottom)
+            ? neqsim.process.equipment.distillation.ColumnSpecification.ProductLocation.BOTTOM
+            : neqsim.process.equipment.distillation.ColumnSpecification.ProductLocation.TOP;
+    neqsim.process.equipment.distillation.ColumnSpecification specification =
+        new neqsim.process.equipment.distillation.ColumnSpecification(type, location, target,
+            component);
+    if (Boolean.TRUE.equals(bottom)) {
+      column.setBottomSpecification(specification);
+    } else {
+      column.setTopSpecification(specification);
+    }
+    if (!label.contains("reflux") && !label.contains("minus_20000")) {
+      column.setCondenserTemperature(-20.0, "C");
+    }
+    column.run();
+
+    System.out.println(label);
+    print("feed", inlet);
+    System.out.println("solved=" + column.solved());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("top_spec_residual=" + column.getLastTopSpecificationResidual());
+    if (Boolean.TRUE.equals(bottom)) {
+      System.out.println("bottom_spec_residual=" + column.getLastBottomSpecificationResidual());
+    }
+    System.out.println("condenser_temperature_K=" + column.getCondenser().getTemperature());
+    // The profile, which is the port's own interior: a specification's effect is a *state*,
+    // so a row that printed only its products could not localise a divergence.
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    System.out.println("condenser_duty_W=" + column.getCondenser().getDuty());
+    System.out.println("reboiler_duty_W=" + column.getReboiler().getDuty());
+    System.out.println();
   }
 
   static void columnRow(String label, String[] names, double[] z, double feedTemperatureK,

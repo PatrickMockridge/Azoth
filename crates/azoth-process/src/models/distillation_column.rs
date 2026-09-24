@@ -9,6 +9,7 @@ use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, 
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
 use crate::kernels::distillation_column as kernel;
+use crate::kernels::distillation_column::{Specification, SpecificationKind};
 use crate::stream::Stream;
 
 /// Result of `process.distillation_column`.
@@ -98,10 +99,11 @@ impl CalcResult for DistillationColumnResult {
 ///
 /// # Errors
 /// [`azoth_core::AzothError::InvalidInput`] for a stage count or a feed stage outside the
-/// column, **for every declared parameter whose arithmetic this tranche does not port** - the
-/// Murphree efficiency, the two product specifications and the nine other solving strategies,
-/// each refused by naming the class that would close it - and
-/// [`azoth_core::AzothError::SolverNotConverged`] when the solve misses its gate.
+/// column, for a specification missing the component it constrains, **for every declared
+/// parameter whose arithmetic this tranche does not port** - the Murphree efficiency and the
+/// nine other solving strategies, each refused by naming the class that would close it - and
+/// [`azoth_core::AzothError::SolverNotConverged`] when the solve or a specification misses
+/// its gate.
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
 pub fn distillation_column(
     components: &[String],
@@ -115,8 +117,8 @@ pub fn distillation_column(
     has_condenser: bool,
     top_pressure: Pressure,
     bottom_pressure: Pressure,
-    reboiler_temperature: ThermodynamicTemperature,
-    condenser_temperature: ThermodynamicTemperature,
+    reboiler_temperature: Option<ThermodynamicTemperature>,
+    condenser_temperature: Option<ThermodynamicTemperature>,
     temperature_tolerance: f64,
     max_iterations: usize,
     murphree_efficiency: Option<f64>,
@@ -128,15 +130,24 @@ pub fn distillation_column(
     bottom_specification_target: Option<f64>,
     bottom_specification_component: Option<&str>,
 ) -> Result<DistillationColumnResult> {
-    refuse_unported(
-        murphree_efficiency,
-        solver_type,
+    refuse_unported(murphree_efficiency, solver_type)?;
+
+    // **The end is the parameter's name, not a value.** `ColumnSpecification` carries a
+    // location - TOP or BOTTOM - and the class holds exactly two of them, so a declaration
+    // that names its parameters `top_*` and `bottom_*` has already said which is which;
+    // `setTopSpecification` refusing a BOTTOM location is the same statement from the other
+    // side.
+    let top_specification = build_specification(
         top_specification_type,
         top_specification_target,
         top_specification_component,
+        "top",
+    )?;
+    let bottom_specification = build_specification(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        "bottom",
     )?;
 
     let spec = &crate::model_gen::DISTILLATION_COLUMN_SPEC;
@@ -167,6 +178,8 @@ pub fn distillation_column(
         reboiler_temperature,
         temperature_tolerance,
         max_iterations,
+        top_specification,
+        bottom_specification,
     })?;
 
     Ok(DistillationColumnResult {
@@ -203,16 +216,7 @@ pub fn distillation_column(
 /// named and its stage is known. A form field that errors with the reason beats a form field
 /// that is silently absent, and beats one that answers with the ideal stage.
 #[allow(clippy::too_many_arguments)]
-fn refuse_unported(
-    murphree_efficiency: Option<f64>,
-    solver_type: Option<&str>,
-    top_specification_type: Option<&str>,
-    top_specification_target: Option<f64>,
-    top_specification_component: Option<&str>,
-    bottom_specification_type: Option<&str>,
-    bottom_specification_target: Option<f64>,
-    bottom_specification_component: Option<&str>,
-) -> Result<()> {
+fn refuse_unported(murphree_efficiency: Option<f64>, solver_type: Option<&str>) -> Result<()> {
     if let Some(efficiency) = murphree_efficiency {
         return Err(AzothError::invalid_input(
             "murphree_efficiency",
@@ -235,33 +239,69 @@ fn refuse_unported(
             ),
         ));
     }
-    for (which, end_temperature, spec_type, target, component) in [
-        (
-            "top",
-            "condenser_temperature",
-            top_specification_type,
-            top_specification_target,
-            top_specification_component,
-        ),
-        (
-            "bottom",
-            "reboiler_temperature",
-            bottom_specification_type,
-            bottom_specification_target,
-            bottom_specification_component,
-        ),
-    ] {
-        if spec_type.is_some() || target.is_some() || component.is_some() {
+    Ok(())
+}
+
+/// One end's specification from its three declared parameters.
+///
+/// `None` where no type was stated, which is the temperature-pinned route the model takes by
+/// default. A target without a type, or a type without a target, is a declaration that cannot
+/// be read rather than a default worth guessing.
+fn build_specification(
+    kind: Option<&str>,
+    target: Option<f64>,
+    component: Option<&str>,
+    which: &str,
+) -> Result<Option<Specification>> {
+    let Some(kind) = kind else {
+        if target.is_some() || component.is_some() {
             return Err(AzothError::invalid_input(
                 "specification",
                 format!(
-                    "a {which} product specification is not ported: `ColumnSpecification`'s \
-                     five types and two locations, and the outer loop that drives one to its \
-                     target, are what would close it. The {which} is pinned by \
-                     `{end_temperature}` instead, which is the class's other route"
+                    "the {which} has a target or a component and no type, so nothing says what \
+                     it constrains"
                 ),
             ));
         }
+        return Ok(None);
+    };
+    let kind = match kind {
+        "product_purity" => SpecificationKind::ProductPurity,
+        "component_recovery" => SpecificationKind::ComponentRecovery,
+        "product_flow_rate" => SpecificationKind::ProductFlowRate,
+        "reflux_ratio" => SpecificationKind::RefluxRatio,
+        "duty" => SpecificationKind::Duty,
+        other => {
+            return Err(AzothError::invalid_input(
+                "specification",
+                format!(
+                    "{other} is not one of `ColumnSpecification`'s five types: product_purity, \
+                     reflux_ratio, component_recovery, product_flow_rate or duty"
+                ),
+            ));
+        }
+    };
+    let target = target.ok_or_else(|| {
+        AzothError::invalid_input(
+            "specification",
+            format!("the {which} specification states a type and no target"),
+        )
+    })?;
+    // A purity or a recovery constrains a named component, and the class's own `validate`
+    // refuses one that does not name it; a flow rate, a ratio and a duty do not read the name.
+    if matches!(
+        kind,
+        SpecificationKind::ProductPurity | SpecificationKind::ComponentRecovery
+    ) && component.is_none()
+    {
+        return Err(AzothError::invalid_input(
+            "specification",
+            format!("a {which} purity or recovery constrains a component, and none was stated"),
+        ));
     }
-    Ok(())
+    Ok(Some(Specification {
+        kind,
+        target,
+        component: component.map(String::from),
+    }))
 }

@@ -3959,10 +3959,10 @@ def distillation_column(
     has_condenser: bool,
     top_pressure: Q,
     bottom_pressure: Q,
-    reboiler_temperature: Q,
-    condenser_temperature: Q,
-    temperature_tolerance: float,
-    max_iterations: int,
+    reboiler_temperature: Q | None = None,
+    condenser_temperature: Q | None = None,
+    temperature_tolerance: float = 1.0e-6,
+    max_iterations: int = 200,
     murphree_efficiency: float | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
@@ -3992,8 +3992,14 @@ def distillation_column(
         has_condenser,
         input_to_si(spec, "top_pressure", top_pressure),
         input_to_si(spec, "bottom_pressure", bottom_pressure),
-        input_to_si(spec, "reboiler_temperature", reboiler_temperature),
-        input_to_si(spec, "condenser_temperature", condenser_temperature),
+        # **Absent means no pin**, which is what `setReboilerTemperature` not having been
+        # called does - and what makes a duty specification reachable at all.
+        None
+        if reboiler_temperature is None
+        else input_to_si(spec, "reboiler_temperature", reboiler_temperature),
+        None
+        if condenser_temperature is None
+        else input_to_si(spec, "condenser_temperature", condenser_temperature),
         _si(spec, "temperature_tolerance", temperature_tolerance),
         int(_si(spec, "max_iterations", max_iterations)),
         murphree_efficiency,

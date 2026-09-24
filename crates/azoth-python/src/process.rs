@@ -429,7 +429,7 @@ pub fn pump(
 /// business rather than the kernel's.
 #[pyfunction]
 #[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, reboiler_temperature, condenser_temperature, temperature_tolerance, max_iterations, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
+    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, reboiler_temperature = None, condenser_temperature = None, temperature_tolerance = 1e-6, max_iterations = 200, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
 )]
 #[pyo3(
     text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, reboiler_temperature, condenser_temperature, temperature_tolerance, max_iterations, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None)"
@@ -449,8 +449,8 @@ pub fn distillation_column(
     has_condenser: bool,
     top_pressure: f64,
     bottom_pressure: f64,
-    reboiler_temperature: f64,
-    condenser_temperature: f64,
+    reboiler_temperature: Option<f64>,
+    condenser_temperature: Option<f64>,
     temperature_tolerance: f64,
     max_iterations: usize,
     murphree_efficiency: Option<f64>,
@@ -474,8 +474,8 @@ pub fn distillation_column(
         has_condenser,
         pascals(top_pressure),
         pascals(bottom_pressure),
-        kelvins(reboiler_temperature),
-        kelvins(condenser_temperature),
+        reboiler_temperature.map(kelvins),
+        condenser_temperature.map(kelvins),
         temperature_tolerance,
         max_iterations,
         murphree_efficiency,
