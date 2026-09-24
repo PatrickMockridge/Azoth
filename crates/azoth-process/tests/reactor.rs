@@ -8,6 +8,64 @@
 
 use azoth_process::reactor::stepper::{Scheme, march};
 
+/// **The reactor's heat capacity exists, and it is `6.85e-4` below the class's.**
+///
+/// `PlugFlowReactor.calculateDerivatives` divides its heat generation by
+/// `getCp("J/molK") * ΣF`, and the capture's `cp_probe` measures that value at the probe's own
+/// feed state: `31.537822487323226`, which the probe also shows is NeqSim's own `(∂H/∂T)_P` to
+/// eight significant figures.
+///
+/// **The surface is not missing.** `eos.molar_enthalpy_entropy` returns `cp` beside `h` and `s`,
+/// as an ideal-gas part plus an analytic departure, and this pins what it gives at that state:
+/// `31.516222490658407`, of which `0.053517` is the departure. Nothing has to be built.
+///
+/// **What the two do not do is agree**, and the gap is `6.85e-4` relative - larger than the
+/// `0.00275` J/(mol·K) ideal-gas difference the process tier's enthalpy offset records, so it is
+/// not that difference alone. It is the same family of library divergence as the offset itself:
+/// invisible where a case pins a difference, and setting the reactor's temperature tolerance
+/// because the whole of `dT/dz` is proportional to it. Asserting the divergence rather than a
+/// band around the class's number is how it stays visible - the shape
+/// `azoth-process/tests/stream.rs` uses for the aqueous viscosity that is still `38` per cent out.
+#[test]
+fn the_reactor_heat_capacity_is_the_eos_one_and_diverges_by_seven_per_ten_thousand() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_eos::{Cubic, RootSide, databank, molar_enthalpy_entropy};
+
+    let names = ["methane", "oxygen", "nitrogen"];
+    let (mixture, ideal_gas) =
+        databank::mixture_of(&names, Cubic::Pr, None).expect("the databank carries the three");
+    let z = vec![0.05, 0.10, 0.85];
+    let (t, p) = (kelvins(600.0), pascals(5.0e5));
+    let reduced = mixture.reduced_parameters(t, p).expect("a state");
+    let root = mixture
+        .phase_state(&reduced, &z, RootSide::Vapour)
+        .expect("a single vapour root")
+        .z;
+    let state = molar_enthalpy_entropy(&mixture, &ideal_gas, t, p, &z, root).expect("a state");
+
+    let neqsim = 31.537_822_487_323_226;
+    let relative = (state.cp.value - neqsim).abs() / neqsim;
+    println!(
+        "azoth cp={} (ideal {} + departure {}) neqsim={neqsim} relative={relative}",
+        state.cp.value, state.cp_ideal.value, state.cp_departure.value
+    );
+
+    // It is the real-mixture capacity and not the ideal-gas one, so the departure is carried.
+    assert!(
+        state.cp_departure.value.abs() > 1e-3,
+        "the departure is {} and would be zero if this were an ideal-gas Cp",
+        state.cp_departure.value
+    );
+    // And it is the measured distance from the class, not a band around it: landing inside
+    // `1e-4` would mean the divergence moved and this test must not silently accept that.
+    assert!(
+        (relative - 6.85e-4).abs() < 2e-5,
+        "the libraries' heat capacities were measured {0:e} apart; this run is at {relative:e}. If an eos \
+         change moved it, say so and re-measure the reactor's tolerance rather than widening this bound.",
+        6.85e-4
+    );
+}
+
 /// The exact solution of `dy/dz = -k y`, `y(0) = y0`.
 fn decaying(z: f64, k: f64, y0: f64) -> f64 {
     y0 * (-k * z).exp()
