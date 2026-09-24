@@ -982,16 +982,28 @@ def _build_pr_peneloux_shift(
 
 
 def pr_peneloux_shift(
-    *, omega: Sequence[float], Tc: Sequence[float], Pc: Sequence[float]
+    *,
+    omega: Sequence[float],
+    Tc: Sequence[float],
+    Pc: Sequence[float],
+    z_ra: Sequence[float] | None = None,
 ) -> PrPenelouxShiftBatch:
-    """The Peng-Robinson Peneloux volume-translation parameter, over arrays."""
+    """The Peng-Robinson Peneloux volume-translation parameter, over arrays.
+
+    ``z_ra`` is the Rackett compressibility, and it is **optional**: a sweep that does not
+    carry the column sweeps the fallback correlation, which is NeqSim's own reading of a
+    zero column rather than a missing value.
+    """
+    inputs = {
+        "omega": sequence(omega, "omega"),
+        "Tc": sequence(Tc, "Tc"),
+        "Pc": sequence(Pc, "Pc"),
+    }
+    if z_ra is not None:
+        inputs["z_ra"] = sequence(z_ra, "z_ra")
     result: PrPenelouxShiftBatch = run(
         _PR_PENELOUX_SHIFT,
-        {
-            "omega": sequence(omega, "omega"),
-            "Tc": sequence(Tc, "Tc"),
-            "Pc": sequence(Pc, "Pc"),
-        },
+        inputs,
         _build_pr_peneloux_shift,
     )
     return result

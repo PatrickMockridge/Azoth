@@ -916,19 +916,27 @@ def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     return resolve(_PR_MASS_DENSITY)(M=M, v=v)  # type: ignore[no-any-return]
 
 
-def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
+def pr_peneloux_shift(
+    omega: float, Tc: Q, Pc: Q, z_ra: float | None = None
+) -> PrPenelouxShiftResult:
     """The Peng-Robinson Peneloux volume-translation parameter.
 
     The shift is subtracted from the untranslated molar volume: ``v_corr = v - c``,
     with ``v`` from :func:`pr_molar_volume`. It corrects the volume and density and
     does not change phase equilibrium.
 
+    ``z_ra`` is the Rackett compressibility, which the databank carries as NeqSim's
+    ``RACKETZ`` column - and **``None`` or a zero takes the fallback correlation**
+    ``0.29056 - 0.08775*omega``, which is NeqSim's own rule for a zero column. Pass the
+    databank's value for a real substance: for water the correlation gives the shift the
+    wrong *sign*.
+
     Raises:
         OutOfRangeError: if ``Tc`` or ``Pc`` is not positive.
 
     See :func:`azoth.eos.reference.pr_peneloux_shift`.
     """
-    return resolve(_PR_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc)  # type: ignore[no-any-return]
+    return resolve(_PR_PENELOUX_SHIFT)(omega=omega, Tc=Tc, Pc=Pc, z_ra=z_ra)  # type: ignore[no-any-return]
 
 
 def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:

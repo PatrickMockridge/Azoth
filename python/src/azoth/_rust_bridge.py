@@ -792,13 +792,18 @@ def pr_mass_density(M: Q, v: Q) -> PrMassDensityResult:
     )
 
 
-def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
+def pr_peneloux_shift(
+    omega: float, Tc: Q, Pc: Q, z_ra: float | None = None
+) -> PrPenelouxShiftResult:
     """The Peng-Robinson Peneloux volume-translation parameter, computed in Rust."""
     spec = _spec_for("eos.pr_peneloux_shift")
     result = _core.pr_peneloux_shift(
         omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
+        # Dimensionless, and `None` means the fallback correlation - which is what the
+        # spec's optional input documents.
+        z_ra,
     )
     return PrPenelouxShiftResult(
         c=from_si(result.c.magnitude_si, result.c.unit),

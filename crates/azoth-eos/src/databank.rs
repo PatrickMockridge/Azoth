@@ -235,6 +235,17 @@ pub struct Entry {
     pub critical_volume: Option<f64>,
     /// Dipole moment, in debye.
     pub dipole: Option<f64>,
+    /// The Rackett compressibility `Z_RA`, dimensionless, as NeqSim's `RACKETZ` column
+    /// states it - and **zero means the table does not carry one**, which is how NeqSim
+    /// reads it too.
+    ///
+    /// Read by `eos.pr_peneloux_shift`, through the volume translation
+    /// `ComponentPR.getVolumeCorrection()` builds from it: the shift is
+    /// `0.50033*(0.25969 - Z_RA)*R*Tc/Pc`, and NeqSim falls back to
+    /// `Z_RA = 0.29056 - 0.08775*omega` only where this column is zero. The fallback is
+    /// the whole of the correlation for 216 of the 348 rows and **the wrong answer for
+    /// the other 132**, water among them - where it gives a shift of the wrong sign.
+    pub rackett_z: f64,
     /// Which reference state the component's activity model is written against, as
     /// NeqSim's `REFERENCESTATETYPE` column states it.
     ///
@@ -423,6 +434,27 @@ impl Entry {
                     self.cp_liquid,
                     self.solid_density_coefs,
                     self.liquid_density_coefs,
+                )
+                // **The volume translation is wired here and nowhere else.** `Mixture`
+                // has carried a per-component `volume_shift` and the linear mixture rule
+                // for it since the cubic family landed, and nothing filled it in for a
+                // databank mixture - so a density built from one was the untranslated
+                // cubic wherever NeqSim's `getPhysicalProperties().getDensity()` applies
+                // the translation, which is everywhere.
+                //
+                // `Some(self.rackett_z)` and not the correlation: the table's own value
+                // is what NeqSim reads, and zero - which is the table's spelling of
+                // absence - is what makes the calc fall back. Measured on water, the two
+                // give the shift opposite signs.
+                .with_volume_shift(
+                    crate::pr_peneloux_shift::pr_peneloux_shift(
+                        self.omega,
+                        kelvins(self.tc),
+                        pascals(self.pc),
+                        Some(self.rackett_z),
+                    )?
+                    .c
+                    .value,
                 )
                 .with_association(self.association.clone()),
         )
@@ -1015,6 +1047,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "molar_mass_kg_per_mol",
         "critical_volume_m3_per_mol",
         "dipole_moment_debye",
+        "racketz",
         "antoine_type",
         "antoinea",
         "antoineb",
@@ -1156,6 +1189,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     "dipole_moment_debye",
                     row,
                 )?),
+                rackett_z: number(&record, index["racketz"], "racketz", row)?,
                 antoine: Some((
                     [
                         number(&record, index["antoinea"], "antoinea", row)?,
@@ -1576,6 +1610,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 molar_mass: None,
                 critical_volume: None,
                 dipole: None,
+                // A card carries no Rackett compressibility either, and zero is this
+                // table's spelling of absence - so a card's substance takes the fallback
+                // correlation, which is what NeqSim does for a zero column.
+                rackett_z: 0.0,
                 antoine: None,
                 association: over.association.as_ref().map(|a| a.applied_to(None)),
                 // **A card carries no PC-SAFT set**, and zero is how this table spells
@@ -1653,6 +1691,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             molar_mass: base.molar_mass,
             critical_volume: base.critical_volume,
             dipole: base.dipole,
+            // The table's, for the reason the PC-SAFT set below is: `ComponentOverride`
+            // is a closed list, and a card correcting `Tc` does not change which Rackett
+            // compressibility the volume translation reads.
+            rackett_z: base.rackett_z,
             antoine: base.antoine,
             // `ComponentOverride` is a closed list and carries no PC-SAFT set, so the
             // table's survives a card untouched - the whole point of naming one parameter

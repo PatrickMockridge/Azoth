@@ -57,8 +57,8 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    CompressorResult, CoolerResult, ExpanderResult, FilterResult, HeatExchangerResult, HeaterResult,
-    MixerResult, PumpResult, SeparatorResult, SplitterResult, ThrottlingValveResult,
+    CompressorResult, CoolerResult, ExpanderResult, FilterResult, HeatExchangerResult,
+    HeaterResult, MixerResult, PumpResult, SeparatorResult, SplitterResult, ThrottlingValveResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;

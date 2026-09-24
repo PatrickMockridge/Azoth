@@ -58,12 +58,35 @@ fn butane_liquid() {
     );
     close(s.mass_flow().unwrap(), 0.058122999999999994, "mass_flow");
     close(s.entropy().unwrap(), -70.09304618085763, "entropy");
-    // The capture's `cubic_density`, not its `corrected_density`: NeqSim's
-    // `getPhase(0).getDensity("kg/m3")` adds a volume correction on top of the cubic, and
-    // `Stream` does not carry the component volume shifts that correction is built from.
+    // Both of the capture's densities, and they are different numbers: `density()` is the
+    // cubic's `M/(Z R T / P)` and `corrected_density()` adds the Peneloux volume
+    // translation, which is what NeqSim's `getPhase(0).getDensity("kg/m3")` and its
+    // `getPhysicalProperties().getDensity()` both report. The gap is 6.4% here - and it is
+    // the *translated* one a hydraulic calculation reads.
     close(s.density().unwrap(), 601.2649457697453, "density");
+    close(
+        s.corrected_density().unwrap(),
+        565.040236518875,
+        "corrected_density",
+    );
     // No viscosity: see the module doc. The capture records NeqSim's for the day the
     // dispatch lands.
+}
+
+/// **The water row, where the translation is the larger half of the gap.** NeqSim's
+/// aqueous phase reports `983.93` kg/m³ and its cubic reports `848.23` - a 14% correction,
+/// against butane's 6.4% - because water's databank row carries a Rackett compressibility
+/// (`0.235662374`) that the fallback correlation `0.29056 - 0.08775*omega` does not
+/// reproduce, and gives the shift the opposite sign.
+#[test]
+fn water_needs_the_tables_rackett_compressibility() {
+    let s = stream(&["water"], &[1.0], 300.0, 1.0e5, 1.0);
+    close(s.density().unwrap(), 848.2314181081963, "density");
+    close(
+        s.corrected_density().unwrap(),
+        983.9300357490571,
+        "corrected_density",
+    );
 }
 
 /// **The one row where the flash root disagrees, and it is not this accessor's.**

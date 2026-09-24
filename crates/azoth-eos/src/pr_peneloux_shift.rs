@@ -28,8 +28,13 @@ use crate::spec_gen;
 /// use azoth_core::units::{kelvins, pascals};
 /// use azoth_eos::pr_peneloux_shift;
 ///
-/// let r = pr_peneloux_shift(0.152, kelvins(369.83), pascals(4_248_000.0))?;
+/// let r = pr_peneloux_shift(0.152, kelvins(369.83), pascals(4_248_000.0), None)?;
 /// assert!((r.c.value - (-6.349504285100194e-06)).abs() < 1e-18);
+///
+/// // Water, whose databank row carries a Rackett compressibility - and a shift of the
+/// // opposite sign to the one the fallback correlation would give it.
+/// let r = pr_peneloux_shift(0.3443, kelvins(647.096), pascals(22_064_000.0), Some(0.235662374))?;
+/// assert!((r.c.value - 2.929079216846814e-06).abs() < 1e-18);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the published equation
@@ -37,6 +42,7 @@ pub fn pr_peneloux_shift(
     omega: f64,
     Tc: ThermodynamicTemperature,
     Pc: Pressure,
+    z_ra: Option<f64>,
 ) -> Result<PrPenelouxShiftResult> {
     let spec = &spec_gen::PR_PENELOUX_SHIFT_SPEC;
     let mut warnings = Vec::new();
@@ -47,12 +53,20 @@ pub fn pr_peneloux_shift(
             "omega" => Some(omega),
             "Tc" => Some(Tc.value),
             "Pc" => Some(Pc.value),
+            "z_ra" => z_ra,
             _ => None,
         },
         &mut warnings,
     )?;
 
-    let z_ra = 0.29056 - 0.08775 * omega;
+    // NeqSim's own rule: the field when it carries one, the correlation where it does
+    // not. `Some(0.0)` and `None` are the same statement, because zero *is* the table's
+    // spelling of absence - `ComponentPR.getVolumeCorrection` tests the value, not the
+    // presence of a column.
+    let z_ra = match z_ra {
+        Some(value) if value.abs() >= 1e-10 => value,
+        _ => 0.29056 - 0.08775 * omega,
+    };
     let c = 0.50033 * (0.25969 - z_ra) * MOLAR_GAS_CONSTANT * Tc.value / Pc.value;
 
     apply_checks(

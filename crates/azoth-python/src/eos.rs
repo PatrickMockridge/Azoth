@@ -533,16 +533,17 @@ pub fn pr_mass_density(py: Python<'_>, M: f64, v: f64) -> PyResult<PyPrMassDensi
 /// `Tc` in kelvin and `Pc` in pascals in, a volume shift in `m**3/mol` out - the
 /// quantity subtracted from `eos.pr_molar_volume` to correct a reported volume.
 #[pyfunction]
-#[pyo3(signature = (omega, Tc, Pc))]
-#[pyo3(text_signature = "(omega, Tc, Pc)")]
+#[pyo3(signature = (omega, Tc, Pc, z_ra = None))]
+#[pyo3(text_signature = "(omega, Tc, Pc, z_ra=None)")]
 #[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the published equation
 pub fn pr_peneloux_shift(
     py: Python<'_>,
     omega: f64,
     Tc: f64,
     Pc: f64,
+    z_ra: Option<f64>,
 ) -> PyResult<PyPrPenelouxShiftResult> {
-    azoth_eos::pr_peneloux_shift(omega, kelvins(Tc), pascals(Pc))
+    azoth_eos::pr_peneloux_shift(omega, kelvins(Tc), pascals(Pc), z_ra)
         .map(|r| PyPrPenelouxShiftResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

@@ -61,6 +61,11 @@ class Component:
     Tc: Q
     Pc: Q
     omega: float
+    #: NeqSim's ``RACKETZ``, the compressibility the Peneloux volume translation is a
+    #: function of, or zero where the table carries none - which is the same spelling of
+    #: absence NeqSim uses, so a zero takes the fallback correlation
+    #: ``0.29056 - 0.08775*omega``.
+    rackett_z: float = 0.0
     molar_mass: Q | None = None
     alpha_params: tuple[float, ...] = ()
     association: AssociationParameters | None = None

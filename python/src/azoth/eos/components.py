@@ -471,6 +471,12 @@ class DatabankEntry:
     Tc: Q
     Pc: Q
     omega: float
+    #: NeqSim's ``RACKETZ`` column, dimensionless, and **zero means the table carries
+    #: none** - which is how NeqSim reads it too. Read through
+    #: :func:`azoth.eos.pr_peneloux_shift`, whose shift is a function of it and whose
+    #: fallback ``0.29056 - 0.08775*omega`` is the whole correlation for the 216 rows
+    #: that carry a zero and the wrong answer for the 132 that do not.
+    rackett_z: float
     molar_mass: Q | None
     critical_volume: Q | None
     liquid_density: Q | None
@@ -619,6 +625,7 @@ class DatabankEntry:
             Tc=self.Tc,
             Pc=self.Pc,
             omega=self.omega,
+            rackett_z=self.rackett_z,
             molar_mass=self.molar_mass,
             alpha_params=params,
             wax_former=self.wax_former,
@@ -715,6 +722,7 @@ def _table() -> dict[str, DatabankEntry]:
             Tc=ureg.Quantity(float(row["tc_k"]), "K"),
             Pc=ureg.Quantity(float(row["pc_pa"]), "Pa"),
             omega=float(row["acentric_factor"]),
+            rackett_z=float(row["racketz"]),
             molar_mass=ureg.Quantity(float(row["molar_mass_kg_per_mol"]), "kg/mol"),
             critical_volume=ureg.Quantity(float(row["critical_volume_m3_per_mol"]), "m**3/mol"),
             liquid_density=ureg.Quantity(float(row["liquid_density_kg_per_m3"]), "kg/m**3"),
@@ -1375,6 +1383,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             Tc=override["Tc"] if not ion else ureg.Quantity(0.0, "K"),
             Pc=override["Pc"] if not ion else ureg.Quantity(0.0, "Pa"),
             omega=0.0 if ion else _as_float(override["omega"], key),
+            rackett_z=0.0,
             molar_mass=None,
             critical_volume=None,
             liquid_density=None,

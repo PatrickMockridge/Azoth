@@ -5,7 +5,8 @@
 //! a unit operation's kernel reads on its inlets and writes on its outlets.
 
 use azoth_core::units::{
-    MolarEnergy, MolarMass, Pressure, ThermodynamicTemperature, joules_per_mole, kilograms_per_mole,
+    MolarEnergy, MolarMass, Pressure, ThermodynamicTemperature, cubic_meters_per_mole,
+    joules_per_mole, kilograms_per_mole,
 };
 use azoth_core::{AzothError, Result};
 use azoth_eos::{
@@ -109,6 +110,40 @@ impl Stream {
         let root = self.single_phase_root(&mixture)?;
         let v = pr_molar_volume(root, self.t, self.p)?.v;
         Ok(pr_mass_density(self.molar_mass()?, v)?.rho.value)
+    }
+
+    /// The mass density a *physical-properties* model reports, kg/m³: the cubic's volume
+    /// with the Peneloux volume translation applied.
+    ///
+    /// **The second of NeqSim's three densities, and the one a hydraulic calculation
+    /// reads.** [`Stream::density`] is the cubic's own `M/(Z R T / P)`; NeqSim's
+    /// `getPhase(0).getDensity("kg/m3")` adds the translation, and it is *that* one
+    /// `getPhysicalProperties().getDensity()` returns - the density
+    /// `AdiabaticPipe.calcPressureOut` reads for its liquid branch and, through the
+    /// kinematic viscosity, for both.
+    ///
+    /// Measured on the captured states, the translation moves the density `6.4%` for
+    /// liquid n-butane (`601.26` untranslated against `565.04`) and `14%` for water
+    /// (`848.23` against `983.93`), because water's databank row carries a Rackett
+    /// compressibility the fallback correlation does not reproduce.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] **if the stream is two-phase**, for the
+    /// reason [`Stream::density`] gives: two phases have no one density.
+    pub fn corrected_density(&self) -> Result<f64> {
+        let (mixture, _) = self.mixture()?;
+        let root = self.single_phase_root(&mixture)?;
+        let v = pr_molar_volume(root, self.t, self.p)?.v.value;
+
+        // The mixture's own rule, `v_corr = v - sum_i x_i c_i`, which lives on `Mixture`
+        // because the components' shifts do - `databank::Entry::component` is where each
+        // one is filled in.
+        let shift = mixture.volume_shift(&self.z);
+        Ok(
+            pr_mass_density(self.molar_mass()?, cubic_meters_per_mole(v - shift))?
+                .rho
+                .value,
+        )
     }
 
     /// The cubic root a single-phase stream sits on.

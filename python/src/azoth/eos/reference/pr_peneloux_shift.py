@@ -21,7 +21,9 @@ from azoth.eos.reference.pr_molar_volume import MOLAR_GAS_CONSTANT
 CALC_ID = "eos.pr_peneloux_shift"
 
 
-def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
+def pr_peneloux_shift(
+    omega: float, Tc: Q, Pc: Q, z_ra: float | None = None
+) -> PrPenelouxShiftResult:
     """The Peng-Robinson Peneloux volume-translation parameter for a pure component.
 
     The shift is subtracted from the untranslated molar volume: ``v_corr = v - c``.
@@ -30,6 +32,7 @@ def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
         omega: the Pitzer acentric factor. Dimensionless.
         Tc: critical temperature.
         Pc: critical pressure.
+        z_ra: the Rackett compressibility, or ``None``/``0.0`` for the correlation.
 
     Returns:
         The volume-translation parameter, in ``m**3/mol``.
@@ -56,7 +59,10 @@ def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> PrPenelouxShiftResult:
 
     apply_checks(checks.on_input, values.get, warnings)
 
-    z_ra = 0.29056 - 0.08775 * omega
+    # NeqSim's own rule: the field when it carries one, the correlation where it does not.
+    # `0.0` and `None` are the same statement, because zero *is* the table's spelling of
+    # absence - `ComponentPR.getVolumeCorrection` tests the value, not the column.
+    z_ra = z_ra if z_ra is not None and abs(z_ra) >= 1e-10 else 0.29056 - 0.08775 * omega
     c = 0.50033 * (0.25969 - z_ra) * MOLAR_GAS_CONSTANT * values["Tc"] / values["Pc"]
 
     apply_checks(checks.derived, lambda name: c if name == "c" else None, warnings)

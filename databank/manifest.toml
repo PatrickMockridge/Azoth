@@ -234,10 +234,19 @@ as = "viscosity_correction_factor"
 unit = "dimensionless"
 [[upstreams.files.columns]]
 name = "RACKETZ"
-disposition = "dropped"
+disposition = "used"
+as = "racketz"
+unit = "dimensionless"
 reason = """\
-    superseded-by: LIQDENS, which is carried across directly rather than through a Rackett \
-    correlation"""
+    read by `eos.pr_peneloux_shift`, through the volume translation NeqSim's \
+    `ComponentPR.getVolumeCorrection()` builds from it. **The row said `dropped` and the \
+    reason was true of one consumer and false of the other**: LIQDENS is what a *density* \
+    is read from, and this column is not a density correlation - it is the Rackett \
+    compressibility a Peneloux shift is a function of, and NeqSim falls back to \
+    `0.29056 - 0.08775*omega` only where this column is zero. Measured: **173 of 389 \
+    components carry a non-zero value**, water among them at `0.235662374`, where the \
+    fallback correlation would give the shift the wrong sign - `-8.0e-8` against the \
+    table's `+2.929079e-6` m**3/mol, which is a 14% density difference on liquid water."""
 [[upstreams.files.columns]]
 name = "volcorrSRK_T"
 disposition = "dropped"

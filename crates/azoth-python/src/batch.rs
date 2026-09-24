@@ -1118,11 +1118,20 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                 take(&inputs, "Tc")?,
                 take(&inputs, "Pc")?,
             );
+            // The Rackett compressibility is an **optional** input, so a sweep that does
+            // not carry the column is a sweep over the fallback correlation - which is
+            // NeqSim's own reading of a zero column, and not a missing value.
+            let z_ra = take_optional(&inputs, "z_ra");
             let mut c = Vec::with_capacity(n);
             for i in 0..n {
                 let r = element(
                     py,
-                    eos::pr_peneloux_shift(omega[i], kelvins(tc[i]), pascals(pc[i])),
+                    eos::pr_peneloux_shift(
+                        omega[i],
+                        kelvins(tc[i]),
+                        pascals(pc[i]),
+                        z_ra.as_ref().map(|column| column[i]),
+                    ),
                     &mut warnings,
                 )?;
                 c.push(r.c.value);
