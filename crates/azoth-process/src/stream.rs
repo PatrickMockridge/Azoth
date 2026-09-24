@@ -10,8 +10,8 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result};
 use azoth_eos::{
-    Cubic, IdealGasModel, Mixture, Phase, databank, ph_flash, pr_mass_density, pr_molar_volume,
-    ps_flash, pt_flash,
+    Cubic, IdealGasModel, Mixture, Phase, RootSide, databank, molar_enthalpy_entropy, ph_flash,
+    pr_mass_density, pr_molar_volume, ps_flash, pt_flash,
 };
 
 /// A material stream on the shared record.
@@ -54,6 +54,45 @@ impl Stream {
             p,
             t,
             h: joules_per_mole(h),
+        })
+    }
+
+    /// A stream at a known temperature and pressure, **on a stated side of the cubic**.
+    ///
+    /// **This is how an outlet that is *a phase* is built, and it is not the same question
+    /// as [`Stream::from_pt`].** `from_pt` re-flashes the composition, which answers with
+    /// the state that composition settles on *on its own*; a phase of a split is on the
+    /// root the split put it on. Where the two differ, the difference is not small. On a
+    /// water-bearing gas that leaves a tank, the outlet's composition re-flashes to two
+    /// phases at a vapour fraction of `0.767` and an enthalpy of `-10043.91` J/mol, where
+    /// the phase's own root gives `441.77` - and NeqSim's `setThermoSystemFromPhase`
+    /// reports `441.83`.
+    ///
+    /// Where the composition *is* stable on its own the two agree, which is why this was
+    /// invisible until a feed whose phase separates when its parent does not.
+    ///
+    /// # Errors
+    /// Whatever the databank and the equation of state raise.
+    pub fn from_side(
+        components: Vec<String>,
+        z: Vec<f64>,
+        n: f64,
+        p: Pressure,
+        t: ThermodynamicTemperature,
+        side: RootSide,
+    ) -> Result<Self> {
+        let names: Vec<&str> = components.iter().map(String::as_str).collect();
+        let (mixture, ideal_gas) = databank::mixture_of(&names, Cubic::Pr, None)?;
+        let reduced = mixture.reduced_parameters(t, p)?;
+        let root = mixture.phase_state(&reduced, &z, side)?.z;
+        let state = molar_enthalpy_entropy(&mixture, &ideal_gas, t, p, &z, root)?;
+        Ok(Stream {
+            components,
+            z,
+            n,
+            p,
+            t,
+            h: joules_per_mole(state.h.value),
         })
     }
 

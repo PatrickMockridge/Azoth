@@ -1550,6 +1550,20 @@ class SplitterResult:
     warnings: list[Warning]
 
 @final
+class TankResult:
+    gas_n: Qty
+    gas_z: list[float]
+    gas_p: Qty
+    gas_t: Qty
+    gas_h: Qty
+    liquid_n: Qty
+    liquid_z: list[float]
+    liquid_p: Qty
+    liquid_t: Qty
+    liquid_h: Qty
+    warnings: list[Warning]
+
+@final
 class ThrottlingValveResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2901,6 +2915,13 @@ def splitter(
     feed_t: float,
     split_factors: list[float],
 ) -> SplitterResult: ...
+def tank(
+    components: list[str],
+    feed_n: list[float],
+    feed_z: list[list[float]],
+    feed_p: list[float],
+    feed_t: list[float],
+) -> TankResult: ...
 def throttling_valve(
     components: list[str],
     inlet_n: float,

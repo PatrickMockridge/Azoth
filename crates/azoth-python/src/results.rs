@@ -61,7 +61,7 @@ use azoth_process::{
     ComponentSplitterResult, CompressorResult, CoolerResult, DistillationColumnResult,
     ExpanderResult, FilterResult, GasScrubberResult, HeatExchangerResult, HeaterResult,
     ManifoldResult, MixerResult, PumpResult, SeparatorResult, ShortcutDistillationColumnResult,
-    SplitterResult, ThrottlingValveResult, pipe::PipeResult,
+    SplitterResult, TankResult, ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -1464,6 +1464,88 @@ impl From<&GasScrubberResult> for PyGasScrubberResult {
             vapour_p: quantity(r.vapour_p.value, "Pa"),
             vapour_t: quantity(r.vapour_t.value, "K"),
             vapour_h: quantity(r.vapour_h.value, "J/mol"),
+            liquid_n: quantity(r.liquid_n, "mol/s"),
+            liquid_z: r.liquid_z.clone(),
+            liquid_p: quantity(r.liquid_p.value, "Pa"),
+            liquid_t: quantity(r.liquid_t.value, "K"),
+            liquid_h: quantity(r.liquid_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.tank`, transported.
+///
+/// Two outlets named for what they carry - `gas` and `liquid` - rather than a separator's
+/// `vapour` and `liquid`, so the result says which phase of the split it is reporting.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TankResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTankResult {
+    /// Gas outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub gas_n: PyQty,
+    /// Gas outlet composition.
+    #[pyo3(get)]
+    pub gas_z: Vec<f64>,
+    /// Gas outlet pressure.
+    #[pyo3(get)]
+    pub gas_p: PyQty,
+    /// Gas outlet temperature.
+    #[pyo3(get)]
+    pub gas_t: PyQty,
+    /// Gas outlet molar enthalpy.
+    #[pyo3(get)]
+    pub gas_h: PyQty,
+    /// Liquid outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub liquid_n: PyQty,
+    /// Liquid outlet composition.
+    #[pyo3(get)]
+    pub liquid_z: Vec<f64>,
+    /// Liquid outlet pressure.
+    #[pyo3(get)]
+    pub liquid_p: PyQty,
+    /// Liquid outlet temperature.
+    #[pyo3(get)]
+    pub liquid_t: PyQty,
+    /// Liquid outlet molar enthalpy.
+    #[pyo3(get)]
+    pub liquid_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTankResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TankResult(gas_n={} {}, liquid_n={} {})",
+            self.gas_n.magnitude_si,
+            self.gas_n.unit,
+            self.liquid_n.magnitude_si,
+            self.liquid_n.unit
+        )
+    }
+}
+
+impl From<&TankResult> for PyTankResult {
+    fn from(r: &TankResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            gas_n: quantity(r.gas_n, "mol/s"),
+            gas_z: r.gas_z.clone(),
+            gas_p: quantity(r.gas_p.value, "Pa"),
+            gas_t: quantity(r.gas_t.value, "K"),
+            gas_h: quantity(r.gas_h.value, "J/mol"),
             liquid_n: quantity(r.liquid_n, "mol/s"),
             liquid_z: r.liquid_z.clone(),
             liquid_p: quantity(r.liquid_p.value, "Pa"),

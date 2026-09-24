@@ -17,6 +17,7 @@
 //!   - specs/models/process/separator.toml
 //!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
+//!   - specs/models/process/tank.toml
 //!   - specs/models/process/throttling_valve.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
@@ -2584,6 +2585,106 @@ pub static SPLITTER_SPEC: ModelSpec = ModelSpec {
     cases: SPLITTER_CASES,
 };
 
+static TANK_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "feed_t",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute temperature, and the first feed's is the one the check resolves",
+    },
+}];
+
+static TANK_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_equilibrium_split",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[
+            ("feed_n", &[1.0]),
+            ("feed_p", &[2000000.0]),
+            ("feed_t", &[300.0]),
+        ],
+        matrices: &[("feed_z", &[0.7, 0.3])],
+        expected: &[
+            ("gas_n", 0.8182211906421442),
+            ("gas_p", 2000000.0),
+            ("gas_t", 300.0),
+            ("gas_h", 530.1529163915924),
+            ("liquid_n", 0.18177880935785584),
+            ("liquid_p", 2000000.0),
+            ("liquid_t", 300.0),
+            ("liquid_h", -17268.958496924704),
+        ],
+        expected_vectors: &[
+            ("gas_z", &[0.8339243334525451, 0.16607566654745487]),
+            ("liquid_z", &[0.09718095876744977, 0.9028190412325502]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_water_bearing_feed_stays_two_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane", "water"])],
+        strings: &[],
+        vectors: &[
+            ("feed_n", &[1.0]),
+            ("feed_p", &[2000000.0]),
+            ("feed_t", &[300.0]),
+        ],
+        matrices: &[("feed_z", &[0.5, 0.3, 0.2])],
+        expected: &[
+            ("gas_n", 0.8036298485392942),
+            ("gas_p", 2000000.0),
+            ("gas_t", 300.0),
+            ("gas_h", 441.8331830403947),
+            ("liquid_n", 0.1963701514607058),
+            ("liquid_p", 2000000.0),
+            ("liquid_t", 300.0),
+            ("liquid_h", -16971.673011528655),
+        ],
+        expected_vectors: &[
+            (
+                "gas_z",
+                &[0.6050306719209471, 0.16066202315031075, 0.2343073049287422],
+            ),
+            (
+                "liquid_z",
+                &[0.07016999610197473, 0.8702300293529803, 0.05959997454504501],
+            ),
+        ],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.tank`.
+pub static TANK_SPEC: ModelSpec = ModelSpec {
+    id: "process.tank",
+    kind: "direct",
+    algorithm: None,
+    checks: TANK_CHECKS,
+    cases: TANK_CASES,
+};
+
 static THROTTLING_VALVE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -2727,6 +2828,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SEPARATOR_SPEC,
     &SHORTCUT_DISTILLATION_COLUMN_SPEC,
     &SPLITTER_SPEC,
+    &TANK_SPEC,
     &THROTTLING_VALVE_SPEC,
 ];
 

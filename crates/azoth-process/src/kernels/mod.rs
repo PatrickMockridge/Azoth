@@ -22,6 +22,7 @@ pub mod pump;
 pub mod separator;
 pub mod shortcut_distillation_column;
 pub mod splitter;
+pub mod tank;
 pub mod throttling_valve;
 
 pub use component_splitter::component_splitter;
@@ -39,4 +40,5 @@ pub use pump::pump;
 pub use separator::separator;
 pub use shortcut_distillation_column::{ShortcutColumn, shortcut_distillation_column};
 pub use splitter::splitter;
+pub use tank::tank;
 pub use throttling_valve::throttling_valve;

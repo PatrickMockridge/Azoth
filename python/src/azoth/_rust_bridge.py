@@ -169,6 +169,7 @@ from azoth.core.result import (
     SrkZFactorResult,
     StabilityTestResult,
     SwameeJainResult,
+    TankResult,
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
@@ -4288,6 +4289,41 @@ def pipe(
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         pressure_drop=from_si(result.pressure_drop.magnitude_si, result.pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tank(
+    components: Sequence[str],
+    feed_n: Sequence[Q],
+    feed_z: Sequence[Sequence[float]],
+    feed_p: Sequence[Q],
+    feed_t: Sequence[Q],
+) -> TankResult:
+    """`process.tank`, computed in Rust.
+
+    The feeds cross as vectors and a matrix, as `process.mixer`'s do: a tank's inlet is a
+    mixer, and its two outlets are the record's five fields under `gas` and `liquid`.
+    """
+    spec = _models_gen.model("process.tank")
+    result = _core.tank(
+        list(components),
+        [input_to_si(spec, "feed_n", v) for v in feed_n],
+        [[_si(spec, "feed_z", x) for x in row] for row in feed_z],
+        [input_to_si(spec, "feed_p", v) for v in feed_p],
+        [input_to_si(spec, "feed_t", v) for v in feed_t],
+    )
+    return TankResult(
+        gas_n=from_si(result.gas_n.magnitude_si, result.gas_n.unit),
+        gas_z=tuple(result.gas_z),
+        gas_p=from_si(result.gas_p.magnitude_si, result.gas_p.unit),
+        gas_t=from_si(result.gas_t.magnitude_si, result.gas_t.unit),
+        gas_h=from_si(result.gas_h.magnitude_si, result.gas_h.unit),
+        liquid_n=from_si(result.liquid_n.magnitude_si, result.liquid_n.unit),
+        liquid_z=tuple(result.liquid_z),
+        liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
+        liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
+        liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
         warnings=_warnings(result.warnings),
     )
 

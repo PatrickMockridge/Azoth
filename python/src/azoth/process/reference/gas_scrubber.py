@@ -35,6 +35,7 @@ from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash
+from azoth.process.reference._phase_outlet import phase_enthalpy
 
 
 def gas_scrubber(
@@ -147,11 +148,16 @@ def gas_scrubber(
         else x
     )
 
-    # Each outlet is a *stream*, so its enthalpy is the state's at its own composition,
-    # pressure and temperature - not the phase root the flash happened to report.
+    # **The outlet is a phase, except where the class re-runs it as a stream.** `GasScrubber`
+    # inherits `Separator.run`, so the same branch decides the liquid's enthalpy: a phase root
+    # while nothing was carried into it, a re-flash of the carried composition once something
+    # was. See `_phase_outlet`, which is where the difference is measured.
     t_out = temperature.to("K").magnitude
-    vapour_h, _ = enthalpy_at(mixture, ideal_gas, t_out, p_out, y)
-    liquid_h, _ = enthalpy_at(mixture, ideal_gas, t_out, p_out, liquid_z)
+    vapour_h = phase_enthalpy(mixture, ideal_gas, t_out, p_out, y, liquid=False)
+    if gas_in_liquid != 0.0:
+        liquid_h, _ = enthalpy_at(mixture, ideal_gas, t_out, p_out, list(liquid_z))
+    else:
+        liquid_h = phase_enthalpy(mixture, ideal_gas, t_out, p_out, list(liquid_z), liquid=True)
 
     return GasScrubberResult(
         vapour_n=from_si(n_vapour - carried, "mol/s"),

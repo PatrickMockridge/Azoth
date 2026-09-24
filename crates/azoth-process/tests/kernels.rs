@@ -1,6 +1,7 @@
 //! The kernels' balance invariants: moles and enthalpy are conserved.
 
 use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
+use azoth_eos::RootSide;
 use azoth_process::Stream;
 use azoth_process::kernels::{
     FlowRegime, compressor, expander, filter, heat_exchanger, heater, mixer, pipe, pump, separator,
@@ -77,7 +78,7 @@ fn a_separator_conserves_moles_and_energy() {
 #[test]
 fn a_separator_carries_vapour_into_the_liquid() {
     let feed = binary(0.5, 100.0, 5e5, 270.0);
-    let (plain, _) = separator(&feed, pascals(0.0), 0.0, None).expect("separator");
+    let (plain, settled) = separator(&feed, pascals(0.0), 0.0, None).expect("separator");
     let (carried, liquid) = separator(&feed, pascals(0.0), 0.1, None).expect("separator");
 
     // A tenth of the vapour's moles move, and they move as material: the vapour keeps its
@@ -89,6 +90,42 @@ fn a_separator_carries_vapour_into_the_liquid() {
         carried.z[0] * carried.n + liquid.z[0] * liquid.n,
         feed.z[0] * feed.n,
     );
+
+    // **An entrainment also re-runs that outlet, and without one it is left as a phase.**
+    // `Separator.run` calls `liquidOutStream.run(id)` under a non-zero fraction and only
+    // there, and a stream `run` is a `TPflash` of the carried composition - so the two
+    // branches answer with different states, and the difference is the rule rather than
+    // noise. The capture's entrainment row is the measurement: `-13999.03` J/mol reported
+    // against the liquid root's `-14916.40`.
+    let root = Stream::from_side(
+        liquid.components.clone(),
+        liquid.z.clone(),
+        liquid.n,
+        liquid.p,
+        liquid.t,
+        RootSide::Liquid,
+    )
+    .expect("the carried composition has a liquid root");
+    assert!(
+        (root.h.value - liquid.h.value).abs() > 100.0,
+        "the re-flashed liquid is {} J/mol against the liquid root's {}, which is the \
+         distinction this branch is",
+        liquid.h.value,
+        root.h.value
+    );
+    // With no entrainment the outlet *is* the phase, so the root is what it reports.
+    close(settled.h.value, {
+        let side = Stream::from_side(
+            settled.components.clone(),
+            settled.z.clone(),
+            settled.n,
+            settled.p,
+            settled.t,
+            RootSide::Liquid,
+        )
+        .expect("the flash's liquid has a root");
+        side.h.value
+    });
 }
 
 #[test]
@@ -843,5 +880,100 @@ fn a_component_splitter_routes_each_component() {
     println!(
         "all-of-one: n={} h={} z={:?} | n={} h={} z={:?}",
         all_h.n, all_h.h.value, all_h.z, all_b.n, all_b.h.value, all_b.z
+    );
+}
+
+/// **The tank's two rows, and the two things the kernel is.**
+///
+/// The first is the claim it rests on: `VUflash` at a fluid's own volume and internal energy
+/// returns that fluid's state, so a tank with no drop and no heat input *is* the flash it
+/// holds - and the captured two-phase row is `process.separator`'s first row to the last
+/// digit. The second is the row that found `Stream::from_side`.
+#[test]
+fn a_tank_is_the_flash_it_holds() {
+    let feed = binary(0.7, 1.0, 20.0e5, 300.0);
+    let joined = mixer(std::slice::from_ref(&feed), None).expect("mixer");
+    let (gas, liquid) =
+        azoth_process::kernels::tank::tank(std::slice::from_ref(&feed)).expect("tank");
+    let (vapour, condensate) = separator(&joined, pascals(0.0), 0.0, None).expect("separator");
+
+    println!(
+        "gas n={} t={} h={} z={:?}",
+        gas.n, gas.t.value, gas.h.value, gas.z
+    );
+    println!(
+        "liquid n={} t={} h={} z={:?}",
+        liquid.n, liquid.t.value, liquid.h.value, liquid.z
+    );
+    println!("neqsim gas n=0.8182211906421442 h=530.1529163915924");
+    println!("neqsim liquid n=0.18177880935785584 h=-17268.958496924704");
+
+    // The tank is `process.separator` at zero drop and no entrainment, field for field.
+    close(gas.n, vapour.n);
+    assert_eq!(gas.z, vapour.z);
+    close(gas.h.value, vapour.h.value);
+    close(liquid.n, condensate.n);
+    assert_eq!(liquid.z, condensate.z);
+
+    // Moles are exact. The energy is closed to the phases' own roots and not to the feed's
+    // flash, which is what `Stream::from_side` is: the residual is measured, not assumed.
+    close(gas.n + liquid.n, feed.n);
+    let balance = gas.n * gas.h.value + liquid.n * liquid.h.value;
+    println!(
+        "energy residual = {} J/mol of feed",
+        balance - feed.n * feed.h.value
+    );
+    absolute(
+        balance,
+        feed.n * feed.h.value,
+        1.0,
+        "the tank's energy balance",
+    );
+}
+
+/// **A tank's outlet is a *phase*, and re-flashing its composition is a different question.**
+///
+/// On the water-bearing feed the two part: the gas's composition, flashed on its own, splits
+/// again at a vapour fraction of `0.767` and reports `-10043.91` J/mol, where the phase's own
+/// root is `441.77` - against NeqSim's `441.83` from `setThermoSystemFromPhase`. The last
+/// assertion is the one that keeps this: an outlet built by a re-flash fails it and says why.
+#[test]
+fn a_tanks_outlet_is_the_phase_it_was_split_into() {
+    let feed = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into(), "water".into()],
+        vec![0.5, 0.3, 0.2],
+        1.0,
+        pascals(20.0e5),
+        kelvins(300.0),
+    )
+    .expect("the three components resolve");
+    let (gas, liquid) =
+        azoth_process::kernels::tank::tank(std::slice::from_ref(&feed)).expect("tank");
+
+    println!("gas n={} h={} z={:?}", gas.n, gas.h.value, gas.z);
+    println!(
+        "liquid n={} h={} z={:?}",
+        liquid.n, liquid.h.value, liquid.z
+    );
+    println!("neqsim gas n=0.8036298485392942 h=441.8331830403947 w=0.2343073049287422");
+    println!("neqsim liquid n=0.1963701514607058 h=-16971.673011528655");
+
+    // The aqueous phase is not an outlet: a tank never asks for a third one, so the water
+    // leaves in the gas at `0.234` where a `ThreePhaseSeparator` leaves it at `0.0016`.
+    close(gas.n + liquid.n, feed.n);
+    relative(gas.z[2], 0.2343073049287422, 1e-9, "the gas's water");
+    relative(gas.n, 0.8036298485392942, 1e-9, "the gas flow");
+    relative(liquid.n, 0.1963701514607058, 1e-9, "the liquid flow");
+
+    // The same composition, re-flashed on its own, is a different state - the divergence
+    // this port does not reproduce.
+    let reflashed = Stream::from_pt(gas.components.clone(), gas.z.clone(), gas.n, gas.p, gas.t)
+        .expect("the gas's composition resolves on its own");
+    println!("re-flashed h={}", reflashed.h.value);
+    assert!(
+        (reflashed.h.value - gas.h.value).abs() > 1000.0,
+        "a re-flash of the outlet's composition is {} J/mol against the phase's own {}",
+        reflashed.h.value,
+        gas.h.value
     );
 }

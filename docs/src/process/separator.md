@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/separator/Separator.java**
 
-Its steady-state `run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the enthalpy a `heatInput` implies, the entrainment calls, each outlet from its phase. **`oilInGas` and `waterInGas` are not carried**: no oil or aqueous phase exists here.
+`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless the class re-runs it. **`oilInGas` and `waterInGas` are not carried**: no oil or aqueous phase exists here.
 
 
 ## What this model is
@@ -54,11 +54,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the flash is at the feed's own temperature, not at one the caller states.** `Separator.run` reduces the pressure and runs a `TPflash`, so the vessel holds the temperature; a stated temperature is not a parameter of that class and is not one here. `heat_input` is the only thing that moves it.
 - **a pressure drop is therefore not a throttling, and the outlets do not carry the inlet's enthalpy.** The capture's 2 bar row takes -2705.35 J/mol in to a weighted -2364.95 out. That is the class's own model of the vessel, and the balance is open whenever `pressure_drop` is non-zero.
 - **`heat_input` moves the flash to the enthalpy it implies**, following `Heater.run`'s one-second convention: the duty is W and the flow is mol/s, so it adds `Q/n` J/mol before the flash. The outlet temperature is then solved for and both outlets are at it.
-- **`gas_in_liquid` carries that fraction of the vapour's moles into the liquid outlet**, which is `setEntrainment(..., "mole", "feed", "gas", "liquid")`. Both outlets are then at the same temperature, so the transfer moves material and not energy.
+- **`gas_in_liquid` carries that fraction of the vapour's moles into the liquid outlet**, which is `setEntrainment(..., "mole", "feed", "gas", "liquid")`.
+- **and it is the one thing that re-runs that outlet.** `Separator.run` calls `liquidOutStream.run(id)` under a non-zero fraction - a `TPflash` of the carried composition - so the liquid's enthalpy is `-13999.03` J/mol rather than the liquid root's `-14916.40`.
 - **the entrainment acts only where both phases exist.** `addPhaseFractionToPhase` returns unchanged unless the from-phase and to-phase are both present, so a single-phase feed is untouched whatever the fraction says.
 - **`efficiency` is not a parameter here.** `Separator` carries the field and a setter, and `run` never reads it - the class says so at `Separator.java:575`. The palette entry used to declare it, which is a parameter nothing could honour.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`. **None is ported**, and neither are `oil_in_gas` and `water_in_gas`: those move material between the oil, aqueous and gas phases, which a two-outlet port has no phases for.
+- NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`, **none ported**. `oil_in_gas` and `water_in_gas` are not carried: no oil or aqueous phase exists here, and they are the only fields that re-run the *vapour*.
 
 ## Cases
 

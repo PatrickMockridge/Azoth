@@ -110,6 +110,12 @@ public class ProcessProbe {
       case "component_splitter":
         componentSplitterRows();
         break;
+      case "three_phase_separator":
+        threePhaseSeparatorRows();
+        break;
+      case "tank":
+        tankRows();
+        break;
       case "column":
         columnRows();
         break;
@@ -1018,6 +1024,156 @@ public class ProcessProbe {
     System.out.println("bottoms_phases="
         + splitter.getSplitStream(1).getThermoSystem().getNumberOfPhases());
     System.out.println("feed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    System.out.println();
+  }
+
+  /// **A feed that splits three ways, so the aqueous outlet is a record rather than the
+  /// empty 1e-20 kg/hr system `run` falls back to.** Methane and n-butane give a vapour and
+  /// a hydrocarbon liquid and water gives the third, which is the only shape in which
+  /// `hasPhaseType("aqueous")` is asked a question it can answer yes to.
+  ///
+  /// The rows walk `run`'s own sequence: the plain flash at the feed's temperature, the
+  /// pressure drop applied before it, a heat input that moves the flash to an enthalpy, and
+  /// two of the six entrainment transfers - one out of the vapour and one into it, because
+  /// `addPhaseFractionToPhase` reads the phase it moves *from* and the order it runs in
+  /// decides what the second sees.
+  static void threePhaseSeparatorRows() {
+    String[] names = new String[] { "methane", "n-butane", "water" };
+    double[] z = new double[] { 0.5, 0.3, 0.2 };
+
+    runThreePhase("pressure_drop_bara=0 heat_input_W=0 entrainment=none", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 0.0, null, null, null, 0.0);
+
+    runThreePhase("pressure_drop_bara=2 heat_input_W=0 entrainment=none", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 2.0, null, null, null, 0.0);
+
+    runThreePhase("pressure_drop_bara=0 heat_input_W=1000 entrainment=none", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 0.0, 1000.0, null, null, 0.0);
+
+    runThreePhase("pressure_drop_bara=0 heat_input_W=0 entrainment=gas_to_oil_0.05", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 0.0, null, "gas", "oil", 0.05);
+
+    runThreePhase("pressure_drop_bara=0 heat_input_W=0 entrainment=oil_to_gas_0.05", names, z,
+        feed(names, z, 300.0, 20.0, 1.0), 0.0, null, "oil", "gas", 0.05);
+
+    // **A two-phase feed, for the other side of `run`'s phase test.** No aqueous phase
+    // exists, so the water outlet is the empty system - and what that prints is what a port
+    // has to reproduce to be reachable on the same inputs.
+    String[] dry = new String[] { "methane", "n-butane" };
+    double[] dryZ = new double[] { 0.7, 0.3 };
+    runThreePhase("dry_feed pressure_drop_bara=0 heat_input_W=0 entrainment=none", dry, dryZ,
+        feed(dry, dryZ, 300.0, 20.0, 1.0), 0.0, null, null, null, 0.0);
+  }
+
+  static void runThreePhase(String label, String[] names, double[] z, Stream inlet, double dropBara,
+      Double heatInputW, String fromPhase, String toPhase, double entrainment) {
+    neqsim.process.equipment.separator.ThreePhaseSeparator separator =
+        new neqsim.process.equipment.separator.ThreePhaseSeparator("sep3", inlet);
+    if (dropBara != 0.0) {
+      separator.setPressureDrop(dropBara);
+    }
+    if (heatInputW != null) {
+      separator.setHeatInput(heatInputW);
+    }
+    if (fromPhase != null) {
+      // "mole" and "feed", the pair `Separator`'s own port uses: the fraction is of the
+      // from-phase's mole count. The class's `setEntrainment` takes the same two strings
+      // per direction, and a direction it does not name is silently ignored upstream.
+      separator.setEntrainment(entrainment, "mole", "feed", fromPhase, toPhase);
+    }
+    separator.run();
+    System.out.println(label);
+    print("feed", inlet);
+    printOrEmpty("vapour", separator.getGasOutStream());
+    printOrEmpty("light_liquid", separator.getOilOutStream());
+    printOrEmpty("heavy_liquid", separator.getWaterOutStream());
+    System.out.println();
+  }
+
+  /// `run`'s absent-phase outlet is a 1e-20 kg/hr empty clone, whose enthalpy is 0/0 and
+  /// whose molar volume the cubic cannot evaluate. Printing that as a `NaN` is the record;
+  /// throwing on it is not, so the columns it cannot produce are named instead.
+  static void printOrEmpty(String port, StreamInterface stream) {
+    try {
+      print(port, stream);
+    } catch (Exception error) {
+      System.out.println(port + "_unreadable=" + error.getClass().getSimpleName());
+    }
+  }
+
+  /// **The design volume is the row that matters.** `setVolume` is read by the mechanical
+  /// design, the capacity report and the JSON dump, and by nothing in `run` - which flashes
+  /// at the *fluid's own* volume and internal energy, `VUflash(thermoSystem2.getVolume(),
+  /// thermoSystem2.getInternalEnergy())`. Two rows that differ only in `setVolume` are the
+  /// measurement that says whether a stated volume reaches the steady state at all.
+  ///
+  /// The last two rows ask what `run` does when a phase is absent, because its `else` branch
+  /// names the wrong stream: `gasOutStream.setThermoSystemFromPhase(..., "oil")` is written
+  /// where the liquid outlet was meant, so the liquid outlet is never refreshed.
+  static void tankRows() {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.7, 0.3 };
+
+    runTank("volume_default", names, z, feed(names, z, 300.0, 20.0, 1.0), null);
+    runTank("volume_50", names, z, feed(names, z, 300.0, 20.0, 1.0), 50.0);
+
+    String[] one = new String[] { "methane" };
+    double[] oneZ = new double[] { 1.0 };
+    runTank("single_phase_gas", one, oneZ, feed(one, oneZ, 300.0, 20.0, 1.0), null);
+
+    String[] liquid = new String[] { "n-butane" };
+    double[] liquidZ = new double[] { 1.0 };
+    runTank("single_phase_liquid", liquid, liquidZ, feed(liquid, liquidZ, 250.0, 5.0, 1.0), null);
+
+    // **A feed that flashes three ways, which is where the second branch bites.** The VU
+    // flash finds a gas, an oil and an aqueous; `run` asks for "gas" and "oil" by name and
+    // never mentions water, so the aqueous phase is not an outlet and what happens to its
+    // material is this row's question.
+    String[] wet = new String[] { "methane", "n-butane", "water" };
+    double[] wetZ = new double[] { 0.5, 0.3, 0.2 };
+    runTank("three_phase_feed", wet, wetZ, feed(wet, wetZ, 300.0, 20.0, 1.0), null);
+
+    // **The same single-phase feed through the sibling class.** The tank's behaviour there
+    // is only a defect if the class it shares its outlet construction with disagrees with
+    // it, and `Separator.run`'s two phase tests name the stream the test asked about.
+    singlePhaseThroughSeparator();
+  }
+
+  static void singlePhaseThroughSeparator() {
+    String[] names = new String[] { "methane" };
+    double[] z = new double[] { 1.0 };
+    neqsim.process.equipment.separator.Separator separator =
+        new neqsim.process.equipment.separator.Separator("sep1", feed(names, z, 300.0, 20.0, 1.0));
+    separator.run();
+    System.out.println("separator_on_the_same_single_phase_gas_feed");
+    printOrEmpty("gas", separator.getGasOutStream());
+    printOrEmpty("liquid", separator.getLiquidOutStream());
+    System.out.println();
+  }
+
+  static void runTank(String label, String[] names, double[] z, Stream inlet, Double volumeM3) {
+    neqsim.process.equipment.tank.Tank tank =
+        new neqsim.process.equipment.tank.Tank("tank1", inlet);
+    if (volumeM3 != null) {
+      tank.setVolume(volumeM3);
+    }
+    tank.run();
+    System.out.println(label);
+    print("inlet", inlet);
+    printOrEmpty("gas", tank.getGasOutStream());
+    printOrEmpty("liquid", tank.getLiquidOutStream());
+    // **What `run`'s two phase tests see.** `run` flashes a clone of the inlet at the
+    // clone's *own* volume and internal energy and then asks `hasPhaseType("gas")` and
+    // `hasPhaseType("oil")`; reproducing that flash here is what says which branch each
+    // outlet took, and the type is not deducible from the state.
+    SystemInterface vu = inlet.getThermoSystem().clone();
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(vu)
+        .VUflash(vu.getVolume(), vu.getInternalEnergy());
+    System.out.println("vu_phases=" + vu.getNumberOfPhases());
+    for (int i = 0; i < vu.getNumberOfPhases(); i++) {
+      System.out.println("vu_phase[" + i + "].type=" + vu.getPhase(i).getType() + " beta="
+          + vu.getPhase(i).getBeta());
+    }
     System.out.println();
   }
 

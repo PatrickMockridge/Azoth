@@ -1,0 +1,43 @@
+model = "process.tank"
+[[cases]]
+id = "the_equilibrium_split"
+tolerance = 0.0002
+source = "NeqSim master, `Tank.run` on a 0.7/0.3 methane/n-butane mixture at 300 K and 20 bara, from `validation/neqsim/captures/process_tank.tsv`. **These are `process.separator`'s own first-row numbers to the last digit, and that is the measurement**: a `VUflash` at a fluid's own volume and internal energy returns that fluid's state, so a tank with no pressure drop and no heat input *is* the flash it holds. The tolerance is the separator's, for the separator's reason - the flows and compositions agree to `3e-12` and the enthalpies `0.06` J/mol apart, which is `1.2e-4` relative on the vapour's small magnitude.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = [1.0]
+feed_z = [[0.7, 0.3]]
+feed_p = [2000000.0]
+feed_t = [300.0]
+[cases.expected]
+gas_n = 0.8182211906421442
+gas_z = [0.8339243334525451, 0.16607566654745487]
+gas_p = 2000000.0
+gas_t = 300.0
+gas_h = 530.1529163915924
+liquid_n = 0.18177880935785584
+liquid_z = [0.09718095876744977, 0.9028190412325502]
+liquid_p = 2000000.0
+liquid_t = 300.0
+liquid_h = -17268.958496924704
+[[cases]]
+id = "a_water_bearing_feed_stays_two_phase"
+tolerance = 0.0002
+source = "The same vessel on a 0.5/0.3/0.2 methane/n-butane/water feed at 300 K and 20 bara, from the same capture. **A `ThreePhaseSeparator` at this state finds three phases and a tank finds two**, because `Tank.run` never enables `multiPhaseCheck`: the gas leaves carrying a water mole fraction of `0.234` here against `0.0016` there, and the rest of the water is in the oil. The case pins the two-phase answer rather than the three-phase one, because the two-phase one is what the class computes. It is also the row that found the outlet construction: this port reported `-10043.91` J/mol for the gas until an outlet was built on its phase's own cubic root instead of a re-flash of its composition, which is `Stream::from_side`'s reason.\\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = [1.0]
+feed_z = [[0.5, 0.3, 0.2]]
+feed_p = [2000000.0]
+feed_t = [300.0]
+[cases.expected]
+gas_n = 0.8036298485392942
+gas_z = [0.6050306719209471, 0.16066202315031075, 0.2343073049287422]
+gas_p = 2000000.0
+gas_t = 300.0
+gas_h = 441.8331830403947
+liquid_n = 0.1963701514607058
+liquid_z = [0.07016999610197473, 0.8702300293529803, 0.05959997454504501]
+liquid_p = 2000000.0
+liquid_t = 300.0
+liquid_h = -16971.673011528655

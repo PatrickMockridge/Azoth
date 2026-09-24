@@ -1,6 +1,6 @@
 id = "unit_ops.tank"
 name = "Tank"
-notes = "Its two outlets are `getGasOutStream` and `getLiquidOutStream`, and its inlet is a mixer, so it is many-in. Its volume is what `VUflash` solves at, and it cannot be declared here yet: the vocabulary has no plain volume dimension (`m**3/s` and `m**3/mol` exist, `m**3` does not), so the parameter is absent rather than wrong until that dimension lands with this kernel."
+notes = "Its two outlets are `getGasOutStream` and `getLiquidOutStream`, and its inlet is a mixer, so it is many-in. **It declares no parameters, and the one it looked like it needed is why.** `setVolume` is read by `getVolume`, `validateMechanicalDesign`, `toJson` and `displayResult` and by nothing in `run` - which flashes at the *fluid's* own volume, `VUflash(thermoSystem2.getVolume(), ...)`. Two capture rows that differ only in `setVolume` come back identical, so a declared `volume` would be a third instance of the thing this family keeps finding: a parameter no steady-state path reads. It is absent because nothing reads it, not because the vocabulary lacks `m**3`."
 [source]
 standard = "NeqSim process/equipment/tank/Tank.java"
 [[ports]]

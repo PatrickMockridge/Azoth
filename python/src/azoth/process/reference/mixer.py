@@ -146,6 +146,18 @@ def _route(
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
 
     n_total = sum(feed_n)
+    # **Feeds that carry nothing are refused rather than divided by.** The outlet
+    # composition is the flows' weighted average, so a zero total is a 0/0 and every field
+    # of the outlet would be NaN. NeqSim propagates a zero-flow outlet instead, through an
+    # `isActive` flag `Stream` has no equivalent of; a caller with a branch that may be idle
+    # has to say what it wants, because a NaN state is not an answer. The refusal is here
+    # rather than in :func:`mixer` because `kernels/mixer.rs` is where Rust puts it, and a
+    # model that reaches the mixer's arithmetic - `tank` and `manifold` do - reaches it too.
+    if n_total <= 0.0:
+        raise InvalidInputError(
+            "feed_n",
+            f"a mixer's feeds carry {n_total} mol/s in total, so there is no mixture to report",
+        )
     z = [0.0] * len(feed_z[0])
     h_total = 0.0
     for index, n_i in enumerate(feed_n):

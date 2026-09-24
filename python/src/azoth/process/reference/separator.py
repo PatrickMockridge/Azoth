@@ -26,6 +26,8 @@ from-phase or a to-phase that is not there has nothing to move.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import Phase, SeparatorResult
@@ -33,6 +35,7 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
+from azoth.process.reference._phase_outlet import phase_enthalpy
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash
 
@@ -97,17 +100,74 @@ def separator(
         warnings,
     )
 
+    duty = None if heat_input is None else input_to_si(spec, "heat_input", heat_input)
+    # The temperature crosses as the quantity, not as its magnitude: the flash takes one
+    # and `enthalpy_at` takes the other, and the route is where those two meet.
+    states = _route(components, n, feed_z, p, feed_t, drop, gas_in_liquid, duty)
+
+    return SeparatorResult(
+        vapour_n=from_si(states.n_vapour, "mol/s"),
+        vapour_z=states.y,
+        vapour_p=from_si(states.p_out, "Pa"),
+        vapour_t=states.temperature,
+        vapour_h=from_si(states.vapour_h, "J/mol"),
+        liquid_n=from_si(states.n_liquid, "mol/s"),
+        liquid_z=states.liquid_z,
+        liquid_p=from_si(states.p_out, "Pa"),
+        liquid_t=states.temperature,
+        liquid_h=from_si(states.liquid_h, "J/mol"),
+        warnings=tuple(warnings),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SepStates:
+    """The separator's intermediates, in the order it computes them, in SI.
+
+    ``beta`` is the one number here the record does not carry: the vapour fraction is
+    implied by the two flows, and reading it back off them would be a ratio of two
+    arithmetic results rather than the split the flash reported.
+    """
+
+    p_out: float
+    n_vapour: float
+    n_liquid: float
+    y: tuple[float, ...]
+    liquid_z: tuple[float, ...]
+    temperature: Q
+    vapour_h: float
+    liquid_h: float
+
+
+def _route(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: Q,
+    pressure_drop: float,
+    gas_in_liquid: float,
+    heat_input: float | None,
+) -> SepStates:
+    """The separator's arithmetic, in SI, in the order it computes them.
+
+    **One arithmetic, two consumers.** :func:`separator` builds the result from this and
+    :func:`azoth.process.reference.tank` reaches the same steps for the vessel whose steady
+    state is this one at zero drop and no entrainment - so the two models cannot drift into
+    two answers. The kernel-level refusals are here rather than in the model because
+    ``kernels/separator.rs`` is where Rust puts them.
+    """
     if not 0.0 <= gas_in_liquid <= 1.0:
         raise InvalidInputError(
             "gas_in_liquid",
             f"an entrainment fraction is a fraction, and {gas_in_liquid} is not in [0, 1]",
         )
-    p_out = p - drop
+    p_out = feed_p - pressure_drop
     if p_out <= 0.0:
         raise InvalidInputError(
             "pressure_drop",
-            f"a pressure drop of {drop} Pa takes a {p} Pa inlet to {p_out} Pa, which is "
-            f"not a pressure",
+            f"a pressure drop of {pressure_drop} Pa takes a {feed_p} Pa inlet to {p_out} Pa, "
+            f"which is not a pressure",
         )
 
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
@@ -121,21 +181,20 @@ def separator(
         beta = _vapour_fraction(flash.phase, flash.beta)
     else:
         # W over (mol/s) is J/mol, for the reason `Heater.run` gives.
-        h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, feed_z)
-        duty = input_to_si(spec, "heat_input", heat_input)
+        h_in, _ = enthalpy_at(mixture, ideal_gas, feed_t.to("K").magnitude, feed_p, feed_z)
         moved = ph_flash_solve(
             mixture,
             ideal_gas,
             from_si(p_out, "Pa"),
-            from_si(h_in + duty / n, "J/mol"),
+            from_si(h_in + heat_input / feed_n, "J/mol"),
             feed_z,
         )
         temperature = moved.T
         x, y = list(moved.x), list(moved.y)
         beta = _vapour_fraction(moved.phase, moved.beta)
 
-    n_vapour = n * beta
-    n_liquid = n * (1.0 - beta)
+    n_vapour = feed_n * beta
+    n_liquid = feed_n * (1.0 - beta)
     # Only where both phases exist: a from-phase or a to-phase that is not there has
     # nothing to move, which is NeqSim's own guard.
     carried = n_vapour * gas_in_liquid if n_vapour > 0.0 and n_liquid > 0.0 else 0.0
@@ -147,24 +206,28 @@ def separator(
         else x
     )
 
-    # Each outlet is a *stream*, so its enthalpy is the state's at its own composition,
-    # pressure and temperature - not the phase root the flash happened to report.
+    # **The outlet is a phase, except where the class re-runs it as a stream.** `Separator.run`
+    # calls `liquidOutStream.run(id)` under `gasInLiquid != 0.0`, and a stream `run` is a
+    # `TPflash` of that composition at the outlet's own temperature - so the liquid is a phase
+    # root while nothing was carried into it and a re-flash once something was. The vapour has
+    # no such branch here: the two fields that re-run it, `oilInGas` and `waterInGas`, are the
+    # three-phase entry's. See `_phase_outlet`, which is where the difference is measured.
     t_out = temperature.to("K").magnitude
-    vapour_h, _ = enthalpy_at(mixture, ideal_gas, t_out, p_out, y)
-    liquid_h, _ = enthalpy_at(mixture, ideal_gas, t_out, p_out, liquid_z)
+    vapour_h = phase_enthalpy(mixture, ideal_gas, t_out, p_out, y, liquid=False)
+    if gas_in_liquid != 0.0:
+        liquid_h, _ = enthalpy_at(mixture, ideal_gas, t_out, p_out, list(liquid_z))
+    else:
+        liquid_h = phase_enthalpy(mixture, ideal_gas, t_out, p_out, list(liquid_z), liquid=True)
 
-    return SeparatorResult(
-        vapour_n=from_si(n_vapour - carried, "mol/s"),
-        vapour_z=tuple(y),
-        vapour_p=from_si(p_out, "Pa"),
-        vapour_t=temperature,
-        vapour_h=from_si(vapour_h, "J/mol"),
-        liquid_n=from_si(liquid_n, "mol/s"),
+    return SepStates(
+        p_out=p_out,
+        n_vapour=n_vapour - carried,
+        n_liquid=liquid_n,
+        y=tuple(y),
         liquid_z=tuple(liquid_z),
-        liquid_p=from_si(p_out, "Pa"),
-        liquid_t=temperature,
-        liquid_h=from_si(liquid_h, "J/mol"),
-        warnings=tuple(warnings),
+        temperature=temperature,
+        vapour_h=vapour_h,
+        liquid_h=liquid_h,
     )
 
 

@@ -2,7 +2,7 @@
 
 use azoth_core::units::{Power, Pressure, joules_per_mole, pascals};
 use azoth_core::{AzothError, Result};
-use azoth_eos::{Phase, ph_flash, pt_flash};
+use azoth_eos::{Phase, RootSide, ph_flash, pt_flash};
 
 use crate::stream::Stream;
 
@@ -18,7 +18,9 @@ use crate::stream::Stream;
 /// which is NeqSim's `gasInLiquid` entrainment on its `feed`/`mole` basis. It moves
 /// material between the phases and not energy: both outlets are then flashed at the same
 /// temperature, so the balance across the transfer is not closed - which is what the class
-/// does and is stated in the spec rather than corrected here.
+/// does and is stated in the spec rather than corrected here. It is also the one thing
+/// that re-runs the liquid outlet as a stream rather than leaving it as a phase, so on
+/// that branch the liquid's enthalpy is the state its carried composition settles on.
 ///
 /// # Errors
 /// [`azoth_core::AzothError::InvalidInput`] if the pressure drop would take the outlet to
@@ -100,24 +102,42 @@ pub fn separator(
         x
     };
 
-    // Each outlet is a *stream*, so its enthalpy is the state's at its own composition,
-    // pressure and temperature - not the phase root the flash happened to report.
-    Ok((
-        Stream::from_pt(
-            feed.components.clone(),
-            y,
-            n_vapour - moved,
-            p_out,
-            temperature,
-        )?,
+    // **The outlet is a phase, except where the class re-runs it as a stream, and the
+    // difference between the two is not small.** `Separator.run` gives each outlet the
+    // flash's own phase through `setThermoSystemFromPhase`, which keeps the phase's root -
+    // and then calls `liquidOutStream.run(id)` under `gasInLiquid != 0.0`, where a stream
+    // `run` is a `TPflash` of that composition at the outlet's own temperature. So the
+    // vapour is always a phase root, and the liquid is one only while nothing was carried
+    // into it: the capture's entrainment row reports `-13999.03` J/mol against the root's
+    // `-14916.40`. The two fields that re-run the *vapour*, `oilInGas` and `waterInGas`,
+    // are the three-phase entry's and are not carried here.
+    let vapour = Stream::from_side(
+        feed.components.clone(),
+        y,
+        n_vapour - moved,
+        p_out,
+        temperature,
+        RootSide::Vapour,
+    )?;
+    let liquid = if gas_in_liquid != 0.0 {
         Stream::from_pt(
             feed.components.clone(),
             liquid_z,
             liquid_n,
             p_out,
             temperature,
-        )?,
-    ))
+        )?
+    } else {
+        Stream::from_side(
+            feed.components.clone(),
+            liquid_z,
+            liquid_n,
+            p_out,
+            temperature,
+            RootSide::Liquid,
+        )?
+    };
+    Ok((vapour, liquid))
 }
 
 /// The vapour fraction a flash's phase and `beta` imply.

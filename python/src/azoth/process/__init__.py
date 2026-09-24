@@ -32,6 +32,7 @@ from azoth.core.result import (
     SeparatorResult,
     ShortcutDistillationColumnResult,
     SplitterResult,
+    TankResult,
     ThrottlingValveResult,
 )
 from azoth.core.units import Q
@@ -56,6 +57,7 @@ __all__ = [
     "separator",
     "shortcut_distillation_column",
     "splitter",
+    "tank",
     "throttling_valve",
     "validate",
 ]
@@ -77,6 +79,7 @@ _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
+_TANK = "process.tank"
 
 
 def validate(flowsheet: str, palette_dir: str = "specs/unit_ops") -> list[str]:
@@ -558,6 +561,40 @@ def gas_scrubber(
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
         heat_input=heat_input,
+    )
+
+
+def tank(
+    components: list[str],
+    feed_n: list[Q],
+    feed_z: list[list[float]],
+    feed_p: list[Q],
+    feed_t: list[Q],
+) -> TankResult:
+    """Join a tank's inlets and split the result into a gas and a liquid outlet.
+
+    **It declares no parameters, and the one it looked like it needed is why.**
+    ``Tank.run`` flashes at the *fluid's* own volume and internal energy, so the steady
+    state is the flash the feed already carries - measured, the captured two-phase row is
+    :func:`separator`'s first row to the last digit. ``setVolume`` is read by the mechanical
+    design, the capacity report and the JSON dump and by nothing in ``run``, so a declared
+    ``volume`` would be a parameter no steady-state path reads.
+
+    **A tank is not a three-phase machine**: ``run`` never enables ``multiPhaseCheck``, so a
+    feed a three-phase separator splits three ways comes back in two, with the water in the
+    liquid.
+
+    Raises:
+        InvalidInputError: where the feeds' shapes disagree or carry no flow in total.
+
+    See :func:`azoth.process.reference.tank`.
+    """
+    return resolve(_TANK)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
     )
 
 

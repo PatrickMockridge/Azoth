@@ -525,6 +525,17 @@ NO_INTERIOR: dict[str, str] = {
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
         "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
     ),
+    "process.tank": (
+        "the same kernel as ``process.separator`` at zero drop, zero entrainment and no "
+        "heat input, and the capture's two-phase row is the separator's first row to the "
+        "last digit. A dumper here would be a second dump of the separator's arithmetic "
+        "under another name, which is the thing this dict exists to refuse. **The capture's "
+        "other rows are the reason this is not a case rather than a dump**: two of them are "
+        "single-phase, where `run`'s absent-oil branch writes `gasOutStream` instead of the "
+        "liquid one and the two outlets come back swapped against `Separator`'s on the same "
+        "feed - a construction-time state a kernel that is a pure function of its inlets "
+        "has no way to reproduce"
+    ),
     "process.separator": (
         "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
         "entrainment moves, and every one of the four is on the two outlet records - the "

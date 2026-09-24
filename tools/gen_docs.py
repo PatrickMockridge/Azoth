@@ -159,13 +159,22 @@ def describe_quantity(declaration: dict[str, Any]) -> tuple[str, str]:
 
 
 def render_range(spec: dict[str, Any]) -> str:
-    """The validated range, rendered by the same code that emits the warnings."""
+    """The validated range, rendered by the same code that emits the warnings.
+
+    **A model may declare none, and the section says so rather than going empty.**
+    Every bound here is on a named input, and a unit operation whose inputs are all
+    record fields has nothing to bound: `process.tank` is the first, and what it
+    refuses - a feed pressure the flash cannot evaluate, a composition that is not a
+    composition - is raised by the calculation rather than checked against a range.
+    """
     rows: list[tuple[str, str, str]] = []
-    for raw in spec["valid_range"]:
+    for raw in spec.get("valid_range", []):
         check = RangeCheck.from_spec(raw)
         bound = check.describe()
         effect = "raises" if check.severity.value == "error" else f"warns `{check.code.value}`"
         rows.append((f"`{bound}`", effect, check.rationale))
+    if not rows:
+        return "No input is bounded. This model declares no range, so nothing here is\nchecked against one.\n"
     return render_table(rows, ("Bound", "On violation", "Why"))
 
 

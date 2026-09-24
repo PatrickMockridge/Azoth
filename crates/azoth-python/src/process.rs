@@ -639,6 +639,30 @@ pub fn gas_scrubber(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.tank` - the tank's kernel as a registered id.
+///
+/// **No parameters at all.** A tank's steady state is the flash it holds, so the only
+/// inputs are the feeds: `many` at the inlet, as `process.mixer`'s are.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t)")]
+#[allow(non_snake_case)] // the record's own field names
+pub fn tank(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: Vec<f64>,
+    feed_z: Vec<Vec<f64>>,
+    feed_p: Vec<f64>,
+    feed_t: Vec<f64>,
+) -> PyResult<crate::results::PyTankResult> {
+    let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
+    let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
+        feed_t.into_iter().map(kelvins).collect();
+    azoth_process::tank(&components, &feed_n, &feed_z, &pressures, &temperatures)
+        .map(|r| crate::results::PyTankResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.shortcut_distillation_column` - the FUG column as a registered id.
 ///
 /// **The first `procedure` in this namespace.** Its `[algorithm]` block is the Underwood

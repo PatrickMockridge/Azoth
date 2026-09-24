@@ -647,6 +647,39 @@ class GasScrubberResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TankResult(_HasWarnings):
+    """Result of ``process.tank``.
+
+    Two outlets named for what they carry - ``gas`` and ``liquid`` - which is what the
+    class calls them and not a separator's ``vapour`` and ``liquid``. The fields are
+    otherwise the pair ``process.separator`` reports.
+    """
+
+    #: Gas outlet molar flow.
+    gas_n: Q
+    #: Gas outlet composition.
+    gas_z: tuple[float, ...]
+    #: Gas outlet pressure.
+    gas_p: Q
+    #: Gas outlet temperature.
+    gas_t: Q
+    #: Gas outlet molar enthalpy.
+    gas_h: Q
+    #: Liquid outlet molar flow.
+    liquid_n: Q
+    #: Liquid outlet composition.
+    liquid_z: tuple[float, ...]
+    #: Liquid outlet pressure.
+    liquid_p: Q
+    #: Liquid outlet temperature.
+    liquid_t: Q
+    #: Liquid outlet molar enthalpy.
+    liquid_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HeatExchangerResult(_HasWarnings):
     """Result of ``process.heat_exchanger``.
 

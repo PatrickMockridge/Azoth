@@ -1,0 +1,89 @@
+id = "process.tank"
+name = "Tank"
+kind = "direct"
+assumptions = [
+    "**its steady state carries no parameters at all.** `Tank.run` clones the inlet, runs `VUflash(thermoSystem2.getVolume(), thermoSystem2.getInternalEnergy())` and reads two phases out; nothing between the inlet and the outlets is a caller's to set.",
+    "**the design volume never reaches the steady state.** `setVolume` is read by `getVolume`, the mechanical design, `toJson` and `displayResult` and by nothing in `run`, which flashes at the *fluid's* own volume - so two capture rows differing only in `setVolume` come back identical.",
+    "**a `VUflash` at the fluid's own volume and internal energy is the feed's own flash**, so the two-phase row is `process.separator`'s first row to the last digit at every field - measured, and the reason this kernel is that one with no knobs.",
+    "**a tank is not a three-phase machine.** `run` never enables `multiPhaseCheck`, so on the capture's three-phase-capable feed the flash finds two: the gas leaves at a water mole fraction of `0.234` where a `ThreePhaseSeparator` leaves at `0.0016`.",
+    "**the single-phase branch is not reproduced.** `run`'s absent-oil branch writes `gasOutStream` where `liquidOutStream` was meant, so one phase comes back *swapped*, and `setInletStream` builds the liquid outlet from `getPhases()[1]` whatever the count. A pure kernel cannot swap.",
+    "**the feeds are one port, so every field has one entry per feed**, as `process.mixer`'s are: `feed_n`, `feed_z`, `feed_p` and `feed_t`, with the fluid's `components` declared once. `Tank.setInletStream` puts the first inlet in the mixer and every later one after it.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Tank` also carries a wall temperature, a steel mass and area, a heat transfer number, a residence time and an auto-sizing, and a `runTransient` that solves the level. **None is ported**: every one of them reads the `volume` field the steady state never asks for.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/tank/Tank.java` is the port source, through its `run`.",
+    "`validation/neqsim/captures/process_tank.tsv` - two rows that differ only in `setVolume`, two single-phase rows, a three-phase-capable feed, and the same single-phase feed through `Separator` for the swap to be read against.",
+    "`validation/neqsim/captures/process_three_phase_separator.tsv` - the same three-phase-capable feed through a `ThreePhaseSeparator`, which is where the `0.0016` water mole fraction beside this tank's `0.234` is measured.",
+]
+[source]
+standard = "NeqSim process/equipment/tank/Tank.java"
+edition = "Its steady-state `run`: a `VUflash` at the fluid's own volume and internal energy, a gas outlet from the `gas` phase and a liquid one from the `oil` phase. **The aqueous phase is not an outlet and the design volume is not an input.**"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+type = "vector"
+unit = "mol/s"
+length = "one per feed"
+description = "each inlet's molar flow. The tank joins them before it flashes, so the outlet flow is their sum.\n"
+[inputs.feed_z]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per feed, one column per component"
+description = "each inlet's composition, joined by flow into the mixture the flash splits.\n"
+[inputs.feed_p]
+type = "vector"
+unit = "Pa"
+length = "one per feed"
+description = "each inlet's pressure. The tank holds the lowest and passes no drop, so both outlets are at it.\n"
+[inputs.feed_t]
+type = "vector"
+unit = "K"
+length = "one per feed"
+description = "each inlet's temperature, which with the others fixes the joined enthalpy and so the flash's temperature.\n"
+[outputs]
+[outputs.gas_n]
+unit = "mol/s"
+description = "the gas outlet's molar flow: the joined flow times the flash's vapour fraction.\n"
+[outputs.gas_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the gas outlet's composition, which is the flash's `y`.\n"
+[outputs.gas_p]
+unit = "Pa"
+description = "the gas outlet's pressure, which is the joined stream's - a tank passes no drop.\n"
+[outputs.gas_t]
+unit = "K"
+description = "the gas outlet's temperature, which the liquid shares: one flash decides both.\n"
+[outputs.gas_h]
+unit = "J/mol"
+description = "the gas outlet's molar enthalpy at its own state.\n"
+[outputs.liquid_n]
+unit = "mol/s"
+description = "the liquid outlet's molar flow, the joined flow less the gas's.\n"
+[outputs.liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid outlet's composition, which is the flash's `x` - and on a feed that would split three ways it carries the aqueous phase's material too, because the flash is two-phase.\n"
+[outputs.liquid_p]
+unit = "Pa"
+description = "the liquid outlet's pressure, the same as the gas's.\n"
+[outputs.liquid_t]
+unit = "K"
+description = "the liquid outlet's temperature, the same as the gas's.\n"
+[outputs.liquid_h]
+unit = "J/mol"
+description = "the liquid outlet's molar enthalpy at its own state.\n"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature, and the first feed's is the one the check resolves"
+[implementations]
+python = "azoth.process.tank"
+rust = "azoth_process::tank"

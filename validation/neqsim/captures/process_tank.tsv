@@ -1,0 +1,127 @@
+volume_default
+inlet_n=1.0
+inlet_P=20.0
+inlet_T=300.0
+inlet_h=-2705.348363948871
+inlet_s=-26.962728758469062
+inlet_z=methane:0.7 n-butane:0.3
+gas_n=0.8182211906421442
+gas_P=20.0
+gas_T=300.0
+gas_h=530.1529163915924
+gas_s=-18.36974680171422
+gas_z=methane:0.8339243334525451 n-butane:0.16607566654745487
+liquid_n=0.18177880935785584
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-17268.958496924704
+liquid_s=-65.6413841675328
+liquid_z=methane:0.09718095876744977 n-butane:0.9028190412325502
+vu_phases=2
+vu_phase[0].type=GAS beta=0.8182211906421442
+vu_phase[1].type=OIL beta=0.18177880935785584
+
+volume_50
+inlet_n=1.0
+inlet_P=20.0
+inlet_T=300.0
+inlet_h=-2705.348363948871
+inlet_s=-26.962728758469062
+inlet_z=methane:0.7 n-butane:0.3
+gas_n=0.8182211906421442
+gas_P=20.0
+gas_T=300.0
+gas_h=530.1529163915924
+gas_s=-18.36974680171422
+gas_z=methane:0.8339243334525451 n-butane:0.16607566654745487
+liquid_n=0.18177880935785584
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-17268.958496924704
+liquid_s=-65.6413841675328
+liquid_z=methane:0.09718095876744977 n-butane:0.9028190412325502
+vu_phases=2
+vu_phase[0].type=GAS beta=0.8182211906421442
+vu_phase[1].type=OIL beta=0.18177880935785584
+
+single_phase_gas
+inlet_n=1.0
+inlet_P=20.0
+inlet_T=300.0
+inlet_h=588.1317490399665
+inlet_s=-22.33242977385462
+inlet_z=methane:1.0
+gas_n=1.9999999999999997E-60
+gas_P=20.0
+gas_T=300.0
+gas_h=0.0
+gas_s=0.0
+gas_z=methane:0.5
+liquid_n=1.0
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=588.1317490399665
+liquid_s=-22.33242977385462
+liquid_z=methane:1.0
+vu_phases=1
+vu_phase[0].type=GAS beta=1.0
+
+single_phase_liquid
+inlet_n=1.0
+inlet_P=5.0
+inlet_T=250.0
+inlet_h=-25558.853476190372
+inlet_s=-94.04553437734694
+inlet_z=n-butane:1.0
+gas_n=1.9999999999999998E-30
+gas_P=5.0
+gas_T=250.0
+gas_h=-1.3546838913405797E34
+gas_s=-3.0371704139560253E32
+gas_z=n-butane:5.000000000000001E29
+liquid_n=1.0
+liquid_P=5.0
+liquid_T=250.0
+liquid_h=-25558.853476190372
+liquid_s=-94.04553437734694
+liquid_z=n-butane:1.0
+vu_phases=1
+vu_phase[0].type=OIL beta=1.0
+
+three_phase_feed
+inlet_n=1.0
+inlet_P=20.0
+inlet_T=300.0
+inlet_h=-2977.6596658490716
+inlet_s=-24.25280667468975
+inlet_z=methane:0.5 n-butane:0.3 water:0.2
+gas_n=0.8036298485392942
+gas_P=20.0
+gas_T=300.0
+gas_h=441.8331830403947
+gas_s=-14.51368709014023
+gas_z=methane:0.6050306719209471 n-butane:0.16066202315031075 water:0.2343073049287422
+liquid_n=0.1963701514607058
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-16971.673011528655
+liquid_s=-64.10940982144511
+liquid_z=methane:0.07016999610197473 n-butane:0.8702300293529803 water:0.05959997454504501
+vu_phases=2
+vu_phase[0].type=GAS beta=0.8036298485392942
+vu_phase[1].type=OIL beta=0.1963701514607058
+
+separator_on_the_same_single_phase_gas_feed
+gas_n=1.0
+gas_P=20.0
+gas_T=300.0
+gas_h=588.1317490399665
+gas_s=-22.33242977385462
+gas_z=methane:1.0
+liquid_n=1.9999999999999998E-30
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=799.0699757132052
+liquid_s=-40.93241159050807
+liquid_z=methane:0.5
+
