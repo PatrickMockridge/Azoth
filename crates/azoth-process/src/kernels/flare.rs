@@ -44,13 +44,13 @@ const CO2_MOLAR_MASS: f64 = 44.01e-3;
 /// co2Emission = (sum_i z_i * n * nC_i) * 44.01e-3
 /// ```
 ///
-/// `LCV()` is `new Standard_ISO6976(fluid, 0, 15.55, "volume").getValue("InferiorCalorificValue")
-/// * 1.0e3`: the inferior calorific value in **joules per normal cubic metre at 0 °C**, from
-/// the standard's 60 °F column and the mixture's compression factor at 0 °C. `Sm3/sec` is
-/// `n * R * 288.15 / atm` - a volume at **15 °C**, ideal. **So the reported duty multiplies
-/// an energy density at one reference by a volumetric flow at another**, and is five and a
-/// half per cent above the same gas measured consistently. That is what the class computes
-/// and what this reproduces; the case says so.
+/// `LCV()` is `Standard_ISO6976(fluid, 0, 15.55, "volume").getValue("InferiorCalorificValue")`,
+/// scaled by `1.0e3`: the inferior calorific value in **joules per normal cubic metre at
+/// 0 °C**, from the standard's 60 °F column and the mixture's compression factor at 0 °C.
+/// `Sm3/sec` is `n * R * 288.15 / atm`, a volume at **15 °C**, ideal. **So the reported duty
+/// multiplies an energy density at one reference by a volumetric flow at another**, and is
+/// five and a half per cent above the same gas measured consistently. That is what the class
+/// computes and what this reproduces; the case says so.
 ///
 /// The carbon comes from the element table rather than the standard's, which is what
 /// `getElements().getNumberOfElements("C")` reads - so a gas the standard has no row for
