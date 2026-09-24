@@ -55,7 +55,7 @@ outlets `c'₁ … c'ₙ`, with `n(c)` the molar-flow field of a channel:
              Σᵢ ḣ(cᵢ)  =  Σⱼ ḣ(c'ⱼ) + duty    enthalpy
 ```
 
-*Status: **specified**. The `ports` layer exists: `specs/unit_ops/` declares 24 unit
+*Status: **specified**. The `ports` layer exists: `specs/unit_ops/` declares 29 unit
 operations, each with typed channels carrying a polarity and a multiplicity, and
 `azoth_process::validate` holds a flowsheet to the discipline above in Rust — a `one` port
 consumed exactly once, a `many` port at least once, every feed and product used once, and
@@ -82,7 +82,7 @@ U  ≅  f(x₁, …, xₘ)
 
 *Status: **specified**. The tier this claim is about half-exists: `crates/azoth-process`
 carries the channel types, the stream record, the palette loader and the checker,
-`specs/unit_ops/` declares 24 unit operations, and six of them carry kernels. So the claim
+`specs/unit_ops/` declares 29 unit operations, and thirteen of them carry kernels. So the claim
 is no longer that there is nothing to check. It is that **nothing checks it**:
 `lean/Azoth/` has no `Process.lean`, and an implementation agreeing with a port declaration
 is exactly what this claim asserts and nothing tests.

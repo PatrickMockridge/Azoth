@@ -379,18 +379,29 @@ complete rather than silent about them:
 **`process/` is not in this list.** It is not physics, but it *is* a port target: the
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
-types, the stream record, the palette loader and the checker, and `specs/unit_ops/` declares 24
-unit operations of which **six carry kernels**. The rest are owed, with two exceptions that are
-stated rather than outstanding. **`unit_ops.simple_absorber` is refused on measured evidence**:
-`SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point loop over
-MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a faithful
-port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and `AmineKentEisenberg`
-are the classes that would close it, and P8's tier is where it belongs. **`unit_ops.distillation_column`
-is parked**: it is the one entry that is a solver rather than a composition of kernels this
-library already has — 40,058 lines across 46 files in NeqSim's `process/equipment/distillation/`,
-`NaphtaliSandholmSolver` alone 5,153 — and the declaration would have to gain a feed stage and a
-product specification before a kernel could be written against it. Both name what would close
-them, which is the point: neither is "out of scope".
+types, the stream record, the palette loader and the checker, and `specs/unit_ops/` declares 29
+unit operations of which **thirteen carry kernels**. The rest are owed, with one exception that
+is stated rather than outstanding. **`unit_ops.simple_absorber` is refused on measured
+evidence**: `SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point
+loop over MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a
+faithful port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and
+`AmineKentEisenberg` are the classes that would close it, and P8's tier is where it belongs.
+That names what would close it, which is the point: it is not "out of scope".
+
+**The distillation column is no longer parked.** `unit_ops.distillation_column` is the one
+entry that is a solver rather than a composition of kernels this library already has — 40,058
+lines across 46 files in NeqSim's `process/equipment/distillation/`, `NaphtaliSandholmSolver`
+alone 5,153 — and its declaration now carries the feed stage, the two ends and the two product
+specifications a rigorous column takes. It runs as a workstream of its own, with five entries
+beside it for the classes the rigorous base is the source of, so its numbers are neither owed
+nor refused. Both solves are in scope, the sequential-substitution core and
+Naphtali-Sandholm, and the oracle is differential because NeqSim carries no absolute reference
+numbers for a column.
+
+**What P11 still owes is nine kernels**, deferred so the column's workstream could start:
+`component_splitter`, `ejector`, `flare`, `gas_scrubber`, `gibbs_reactor`,
+`plug_flow_reactor`, `stirred_tank_reactor`, `tank` and `three_phase_separator`. They are owed
+rather than dropped, and the P11 plan of record records the deferral and what it leaves owed.
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.

@@ -66,8 +66,8 @@ Five sections, and the difference between them is the point:
   quantities with units.
 - **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
   pressure drop.
-- **Unit operations** — the palette and the flowsheet: 24 unit operations declared on
-  typed channels, six of them with kernels, and the checker that holds a flowsheet to
+- **Unit operations** — the palette and the flowsheet: 29 unit operations declared on
+  typed channels, thirteen of them with kernels, and the checker that holds a flowsheet to
   the calculus's rules. The executor that runs one is P12 and is not built.
 - **Reactions** — chemical equilibrium, the reactive flashes, and the kinetics rate law
   behind them.

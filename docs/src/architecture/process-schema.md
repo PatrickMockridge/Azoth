@@ -109,9 +109,9 @@ named as the tear.
 
 ## The kernels
 
-A kernel is a unit operation's arithmetic, a pure function of its inlets. The first six
-— splitter, mixer, separator, throttling valve, heat exchanger, pump — live in
-`crates/azoth-process/src/kernels/`, composing the calculations in `azoth-eos` rather
-than adding new physics. The flowsheet **executor** — turning a flowsheet into something
+A kernel is a unit operation's arithmetic, a pure function of its inlets. Thirteen live in
+`crates/azoth-process/src/kernels/` — splitter, mixer, separator, throttling valve, heat
+exchanger, pump, heater, cooler, filter, compressor, expander, pipe and manifold — composing the
+calculations in `azoth-eos` rather than adding new physics. The flowsheet **executor** — turning a flowsheet into something
 that runs — is tranche P12, and is not built: this page's subject is the schema the
 executor and a GUI will both read and write.

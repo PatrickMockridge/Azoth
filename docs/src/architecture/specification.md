@@ -314,7 +314,7 @@ page:
   [Processes and channels](../calculus/process.md) states a unit operation as a
   process on typed, directional channels, and that statement is what tranche P11
   builds the tier against. **It is no longer a bare specification**: `specs/unit_ops/`
-  declares 24 unit operations with typed channels, `crates/azoth-process` carries the
+  declares 29 unit operations with typed channels, `crates/azoth-process` carries the
   loader and `azoth_process::validate`, and a cargo test holds every shipped palette entry
   and flowsheet to the calculus's rules. What is still absent is the *interpreter* — the
   executor is P12 — and the Lean statement of the two claims, which

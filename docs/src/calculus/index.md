@@ -60,7 +60,7 @@ Two are not. [Barbs](./barbs.md) proves a barbed bisimulation to be an equivalen
 the general machinery, before the *dimensional* barb that would give those two claims
 something to be about, which is a later tranche — so they stay specifications.
 [Processes and channels](./process.md) is where the layer half-exists and
-nothing proves it: `azoth_process::channel` is the channel type, 24 unit operations
+nothing proves it: `azoth_process::channel` is the channel type, 29 unit operations
 declare ports against it, and `azoth_process::validate` holds a flowsheet to the
 calculus's rules — all of it in Rust, with no `Azoth/Process.lean` behind it, which is
 why that page's two claims stay specifications. A proof about a layer that does not
