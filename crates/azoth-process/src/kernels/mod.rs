@@ -8,6 +8,7 @@
 
 pub mod compressor;
 pub mod cooler;
+pub mod distillation_column;
 pub mod expander;
 pub mod filter;
 pub mod gas_scrubber;
@@ -24,6 +25,7 @@ pub mod throttling_valve;
 
 pub use compressor::compressor;
 pub use cooler::cooler;
+pub use distillation_column::{ColumnOutcome, ColumnSetup, TrayProfile, distillation_column};
 pub use expander::expander;
 pub use filter::filter;
 pub use gas_scrubber::gas_scrubber;

@@ -44,6 +44,7 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber \
 //       > captures/process_gas_scrubber.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe tray > captures/process_column_tray.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe reboiler \
@@ -103,6 +104,9 @@ public class ProcessProbe {
         break;
       case "gas_scrubber":
         gasScrubberRows();
+        break;
+      case "column":
+        columnRows();
         break;
       case "condenser":
         condenserRows();
@@ -497,6 +501,109 @@ public class ProcessProbe {
     if (withCapacity) {
       System.out.println("capacity_utilization=" + scrubber.getCapacityUtilization());
     }
+    System.out.println();
+  }
+
+  /// **The column, and the one state NeqSim's own tests carry.** `NaphtaliSandholmPublishedStateTest`
+  /// (issue #3698) is a deethanizer: 8 stages, the feed on tray 6, a C1-C6 mixture at
+  /// 10,000 kg/hr, the condenser at 0 C and the reboiler at 80 C, 24 bara at the top and 25 at
+  /// the bottom. The class is written on `SystemSrkEos` there; **this drives it on PR**, because
+  /// `azoth_process::Stream::mixture()` resolves a Peng-Robinson fluid and has no other route,
+  /// so a row on SRK would not be a case azoth could be held to.
+  ///
+  /// **The solve is `solveSequential` with the class's default `DIRECT_SUBSTITUTION`**, and its
+  /// own stopping rule: the mean tray temperature change under `setTemperatureTolerance`, with a
+  /// mass and an energy gate behind it. Every residual below is the class's own, because where a
+  /// solve stops is a property of the column and not of the port.
+  ///
+  /// **The profile is the measurement.** A column's answer is not a scalar, so each tray prints
+  /// its temperature, its pressure and both its traffic rates - and one tray prints its whole
+  /// record, because a profile that agrees in the temperatures and not in the flows has not
+  /// agreed.
+  static void columnRows() {
+    String[] light = new String[] { "methane", "ethane", "propane", "n-butane" };
+    // The deethanizer, on PR rather than the test's SRK.
+    columnRow("deethanizer_pr_hard_cap_80", new String[] { "methane", "ethane", "propane", "i-butane",
+        "n-butane", "i-pentane", "n-pentane", "n-hexane" },
+        new double[] { 0.22, 0.34, 0.20, 0.08, 0.08, 0.03, 0.03, 0.02 }, 283.15, 25.0, 10000.0, 8, 6,
+        0.0, 80.0, 24.0, 25.0, 1.0e-5, 80, true, false);
+    // The same column with a **soft** iteration limit, which is what it takes to converge: on PR
+    // the deethanizer's own `setMaxNumberOfIterations(80, true)` hard cap stops it at a mean
+    // tray-temperature change of `7.3e-3` K, so the hard-capped rows above are a *measurement of
+    // the cap* rather than of the column. `AUTO`'s ladder is what the soft limit reaches for.
+    columnRow("deethanizer_pr_soft_limit", new String[] { "methane", "ethane", "propane",
+        "i-butane", "n-butane", "i-pentane", "n-pentane", "n-hexane" },
+        new double[] { 0.22, 0.34, 0.20, 0.08, 0.08, 0.03, 0.03, 0.02 }, 283.15, 25.0, 10000.0, 8, 6,
+        0.0, 80.0, 24.0, 25.0, 1.0e-5, 200, true, false);
+    // **A small binary**, the row a reader can follow by hand: four stages, the feed on tray 2.
+    // This is the one that converges rigorously, and it is the port's primary oracle.
+    columnRow("binary_methane_butane_4_stages", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200,
+        true, false);
+    // The same binary with a **looser tolerance**, which is a different measurement rather than
+    // a sloppier version of the same one: where a solve stops is what its answer is.
+    columnRow("binary_methane_butane_loose", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-2, 200,
+        true, false);
+  }
+
+  static void columnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
+      double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
+      boolean condenser, boolean totalCondenser) {
+    SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(kgPerHour, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", stages, true, condenser);
+    column.addFeedStream(inlet, feedTray);
+    column.setCondenserTemperature(condenserC, "C");
+    column.setReboilerTemperature(reboilerC, "C");
+    column.setTopPressure(topBara);
+    column.setBottomPressure(bottomBara);
+    column.setTemperatureTolerance(tolerance);
+    if (totalCondenser) {
+      column.setCondenserMode(
+          neqsim.process.equipment.distillation.DistillationColumn.CondenserMode.TOTAL);
+      column.setCondenserRefluxRatio(1.5);
+    }
+    column.setMaxNumberOfIterations(maxIterations, true);
+    column.run();
+
+    System.out.println(label);
+    System.out.println("stages=" + stages);
+    System.out.println("feed_tray=" + feedTray);
+    System.out.println("temperature_tolerance=" + tolerance);
+    System.out.println("total_condenser=" + totalCondenser);
+    print("feed", inlet);
+    System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("tray_count=" + column.getNumberOfTrays());
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("solver=" + column.getLastSolverTypeUsed());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("temperature_step_residual=" + column.getLastAppliedTemperatureStepResidual());
+    System.out.println("mass_residual=" + column.getLastMassResidual());
+    System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    System.out.println("internal_traffic_ratio=" + column.getLastInternalTrafficRatio());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    System.out.println("condenser_duty_W=" + column.getCondenser().getDuty());
+    System.out.println("reboiler_duty_W=" + column.getReboiler().getDuty());
     System.out.println();
   }
 
