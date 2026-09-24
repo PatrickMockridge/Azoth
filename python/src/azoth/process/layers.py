@@ -231,9 +231,16 @@ NO_INTERIOR: dict[str, str] = {
         "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
         "entrainment moves, and every one of the four is on the two outlet records - the "
         "vapour fraction is their flow ratio and the compositions are their ``z``. "
-        "`Separator` exposes no getter for the *flash* state either: `getThermoSystem()` is "
-        "the working system with the entrainment already applied, and re-flashing the feed "
-        "to reach the state before it would be a second implementation of the ported "
+        "`Separator` exposes no getter for the state *before* the entrainment either: "
+        "`getThermoSystem()` is the working system with the fraction already applied. "
+        "**That state is not missing from the oracle, it is in the block beside it.** "
+        "Entrainment is a move applied after the flash, and the capture's first row runs "
+        "the same feed at the same conditions with no entrainment - so the fourth row's "
+        "flash is the first row's answer exactly, and it is: the vapour leaves at "
+        "`0.7773101311100368`, which is the first row's `0.8182211906421439` less the "
+        "stated `0.05`, at that row's composition and enthalpy to `1.3e-15`. The flash's "
+        "arithmetic is therefore already held by the three rows that state no entrainment, "
+        "and reaching for it again here would be a second implementation of the ported "
         "arithmetic rather than a layer of it"
     ),
 }
@@ -430,6 +437,135 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 UNCASED_ROWS: dict[str, int] = {
     "process_heat_exchanger.tsv": 2,
 }
+
+
+def case_inputs(model: str, case: str) -> tuple[dict[str, Any], float]:
+    """A case's declared inputs and tolerance, from the generated registry.
+
+    The registry rather than the case file: `specs/cases/process/*.toml` is what a case
+    *is*, and `azoth._models_gen` is its generated form - the one the reference kernels and
+    the generated stub already read.
+    """
+    from azoth import _models_gen
+
+    for declared in _models_gen.MODELS:
+        if declared["id"] != model:
+            continue
+        for entry in declared["cases"]:
+            if entry["id"] == case:
+                return dict(entry["inputs"]), float(entry["tolerance"])
+    raise KeyError(f"{model} has no case {case!r}")
+
+
+@dataclass(frozen=True)
+class LayerDiff:
+    """One layer both sides have, and whether it is where it is declared to be.
+
+    The three rules live here rather than in the gate that applies them, so that the gate
+    and `tools/neqsim_layer_diff.py` cannot come to different answers about one layer.
+    """
+
+    key: str
+    capture: float
+    azoth: float
+    #: Which rule holds it: `"case"` for the case's relative tolerance, `"absolute"` for a
+    #: declared [`LayerCase.diagnostic`], `"divergence"` for a declared [`Divergence`].
+    by: str
+    #: The bound the rule compares against.
+    bound: float
+    #: What the rule measured - a relative gap, an absolute one, or a ratio.
+    gap: float
+    ok: bool
+
+    def describe(self) -> str:
+        """The layer, both numbers, and the rule it missed."""
+        if self.by == "divergence":
+            return (
+                f".{self.key}: the capture's {self.capture} is {self.gap:.3f} times azoth's "
+                f"{self.azoth}, under the {self.bound} this divergence is declared to be at "
+                f"least"
+            )
+        if self.by == "absolute":
+            return (
+                f".{self.key}: {self.azoth} against the capture's {self.capture} is "
+                f"{self.gap:.3e} absolute, over the {self.bound:.1e} this layer is compared on"
+            )
+        return (
+            f".{self.key}: {self.azoth} against the capture's {self.capture} is "
+            f"{self.gap:.3e} relative, over the case's {self.bound:.1e}"
+        )
+
+
+def compare(
+    layer_case: LayerCase,
+    inputs: Mapping[str, Any],
+    *,
+    tolerance: float | None = None,
+) -> list[LayerDiff]:
+    """Every layer the dump and the capture share, in the dump's own order, with its verdict.
+
+    **In the dumper's order and not the capture's**, because "the first layer that moved" is
+    a statement about the build order of the model - the reason the dumpers put the cause
+    before the answer it produced, and the reason this returns the list rather than the
+    first failure.
+    """
+    block = capture_blocks(layer_case.capture)[layer_case.block]
+    dumped = rows(layer_case.model, inputs)
+    absolute = dict(layer_case.diagnostic)
+    divergence = {declared.key: declared for declared in layer_case.divergence}
+    out: list[LayerDiff] = []
+    for key, mine in dumped.items():
+        if key not in block:
+            continue
+        theirs = float(block[key])
+        if key in divergence:
+            declared = divergence[key]
+            ratio = abs(theirs) / abs(mine) if mine else float("inf")
+            out.append(
+                LayerDiff(
+                    key=key,
+                    capture=theirs,
+                    azoth=mine,
+                    by="divergence",
+                    bound=declared.at_least,
+                    gap=ratio,
+                    ok=ratio >= declared.at_least,
+                )
+            )
+        elif key in absolute:
+            bound = absolute[key]
+            out.append(
+                LayerDiff(
+                    key=key,
+                    capture=theirs,
+                    azoth=mine,
+                    by="absolute",
+                    bound=bound,
+                    gap=abs(mine - theirs),
+                    ok=abs(mine - theirs) <= bound,
+                )
+            )
+        else:
+            bound = tolerance if tolerance is not None else case_tolerance(layer_case)
+            scale = abs(theirs)
+            gap = abs(mine - theirs) / scale if scale else abs(mine - theirs)
+            out.append(
+                LayerDiff(
+                    key=key,
+                    capture=theirs,
+                    azoth=mine,
+                    by="case",
+                    bound=bound,
+                    gap=gap,
+                    ok=gap <= bound,
+                )
+            )
+    return out
+
+
+def case_tolerance(layer_case: LayerCase) -> float:
+    """The tolerance the case itself compares with."""
+    return case_inputs(layer_case.model, layer_case.case)[1]
 
 
 def capture_blocks(capture: str) -> list[dict[str, str]]:

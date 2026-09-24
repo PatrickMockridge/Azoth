@@ -11,6 +11,12 @@ layer the capture has no counterpart for is not compared - `Pump` exposes no get
 isentropic outlet, so that interior is reached through the shaft power and the entropy the
 step produced - and a dump that shared no key with its capture would be a dumper reading
 the wrong thing rather than a passing test.
+
+**The three rules a layer may be held to are `layers.compare`'s**, not this file's: the
+case's relative tolerance, a declared absolute bound where the oracle is zero by
+construction, and a declared [`layers.Divergence`] where the port is deliberately not
+NeqSim's answer. `tools/neqsim_layer_diff.py` applies the same three, so the gate and the
+tool a developer reaches for when a case fails cannot come to different conclusions.
 """
 
 from __future__ import annotations
@@ -25,13 +31,10 @@ from azoth.process import layers
 
 def _case_inputs(model_id: str, case_id: str) -> tuple[dict[str, Any], float]:
     """A case's inputs and tolerance, from the generated registry."""
-    for model in _models_gen.MODELS:
-        if model["id"] != model_id:
-            continue
-        for case in model["cases"]:
-            if case["id"] == case_id:
-                return dict(case["inputs"]), float(case["tolerance"])
-    raise AssertionError(f"{model_id} has no case {case_id!r}")
+    try:
+        return layers.case_inputs(model_id, case_id)
+    except KeyError as missing:
+        raise AssertionError(f"{model_id} has no case {case_id!r}") from missing
 
 
 def test_every_process_model_says_which_kind_it_is() -> None:
@@ -113,40 +116,11 @@ def test_a_models_layers_agree_with_its_capture(layer_case: layers.LayerCase) ->
         f"{layer_case.case} names: its {id_key} is {block.get(id_key)!r}, not {id_value!r}"
     )
 
-    dumped = layers.rows(layer_case.model, inputs)
-    absolute = dict(layer_case.diagnostic)
-    divergence = {d.key: d for d in layer_case.divergence}
-    compared = 0
-    for key, value in dumped.items():
-        if key not in block:
-            continue
-        expected = float(block[key])
-        if key in divergence:
-            declared = divergence[key]
-            ratio = abs(expected) / abs(value) if value else float("inf")
-            assert ratio >= declared.at_least, (
-                f"{layer_case.model}::{layer_case.case}.{key}: the capture's {expected} is "
-                f"{ratio:.3f} times azoth's {value}, under the {declared.at_least} this "
-                f"divergence is declared to be at least. It is a deliberate one: "
-                f"{declared.reason}"
-            )
-        elif key in absolute:
-            assert abs(value - expected) <= absolute[key], (
-                f"{layer_case.model}::{layer_case.case}.{key}: {value} against the "
-                f"capture's {expected} is {abs(value - expected):.3e} absolute, over the "
-                f"{absolute[key]:.1e} this layer is compared on"
-            )
-        else:
-            scale = abs(expected)
-            relative = abs(value - expected) / scale if scale else abs(value - expected)
-            assert relative <= tolerance, (
-                f"{layer_case.model}::{layer_case.case}.{key}: {value} against the "
-                f"capture's {expected} is {relative:.3e} relative, over the case's "
-                f"{tolerance:.1e}"
-            )
-        compared += 1
-    assert compared > 0, (
+    diffs = layers.compare(layer_case, inputs, tolerance=tolerance)
+    assert diffs, (
         f"{layer_case.model}'s dump shares no key with {layer_case.capture} block "
-        f"{layer_case.block}; layers carries {sorted(dumped)} and the capture "
-        f"{sorted(k for k in block if not k.endswith('_z'))}"
+        f"{layer_case.block}; layers carries {sorted(layers.rows(layer_case.model, inputs))} "
+        f"and the capture {sorted(k for k in block if not k.endswith('_z'))}"
     )
+    for diff in diffs:
+        assert diff.ok, f"{layer_case.model}::{layer_case.case}{diff.describe()}"

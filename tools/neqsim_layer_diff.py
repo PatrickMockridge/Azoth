@@ -5,21 +5,24 @@
     python tools/neqsim_layer_diff.py --all
 
 A case compares a *total*, and a total that is 4% out says nothing about where. This
-compares the intermediates instead: `azoth.eos.layers` dumps the reference kernel's
-own layers under the capture's own key names, so the two sides meet without a mapping
-table, and the first key whose relative difference exceeds the case's tolerance is
-printed with both numbers beside it.
+compares the intermediates instead: `azoth.eos.layers` and `azoth.process.layers` dump the
+reference kernel's own layers under the capture's own key names, so the two sides meet
+without a mapping table, and the first key that is not where it is declared to be is printed
+with both numbers beside it.
 
-**Every case in `gen_neqsim_cases.CASES` has one of these**, and a divergence is meant
-to be read in this order: the layers first, then the case.
+**Two tiers, two kinds of case id.** The `eos` cases are `gen_neqsim_cases.CASES`, named by
+their own id. A process case is named `model::case` - `process.pump::the_work_divides_by_the
+_efficiency` - which is exactly the id `python/tests/test_process_layer_diff.py` parametrises
+by, so a failing test's name pastes straight in here.
 
 The capture is read through that generator's readers rather than through a second
 parser, for the reason the two exist at all - a second parser is a second set of
-answers about what a probe printed.
+answers about what a probe printed. The process captures are read by
+`azoth.process.layers` for the same reason.
 
-`--all` walks every case and is what `python/tests/test_layer_diff.py` runs, so a
-divergence fails the build naming its layer. Nothing here needs a JDK or the NeqSim
-jar: the captures are committed and the layers are azoth's.
+`--all` walks every case of both tiers and is what the two layer tests run, so a divergence
+fails the build naming its layer. Nothing here needs a JDK or the NeqSim jar: the captures
+are committed and the layers are azoth's.
 """
 
 from __future__ import annotations
@@ -101,6 +104,63 @@ def first_divergence(
     return None
 
 
+def is_process(case_id: str) -> bool:
+    """Whether an id names a `process.*` model's case rather than an `eos` one."""
+    return case_id.startswith("process.") or case_id.startswith("process::")
+
+
+def process_case(case_id: str) -> Any:
+    """The `LayerCase` a `model::case` id names."""
+    from azoth.process import layers as process_layers
+
+    model, _, case = case_id.partition("::")
+    for entry in process_layers.LAYER_CASES:
+        if entry.model == model and entry.case == case:
+            return entry
+    raise SystemExit(
+        f"neqsim_layer_diff: no process case {case_id!r}; "
+        f"`--all` carries {', '.join(f'{c.model}::{c.case}' for c in process_layers.LAYER_CASES)}"
+    )
+
+
+def report_process(case_id: str, tolerance: float | None, quiet: bool) -> bool:
+    """One process case. `True` when every layer is where it is declared to be.
+
+    **The rules are `azoth.process.layers.compare`'s**, the same object the pytest gate
+    applies, so this cannot report a divergence the build does not fail on - or the reverse.
+    """
+    from azoth.process import layers as process_layers
+
+    entry = process_case(case_id)
+    inputs, case_tolerance = process_layers.case_inputs(entry.model, entry.case)
+    bound = case_tolerance if tolerance is None else tolerance
+
+    diffs = process_layers.compare(entry, inputs, tolerance=tolerance)
+    if not diffs:
+        raise SystemExit(
+            f"neqsim_layer_diff: {case_id} has no layer in common with {entry.capture}, "
+            f"so there is nothing to compare and nothing to report"
+        )
+    missed = [diff for diff in diffs if not diff.ok]
+    if not missed:
+        if not quiet:
+            print(f"neqsim_layer_diff: {case_id}: {len(diffs)} layer(s) agree to {bound:g}")
+        return True
+
+    first = missed[0]
+    print(
+        f"neqsim_layer_diff: {case_id}: first divergence is `{first.key}`"
+        f"{'' if first.by == 'case' else f' (a {first.by})'}",
+        file=sys.stderr,
+    )
+    print(f"    neqsim  {first.capture!r}", file=sys.stderr)
+    print(f"    azoth   {first.azoth!r}", file=sys.stderr)
+    print(f"    {first.describe().lstrip('.')}", file=sys.stderr)
+    for later in missed[1:]:
+        print(f"    also    {later.describe().lstrip('.')}", file=sys.stderr)
+    return False
+
+
 def report(case_id: str, tolerance: float | None, quiet: bool) -> bool:
     """One case. `True` when nothing diverged."""
     from azoth.eos import layers as azoth_layers
@@ -154,6 +214,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.all == (args.case is not None):
         parser.error("give a case id or --all, not both and not neither")
 
+    from azoth.process import layers as process_layers
+
     if args.all:
         from azoth.eos import layers as azoth_layers
 
@@ -161,13 +223,21 @@ def main(argv: list[str] | None = None) -> int:
         skipped = [case.id for case in gen.CASES if case.calc not in azoth_layers.DUMPERS]
         if skipped:
             print(f"neqsim_layer_diff: no dumper for {', '.join(skipped)}")
-        ids = dumped
+        if process_layers.NO_INTERIOR:
+            # Named on separate lines, because the joined list is the one string here that
+            # grows with the tier and an f-string cannot be wrapped by the formatter.
+            interiorless = ",\n    ".join(sorted(process_layers.NO_INTERIOR))
+            print(f"neqsim_layer_diff: no interior for {interiorless}")
+        ids = dumped + [f"{entry.model}::{entry.case}" for entry in process_layers.LAYER_CASES]
     else:
         ids = [args.case]
     quiet = args.all
     ok = True
     for case_id in ids:
-        ok = report(case_id, args.tolerance, quiet) and ok
+        if is_process(case_id):
+            ok = report_process(case_id, args.tolerance, quiet) and ok
+        else:
+            ok = report(case_id, args.tolerance, quiet) and ok
     if args.all:
         print(f"neqsim_layer_diff: {len(ids)} case(s), {'no divergence' if ok else 'FAILED'}")
     return 0 if ok else 1
