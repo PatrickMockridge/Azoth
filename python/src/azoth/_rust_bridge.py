@@ -173,6 +173,7 @@ from azoth.core.result import (
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
+    ThreePhaseSeparatorResult,
     ThrottlingValveResult,
     TpFlashSaftResult,
     TpMultiflashResult,
@@ -4331,6 +4332,62 @@ def tank(
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def three_phase_separator(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_aqueous: float,
+    gas_in_oil: float,
+    oil_in_aqueous: float,
+    oil_in_gas: float,
+    aqueous_in_gas: float,
+    aqueous_in_oil: float,
+    heat_input: Q | None = None,
+) -> ThreePhaseSeparatorResult:
+    """`process.three_phase_separator`, computed in Rust.
+
+    Six fractions cross as bare numbers, as `process.separator`'s one does: they are
+    dimensionless parameters, and the spec declares them without a unit.
+    """
+    spec = _models_gen.model("process.three_phase_separator")
+    result = _core.three_phase_separator(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        _si(spec, "gas_in_aqueous", gas_in_aqueous),
+        _si(spec, "gas_in_oil", gas_in_oil),
+        _si(spec, "oil_in_aqueous", oil_in_aqueous),
+        _si(spec, "oil_in_gas", oil_in_gas),
+        _si(spec, "aqueous_in_gas", aqueous_in_gas),
+        _si(spec, "aqueous_in_oil", aqueous_in_oil),
+        None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+    )
+    return ThreePhaseSeparatorResult(
+        vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
+        vapour_z=tuple(result.vapour_z),
+        vapour_p=from_si(result.vapour_p.magnitude_si, result.vapour_p.unit),
+        vapour_t=from_si(result.vapour_t.magnitude_si, result.vapour_t.unit),
+        vapour_h=from_si(result.vapour_h.magnitude_si, result.vapour_h.unit),
+        light_liquid_n=from_si(result.light_liquid_n.magnitude_si, result.light_liquid_n.unit),
+        light_liquid_z=tuple(result.light_liquid_z),
+        light_liquid_p=from_si(result.light_liquid_p.magnitude_si, result.light_liquid_p.unit),
+        light_liquid_t=from_si(result.light_liquid_t.magnitude_si, result.light_liquid_t.unit),
+        light_liquid_h=from_si(result.light_liquid_h.magnitude_si, result.light_liquid_h.unit),
+        heavy_liquid_n=from_si(result.heavy_liquid_n.magnitude_si, result.heavy_liquid_n.unit),
+        heavy_liquid_z=tuple(result.heavy_liquid_z),
+        heavy_liquid_p=from_si(result.heavy_liquid_p.magnitude_si, result.heavy_liquid_p.unit),
+        heavy_liquid_t=from_si(result.heavy_liquid_t.magnitude_si, result.heavy_liquid_t.unit),
+        heavy_liquid_h=from_si(result.heavy_liquid_h.magnitude_si, result.heavy_liquid_h.unit),
         warnings=_warnings(result.warnings),
     )
 

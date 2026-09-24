@@ -1,10 +1,32 @@
 id = "unit_ops.three_phase_separator"
 name = "Three-phase separator"
+notes = "**Its parameters are `run`'s own, and the entry used to declare `temperature`, which is not a parameter of this class.** `run` flashes at the feed's temperature (moving it only through `heatInput`), exactly as its parent does, so the entry's one parameter was the one `unit_ops.separator` had already withdrawn for the same reason. What it does read is the pressure drop, the heat input and **six** entrainment fractions - `gasInAqueous`, `gasInOil`, `oilInAqueous`, `oilInGas`, `aqueousInGas`, `aqueousInOil` - each a share of a phase's moles moved into another, named here in `Separator`'s own from-to convention. The six are applied in that order and each reads what the last one left, which is why they are declared rather than composed."
 [source]
 standard = "NeqSim process/equipment/separator/ThreePhaseSeparator.java"
-[parameters.temperature]
-unit = "K"
-description = "the flash temperature; defaults to the feed's temperature when omitted"
+[parameters.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy"
+[parameters.heat_input]
+unit = "W"
+description = "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's, and the flash is the multiphase one `run` enables"
+[parameters.gas_in_aqueous]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the aqueous phase, on NeqSim's `feed`/`mole` basis for `setEntrainment`"
+[parameters.gas_in_oil]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the oil"
+[parameters.oil_in_aqueous]
+unit = "dimensionless"
+description = "the fraction of the oil's moles carried into the aqueous phase"
+[parameters.oil_in_gas]
+unit = "dimensionless"
+description = "the fraction of the oil's moles carried into the vapour; with `aqueous_in_gas` it is also what re-runs the vapour outlet as a stream"
+[parameters.aqueous_in_gas]
+unit = "dimensionless"
+description = "the fraction of the aqueous phase's moles carried into the vapour"
+[parameters.aqueous_in_oil]
+unit = "dimensionless"
+description = "the fraction of the aqueous phase's moles carried into the oil"
 [[ports]]
 name = "feed"
 direction = "in"

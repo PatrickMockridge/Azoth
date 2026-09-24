@@ -545,6 +545,18 @@ NO_INTERIOR: dict[str, str] = {
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
         "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
     ),
+    "process.three_phase_separator": (
+        "the kernel forms the multiphase flash's three fractions, the three compositions and "
+        "the moles the entrainment moves, and every one of them is on the three outlet "
+        "records - a phase's share is its outlet's flow over the feed's, and its composition "
+        "is that outlet's ``z``. The **labels** are the one intermediate the records do not "
+        "carry, and a swap is not a hidden layer: the phases are named by "
+        "`PhaseEos.init`'s rule and routed to the outlet that names them, so an oil sent to "
+        "the water outlet is a wrong ``z`` in the capture rather than a state beside it. And "
+        "the flash itself is held by the first row, which states the same feed with no "
+        "entrainment - the other five are that answer with material moved, and where it moved "
+        "to is the difference between their flows and its"
+    ),
     "process.tank": (
         "the same kernel as ``process.separator`` at zero drop, zero entrainment and no "
         "heat input, and the capture's two-phase row is the separator's first row to the "

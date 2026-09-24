@@ -1,0 +1,180 @@
+id = "process.three_phase_separator"
+name = "Three-phase separator"
+kind = "direct"
+assumptions = [
+    "**the flash is a multiphase one, and `run` turns the check on for it.** `run` sets `multiPhaseCheck` before the flash and clears it after, so a feed that separates into gas, oil and aqueous is split three ways - and a two-phase feed is split into whichever two it has.",
+    "**the flash is at the feed's own temperature, not at one the caller states.** The vessel holds the temperature, as `Separator.run` does; `heat_input` is the one thing that moves it, and it moves the *multiphase* flash.",
+    "**a pressure drop is therefore not a throttling.** The 2 bar row reports the outlets at the feed's temperature with the drop taken off the vapour's flow, not an isenthalpic flash.",
+    "**the phases are named by `PhaseEos.init`'s label rule**, not by the order the flash reports them in: `V/b > 1.75` is the gas, and of the two liquids the one whose hydrocarbons outweigh its aqueous components is the oil. `eos.pr_cpa_phase`'s label is the same rule.",
+    "**the vapour is the flash's gas phase and the other two are re-run as streams.** `run` calls `liquidOutStream.run(id)` and `waterOutStream.run(id)` whenever those phases exist, so the oil and aqueous outlets are the state their composition settles on, not the phase `run` started from.",
+    "**the vapour is re-run only under `oilInGas` or `aqueousInGas`**, the two fractions that carry material out of it: with neither, the outlet is the gas phase itself - and because an entrainment moves moles and no energy, the balance across it is open by the amount it moved.",
+    "**the six fractions are declared, and their order is part of the answer.** Each moves a share of the *current* from-phase's moles, so `gas_in_oil` after `gas_in_aqueous` moves a share of what is left - the order `run` applies them in is the order here.",
+    "**an absent phase is a zero-flow outlet.** NeqSim answers with a `1e-20 kg/hr` clone of the whole system, whose composition need not sum to one and whose enthalpy is that clone's own; both rows of the capture that have one are declared rather than pinned.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `ThreePhaseSeparator` also carries water and oil levels, three outlet valve fractions, a droplet-performance calculator and a `runTransient`. **None is ported**: every one of them reads a transient or mechanical state the steady `run` does not.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/ThreePhaseSeparator.java` is the port source, through its `run`.",
+    "`validation/neqsim/captures/process_three_phase_separator.tsv` - six rows: no drop, a 2 bar drop, a 1000 W heat input, the two entrainment directions, and a dry feed whose aqueous outlet is the empty clone.",
+]
+[source]
+standard = "NeqSim process/equipment/separator/ThreePhaseSeparator.java"
+edition = "Its steady-state `run`: the pressure less `pressureDrop`, a multiphase `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the six entrainment calls, and each outlet from its phase - the oil and aqueous ones re-run as streams."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the inlet's molar flow, which the flash's three fractions divide between the outlets.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, the feed the multiphase flash splits.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the inlet pressure. The outlets flash at this less `pressure_drop`.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the inlet temperature, which the vessel holds and the outlets therefore share, unless a `heat_input` moves the flash.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel, which is `unit_ops.three_phase_separator`'s own first parameter.\n"
+[inputs.gas_in_aqueous]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the aqueous phase. Zero is the equilibrium split and no entrainment.\n"
+[inputs.gas_in_oil]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the oil.\n"
+[inputs.oil_in_aqueous]
+unit = "dimensionless"
+description = "the fraction of the oil's moles carried into the aqueous phase.\n"
+[inputs.oil_in_gas]
+unit = "dimensionless"
+description = "the fraction of the oil's moles carried into the vapour.\n"
+[inputs.aqueous_in_gas]
+unit = "dimensionless"
+description = "the fraction of the aqueous phase's moles carried into the vapour.\n"
+[inputs.aqueous_in_oil]
+unit = "dimensionless"
+description = "the fraction of the aqueous phase's moles carried into the oil.\n"
+[inputs.heat_input]
+unit = "W"
+optional = true
+description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies, and the temperature that carries it is solved for.\n"
+[outputs]
+[outputs.vapour_n]
+unit = "mol/s"
+description = "the vapour outlet's molar flow: the feed's flow times the gas phase's share, less what an entrainment carried out of it.\n"
+[outputs.vapour_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vapour outlet's composition, which is the flash's gas phase - an entrainment takes moles from it and leaves its composition alone.\n"
+[outputs.vapour_p]
+unit = "Pa"
+description = "the vapour outlet's pressure, which all three outlets share.\n"
+[outputs.vapour_t]
+unit = "K"
+description = "the vapour outlet's temperature, which all three outlets share: one flash decides them.\n"
+[outputs.vapour_h]
+unit = "J/mol"
+description = "the vapour outlet's molar enthalpy at its own state.\n"
+[outputs.light_liquid_n]
+unit = "mol/s"
+description = "the oil outlet's molar flow, which an entrainment in or out of it moves.\n"
+[outputs.light_liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the oil outlet's composition, the flash's oil phase or the mole-weighted mixture an entrainment leaves.\n"
+[outputs.light_liquid_p]
+unit = "Pa"
+description = "the oil outlet's pressure, the same as the vapour's.\n"
+[outputs.light_liquid_t]
+unit = "K"
+description = "the oil outlet's temperature, the same as the vapour's.\n"
+[outputs.light_liquid_h]
+unit = "J/mol"
+description = "the oil outlet's molar enthalpy at the state its composition settles on, which is the class's re-run rather than the phase it came from.\n"
+[outputs.heavy_liquid_n]
+unit = "mol/s"
+description = "the aqueous outlet's molar flow, zero when the feed has no aqueous phase.\n"
+[outputs.heavy_liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the aqueous outlet's composition, or the feed's where the phase is absent and the outlet carries nothing.\n"
+[outputs.heavy_liquid_p]
+unit = "Pa"
+description = "the aqueous outlet's pressure, the same as the vapour's.\n"
+[outputs.heavy_liquid_t]
+unit = "K"
+description = "the aqueous outlet's temperature, the same as the vapour's.\n"
+[outputs.heavy_liquid_h]
+unit = "J/mol"
+description = "the aqueous outlet's molar enthalpy at the state its composition settles on, which on a dry feed is the state of a stream that carries nothing.\n"
+[[valid_range]]
+quantity = "pressure_drop"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a vessel passes pressure down, not up, and the outlet would otherwise be at a pressure the feed never had\n"
+[[valid_range]]
+quantity = "gas_in_aqueous"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a fraction of a phase's moles, which cannot exceed the phase\n"
+[[valid_range]]
+quantity = "gas_in_oil"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a fraction of a phase's moles, which cannot exceed the phase\n"
+[[valid_range]]
+quantity = "oil_in_aqueous"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a fraction of a phase's moles, which cannot exceed the phase\n"
+[[valid_range]]
+quantity = "oil_in_gas"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a fraction of a phase's moles, which cannot exceed the phase\n"
+[[valid_range]]
+quantity = "aqueous_in_gas"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a fraction of a phase's moles, which cannot exceed the phase\n"
+[[valid_range]]
+quantity = "aqueous_in_oil"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a fraction of a phase's moles, which cannot exceed the phase\n"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature, and the feed's is the one it resolves"
+[implementations]
+python = "azoth.process.three_phase_separator"
+rust = "azoth_process::three_phase_separator"

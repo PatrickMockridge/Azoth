@@ -3,6 +3,7 @@
 use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_eos::RootSide;
 use azoth_process::Stream;
+use azoth_process::kernels::three_phase_separator::Entrainment;
 use azoth_process::kernels::{
     FlowRegime, compressor, expander, filter, heat_exchanger, heater, mixer, pipe, pump, separator,
     shortcut_distillation_column, splitter, throttling_valve,
@@ -976,4 +977,120 @@ fn a_tanks_outlet_is_the_phase_it_was_split_into() {
         reflashed.h.value,
         gas.h.value
     );
+}
+
+/// **A three-phase separator splits a feed three ways, and it is the only kernel here that
+/// does.** The capture's first row is the state to reproduce; the invariants are that the
+/// three outlets carry the feed's moles and that the two entrainment directions move what
+/// they say they move.
+#[test]
+fn a_three_phase_separator_splits_a_feed_three_ways() {
+    let feed = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into(), "water".into()],
+        vec![0.5, 0.3, 0.2],
+        1.0,
+        pascals(20.0e5),
+        kelvins(300.0),
+    )
+    .expect("the three components resolve");
+    let none = Entrainment::default();
+    let (vapour, oil, aqueous) =
+        azoth_process::kernels::three_phase_separator::three_phase_separator(
+            &feed,
+            pascals(0.0),
+            None,
+            none,
+        )
+        .expect("the separator splits three ways");
+
+    println!(
+        "vapour n={} h={} z={:?}",
+        vapour.n, vapour.h.value, vapour.z
+    );
+    println!("oil n={} h={} z={:?}", oil.n, oil.h.value, oil.z);
+    println!(
+        "aqueous n={} h={} z={:?}",
+        aqueous.n, aqueous.h.value, aqueous.z
+    );
+    println!("neqsim vapour n=0.5742666398533198 h=530.2999342332546");
+    println!("neqsim oil n=0.22670512468681528 h=-17267.597049152402");
+    println!("neqsim aqueous n=0.199028235459865 h=-44702.48623278945");
+
+    close(vapour.n + oil.n + aqueous.n, feed.n);
+    for i in 0..3 {
+        close(
+            vapour.z[i] * vapour.n + oil.z[i] * oil.n + aqueous.z[i] * aqueous.n,
+            feed.z[i] * feed.n,
+        );
+    }
+    relative(vapour.n, 0.5742666398533198, 1e-9, "the vapour flow");
+    relative(oil.n, 0.22670512468681528, 1e-9, "the oil flow");
+    relative(aqueous.n, 0.199028235459865, 1e-9, "the aqueous flow");
+    // The three phases are what they are: a gas, a hydrocarbon liquid and a water-rich one.
+    relative(
+        vapour.z[0],
+        0.8323862772745304,
+        1e-9,
+        "the vapour's methane",
+    );
+    relative(oil.z[1], 0.9026669734727175, 1e-9, "the oil's n-butane");
+    relative(aqueous.z[2], 0.9999999860500847, 1e-12, "the aqueous water");
+}
+
+/// **An entrainment moves a share of one phase's moles into another, and the two directions
+/// are not symmetric.**
+#[test]
+fn an_entrainment_moves_moles_between_the_phases() {
+    let feed = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into(), "water".into()],
+        vec![0.5, 0.3, 0.2],
+        1.0,
+        pascals(20.0e5),
+        kelvins(300.0),
+    )
+    .expect("the three components resolve");
+    let plain = azoth_process::kernels::three_phase_separator::three_phase_separator(
+        &feed,
+        pascals(0.0),
+        None,
+        Entrainment::default(),
+    )
+    .expect("the equilibrium split");
+    let into_oil = azoth_process::kernels::three_phase_separator::three_phase_separator(
+        &feed,
+        pascals(0.0),
+        None,
+        Entrainment {
+            gas_in_oil: 0.05,
+            ..Entrainment::default()
+        },
+    )
+    .expect("gas into oil");
+    let out_of_oil = azoth_process::kernels::three_phase_separator::three_phase_separator(
+        &feed,
+        pascals(0.0),
+        None,
+        Entrainment {
+            oil_in_gas: 0.05,
+            ..Entrainment::default()
+        },
+    )
+    .expect("oil into gas");
+
+    // A twentieth of the vapour's moles move: the vapour keeps its composition, its flow
+    // falls by that share, and the oil takes both.
+    close(into_oil.0.n, plain.0.n * 0.95);
+    // The composition is held to the last bit of the normalisation rather than exactly: the
+    // transfer is proportional component by component, so the share that comes back out of
+    // `amounts / beta` is the same number up to the division's rounding.
+    for i in 0..3 {
+        close(into_oil.0.z[i], plain.0.z[i]);
+    }
+    close(into_oil.1.n, plain.1.n + plain.0.n * 0.05);
+    close(into_oil.0.n + into_oil.1.n + into_oil.2.n, feed.n);
+    // And the other way: the vapour gains, the oil loses, and the water-rich phase is
+    // untouched by either - the fractions are per-pair, not per-vessel.
+    close(out_of_oil.0.n, plain.0.n + plain.1.n * 0.05);
+    close(out_of_oil.1.n, plain.1.n * 0.95);
+    close(out_of_oil.2.n, plain.2.n);
 }

@@ -47,6 +47,7 @@ pub mod separator;
 pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod tank;
+pub mod three_phase_separator;
 pub mod throttling_valve;
 
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
@@ -68,4 +69,5 @@ pub use shortcut_distillation_column::{
 };
 pub use splitter::{SplitterResult, splitter};
 pub use tank::{TankResult, tank};
+pub use three_phase_separator::{ThreePhaseSeparatorResult, three_phase_separator};
 pub use throttling_valve::{ThrottlingValveResult, throttling_valve};

@@ -647,6 +647,49 @@ class GasScrubberResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ThreePhaseSeparatorResult(_HasWarnings):
+    """Result of ``process.three_phase_separator``.
+
+    Three outlets named for what they carry - ``vapour``, ``light_liquid`` (the class's
+    ``getOilOutStream``, which it calls ``oil``) and ``heavy_liquid`` (``getWaterOutStream``)
+    - each the record's five fields.
+    """
+
+    #: Vapour outlet molar flow.
+    vapour_n: Q
+    #: Vapour outlet composition.
+    vapour_z: tuple[float, ...]
+    #: Vapour outlet pressure.
+    vapour_p: Q
+    #: Vapour outlet temperature.
+    vapour_t: Q
+    #: Vapour outlet molar enthalpy.
+    vapour_h: Q
+    #: Oil outlet molar flow.
+    light_liquid_n: Q
+    #: Oil outlet composition.
+    light_liquid_z: tuple[float, ...]
+    #: Oil outlet pressure.
+    light_liquid_p: Q
+    #: Oil outlet temperature.
+    light_liquid_t: Q
+    #: Oil outlet molar enthalpy.
+    light_liquid_h: Q
+    #: Aqueous outlet molar flow.
+    heavy_liquid_n: Q
+    #: Aqueous outlet composition.
+    heavy_liquid_z: tuple[float, ...]
+    #: Aqueous outlet pressure.
+    heavy_liquid_p: Q
+    #: Aqueous outlet temperature.
+    heavy_liquid_t: Q
+    #: Aqueous outlet molar enthalpy.
+    heavy_liquid_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TankResult(_HasWarnings):
     """Result of ``process.tank``.
 

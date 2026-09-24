@@ -1564,6 +1564,25 @@ class TankResult:
     warnings: list[Warning]
 
 @final
+class ThreePhaseSeparatorResult:
+    vapour_n: Qty
+    vapour_z: list[float]
+    vapour_p: Qty
+    vapour_t: Qty
+    vapour_h: Qty
+    light_liquid_n: Qty
+    light_liquid_z: list[float]
+    light_liquid_p: Qty
+    light_liquid_t: Qty
+    light_liquid_h: Qty
+    heavy_liquid_n: Qty
+    heavy_liquid_z: list[float]
+    heavy_liquid_p: Qty
+    heavy_liquid_t: Qty
+    heavy_liquid_h: Qty
+    warnings: list[Warning]
+
+@final
 class ThrottlingValveResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2922,6 +2941,21 @@ def tank(
     feed_p: list[float],
     feed_t: list[float],
 ) -> TankResult: ...
+def three_phase_separator(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    pressure_drop: float,
+    gas_in_aqueous: float,
+    gas_in_oil: float,
+    oil_in_aqueous: float,
+    oil_in_gas: float,
+    aqueous_in_gas: float,
+    aqueous_in_oil: float,
+    heat_input: float | None = None,
+) -> ThreePhaseSeparatorResult: ...
 def throttling_valve(
     components: list[str],
     inlet_n: float,

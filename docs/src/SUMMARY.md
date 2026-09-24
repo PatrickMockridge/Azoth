@@ -183,6 +183,7 @@
   - [Shortcut distillation column](./process/shortcut_distillation_column.md)
   - [Splitter](./process/splitter.md)
   - [Tank](./process/tank.md)
+  - [Three-phase separator](./process/three_phase_separator.md)
   - [Throttling valve](./process/throttling_valve.md)
 - [Reactions](./reactions/index.md)
   - [Equilibrium constant of one reaction](./reactions/equilibrium_constant.md)

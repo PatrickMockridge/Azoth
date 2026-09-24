@@ -663,6 +663,52 @@ pub fn tank(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.three_phase_separator` - the separator's kernel as a registered id.
+///
+/// **Six entrainment fractions and three outlets.** The fractions cross in `run`'s own
+/// order, which is the order they are applied in, and the outlets are the record's five
+/// fields under `vapour`, `light_liquid` and `heavy_liquid`.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input = None))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are thirteen
+pub fn three_phase_separator(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_aqueous: f64,
+    gas_in_oil: f64,
+    oil_in_aqueous: f64,
+    oil_in_gas: f64,
+    aqueous_in_gas: f64,
+    aqueous_in_oil: f64,
+    heat_input: Option<f64>,
+) -> PyResult<crate::results::PyThreePhaseSeparatorResult> {
+    azoth_process::three_phase_separator(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_aqueous,
+        gas_in_oil,
+        oil_in_aqueous,
+        oil_in_gas,
+        aqueous_in_gas,
+        aqueous_in_oil,
+        heat_input.map(watts),
+    )
+    .map(|r| crate::results::PyThreePhaseSeparatorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.shortcut_distillation_column` - the FUG column as a registered id.
 ///
 /// **The first `procedure` in this namespace.** Its `[algorithm]` block is the Underwood

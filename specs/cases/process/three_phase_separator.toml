@@ -1,0 +1,199 @@
+model = "process.three_phase_separator"
+
+[[cases]]
+id = "the_equilibrium_split"
+tolerance = 0.0002
+source = "NeqSim master, `ThreePhaseSeparator.run` on a 0.5/0.3/0.2 methane/n-butane/water feed at 300 K and 20 bara, from `validation/neqsim/captures/process_three_phase_separator.tsv`. **The feed splits three ways, and that is what this model is for**: a `Separator` at the same state finds two phases with the water in the oil, and the tank inherits its answer. The flows and compositions agree to `2e-13`; the enthalpies are `0.06` J/mol apart, which is the two libraries' ideal-gas offset and is `1.2e-4` relative on the vapour's small magnitude - the tolerance is the separator's, for the separator's reason.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+[cases.expected]
+vapour_n = 0.5742666398533198
+vapour_z = [0.8323862772745304, 0.16605660961350757, 0.0015571131119619512]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 530.2999342332546
+light_liquid_n = 0.22670512468681528
+light_liquid_z = [0.09699086751349376, 0.9026669734727175, 0.0003421590137886759]
+light_liquid_p = 2000000.0
+light_liquid_t = 300.0
+light_liquid_h = -17267.597049152402
+heavy_liquid_n = 0.199028235459865
+heavy_liquid_z = [1.3949914078317068e-8, 1.299159027526262e-15, 0.9999999860500847]
+heavy_liquid_p = 2000000.0
+heavy_liquid_t = 300.0
+heavy_liquid_h = -44702.48623278945
+
+[[cases]]
+id = "a_pressure_drop_is_not_a_throttling"
+tolerance = 0.0002
+source = "The capture's second row: the same feed with 2 bara taken off. `run` sets the pressure and flashes, so the outlets come back at the **feed's** temperature and the vapour's flow rises to `0.5884` - an isenthalpic drop would have cooled them. The balance is open by the drop, which is the class's own model of the vessel.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 200000.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+[cases.expected]
+vapour_n = 0.588394834038384
+vapour_z = [0.8186408549335518, 0.17963628322698968, 0.001722861839458615]
+vapour_p = 1800000.0
+vapour_t = 300.0
+vapour_h = 594.8830365445574
+light_liquid_n = 0.21269189876199818
+light_liquid_z = [0.08611492800808353, 0.9135417948419166, 0.0003432771499999563]
+light_liquid_p = 1800000.0
+light_liquid_t = 300.0
+light_liquid_h = -17456.18804993718
+heavy_liquid_n = 0.1989132671996179
+heavy_liquid_z = [1.2440359440221417e-8, 1.3133404684448346e-15, 0.9999999875596391]
+heavy_liquid_p = 1800000.0
+heavy_liquid_t = 300.0
+heavy_liquid_h = -44705.895733182806
+
+[[cases]]
+id = "a_heat_input_moves_the_multiphase_flash"
+tolerance = 0.001
+source = "The capture's third row: 1000 W into the same feed, at 1 mol/s. `run` adds the duty to the total enthalpy and runs a **multiphase** `PHflash`, so the outlets land at `371.23` K and the oil phase is gone - what is left is a vapour and a water-rich liquid at `0.1617` mol/s. **The tolerance is looser than the other rows' and the reason is measured**: the temperature the two libraries solve for differs by `0.002` K, which is their ideal-gas enthalpy offset (about `0.28` J/mol at this temperature) divided by the mixture's heat capacity. The port solves the same equation on `eos.tp_multiflash` rather than on NeqSim's own PH iteration, and every field of the row lands inside `2e-4`: the vapour's water fraction is the widest at `7.5e-5`, which is that same offset divided by the water's latent heat at this temperature. **The tolerance is the trace's**: the aqueous outlet's n-butane is `3e-11`, and a relative assertion on a number that small measures the two libraries' last bits rather than the state.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+heat_input = 1000.0
+[cases.expected]
+vapour_n = 0.8383179024874746
+vapour_z = [0.5964323238825336, 0.3578594696648377, 0.04570820645262857]
+vapour_p = 2000000.0
+vapour_t = 371.2337801579336
+vapour_h = 5143.330332745325
+heavy_liquid_n = 0.16168209751152537
+heavy_liquid_z = [6.510707274410019e-7, 3.057238296098721e-11, 0.9999993488987003]
+heavy_liquid_p = 2000000.0
+heavy_liquid_t = 371.2337801579336
+heavy_liquid_h = -38899.826680291575
+
+[[cases]]
+id = "an_entrainment_moves_a_share_of_the_vapour_into_the_oil"
+tolerance = 0.0002
+source = "The capture's fourth row, `setEntrainment(0.05, \"mole\", \"feed\", \"gas\", \"oil\")`. A twentieth of the vapour's moles move into the oil, component by component, so the vapour keeps its composition and its flow falls to `0.5456` while the oil becomes `0.2554` mol of a methane-rich mixture. **The vapour is not re-run on this branch** - only `oil_in_gas` and `aqueous_in_gas` do that - so its enthalpy is the gas phase's own.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.05
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+[cases.expected]
+vapour_n = 0.5455533078606538
+vapour_z = [0.8323862772745304, 0.1660566096135076, 0.0015571131119619512]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 530.2999342332541
+light_liquid_n = 0.25541845667948126
+light_liquid_z = [0.17966168473187838, 0.819859574971875, 0.00047874029624656907]
+light_liquid_p = 2000000.0
+light_liquid_t = 300.0
+light_liquid_h = -15266.81397537301
+heavy_liquid_n = 0.199028235459865
+heavy_liquid_z = [1.3949914078317068e-8, 1.299159027526262e-15, 0.9999999860500847]
+heavy_liquid_p = 2000000.0
+heavy_liquid_t = 300.0
+heavy_liquid_h = -44702.48623278945
+
+[[cases]]
+id = "an_entrainment_out_of_the_oil_re_runs_the_vapour"
+tolerance = 0.0005
+source = "The capture's fifth row, `setEntrainment(0.05, \"mole\", \"feed\", \"oil\", \"gas\")`. The other direction: a twentieth of the oil's moles move into the vapour, whose flow rises to `0.5856` and whose enthalpy falls to `185.79` J/mol. **`oil_in_gas` is one of the two fractions that make `run` re-run the vapour outlet as a stream**, and the state it lands on is the same gas phase the outlet was - measured, the same value the no-entrainment rows report. **The tolerance is this row's own**: `185.79` J/mol is a small enthalpy, so the libraries' `0.063` J/mol offset is `3.4e-4` of it, where the same offset is `1.2e-4` of the separator's larger ones.\n"
+[cases.inputs]
+components = ["methane", "n-butane", "water"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.05
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+[cases.expected]
+vapour_n = 0.5856018960876607
+vapour_z = [0.8181515293017343, 0.1803148749555399, 0.0015335957427256757]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 185.79332639291266
+light_liquid_n = 0.21536986845247452
+light_liquid_z = [0.09699086751349374, 0.9026669734727175, 0.0003421590138866759]
+light_liquid_p = 2000000.0
+light_liquid_t = 300.0
+light_liquid_h = -17267.597049152402
+heavy_liquid_n = 0.199028235459865
+heavy_liquid_z = [1.3949914078317068e-8, 1.299159027526262e-15, 0.9999999860500847]
+heavy_liquid_p = 2000000.0
+heavy_liquid_t = 300.0
+heavy_liquid_h = -44702.48623278945
+
+[[cases]]
+id = "a_dry_feed_has_no_aqueous_outlet"
+tolerance = 0.0002
+source = "The capture's sixth row: a 0.7/0.3 methane/n-butane feed, which has no aqueous phase at all. `run` gives the aqueous outlet a `1e-20 kg/hr` clone of the whole system, whose composition is `[0.3411672805114989, 0.06794331480957302]` - **it does not sum to one** - and whose enthalpy is that clone's own `612.29` J/mol. This port answers with a zero-flow outlet instead and the row is declared rather than pinned: the class reports a state for a stream that carries nothing, and reproducing a composition that is not a composition would be reproducing a defect.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_aqueous = 0.0
+gas_in_oil = 0.0
+oil_in_aqueous = 0.0
+oil_in_gas = 0.0
+aqueous_in_gas = 0.0
+aqueous_in_oil = 0.0
+[cases.expected]
+vapour_n = 0.8182211906421439
+vapour_z = [0.8339243334525452, 0.16607566654745468]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 530.1529163915932
+light_liquid_n = 0.18177880935785606
+light_liquid_z = [0.09718095876744991, 0.9028190412325501]
+light_liquid_p = 2000000.0
+light_liquid_t = 300.0
+light_liquid_h = -17268.958496924708
+heavy_liquid_n = 0.0
+heavy_liquid_p = 2000000.0
+heavy_liquid_t = 300.0

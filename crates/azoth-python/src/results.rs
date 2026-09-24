@@ -61,7 +61,7 @@ use azoth_process::{
     ComponentSplitterResult, CompressorResult, CoolerResult, DistillationColumnResult,
     ExpanderResult, FilterResult, GasScrubberResult, HeatExchangerResult, HeaterResult,
     ManifoldResult, MixerResult, PumpResult, SeparatorResult, ShortcutDistillationColumnResult,
-    SplitterResult, TankResult, ThrottlingValveResult, pipe::PipeResult,
+    SplitterResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -1551,6 +1551,112 @@ impl From<&TankResult> for PyTankResult {
             liquid_p: quantity(r.liquid_p.value, "Pa"),
             liquid_t: quantity(r.liquid_t.value, "K"),
             liquid_h: quantity(r.liquid_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.three_phase_separator`, transported.
+///
+/// Three outlets named for what they carry - `vapour`, `light_liquid` (the class's
+/// `getOilOutStream`) and `heavy_liquid` (`getWaterOutStream`) - each the record's five
+/// fields, so the result says which phase of the split each pair belongs to.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ThreePhaseSeparatorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyThreePhaseSeparatorResult {
+    /// Vapour outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub vapour_n: PyQty,
+    /// Vapour outlet composition.
+    #[pyo3(get)]
+    pub vapour_z: Vec<f64>,
+    /// Vapour outlet pressure.
+    #[pyo3(get)]
+    pub vapour_p: PyQty,
+    /// Vapour outlet temperature.
+    #[pyo3(get)]
+    pub vapour_t: PyQty,
+    /// Vapour outlet molar enthalpy.
+    #[pyo3(get)]
+    pub vapour_h: PyQty,
+    /// Oil outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub light_liquid_n: PyQty,
+    /// Oil outlet composition.
+    #[pyo3(get)]
+    pub light_liquid_z: Vec<f64>,
+    /// Oil outlet pressure.
+    #[pyo3(get)]
+    pub light_liquid_p: PyQty,
+    /// Oil outlet temperature.
+    #[pyo3(get)]
+    pub light_liquid_t: PyQty,
+    /// Oil outlet molar enthalpy.
+    #[pyo3(get)]
+    pub light_liquid_h: PyQty,
+    /// Aqueous outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub heavy_liquid_n: PyQty,
+    /// Aqueous outlet composition.
+    #[pyo3(get)]
+    pub heavy_liquid_z: Vec<f64>,
+    /// Aqueous outlet pressure.
+    #[pyo3(get)]
+    pub heavy_liquid_p: PyQty,
+    /// Aqueous outlet temperature.
+    #[pyo3(get)]
+    pub heavy_liquid_t: PyQty,
+    /// Aqueous outlet molar enthalpy.
+    #[pyo3(get)]
+    pub heavy_liquid_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyThreePhaseSeparatorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ThreePhaseSeparatorResult(vapour_n={} {}, light_liquid_n={} {}, \
+             heavy_liquid_n={} {})",
+            self.vapour_n.magnitude_si,
+            self.vapour_n.unit,
+            self.light_liquid_n.magnitude_si,
+            self.light_liquid_n.unit,
+            self.heavy_liquid_n.magnitude_si,
+            self.heavy_liquid_n.unit
+        )
+    }
+}
+
+impl From<&ThreePhaseSeparatorResult> for PyThreePhaseSeparatorResult {
+    fn from(r: &ThreePhaseSeparatorResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            vapour_n: quantity(r.vapour_n, "mol/s"),
+            vapour_z: r.vapour_z.clone(),
+            vapour_p: quantity(r.vapour_p.value, "Pa"),
+            vapour_t: quantity(r.vapour_t.value, "K"),
+            vapour_h: quantity(r.vapour_h.value, "J/mol"),
+            light_liquid_n: quantity(r.light_liquid_n, "mol/s"),
+            light_liquid_z: r.light_liquid_z.clone(),
+            light_liquid_p: quantity(r.light_liquid_p.value, "Pa"),
+            light_liquid_t: quantity(r.light_liquid_t.value, "K"),
+            light_liquid_h: quantity(r.light_liquid_h.value, "J/mol"),
+            heavy_liquid_n: quantity(r.heavy_liquid_n, "mol/s"),
+            heavy_liquid_z: r.heavy_liquid_z.clone(),
+            heavy_liquid_p: quantity(r.heavy_liquid_p.value, "Pa"),
+            heavy_liquid_t: quantity(r.heavy_liquid_t.value, "K"),
+            heavy_liquid_h: quantity(r.heavy_liquid_h.value, "J/mol"),
             warnings: transport(&r.warnings),
         }
     }
@@ -8759,6 +8865,8 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         DistillationColumnResult::CALC_ID => DistillationColumnResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
+        TankResult::CALC_ID => TankResult::FIELDS.to_vec(),
+        ThreePhaseSeparatorResult::CALC_ID => ThreePhaseSeparatorResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

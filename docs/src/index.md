@@ -252,6 +252,7 @@ Five sections, and the difference between them is the point:
 - [`process.shortcut_distillation_column`](./process/shortcut_distillation_column.md) — Shortcut distillation column
 - [`process.splitter`](./process/splitter.md) — Splitter
 - [`process.tank`](./process/tank.md) — Tank
+- [`process.three_phase_separator`](./process/three_phase_separator.md) — Three-phase separator
 - [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
 
 **Reactions** - [`reactions/index.md`](./reactions/index.md):

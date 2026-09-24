@@ -33,6 +33,7 @@ from azoth.core.result import (
     ShortcutDistillationColumnResult,
     SplitterResult,
     TankResult,
+    ThreePhaseSeparatorResult,
     ThrottlingValveResult,
 )
 from azoth.core.units import Q
@@ -58,6 +59,7 @@ __all__ = [
     "shortcut_distillation_column",
     "splitter",
     "tank",
+    "three_phase_separator",
     "throttling_valve",
     "validate",
 ]
@@ -80,6 +82,7 @@ _THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 _TANK = "process.tank"
+_THREE_PHASE_SEPARATOR = "process.three_phase_separator"
 
 
 def validate(flowsheet: str, palette_dir: str = "specs/unit_ops") -> list[str]:
@@ -595,6 +598,55 @@ def tank(
         feed_z=feed_z,
         feed_p=feed_p,
         feed_t=feed_t,
+    )
+
+
+def three_phase_separator(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_aqueous: float = 0.0,
+    gas_in_oil: float = 0.0,
+    oil_in_aqueous: float = 0.0,
+    oil_in_gas: float = 0.0,
+    aqueous_in_gas: float = 0.0,
+    aqueous_in_oil: float = 0.0,
+    heat_input: Q | None = None,
+) -> ThreePhaseSeparatorResult:
+    """Flash a stream into vapour, oil and aqueous outlets.
+
+    **The three-phase vessel turns `multiPhaseCheck` on for its flash**, so a feed that
+    separates into a gas, an oil and an aqueous phase is split three ways - a two-phase feed
+    into whichever two it has. The vessel holds the feed's temperature, so a pressure drop is
+    not a throttling; ``heat_input`` is the one thing that moves the flash.
+
+    **The six entrainment fractions are declared, and their order is part of the answer**:
+    each moves a share of the *current* from-phase's moles, component by component, in
+    ``run``'s own order, so a later pair reads what an earlier one left.
+
+    Raises:
+        InvalidInputError: where the pressure drop takes the outlet below zero or a fraction
+            is outside ``[0, 1]``.
+
+    See :func:`azoth.process.reference.three_phase_separator`.
+    """
+    return resolve(_THREE_PHASE_SEPARATOR)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        pressure_drop=pressure_drop,
+        gas_in_aqueous=gas_in_aqueous,
+        gas_in_oil=gas_in_oil,
+        oil_in_aqueous=oil_in_aqueous,
+        oil_in_gas=oil_in_gas,
+        aqueous_in_gas=aqueous_in_gas,
+        aqueous_in_oil=aqueous_in_oil,
+        heat_input=heat_input,
     )
 
 

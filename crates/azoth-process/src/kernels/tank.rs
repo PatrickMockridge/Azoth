@@ -12,7 +12,7 @@ use crate::stream::Stream;
 /// **The steady state is a `VUflash` at the fluid's own volume and internal energy, and a
 /// fluid at its stable state re-imposing its own `V` and `U` returns that state.**
 /// `Tank.run` calls `ops.VUflash(thermoSystem2.getVolume(), thermoSystem2.getInternalEnergy())`
-/// - the *fluid's* volume, not the vessel's - and the capture's two-phase row is
+/// on the *fluid's* volume rather than the vessel's, and the capture's two-phase row is
 /// `process.separator`'s first row to the last digit, at every field of both outlets.
 ///
 /// **The design volume never reaches it.** `setVolume` is read by `getVolume`,
