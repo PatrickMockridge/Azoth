@@ -242,6 +242,7 @@ Five sections, and the difference between them is the point:
 - [`process.ejector`](./process/ejector.md) — Ejector
 - [`process.expander`](./process/expander.md) — Expander
 - [`process.filter`](./process/filter.md) — Filter
+- [`process.flare`](./process/flare.md) — Flare
 - [`process.gas_scrubber`](./process/gas_scrubber.md) — Gas scrubber
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater

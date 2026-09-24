@@ -1439,6 +1439,17 @@ class FilterResult:
     warnings: list[Warning]
 
 @final
+class FlareResult:
+    product_n: Qty
+    product_z: list[float]
+    product_p: Qty
+    product_t: Qty
+    product_h: Qty
+    heat_duty: Qty
+    co2_emission: Qty
+    warnings: list[Warning]
+
+@final
 class GasScrubberResult:
     vapour_n: Qty
     vapour_z: list[float]
@@ -2868,6 +2879,13 @@ def filter(
     inlet_t: float,
     pressure_drop: float,
 ) -> FilterResult: ...
+def flare(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+) -> FlareResult: ...
 def gas_scrubber(
     components: list[str],
     feed_n: float,

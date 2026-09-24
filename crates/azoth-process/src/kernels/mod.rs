@@ -13,6 +13,7 @@ pub mod distillation_column;
 pub mod ejector;
 pub mod expander;
 pub mod filter;
+pub mod flare;
 pub mod gas_scrubber;
 pub mod heat_exchanger;
 pub mod heater;
@@ -34,6 +35,7 @@ pub use distillation_column::{ColumnOutcome, ColumnSetup, TrayProfile, distillat
 pub use ejector::{EjectorSetup, ejector};
 pub use expander::expander;
 pub use filter::filter;
+pub use flare::{FlareNumbers, flare};
 pub use gas_scrubber::gas_scrubber;
 pub use heat_exchanger::heat_exchanger;
 pub use heater::heater;

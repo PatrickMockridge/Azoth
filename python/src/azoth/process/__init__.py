@@ -23,6 +23,7 @@ from azoth.core.result import (
     EjectorResult,
     ExpanderResult,
     FilterResult,
+    FlareResult,
     GasScrubberResult,
     HeaterResult,
     HeatExchangerResult,
@@ -49,6 +50,7 @@ __all__ = [
     "ejector",
     "expander",
     "filter",
+    "flare",
     "gas_scrubber",
     "heat_exchanger",
     "heater",
@@ -78,6 +80,7 @@ _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
 _FILTER = "process.filter"
+_FLARE = "process.flare"
 _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
@@ -567,6 +570,40 @@ def gas_scrubber(
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
         heat_input=heat_input,
+    )
+
+
+def flare(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+) -> FlareResult:
+    """A flare's steady state: the record through, and the two numbers beside it.
+
+    ``Flare.run`` clones the inlet into the outlet and changes nothing in it, so the record is
+    a pass-through. What the machine computes is its own report: ``heatDuty``, the gas's
+    inferior calorific value per normal cubic metre at 0 C times its flow in standard cubic
+    metres per second at 15 C, and ``co2Emission``, the carbon the gas carries times
+    ``44.01e-3`` kg/mol.
+
+    **The duty multiplies two reference states**: the calorific value is per *normal* cubic
+    metre at 0 C and the flow is at 15 C, which the class's own arithmetic does and this
+    reproduces - the case records the ratio.
+
+    Raises:
+        InvalidInputError: where a component has no row in ISO 6976's table or none in the
+            element table.
+
+    See :func:`azoth.process.reference.flare`.
+    """
+    return resolve(_FLARE)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
     )
 
 

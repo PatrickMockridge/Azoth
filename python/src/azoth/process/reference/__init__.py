@@ -19,6 +19,7 @@ from azoth.process.reference.cooler import cooler
 from azoth.process.reference.ejector import ejector
 from azoth.process.reference.expander import expander
 from azoth.process.reference.filter import filter
+from azoth.process.reference.flare import flare
 from azoth.process.reference.gas_scrubber import gas_scrubber
 from azoth.process.reference.heat_exchanger import heat_exchanger
 from azoth.process.reference.heater import heater
@@ -41,6 +42,7 @@ __all__ = [
     "ejector",
     "expander",
     "filter",
+    "flare",
     "gas_scrubber",
     "heat_exchanger",
     "heater",

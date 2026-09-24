@@ -121,11 +121,17 @@ public class ProcessProbe {
       case "ejector":
         ejectorRows();
         break;
+      case "flare":
+        flareRows();
+        break;
       case "column":
         columnRows();
         break;
       case "column_solvers":
         columnSolverRows(args);
+        break;
+      case "absorber":
+        absorberRows();
         break;
       case "condenser":
         condenserRows();
@@ -1764,6 +1770,51 @@ public class ProcessProbe {
     System.out.println("corrected_density=" + fluid.getPhase(0).getDensity("kg/m3"));
     System.out.println("system_density=" + fluid.getDensity("kg/m3"));
     System.out.println("viscosity=" + fluid.getViscosity("kg/msec"));
+    System.out.println();
+  }
+
+  /// **The flare, whose whole steady state is its report.**
+  ///
+  /// `Flare.run` clones the inlet into the outlet and computes two numbers beside it: the
+  /// heat duty, `inStream.LCV() * flowSm3sec`, and the CO2 emission, the carbon the gas
+  /// carries times `44.01e-3` kg/mol. Both are printed, and so are the inlet and the outlet,
+  /// because the pass-through is half of what the class does - a reader has to see that the
+  /// record does not move.
+  ///
+  /// **The two volumetric references are not the same one, and the duty carries both.**
+  /// `Stream.LCV()` builds `new Standard_ISO6976(fluid, 0, 15.55, "volume")` - joules per
+  /// normal cubic metre at 0 C - while `getFlowRate("Sm3/sec")` is
+  /// `n * R * standardStateTemperature / atm` with `standardStateTemperature` 288.15 K, a
+  /// volume at 15 C. The product is therefore an energy density at one reference times a
+  /// volumetric flow at another, and the duty it reports is 5.5 per cent above the same gas
+  /// measured consistently. Reproduced here rather than corrected: it is what the class
+  /// computes.
+  static void flareRows() {
+    String[] binary = new String[] { "methane", "n-butane" };
+    double[] binaryZ = new double[] { 0.9, 0.1 };
+    String[] sales = new String[] { "methane", "ethane", "propane", "n-butane", "nitrogen" };
+    double[] salesZ = new double[] { 0.85, 0.07, 0.03, 0.02, 0.03 };
+    String[] sour = new String[] { "methane", "CO2", "nitrogen" };
+    double[] sourZ = new double[] { 0.8, 0.15, 0.05 };
+    String[] heavy = new String[] { "methane", "n-butane", "n-heptane" };
+    double[] heavyZ = new double[] { 0.6, 0.3, 0.1 };
+
+    runFlare("binary", binary, binaryZ);
+    runFlare("sales_gas", sales, salesZ);
+    runFlare("sour_gas", sour, sourZ);
+    runFlare("heavy", heavy, heavyZ);
+  }
+
+  static void runFlare(String label, String[] names, double[] z) {
+    Stream inlet = feed(names, z, 288.15, 1.01325, 1.0);
+    neqsim.process.equipment.flare.Flare flare =
+        new neqsim.process.equipment.flare.Flare("flare", inlet);
+    flare.run();
+    System.out.println(label);
+    print("inlet", inlet);
+    printOrEmpty("product", flare.getOutletStream());
+    System.out.println("heat_duty_W=" + flare.getHeatDuty());
+    System.out.println("co2_emission_kg_per_s=" + flare.getCO2Emission());
     System.out.println();
   }
 

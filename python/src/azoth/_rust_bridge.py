@@ -55,6 +55,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     DistillationColumnResult,
     EjectorResult,
+    FlareResult,
     Iso6976Result,
     EffectiveDiffusionResult,
     EosCgPhaseResult,
@@ -4334,6 +4335,39 @@ def tank(
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def flare(
+    components: Sequence[str],
+    inlet_n: Q,
+    inlet_z: Sequence[float],
+    inlet_p: Q,
+    inlet_t: Q,
+) -> FlareResult:
+    """`process.flare`, computed in Rust.
+
+    The component names cross unresolved, as the process models' do: the Rust side resolves
+    each against the standard's table for the duty and the element table for the emission, so
+    the two languages cannot disagree about which row answered.
+    """
+    spec = _models_gen.model("process.flare")
+    result = _core.flare(
+        list(components),
+        input_to_si(spec, "inlet_n", inlet_n),
+        [_si(spec, "inlet_z", value) for value in inlet_z],
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+    )
+    return FlareResult(
+        product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
+        product_z=tuple(result.product_z),
+        product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
+        product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
+        heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
+        co2_emission=from_si(result.co2_emission.magnitude_si, result.co2_emission.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -546,6 +546,12 @@ NO_INTERIOR: dict[str, str] = {
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
         "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
     ),
+    "process.flare": (
+        "the kernel is a *pass-through*: `run` clones the inlet into the outlet, so the whole "
+        "record is the answer and there is no intermediate between the two ports. Its two "
+        "reported numbers - the duty and the CO2 emission - are outputs rather than layers, "
+        "and the capture prints them beside the record exactly as the model does"
+    ),
     "process.ejector": (
         "the kernel forms the mixing pressure, four velocities, two efficiencies' enthalpy "
         "drops and the joined fluid's static enthalpy - and the outlet record carries the "

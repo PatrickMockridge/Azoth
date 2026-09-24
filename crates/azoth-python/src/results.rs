@@ -59,8 +59,8 @@ use azoth_eos::results::{
 };
 use azoth_process::{
     ComponentSplitterResult, CompressorResult, CoolerResult, DistillationColumnResult,
-    EjectorResult, ExpanderResult, FilterResult, GasScrubberResult, HeatExchangerResult,
-    HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult,
+    EjectorResult, ExpanderResult, FilterResult, FlareResult, GasScrubberResult,
+    HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult,
     ShortcutDistillationColumnResult, SplitterResult, TankResult, ThreePhaseSeparatorResult,
     ThrottlingValveResult, pipe::PipeResult,
 };
@@ -1553,6 +1553,76 @@ impl From<&TankResult> for PyTankResult {
             liquid_p: quantity(r.liquid_p.value, "Pa"),
             liquid_t: quantity(r.liquid_t.value, "K"),
             liquid_h: quantity(r.liquid_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.flare`, transported.
+///
+/// The inlet's record through, plus the duty and the emission - the two numbers the class
+/// computes beside the state it does not change.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FlareResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFlareResult {
+    /// Product molar flow, mol/s.
+    #[pyo3(get)]
+    pub product_n: PyQty,
+    /// Product composition.
+    #[pyo3(get)]
+    pub product_z: Vec<f64>,
+    /// Product pressure.
+    #[pyo3(get)]
+    pub product_p: PyQty,
+    /// Product temperature.
+    #[pyo3(get)]
+    pub product_t: PyQty,
+    /// Product molar enthalpy.
+    #[pyo3(get)]
+    pub product_h: PyQty,
+    /// The heat the flare releases, W.
+    #[pyo3(get)]
+    pub heat_duty: PyQty,
+    /// The carbon dioxide the combustion forms, kg/s.
+    #[pyo3(get)]
+    pub co2_emission: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFlareResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FlareResult(product_n={} {}, heat_duty={} {})",
+            self.product_n.magnitude_si,
+            self.product_n.unit,
+            self.heat_duty.magnitude_si,
+            self.heat_duty.unit
+        )
+    }
+}
+
+impl From<&FlareResult> for PyFlareResult {
+    fn from(r: &FlareResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            product_n: quantity(r.product_n, "mol/s"),
+            product_z: r.product_z.clone(),
+            product_p: quantity(r.product_p.value, "Pa"),
+            product_t: quantity(r.product_t.value, "K"),
+            product_h: quantity(r.product_h.value, "J/mol"),
+            heat_duty: quantity(r.heat_duty.value, "W"),
+            co2_emission: quantity(r.co2_emission.value, "kg/s"),
             warnings: transport(&r.warnings),
         }
     }
@@ -9001,6 +9071,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ThreePhaseSeparatorResult::CALC_ID => ThreePhaseSeparatorResult::FIELDS.to_vec(),
         EjectorResult::CALC_ID => EjectorResult::FIELDS.to_vec(),
         Iso6976Result::CALC_ID => Iso6976Result::FIELDS.to_vec(),
+        FlareResult::CALC_ID => FlareResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

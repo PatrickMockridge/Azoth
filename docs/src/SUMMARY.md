@@ -173,6 +173,7 @@
   - [Ejector](./process/ejector.md)
   - [Expander](./process/expander.md)
   - [Filter](./process/filter.md)
+  - [Flare](./process/flare.md)
   - [Gas scrubber](./process/gas_scrubber.md)
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)

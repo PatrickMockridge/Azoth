@@ -1,0 +1,77 @@
+model = "process.flare"
+
+[[cases]]
+id = "binary"
+tolerance = 0.0002
+source = "NeqSim master, `Flare.run` on 0.9/0.1 methane/n-butane at 1.01325 bara, 288.15 K and 1 mol/s, from `validation/neqsim/captures/process_flare.tsv`. **The record passes through unchanged and the two numbers are the class's own**: the duty is `inStream.LCV() * flowSm3sec`, an energy density at 0 C times a volumetric flow at 15 C, and the emission is the gas's carbon times `44.01e-3`. **The two reported numbers agree to the last bit** - the mixture sums, the compression factor and the ideal-gas conversion are all closed form - and **the product's enthalpy is the one field that carries the libraries' offset**, `0.033` J/mol of `587.4`, which is `5.6e-5` relative and sets the tolerance. The record itself is a pass-through, so that offset is the *inlet state's* and not the flare's."
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 101325.0
+inlet_t = 288.15
+[cases.expected]
+product_n = 1.0
+product_z = [0.9, 0.1]
+product_p = 101325.0
+product_t = 288.15
+product_h = 587.430399954884
+heat_duty = 1046833.0648978995
+co2_emission = 0.057213
+
+[[cases]]
+id = "sales_gas"
+tolerance = 0.0002
+source = "NeqSim master, `Flare.run` on a sales gas - 0.85/0.07/0.03/0.02/0.03 methane/ethane/propane/n-butane/nitrogen at 1.01325 bara, 288.15 K and 1 mol/s, from `validation/neqsim/captures/process_flare.tsv`. **The record passes through unchanged and the two numbers are the class's own**: the duty is `inStream.LCV() * flowSm3sec`, an energy density at 0 C times a volumetric flow at 15 C, and the emission is the gas's carbon times `44.01e-3`. **The two reported numbers agree to the last bit** - the mixture sums, the compression factor and the ideal-gas conversion are all closed form - and **the product's enthalpy is the one field that carries the libraries' offset**, `0.033` J/mol of `587.4`, which is `5.6e-5` relative and sets the tolerance. The record itself is a pass-through, so that offset is the *inlet state's* and not the flare's."
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane", "nitrogen"]
+inlet_n = 1.0
+inlet_z = [0.85, 0.07, 0.03, 0.02, 0.03]
+inlet_p = 101325.0
+inlet_t = 288.15
+[cases.expected]
+product_n = 1.0
+product_z = [0.85, 0.07, 0.03, 0.02, 0.03]
+product_p = 101325.0
+product_t = 288.15
+product_h = 549.2474767040519
+heat_duty = 949169.6473970738
+co2_emission = 0.05105160000000001
+
+[[cases]]
+id = "sour_gas"
+tolerance = 0.0002
+source = "NeqSim master, `Flare.run` on a sour gas - 0.8/0.15/0.05 methane/CO2/nitrogen at 1.01325 bara, 288.15 K and 1 mol/s, from `validation/neqsim/captures/process_flare.tsv`. **The record passes through unchanged and the two numbers are the class's own**: the duty is `inStream.LCV() * flowSm3sec`, an energy density at 0 C times a volumetric flow at 15 C, and the emission is the gas's carbon times `44.01e-3`. **The two reported numbers agree to the last bit** - the mixture sums, the compression factor and the ideal-gas conversion are all closed form - and **the product's enthalpy is the one field that carries the libraries' offset**, `0.033` J/mol of `587.4`, which is `5.6e-5` relative and sets the tolerance. The record itself is a pass-through, so that offset is the *inlet state's* and not the flare's."
+[cases.inputs]
+components = ["methane", "CO2", "nitrogen"]
+inlet_n = 1.0
+inlet_z = [0.8, 0.15, 0.05]
+inlet_p = 101325.0
+inlet_t = 288.15
+[cases.expected]
+product_n = 1.0
+product_z = [0.8, 0.15, 0.05]
+product_p = 101325.0
+product_t = 288.15
+product_h = 504.0082050804368
+heat_duty = 679291.5927940359
+co2_emission = 0.041809500000000006
+
+[[cases]]
+id = "heavy"
+tolerance = 0.0002
+source = "NeqSim master, `Flare.run` on 0.6/0.3/0.1 methane/n-butane/n-heptane at 1.01325 bara, 288.15 K and 1 mol/s, from `validation/neqsim/captures/process_flare.tsv`. **The record passes through unchanged and the two numbers are the class's own**: the duty is `inStream.LCV() * flowSm3sec`, an energy density at 0 C times a volumetric flow at 15 C, and the emission is the gas's carbon times `44.01e-3`. **The two reported numbers agree to the last bit** - the mixture sums, the compression factor and the ideal-gas conversion are all closed form - and **the product's enthalpy is the one field that carries the libraries' offset**, `0.033` J/mol of `587.4`, which is `5.6e-5` relative and sets the tolerance. The record itself is a pass-through, so that offset is the *inlet state's* and not the flare's."
+[cases.inputs]
+components = ["methane", "n-butane", "n-heptane"]
+inlet_n = 0.9999999999999999
+inlet_z = [0.6, 0.3, 0.1]
+inlet_p = 101325.0
+inlet_t = 288.15
+[cases.expected]
+product_n = 0.9999999999999999
+product_z = [0.6, 0.3, 0.1]
+product_p = 101325.0
+product_t = 288.15
+product_h = -2022.5692972719955
+heat_duty = 1856692.489362915
+co2_emission = 0.110025

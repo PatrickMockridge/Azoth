@@ -1,0 +1,83 @@
+id = "process.flare"
+name = "Flare"
+kind = "direct"
+assumptions = [
+    "**the steady state is a pass-through.** `run` clones the inlet's thermo system into the outlet and changes nothing in it, so the record's five fields are the outlet's exactly. What the machine computes is its *report*, not its state.",
+    "**the reported duty multiplies two different volumetric references.** `LCV()` is per normal cubic metre at **0 °C** and `getFlowRate(\"Sm3/sec\")` is a volume at **15 °C**, so the duty is 5.5 per cent above the same gas measured consistently. The port reproduces the class.",
+    "**two molar gas constants, and the class uses both.** The standard's density reaches `8.314510` and the Sm3 conversion divides by `8.3144621`; a port that used one for both would be a port of neither.",
+    "**the carbon comes from the element table, not the standard's.** `getElements().getNumberOfElements(\"C\")` reads the component's formula, so a gas ISO 6976 has no row for still gets a CO2 emission - and only its duty is refused.",
+    "**no parameter is declared, and none is read.** The entry has one inlet and one outlet and the class's own setters (a flame height, a radiant fraction, a tip diameter) are radiation-model inputs `run` never reads.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route - and the duty reads the standard's table rather than the cubic, so the fluid choice moves the *record* and not the report.",
+    "NeqSim's `Flare` also carries a radiation model, a capacity check and a `runTransient`. **None is ported**: the first two read setters nothing declares, and the transient needs a holdup this library has no state for.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/flare/Flare.java` is the port source, through its `run`.",
+    "ISO 6976:1995 through `Standard_ISO6976`, which is what `Stream.LCV()` builds; see `standards.iso6976`.",
+    "`validation/neqsim/captures/process_flare.tsv` - four gases, each with the record through and the duty and emission beside it.",
+]
+[source]
+standard = "NeqSim process/equipment/flare/Flare.java"
+edition = "Its steady-state `run`: the inlet cloned to the outlet, `heatDuty = inStream.LCV() * flowSm3sec`, and `co2Emission` from the gas's carbon. **The radiation model and the capacity check are not read.**"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the gas's substances, by name, resolved against the component databank. Each needs a row in the element table for the CO2 and one in ISO 6976's for the duty.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow, which the outlet carries unchanged.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, which the outlet carries unchanged and the standard sums.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which the outlet carries unchanged.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which the outlet carries unchanged.\n"
+[outputs]
+[outputs.product_n]
+unit = "mol/s"
+description = "the product's molar flow, the inlet's.\n"
+[outputs.product_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the product's composition, the inlet's.\n"
+[outputs.product_p]
+unit = "Pa"
+description = "the product's pressure, the inlet's.\n"
+[outputs.product_t]
+unit = "K"
+description = "the product's temperature, the inlet's.\n"
+[outputs.product_h]
+unit = "J/mol"
+description = "the product's molar enthalpy, the inlet's.\n"
+[outputs.heat_duty]
+unit = "W"
+description = "the heat the flare releases: the gas's inferior calorific value per normal cubic metre at 0 C times its flow in standard cubic metres per second at 15 C. **The two references differ**, which is the class's own arithmetic.\n"
+[outputs.co2_emission]
+unit = "kg/s"
+description = "the carbon dioxide the combustion forms: the gas's carbon atoms per second times `44.01e-3` kg/mol.\n"
+[[valid_range]]
+quantity = "inlet_n"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a molar flow is non-negative, and the CO2 it carries is proportional to it\n"
+[[valid_range]]
+quantity = "heat_duty"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a calorific value times a positive flow is non-negative, and a negative duty would be a flare that absorbs heat\n"
+[[valid_range]]
+quantity = "co2_emission"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a mass rate of carbon dioxide is non-negative\n"
+[implementations]
+python = "azoth.process.flare"
+rust = "azoth_process::flare"

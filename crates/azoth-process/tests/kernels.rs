@@ -1165,3 +1165,61 @@ fn an_ejector_discharges_between_its_inlets() {
         "the poorer nozzle's temperature",
     );
 }
+
+/// **A flare is a pass-through with a report.** The record does not move; the duty and the
+/// emission are the class's own two numbers, and the duty multiplies an energy density at
+/// one reference by a volumetric flow at another.
+#[test]
+fn a_flare_passes_its_record_through_and_reports_two_numbers() {
+    let inlet = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into()],
+        vec![0.9, 0.1],
+        1.0,
+        pascals(1.01325e5),
+        kelvins(288.15),
+    )
+    .expect("the pair resolves");
+    let (product, numbers) =
+        azoth_process::kernels::flare::flare(&inlet).expect("the standard has both rows");
+
+    println!(
+        "product n={} p={} t={} h={} duty={} co2={}",
+        product.n,
+        product.p.value,
+        product.t.value,
+        product.h.value,
+        numbers.heat_duty.value,
+        numbers.co2_emission.value
+    );
+    println!("neqsim duty=1046833.0648978995 co2=0.057213");
+
+    // The record is the inlet's, field for field.
+    close(product.n, inlet.n);
+    assert_eq!(product.z, inlet.z);
+    close(product.p.value, inlet.p.value);
+    close(product.t.value, inlet.t.value);
+    close(product.h.value, inlet.h.value);
+
+    // The carbon is the gas's: 0.9 methane (one atom) and 0.1 n-butane (four) is 1.3 mol/s of
+    // carbon, times 44.01e-3 kg/mol.
+    close(numbers.co2_emission.value, 1.3 * 44.01e-3);
+    relative(
+        numbers.heat_duty.value,
+        1_046_833.064_897_899_5,
+        1e-12,
+        "the duty",
+    );
+
+    // **The two reference states are not the same one.** The duty is the calorific value per
+    // normal cubic metre at 0 C times a volume at 15 C, so it is 288.15/273.15 above the
+    // consistently-referenced one - which is the class's arithmetic and not a defect this
+    // port may quietly fix.
+    let consistently = numbers.heat_duty.value * 273.15 / 288.15;
+    close(numbers.heat_duty.value / consistently, 288.15 / 273.15);
+    assert!(
+        (numbers.heat_duty.value - consistently) / consistently > 0.05,
+        "the two references differ by more than five per cent: {} against {}",
+        numbers.heat_duty.value,
+        consistently
+    );
+}

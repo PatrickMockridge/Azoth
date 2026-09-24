@@ -647,6 +647,32 @@ class GasScrubberResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FlareResult(_HasWarnings):
+    """Result of ``process.flare``.
+
+    The inlet's record through - a flare's steady state changes nothing - and the two numbers
+    the class computes beside it.
+    """
+
+    #: Product molar flow.
+    product_n: Q
+    #: Product composition.
+    product_z: tuple[float, ...]
+    #: Product pressure.
+    product_p: Q
+    #: Product temperature.
+    product_t: Q
+    #: Product molar enthalpy.
+    product_h: Q
+    #: The heat the flare releases.
+    heat_duty: Q
+    #: The carbon dioxide the combustion forms.
+    co2_emission: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Iso6976Result(_HasWarnings):
     """Result of ``standards.iso6976``.
 

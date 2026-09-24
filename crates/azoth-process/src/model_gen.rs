@@ -8,6 +8,7 @@
 //!   - specs/models/process/ejector.toml
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
+//!   - specs/models/process/flare.toml
 //!   - specs/models/process/gas_scrubber.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
@@ -1559,6 +1560,169 @@ pub static FILTER_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: FILTER_CHECKS,
     cases: FILTER_CASES,
+};
+
+static FLARE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "inlet_n",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a molar flow is non-negative, and the CO2 it carries is proportional to it",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "heat_duty",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a calorific value times a positive flow is non-negative, and a negative duty would be a flare that absorbs heat",
+        },
+    },
+    SpecCheck {
+        on_input: false,
+        check: RangeCheck {
+            quantity: "co2_emission",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a mass rate of carbon dioxide is non-negative",
+        },
+    },
+];
+
+static FLARE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "binary",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[("inlet_n", 1.0), ("inlet_p", 101325.0), ("inlet_t", 288.15)],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.9, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 1.0),
+            ("product_p", 101325.0),
+            ("product_t", 288.15),
+            ("product_h", 587.430399954884),
+            ("heat_duty", 1046833.0648978995),
+            ("co2_emission", 0.057213),
+        ],
+        expected_vectors: &[("product_z", &[0.9, 0.1])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "sales_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[("inlet_n", 1.0), ("inlet_p", 101325.0), ("inlet_t", 288.15)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &["methane", "ethane", "propane", "n-butane", "nitrogen"],
+        )],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.85, 0.07, 0.03, 0.02, 0.03])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 1.0),
+            ("product_p", 101325.0),
+            ("product_t", 288.15),
+            ("product_h", 549.2474767040519),
+            ("heat_duty", 949169.6473970738),
+            ("co2_emission", 0.05105160000000001),
+        ],
+        expected_vectors: &[("product_z", &[0.85, 0.07, 0.03, 0.02, 0.03])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "sour_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[("inlet_n", 1.0), ("inlet_p", 101325.0), ("inlet_t", 288.15)],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2", "nitrogen"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.8, 0.15, 0.05])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 1.0),
+            ("product_p", 101325.0),
+            ("product_t", 288.15),
+            ("product_h", 504.0082050804368),
+            ("heat_duty", 679291.5927940359),
+            ("co2_emission", 0.041809500000000006),
+        ],
+        expected_vectors: &[("product_z", &[0.8, 0.15, 0.05])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "heavy",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("inlet_n", 0.9999999999999999),
+            ("inlet_p", 101325.0),
+            ("inlet_t", 288.15),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane", "n-heptane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.6, 0.3, 0.1])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 0.9999999999999999),
+            ("product_p", 101325.0),
+            ("product_t", 288.15),
+            ("product_h", -2022.5692972719955),
+            ("heat_duty", 1856692.489362915),
+            ("co2_emission", 0.110025),
+        ],
+        expected_vectors: &[("product_z", &[0.6, 0.3, 0.1])],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.flare`.
+pub static FLARE_SPEC: ModelSpec = ModelSpec {
+    id: "process.flare",
+    kind: "direct",
+    algorithm: None,
+    checks: FLARE_CHECKS,
+    cases: FLARE_CASES,
 };
 
 static GAS_SCRUBBER_CHECKS: &[SpecCheck] = &[
@@ -3904,6 +4068,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &EJECTOR_SPEC,
     &EXPANDER_SPEC,
     &FILTER_SPEC,
+    &FLARE_SPEC,
     &GAS_SCRUBBER_SPEC,
     &HEAT_EXCHANGER_SPEC,
     &HEATER_SPEC,

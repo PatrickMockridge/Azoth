@@ -663,6 +663,33 @@ pub fn tank(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.flare` - the flare's kernel as a registered id.
+///
+/// **The record through and two numbers beside it.** `Flare.run` clones the inlet into the
+/// outlet, so the five fields cross unchanged; the duty and the CO2 emission are the class's
+/// own, and they are outputs here because they are what the machine reports.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t))]
+#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t)")]
+pub fn flare(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+) -> PyResult<crate::results::PyFlareResult> {
+    azoth_process::flare(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+    )
+    .map(|r| crate::results::PyFlareResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.ejector` - the ejector's kernel as a registered id.
 ///
 /// **Two inlets carrying two fluids and one outlet.** The four efficiencies are the class's

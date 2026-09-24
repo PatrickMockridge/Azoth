@@ -1,0 +1,64 @@
+binary
+inlet_n=1.0
+inlet_P=1.01325
+inlet_T=288.15
+inlet_h=587.430399954884
+inlet_s=4.831532939546865
+inlet_z=methane:0.9 n-butane:0.1
+product_n=1.0
+product_P=1.01325
+product_T=288.15
+product_h=587.430399954884
+product_s=4.831532939546865
+product_z=methane:0.9 n-butane:0.1
+heat_duty_W=1046833.0648978995
+co2_emission_kg_per_s=0.057213
+
+sales_gas
+inlet_n=1.0
+inlet_P=1.01325
+inlet_T=288.15
+inlet_h=549.2474767040519
+inlet_s=7.083521689947269
+inlet_z=methane:0.85 ethane:0.07 propane:0.03 n-butane:0.02 nitrogen:0.03
+product_n=1.0
+product_P=1.01325
+product_T=288.15
+product_h=549.2474767040519
+product_s=7.083521689947269
+product_z=methane:0.85 ethane:0.07 propane:0.03 n-butane:0.02 nitrogen:0.03
+heat_duty_W=949169.6473970738
+co2_emission_kg_per_s=0.05105160000000001
+
+sour_gas
+inlet_n=1.0
+inlet_P=1.01325
+inlet_T=288.15
+inlet_h=504.0082050804368
+inlet_s=6.916477441233057
+inlet_z=methane:0.8 CO2:0.15 nitrogen:0.05
+product_n=1.0
+product_P=1.01325
+product_T=288.15
+product_h=504.0082050804368
+product_s=6.916477441233057
+product_z=methane:0.8 CO2:0.15 nitrogen:0.05
+heat_duty_W=679291.5927940359
+co2_emission_kg_per_s=0.041809500000000006
+
+heavy
+inlet_n=0.9999999999999999
+inlet_P=1.01325
+inlet_T=288.15
+inlet_h=-2022.5692972719955
+inlet_s=1.0474158645756175
+inlet_z=methane:0.6000000000000001 n-butane:0.30000000000000004 n-heptane:0.10000000000000002
+product_n=0.9999999999999999
+product_P=1.01325
+product_T=288.15
+product_h=-2022.5692972719955
+product_s=1.0474158645756175
+product_z=methane:0.6000000000000001 n-butane:0.30000000000000004 n-heptane:0.10000000000000002
+heat_duty_W=1856692.489362915
+co2_emission_kg_per_s=0.110025
+
