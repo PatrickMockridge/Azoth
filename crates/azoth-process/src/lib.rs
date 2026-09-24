@@ -16,6 +16,7 @@ pub mod kernels;
 pub mod load;
 pub mod model_gen;
 pub mod models;
+pub mod reactor;
 pub mod stream;
 pub mod unit_op;
 
