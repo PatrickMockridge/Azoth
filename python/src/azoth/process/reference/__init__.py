@@ -12,11 +12,11 @@ rule arriving.
 
 from __future__ import annotations
 
+from azoth.process.reference.absorption_column import absorption_column
 from azoth.process.reference.component_splitter import component_splitter
 from azoth.process.reference.compressor import compressor
-from azoth.process.reference.absorption_column import absorption_column
-from azoth.process.reference.distillation_column import distillation_column
 from azoth.process.reference.cooler import cooler
+from azoth.process.reference.distillation_column import distillation_column
 from azoth.process.reference.ejector import ejector
 from azoth.process.reference.expander import expander
 from azoth.process.reference.filter import filter
@@ -32,16 +32,17 @@ from azoth.process.reference.separator import separator
 from azoth.process.reference.shortcut_distillation_column import shortcut_distillation_column
 from azoth.process.reference.splitter import splitter
 from azoth.process.reference.stirred_tank_reactor import stirred_tank_reactor
+from azoth.process.reference.stripping_column import stripping_column
 from azoth.process.reference.tank import tank
 from azoth.process.reference.three_phase_separator import three_phase_separator
 from azoth.process.reference.throttling_valve import throttling_valve
 
 __all__ = [
+    "absorption_column",
     "component_splitter",
     "compressor",
-    "absorption_column",
-    "distillation_column",
     "cooler",
+    "distillation_column",
     "ejector",
     "expander",
     "filter",
@@ -57,6 +58,7 @@ __all__ = [
     "shortcut_distillation_column",
     "splitter",
     "stirred_tank_reactor",
+    "stripping_column",
     "tank",
     "three_phase_separator",
     "throttling_valve",

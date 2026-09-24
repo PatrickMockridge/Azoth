@@ -3943,6 +3943,55 @@ class ShortcutDistillationColumnResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class StrippingColumnResult(_HasWarnings):
+    """Result of ``process.stripping_column``.
+
+    **`AbsorptionColumnResult` under the class's own getters**: `getOverheadGasStream` is the
+    stripped gas and `getLeanLiquidStream` the stripped liquid, and the two classes are one set
+    of counter-current stage equations.
+    """
+
+    #: Each tray's temperature, from the gas end at stage 0 up.
+    tray_temperature: tuple[Q, ...]
+    #: Each tray's pressure.
+    tray_pressure: tuple[Q, ...]
+    #: Each tray's vapour traffic, which is its upward traffic.
+    tray_gas_n: tuple[Q, ...]
+    #: Each tray's liquid traffic, which is its downward traffic.
+    tray_liquid_n: tuple[Q, ...]
+    #: The stripped gas.
+    overhead_gas_n: Q
+    #: The stripped gas's composition.
+    overhead_gas_z: tuple[float, ...]
+    #: The stripped gas's pressure.
+    overhead_gas_p: Q
+    #: The stripped gas's temperature.
+    overhead_gas_t: Q
+    #: The stripped gas's molar enthalpy at its own state.
+    overhead_gas_h: Q
+    #: The lean liquid.
+    lean_liquid_n: Q
+    #: The lean liquid's composition.
+    lean_liquid_z: tuple[float, ...]
+    #: The lean liquid's pressure.
+    lean_liquid_p: Q
+    #: The lean liquid's temperature.
+    lean_liquid_t: Q
+    #: The lean liquid's molar enthalpy at its own state.
+    lean_liquid_h: Q
+    #: Iterations taken - one sweep where every tray is pinned.
+    iterations: int
+    #: The mean tray-temperature change at the last iteration, the gate the solve was held to.
+    temperature_residual: float
+    #: The products' worst component imbalance against both feeds, relative.
+    mass_residual: float
+    #: ``|H_feeds - H_products| / |H_feeds|``.
+    energy_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AbsorptionColumnResult(_HasWarnings):
     """Result of ``process.absorption_column``.
 

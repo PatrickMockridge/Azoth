@@ -1,0 +1,201 @@
+id = "process.stripping_column"
+name = "Stripping column"
+kind = "direct"
+assumptions = [
+    "**the class adds no arithmetic, and this id is a rename.** `StrippingColumn extends AbsorptionColumn` in ninety lines: its two inlets and its two products are the base's under other names, because absorption and stripping are one set of counter-current stage equations.",
+    "**so the equations are `process.absorption_column`'s**, which are `process.distillation_column`'s with two feeds and no ends: the stripping gas enters stage 0 and the rich liquid the top stage, exactly where an absorber's gas and solvent enter.",
+    "**`StrippingColumnTest`'s own case states `MESH_RESIDUAL`**, a strategy this port refuses as a path variant. Its row is in the capture beside the answer it produces, and the port is held to that answer rather than to the rung.",
+    "**the class's own tests pin every tray**, which makes the base's gate - the mean tray-temperature change - exactly zero, so those rows stop after their first sweep and are captured as evidence rather than as oracles.",
+    "**the products are the class's own getters**: `getOverheadGasStream` is the stripped gas leaving the top tray and `getLeanLiquidStream` the lean liquid leaving the bottom.",
+    "**both inlets carry the same substances in the same order**, which is the class's own indexing and `process.absorption_column`'s refusal.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**the Murphree efficiencies and the eight unported strategies are refused by name**, as the base refuses them.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/absorber/StrippingColumn.java` is the port source; it extends `AbsorptionColumn` and adds no equations.",
+    "`validation/neqsim/captures/process_absorber.tsv` - six rows for the two machines: a lean-oil absorber and a hydrocarbon stripper, each pinned as the classes' own tests pin them, unpinned at the classes' own `1e-2` K gate, and unpinned at `1e-4` K, which is the row this port is held to.",
+]
+[source]
+standard = "NeqSim process/equipment/absorber/StrippingColumn.java"
+edition = "Its two inlet methods and its two product getters, over `AbsorptionColumn`'s constructor: no condenser, no reboiler, the gas at stage 0 and the liquid at the top stage."
+[inputs]
+[inputs.stripping_gas_components]
+type = "components"
+description = "the stripping gas's substances, by name. The rich liquid must name the same substances in the same order.\n"
+[inputs.stripping_gas_n]
+unit = "mol/s"
+description = "the stripping gas's molar flow, which enters stage 0.\n"
+[inputs.stripping_gas_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the stripping gas's composition.\n"
+[inputs.stripping_gas_p]
+unit = "Pa"
+description = "the stripping gas's pressure, which is its own.\n"
+[inputs.stripping_gas_t]
+unit = "K"
+description = "the stripping gas's temperature.\n"
+[inputs.rich_liquid_components]
+type = "components"
+description = "the rich liquid's substances, by name, in the gas's own order.\n"
+[inputs.rich_liquid_n]
+unit = "mol/s"
+description = "the rich liquid's molar flow, which enters the top stage.\n"
+[inputs.rich_liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the rich liquid's composition.\n"
+[inputs.rich_liquid_p]
+unit = "Pa"
+description = "the rich liquid's pressure.\n"
+[inputs.rich_liquid_t]
+unit = "K"
+description = "the rich liquid's temperature.\n"
+[inputs.number_of_stages]
+unit = "dimensionless"
+description = "the actual trays; a tray is numbered 0 at the bottom, where the stripping gas enters, to `number_of_stages - 1`, where the rich liquid enters.\n"
+[inputs.top_pressure]
+unit = "Pa"
+description = "the pressure at the top stage.\n"
+[inputs.bottom_pressure]
+unit = "Pa"
+description = "the pressure at the bottom stage. The class's own tests state the same value for both.\n"
+[inputs.tray_temperatures]
+type = "vector"
+unit = "K"
+length = "one per tray"
+optional = true
+description = "one outlet-temperature pin per tray, `NaN` where a tray has none. **A pinned column stops after its first sweep**, because the gate is the tray-temperature change it has made zero.\n"
+[inputs.temperature_tolerance]
+unit = "K"
+description = "the convergence gate on the mean tray-temperature change. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named.\n"
+[inputs.murphree_efficiency]
+unit = "dimensionless"
+optional = true
+description = "**not ported**: the column-wide Murphree tray efficiency, which `SimpleTray.setMurphreeEfficiency` and `applyMurphreeCorrection` would close. Omitted means the ideal stage.\n"
+[inputs.component_murphree_efficiency]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+optional = true
+description = "**not ported**: the per-component Murphree efficiency, which `setComponentMurphreeEfficiency` sets.\n"
+[inputs.max_allowable_gas_load_factor]
+unit = "dimensionless"
+optional = true
+description = "the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does.\n"
+[inputs.solver_type]
+type = "enum"
+values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]
+optional = true
+description = "which of the base's ten solving strategies runs. **`direct_substitution` is the class's own default**; `naphtali_sandholm` refuses here, because a column with no pinned reboiler runs `solveBubblePointMethod`.\n"
+[outputs]
+[outputs.tray_temperature]
+type = "vector"
+unit = "K"
+length = "one per tray, the gas end at stage 0"
+description = "the solved temperature profile.\n"
+[outputs.tray_pressure]
+type = "vector"
+unit = "Pa"
+length = "one per tray"
+description = "each tray's pressure, the linear profile between `bottom_pressure` and `top_pressure`.\n"
+[outputs.tray_gas_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the vapour leaving each tray, which is its upward traffic.\n"
+[outputs.tray_liquid_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the liquid leaving each tray, which is its downward traffic.\n"
+[outputs.overhead_gas_n]
+unit = "mol/s"
+description = "the stripped gas, which is the top tray's own vapour.\n"
+[outputs.overhead_gas_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the stripped gas's composition.\n"
+[outputs.overhead_gas_p]
+unit = "Pa"
+description = "the stripped gas's pressure, which is `top_pressure`.\n"
+[outputs.overhead_gas_t]
+unit = "K"
+description = "the stripped gas's temperature, which is the top tray's own.\n"
+[outputs.overhead_gas_h]
+unit = "J/mol"
+description = "the stripped gas's molar enthalpy at its own state.\n"
+[outputs.lean_liquid_n]
+unit = "mol/s"
+description = "the lean liquid, which is the bottom tray's own liquid.\n"
+[outputs.lean_liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the lean liquid's composition.\n"
+[outputs.lean_liquid_p]
+unit = "Pa"
+description = "the lean liquid's pressure, which is `bottom_pressure`.\n"
+[outputs.lean_liquid_t]
+unit = "K"
+description = "the lean liquid's temperature.\n"
+[outputs.lean_liquid_h]
+unit = "J/mol"
+description = "the lean liquid's molar enthalpy at its own state.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "the iterations taken. **One sweep where every tray is pinned**, which is what the class's own isothermal rows are.\n"
+[outputs.temperature_residual]
+unit = "K"
+description = "the mean tray-temperature change at the last iteration - the gate the solve was held to.\n"
+[outputs.mass_residual]
+unit = "dimensionless"
+description = "the products' worst component imbalance against both feeds, relative.\n"
+[outputs.energy_residual]
+unit = "dimensionless"
+description = "`|H_feeds - H_products| / |H_feeds|`, the enthalpy closure.\n"
+[[valid_range]]
+quantity = "number_of_stages"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a stripper with no trays is not a stripper\n"
+[[valid_range]]
+quantity = "top_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "bottom_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "temperature_tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a convergence tolerance is positive, and zero is a solve that never stops\n"
+[[valid_range]]
+quantity = "stripping_gas_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[[valid_range]]
+quantity = "rich_liquid_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.stripping_column"
+rust = "azoth_process::stripping_column"

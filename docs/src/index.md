@@ -235,6 +235,7 @@ Five sections, and the difference between them is the point:
 
 *Models* — whose specs fix a procedure rather than an equation:
 
+- [`process.absorption_column`](./process/absorption_column.md) — Absorption column
 - [`process.component_splitter`](./process/component_splitter.md) — Component splitter
 - [`process.compressor`](./process/compressor.md) — Compressor
 - [`process.cooler`](./process/cooler.md) — Cooler
@@ -254,6 +255,7 @@ Five sections, and the difference between them is the point:
 - [`process.shortcut_distillation_column`](./process/shortcut_distillation_column.md) — Shortcut distillation column
 - [`process.splitter`](./process/splitter.md) — Splitter
 - [`process.stirred_tank_reactor`](./process/stirred_tank_reactor.md) — Stirred-tank reactor
+- [`process.stripping_column`](./process/stripping_column.md) — Stripping column
 - [`process.tank`](./process/tank.md) — Tank
 - [`process.three_phase_separator`](./process/three_phase_separator.md) — Three-phase separator
 - [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve

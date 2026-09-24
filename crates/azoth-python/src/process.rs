@@ -558,6 +558,69 @@ pub fn absorption_column(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.stripping_column` - the tray stripper as a registered id.
+///
+/// **The absorber's own machine under the class's own names**: `StrippingColumn extends
+/// AbsorptionColumn` and renames its two inlets and its two products, so the binding is the same
+/// call with the other labels.
+#[pyfunction]
+#[pyo3(
+    signature = (stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, solver_type = None)
+)]
+#[pyo3(
+    text_signature = "(stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, solver_type=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input
+pub fn stripping_column(
+    py: Python<'_>,
+    stripping_gas_components: Vec<String>,
+    rich_liquid_components: Vec<String>,
+    stripping_gas_n: f64,
+    stripping_gas_z: Vec<f64>,
+    stripping_gas_p: f64,
+    stripping_gas_t: f64,
+    rich_liquid_n: f64,
+    rich_liquid_z: Vec<f64>,
+    rich_liquid_p: f64,
+    rich_liquid_t: f64,
+    number_of_stages: usize,
+    top_pressure: f64,
+    bottom_pressure: f64,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    tray_temperatures: Option<Vec<f64>>,
+    murphree_efficiency: Option<f64>,
+    component_murphree_efficiency: Option<Vec<f64>>,
+    max_allowable_gas_load_factor: Option<f64>,
+    solver_type: Option<&str>,
+) -> PyResult<crate::results::PyStrippingColumnResult> {
+    azoth_process::stripping_column(
+        &stripping_gas_components,
+        &rich_liquid_components,
+        stripping_gas_n,
+        &stripping_gas_z,
+        pascals(stripping_gas_p),
+        kelvins(stripping_gas_t),
+        rich_liquid_n,
+        &rich_liquid_z,
+        pascals(rich_liquid_p),
+        kelvins(rich_liquid_t),
+        number_of_stages,
+        pascals(top_pressure),
+        pascals(bottom_pressure),
+        temperature_tolerance,
+        max_iterations,
+        tray_temperatures.as_deref(),
+        murphree_efficiency,
+        component_murphree_efficiency.as_deref(),
+        max_allowable_gas_load_factor,
+        solver_type,
+    )
+    .map(|r| crate::results::PyStrippingColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.throttling_valve` - the valve's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]

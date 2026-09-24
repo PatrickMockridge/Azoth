@@ -13,6 +13,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 
 | Model | Scheme | Source |
 |---|---|---|
+| [`process.absorption_column`](./absorption_column.md) | `direct composition` | NeqSim process/equipment/absorber/AbsorptionColumn.java |
 | [`process.component_splitter`](./component_splitter.md) | `direct composition` | NeqSim process/equipment/splitter/ComponentSplitter.java |
 | [`process.compressor`](./compressor.md) | `direct composition` | NeqSim process/equipment/compressor/Compressor.java |
 | [`process.cooler`](./cooler.md) | `direct composition` | NeqSim process/equipment/heatexchanger/Cooler.java |
@@ -32,6 +33,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.shortcut_distillation_column`](./shortcut_distillation_column.md) | `underwood_bisection` | NeqSim process/equipment/distillation/ShortcutDistillationColumn.java |
 | [`process.splitter`](./splitter.md) | `direct composition` | NeqSim process/equipment/splitter/Splitter.java |
 | [`process.stirred_tank_reactor`](./stirred_tank_reactor.md) | `direct composition` | NeqSim process/equipment/reactor/StirredTankReactor.java |
+| [`process.stripping_column`](./stripping_column.md) | `direct composition` | NeqSim process/equipment/absorber/StrippingColumn.java |
 | [`process.tank`](./tank.md) | `direct composition` | NeqSim process/equipment/tank/Tank.java |
 | [`process.three_phase_separator`](./three_phase_separator.md) | `direct composition` | NeqSim process/equipment/separator/ThreePhaseSeparator.java |
 | [`process.throttling_valve`](./throttling_valve.md) | `direct composition` | NeqSim process/equipment/valve/ThrottlingValve.java |

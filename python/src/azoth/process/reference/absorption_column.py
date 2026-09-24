@@ -172,10 +172,10 @@ def absorption_column(
     )
 
     return AbsorptionColumnResult(
-        tray_temperature=[from_si(value, "K") for value in states.tray_temperature],
-        tray_pressure=[from_si(value, "Pa") for value in states.tray_pressure],
-        tray_gas_n=[from_si(value, "mol/s") for value in states.tray_gas_n],
-        tray_liquid_n=[from_si(value, "mol/s") for value in states.tray_liquid_n],
+        tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
+        tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
+        tray_gas_n=tuple(from_si(value, "mol/s") for value in states.tray_gas_n),
+        tray_liquid_n=tuple(from_si(value, "mol/s") for value in states.tray_liquid_n),
         gas_out_n=from_si(states.distillate_n, "mol/s"),
         gas_out_z=states.distillate_z,
         gas_out_p=from_si(states.distillate_p, "Pa"),

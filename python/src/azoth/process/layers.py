@@ -467,6 +467,56 @@ def _absorption_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     return layers
 
 
+def _stripping_column(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.stripping_column`'s layers: the profile, under the capture's own key names.
+
+    The same layer as the absorber's, because the class is the same machine: `StrippingColumn`
+    renames the two inlets and the two products and adds no equations.
+    """
+    from azoth.process.reference.distillation_column import _feed, _states
+
+    components = [str(name) for name in inputs["stripping_gas_components"]]
+    states = _states(
+        components,
+        float(inputs["stripping_gas_n"]),
+        [float(v) for v in inputs["stripping_gas_z"]],
+        float(inputs["stripping_gas_t"]),
+        float(inputs["stripping_gas_p"]),
+        int(inputs["number_of_stages"]),
+        0,
+        False,
+        False,
+        float(inputs["top_pressure"]),
+        float(inputs["bottom_pressure"]),
+        None,
+        None,
+        float(inputs["temperature_tolerance"]),
+        int(inputs["max_iterations"]),
+        None,
+        None,
+        str(inputs["solver_type"]) if "solver_type" in inputs else None,
+        top_feed=_feed(
+            [str(name) for name in inputs["rich_liquid_components"]],
+            float(inputs["rich_liquid_n"]),
+            [float(v) for v in inputs["rich_liquid_z"]],
+            float(inputs["rich_liquid_t"]),
+            float(inputs["rich_liquid_p"]),
+        ),
+        tray_temperatures=(
+            None
+            if "tray_temperatures" not in inputs
+            else tuple(float(v) for v in inputs["tray_temperatures"])
+        ),
+    )
+    layers: dict[str, float] = {}
+    for i in range(len(states.tray_temperature)):
+        layers[f"tray{i}_temperature_K"] = states.tray_temperature[i]
+        layers[f"tray{i}_pressure_bara"] = states.tray_pressure[i] / 1.0e5
+        layers[f"tray{i}_gas_n"] = states.tray_gas_n[i]
+        layers[f"tray{i}_liquid_n"] = states.tray_liquid_n[i]
+    return layers
+
+
 def _spec_of(inputs: Mapping[str, Any], which: str) -> Any:
     """One end's specification from a case's own inputs, or ``None`` where none is stated."""
     from azoth.process.reference.distillation_column import Specification
@@ -531,6 +581,7 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
 
 DUMPERS: dict[str, Dumper] = {
     "process.absorption_column": _absorption_column,
+    "process.stripping_column": _stripping_column,
     "process.component_splitter": _component_splitter,
     "process.distillation_column": _distillation_column,
     "process.expander": _expander,
@@ -869,6 +920,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=2,
         identified_by=("#label", "lean_oil_absorber"),
     ),
+    LayerCase(
+        model="process.stripping_column",
+        case="hydrocarbon_stripper",
+        capture="process_absorber.tsv",
+        block=5,
+        identified_by=("#label", "hydrocarbon_stripper"),
+    ),
     # The column's converged rows. **Both are cases, and the second is there because a looser
     # gate is a different measurement** rather than a sloppier version of the first: where a
     # solve stops is what its answer is.
@@ -1156,15 +1214,14 @@ UNCASED_ROWS: dict[str, int] = {
     # own test asserts about them is self-consistency, and this is why they are declared here
     # rather than paired with a case.
     "process_column.tsv": 5,
-    # The absorber's capture holds six rows for one id, because the two machines it drives are
-    # one class with two names. Five are uncased. **The pinned pair is the classes' own
-    # isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly
+    # One capture for two ids, because the two machines it drives are one class with two names,
+    # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
+    # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly
     # zero, so the solve stops after its first sweep - and the port **refuses** the state it
     # lands on, because that state's energy closure is `0.28` against the class's own default
-    # gate of `1.6e-2`. The class's *test* accepts it only because it loosened that gate to
-    # `5e-2`, a settable this port has not carried. The loose-gate unpinned row is the same
-    # measurement one step out, and the three stripper rows belong to a class whose id this
-    # stage does not carry.
+    # gate of `1.6e-2`. The classes' *tests* accept it only because they loosened that gate to
+    # `5e-2`, a settable this port has not carried. The two loose-gate rows are the same
+    # measurement one step out, and the stripper's pinned row states `MESH_RESIDUAL` besides.
     "process_absorber.tsv": 5,
 }
 

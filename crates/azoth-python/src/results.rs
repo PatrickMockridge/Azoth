@@ -10491,6 +10491,112 @@ pub struct PyAbsorptionColumnResult {
     pub warnings: Vec<PyWarning>,
 }
 
+/// Result of `process.stripping_column`, transported.
+///
+/// **`PyAbsorptionColumnResult` under the class's own getters**, which is what the class is.
+#[pyclass(module = "azoth._core")]
+pub struct PyStrippingColumnResult {
+    /// Each tray's temperature.
+    #[pyo3(get)]
+    pub tray_temperature: Vec<PyQty>,
+    /// Each tray's pressure.
+    #[pyo3(get)]
+    pub tray_pressure: Vec<PyQty>,
+    /// Each tray's vapour traffic.
+    #[pyo3(get)]
+    pub tray_gas_n: Vec<PyQty>,
+    /// Each tray's liquid traffic.
+    #[pyo3(get)]
+    pub tray_liquid_n: Vec<PyQty>,
+    /// The stripped gas's molar flow.
+    #[pyo3(get)]
+    pub overhead_gas_n: PyQty,
+    /// The stripped gas's composition.
+    #[pyo3(get)]
+    pub overhead_gas_z: Vec<f64>,
+    /// The stripped gas's pressure.
+    #[pyo3(get)]
+    pub overhead_gas_p: PyQty,
+    /// The stripped gas's temperature.
+    #[pyo3(get)]
+    pub overhead_gas_t: PyQty,
+    /// The stripped gas's molar enthalpy.
+    #[pyo3(get)]
+    pub overhead_gas_h: PyQty,
+    /// The lean liquid's molar flow.
+    #[pyo3(get)]
+    pub lean_liquid_n: PyQty,
+    /// The lean liquid's composition.
+    #[pyo3(get)]
+    pub lean_liquid_z: Vec<f64>,
+    /// The lean liquid's pressure.
+    #[pyo3(get)]
+    pub lean_liquid_p: PyQty,
+    /// The lean liquid's temperature.
+    #[pyo3(get)]
+    pub lean_liquid_t: PyQty,
+    /// The lean liquid's molar enthalpy.
+    #[pyo3(get)]
+    pub lean_liquid_h: PyQty,
+    /// Iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The mean tray-temperature change at the last iteration.
+    #[pyo3(get)]
+    pub temperature_residual: f64,
+    /// The products' worst component imbalance against both feeds.
+    #[pyo3(get)]
+    pub mass_residual: f64,
+    /// The enthalpy closure.
+    #[pyo3(get)]
+    pub energy_residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+impl From<&StrippingColumnResult> for PyStrippingColumnResult {
+    fn from(r: &StrippingColumnResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            tray_temperature: r
+                .tray_temperature
+                .iter()
+                .map(|t| quantity(t.value, "K"))
+                .collect(),
+            tray_pressure: r
+                .tray_pressure
+                .iter()
+                .map(|p| quantity(p.value, "Pa"))
+                .collect(),
+            tray_gas_n: r.tray_gas_n.iter().map(|n| quantity(*n, "mol/s")).collect(),
+            tray_liquid_n: r
+                .tray_liquid_n
+                .iter()
+                .map(|n| quantity(*n, "mol/s"))
+                .collect(),
+            overhead_gas_n: quantity(r.overhead_gas_n, "mol/s"),
+            overhead_gas_z: r.overhead_gas_z.clone(),
+            overhead_gas_p: quantity(r.overhead_gas_p.value, "Pa"),
+            overhead_gas_t: quantity(r.overhead_gas_t.value, "K"),
+            overhead_gas_h: quantity(r.overhead_gas_h.value, "J/mol"),
+            lean_liquid_n: quantity(r.lean_liquid_n, "mol/s"),
+            lean_liquid_z: r.lean_liquid_z.clone(),
+            lean_liquid_p: quantity(r.lean_liquid_p.value, "Pa"),
+            lean_liquid_t: quantity(r.lean_liquid_t.value, "K"),
+            lean_liquid_h: quantity(r.lean_liquid_h.value, "J/mol"),
+            iterations: r.iterations,
+            temperature_residual: r.temperature_residual,
+            mass_residual: r.mass_residual,
+            energy_residual: r.energy_residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&AbsorptionColumnResult> for PyAbsorptionColumnResult {
     fn from(r: &AbsorptionColumnResult) -> Self {
         let quantity = |magnitude_si: f64, unit: &str| PyQty {

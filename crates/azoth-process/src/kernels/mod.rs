@@ -26,6 +26,7 @@ pub mod separator;
 pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod stirred_tank_reactor;
+pub mod stripping_column;
 pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;

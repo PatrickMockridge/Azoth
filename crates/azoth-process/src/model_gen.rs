@@ -21,6 +21,7 @@
 //!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
 //!   - specs/models/process/stirred_tank_reactor.toml
+//!   - specs/models/process/stripping_column.toml
 //!   - specs/models/process/tank.toml
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
@@ -3802,6 +3803,214 @@ pub static STIRRED_TANK_REACTOR_SPEC: ModelSpec = ModelSpec {
     cases: STIRRED_TANK_REACTOR_CASES,
 };
 
+static STRIPPING_COLUMN_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "number_of_stages",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a stripper with no trays is not a stripper",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "top_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bottom_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature_tolerance",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a convergence tolerance is positive, and zero is a solve that never stops",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "stripping_gas_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rich_liquid_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+];
+
+static STRIPPING_COLUMN_CASES: &[TestCase] = &[TestCase {
+    id: "hydrocarbon_stripper",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 0.0001,
+    numbers: &[
+        ("stripping_gas_n", 2.547079374624363),
+        ("stripping_gas_p", 1200000.0),
+        ("stripping_gas_t", 343.15),
+        ("rich_liquid_n", 2.9489815574232177),
+        ("rich_liquid_p", 1200000.0),
+        ("rich_liquid_t", 343.15),
+        ("number_of_stages", 5.0),
+        ("top_pressure", 1200000.0),
+        ("bottom_pressure", 1200000.0),
+        ("temperature_tolerance", 0.0001),
+        ("max_iterations", 80.0),
+    ],
+    flags: &[],
+    lists: &[
+        (
+            "stripping_gas_components",
+            &["methane", "propane", "n-butane", "n-pentane", "n-heptane"],
+        ),
+        (
+            "rich_liquid_components",
+            &["methane", "propane", "n-butane", "n-pentane", "n-heptane"],
+        ),
+    ],
+    strings: &[],
+    vectors: &[
+        ("stripping_gas_z", &[0.99, 0.008, 0.0015, 0.0005, 0.0]),
+        ("rich_liquid_z", &[0.02, 0.08, 0.12, 0.15, 0.63]),
+    ],
+    matrices: &[],
+    expected: &[
+        ("overhead_gas_n", 3.086389912429422),
+        ("overhead_gas_p", 1200000.0),
+        ("overhead_gas_t", 337.4756906481115),
+        ("overhead_gas_h", 2822.7677411042864),
+        ("lean_liquid_n", 2.4096710196150735),
+        ("lean_liquid_p", 1200000.0),
+        ("lean_liquid_t", 321.70664969208974),
+        ("lean_liquid_h", -23614.26232543406),
+    ],
+    expected_vectors: &[
+        (
+            "tray_temperature",
+            &[
+                321.706608455782,
+                325.7629838093825,
+                329.5399755743931,
+                333.18535921380345,
+                337.4756767231461,
+            ],
+        ),
+        (
+            "tray_pressure",
+            &[1200000.0, 1200000.0, 1200000.0, 1200000.0, 1200000.0],
+        ),
+        (
+            "tray_gas_n",
+            &[
+                2.7279541990373932,
+                2.802590567757772,
+                2.8794915186188894,
+                2.983269506121942,
+                3.0863681590312635,
+            ],
+        ),
+        (
+            "tray_liquid_n",
+            &[
+                2.40966121118395,
+                2.590537094838872,
+                2.665180172095894,
+                2.7420904284327983,
+                2.845876882580072,
+            ],
+        ),
+        (
+            "overhead_gas_z",
+            &[
+                0.7933252789771452,
+                0.07619406979290001,
+                0.06873841855655499,
+                0.0361693602046566,
+                0.025572872468743128,
+            ],
+        ),
+        (
+            "lean_liquid_z",
+            &[
+                0.05487713716722947,
+                0.00880774500850238,
+                0.06025358305292857,
+                0.13783328942864104,
+                0.7382282453426986,
+            ],
+        ),
+    ],
+    expected_strings: &[],
+}];
+
+/// Registry entry for `process.stripping_column`.
+pub static STRIPPING_COLUMN_SPEC: ModelSpec = ModelSpec {
+    id: "process.stripping_column",
+    kind: "direct",
+    algorithm: None,
+    checks: STRIPPING_COLUMN_CHECKS,
+    cases: STRIPPING_COLUMN_CASES,
+};
+
 static TANK_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -4542,6 +4751,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SHORTCUT_DISTILLATION_COLUMN_SPEC,
     &SPLITTER_SPEC,
     &STIRRED_TANK_REACTOR_SPEC,
+    &STRIPPING_COLUMN_SPEC,
     &TANK_SPEC,
     &THREE_PHASE_SEPARATOR_SPEC,
     &THROTTLING_VALVE_SPEC,

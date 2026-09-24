@@ -36,6 +36,7 @@ from azoth.core.result import (
     ShortcutDistillationColumnResult,
     SplitterResult,
     StirredTankReactorResult,
+    StrippingColumnResult,
     TankResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
@@ -65,6 +66,7 @@ __all__ = [
     "separator",
     "shortcut_distillation_column",
     "splitter",
+    "stripping_column",
     "stirred_tank_reactor",
     "tank",
     "three_phase_separator",
@@ -80,6 +82,7 @@ _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
 _ABSORPTION_COLUMN = "process.absorption_column"
+_STRIPPING_COLUMN = "process.stripping_column"
 _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
@@ -280,6 +283,64 @@ def absorption_column(
         solvent_z=solvent_z,
         solvent_p=solvent_p,
         solvent_t=solvent_t,
+        number_of_stages=number_of_stages,
+        top_pressure=top_pressure,
+        bottom_pressure=bottom_pressure,
+        temperature_tolerance=temperature_tolerance,
+        max_iterations=max_iterations,
+        tray_temperatures=tray_temperatures,
+        murphree_efficiency=murphree_efficiency,
+        component_murphree_efficiency=component_murphree_efficiency,
+        max_allowable_gas_load_factor=max_allowable_gas_load_factor,
+        solver_type=solver_type,
+    )
+
+
+def stripping_column(
+    stripping_gas_components: list[str],
+    rich_liquid_components: list[str],
+    stripping_gas_n: Q,
+    stripping_gas_z: list[float],
+    stripping_gas_p: Q,
+    stripping_gas_t: Q,
+    rich_liquid_n: Q,
+    rich_liquid_z: list[float],
+    rich_liquid_p: Q,
+    rich_liquid_t: Q,
+    number_of_stages: int,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    temperature_tolerance: float,
+    max_iterations: int,
+    tray_temperatures: list[float] | None = None,
+    murphree_efficiency: float | None = None,
+    component_murphree_efficiency: list[float] | None = None,
+    max_allowable_gas_load_factor: float | None = None,
+    solver_type: str | None = None,
+) -> StrippingColumnResult:
+    """Strip a rich liquid with a counter-current gas.
+
+    ``StrippingColumn extends AbsorptionColumn`` and its ninety lines rename the two inlets and
+    the two products: ``addStrippingGasStream`` is ``addGasInStream`` and
+    ``addRichLiquidStream`` is ``addSolventInStream``, so the stripping gas enters stage 0 and
+    the rich liquid the top stage. **The class adds no equations** - absorption and stripping
+    are one set of counter-current equilibrium-stage equations, and the driving force sets the
+    direction of transfer - so this is :func:`absorption_column` under the class's own names, and
+    the two products are ``getOverheadGasStream`` and ``getLeanLiquidStream``.
+
+    See :func:`azoth.process.reference.stripping_column`.
+    """
+    return resolve(_STRIPPING_COLUMN)(  # type: ignore[no-any-return]
+        stripping_gas_components=stripping_gas_components,
+        rich_liquid_components=rich_liquid_components,
+        stripping_gas_n=stripping_gas_n,
+        stripping_gas_z=stripping_gas_z,
+        stripping_gas_p=stripping_gas_p,
+        stripping_gas_t=stripping_gas_t,
+        rich_liquid_n=rich_liquid_n,
+        rich_liquid_z=rich_liquid_z,
+        rich_liquid_p=rich_liquid_p,
+        rich_liquid_t=rich_liquid_t,
         number_of_stages=number_of_stages,
         top_pressure=top_pressure,
         bottom_pressure=bottom_pressure,

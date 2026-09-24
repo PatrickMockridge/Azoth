@@ -1601,6 +1601,28 @@ class SplitterResult:
     warnings: list[Warning]
 
 @final
+@final
+class StrippingColumnResult:
+    tray_temperature: list[Qty]
+    tray_pressure: list[Qty]
+    tray_gas_n: list[Qty]
+    tray_liquid_n: list[Qty]
+    overhead_gas_n: Qty
+    overhead_gas_z: list[float]
+    overhead_gas_p: Qty
+    overhead_gas_t: Qty
+    overhead_gas_h: Qty
+    lean_liquid_n: Qty
+    lean_liquid_z: list[float]
+    lean_liquid_p: Qty
+    lean_liquid_t: Qty
+    lean_liquid_h: Qty
+    iterations: int
+    temperature_residual: float
+    mass_residual: float
+    energy_residual: float
+    warnings: list[Warning]
+
 class TankResult:
     gas_n: Qty
     gas_z: list[float]
@@ -3048,6 +3070,28 @@ def stirred_tank_reactor(
     reactor_pressure: float | None = None,
     pressure_drop: float | None = None,
 ) -> StirredTankReactorResult: ...
+def stripping_column(
+    stripping_gas_components: list[str],
+    rich_liquid_components: list[str],
+    stripping_gas_n: float,
+    stripping_gas_z: list[float],
+    stripping_gas_p: float,
+    stripping_gas_t: float,
+    rich_liquid_n: float,
+    rich_liquid_z: list[float],
+    rich_liquid_p: float,
+    rich_liquid_t: float,
+    number_of_stages: float,
+    top_pressure: float,
+    bottom_pressure: float,
+    temperature_tolerance: float,
+    max_iterations: float,
+    tray_temperatures: list[float] | None = None,
+    murphree_efficiency: float | None = None,
+    component_murphree_efficiency: list[float] | None = None,
+    max_allowable_gas_load_factor: float | None = None,
+    solver_type: str | None = None,
+) -> StrippingColumnResult: ...
 def splitter(
     components: list[str],
     feed_n: float,
