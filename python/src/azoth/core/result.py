@@ -583,6 +583,38 @@ class SeparatorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class GasScrubberResult(_HasWarnings):
+    """Result of ``process.gas_scrubber``.
+
+    The same fields as :class:`SeparatorResult`, and its own class: a result type is the
+    registry's handle on an id, and the two entries reach one arithmetic.
+    """
+
+    #: Vapour outlet molar flow.
+    vapour_n: Q
+    #: Vapour outlet composition.
+    vapour_z: tuple[float, ...]
+    #: Vapour outlet pressure.
+    vapour_p: Q
+    #: Vapour outlet temperature.
+    vapour_t: Q
+    #: Vapour outlet molar enthalpy.
+    vapour_h: Q
+    #: Liquid outlet molar flow.
+    liquid_n: Q
+    #: Liquid outlet composition.
+    liquid_z: tuple[float, ...]
+    #: Liquid outlet pressure.
+    liquid_p: Q
+    #: Liquid outlet temperature.
+    liquid_t: Q
+    #: Liquid outlet molar enthalpy.
+    liquid_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HeatExchangerResult(_HasWarnings):
     """Result of ``process.heat_exchanger``.
 
@@ -3645,5 +3677,57 @@ class GeFlashResult(_HasWarnings):
     #: ``rms_i |ln K_i - ln K_i_previous|`` at the last step the loop completed, or
     #: ``NaN`` when no step completed.
     residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ShortcutDistillationColumnResult(_HasWarnings):
+    """Result of ``process.shortcut_distillation_column``.
+
+    **Two outlets of single multiplicity, ten fields, and eight scalars.** The two products
+    cross as ``unit_ops.separator``'s pair does; the eight scalars are the class's whole
+    answer, because a shortcut column's output is not a profile but a stage count, a reflux
+    ratio, a feed tray and two duties. ``relative_volatility`` is among them rather than only
+    inside the arithmetic: it is the one intermediate the NeqSim class exposes, and it is what
+    makes the capture's K-values checkable against the class's own flash.
+    """
+
+    #: Distillate molar flow.
+    distillate_n: Q
+    #: Distillate composition.
+    distillate_z: tuple[float, ...]
+    #: Distillate pressure.
+    distillate_p: Q
+    #: Distillate temperature, which is the feed's.
+    distillate_t: Q
+    #: Distillate molar enthalpy at its own state.
+    distillate_h: Q
+    #: Bottoms molar flow.
+    bottoms_n: Q
+    #: Bottoms composition.
+    bottoms_z: tuple[float, ...]
+    #: Bottoms pressure.
+    bottoms_p: Q
+    #: Bottoms temperature, which is the feed's.
+    bottoms_t: Q
+    #: Bottoms molar enthalpy at its own state.
+    bottoms_h: Q
+    #: Fenske's minimum stages at total reflux.
+    minimum_stages: float
+    #: Underwood's minimum reflux ratio.
+    minimum_reflux_ratio: float
+    #: The stages Molokanov's fit gives at the actual reflux.
+    actual_stages: float
+    #: ``minimum_reflux_ratio * reflux_ratio_multiplier``.
+    actual_reflux_ratio: float
+    #: The feed stage counted from the top.
+    feed_tray_number: int
+    #: The condenser duty the class reports, an estimate rather than a balance.
+    condenser_duty: Q
+    #: The reboiler duty the class reports, an estimate rather than a balance.
+    reboiler_duty: Q
+    #: ``alpha_LK/HK``.
+    relative_volatility: float
     #: Caveats.
     warnings: tuple[Warning, ...]

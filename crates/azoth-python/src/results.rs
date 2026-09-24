@@ -58,9 +58,9 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    CompressorResult, CoolerResult, ExpanderResult, FilterResult, HeatExchangerResult,
-    HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult, SplitterResult,
-    ThrottlingValveResult, pipe::PipeResult,
+    CompressorResult, CoolerResult, ExpanderResult, FilterResult, GasScrubberResult,
+    HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult,
+    ShortcutDistillationColumnResult, SplitterResult, ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -1289,6 +1289,89 @@ impl PySeparatorResult {
 
 impl From<&SeparatorResult> for PySeparatorResult {
     fn from(r: &SeparatorResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            vapour_n: quantity(r.vapour_n, "mol/s"),
+            vapour_z: r.vapour_z.clone(),
+            vapour_p: quantity(r.vapour_p.value, "Pa"),
+            vapour_t: quantity(r.vapour_t.value, "K"),
+            vapour_h: quantity(r.vapour_h.value, "J/mol"),
+            liquid_n: quantity(r.liquid_n, "mol/s"),
+            liquid_z: r.liquid_z.clone(),
+            liquid_p: quantity(r.liquid_p.value, "Pa"),
+            liquid_t: quantity(r.liquid_t.value, "K"),
+            liquid_h: quantity(r.liquid_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `process.gas_scrubber`, transported.
+///
+/// **Two single-multiplicity ports, so ten fields.** The record is five fields per port
+/// and a separator has two outlets, so this is the pair written out under the ports' own
+/// names rather than a list - which is what the port rule gives a `one`-multiplicity port
+/// even when a unit operation has two of them.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GasScrubberResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGasScrubberResult {
+    /// Vapour outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub vapour_n: PyQty,
+    /// Vapour outlet composition.
+    #[pyo3(get)]
+    pub vapour_z: Vec<f64>,
+    /// Vapour outlet pressure.
+    #[pyo3(get)]
+    pub vapour_p: PyQty,
+    /// Vapour outlet temperature.
+    #[pyo3(get)]
+    pub vapour_t: PyQty,
+    /// Vapour outlet molar enthalpy.
+    #[pyo3(get)]
+    pub vapour_h: PyQty,
+    /// Liquid outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub liquid_n: PyQty,
+    /// Liquid outlet composition.
+    #[pyo3(get)]
+    pub liquid_z: Vec<f64>,
+    /// Liquid outlet pressure.
+    #[pyo3(get)]
+    pub liquid_p: PyQty,
+    /// Liquid outlet temperature.
+    #[pyo3(get)]
+    pub liquid_t: PyQty,
+    /// Liquid outlet molar enthalpy.
+    #[pyo3(get)]
+    pub liquid_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGasScrubberResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GasScrubberResult(vapour_n={} {}, liquid_n={} {})",
+            self.vapour_n.magnitude_si,
+            self.vapour_n.unit,
+            self.liquid_n.magnitude_si,
+            self.liquid_n.unit
+        )
+    }
+}
+
+impl From<&GasScrubberResult> for PyGasScrubberResult {
+    fn from(r: &GasScrubberResult) -> Self {
         let quantity = |magnitude_si: f64, unit: &str| PyQty {
             magnitude_si,
             unit: unit.to_string(),
@@ -8504,6 +8587,10 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         ManifoldResult::CALC_ID => ManifoldResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
+        GasScrubberResult::CALC_ID => GasScrubberResult::FIELDS.to_vec(),
+        ShortcutDistillationColumnResult::CALC_ID => {
+            ShortcutDistillationColumnResult::FIELDS.to_vec()
+        }
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
@@ -9598,6 +9685,114 @@ impl From<&azoth_eos::GeFlashResult> for PyGeFlashResult {
             phase: r.phase.as_str().to_string(),
             iterations: r.iterations,
             residual: r.residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.shortcut_distillation_column`, transported.
+///
+/// **Ten stream fields and eight scalars.** The two products cross as `process.separator`'s
+/// pair does; the eight scalars are the class's whole answer, because a shortcut column's
+/// output is not a profile but a stage count, a reflux ratio, a feed tray and two duties.
+/// `relative_volatility` is among them because it is the one intermediate the NeqSim class
+/// exposes, and it is what makes the capture's K-values checkable against the class's flash.
+#[pyclass(module = "azoth._core")]
+pub struct PyShortcutDistillationColumnResult {
+    /// Distillate molar flow, mol/s.
+    #[pyo3(get)]
+    pub distillate_n: PyQty,
+    /// Distillate composition.
+    #[pyo3(get)]
+    pub distillate_z: Vec<f64>,
+    /// Distillate pressure.
+    #[pyo3(get)]
+    pub distillate_p: PyQty,
+    /// Distillate temperature.
+    #[pyo3(get)]
+    pub distillate_t: PyQty,
+    /// Distillate molar enthalpy.
+    #[pyo3(get)]
+    pub distillate_h: PyQty,
+    /// Bottoms molar flow, mol/s.
+    #[pyo3(get)]
+    pub bottoms_n: PyQty,
+    /// Bottoms composition.
+    #[pyo3(get)]
+    pub bottoms_z: Vec<f64>,
+    /// Bottoms pressure.
+    #[pyo3(get)]
+    pub bottoms_p: PyQty,
+    /// Bottoms temperature.
+    #[pyo3(get)]
+    pub bottoms_t: PyQty,
+    /// Bottoms molar enthalpy.
+    #[pyo3(get)]
+    pub bottoms_h: PyQty,
+    /// Fenske's minimum stages.
+    #[pyo3(get)]
+    pub minimum_stages: f64,
+    /// Underwood's minimum reflux ratio.
+    #[pyo3(get)]
+    pub minimum_reflux_ratio: f64,
+    /// Molokanov's actual stage count.
+    #[pyo3(get)]
+    pub actual_stages: f64,
+    /// The reflux ratio the correlation was evaluated at.
+    #[pyo3(get)]
+    pub actual_reflux_ratio: f64,
+    /// The feed stage counted from the top.
+    #[pyo3(get)]
+    pub feed_tray_number: i64,
+    /// The condenser duty the class reports.
+    #[pyo3(get)]
+    pub condenser_duty: PyQty,
+    /// The reboiler duty the class reports.
+    #[pyo3(get)]
+    pub reboiler_duty: PyQty,
+    /// `alpha_LK/HK`.
+    #[pyo3(get)]
+    pub relative_volatility: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyShortcutDistillationColumnResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ShortcutDistillationColumnResult(actual_stages={}, feed_tray_number={})",
+            self.actual_stages, self.feed_tray_number
+        )
+    }
+}
+
+impl From<&ShortcutDistillationColumnResult> for PyShortcutDistillationColumnResult {
+    fn from(r: &ShortcutDistillationColumnResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            distillate_n: quantity(r.distillate_n, "mol/s"),
+            distillate_z: r.distillate_z.clone(),
+            distillate_p: quantity(r.distillate_p.value, "Pa"),
+            distillate_t: quantity(r.distillate_t.value, "K"),
+            distillate_h: quantity(r.distillate_h.value, "J/mol"),
+            bottoms_n: quantity(r.bottoms_n, "mol/s"),
+            bottoms_z: r.bottoms_z.clone(),
+            bottoms_p: quantity(r.bottoms_p.value, "Pa"),
+            bottoms_t: quantity(r.bottoms_t.value, "K"),
+            bottoms_h: quantity(r.bottoms_h.value, "J/mol"),
+            minimum_stages: r.minimum_stages,
+            minimum_reflux_ratio: r.minimum_reflux_ratio,
+            actual_stages: r.actual_stages,
+            actual_reflux_ratio: r.actual_reflux_ratio,
+            feed_tray_number: r.feed_tray_number,
+            condenser_duty: quantity(r.condenser_duty.value, "W"),
+            reboiler_duty: quantity(r.reboiler_duty.value, "W"),
+            relative_volatility: r.relative_volatility,
             warnings: transport(&r.warnings),
         }
     }

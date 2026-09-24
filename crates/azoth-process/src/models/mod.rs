@@ -34,6 +34,7 @@ pub mod compressor;
 pub mod cooler;
 pub mod expander;
 pub mod filter;
+pub mod gas_scrubber;
 pub mod heat_exchanger;
 pub mod heater;
 pub mod manifold;
@@ -41,6 +42,7 @@ pub mod mixer;
 pub mod pipe;
 pub mod pump;
 pub mod separator;
+pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod throttling_valve;
 
@@ -48,6 +50,7 @@ pub use compressor::{CompressorResult, compressor};
 pub use cooler::{CoolerResult, cooler};
 pub use expander::{ExpanderResult, expander};
 pub use filter::{FilterResult, filter};
+pub use gas_scrubber::{GasScrubberResult, gas_scrubber};
 pub use heat_exchanger::{HeatExchangerResult, heat_exchanger};
 pub use heater::{HeaterResult, heater};
 pub use manifold::{ManifoldResult, manifold};
@@ -55,5 +58,8 @@ pub use mixer::{MixerResult, mixer};
 pub use pipe::{PipeResult, pipe};
 pub use pump::{PumpResult, pump};
 pub use separator::{SeparatorResult, separator};
+pub use shortcut_distillation_column::{
+    ShortcutDistillationColumnResult, shortcut_distillation_column,
+};
 pub use splitter::{SplitterResult, splitter};
 pub use throttling_valve::{ThrottlingValveResult, throttling_valve};

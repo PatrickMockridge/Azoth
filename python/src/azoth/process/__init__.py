@@ -20,6 +20,7 @@ from azoth.core.result import (
     CoolerResult,
     ExpanderResult,
     FilterResult,
+    GasScrubberResult,
     HeaterResult,
     HeatExchangerResult,
     ManifoldResult,
@@ -27,6 +28,7 @@ from azoth.core.result import (
     PipeResult,
     PumpResult,
     SeparatorResult,
+    ShortcutDistillationColumnResult,
     SplitterResult,
     ThrottlingValveResult,
 )
@@ -39,6 +41,7 @@ __all__ = [
     "cooler",
     "expander",
     "filter",
+    "gas_scrubber",
     "heat_exchanger",
     "heater",
     "load_flowsheet",
@@ -47,6 +50,7 @@ __all__ = [
     "pipe",
     "pump",
     "separator",
+    "shortcut_distillation_column",
     "splitter",
     "throttling_valve",
     "validate",
@@ -55,6 +59,7 @@ __all__ = [
 _MANIFOLD = "process.manifold"
 _MIXER = "process.mixer"
 _PIPE = "process.pipe"
+_GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPRESSOR = "process.compressor"
 _COOLER = "process.cooler"
@@ -62,6 +67,7 @@ _EXPANDER = "process.expander"
 _FILTER = "process.filter"
 _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
+_SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
@@ -402,6 +408,42 @@ def mixer(
     )
 
 
+def gas_scrubber(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_liquid: float,
+    heat_input: Q | None = None,
+) -> GasScrubberResult:
+    """Flash a feed into vapour and liquid, as a scrubber does.
+
+    ``GasScrubber extends Separator`` and does not override ``run``, so this is
+    :func:`separator`'s arithmetic under the other entry, and its three parameters are the
+    separator's. **The Souders-Brown capacity metric is not ported**: it needs an internal
+    diameter and a design gas load factor, neither of which the palette declares, and it asks
+    whether the vessel is big enough rather than stating anything about the stream.
+
+    Raises:
+        InvalidInputError: where the shapes disagree, the pressure drop leaves a
+            non-positive pressure, or the entrainment fraction is outside ``[0, 1]``.
+
+    See :func:`azoth.process.reference.gas_scrubber`.
+    """
+    return resolve(_GAS_SCRUBBER)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        pressure_drop=pressure_drop,
+        gas_in_liquid=gas_in_liquid,
+        heat_input=heat_input,
+    )
+
+
 def manifold(
     components: list[str],
     feed_n: list[Q],
@@ -471,6 +513,60 @@ def separator(
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
         heat_input=heat_input,
+    )
+
+
+def shortcut_distillation_column(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    light_key: str,
+    heavy_key: str,
+    light_key_recovery_distillate: float,
+    heavy_key_recovery_bottoms: float,
+    reflux_ratio_multiplier: float,
+    condenser_pressure: Q | None = None,
+    reboiler_pressure: Q | None = None,
+) -> ShortcutDistillationColumnResult:
+    """Solve a Fenske-Underwood-Gilliland shortcut column.
+
+    ``light_key`` and ``heavy_key`` name the two components the separation is written
+    between, and their recoveries plus ``reflux_ratio_multiplier`` are the four numbers the
+    class takes. The answer is **not a profile but a stage count, a feed tray and two
+    duties**: Fenske's minimum stages, Underwood's minimum reflux, Molokanov's fit to
+    Gilliland for the actual stages, Kirkbride for the feed tray.
+
+    Three things the class does that the numbers alone do not show, and all three are
+    reproduced rather than corrected. The **duties are estimates**: a hard-coded 30000 J/mol
+    average latent heat for the condenser and one per cent of the feed's enthalpy for the
+    reboiler, so the condenser's figure does not depend on what the fluid is. The
+    **Kirkbride argument is the class's own**, with the square on the bottoms-to-distillate
+    ratio, where the correlation as usually quoted squares the composition ratio. And a
+    **reflux multiplier at or below one is refused**, because the class returns an infinite
+    stage count at exactly one and a silent fallback below it.
+
+    Raises:
+        InvalidInputError: for a key that is not a component, a relative volatility at or
+            below one, a reflux multiplier at or below one, a split that empties a product,
+            or a feed whose flash is a trivial solution.
+
+    See :func:`azoth.process.reference.shortcut_distillation_column`.
+    """
+    return resolve(_SHORTCUT_DISTILLATION_COLUMN)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        light_key=light_key,
+        heavy_key=heavy_key,
+        light_key_recovery_distillate=light_key_recovery_distillate,
+        heavy_key_recovery_bottoms=heavy_key_recovery_bottoms,
+        reflux_ratio_multiplier=reflux_ratio_multiplier,
+        condenser_pressure=condenser_pressure,
+        reboiler_pressure=reboiler_pressure,
     )
 
 

@@ -1,0 +1,98 @@
+id = "process.gas_scrubber"
+name = "Gas scrubber"
+kind = "direct"
+assumptions = [
+    "**its stream side is `process.separator`'s, and that is a measurement.** `GasScrubber extends Separator` and does not override `run` - `grep -c 'public void run'` returns zero - so this capture is that model's own row through the other entry.",
+    "**the Souders-Brown capacity metric is not ported.** `getCapacityUtilization` needs the vapour's volumetric flow, the liquid's density and two *mechanical* parameters - `setInternalDiameter` and `setDesignGasLoadFactor` - which the palette declares neither of.",
+    "**the three parameters are the separator's**, and the entry declares all three for the reason the separator does: a scrubber holds its feed's temperature unless a `heat_input` moves the flash, and a pressure drop is not a throttling.",
+    "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is ported**: the first three are what the capacity metric reads.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/GasScrubber.java`, whose steady state is `Separator.run`'s.",
+    "`validation/neqsim/captures/process_gas_scrubber.tsv` - the separator's own two rows through this class, and a fourth that prints the capacity metric the port leaves out.",
+]
+[source]
+standard = "NeqSim process/equipment/separator/GasScrubber.java"
+edition = "No `run` of its own: the port is the separator's, through the class that adds only a capacity metric."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the inlet's molar flow, which the flash's vapour fraction divides between the outlets.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, the feed the flash splits.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the inlet pressure. The outlets flash at this less `pressure_drop`.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the inlet temperature, which the vessel holds and the outlets therefore share, unless a `heat_input` moves the flash.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel, which is `unit_ops.separator`'s own parameter. NeqSim's is in the thermo system's pressure unit and this one is in pascals, as every other pressure here is.\n"
+[inputs.gas_in_liquid]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried into the liquid outlet. Zero is the equilibrium split and no entrainment.\n"
+[inputs.heat_input]
+unit = "W"
+optional = true
+description = "heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for.\n"
+[outputs]
+[outputs.vapour_n]
+unit = "mol/s"
+description = "the vapour outlet's molar flow: the feed's times the vapour fraction, less whatever `gas_in_liquid` carried away.\n"
+[outputs.vapour_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the vapour outlet's composition, which is the flash's `y` - entrainment takes moles from the vapour and leaves its composition alone.\n"
+[outputs.vapour_p]
+unit = "Pa"
+description = "the vapour outlet's pressure, which is `feed_p - pressure_drop`.\n"
+[outputs.vapour_t]
+unit = "K"
+description = "the vapour outlet's temperature, which is `feed_t` unless a `heat_input` moved the flash.\n"
+[outputs.vapour_h]
+unit = "J/mol"
+description = "the vapour outlet's molar enthalpy at its own state. **Not the inlet's** whenever a pressure drop or an entrainment is asked for - see the assumptions.\n"
+[outputs.liquid_n]
+unit = "mol/s"
+description = "the liquid outlet's molar flow: the feed's less the vapour's, plus whatever `gas_in_liquid` carried in.\n"
+[outputs.liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid outlet's composition, which is the flash's `x` or, where vapour was carried in, the mole-weighted mixture of `x` and the vapour's `y`.\n"
+[outputs.liquid_p]
+unit = "Pa"
+description = "the liquid outlet's pressure, the same as the vapour's.\n"
+[outputs.liquid_t]
+unit = "K"
+description = "the liquid outlet's temperature, the same as the vapour's - one flash decides both.\n"
+[outputs.liquid_h]
+unit = "J/mol"
+description = "the liquid outlet's molar enthalpy at its own state.\n"
+[[valid_range]]
+quantity = "pressure_drop"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a vessel passes pressure down, not up\n"
+[[valid_range]]
+quantity = "gas_in_liquid"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an entrainment fraction is a fraction\n"
+[implementations]
+python = "azoth.process.gas_scrubber"
+rust = "azoth_process::gas_scrubber"

@@ -16,6 +16,7 @@ from azoth.process.reference.compressor import compressor
 from azoth.process.reference.cooler import cooler
 from azoth.process.reference.expander import expander
 from azoth.process.reference.filter import filter
+from azoth.process.reference.gas_scrubber import gas_scrubber
 from azoth.process.reference.heat_exchanger import heat_exchanger
 from azoth.process.reference.heater import heater
 from azoth.process.reference.manifold import manifold
@@ -23,6 +24,7 @@ from azoth.process.reference.mixer import mixer
 from azoth.process.reference.pipe import pipe
 from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
+from azoth.process.reference.shortcut_distillation_column import shortcut_distillation_column
 from azoth.process.reference.splitter import splitter
 from azoth.process.reference.throttling_valve import throttling_valve
 
@@ -31,6 +33,7 @@ __all__ = [
     "cooler",
     "expander",
     "filter",
+    "gas_scrubber",
     "heat_exchanger",
     "heater",
     "manifold",
@@ -38,6 +41,7 @@ __all__ = [
     "pipe",
     "pump",
     "separator",
+    "shortcut_distillation_column",
     "splitter",
     "throttling_valve",
 ]

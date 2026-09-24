@@ -1392,6 +1392,20 @@ class FilterResult:
     warnings: list[Warning]
 
 @final
+class GasScrubberResult:
+    vapour_n: Qty
+    vapour_z: list[float]
+    vapour_p: Qty
+    vapour_t: Qty
+    vapour_h: Qty
+    liquid_n: Qty
+    liquid_z: list[float]
+    liquid_p: Qty
+    liquid_t: Qty
+    liquid_h: Qty
+    warnings: list[Warning]
+
+@final
 class HeatExchangerResult:
     hot_out_n: Qty
     hot_out_z: list[float]
@@ -1464,6 +1478,28 @@ class SeparatorResult:
     liquid_p: Qty
     liquid_t: Qty
     liquid_h: Qty
+    warnings: list[Warning]
+
+@final
+class ShortcutDistillationColumnResult:
+    distillate_n: Qty
+    distillate_z: list[float]
+    distillate_p: Qty
+    distillate_t: Qty
+    distillate_h: Qty
+    bottoms_n: Qty
+    bottoms_z: list[float]
+    bottoms_p: Qty
+    bottoms_t: Qty
+    bottoms_h: Qty
+    minimum_stages: float
+    minimum_reflux_ratio: float
+    actual_stages: float
+    actual_reflux_ratio: float
+    feed_tray_number: int
+    condenser_duty: Qty
+    reboiler_duty: Qty
+    relative_volatility: float
     warnings: list[Warning]
 
 @final
@@ -2691,6 +2727,16 @@ def filter(
     inlet_t: float,
     pressure_drop: float,
 ) -> FilterResult: ...
+def gas_scrubber(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    pressure_drop: float,
+    gas_in_liquid: float,
+    heat_input: float | None = None,
+) -> GasScrubberResult: ...
 def heat_exchanger(
     hot_components: list[str],
     cold_components: list[str],
@@ -2762,6 +2808,20 @@ def separator(
     gas_in_liquid: float,
     heat_input: float | None = None,
 ) -> SeparatorResult: ...
+def shortcut_distillation_column(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    light_key: str,
+    heavy_key: str,
+    light_key_recovery_distillate: float,
+    heavy_key_recovery_bottoms: float,
+    reflux_ratio_multiplier: float,
+    condenser_pressure: float | None = None,
+    reboiler_pressure: float | None = None,
+) -> ShortcutDistillationColumnResult: ...
 def splitter(
     components: list[str],
     feed_n: float,

@@ -1,0 +1,47 @@
+model = "process.gas_scrubber"
+[[cases]]
+id = "the_equilibrium_split"
+tolerance = 0.0002
+source = "NeqSim master, `GasScrubber.run` on a 0.7/0.3 methane/n-butane mixture at 300 K and 20 bara, from `validation/neqsim/captures/process_gas_scrubber.tsv`. **The numbers are `process.separator`'s own first row, and that is the measurement**: `GasScrubber extends Separator` and does not override `run` - `grep -c \\\"public void run\\\"` returns zero - so the steady state is the separator's flash exactly, and this capture is that row through the other class. The tolerance is the separator's, for the separator's reason.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+[cases.expected]
+vapour_n = 0.8182211906421439
+vapour_z = [0.8339243334525452, 0.16607566654745468]
+vapour_p = 2000000.0
+vapour_t = 300.0
+vapour_h = 530.1529163915932
+liquid_n = 0.18177880935785606
+liquid_z = [0.09718095876744991, 0.9028190412325501]
+liquid_p = 2000000.0
+liquid_t = 300.0
+liquid_h = -17268.958496924708
+[[cases]]
+id = "a_pressure_drop_is_not_a_throttling"
+tolerance = 0.0002
+source = "The same feed with `setPressureDrop(2.0)`, which the separator's own case records: `run` reduces the pressure and runs a `TPflash` at the *feed's* temperature, so the outlets are at the feed's temperature and their enthalpies move with the pressure. This is the separator's second row through the scrubber, and it is here so that the delegation is measured on a second state rather than one.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 200000.0
+gas_in_liquid = 0.0
+[cases.expected]
+vapour_n = 0.8360536845155941
+vapour_z = [0.8203430710096191, 0.1796569289903808]
+vapour_p = 1800000.0
+vapour_t = 300.0
+vapour_h = 594.757372548732
+liquid_n = 0.16394631548440586
+liquid_z = [0.08630357366533918, 0.9136964263346607]
+liquid_p = 1800000.0
+liquid_t = 300.0
+liquid_h = -17457.57964433711

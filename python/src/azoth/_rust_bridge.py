@@ -61,6 +61,7 @@ from azoth.core.result import (
     FreezingPointResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
+    GasScrubberResult,
     GeFlashResult,
     GeNrtlFlashResult,
     GeNrtlPhaseResult,
@@ -152,6 +153,7 @@ from azoth.core.result import (
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SeparatorResult,
+    ShortcutDistillationColumnResult,
     SiddiqiLucasDiffusivityResult,
     SolidFugacityResult,
     SoreideWhitsonAlphaResult,
@@ -3879,6 +3881,65 @@ def separator(
     )
 
 
+def shortcut_distillation_column(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    light_key: str,
+    heavy_key: str,
+    light_key_recovery_distillate: float,
+    heavy_key_recovery_bottoms: float,
+    reflux_ratio_multiplier: float,
+    condenser_pressure: Q | None = None,
+    reboiler_pressure: Q | None = None,
+) -> ShortcutDistillationColumnResult:
+    """`process.shortcut_distillation_column`, computed in Rust.
+
+    The component names cross unresolved, as the other unit operations' do: the Rust side
+    resolves the mixture itself, so the two languages cannot disagree about which databank
+    row answered. The two key names cross as strings, because they name rows of that same
+    resolution rather than values of it.
+    """
+    spec = _models_gen.model("process.shortcut_distillation_column")
+    result = _core.shortcut_distillation_column(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        light_key,
+        heavy_key,
+        _si(spec, "light_key_recovery_distillate", light_key_recovery_distillate),
+        _si(spec, "heavy_key_recovery_bottoms", heavy_key_recovery_bottoms),
+        _si(spec, "reflux_ratio_multiplier", reflux_ratio_multiplier),
+        None if condenser_pressure is None else input_to_si(spec, "condenser_pressure", condenser_pressure),
+        None if reboiler_pressure is None else input_to_si(spec, "reboiler_pressure", reboiler_pressure),
+    )
+    return ShortcutDistillationColumnResult(
+        distillate_n=from_si(result.distillate_n.magnitude_si, result.distillate_n.unit),
+        distillate_z=tuple(result.distillate_z),
+        distillate_p=from_si(result.distillate_p.magnitude_si, result.distillate_p.unit),
+        distillate_t=from_si(result.distillate_t.magnitude_si, result.distillate_t.unit),
+        distillate_h=from_si(result.distillate_h.magnitude_si, result.distillate_h.unit),
+        bottoms_n=from_si(result.bottoms_n.magnitude_si, result.bottoms_n.unit),
+        bottoms_z=tuple(result.bottoms_z),
+        bottoms_p=from_si(result.bottoms_p.magnitude_si, result.bottoms_p.unit),
+        bottoms_t=from_si(result.bottoms_t.magnitude_si, result.bottoms_t.unit),
+        bottoms_h=from_si(result.bottoms_h.magnitude_si, result.bottoms_h.unit),
+        minimum_stages=result.minimum_stages,
+        minimum_reflux_ratio=result.minimum_reflux_ratio,
+        actual_stages=result.actual_stages,
+        actual_reflux_ratio=result.actual_reflux_ratio,
+        feed_tray_number=result.feed_tray_number,
+        condenser_duty=from_si(result.condenser_duty.magnitude_si, result.condenser_duty.unit),
+        reboiler_duty=from_si(result.reboiler_duty.magnitude_si, result.reboiler_duty.unit),
+        relative_volatility=result.relative_volatility,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def throttling_valve(
     components: Sequence[str],
     inlet_n: Q,
@@ -4170,6 +4231,46 @@ def manifold(
         products_p=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_p),
         products_t=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_t),
         products_h=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_h),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def gas_scrubber(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    pressure_drop: Q,
+    gas_in_liquid: float,
+    heat_input: Q | None = None,
+) -> GasScrubberResult:
+    """`process.gas_scrubber`, computed in Rust.
+
+    The separator's arguments, because the class does not override `run`.
+    """
+    spec = _models_gen.model("process.gas_scrubber")
+    result = _core.gas_scrubber(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "pressure_drop", pressure_drop),
+        float(gas_in_liquid),
+        None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
+    )
+    return GasScrubberResult(
+        vapour_n=from_si(result.vapour_n.magnitude_si, result.vapour_n.unit),
+        vapour_z=tuple(result.vapour_z),
+        vapour_p=from_si(result.vapour_p.magnitude_si, result.vapour_p.unit),
+        vapour_t=from_si(result.vapour_t.magnitude_si, result.vapour_t.unit),
+        vapour_h=from_si(result.vapour_h.magnitude_si, result.vapour_h.unit),
+        liquid_n=from_si(result.liquid_n.magnitude_si, result.liquid_n.unit),
+        liquid_z=tuple(result.liquid_z),
+        liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
+        liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
+        liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -348,6 +348,46 @@ def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
 
 
 #: One model's layers, keyed by the model id a case names.
+def _shortcut_distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.shortcut_distillation_column`'s layers, from the reference's own factored arithmetic.
+
+    **The layers are the K-values and the relative volatilities, because everything
+    downstream of `alpha` is rearrangement.** Fenske, Underwood, Molokanov and Kirkbride are
+    closed form in `alpha_i = K_i / K_HK`, so a divergence in the stage count or the feed
+    tray is located either in the flash that produced the K-values or in the correlations -
+    and this dump separates the two. It is also the row where the port and NeqSim are closest,
+    measured at `3e-12` on the captured propane/n-butane row, so a gap here is a plumbing bug
+    rather than a physics disagreement.
+
+    `alpha_lk_hk_from_flash` is dumped beside the per-component vectors rather than instead of
+    them because the probe prints it twice - once from the flash it re-runs, once from the
+    class's own `getRelativeVolatility` - and the two agreeing is what makes the capture's
+    K-values the class's own rather than a second flash's.
+    """
+    from azoth.process.reference.shortcut_distillation_column import _states
+
+    components = [str(name) for name in inputs["components"]]
+    states = _states(
+        components,
+        float(inputs["feed_n"]),
+        float(inputs["feed_t"]),
+        float(inputs["feed_p"]),
+        [float(v) for v in inputs["feed_z"]],
+        str(inputs["light_key"]),
+        str(inputs["heavy_key"]),
+        float(inputs["light_key_recovery_distillate"]),
+        float(inputs["heavy_key_recovery_bottoms"]),
+        float(inputs["reflux_ratio_multiplier"]),
+        None if inputs.get("condenser_pressure") is None else float(inputs["condenser_pressure"]),
+        None if inputs.get("reboiler_pressure") is None else float(inputs["reboiler_pressure"]),
+    )
+    layers: dict[str, float] = {"alpha_lk_hk_from_flash": states.relative_volatility}
+    for index, name in enumerate(components):
+        layers[f"k_{name}"] = states.k_values[index]
+        layers[f"alpha_{name}"] = states.alpha[index]
+    return layers
+
+
 DUMPERS: dict[str, Dumper] = {
     "process.expander": _expander,
     "process.manifold": _manifold,
@@ -357,6 +397,7 @@ DUMPERS: dict[str, Dumper] = {
     "process.mixer": _mixer,
     "process.compressor": _compressor,
     "process.heat_exchanger": _heat_exchanger,
+    "process.shortcut_distillation_column": _shortcut_distillation_column,
 }
 
 #: The process models whose kernel forms **nothing the port records do not carry**, and why.
@@ -384,6 +425,13 @@ NO_INTERIOR: dict[str, str] = {
         "overrides `runTransient` and some getters and not `run`, and the probe's two "
         "captures are byte-identical. A dumper here would be a second dump of the heater's "
         "arithmetic under another name, which is the thing this dict exists to refuse"
+    ),
+    "process.gas_scrubber": (
+        "the same kernel as ``process.separator`` and therefore the same answer: `GasScrubber` "
+        "does not override `run`, so the two entries' captures carry the same rows. A dumper "
+        "here would be a second dump of the separator's arithmetic under another name, which "
+        "is the thing this dict exists to refuse - and the class's own arithmetic, the "
+        "Souders-Brown capacity metric, is mechanical design that no port field reaches"
     ),
     "process.heater": (
         "the kernel is one ``Stream::from_pt`` at the stated temperature or one "
@@ -516,6 +564,38 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    # The shortcut column's four rows. **Their block order is the probe's**, and the two
+    # degenerate rows are the gap between the fourth and the fifth: `UNCASED_ROWS` declares
+    # them, and this tuple names the other four by position.
+    LayerCase(
+        model="process.shortcut_distillation_column",
+        case="propane_nbutane_split",
+        capture="process_shortcut_distillation_column.tsv",
+        block=0,
+        identified_by=("#label", "propane_nbutane_300K_20bara"),
+    ),
+    LayerCase(
+        model="process.shortcut_distillation_column",
+        case="pressures_stated_move_the_product_phase",
+        capture="process_shortcut_distillation_column.tsv",
+        block=1,
+        identified_by=("#label", "pressures_stated_18_21_bara"),
+    ),
+    LayerCase(
+        model="process.shortcut_distillation_column",
+        case="wilson_fallback_superheated_gas",
+        capture="process_shortcut_distillation_column.tsv",
+        block=3,
+        identified_by=("#label", "wilson_fallback_superheated_gas"),
+    ),
+    LayerCase(
+        model="process.shortcut_distillation_column",
+        case="binary_methane_nbutane",
+        capture="process_shortcut_distillation_column.tsv",
+        block=4,
+        identified_by=("#label", "binary_methane_nbutane"),
+    ),
+
     # The isentropic pair. **Both rows of each are cases, and the efficiency-of-one row is
     # the one that matters**: its reversible step *is* its answer, so the capture states the
     # isentropic enthalpy the class keeps in a local - and its entropy production is zero by
@@ -713,6 +793,14 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 #: block count open keeps the check exact: a probe row added without a case still fails.
 UNCASED_ROWS: dict[str, int] = {
     "process_heat_exchanger.tsv": 2,
+    # The shortcut column's two degenerate rows. **Both are evidence rather than oracles**:
+    # a reflux multiplier of exactly one leaves Gilliland's `X` at zero and the class returns
+    # `actual_stages = Infinity` with a feed tray of zero - `(int) Math.round(Infinity) + 1`
+    # wrapping through `Integer.MIN_VALUE` - and swapped keys give the class's own
+    # `solved = false` with every answer at its field initialiser. The port **refuses** both,
+    # so neither has a state to be its case; they stay in the capture as the measurement the
+    # refusal rests on.
+    "process_shortcut_distillation_column.tsv": 2,
 }
 
 

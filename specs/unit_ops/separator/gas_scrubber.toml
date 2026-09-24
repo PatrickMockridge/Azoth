@@ -1,7 +1,17 @@
 id = "unit_ops.gas_scrubber"
 name = "Gas scrubber"
+notes = "**Its stream side is `unit_ops.separator`'s and the three parameters are the separator's.** `GasScrubber extends Separator` and does **not** override `run`, so the steady state is the separator's flash exactly - which is why an entry declaring no parameters could not describe the machine: the same vessel was statable through `unit_ops.separator` and not through this one. **The Souders-Brown capacity metric is not ported**: `getCapacityUtilization` needs an internal diameter and a design K-factor (`setInternalDiameter`, `setDesignGasLoadFactor`) and lives in `GasScrubberMechanicalDesign`, so it is mechanical design rather than stream arithmetic, and the entry declares neither."
 [source]
 standard = "NeqSim process/equipment/separator/GasScrubber.java"
+[parameters.pressure_drop]
+unit = "Pa"
+description = "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy"
+[parameters.heat_input]
+unit = "W"
+description = "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's"
+[parameters.gas_in_liquid]
+unit = "dimensionless"
+description = "the fraction of the vapour's moles carried over into the liquid outlet, on NeqSim's `feed`/`mole` basis for `setEntrainment`"
 [[ports]]
 name = "feed"
 direction = "in"

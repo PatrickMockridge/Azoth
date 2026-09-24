@@ -41,6 +41,10 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe filter > captures/process_filter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe pipe > captures/process_pipe.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe manifold > captures/process_manifold.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber \
+//       > captures/process_gas_scrubber.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe shortcut_column \
+//       > captures/process_shortcut_distillation_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
 
@@ -91,6 +95,12 @@ public class ProcessProbe {
         break;
       case "manifold":
         manifoldRows();
+        break;
+      case "gas_scrubber":
+        gasScrubberRows();
+        break;
+      case "shortcut_column":
+        shortcutColumnRows();
         break;
       case "stream":
         stream();
@@ -419,6 +429,203 @@ public class ProcessProbe {
     }
     System.out.println("outlet_count=" + manifold.getNumberOfOutputStreams());
     System.out.println();
+  }
+
+  /// `GasScrubber`, whose stream side is `Separator.run` and whose own arithmetic is a
+  /// mechanical capacity metric.
+  ///
+  /// **The class does not override `run`** - measured, `grep -c "public void run"` returns
+  /// zero - so the first three rows are the separator's own rows through another class, and
+  /// the capture records that they are the same numbers.
+  ///
+  /// **The fourth row is the metric, and it is what the port leaves out.**
+  /// `getCapacityUtilization` needs an internal diameter and a design gas load factor; the
+  /// palette entry declares neither, and it is a statement about whether the *vessel* is
+  /// big enough rather than about the stream.
+  static void gasScrubberRows() {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.7, 0.3 };
+    scrubberRow("pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0", names, z, 0.0, null, 0.0,
+        false);
+    scrubberRow("pressure_drop_bara=2 heat_input_W=0 gas_in_liquid=0", names, z, 2.0, null, 0.0,
+        false);
+    scrubberRow("pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0.05", names, z, 0.0, null, 0.05,
+        false);
+    scrubberRow("capacity_utilization_dn1000_k_007", names, z, 0.0, null, 0.0, true);
+  }
+
+  static void scrubberRow(String label, String[] names, double[] z, double dropBara,
+      Double heatInputW, double gasInLiquid, boolean withCapacity) {
+    Stream inlet = feed(names, z, 300.0, 20.0, 1.0);
+    neqsim.process.equipment.separator.GasScrubber scrubber =
+        new neqsim.process.equipment.separator.GasScrubber("gs1", inlet);
+    if (dropBara != 0.0) {
+      scrubber.setPressureDrop(dropBara);
+    }
+    if (heatInputW != null) {
+      scrubber.setHeatInput(heatInputW);
+    }
+    if (gasInLiquid != 0.0) {
+      scrubber.setEntrainment(gasInLiquid, "mole", "feed", "gas", "liquid");
+    }
+    if (withCapacity) {
+      // The two mechanical parameters the metric needs, and neither is on the palette.
+      scrubber.setInternalDiameter(1.0);
+      scrubber.setDesignGasLoadFactor(0.07);
+    }
+    scrubber.run();
+
+    System.out.println(label);
+    print("feed", inlet);
+    print("vapour", scrubber.getGasOutStream());
+    print("liquid", scrubber.getLiquidOutStream());
+    if (withCapacity) {
+      System.out.println("capacity_utilization=" + scrubber.getCapacityUtilization());
+    }
+    System.out.println();
+  }
+
+  /// **The family's closed-form member, and the one place the two libraries can be expected
+  /// to agree tightly.** `ShortcutDistillationColumn` is Fenske-Underwood-Gilliland with a
+  /// Kirkbride feed tray: it flashes the feed for K-values, forms `alpha_i = K_i / K_HK`, and
+  /// every answer below is a rearrangement of those. **It is not a `DistillationColumn`** -
+  /// it extends `ProcessEquipmentBaseClass` - so there is no tray profile and no MESH
+  /// residual to print.
+  ///
+  /// **Its interior is eight scalars and two streams.** `getMinimumNumberOfStages`,
+  /// `getMinimumRefluxRatio`, `getActualNumberOfStages`, `getActualRefluxRatio`,
+  /// `getFeedTrayNumber`, `getCondenserDuty`, `getReboilerDuty` and `getRelativeVolatility`
+  /// are public; the Underwood root, the feed quality and the per-component split fractions
+  /// are private and are **not** in this capture. What is printed beside them is the flash
+  /// the class itself performs, re-run here on a clone, so a divergence in `alpha` is
+  /// localised before it reaches Fenske. `alpha_lk_hk` is printed twice - once from that
+  /// flash, once from `getRelativeVolatility` - and the two agreeing is what makes it the
+  /// same flash rather than two.
+  ///
+  /// **`solved` is printed because the class has a refusal.** A light key less volatile than
+  /// the heavy key logs an error, sets `solved = false` and returns with every answer left at
+  /// its field initialiser, and the swapped-key row is that path.
+  ///
+  /// **`setNumberOfTrays` is not settable here.** The class's own override logs
+  /// `calculates stages; setNumberOfTrays ignored` and returns, so a row that called it would
+  /// measure nothing.
+  static void shortcutColumnRows() {
+    // A C1/C2/C3/nC4 mixture split propane/n-butane, so every branch of the class's own
+    // split-fraction estimate is reached: methane and ethane are lighter than the light key,
+    // propane is it, and n-butane is the heavy key.
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane" };
+    double[] z = new double[] { 0.1, 0.3, 0.4, 0.2 };
+    shortcutColumnRow("propane_nbutane_300K_20bara", names, z, 300.0, 20.0, 1.0, "propane",
+        "n-butane", 0.98, 0.98, 1.2, null, null);
+    // **The pressures stated**, which move both outlet streams' flash and nothing in the
+    // FUG arithmetic - the class reads them only where it creates the products.
+    shortcutColumnRow("pressures_stated_18_21_bara", names, z, 300.0, 20.0, 1.0, "propane",
+        "n-butane", 0.98, 0.98, 1.2, 18.0, 21.0);
+    // **A reflux multiplier of one**, so the actual reflux is the minimum and Gilliland's `X`
+    // is zero - the branch where the correlation's own denominator has `sqrt(X)` in it.
+    shortcutColumnRow("reflux_multiplier_one", names, z, 300.0, 20.0, 1.0, "propane",
+        "n-butane", 0.98, 0.98, 1.0, null, null);
+    // **A single-phase gas feed**, which is the Wilson branch: the class falls back to
+    // `(Pc/P) exp(5.373 (1 + omega) (1 - Tc/T))` when its flash finds no second phase.
+    shortcutColumnRow("wilson_fallback_superheated_gas", names, z, 450.0, 20.0, 1.0, "propane",
+        "n-butane", 0.98, 0.98, 1.2, null, null);
+    // **A binary**, which is the row a reader can check by hand.
+    shortcutColumnRow("binary_methane_nbutane", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1.0, "methane", "n-butane", 0.99, 0.99, 1.2,
+        null, null);
+    // **The refusal**: the light key is the heavy component, so `alpha_LK/HK` is below one.
+    shortcutColumnRow("light_key_heavier_than_heavy_key", names, z, 300.0, 20.0, 1.0,
+        "n-butane", "propane", 0.98, 0.98, 1.2, null, null);
+  }
+
+  static void shortcutColumnRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSec, String lightKey, String heavyKey,
+      double lightKeyRecovery, double heavyKeyRecovery, double refluxMultiplier,
+      Double condenserPressureBara, Double reboilerPressureBara) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, molPerSec);
+
+    // The flash the class performs, on a clone, so the K-values and the relative volatilities
+    // are measurable rather than private.
+    SystemInterface flashed = inlet.getThermoSystem().clone();
+    new neqsim.thermodynamicoperations.ThermodynamicOperations(flashed).TPflash();
+    flashed.init(2);
+    int gas = shortcutPhaseIndex(flashed, true);
+    int liquid = shortcutPhaseIndex(flashed, false);
+    double[] kValues = new double[names.length];
+    for (int i = 0; i < names.length; i++) {
+      if (gas >= 0 && liquid >= 0 && gas != liquid) {
+        double yi = flashed.getPhase(gas).getComponent(i).getx();
+        double xi = flashed.getPhase(liquid).getComponent(i).getx();
+        kValues[i] = xi > 1.0e-20 ? yi / xi : 1.0e10;
+      } else {
+        double tc = flashed.getPhase(0).getComponent(i).getTC();
+        double pc = flashed.getPhase(0).getComponent(i).getPC();
+        double omega = flashed.getPhase(0).getComponent(i).getAcentricFactor();
+        kValues[i] = (pc / flashed.getPressure())
+            * Math.exp(5.373 * (1.0 + omega) * (1.0 - tc / flashed.getTemperature()));
+      }
+    }
+    int lk = flashed.getPhase(0).getComponent(lightKey).getComponentNumber();
+    int hk = flashed.getPhase(0).getComponent(heavyKey).getComponentNumber();
+
+    neqsim.process.equipment.distillation.ShortcutDistillationColumn column =
+        new neqsim.process.equipment.distillation.ShortcutDistillationColumn("sc1", inlet);
+    column.setLightKey(lightKey);
+    column.setHeavyKey(heavyKey);
+    column.setLightKeyRecoveryDistillate(lightKeyRecovery);
+    column.setHeavyKeyRecoveryBottoms(heavyKeyRecovery);
+    column.setRefluxRatioMultiplier(refluxMultiplier);
+    if (condenserPressureBara != null) {
+      column.setCondenserPressure(condenserPressureBara);
+    }
+    if (reboilerPressureBara != null) {
+      column.setReboilerPressure(reboilerPressureBara);
+    }
+    column.run();
+
+    System.out.println(label);
+    print("feed", inlet);
+    System.out.println("feed_phases=" + flashed.getNumberOfPhases());
+    System.out.println("feed_beta=" + flashed.getBeta());
+    System.out.println("alpha_lk_hk_from_flash=" + (kValues[lk] / kValues[hk]));
+    System.out.println("alpha_lk_hk_reported=" + column.getRelativeVolatility());
+    for (int i = 0; i < names.length; i++) {
+      System.out.println("k_" + names[i] + "=" + kValues[i]);
+      System.out.println("alpha_" + names[i] + "=" + (kValues[i] / kValues[hk]));
+    }
+    System.out.println("solved=" + column.isSolved());
+    System.out.println("minimum_stages=" + column.getMinimumNumberOfStages());
+    System.out.println("minimum_reflux_ratio=" + column.getMinimumRefluxRatio());
+    System.out.println("actual_stages=" + column.getActualNumberOfStages());
+    System.out.println("actual_reflux_ratio=" + column.getActualRefluxRatio());
+    System.out.println("feed_tray_number=" + column.getFeedTrayNumber());
+    System.out.println("condenser_duty_W=" + column.getCondenserDuty());
+    System.out.println("reboiler_duty_W=" + column.getReboilerDuty());
+    if (column.isSolved()) {
+      print("distillate", column.getDistillateStream());
+      print("bottoms", column.getBottomsStream());
+    }
+    System.out.println();
+  }
+
+  /// The class's own phase lookup, reproduced: `type` asks for the gas phase, otherwise the
+  /// first liquid-like one.
+  static int shortcutPhaseIndex(SystemInterface system, boolean wantGas) {
+    for (int i = 0; i < system.getNumberOfPhases(); i++) {
+      String type = system.getPhase(i).getPhaseTypeName();
+      if (wantGas ? "gas".equals(type)
+          : ("liquid".equals(type) || "oil".equals(type) || "aqueous".equals(type))) {
+        return i;
+      }
+    }
+    if (!wantGas) {
+      for (int i = 0; i < system.getNumberOfPhases(); i++) {
+        if (!"gas".equals(system.getPhase(i).getPhaseTypeName())) {
+          return i;
+        }
+      }
+    }
+    return -1;
   }
 
   static void splitter() {

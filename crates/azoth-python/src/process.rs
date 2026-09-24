@@ -534,6 +534,89 @@ pub fn separator(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.gas_scrubber` - the separator's kernel under the other entry.
+///
+/// `GasScrubber` does not override `run`, so this is `process.separator`'s arithmetic and
+/// the same arguments.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input = None))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+pub fn gas_scrubber(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_liquid: f64,
+    heat_input: Option<f64>,
+) -> PyResult<crate::results::PyGasScrubberResult> {
+    azoth_process::gas_scrubber(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_liquid,
+        heat_input.map(watts),
+    )
+    .map(|r| crate::results::PyGasScrubberResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.shortcut_distillation_column` - the FUG column as a registered id.
+///
+/// **The first `procedure` in this namespace.** Its `[algorithm]` block is the Underwood
+/// bisection the two implementations both run; nothing in Rust or Python reads it at
+/// runtime, and the case is what holds both to it.
+#[pyfunction]
+#[pyo3(
+    signature = (components, feed_n, feed_z, feed_p, feed_t, light_key, heavy_key, light_key_recovery_distillate, heavy_key_recovery_bottoms, reflux_ratio_multiplier, condenser_pressure = None, reboiler_pressure = None)
+)]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, light_key, heavy_key, light_key_recovery_distillate, heavy_key_recovery_bottoms, reflux_ratio_multiplier, condenser_pressure=None, reboiler_pressure=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eleven
+pub fn shortcut_distillation_column(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    light_key: &str,
+    heavy_key: &str,
+    light_key_recovery_distillate: f64,
+    heavy_key_recovery_bottoms: f64,
+    reflux_ratio_multiplier: f64,
+    condenser_pressure: Option<f64>,
+    reboiler_pressure: Option<f64>,
+) -> PyResult<crate::results::PyShortcutDistillationColumnResult> {
+    azoth_process::shortcut_distillation_column(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        light_key,
+        heavy_key,
+        light_key_recovery_distillate,
+        heavy_key_recovery_bottoms,
+        reflux_ratio_multiplier,
+        condenser_pressure.map(pascals),
+        reboiler_pressure.map(pascals),
+    )
+    .map(|r| crate::results::PyShortcutDistillationColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.mixer` - the mixer's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, outlet_pressure = None))]

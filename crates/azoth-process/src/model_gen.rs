@@ -5,6 +5,7 @@
 //!   - specs/models/process/cooler.toml
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
+//!   - specs/models/process/gas_scrubber.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/manifold.toml
@@ -12,13 +13,16 @@
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/separator.toml
+//!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
 //!   - specs/models/process/throttling_valve.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
 
-use azoth_core::{Band, ModelSpec, RangeCheck, Severity, SpecCheck, TestCase, WarningCode};
+use azoth_core::{
+    Band, ModelAlgorithm, ModelSpec, RangeCheck, Severity, SpecCheck, TestCase, WarningCode,
+};
 
 static COMPRESSOR_CHECKS: &[SpecCheck] = &[
     SpecCheck {
@@ -530,6 +534,121 @@ pub static FILTER_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: FILTER_CHECKS,
     cases: FILTER_CASES,
+};
+
+static GAS_SCRUBBER_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure_drop",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a vessel passes pressure down, not up",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "gas_in_liquid",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an entrainment fraction is a fraction",
+        },
+    },
+];
+
+static GAS_SCRUBBER_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_equilibrium_split",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("pressure_drop", 0.0),
+            ("gas_in_liquid", 0.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("feed_z", &[0.7, 0.3])],
+        matrices: &[],
+        expected: &[
+            ("vapour_n", 0.8182211906421439),
+            ("vapour_p", 2000000.0),
+            ("vapour_t", 300.0),
+            ("vapour_h", 530.1529163915932),
+            ("liquid_n", 0.18177880935785606),
+            ("liquid_p", 2000000.0),
+            ("liquid_t", 300.0),
+            ("liquid_h", -17268.958496924708),
+        ],
+        expected_vectors: &[
+            ("vapour_z", &[0.8339243334525452, 0.16607566654745468]),
+            ("liquid_z", &[0.09718095876744991, 0.9028190412325501]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_pressure_drop_is_not_a_throttling",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("pressure_drop", 200000.0),
+            ("gas_in_liquid", 0.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("feed_z", &[0.7, 0.3])],
+        matrices: &[],
+        expected: &[
+            ("vapour_n", 0.8360536845155941),
+            ("vapour_p", 1800000.0),
+            ("vapour_t", 300.0),
+            ("vapour_h", 594.757372548732),
+            ("liquid_n", 0.16394631548440586),
+            ("liquid_p", 1800000.0),
+            ("liquid_t", 300.0),
+            ("liquid_h", -17457.57964433711),
+        ],
+        expected_vectors: &[
+            ("vapour_z", &[0.8203430710096191, 0.1796569289903808]),
+            ("liquid_z", &[0.08630357366533918, 0.9136964263346607]),
+        ],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.gas_scrubber`.
+pub static GAS_SCRUBBER_SPEC: ModelSpec = ModelSpec {
+    id: "process.gas_scrubber",
+    kind: "direct",
+    algorithm: None,
+    checks: GAS_SCRUBBER_CHECKS,
+    cases: GAS_SCRUBBER_CASES,
 };
 
 static HEAT_EXCHANGER_CHECKS: &[SpecCheck] = &[
@@ -1648,6 +1767,319 @@ pub static SEPARATOR_SPEC: ModelSpec = ModelSpec {
     cases: SEPARATOR_CASES,
 };
 
+static SHORTCUT_DISTILLATION_COLUMN_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "reflux_ratio_multiplier",
+            min: Some(1.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "at one the reflux equals the minimum, Gilliland's X is zero and the class returns an infinite stage count; below one it silently takes its Y = 0.5 fallback",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "light_key_recovery_distillate",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a recovery is a fraction of the feed, and the class's own clamp takes either bound to just inside it rather than refusing",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "heavy_key_recovery_bottoms",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "as the light key's recovery: the class clamps a bound rather than refusing it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "feed_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+];
+
+static SHORTCUT_DISTILLATION_COLUMN_CASES: &[TestCase] = &[
+    TestCase {
+        id: "propane_nbutane_split",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("light_key_recovery_distillate", 0.98),
+            ("heavy_key_recovery_bottoms", 0.98),
+            ("reflux_ratio_multiplier", 1.2),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "n-butane"])],
+        strings: &[("light_key", "propane"), ("heavy_key", "n-butane")],
+        vectors: &[("feed_z", &[0.1, 0.3, 0.4, 0.2])],
+        matrices: &[],
+        expected: &[
+            ("relative_volatility", 2.7769364052320538),
+            ("minimum_stages", 7.620946291100026),
+            ("minimum_reflux_ratio", 0.44008894984866465),
+            ("actual_reflux_ratio", 0.5281067398183975),
+            ("actual_stages", 20.510953860048968),
+            ("feed_tray_number", 14.0),
+            ("condenser_duty", -36472.85166598551),
+            ("reboiler_duty", 36378.53354647986),
+            ("distillate_n", 0.7956000000005571),
+            ("distillate_p", 2000000.0),
+            ("distillate_t", 300.0),
+            ("distillate_h", -2243.812676863934),
+            ("bottoms_n", 0.20439999999944294),
+            ("bottoms_p", 2000000.0),
+            ("bottoms_t", 300.0),
+            ("bottoms_h", -18697.707831107058),
+        ],
+        expected_vectors: &[
+            (
+                "distillate_z",
+                &[
+                    0.12556561086035364,
+                    0.3766968325795219,
+                    0.49270990447366647,
+                    0.005027652086458033,
+                ],
+            ),
+            (
+                "bottoms_z",
+                &[
+                    0.0004892367906107846,
+                    0.0014677103718262435,
+                    0.03913894324859146,
+                    0.9589041095889715,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "pressures_stated_move_the_product_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.005,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("light_key_recovery_distillate", 0.98),
+            ("heavy_key_recovery_bottoms", 0.98),
+            ("reflux_ratio_multiplier", 1.2),
+            ("condenser_pressure", 1800000.0),
+            ("reboiler_pressure", 2100000.0),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "n-butane"])],
+        strings: &[("light_key", "propane"), ("heavy_key", "n-butane")],
+        vectors: &[("feed_z", &[0.1, 0.3, 0.4, 0.2])],
+        matrices: &[],
+        expected: &[
+            ("relative_volatility", 2.7769364052320538),
+            ("minimum_stages", 7.620946291100026),
+            ("minimum_reflux_ratio", 0.44008894984866465),
+            ("actual_reflux_ratio", 0.5281067398183975),
+            ("actual_stages", 20.510953860048968),
+            ("feed_tray_number", 14.0),
+            ("condenser_duty", -36472.85166598551),
+            ("reboiler_duty", 36378.53354647986),
+            ("distillate_n", 0.7956000000005571),
+            ("distillate_p", 1800000.0),
+            ("distillate_t", 300.0),
+            ("distillate_h", -13.322032609178178),
+            ("bottoms_n", 0.20439999999944294),
+            ("bottoms_p", 2100000.0),
+            ("bottoms_t", 300.0),
+            ("bottoms_h", -18694.58756409396),
+        ],
+        expected_vectors: &[
+            (
+                "distillate_z",
+                &[
+                    0.12556561086035364,
+                    0.3766968325795219,
+                    0.49270990447366647,
+                    0.005027652086458033,
+                ],
+            ),
+            (
+                "bottoms_z",
+                &[
+                    0.0004892367906107846,
+                    0.0014677103718262435,
+                    0.03913894324859146,
+                    0.9589041095889715,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "wilson_fallback_superheated_gas",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 2000000.0),
+            ("feed_t", 450.0),
+            ("light_key_recovery_distillate", 0.98),
+            ("heavy_key_recovery_bottoms", 0.98),
+            ("reflux_ratio_multiplier", 1.2),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "ethane", "propane", "n-butane"])],
+        strings: &[("light_key", "propane"), ("heavy_key", "n-butane")],
+        vectors: &[("feed_z", &[0.1, 0.3, 0.4, 0.2])],
+        matrices: &[],
+        expected: &[
+            ("relative_volatility", 2.360742641862776),
+            ("minimum_stages", 9.061531808008356),
+            ("minimum_reflux_ratio", 0.8355991286740769),
+            ("actual_reflux_ratio", 1.0027189544088924),
+            ("actual_stages", 22.4423070346342),
+            ("feed_tray_number", 15.0),
+            ("condenser_duty", -47800.89600383143),
+            ("reboiler_duty", 47931.163544252726),
+            ("distillate_n", 0.7956),
+            ("distillate_p", 2000000.0),
+            ("distillate_t", 450.0),
+            ("distillate_h", 11686.336029445352),
+            ("bottoms_n", 0.20440000000000003),
+            ("bottoms_p", 2000000.0),
+            ("bottoms_t", 450.0),
+            ("bottoms_h", 17894.58448158318),
+        ],
+        expected_vectors: &[
+            (
+                "distillate_z",
+                &[
+                    0.1255656108597285,
+                    0.3766968325791855,
+                    0.4927099044746104,
+                    0.005027652086475621,
+                ],
+            ),
+            (
+                "bottoms_z",
+                &[
+                    0.0004892367906066676,
+                    0.0014677103718200707,
+                    0.03913894324853232,
+                    0.958904109589041,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "binary_methane_nbutane",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("light_key_recovery_distillate", 0.99),
+            ("heavy_key_recovery_bottoms", 0.99),
+            ("reflux_ratio_multiplier", 1.2),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("light_key", "methane"), ("heavy_key", "n-butane")],
+        vectors: &[("feed_z", &[0.5, 0.5])],
+        matrices: &[],
+        expected: &[
+            ("relative_volatility", 46.648767420893286),
+            ("minimum_stages", 2.391643282325193),
+            ("minimum_reflux_ratio", 0.21184536162652234),
+            ("actual_reflux_ratio", 0.2542144339518268),
+            ("actual_stages", 8.193966146245264),
+            ("feed_tray_number", 5.0),
+            ("condenser_duty", -18813.2165092774),
+            ("reboiler_duty", 18737.84467755389),
+            ("distillate_n", 0.5),
+            ("distillate_p", 2000000.0),
+            ("distillate_t", 300.0),
+            ("distillate_h", 588.2035463850532),
+            ("bottoms_n", 0.5),
+            ("bottoms_p", 2000000.0),
+            ("bottoms_t", 300.0),
+            ("bottoms_h", -18733.17152906549),
+        ],
+        expected_vectors: &[
+            ("distillate_z", &[0.99, 0.010000000000000009]),
+            ("bottoms_z", &[0.010000000000000009, 0.99]),
+        ],
+        expected_strings: &[],
+    },
+];
+
+static SHORTCUT_DISTILLATION_COLUMN_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "underwood_bisection",
+    convergence: "absolute",
+    tolerance: 1e-10,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: None,
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `process.shortcut_distillation_column`.
+pub static SHORTCUT_DISTILLATION_COLUMN_SPEC: ModelSpec = ModelSpec {
+    id: "process.shortcut_distillation_column",
+    kind: "procedure",
+    algorithm: Some(&SHORTCUT_DISTILLATION_COLUMN_ALGORITHM),
+    checks: SHORTCUT_DISTILLATION_COLUMN_CHECKS,
+    cases: SHORTCUT_DISTILLATION_COLUMN_CASES,
+};
+
 static SPLITTER_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -1851,6 +2283,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &COOLER_SPEC,
     &EXPANDER_SPEC,
     &FILTER_SPEC,
+    &GAS_SCRUBBER_SPEC,
     &HEAT_EXCHANGER_SPEC,
     &HEATER_SPEC,
     &MANIFOLD_SPEC,
@@ -1858,6 +2291,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PIPE_SPEC,
     &PUMP_SPEC,
     &SEPARATOR_SPEC,
+    &SHORTCUT_DISTILLATION_COLUMN_SPEC,
     &SPLITTER_SPEC,
     &THROTTLING_VALVE_SPEC,
 ];

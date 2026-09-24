@@ -239,6 +239,7 @@ Five sections, and the difference between them is the point:
 - [`process.cooler`](./process/cooler.md) — Cooler
 - [`process.expander`](./process/expander.md) — Expander
 - [`process.filter`](./process/filter.md) — Filter
+- [`process.gas_scrubber`](./process/gas_scrubber.md) — Gas scrubber
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.manifold`](./process/manifold.md) — Manifold
@@ -246,6 +247,7 @@ Five sections, and the difference between them is the point:
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.separator`](./process/separator.md) — Separator
+- [`process.shortcut_distillation_column`](./process/shortcut_distillation_column.md) — Shortcut distillation column
 - [`process.splitter`](./process/splitter.md) — Splitter
 - [`process.throttling_valve`](./process/throttling_valve.md) — Throttling valve
 

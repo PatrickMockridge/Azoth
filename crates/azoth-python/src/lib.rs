@@ -350,6 +350,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::pipe, m)?)?;
     m.add_function(wrap_pyfunction!(process::mixer, m)?)?;
     m.add_function(wrap_pyfunction!(process::separator, m)?)?;
+    m.add_function(wrap_pyfunction!(process::gas_scrubber, m)?)?;
+    m.add_function(wrap_pyfunction!(process::shortcut_distillation_column, m)?)?;
     m.add_function(wrap_pyfunction!(process::heat_exchanger, m)?)?;
     m.add_function(wrap_pyfunction!(process::throttling_valve, m)?)?;
     m.add_function(wrap_pyfunction!(process::splitter, m)?)?;
