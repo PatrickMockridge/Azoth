@@ -20,7 +20,7 @@ back its physics:
 - **Unit operations and the flowsheet** — 39 skills wait on P11: 30 under
   `process/` and 9 under `safety/`. The specification places the tier after the
   physics, and it is partly built: `specs/unit_ops/` declares 29 palette entries
-  and thirteen carry kernels, so the skills are waiting on the remaining kernels and on
+  and fourteen carry kernels, so the skills are waiting on the remaining kernels and on
   the P12 executor rather than on the tier's existence.
 - **Reference equations of state, and the PVT chain** — 7 skills wait on P4: six
   under `pvt/` and `azoth-near-well-and-injectivity` under `subsurface/`.

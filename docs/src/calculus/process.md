@@ -82,7 +82,7 @@ U  ≅  f(x₁, …, xₘ)
 
 *Status: **specified**. The tier this claim is about half-exists: `crates/azoth-process`
 carries the channel types, the stream record, the palette loader and the checker,
-`specs/unit_ops/` declares 29 unit operations, and thirteen of them carry kernels. So the claim
+`specs/unit_ops/` declares 29 unit operations, and fourteen of them carry kernels. So the claim
 is no longer that there is nothing to check. It is that **nothing checks it**:
 `lean/Azoth/` has no `Process.lean`, and an implementation agreeing with a port declaration
 is exactly what this claim asserts and nothing tests.

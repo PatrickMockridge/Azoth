@@ -380,7 +380,7 @@ complete rather than silent about them:
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
 types, the stream record, the palette loader and the checker, and `specs/unit_ops/` declares 29
-unit operations of which **thirteen carry kernels**. The rest are owed, with one exception that
+unit operations of which **fourteen carry kernels**. The rest are owed, with one exception that
 is stated rather than outstanding. **`unit_ops.simple_absorber` is refused on measured
 evidence**: `SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point
 loop over MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a

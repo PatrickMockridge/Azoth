@@ -67,7 +67,7 @@ Five sections, and the difference between them is the point:
 - **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
   pressure drop.
 - **Unit operations** — the palette and the flowsheet: 29 unit operations declared on
-  typed channels, thirteen of them with kernels, and the checker that holds a flowsheet to
+  typed channels, fourteen of them with kernels, and the checker that holds a flowsheet to
   the calculus's rules. The executor that runs one is P12 and is not built.
 - **Reactions** — chemical equilibrium, the reactive flashes, and the kinetics rate law
   behind them.
@@ -235,6 +235,7 @@ Five sections, and the difference between them is the point:
 
 *Models* — whose specs fix a procedure rather than an equation:
 
+- [`process.component_splitter`](./process/component_splitter.md) — Component splitter
 - [`process.compressor`](./process/compressor.md) — Compressor
 - [`process.cooler`](./process/cooler.md) — Cooler
 - [`process.expander`](./process/expander.md) — Expander
