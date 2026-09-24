@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from azoth.process.reference.component_splitter import component_splitter
 from azoth.process.reference.compressor import compressor
+from azoth.process.reference.distillation_column import distillation_column
 from azoth.process.reference.cooler import cooler
 from azoth.process.reference.expander import expander
 from azoth.process.reference.filter import filter
@@ -32,6 +33,7 @@ from azoth.process.reference.throttling_valve import throttling_valve
 __all__ = [
     "component_splitter",
     "compressor",
+    "distillation_column",
     "cooler",
     "expander",
     "filter",

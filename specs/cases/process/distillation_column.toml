@@ -1,0 +1,75 @@
+model = "process.distillation_column"
+[[cases]]
+id = "binary_rigorous"
+tolerance = 0.0002
+source = "NeqSim master, `DistillationColumn` under its default `DIRECT_SUBSTITUTION`, from `validation/neqsim/captures/process_column.tsv`: four stages, the feed on stage 2, a condenser at -20 C and a reboiler at 100 C, 19 bara at the top and 20 at the bottom, and a gate of `1e-6` K. **The port reaches the same fixed point one iteration apart** - 15 against 14 - so the profile and the products agree: measured, every tray temperature within `1.4e-4` K, every traffic rate within `5e-6` relative, and both products' compositions within `3e-15`. **The tolerance is set by the duties and the enthalpies**, which are enthalpy differences carrying the libraries' ideal-gas offset - measured at `1.8e-5` and `2.2e-5` relative on the two duties. `iterations` and the three residuals are deliberately not expected values: they are one apart and differently defined, and the kernel's own test asserts them.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+[cases.expected]
+tray_temperature = [373.15, 336.15382381733946, 303.0710539116486, 302.1225394582587, 296.84208939635556, 253.14999999999998]
+tray_pressure = [2000000.0, 1980000.0, 1960000.0000000002, 1939999.9999999998, 1920000.0, 1900000.0]
+tray_gas_n = [1.373278181743518, 0.5259031551756898, 4.5761815164886315, 4.558039582740156, 4.451759798394696, 3.7914997294607584]
+tray_liquid_n = [3.6992043068302056, 5.072482507910388, 4.225107543947319, 0.784681868969297, 0.7665399361896209, 0.6602601517057779]
+distillate_n = 3.7914997294607584
+distillate_z = [0.9659099052324753, 0.03409009476752466]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+distillate_h = -1258.451319893305
+bottoms_n = 3.6992043068302056
+bottoms_z = [0.02246562977682579, 0.9775343702231742]
+bottoms_p = 2000000.0
+bottoms_t = 373.15
+bottoms_h = -6818.722955062241
+condenser_duty = -21323.042789303567
+reboiler_duty = 47786.58389381015
+[[cases]]
+id = "binary_looser_gate"
+tolerance = 0.001
+source = "The same column with the gate at `1e-2` instead of `1e-6`. **Not a sloppier version of the first row - a different measurement.** Where a solve stops is what its answer is, so NeqSim's 7 iterations land on `3.7913503170929044` mol/s of distillate against the rigorous row's `3.7914997294607584`: the same separation to four figures, and a state 1.7e-4 away, which is what sets this case's tolerance.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 0.01
+max_iterations = 200
+[cases.expected]
+tray_temperature = [373.15, 336.1461469511687, 303.0684737943885, 302.1208351248661, 296.84135336194566, 253.14999999999998]
+tray_pressure = [2000000.0, 1980000.0, 1960000.0000000002, 1939999.9999999998, 1920000.0, 1900000.0]
+tray_gas_n = [1.3726897093823904, 0.5256141980211493, 4.575940529466956, 4.557821766053063, 4.451569165299028, 3.7913503170929044]
+tray_liquid_n = [3.6993537191980588, 5.073058247556919, 4.224818011224946, 0.7844403063797876, 0.7663078404755527, 0.6600629788953105]
+distillate_n = 3.7913503170929044
+distillate_z = [0.965932409618382, 0.034067590381618044]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+distillate_h = -1258.3755519082827
+bottoms_n = 3.6993537191980588
+bottoms_z = [0.022480648502718616, 0.9775193514972814]
+bottoms_p = 2000000.0
+bottoms_t = 373.15
+bottoms_h = -6817.385259791932
+condenser_duty = -21316.79905968026
+reboiler_duty = 47785.789477065184

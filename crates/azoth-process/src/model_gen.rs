@@ -4,6 +4,7 @@
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
 //!   - specs/models/process/cooler.toml
+//!   - specs/models/process/distillation_column.toml
 //!   - specs/models/process/expander.toml
 //!   - specs/models/process/filter.toml
 //!   - specs/models/process/gas_scrubber.toml
@@ -487,6 +488,282 @@ pub static COOLER_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: COOLER_CHECKS,
     cases: COOLER_CASES,
+};
+
+static DISTILLATION_COLUMN_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "number_of_stages",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a column with no stages between its ends is not a column",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "top_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "bottom_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "temperature_tolerance",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a convergence tolerance is positive, and zero is a solve that never stops",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "feed_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+];
+
+static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
+    TestCase {
+        id: "binary_rigorous",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("feed_n", 7.490704036290964),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("number_of_stages", 4.0),
+            ("feed_stage", 2.0),
+            ("top_pressure", 1900000.0),
+            ("bottom_pressure", 2000000.0),
+            ("reboiler_temperature", 373.15),
+            ("condenser_temperature", 253.14999999999998),
+            ("temperature_tolerance", 1e-06),
+            ("max_iterations", 200.0),
+        ],
+        flags: &[("has_reboiler", true), ("has_condenser", true)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("feed_z", &[0.49999999999999994, 0.49999999999999994])],
+        matrices: &[],
+        expected: &[
+            ("distillate_n", 3.7914997294607584),
+            ("distillate_p", 1900000.0),
+            ("distillate_t", 253.14999999999998),
+            ("distillate_h", -1258.451319893305),
+            ("bottoms_n", 3.6992043068302056),
+            ("bottoms_p", 2000000.0),
+            ("bottoms_t", 373.15),
+            ("bottoms_h", -6818.722955062241),
+            ("condenser_duty", -21323.042789303567),
+            ("reboiler_duty", 47786.58389381015),
+        ],
+        expected_vectors: &[
+            (
+                "tray_temperature",
+                &[
+                    373.15,
+                    336.15382381733946,
+                    303.0710539116486,
+                    302.1225394582587,
+                    296.84208939635556,
+                    253.14999999999998,
+                ],
+            ),
+            (
+                "tray_pressure",
+                &[
+                    2000000.0,
+                    1980000.0,
+                    1960000.0000000002,
+                    1939999.9999999998,
+                    1920000.0,
+                    1900000.0,
+                ],
+            ),
+            (
+                "tray_gas_n",
+                &[
+                    1.373278181743518,
+                    0.5259031551756898,
+                    4.5761815164886315,
+                    4.558039582740156,
+                    4.451759798394696,
+                    3.7914997294607584,
+                ],
+            ),
+            (
+                "tray_liquid_n",
+                &[
+                    3.6992043068302056,
+                    5.072482507910388,
+                    4.225107543947319,
+                    0.784681868969297,
+                    0.7665399361896209,
+                    0.6602601517057779,
+                ],
+            ),
+            ("distillate_z", &[0.9659099052324753, 0.03409009476752466]),
+            ("bottoms_z", &[0.02246562977682579, 0.9775343702231742]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "binary_looser_gate",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[
+            ("feed_n", 7.490704036290964),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("number_of_stages", 4.0),
+            ("feed_stage", 2.0),
+            ("top_pressure", 1900000.0),
+            ("bottom_pressure", 2000000.0),
+            ("reboiler_temperature", 373.15),
+            ("condenser_temperature", 253.14999999999998),
+            ("temperature_tolerance", 0.01),
+            ("max_iterations", 200.0),
+        ],
+        flags: &[("has_reboiler", true), ("has_condenser", true)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[("feed_z", &[0.49999999999999994, 0.49999999999999994])],
+        matrices: &[],
+        expected: &[
+            ("distillate_n", 3.7913503170929044),
+            ("distillate_p", 1900000.0),
+            ("distillate_t", 253.14999999999998),
+            ("distillate_h", -1258.3755519082827),
+            ("bottoms_n", 3.6993537191980588),
+            ("bottoms_p", 2000000.0),
+            ("bottoms_t", 373.15),
+            ("bottoms_h", -6817.385259791932),
+            ("condenser_duty", -21316.79905968026),
+            ("reboiler_duty", 47785.789477065184),
+        ],
+        expected_vectors: &[
+            (
+                "tray_temperature",
+                &[
+                    373.15,
+                    336.1461469511687,
+                    303.0684737943885,
+                    302.1208351248661,
+                    296.84135336194566,
+                    253.14999999999998,
+                ],
+            ),
+            (
+                "tray_pressure",
+                &[
+                    2000000.0,
+                    1980000.0,
+                    1960000.0000000002,
+                    1939999.9999999998,
+                    1920000.0,
+                    1900000.0,
+                ],
+            ),
+            (
+                "tray_gas_n",
+                &[
+                    1.3726897093823904,
+                    0.5256141980211493,
+                    4.575940529466956,
+                    4.557821766053063,
+                    4.451569165299028,
+                    3.7913503170929044,
+                ],
+            ),
+            (
+                "tray_liquid_n",
+                &[
+                    3.6993537191980588,
+                    5.073058247556919,
+                    4.224818011224946,
+                    0.7844403063797876,
+                    0.7663078404755527,
+                    0.6600629788953105,
+                ],
+            ),
+            ("distillate_z", &[0.965932409618382, 0.034067590381618044]),
+            ("bottoms_z", &[0.022480648502718616, 0.9775193514972814]),
+        ],
+        expected_strings: &[],
+    },
+];
+
+static DISTILLATION_COLUMN_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "sequential_substitution_sweeps",
+    convergence: "absolute",
+    tolerance: 1e-06,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("linear_temperature_profile"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `process.distillation_column`.
+pub static DISTILLATION_COLUMN_SPEC: ModelSpec = ModelSpec {
+    id: "process.distillation_column",
+    kind: "procedure",
+    algorithm: Some(&DISTILLATION_COLUMN_ALGORITHM),
+    checks: DISTILLATION_COLUMN_CHECKS,
+    cases: DISTILLATION_COLUMN_CASES,
 };
 
 static EXPANDER_CHECKS: &[SpecCheck] = &[
@@ -2437,6 +2714,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &COMPONENT_SPLITTER_SPEC,
     &COMPRESSOR_SPEC,
     &COOLER_SPEC,
+    &DISTILLATION_COLUMN_SPEC,
     &EXPANDER_SPEC,
     &FILTER_SPEC,
     &GAS_SCRUBBER_SPEC,

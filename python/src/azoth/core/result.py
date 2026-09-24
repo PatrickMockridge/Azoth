@@ -3763,3 +3763,58 @@ class ShortcutDistillationColumnResult(_HasWarnings):
     relative_volatility: float
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DistillationColumnResult(_HasWarnings):
+    """Result of ``process.distillation_column``.
+
+    **The profile is four vectors whose length is the tray count**, which the inputs decide -
+    the first id here whose output shape is computed rather than fixed. A column's answer is a
+    profile, not a scalar: two solvers reaching the same one is the agreement worth asserting,
+    and it is what the capture holds.
+    """
+
+    #: Each tray's temperature, from the reboiler at stage 0 to the condenser.
+    tray_temperature: tuple[Q, ...]
+    #: Each tray's pressure.
+    tray_pressure: tuple[Q, ...]
+    #: Each tray's vapour traffic, which is its upward traffic.
+    tray_gas_n: tuple[Q, ...]
+    #: Each tray's liquid traffic, which is its downward traffic.
+    tray_liquid_n: tuple[Q, ...]
+    #: The overhead product.
+    distillate_n: Q
+    #: The distillate's composition.
+    distillate_z: tuple[float, ...]
+    #: The distillate's pressure.
+    distillate_p: Q
+    #: The distillate's temperature.
+    distillate_t: Q
+    #: The distillate's molar enthalpy at its own state.
+    distillate_h: Q
+    #: The bottom product.
+    bottoms_n: Q
+    #: The bottoms' composition.
+    bottoms_z: tuple[float, ...]
+    #: The bottoms' pressure.
+    bottoms_p: Q
+    #: The bottoms' temperature.
+    bottoms_t: Q
+    #: The bottoms' molar enthalpy at its own state.
+    bottoms_h: Q
+    #: The condenser's duty, negative for a condenser.
+    condenser_duty: Q
+    #: The reboiler's duty.
+    reboiler_duty: Q
+    #: Iterations taken - one apart from NeqSim's on the captured row.
+    iterations: int
+    #: The mean tray-temperature change at the last iteration, the gate the solve was held to.
+    temperature_residual: float
+    #: The products' worst component imbalance against the feed. **The closure, not the
+    #: class's MESH norm.**
+    mass_residual: float
+    #: ``|H_feed + duties - H_products| / |H_feed|``.
+    energy_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]

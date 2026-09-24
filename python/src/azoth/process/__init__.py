@@ -19,6 +19,7 @@ from azoth.core.result import (
     ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
+    DistillationColumnResult,
     ExpanderResult,
     FilterResult,
     GasScrubberResult,
@@ -41,6 +42,7 @@ __all__ = [
     "component_splitter",
     "compressor",
     "cooler",
+    "distillation_column",
     "expander",
     "filter",
     "gas_scrubber",
@@ -65,6 +67,7 @@ _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
+_DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EXPANDER = "process.expander"
 _FILTER = "process.filter"
@@ -123,6 +126,82 @@ def pump(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+    )
+
+
+def distillation_column(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    number_of_stages: int,
+    feed_stage: int,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    reboiler_temperature: Q,
+    condenser_temperature: Q,
+    temperature_tolerance: float,
+    max_iterations: int,
+    murphree_efficiency: float | None = None,
+    solver_type: str | None = None,
+    top_specification_type: str | None = None,
+    top_specification_target: float | None = None,
+    top_specification_component: str | None = None,
+    bottom_specification_type: str | None = None,
+    bottom_specification_target: float | None = None,
+    bottom_specification_component: str | None = None,
+) -> DistillationColumnResult:
+    """Solve a distillation column by sequential substitution.
+
+    ``number_of_stages`` counts the trays **between the ends**, so a reboiler or a condenser
+    adds one stage each; ``feed_stage`` is 0-based over the trays *including* them, which is
+    why stage 0 is the reboiler when there is one. The ends are pinned by temperature -
+    ``condenser_temperature`` and ``reboiler_temperature`` reach the trays' own outlet
+    specifications, exactly as ``setCondenserTemperature`` does - and a middle tray flashes at
+    its own enthalpy.
+
+    **The answer is a profile**, not a scalar: the tray temperatures, pressures and both
+    traffic rates, then the two products and the two duties. **Four of the twenty-two declared
+    parameters are refused by name** - the Murphree efficiency and the two product
+    specifications, whose arithmetic is not ported - as are the nine other solving strategies
+    the class carries. A refusal names the class that would close it, so what is owed is
+    readable rather than absent.
+
+    Raises:
+        InvalidInputError: for a stage or a feed stage outside the column, and for any
+            declared parameter whose arithmetic is not ported.
+        SolverNotConvergedError: when the solve misses its gate; the message carries the
+            residuals.
+
+    See :func:`azoth.process.reference.distillation_column`.
+    """
+    return resolve(_DISTILLATION_COLUMN)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        number_of_stages=number_of_stages,
+        feed_stage=feed_stage,
+        has_reboiler=has_reboiler,
+        has_condenser=has_condenser,
+        top_pressure=top_pressure,
+        bottom_pressure=bottom_pressure,
+        reboiler_temperature=reboiler_temperature,
+        condenser_temperature=condenser_temperature,
+        temperature_tolerance=temperature_tolerance,
+        max_iterations=max_iterations,
+        murphree_efficiency=murphree_efficiency,
+        solver_type=solver_type,
+        top_specification_type=top_specification_type,
+        top_specification_target=top_specification_target,
+        top_specification_component=top_specification_component,
+        bottom_specification_type=bottom_specification_type,
+        bottom_specification_target=bottom_specification_target,
+        bottom_specification_component=bottom_specification_component,
     )
 
 

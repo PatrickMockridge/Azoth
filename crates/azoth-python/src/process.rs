@@ -422,6 +422,75 @@ pub fn pump(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.distillation_column` - the column solve as a registered id.
+///
+/// **The first process id whose outputs are vectors of a *computed* length** - one entry per
+/// tray - and the first that refuses declared parameters by name. Both are the boundary's
+/// business rather than the kernel's.
+#[pyfunction]
+#[pyo3(
+    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, reboiler_temperature, condenser_temperature, temperature_tolerance, max_iterations, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
+)]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, reboiler_temperature, condenser_temperature, temperature_tolerance, max_iterations, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
+pub fn distillation_column(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    number_of_stages: usize,
+    feed_stage: usize,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: f64,
+    bottom_pressure: f64,
+    reboiler_temperature: f64,
+    condenser_temperature: f64,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    murphree_efficiency: Option<f64>,
+    solver_type: Option<&str>,
+    top_specification_type: Option<&str>,
+    top_specification_target: Option<f64>,
+    top_specification_component: Option<&str>,
+    bottom_specification_type: Option<&str>,
+    bottom_specification_target: Option<f64>,
+    bottom_specification_component: Option<&str>,
+) -> PyResult<crate::results::PyDistillationColumnResult> {
+    azoth_process::distillation_column(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        number_of_stages,
+        feed_stage,
+        has_reboiler,
+        has_condenser,
+        pascals(top_pressure),
+        pascals(bottom_pressure),
+        kelvins(reboiler_temperature),
+        kelvins(condenser_temperature),
+        temperature_tolerance,
+        max_iterations,
+        murphree_efficiency,
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+    )
+    .map(|r| crate::results::PyDistillationColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.throttling_valve` - the valve's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]

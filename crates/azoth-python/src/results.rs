@@ -58,10 +58,10 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    ComponentSplitterResult, CompressorResult, CoolerResult, ExpanderResult, FilterResult,
-    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult,
-    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, ThrottlingValveResult,
-    pipe::PipeResult,
+    ComponentSplitterResult, CompressorResult, CoolerResult, DistillationColumnResult,
+    ExpanderResult, FilterResult, GasScrubberResult, HeatExchangerResult, HeaterResult,
+    ManifoldResult, MixerResult, PumpResult, SeparatorResult, ShortcutDistillationColumnResult,
+    SplitterResult, ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -8674,6 +8674,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ShortcutDistillationColumnResult::CALC_ID => {
             ShortcutDistillationColumnResult::FIELDS.to_vec()
         }
+        DistillationColumnResult::CALC_ID => DistillationColumnResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
@@ -9876,6 +9877,129 @@ impl From<&ShortcutDistillationColumnResult> for PyShortcutDistillationColumnRes
             condenser_duty: quantity(r.condenser_duty.value, "W"),
             reboiler_duty: quantity(r.reboiler_duty.value, "W"),
             relative_volatility: r.relative_volatility,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.distillation_column`, transported.
+///
+/// **Four vectors whose length is the tray count**, which the inputs decide: the profile is
+/// what a column's answer is, and a fixed-length shape could not carry it. The two pressure
+/// and temperature vectors cross as quantities, one `PyQty` per tray.
+#[pyclass(module = "azoth._core")]
+pub struct PyDistillationColumnResult {
+    /// Each tray's temperature.
+    #[pyo3(get)]
+    pub tray_temperature: Vec<PyQty>,
+    /// Each tray's pressure.
+    #[pyo3(get)]
+    pub tray_pressure: Vec<PyQty>,
+    /// Each tray's vapour traffic, mol/s.
+    #[pyo3(get)]
+    pub tray_gas_n: Vec<f64>,
+    /// Each tray's liquid traffic, mol/s.
+    #[pyo3(get)]
+    pub tray_liquid_n: Vec<f64>,
+    /// Distillate molar flow, mol/s.
+    #[pyo3(get)]
+    pub distillate_n: PyQty,
+    /// Distillate composition.
+    #[pyo3(get)]
+    pub distillate_z: Vec<f64>,
+    /// Distillate pressure.
+    #[pyo3(get)]
+    pub distillate_p: PyQty,
+    /// Distillate temperature.
+    #[pyo3(get)]
+    pub distillate_t: PyQty,
+    /// Distillate molar enthalpy.
+    #[pyo3(get)]
+    pub distillate_h: PyQty,
+    /// Bottoms molar flow, mol/s.
+    #[pyo3(get)]
+    pub bottoms_n: PyQty,
+    /// Bottoms composition.
+    #[pyo3(get)]
+    pub bottoms_z: Vec<f64>,
+    /// Bottoms pressure.
+    #[pyo3(get)]
+    pub bottoms_p: PyQty,
+    /// Bottoms temperature.
+    #[pyo3(get)]
+    pub bottoms_t: PyQty,
+    /// Bottoms molar enthalpy.
+    #[pyo3(get)]
+    pub bottoms_h: PyQty,
+    /// The condenser's duty, W.
+    #[pyo3(get)]
+    pub condenser_duty: PyQty,
+    /// The reboiler's duty, W.
+    #[pyo3(get)]
+    pub reboiler_duty: PyQty,
+    /// Iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The mean tray-temperature change at the last iteration, K.
+    #[pyo3(get)]
+    pub temperature_residual: f64,
+    /// The mass closure.
+    #[pyo3(get)]
+    pub mass_residual: f64,
+    /// The enthalpy closure.
+    #[pyo3(get)]
+    pub energy_residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyDistillationColumnResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "DistillationColumnResult(trays={}, condenserduty={} W)",
+            self.tray_temperature.len(),
+            self.condenser_duty.magnitude_si
+        )
+    }
+}
+
+impl From<&DistillationColumnResult> for PyDistillationColumnResult {
+    fn from(r: &DistillationColumnResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            tray_temperature: r
+                .tray_temperature
+                .iter()
+                .map(|t| quantity(t.value, "K"))
+                .collect(),
+            tray_pressure: r
+                .tray_pressure
+                .iter()
+                .map(|p| quantity(p.value, "Pa"))
+                .collect(),
+            tray_gas_n: r.tray_gas_n.clone(),
+            tray_liquid_n: r.tray_liquid_n.clone(),
+            distillate_n: quantity(r.distillate_n, "mol/s"),
+            distillate_z: r.distillate_z.clone(),
+            distillate_p: quantity(r.distillate_p.value, "Pa"),
+            distillate_t: quantity(r.distillate_t.value, "K"),
+            distillate_h: quantity(r.distillate_h.value, "J/mol"),
+            bottoms_n: quantity(r.bottoms_n, "mol/s"),
+            bottoms_z: r.bottoms_z.clone(),
+            bottoms_p: quantity(r.bottoms_p.value, "Pa"),
+            bottoms_t: quantity(r.bottoms_t.value, "K"),
+            bottoms_h: quantity(r.bottoms_h.value, "J/mol"),
+            condenser_duty: quantity(r.condenser_duty.value, "W"),
+            reboiler_duty: quantity(r.reboiler_duty.value, "W"),
+            iterations: r.iterations,
+            temperature_residual: r.temperature_residual,
+            mass_residual: r.mass_residual,
+            energy_residual: r.energy_residual,
             warnings: transport(&r.warnings),
         }
     }

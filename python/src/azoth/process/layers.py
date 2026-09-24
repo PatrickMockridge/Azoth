@@ -416,8 +416,50 @@ def _component_splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.distillation_column`'s layers, from the reference's own factored arithmetic.
+
+    **The profile is the layer, and it is the whole answer.** A column's response is not a
+    scalar that a divergence can be attributed to; it is a temperature and two traffic rates on
+    every tray, and the capture prints exactly those. So the dump is the profile under the
+    capture's own key names - `tray3_temperature_K` and not `tray_temperature[3]` - and the
+    first tray that moved is the layer the diff names.
+
+    That is also why this model needs no divergence declaration: the two solvers reach the same
+    fixed point one iteration apart, so the profile is compared directly rather than with a
+    declared band.
+    """
+    from azoth.process.reference.distillation_column import _states
+
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        float(inputs["feed_n"]),
+        [float(v) for v in inputs["feed_z"]],
+        float(inputs["feed_t"]),
+        float(inputs["feed_p"]),
+        int(inputs["number_of_stages"]),
+        int(inputs["feed_stage"]),
+        bool(inputs["has_reboiler"]),
+        bool(inputs["has_condenser"]),
+        float(inputs["top_pressure"]),
+        float(inputs["bottom_pressure"]),
+        float(inputs["reboiler_temperature"]),
+        float(inputs["condenser_temperature"]),
+        float(inputs["temperature_tolerance"]),
+        int(inputs["max_iterations"]),
+    )
+    layers: dict[str, float] = {}
+    for i in range(len(states.tray_temperature)):
+        layers[f"tray{i}_temperature_K"] = states.tray_temperature[i]
+        layers[f"tray{i}_pressure_bara"] = states.tray_pressure[i] / 1.0e5
+        layers[f"tray{i}_gas_n"] = states.tray_gas_n[i]
+        layers[f"tray{i}_liquid_n"] = states.tray_liquid_n[i]
+    return layers
+
+
 DUMPERS: dict[str, Dumper] = {
     "process.component_splitter": _component_splitter,
+    "process.distillation_column": _distillation_column,
     "process.expander": _expander,
     "process.manifold": _manifold,
     "process.pipe": _pipe,
@@ -651,6 +693,23 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    # The column's converged rows. **Both are cases, and the second is there because a looser
+    # gate is a different measurement** rather than a sloppier version of the first: where a
+    # solve stops is what its answer is.
+    LayerCase(
+        model="process.distillation_column",
+        case="binary_rigorous",
+        capture="process_column.tsv",
+        block=2,
+        identified_by=("#label", "binary_methane_butane_4_stages"),
+    ),
+    LayerCase(
+        model="process.distillation_column",
+        case="binary_looser_gate",
+        capture="process_column.tsv",
+        block=3,
+        identified_by=("#label", "binary_methane_butane_loose"),
+    ),
     # The component splitter's three rows. The two enthalpies are declared divergences - see
     # `_COMPONENT_SPLITTER_DIVERGENCE` - and the flows, compositions and temperatures are
     # compared, which is what the class gets right.
@@ -914,6 +973,13 @@ UNCASED_ROWS: dict[str, int] = {
     # so neither has a state to be its case; they stay in the capture as the measurement the
     # refusal rests on.
     "process_shortcut_distillation_column.tsv": 2,
+    # The column's two deethanizer rows. **Both are the class's own failure to converge** - the
+    # same column at a hard-capped 80 iterations and at 200, ending `7.3e-3` and `2.9e-2` K from
+    # a `1e-5` gate, the second worse than the first. The port converges on the same column, so
+    # its state is not NeqSim's and the rows are evidence rather than oracles: what the port's
+    # own test asserts about them is self-consistency, and this is why they are declared here
+    # rather than paired with a case.
+    "process_column.tsv": 2,
 }
 
 

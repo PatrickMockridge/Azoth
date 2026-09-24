@@ -169,6 +169,7 @@
   - [Component splitter](./process/component_splitter.md)
   - [Compressor](./process/compressor.md)
   - [Cooler](./process/cooler.md)
+  - [Distillation column](./process/distillation_column.md)
   - [Expander](./process/expander.md)
   - [Filter](./process/filter.md)
   - [Gas scrubber](./process/gas_scrubber.md)

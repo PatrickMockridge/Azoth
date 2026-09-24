@@ -53,6 +53,7 @@ from azoth.core.result import (
     DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
+    DistillationColumnResult,
     EffectiveDiffusionResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
@@ -3941,6 +3942,89 @@ def shortcut_distillation_column(
         condenser_duty=from_si(result.condenser_duty.magnitude_si, result.condenser_duty.unit),
         reboiler_duty=from_si(result.reboiler_duty.magnitude_si, result.reboiler_duty.unit),
         relative_volatility=result.relative_volatility,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def distillation_column(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    number_of_stages: int,
+    feed_stage: int,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    reboiler_temperature: Q,
+    condenser_temperature: Q,
+    temperature_tolerance: float,
+    max_iterations: int,
+    murphree_efficiency: float | None = None,
+    solver_type: str | None = None,
+    top_specification_type: str | None = None,
+    top_specification_target: float | None = None,
+    top_specification_component: str | None = None,
+    bottom_specification_type: str | None = None,
+    bottom_specification_target: float | None = None,
+    bottom_specification_component: str | None = None,
+) -> DistillationColumnResult:
+    """`process.distillation_column`, computed in Rust.
+
+    The component names cross unresolved, as the other unit operations' do. The four
+    unported parameters cross as `None` or their value, and the Rust side refuses them: a
+    refusal must be the kernel's, so that the Python reference and the extension refuse for the
+    same stated reason rather than each in its own words.
+    """
+    spec = _models_gen.model("process.distillation_column")
+    result = _core.distillation_column(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        int(_si(spec, "number_of_stages", number_of_stages)),
+        int(_si(spec, "feed_stage", feed_stage)),
+        has_reboiler,
+        has_condenser,
+        input_to_si(spec, "top_pressure", top_pressure),
+        input_to_si(spec, "bottom_pressure", bottom_pressure),
+        input_to_si(spec, "reboiler_temperature", reboiler_temperature),
+        input_to_si(spec, "condenser_temperature", condenser_temperature),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
+        int(_si(spec, "max_iterations", max_iterations)),
+        murphree_efficiency,
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+    )
+    return DistillationColumnResult(
+        tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
+        tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
+        tray_gas_n=tuple(from_si(v, "mol/s") for v in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(v, "mol/s") for v in result.tray_liquid_n),
+        distillate_n=from_si(result.distillate_n.magnitude_si, result.distillate_n.unit),
+        distillate_z=tuple(result.distillate_z),
+        distillate_p=from_si(result.distillate_p.magnitude_si, result.distillate_p.unit),
+        distillate_t=from_si(result.distillate_t.magnitude_si, result.distillate_t.unit),
+        distillate_h=from_si(result.distillate_h.magnitude_si, result.distillate_h.unit),
+        bottoms_n=from_si(result.bottoms_n.magnitude_si, result.bottoms_n.unit),
+        bottoms_z=tuple(result.bottoms_z),
+        bottoms_p=from_si(result.bottoms_p.magnitude_si, result.bottoms_p.unit),
+        bottoms_t=from_si(result.bottoms_t.magnitude_si, result.bottoms_t.unit),
+        bottoms_h=from_si(result.bottoms_h.magnitude_si, result.bottoms_h.unit),
+        condenser_duty=from_si(result.condenser_duty.magnitude_si, result.condenser_duty.unit),
+        reboiler_duty=from_si(result.reboiler_duty.magnitude_si, result.reboiler_duty.unit),
+        iterations=int(result.iterations),
+        temperature_residual=float(result.temperature_residual),
+        mass_residual=float(result.mass_residual),
+        energy_residual=float(result.energy_residual),
         warnings=_warnings(result.warnings),
     )
 

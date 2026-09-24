@@ -1387,6 +1387,30 @@ class CoolerResult:
     warnings: list[Warning]
 
 @final
+class DistillationColumnResult:
+    tray_temperature: list[Qty]
+    tray_pressure: list[Qty]
+    tray_gas_n: list[Qty]
+    tray_liquid_n: list[Qty]
+    distillate_n: Qty
+    distillate_z: list[float]
+    distillate_p: Qty
+    distillate_t: Qty
+    distillate_h: Qty
+    bottoms_n: Qty
+    bottoms_z: list[float]
+    bottoms_p: Qty
+    bottoms_t: Qty
+    bottoms_h: Qty
+    condenser_duty: Qty
+    reboiler_duty: Qty
+    iterations: int
+    temperature_residual: float
+    mass_residual: float
+    energy_residual: float
+    warnings: list[Warning]
+
+@final
 class ExpanderResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2732,6 +2756,31 @@ def cooler(
     duty: float | None = None,
     pressure_drop: float | None = None,
 ) -> CoolerResult: ...
+def distillation_column(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    number_of_stages: float,
+    feed_stage: float,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: float,
+    bottom_pressure: float,
+    reboiler_temperature: float,
+    condenser_temperature: float,
+    temperature_tolerance: float,
+    max_iterations: float,
+    murphree_efficiency: float | None = None,
+    solver_type: str | None = None,
+    top_specification_type: str | None = None,
+    top_specification_target: float | None = None,
+    top_specification_component: str | None = None,
+    bottom_specification_type: str | None = None,
+    bottom_specification_target: float | None = None,
+    bottom_specification_component: str | None = None,
+) -> DistillationColumnResult: ...
 def expander(
     components: list[str],
     inlet_n: float,

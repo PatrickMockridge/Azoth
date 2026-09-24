@@ -1,0 +1,223 @@
+id = "process.distillation_column"
+name = "Distillation column"
+kind = "procedure"
+assumptions = [
+    "**the solve is `DIRECT_SUBSTITUTION`**, which is `DistillationColumn`'s own default: `init` flashes the feed stage, seeds a linear temperature profile and links the trays, then the sweeps run each tray from its neighbours' outlets until the mean tray-temperature change is under the tolerance.",
+    "**the relaxation is the class's, and its controller reads one term of three.** It damps on a combined residual carrying its scaled temperature, mass and energy terms, and the others are `ColumnMeshResidualEvaluator`'s - a MESH norm this port does not carry.",
+    "**that matters only where a solve struggles.** On the captured binary row both libraries keep a relaxation of one and reach the same fixed point.",
+    "**the linear seed enters through the inlets.** `SimpleTray.init()` re-states every inlet stream's temperature to the tray's before its first run, which is how the profile reaches the trays at all.",
+    "**the external feed is restored afterwards**, which is why the sweeps see the feed's own state and not the seeded one.",
+    "**the reboiler's `init` inlet is the feed stage's liquid**, not the first tray's - `init` links it that way and the sweeps then replace it with the first tray's. The two differ only during the seeding.",
+    "**the ends are pinned by temperature**: `setCondenserTemperature` reaches the tray's own `outTemperature`, so its flash is a `TPflash` there rather than at the mixed enthalpy. A middle tray has no pin and flashes at its enthalpy.",
+    "**pressures run linearly** from `bottom_pressure` at stage 0 to `top_pressure` at the top stage, which is the class's own rule and is why the two are both declared.",
+    "**`number_of_stages` counts the trays between the ends**, so a reboiler or a condenser adds one stage each: the stage a feed enters is 0-based over the trays *including* them, and stage 0 is the reboiler where there is one.",
+    "**the mass and energy residuals are the closure, not the class's.** They are the products' worst component imbalance against the feed, and the enthalpy balance; `getLastMassResidual` is a norm over the MESH equations. The capture prints both, and they are not comparable.",
+    "**`murphree_efficiency` and the two product specifications are declared and refused.** The palette declares them because they are the machine's; their arithmetic is not ported, and `SimpleTray.setMurphreeEfficiency` and `ColumnSpecification` would close them.",
+    "**a refused parameter is refused by name**, rather than answered with the ideal stage or the wrong degree of freedom.",
+    "**`solver_type` is refused for everything but `direct_substitution`**, which is the class's own default. The other nine are `NaphtaliSandholmSolver`, `ColumnSolverFactory`'s inside-out family and the rest.",
+    "**`AUTO` is a ladder and not one method** - the parking note's finding - so it is refused with them rather than silently resolved.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**NeqSim's own deethanizer state is written on SRK**, and on PR it does not converge in NeqSim at all - the capture keeps that as evidence.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/DistillationColumn.java` is the port source, through `init` and `solveSequential`; the stage is `SimpleTray.java`, ported as `crates/azoth-process/src/column/tray.rs`.",
+    "`validation/neqsim/captures/process_column.tsv` - four rows: a converged binary column, the same at a looser tolerance, and NeqSim's own deethanizer taken to 80 and to 200 iterations.",
+]
+[source]
+standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
+edition = "Its `init` and its `solveSequential` under the default `DIRECT_SUBSTITUTION`: the feed-stage flash, the linear temperature seed, the two links, and the sweeps. The other nine solving strategies are refused by name."
+[algorithm]
+scheme = "sequential_substitution_sweeps"
+initialisation = "linear_temperature_profile"
+convergence = "absolute"
+tolerance = 1.0e-06
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+description = "the feed's substances, by name, resolved against the component databank. The order is the order of `feed_z`.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the feed's molar flow.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed composition.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the feed's pressure, which is its own - the column's tray pressures come from `bottom_pressure` and `top_pressure`.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the feed's temperature, which with its pressure and composition fixes its enthalpy.\n"
+[inputs.number_of_stages]
+unit = "dimensionless"
+description = "the theoretical trays between the ends, which is the palette's own parameter; a reboiler or a condenser adds one stage each.\n"
+[inputs.feed_stage]
+unit = "dimensionless"
+description = "the stage the feed enters, 0-based over the trays including the ends - so stage 0 is the reboiler where there is one, and the last stage is the condenser.\n"
+[inputs.has_reboiler]
+type = "boolean"
+description = "whether the column has a reboiler at stage 0.\n"
+[inputs.has_condenser]
+type = "boolean"
+description = "whether the column has a condenser at the top stage.\n"
+[inputs.top_pressure]
+unit = "Pa"
+description = "the pressure at the top stage.\n"
+[inputs.bottom_pressure]
+unit = "Pa"
+description = "the pressure at stage 0. The two fix the profile the tray pressures interpolate.\n"
+[inputs.reboiler_temperature]
+unit = "K"
+description = "the reboiler's temperature, which pins the bottom tray's flash.\n"
+[inputs.condenser_temperature]
+unit = "K"
+description = "the condenser's temperature, which pins the top tray's flash.\n"
+[inputs.temperature_tolerance]
+unit = "K"
+description = "the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named.\n"
+[inputs.murphree_efficiency]
+unit = "dimensionless"
+optional = true
+description = "**not ported**: the column-wide Murphree tray efficiency, which `SimpleTray.setMurphreeEfficiency` applies and this model refuses. Omitted means the ideal stage, which is the class's own default of one.\n"
+[inputs.solver_type]
+type = "enum"
+values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]
+optional = true
+description = "**only `direct_substitution` is ported**, which is the class's own default. The rest are refused by name - `NaphtaliSandholmSolver`, `ColumnSolverFactory`'s inside-out family - and `auto` is a ladder rather than one method.\n"
+[inputs.top_specification_type]
+type = "enum"
+values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
+optional = true
+description = "**not ported**: the top product's degree of freedom, which `ColumnSpecification` carries. Omitted, the top is pinned by `condenser_temperature` instead, which is the class's other route and the one this model takes.\n"
+[inputs.top_specification_target]
+unit = "dimensionless"
+optional = true
+description = "**not ported**: the target value, in the unit its type implies.\n"
+[inputs.top_specification_component]
+type = "string"
+optional = true
+description = "**not ported**: the component a purity or a recovery constrains.\n"
+[inputs.bottom_specification_type]
+type = "enum"
+values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
+optional = true
+description = "**not ported**: the bottom product's degree of freedom, as the top's.\n"
+[inputs.bottom_specification_target]
+unit = "dimensionless"
+optional = true
+description = "**not ported**: the target value, in the unit its type implies.\n"
+[inputs.bottom_specification_component]
+type = "string"
+optional = true
+description = "**not ported**: the component a purity or a recovery constrains.\n"
+[outputs]
+[outputs.tray_temperature]
+type = "vector"
+unit = "K"
+length = "one per tray, the reboiler at stage 0 to the condenser at the top"
+description = "the solved temperature profile, which is what a column's answer is rather than a scalar.\n"
+[outputs.tray_pressure]
+type = "vector"
+unit = "Pa"
+length = "one per tray"
+description = "each tray's pressure, which is the linear profile between `bottom_pressure` and `top_pressure`.\n"
+[outputs.tray_gas_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the vapour leaving each tray, which is its upward traffic.\n"
+[outputs.tray_liquid_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the liquid leaving each tray, which is its downward traffic.\n"
+[outputs.distillate_n]
+unit = "mol/s"
+description = "the overhead product, which is the condenser's own outlet.\n"
+[outputs.distillate_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the distillate's composition.\n"
+[outputs.distillate_p]
+unit = "Pa"
+description = "the distillate's pressure, which is `top_pressure` where there is a condenser.\n"
+[outputs.distillate_t]
+unit = "K"
+description = "the distillate's temperature, which is the condenser's own.\n"
+[outputs.distillate_h]
+unit = "J/mol"
+description = "the distillate's molar enthalpy at its own state.\n"
+[outputs.bottoms_n]
+unit = "mol/s"
+description = "the bottom product, which is the reboiler's liquid.\n"
+[outputs.bottoms_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the bottoms' composition.\n"
+[outputs.bottoms_p]
+unit = "Pa"
+description = "the bottoms' pressure, which is `bottom_pressure` where there is a reboiler.\n"
+[outputs.bottoms_t]
+unit = "K"
+description = "the bottoms' temperature, which is the reboiler's own.\n"
+[outputs.bottoms_h]
+unit = "J/mol"
+description = "the bottoms' molar enthalpy at its own state.\n"
+[outputs.condenser_duty]
+unit = "W"
+description = "the condenser's duty: its products' enthalpy less the vapour's that came in, which is negative for a condenser.\n"
+[outputs.reboiler_duty]
+unit = "W"
+description = "the reboiler's duty: its boilup and its bottoms less the downcomer's enthalpy.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "the iterations taken. **One apart from NeqSim's on the captured row** - 14 against 15 - because where a solve stops is where its answer is.\n"
+[outputs.temperature_residual]
+unit = "dimensionless"
+description = "the mean tray-temperature change at the last iteration, in K - the gate the solve was held to.\n"
+[outputs.mass_residual]
+unit = "dimensionless"
+description = "the products' worst component imbalance against the feed, relative. **The closure and not the class's MESH norm** - see the assumptions.\n"
+[outputs.energy_residual]
+unit = "dimensionless"
+description = "`|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.\n"
+[[valid_range]]
+quantity = "number_of_stages"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a column with no stages between its ends is not a column\n"
+[[valid_range]]
+quantity = "top_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "bottom_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "temperature_tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a convergence tolerance is positive, and zero is a solve that never stops\n"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.distillation_column"
+rust = "azoth_process::distillation_column"

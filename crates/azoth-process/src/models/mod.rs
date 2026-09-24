@@ -33,6 +33,7 @@
 pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;
+pub mod distillation_column;
 pub mod expander;
 pub mod filter;
 pub mod gas_scrubber;
@@ -50,6 +51,7 @@ pub mod throttling_valve;
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
 pub use compressor::{CompressorResult, compressor};
 pub use cooler::{CoolerResult, cooler};
+pub use distillation_column::{DistillationColumnResult, distillation_column};
 pub use expander::{ExpanderResult, expander};
 pub use filter::{FilterResult, filter};
 pub use gas_scrubber::{GasScrubberResult, gas_scrubber};
