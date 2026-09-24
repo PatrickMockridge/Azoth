@@ -3743,6 +3743,24 @@ impl CalcResult for ParachorSurfaceTensionResult {
     }
 }
 
+/// Result of `eos.aqueous_viscosity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AqueousViscosityResult {
+    /// The phase's dynamic viscosity, in Pa·s.
+    pub viscosity: DynamicViscosity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for AqueousViscosityResult {
+    const CALC_ID: &'static str = "eos.aqueous_viscosity";
+    const FIELDS: &'static [&'static str] = &["viscosity", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ViscosityResult {

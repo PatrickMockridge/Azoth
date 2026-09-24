@@ -45,7 +45,7 @@ use crate::results::{
     PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
     PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
     PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyVhFlashResult,
-    PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
+    PyAqueousViscosityResult, PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
     PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
     PyWilsonActivityCoefficientsResult,
 };
@@ -3750,6 +3750,60 @@ pub fn viscosity(
     let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
     azoth_eos::viscosity(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyViscosityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// The liquid viscosity NeqSim gives an **aqueous** phase.
+///
+/// `eos`, `alpha` and `alpha_params` are accepted for the boundary's uniformity and
+/// ignored: this correlation reads the components' own `LIQVISC` sets and nothing about
+/// the mixture's cubic.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, liqvisc, liqvisc_model, T, P, z, eos = \"pr\", alpha = \"pr\")"
+)]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+#[allow(unused_variables)] // `eos`, `alpha` and `alpha_params` are boundary-only, see above.
+pub fn aqueous_viscosity(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    molar_mass: Vec<f64>,
+    liqvisc: Vec<f64>,
+    liqvisc_model: Vec<u32>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<PyAqueousViscosityResult> {
+    let n = Tc.len();
+    let components = (0..n)
+        .map(|i| {
+            azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i]).map(|c| {
+                c.with_molar_mass(Some(molar_mass[i]))
+                    .with_liquid_viscosity(
+                        [
+                            liqvisc[4 * i],
+                            liqvisc[4 * i + 1],
+                            liqvisc[4 * i + 2],
+                            liqvisc[4 * i + 3],
+                        ],
+                        liqvisc_model[i],
+                    )
+            })
+        })
+        .collect::<azoth_core::Result<Vec<_>>>()
+        .map_err(|e| to_pyerr(py, e))?;
+    let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::aqueous_viscosity(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| PyAqueousViscosityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

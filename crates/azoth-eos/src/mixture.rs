@@ -136,6 +136,13 @@ pub struct Component {
     /// correlation reads them. Empty for a component built without a fitted set, which
     /// is every caller-supplied component and every correlation that needs none.
     pub alpha_params: Vec<f64>,
+    /// The four liquid-viscosity parameters `LIQVISC1`-`LIQVISC4`, whose meaning is
+    /// [`Self::liqvisc_model`]. Read by `eos.aqueous_viscosity`; a component built from
+    /// critical constants alone carries zeros and a model of zero, which that model reads as
+    /// NeqSim's own default branch.
+    pub liqvisc: [f64; 4],
+    /// Which of NeqSim's four liquid-viscosity expressions those four are; zero names none.
+    pub liqvisc_model: u32,
     /// The volume-translation parameter in m³/mol, subtracted from the untranslated
     /// molar volume: `v_corr = v - c`. Zero for a component without a translation,
     /// which is the plain PR/SRK/RK forms. The Peneloux shift of
@@ -216,6 +223,8 @@ impl Component {
             omega,
             molar_mass: None,
             alpha_params: Vec::new(),
+            liqvisc: [0.0; 4],
+            liqvisc_model: 0,
             volume_shift: 0.0,
             wax_former: false,
             class: String::new(),
@@ -315,6 +324,13 @@ impl Component {
     #[must_use]
     pub fn with_volume_shift(mut self, volume_shift: f64) -> Self {
         self.volume_shift = volume_shift;
+        self
+    }
+
+    /// Attach a liquid-viscosity set: the four parameters and the model they belong to.
+    pub fn with_liquid_viscosity(mut self, liqvisc: [f64; 4], model: u32) -> Self {
+        self.liqvisc = liqvisc;
+        self.liqvisc_model = model;
         self
     }
 }

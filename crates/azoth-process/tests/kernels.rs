@@ -409,16 +409,13 @@ fn a_pipe_solves_a_liquid_line_with_two_densities() {
     assert_eq!(out.regime, FlowRegime::Turbulent);
 }
 
-/// **The water row, which this library cannot match and does not pretend to.** NeqSim's
-/// aqueous phase takes `WaterPhysicalProperties` and a water correlation
-/// (`8.551e-4` Pa·s); `eos.viscosity` is the PFCT correlation the *gas* and *oil* branches
-/// use, and gives `5.31e-4`. The density is right - the velocity here agrees to `6e-8` -
-/// and the Reynolds number is `1.61` times too high, which is the viscosity ratio.
-///
-/// The row is asserted as it is, so that landing the aqueous branch fails this test rather
-/// than passing unnoticed.
+/// **The water row, which was the gap and is now closed.** NeqSim's aqueous phase takes
+/// `WaterPhysicalProperties` and the liquid `Viscosity` correlation (`eos.aqueous_viscosity`);
+/// before that id existed this row diverged by `1.61` on the Reynolds number, because
+/// `eos.viscosity` is the PFCT form the *gas* and *oil* branches use and is 38% low on water.
+/// Now it reproduces the capture: `Re = 231.24476346337397` and the laminar `64 / Re`.
 #[test]
-fn a_water_line_diverges_on_the_unported_aqueous_viscosity() {
+fn a_water_line_takes_the_aqueous_viscosity() {
     let feed = Stream::from_pt(
         vec!["water".into()],
         vec![1.0],
@@ -430,10 +427,12 @@ fn a_water_line_diverges_on_the_unported_aqueous_viscosity() {
     let out = pipe(&feed, meters(1000.0), meters(0.1), meters(1.0e-5)).expect("pipe");
 
     assert!((out.velocity - 0.002331069853012549).abs() / 0.002331069853012549 < 1e-6);
-    let ratio = out.reynolds / 231.24476346337397;
     assert!(
-        (ratio - 1.61).abs() < 0.02,
-        "the aqueous branch is unported, and this is the ratio that says so: {ratio}"
+        (out.reynolds - 231.24476346337397).abs() / 231.24476346337397 < 1e-6,
+        "the aqueous branch, against the capture's own Reynolds number: {}",
+        out.reynolds
     );
+    assert!((out.friction_factor - 0.2767630239122657).abs() < 1e-6);
     assert_eq!(out.regime, FlowRegime::Laminar);
+    assert!((out.outlet.p.value - 499992.6009196372).abs() / 5.0e5 < 1e-9);
 }

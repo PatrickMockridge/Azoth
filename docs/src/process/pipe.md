@@ -53,7 +53,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the outlet pressure is solved from the line, not stated.** `AdiabaticPipe.run` iterates `calcPressureOut()` against the state it is evaluating at until the two agree to `1e-2` bar or twenty-five passes run out, and the outlet is a flash at the pressure it settled on, at the inlet's temperature.
 - **two equations, one per phase, and the branch is the phase's label.** A gas takes the compressible `P1^2 - P2^2` form - `Z`, molar mass and temperature, no density - and anything else takes Darcy-Weisbach. The label is NeqSim's `PhaseEos.init` rule, which `eos` ports.
 - **and the class uses two densities.** The liquid velocity takes the *physical-properties* density, translated; the Reynolds number takes `getKinematicViscosity()`, which divides by the **untranslated cubic** `M/(Z R T / P)`. Measured on the butane row: `567.33` against `603.86`, 6%.
-- **the aqueous viscosity branch is not ported.** An aqueous phase takes `WaterPhysicalProperties` and a water correlation (`8.551e-4` Pa s at 300 K) where `eos.viscosity` is the PFCT form the gas and oil branches use (`5.31e-4`). A water line's Reynolds number is `1.61` times NeqSim's.
+- **the viscosity follows the phase type, as NeqSim's does.** A gas or a hydrocarbon liquid takes the PFCT form (`eos.viscosity`); an aqueous phase takes `eos.aqueous_viscosity` - `8.5510e-4` Pa s for water at 300 K against `5.3097e-4`. One for both puts a water line's Reynolds number `1.61` out.
 - **the transition band is interpolated, not refused.** Between `Re` 2300 and 4000 the class blends the laminar value at 2300 with the Haaland value at 4000, and this reproduces it rather than declining the band.
 - **a level line only.** The class's balance carries `rho g (z_in - z_out)`, and the palette entry declares no elevations - so the gravity term is zero here rather than defaulted to something. A line with a rise is not a state this entry describes.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
@@ -65,7 +65,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `gas_methane_co2_1000m` | components = ['methane', 'CO2'], inlet_n = 1.0, inlet_z = [0.7, 0.3], inlet_p = 5000000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [0.7, 0.3], outlet_p = 4999978.227836236, outlet_t = 300.0, outlet_h = -231.601245143823, pressure_drop = 21.77216376398931 |
 | `liquid_n_butane_1000m` | components = ['n-butane'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 1999981.6572976355, outlet_t = 300.0, pressure_drop = 18.3427023645 |
-| `water_1000m_and_the_unported_aqueous_viscosity` | components = ['water'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 500000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 499995.40557063156, outlet_t = 300.0, outlet_h = -44728.052572021756, pressure_drop = 4.59442936844 |
+| `water_1000m` | components = ['water'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 500000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 499992.6009196372, outlet_t = 300.0, pressure_drop = 7.399080362802124 |
 
 ## References
 

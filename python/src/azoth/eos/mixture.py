@@ -66,6 +66,13 @@ class Component:
     #: absence NeqSim uses, so a zero takes the fallback correlation
     #: ``0.29056 - 0.08775*omega``.
     rackett_z: float = 0.0
+    #: The four liquid-viscosity parameters ``LIQVISC1``-``LIQVISC4``, whose meaning is
+    #: :attr:`liqvisc_model`. Read by :func:`azoth.eos.aqueous_viscosity`; a component built
+    #: from critical constants alone carries zeros and a model of zero, which that model
+    #: reads as NeqSim's own default branch.
+    liqvisc: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    #: Which of NeqSim's four liquid-viscosity expressions those four are; ``0`` names none.
+    liqvisc_model: int = 0
     #: The Peneloux volume-translation parameter, in ``m**3/mol``, subtracted from the
     #: untranslated molar volume: ``v_corr = v - c``. Zero for a component without a
     #: translation, which is the plain PR/SRK/RK forms; the databank fills it from

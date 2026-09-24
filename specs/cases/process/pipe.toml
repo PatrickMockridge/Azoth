@@ -45,9 +45,9 @@ outlet_p = 1999981.6572976355
 outlet_t = 300.0
 pressure_drop = 18.3427023645
 [[cases]]
-id = "water_1000m_and_the_unported_aqueous_viscosity"
-tolerance = 0.0001
-source = "**The row this library cannot match, pinned as it is.** NeqSim's phase-typed dispatch gives an aqueous phase `WaterPhysicalProperties` and a water correlation - `8.551e-4` Pa s at 300 K - where `eos.viscosity` is the PFCT form the *gas* and *oil* branches use and gives `5.31e-4`. The velocity is exact (`6e-8`, because the *density* is the physics this port does have) and the pressure drop is `1.61` times NeqSim's, which is the viscosity ratio on a laminar line. **The values below are azoth's and not the capture's, and that is the point of the row**: NeqSim gives `outlet_p = 499992.6009196372` and a drop of `7.399080362802124` Pa, and this library gives `499995.40557063156` and `4.5944` Pa - the same ratio, `1.61`, that the viscosities are apart. A case that pinned only `outlet_p` at the capture's tolerance would call this row faithful at `6e-6`, because a 7 Pa drop on 5 bar is invisible in the pressure; pinning the *drop* is what makes the divergence a recorded number rather than a rounding error.\\n"
+id = "water_1000m"
+tolerance = 1e-06
+source = "The same geometry on water at 300 K and 5 bara. **This row was the tier's recorded divergence and is now a case like any other.** NeqSim's aqueous phase takes `WaterPhysicalProperties`, whose correlation is the liquid `Viscosity` class - `eos.aqueous_viscosity`, `8.5510e-4` Pa s here - where `eos.viscosity` is the PFCT form its gas and oil branches use and gives `5.3097e-4`. Before that id existed this row's Reynolds number was `1.61` times NeqSim's and the drop was `4.5944` Pa against `7.3991`; measured now, the velocity, the Reynolds number, the friction factor and the pressure agree to the band, and the pressure drop is `7.399080362802124` Pa. **`outlet_h` is not recorded**, for the reason the butane row states: it carries the libraries' ideal-gas offset, `1.5e-6` relative here, and a case has one tolerance.\n"
 [cases.inputs]
 components = ["water"]
 inlet_n = 1.0
@@ -60,7 +60,6 @@ roughness = 1.0e-05
 [cases.expected]
 outlet_n = 1.0
 outlet_z = [1.0]
-outlet_p = 499995.40557063156
+outlet_p = 499992.6009196372
 outlet_t = 300.0
-outlet_h = -44728.052572021756
-pressure_drop = 4.59442936844
+pressure_drop = 7.399080362802124

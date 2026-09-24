@@ -69,6 +69,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | Model | Scheme | Source |
 |---|---|---|
 | [`eos.ammonia_phase`](./ammonia_phase.md) | `newton_density_solve` | Gao, K.; Wu, J.; Bell, I. H.; Lemmon, E. W. (2020) |
+| [`eos.aqueous_viscosity`](./aqueous_viscosity.md) | `direct composition` | NeqSim physicalproperties/methods/liquidphysicalproperties/viscosity/Viscosity.java |
 | [`eos.argon_solid_phase`](./argon_solid_phase.md) | `bracketed_log_volume_newton` | Maltby, V.; Hammer, M.; Wilhelmsen, O. (2024) |
 | [`eos.bubble_pressure`](./bubble_pressure.md) | `bubble_pressure_newton` | Michelsen, M. L. (1982) |
 | [`eos.bubble_temperature`](./bubble_temperature.md) | `bubble_temperature_successive_substitution` | Michelsen, M. L. (1982) |

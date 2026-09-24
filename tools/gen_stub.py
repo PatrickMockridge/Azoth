@@ -66,8 +66,20 @@ MOLAR_MASS_MODELS = frozenset(
         "eos.thermal_conductivity",
         "eos.wilson_activity_coefficients",
         "eos.ge_wilson_phase",
+        "eos.aqueous_viscosity",
     }
 )
+
+#: The models whose mixture transport carries a **liquid-viscosity set** as well: the four
+#: `LIQVISC` parameters flattened row by row, and the `LIQVISCMODEL` selector that says
+#: which of NeqSim's four expressions they are.
+#:
+#: The same rule as [`MOLAR_MASS_MODELS`] and for the same reason - the boundary crosses
+#: per-component data as vectors, and the stub has to say which ones or its signature is a
+#: disagreement with the extension rather than a declaration of it. It is narrowed to the
+#: one model that reads them rather than added to every mixture, because a vector no
+#: function takes is a parameter a caller would pass and nothing would read.
+LIQUID_VISCOSITY_MODELS = frozenset({"eos.aqueous_viscosity"})
 
 STUB = ROOT / "python" / "src" / "azoth" / "_core.pyi"
 
@@ -486,6 +498,9 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
             params.append(f"{prefix}association: AssociationSpec")
             if model["id"] in MOLAR_MASS_MODELS:
                 params.append(f"{prefix}molar_mass: list[float]")
+            if model["id"] in LIQUID_VISCOSITY_MODELS:
+                params.append(f"{prefix}liqvisc: list[float]")
+                params.append(f"{prefix}liqvisc_model: list[int]")
             if "params" in taken:
                 # A model that takes both a mixture and a parameter record - the
                 # gamma-phi flash, whose vapour is a cubic and whose liquid is an

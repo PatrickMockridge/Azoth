@@ -152,6 +152,12 @@ def test_the_committed_stub_is_current() -> None:
 #: nineteen.
 KNOWN_SIGNATURE_DRIFT = frozenset(
     {
+        # The same cause as `viscosity`, which is below: a model whose spec declares a
+        # `components` input and whose pyfunction takes the mixture expanded into the
+        # vectors its boundary carries - `Tc`, `Pc`, `omega`, `kij`, `molar_mass`, and for
+        # this one `liqvisc` and `liqvisc_model` too. The stub renders the declared name;
+        # the extension takes the expansion.
+        "aqueous_viscosity",
         "bubble_pressure",
         "bubble_temperature",
         "capillary_dew_point",

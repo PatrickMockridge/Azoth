@@ -246,6 +246,14 @@ pub struct Entry {
     /// the whole of the correlation for 216 of the 348 rows and **the wrong answer for
     /// the other 132**, water among them - where it gives a shift of the wrong sign.
     pub rackett_z: f64,
+    /// The four liquid-viscosity parameters `LIQVISC1`-`LIQVISC4`, whose meaning is
+    /// [`Self::liqvisc_model`]. Read by `eos.aqueous_viscosity`.
+    pub liqvisc: [f64; 4],
+    /// Which of NeqSim's four liquid-viscosity expressions those four are: `1` is
+    /// `L1 T^L2`, `2` is `exp(L1 + L2/T)`, `3` is `exp(L1 + L2/T + L3 T + L4 T^2)` and `4`
+    /// is `10^(L1 (1/T - 1/L2))`. **Zero names none**, which is NeqSim's own default branch
+    /// and gives a pure-component viscosity of `0.7` cP.
+    pub liqvisc_model: u32,
     /// Which reference state the component's activity model is written against, as
     /// NeqSim's `REFERENCESTATETYPE` column states it.
     ///
@@ -446,6 +454,7 @@ impl Entry {
                 // is what NeqSim reads, and zero - which is the table's spelling of
                 // absence - is what makes the calc fall back. Measured on water, the two
                 // give the shift opposite signs.
+                .with_liquid_viscosity(self.liqvisc, self.liqvisc_model)
                 .with_volume_shift(
                     crate::pr_peneloux_shift::pr_peneloux_shift(
                         self.omega,
@@ -1048,6 +1057,11 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "critical_volume_m3_per_mol",
         "dipole_moment_debye",
         "racketz",
+        "liqviscmodel",
+        "liqvisc1",
+        "liqvisc2",
+        "liqvisc3",
+        "liqvisc4",
         "antoine_type",
         "antoinea",
         "antoineb",
@@ -1190,6 +1204,13 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     row,
                 )?),
                 rackett_z: number(&record, index["racketz"], "racketz", row)?,
+                liqvisc: [
+                    number(&record, index["liqvisc1"], "liqvisc1", row)?,
+                    number(&record, index["liqvisc2"], "liqvisc2", row)?,
+                    number(&record, index["liqvisc3"], "liqvisc3", row)?,
+                    number(&record, index["liqvisc4"], "liqvisc4", row)?,
+                ],
+                liqvisc_model: number(&record, index["liqviscmodel"], "liqviscmodel", row)? as u32,
                 antoine: Some((
                     [
                         number(&record, index["antoinea"], "antoinea", row)?,
@@ -1614,6 +1635,11 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // table's spelling of absence - so a card's substance takes the fallback
                 // correlation, which is what NeqSim does for a zero column.
                 rackett_z: 0.0,
+                // Nor a liquid-viscosity set, whose absence is a model of zero - NeqSim's
+                // own default branch, and the one that gives `0.7` cP rather than a number
+                // read from four zeros.
+                liqvisc: [0.0; 4],
+                liqvisc_model: 0,
                 antoine: None,
                 association: over.association.as_ref().map(|a| a.applied_to(None)),
                 // **A card carries no PC-SAFT set**, and zero is how this table spells
@@ -1695,6 +1721,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             // is a closed list, and a card correcting `Tc` does not change which Rackett
             // compressibility the volume translation reads.
             rackett_z: base.rackett_z,
+            // The table's, for the same reason: `ComponentOverride` is a closed list and
+            // carries no liquid-viscosity set.
+            liqvisc: base.liqvisc,
+            liqvisc_model: base.liqvisc_model,
             antoine: base.antoine,
             // `ComponentOverride` is a closed list and carries no PC-SAFT set, so the
             // table's survives a card untouched - the whole point of naming one parameter

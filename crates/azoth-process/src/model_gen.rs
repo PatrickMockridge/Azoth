@@ -1189,12 +1189,12 @@ static PIPE_CASES: &[TestCase] = &[
         expected_strings: &[],
     },
     TestCase {
-        id: "water_1000m_and_the_unported_aqueous_viscosity",
+        id: "water_1000m",
         kind: "case",
         property: None,
         status: "active",
         skip_reason: None,
-        tolerance: 0.0001,
+        tolerance: 1e-06,
         numbers: &[
             ("inlet_n", 1.0),
             ("inlet_p", 500000.0),
@@ -1210,10 +1210,9 @@ static PIPE_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[
             ("outlet_n", 1.0),
-            ("outlet_p", 499995.40557063156),
+            ("outlet_p", 499992.6009196372),
             ("outlet_t", 300.0),
-            ("outlet_h", -44728.052572021756),
-            ("pressure_drop", 4.59442936844),
+            ("pressure_drop", 7.399080362802124),
         ],
         expected_vectors: &[("outlet_z", &[1.0])],
         expected_strings: &[],

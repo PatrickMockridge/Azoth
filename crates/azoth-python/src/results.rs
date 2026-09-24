@@ -17,6 +17,7 @@ use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_eos::EffectiveDiffusionResult as KernelEffectiveDiffusionResult;
+use azoth_eos::results::AqueousViscosityResult as KernelAqueousViscosityResult;
 use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
     BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
@@ -3395,6 +3396,45 @@ impl From<&ViscosityResult> for PyViscosityResult {
         Self {
             mu: PyQty {
                 magnitude_si: r.mu.value,
+                unit: "Pa*s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.aqueous_viscosity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AqueousViscosityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAqueousViscosityResult {
+    /// The phase's dynamic viscosity, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub viscosity: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyAqueousViscosityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AqueousViscosityResult(viscosity={} {})",
+            self.viscosity.magnitude_si, self.viscosity.unit
+        )
+    }
+}
+
+impl From<&KernelAqueousViscosityResult> for PyAqueousViscosityResult {
+    fn from(r: &KernelAqueousViscosityResult) -> Self {
+        Self {
+            viscosity: PyQty {
+                magnitude_si: r.viscosity.value,
                 unit: "Pa*s".to_string(),
             },
             warnings: transport(&r.warnings),
@@ -8549,6 +8589,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
         MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
         ViscosityResult::CALC_ID => ViscosityResult::FIELDS.to_vec(),
+        KernelAqueousViscosityResult::CALC_ID => KernelAqueousViscosityResult::FIELDS.to_vec(),
         ThermalConductivityResult::CALC_ID => ThermalConductivityResult::FIELDS.to_vec(),
         // Unit operations. In the same table for the same reason the models are: a
         // result's shape is a cross-language contract whether or not its spec calls it

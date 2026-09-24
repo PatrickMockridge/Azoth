@@ -12,6 +12,7 @@ a bug in one of them - and the cross-implementation tests are what catch it.
 
 from __future__ import annotations
 
+from azoth.eos.reference.aqueous_viscosity import aqueous_viscosity
 from azoth.eos.reference.bubble_pressure import bubble_pressure
 from azoth.eos.reference.bubble_temperature import bubble_temperature
 from azoth.eos.reference.critical_point import critical_point
@@ -42,6 +43,7 @@ __all__ = [
     "OMEGA_A",
     "OMEGA_B",
     "IdealGasModel",
+    "aqueous_viscosity",
     "bubble_pressure",
     "bubble_temperature",
     "critical_point",

@@ -267,6 +267,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::eos_cg_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::gerg2008_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::viscosity, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::aqueous_viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::thermal_conductivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::wilke_viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::mason_saxena_conductivity, m)?)?;

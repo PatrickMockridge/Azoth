@@ -282,38 +282,51 @@ reason = "unreachable-upstream: the hydrate cavity models; NeqSim's `ComponentHy
 
 [[upstreams.files.columns]]
 name = "LIQVISCMODEL"
-disposition = "dropped"
+disposition = "used"
+as = "liqviscmodel"
+unit = "dimensionless"
 reason = """\
-    not-a-value: a selector naming which viscosity correlation the following columns belong \
-    to"""
+    read by `eos.aqueous_viscosity`. **It was dispositioned `not-a-value`, and it is the \
+    selector the four columns beside it are meaningless without**: the same quad is one of \
+    four different expressions depending on it, so a reader that carried `LIQVISC1`-`LIQVISC4` \
+    and dropped this was carrying four numbers and no statement of what they mean. NeqSim's \
+    `Viscosity.calcPureComponentViscosity` switches on it."""
 [[upstreams.files.columns]]
 name = "LIQVISC1"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc1"
 unit = "neqsim-internal"
-reason = "not-ported: the liquid-viscosity `polynom` model; NeqSim's `liquidphysicalproperties/viscosity/Viscosity`. `eos.viscosity` does not read it - it ports `PFCTViscosityMethodHeavyOil`, which reads none of these."
-consumer = "roadmap:P1"
+reason = """\
+    read by `eos.aqueous_viscosity`, which is the correlation NeqSim's \
+    `WaterPhysicalProperties` gives an aqueous phase. Its meaning depends on \
+    `LIQVISCMODEL`, so the four are one statement and not four numbers."""
 [[upstreams.files.columns]]
 name = "LIQVISC2"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc2"
 unit = "neqsim-internal"
-reason = "not-ported: the liquid-viscosity `polynom` model; NeqSim's `liquidphysicalproperties/viscosity/Viscosity`. `eos.viscosity` does not read it - it ports `PFCTViscosityMethodHeavyOil`, which reads none of these."
-consumer = "roadmap:P1"
+reason = """\
+    read by `eos.aqueous_viscosity`, which is the correlation NeqSim's \
+    `WaterPhysicalProperties` gives an aqueous phase. Its meaning depends on \
+    `LIQVISCMODEL`, so the four are one statement and not four numbers."""
 [[upstreams.files.columns]]
 name = "LIQVISC3"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc3"
 unit = "neqsim-internal"
-reason = "not-ported: the liquid-viscosity `polynom` model; NeqSim's `liquidphysicalproperties/viscosity/Viscosity`. `eos.viscosity` does not read it - it ports `PFCTViscosityMethodHeavyOil`, which reads none of these."
-consumer = "roadmap:P1"
+reason = """\
+    read by `eos.aqueous_viscosity`, which is the correlation NeqSim's \
+    `WaterPhysicalProperties` gives an aqueous phase. Its meaning depends on \
+    `LIQVISCMODEL`, so the four are one statement and not four numbers."""
 [[upstreams.files.columns]]
 name = "LIQVISC4"
-disposition = "vendored"
+disposition = "used"
 as = "liqvisc4"
 unit = "neqsim-internal"
-reason = "not-ported: the liquid-viscosity `polynom` model; NeqSim's `liquidphysicalproperties/viscosity/Viscosity`. `eos.viscosity` does not read it - it ports `PFCTViscosityMethodHeavyOil`, which reads none of these."
-consumer = "roadmap:P1"
+reason = """\
+    read by `eos.aqueous_viscosity`, which is the correlation NeqSim's \
+    `WaterPhysicalProperties` gives an aqueous phase. Its meaning depends on \
+    `LIQVISCMODEL`, so the four are one statement and not four numbers."""
 [[upstreams.files.columns]]
 name = "GIBBSENERGYOFFORMATION"
 disposition = "used"

@@ -1,0 +1,78 @@
+model = "eos.aqueous_viscosity"
+[[cases]]
+id = "water_at_300_k_and_1_bar"
+tolerance = 1e-12
+source = "NeqSim master, `WaterPhysicalProperties.getViscosity()` at 300 K and 1 bar, from `validation/neqsim/captures/aqueous_viscosity_probe.tsv`. **The row the pipe was blocked on**: an aqueous phase takes this class and this correlation, where `eos.viscosity` - the PFCT form its gas and oil branches use - gives `5.3097e-4` for the same state, 38% low. Water's `LIQVISCMODEL` is 3, so `mu = exp(L1 + L2/T + L3 T + L4 T^2)` with the databank's `-27.952757828, 4665.22592993, 0.052323342, -3.8356e-05`, and the pressure correction is `1.000212` here.\n"
+[cases.inputs]
+components = ["water"]
+T = 300.0
+P = 100000.0
+z = [1.0]
+[cases.expected]
+viscosity = 8.547585317553409e-04
+[[cases]]
+id = "water_at_300_k_and_5_bar"
+tolerance = 1e-12
+source = "The same state at 5 bar, which moves it only through the pressure correction - `1.000212` at one bar against `1.001021` at five. The two rows together are what separates the correlation from the correction: the pure-component value is unchanged and the answer is not.\n"
+[cases.inputs]
+components = ["water"]
+T = 300.0
+P = 500000.0
+z = [1.0]
+[cases.expected]
+viscosity = 8.551044828231576e-04
+[[cases]]
+id = "water_through_the_temperature_range"
+tolerance = 1e-12
+source = "Water at 280, 320 and 350 K, which is what pins the model *form* rather than one point: `exp(L1 + L2/T + L3 T + L4 T^2)` rises steeply as T falls - `1.4229e-3` at 280 K against `3.6480e-4` at 350 - and no other of NeqSim's four expressions reproduces that shape with these four numbers.\n"
+[cases.inputs]
+components = ["water"]
+T = 280.0
+P = 500000.0
+z = [1.0]
+[cases.expected]
+viscosity = 1.422878428248548e-03
+[[cases]]
+id = "water_at_320_k"
+tolerance = 1e-12
+source = "The 320 K point of the same range.\n"
+[cases.inputs]
+components = ["water"]
+T = 320.0
+P = 500000.0
+z = [1.0]
+[cases.expected]
+viscosity = 5.725923588703773e-04
+[[cases]]
+id = "water_at_350_k"
+tolerance = 1e-12
+source = "The 350 K point.\n"
+[cases.inputs]
+components = ["water"]
+T = 350.0
+P = 500000.0
+z = [1.0]
+[cases.expected]
+viscosity = 3.6479710612851546e-04
+[[cases]]
+id = "methanol_at_300_k_and_5_bar"
+tolerance = 1e-12
+source = "Pure methanol, the second row whose `LIQVISC` set is its own - and the one the ions' rows are copies of: `-39.35, 4826.0, 0.1091, -1.13e-4`. So this case pins the numbers a brine would be computed from, which is why the two together say what the ion refusal is about.\n"
+[cases.inputs]
+components = ["methanol"]
+T = 300.0
+P = 500000.0
+z = [1.0]
+[cases.expected]
+viscosity = 4.955318590786208e-04
+[[cases]]
+id = "teg_at_300_k_and_5_bar"
+tolerance = 1e-12
+source = "Triethylene glycol, which is the row that shows the correlation is not a water fit: `34.62` mPa s at 300 K against water's `0.855`, and the true value is about `36` - so the table's TEG parameters are its own measurements, unlike the ions'.\n"
+[cases.inputs]
+components = ["TEG"]
+T = 300.0
+P = 500000.0
+z = [1.0]
+[cases.expected]
+viscosity = 3.461914543810686e-02

@@ -72,6 +72,7 @@ from azoth._dispatch import resolve
 from azoth.core.result import (
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
+    AqueousViscosityResult,
     ArgonSolidPhaseResult,
     BubblePressureResult,
     BubbleTemperatureResult,
@@ -408,6 +409,7 @@ _GE_WILSON_PHASE = "eos.ge_wilson_phase"
 _GE_NRTL_PHASE = "eos.ge_nrtl_phase"
 _GERG2008_PHASE = "eos.gerg2008_phase"
 _VISCOSITY = "eos.viscosity"
+_AQUEOUS_VISCOSITY = "eos.aqueous_viscosity"
 _THERMAL_CONDUCTIVITY = "eos.thermal_conductivity"
 _NITRIC_SULFURIC_ACID_VAPOR_PRESSURE = "eos.nitric_sulfuric_acid_vapor_pressure"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
@@ -2901,6 +2903,31 @@ def gerg2008_phase(components: list[str], T: Q, P: Q, z: list[float]) -> Gerg200
     See :func:`azoth.eos.reference.gerg2008_phase`.
     """
     return resolve(_GERG2008_PHASE)(components=components, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousViscosityResult:
+    """The liquid viscosity NeqSim gives an **aqueous** phase.
+
+    ``mixture`` must carry each component's molar mass, because the mixing rule weights by
+    mass fraction. ``z`` is the phase's composition in mole fractions.
+
+    **This is not "the liquid viscosity".** ``getPhysicalProperties()`` dispatches on the
+    phase's *type*, and ``PhaseType.AQUEOUS`` takes ``WaterPhysicalProperties``, whose
+    correlation is the liquid ``Viscosity`` class; a gas or a hydrocarbon liquid takes
+    ``PFCTViscosityMethodHeavyOil``, which :func:`viscosity` ports. Water at 300 K and 1 bar
+    is ``8.5476e-4`` Pa s here and ``5.31e-4`` there.
+
+    **A phase carrying an ion is refused**: NeqSim's ``LIQVISC`` rows for ``na+`` and ``cl-``
+    are methanol's four numbers, so a brine computed from them comes out less viscous than
+    pure water.
+
+    Raises:
+        InvalidInputError: if ``z`` is the wrong length, or if any component is an ion.
+        PropertyUnavailableError: if a component carries no molar mass.
+
+    See :func:`azoth.eos.reference.aqueous_viscosity`.
+    """
+    return resolve(_AQUEOUS_VISCOSITY)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
 
 
 def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:

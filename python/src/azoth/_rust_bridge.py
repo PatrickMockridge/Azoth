@@ -29,6 +29,7 @@ from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
+    AqueousViscosityResult,
     ArgonSolidPhaseResult,
     BubblePressureResult,
     BubbleTemperatureResult,
@@ -1331,6 +1332,42 @@ def parachor_surface_tension(
     )
     return ParachorSurfaceTensionResult(
         sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def aqueous_viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> AqueousViscosityResult:
+    """The liquid viscosity NeqSim gives an aqueous phase, computed in Rust.
+
+    The mixture's per-component data crosses as vectors, as `eos.viscosity`'s does, plus the
+    two the correlation reads: `liqvisc` flattened and the model number beside it.
+    """
+    spec = _models_gen.model("eos.aqueous_viscosity")
+    molar_mass = []
+    for c in mixture.components:
+        if c.molar_mass is None:
+            raise PropertyUnavailableError(
+                "component", "molar mass", "a card-added component needs its own molar mass"
+            )
+        molar_mass.append(c.molar_mass.to_base_units().magnitude)
+    result = _core.aqueous_viscosity(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        molar_mass,
+        [value for c in mixture.components for value in c.liqvisc],
+        [c.liqvisc_model for c in mixture.components],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return AqueousViscosityResult(
+        viscosity=from_si(result.viscosity.magnitude_si, result.viscosity.unit),
         warnings=_warnings(result.warnings),
     )
 

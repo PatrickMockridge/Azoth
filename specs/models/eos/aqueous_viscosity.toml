@@ -1,0 +1,55 @@
+id = "eos.aqueous_viscosity"
+name = "Liquid viscosity of an aqueous phase"
+kind = "direct"
+assumptions = [
+    "**this is what NeqSim gives an aqueous phase.** `getPhysicalProperties()` dispatches on the phase type: `AQUEOUS` takes `WaterPhysicalProperties`, whose viscosity model is the liquid `Viscosity` (the `polynom` one). A gas or a hydrocarbon liquid takes the PFCT form `eos.viscosity` ports.",
+    "each component's viscosity is a pure correlation chosen by its `LIQVISCMODEL`: `1` is `L1 T^L2`, `2` is `exp(L1 + L2/T)`, `3` is `exp(L1 + L2/T + L3 T + L4 T^2)`, `4` is `10^(L1 (1/T - 1/L2))`. **Zero names none** - NeqSim's default branch, `0.7` cP; above `Tc`, `0.5` cP.",
+    "**Grunberg-Nissan with its interaction term zero**: `mu = exp(sum_i w_i ln mu_i)` over **mass** fractions. `PhysicalPropertyMixingRule.initMixingRules` never fills `Gij` - its inner loop starts at `k = l` and breaks on `k == l` - so every pair measures `0.0`.",
+    "the pressure correction is NeqSim's own: `(corr + 1)/2` multiplying each pure viscosity, with `corr = (1 + D (P/Pc/2.118)^A) / (1 + C omega P/Pc)` and `A`, `C`, `D` functions of `T/Tc`. It is `1.0002` at 1 bar and `1.0010` at 5 bar for water at 300 K.",
+    "**a phase carrying an ion is refused.** NeqSim's own `LIQVISC` rows for `na+` and `cl-` are the *same four numbers as methanol's*, and a 2 mol% NaCl brine comes out `8.4026e-4` against pure water's `8.5510e-4` Pa s - the wrong direction.",
+    "the fluid is resolved against the databank with the keycard's overrides applied, as `eos.viscosity` is.",
+    "NeqSim's `Viscosity` also carries a `Salt Water` variant (`liquidphysicalproperties/viscosity/Water`) selected by name, which this does not port.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `liquidphysicalproperties/WaterPhysicalProperties.java` is the phase class and `liquidphysicalproperties/viscosity/Viscosity.java` the correlation, through `calcViscosity`.",
+    "Grunberg, L.; Nissan, A. H. (1949). \"Mixture law for viscosity.\" Nature 164(4175), 799-800. DOI 10.1038/164799b0. The mixing law, whose interaction term the class leaves at zero.",
+    "`validation/neqsim/captures/aqueous_viscosity_probe.tsv` - water at five states, methanol, ethanol, TEG, and the brine the ion rows are refused for.",
+]
+[source]
+standard = "NeqSim physicalproperties/methods/liquidphysicalproperties/viscosity/Viscosity.java"
+edition = "`calcViscosity` and `calcPureComponentViscosity`, ported verbatim; the `Gij` matrix is read as the zero the class leaves it at."
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the phase is made of, by name, resolved against the component databank with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature of the state"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure of the state, which enters only through the pressure correction"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's composition in mole fractions. The class reads it as **mass** fractions, which is where the mixing rule's weights come from."
+[outputs]
+[outputs.viscosity]
+unit = "Pa*s"
+description = "The phase's dynamic viscosity."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.aqueous_viscosity"
+rust = "azoth_eos::aqueous_viscosity"

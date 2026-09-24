@@ -74,6 +74,7 @@
   - [Wax solid fugacity coefficient](./eos/wax_solid_fugacity.md)
   - [Liquid binary diffusivity from the Wilke-Chang correlation](./eos/wilke_chang_diffusivity.md)
   - [Ammonia reference phase state](./eos/ammonia_phase.md)
+  - [Liquid viscosity of an aqueous phase](./eos/aqueous_viscosity.md)
   - [Solid argon reference phase state](./eos/argon_solid_phase.md)
   - [Bubble-point pressure](./eos/bubble_pressure.md)
   - [Bubble-point temperature](./eos/bubble_temperature.md)

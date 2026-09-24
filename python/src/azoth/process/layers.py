@@ -524,42 +524,17 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=1,
         identified_by=(LABEL_KEY, "liquid_n_butane_1000m"),
     ),
+    # **The water row, which was three declared divergences and is now a case like the
+    # others.** NeqSim gives an aqueous phase `WaterPhysicalProperties` and the liquid
+    # `Viscosity` correlation, which `eos.aqueous_viscosity` ports; before that id existed
+    # this port used the PFCT form its gas and oil branches take and was `1.61` out on the
+    # Reynolds number and the drop. The row is kept because it is the measurement of that.
     LayerCase(
         model="process.pipe",
-        case="water_1000m_and_the_unported_aqueous_viscosity",
+        case="water_1000m",
         capture="process_pipe.tsv",
         block=2,
         identified_by=(LABEL_KEY, "liquid_water_1000m"),
-        # **The unported aqueous viscosity, as three declared divergences.** The capture's
-        # Reynolds number is `1.61` times this library's, its friction factor is the laminar
-        # `64/Re` and therefore `1.61` times *smaller*, and its pressure drop follows the
-        # viscosity. The bounds sit a little under each ratio, so what is asserted is that
-        # the divergence is still there and several times wide - not its last digits.
-        divergence=(
-            Divergence(
-                key="reynolds_number",
-                # **Under one, because the direction here is the *opposite* of the other
-                # two**: this port's viscosity is the lower one, so its Reynolds number is
-                # the higher and the ratio `capture / azoth` is `0.62`. The bound is that
-                # reciprocal read as a floor, and it says the same thing: the two are more
-                # than a factor of `1.5` apart, in whichever direction.
-                at_least=0.5,
-                reason="NeqSim's aqueous phase takes WaterPhysicalProperties and a water "
-                "correlation; `eos.viscosity` is the PFCT form its gas and oil branches use, "
-                "so this port's viscosity is the lower one and its Re the higher",
-            ),
-            Divergence(
-                key="friction_factor",
-                at_least=1.5,
-                reason="`64 / Re` on a laminar line, so the factor is the reciprocal of the "
-                "same ratio",
-            ),
-            Divergence(
-                key="pressure_drop_bara",
-                at_least=1.5,
-                reason="the drop follows the viscosity on a laminar line",
-            ),
-        ),
     ),
     LayerCase(
         model="process.pump",

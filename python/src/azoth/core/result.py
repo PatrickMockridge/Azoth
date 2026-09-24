@@ -1370,6 +1370,19 @@ class ParachorSurfaceTensionResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AqueousViscosityResult(_HasWarnings):
+    """Result of ``eos.aqueous_viscosity``.
+
+    One quantity, as :class:`ViscosityResult` has: the phase's dynamic viscosity.
+    """
+
+    #: The phase's dynamic viscosity.
+    viscosity: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ViscosityResult(_HasWarnings):
     """Result of ``eos.viscosity``."""
 

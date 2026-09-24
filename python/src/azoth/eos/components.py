@@ -478,6 +478,12 @@ class DatabankEntry:
     #: fallback ``0.29056 - 0.08775*omega`` is the whole correlation for the 216 rows
     #: that carry a zero and the wrong answer for the 132 that do not.
     rackett_z: float
+    #: The four liquid-viscosity parameters ``LIQVISC1``-``LIQVISC4``, whose meaning is
+    #: :attr:`liqvisc_model`. Read by :func:`azoth.eos.aqueous_viscosity`, and by nothing
+    #: else: the PFCT correlation ``eos.viscosity`` ports reads none of them.
+    liqvisc: tuple[float, float, float, float]
+    #: Which of NeqSim's four liquid-viscosity expressions those four are; ``0`` names none.
+    liqvisc_model: int
     molar_mass: Q | None
     critical_volume: Q | None
     liquid_density: Q | None
@@ -627,6 +633,8 @@ class DatabankEntry:
             Pc=self.Pc,
             omega=self.omega,
             rackett_z=self.rackett_z,
+            liqvisc=self.liqvisc,
+            liqvisc_model=self.liqvisc_model,
             # **The volume translation is wired here and nowhere else.** `Mixture` carries a
             # per-component shift and the linear rule for it; nothing filled it in for a
             # databank mixture, so every density this library computed was the untranslated
@@ -736,6 +744,13 @@ def _table() -> dict[str, DatabankEntry]:
             Pc=ureg.Quantity(float(row["pc_pa"]), "Pa"),
             omega=float(row["acentric_factor"]),
             rackett_z=float(row["racketz"]),
+            liqvisc=(
+                float(row["liqvisc1"]),
+                float(row["liqvisc2"]),
+                float(row["liqvisc3"]),
+                float(row["liqvisc4"]),
+            ),
+            liqvisc_model=int(float(row["liqviscmodel"])),
             molar_mass=ureg.Quantity(float(row["molar_mass_kg_per_mol"]), "kg/mol"),
             critical_volume=ureg.Quantity(float(row["critical_volume_m3_per_mol"]), "m**3/mol"),
             liquid_density=ureg.Quantity(float(row["liquid_density_kg_per_m3"]), "kg/m**3"),
@@ -1397,6 +1412,11 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             Pc=override["Pc"] if not ion else ureg.Quantity(0.0, "Pa"),
             omega=0.0 if ion else _as_float(override["omega"], key),
             rackett_z=0.0,
+            # A card carries no liquid-viscosity set either, and a model of zero is how the
+            # table states that - NeqSim's own default branch, `0.7` cP rather than a number
+            # read from four zeros.
+            liqvisc=(0.0, 0.0, 0.0, 0.0),
+            liqvisc_model=0,
             molar_mass=None,
             critical_volume=None,
             liquid_density=None,

@@ -4,7 +4,7 @@
 use azoth_core::units::{Length, Pressure, pascals};
 use azoth_core::{AzothError, Result};
 use azoth_eos::hydrate_inhibitor_wt::PhaseLabel;
-use azoth_eos::{hydrate_inhibitor_wt, pt_flash, viscosity};
+use azoth_eos::{aqueous_viscosity, hydrate_inhibitor_wt, pt_flash, viscosity};
 
 use crate::stream::Stream;
 
@@ -212,9 +212,23 @@ impl State {
         let density = density_at(mixture, feed, p, z_factor)?;
         let cubic_density =
             molar_mass_of(mixture, &feed.z)? / (z_factor * R * feed.t.value / pressure);
-        let mu = viscosity::viscosity(mixture, feed.t, p, &composition)?
-            .mu
-            .value;
+        // **The viscosity is the phase's, and NeqSim dispatches on the phase type.** A gas or
+        // a hydrocarbon liquid takes `PFCTViscosityMethodHeavyOil` - `eos.viscosity` - and an
+        // **aqueous** phase takes `WaterPhysicalProperties`, whose correlation is the liquid
+        // `Viscosity` class: `eos.aqueous_viscosity`. Water at 300 K is `8.5510e-4` Pa s
+        // through the second and `5.3097e-4` through the first.
+        let mu = match label {
+            PhaseLabel::Aqueous => {
+                aqueous_viscosity::aqueous_viscosity(mixture, feed.t, p, &composition)?
+                    .viscosity
+                    .value
+            }
+            PhaseLabel::Gas | PhaseLabel::Oil => {
+                viscosity::viscosity(mixture, feed.t, p, &composition)?
+                    .mu
+                    .value
+            }
+        };
         let kinematic = mu / cubic_density;
 
         // The gas branch takes the velocity from the cubic's total volume; the liquid branch

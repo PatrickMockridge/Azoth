@@ -179,6 +179,11 @@ class AntoineVaporPressureResult:
     warnings: list[Warning]
 
 @final
+class AqueousViscosityResult:
+    viscosity: Qty
+    warnings: list[Warning]
+
+@final
 class ArgonSolidPhaseResult:
     z_factor: float
     u: Qty
@@ -1583,6 +1588,22 @@ def antoine_vapor_pressure(
     Pc: float,
     T: float,
 ) -> AntoineVaporPressureResult: ...
+def aqueous_viscosity(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    association: AssociationSpec,
+    molar_mass: list[float],
+    liqvisc: list[float],
+    liqvisc_model: list[int],
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> AqueousViscosityResult: ...
 def argon_solid_phase(T: float, P: float) -> ArgonSolidPhaseResult: ...
 def bubble_pressure(
     Tc: list[float],

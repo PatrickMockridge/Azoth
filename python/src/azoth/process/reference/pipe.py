@@ -20,11 +20,14 @@ divides the same viscosity by the **untranslated** cubic ``M / (Z R T / P)``. Me
 captured butane row the two are ``567.33`` and ``603.86`` kg/m3, 6% apart, and a port that
 used one density for both is 6% out on ``Re``.
 
-# The aqueous viscosity is not ported
+# The viscosity follows the phase type
 
-NeqSim's dispatch gives an aqueous phase ``WaterPhysicalProperties`` and a water correlation;
-``azoth.eos.viscosity`` is the PFCT form its gas and oil branches use. A water line's
-Reynolds number is therefore ``1.61`` times NeqSim's, and the case records it.
+``getPhysicalProperties()`` dispatches on it: a gas or a hydrocarbon liquid takes
+``PFCTViscosityMethodHeavyOil`` - ``eos.viscosity`` - and an **aqueous** phase takes
+``WaterPhysicalProperties``, whose correlation is the liquid ``Viscosity`` class
+(``eos.aqueous_viscosity``). Water at 300 K is ``8.5510e-4`` Pa s through the second and
+``5.3097e-4`` through the first, so taking one for both puts a water line's Reynolds number
+``1.61`` out - which is what this row did until that id existed.
 """
 
 from __future__ import annotations
@@ -40,7 +43,8 @@ from azoth.core.warnings import Warning
 from azoth.eos import components as _databank
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import reduced_parameters
-from azoth.eos.reference.hydrate_inhibitor_wt import GAS, phase_label
+from azoth.eos.reference.aqueous_viscosity import aqueous_viscosity as aqueous_viscosity_solve
+from azoth.eos.reference.hydrate_inhibitor_wt import AQUEOUS, GAS, phase_label
 from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
 from azoth.eos.reference.pt_flash import pt_flash as pt_flash_solve
@@ -88,8 +92,8 @@ def pipe(
         >>> q = azoth.ureg.Quantity
         >>> r = pipe(
         ...     ["methane", "CO2"],
-        ...     1.0,
-        ...     q([0.7, 0.3]),
+        ...     q(1.0, "mol/s"),
+        ...     [0.7, 0.3],
         ...     q(50.0, "bar"),
         ...     q(300.0, "K"),
         ...     length=q(1000.0, "m"),
@@ -246,7 +250,8 @@ def _pass(
         z_factor, composition = flash.z_liquid, list(flash.x)
 
     reduced = reduced_parameters(mixture, inlet_t, pressure)
-    is_gas = phase_label(mixture, reduced, composition, z_factor) == GAS
+    label = phase_label(mixture, reduced, composition, z_factor)
+    is_gas = label == GAS
 
     # In kg/mol, as a bare float: the rest of this arithmetic is SI magnitudes, and a
     # quantity that leaked into it would surface as a comparison against a float.
@@ -261,11 +266,24 @@ def _pass(
     density = molar_mass / (volume.to("m**3/mol").magnitude - mixture.volume_shift(inlet_z))
     cubic_density = molar_mass / (z_factor * R * inlet_t / pressure)
 
-    mu = (
-        viscosity_solve(mixture, from_si(inlet_t, "K"), from_si(pressure, "Pa"), composition)
-        .mu.to("Pa*s")
-        .magnitude
-    )
+    # **The viscosity is the phase's, and NeqSim dispatches on the phase type.** A gas or a
+    # hydrocarbon liquid takes the PFCT form; an **aqueous** phase takes
+    # `WaterPhysicalProperties` and the liquid `Viscosity` correlation. Water at 300 K is
+    # `8.5510e-4` Pa s through the second and `5.3097e-4` through the first.
+    if label == AQUEOUS:
+        mu = (
+            aqueous_viscosity_solve(
+                mixture, from_si(inlet_t, "K"), from_si(pressure, "Pa"), composition
+            )
+            .viscosity.to("Pa*s")
+            .magnitude
+        )
+    else:
+        mu = (
+            viscosity_solve(mixture, from_si(inlet_t, "K"), from_si(pressure, "Pa"), composition)
+            .mu.to("Pa*s")
+            .magnitude
+        )
     kinematic = mu / cubic_density
 
     if is_gas:

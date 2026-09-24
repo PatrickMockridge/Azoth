@@ -136,6 +136,7 @@ Five sections, and the difference between them is the point:
 *Models* — whose specs fix a procedure rather than an equation:
 
 - [`eos.ammonia_phase`](./eos/ammonia_phase.md) — Ammonia reference phase state
+- [`eos.aqueous_viscosity`](./eos/aqueous_viscosity.md) — Liquid viscosity of an aqueous phase
 - [`eos.argon_solid_phase`](./eos/argon_solid_phase.md) — Solid argon reference phase state
 - [`eos.bubble_pressure`](./eos/bubble_pressure.md) — Bubble-point pressure
 - [`eos.bubble_temperature`](./eos/bubble_temperature.md) — Bubble-point temperature
