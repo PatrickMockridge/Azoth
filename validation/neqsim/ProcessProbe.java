@@ -2092,8 +2092,41 @@ public class ProcessProbe {
     System.out.println("gas_density_kg_m3=" + flashed.getDensity("kg/m3"));
     System.out.println("gas_phase_density_kg_m3=" + flashed.getPhase(0).getDensity("kg/m3"));
     System.out.println("gas_viscosity_pa_s=" + flashed.getPhase(0).getViscosity("kg/msec"));
+
+    // **The energy balance's heat capacity flow is `getCp("J/molK") * totalMolFlow`**, and
+    // azoth has no real-mixture molar Cp at all - only `eos.ideal_gas_cp` and a liquid
+    // correlation. This prints the number the port would have to reproduce, beside the two
+    // things a port could reach for instead: the ideal-gas Cp and a finite difference of the
+    // molar enthalpy, which is what `Cp = (dH/dT)_P` says it is.
+    System.out.println("cp_probe");
+    System.out.println("system_cp_J_molK=" + flashed.getCp("J/molK"));
+    System.out.println("phase_cp_J_molK=" + flashed.getPhase(0).getCp("J/molK"));
+    System.out.println("phase_cp_molar_bare=" + flashed.getPhase(0).getCp());
+    double h1 = enthalpyAt(flashAt(600.0, 5.0));
+    double h2 = enthalpyAt(flashAt(600.001, 5.0));
+    System.out.println("molar_enthalpy_600K=" + h1);
+    System.out.println("finite_difference_dH_dT=" + ((h2 - h1) / 0.001));
     System.out.println();
   }
+
+  /// A flashed single-point state, for the finite-difference Cp.
+  static SystemInterface flashAt(double temperatureK, double pressureBara) {
+    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBara);
+    fluid.addComponent("methane", 0.05);
+    fluid.addComponent("oxygen", 0.10);
+    fluid.addComponent("nitrogen", 0.85);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("fd", fluid);
+    stream.setFlowRate(1.0, "mol/sec");
+    stream.run();
+    return stream.getThermoSystem();
+  }
+
+  /// The molar enthalpy of a flashed state, J/mol.
+  static double enthalpyAt(SystemInterface flashed) {
+    return flashed.getEnthalpy() / flashed.getTotalNumberOfMoles();
+  }
+
 
   /// computes.
   static void flareRows() {

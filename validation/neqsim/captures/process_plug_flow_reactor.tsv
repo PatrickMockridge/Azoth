@@ -824,4 +824,10 @@ superficial_velocity_m_s=1.2723781404329497
 gas_density_kg_m3=2.7820612568437992
 gas_phase_density_kg_m3=2.7820612568437992
 gas_viscosity_pa_s=2.9839030211141318E-5
+cp_probe
+system_cp_J_molK=31.537822487323226
+phase_cp_J_molK=31.537822487323226
+phase_cp_molar_bare=31.537822487323226
+molar_enthalpy_600K=9890.722056007267
+finite_difference_dH_dT=31.537826786006917
 
