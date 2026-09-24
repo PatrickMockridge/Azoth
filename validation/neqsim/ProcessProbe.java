@@ -43,6 +43,11 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe manifold > captures/process_manifold.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber \
 //       > captures/process_gas_scrubber.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe tray > captures/process_column_tray.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
+//       > captures/process_column_condenser.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe reboiler \
+//       > captures/process_column_reboiler.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe shortcut_column \
 //       > captures/process_shortcut_distillation_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
@@ -98,6 +103,16 @@ public class ProcessProbe {
         break;
       case "gas_scrubber":
         gasScrubberRows();
+        break;
+      case "condenser":
+        condenserRows();
+        break;
+      case "reboiler":
+        reboilerRows();
+        break;
+      case "tray":
+        trayRows();
+        phFlashRows();
         break;
       case "shortcut_column":
         shortcutColumnRows();
@@ -485,6 +500,228 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  /// **The condenser, which is a tray with a reflux split.** `Condenser extends SimpleTray`, so
+  /// an equilibrium partial condenser is `super.run` and nothing else; the other two modes add
+  /// a specification.
+  ///
+  /// **Three modes, and each reaches its products differently.** With no reflux set the run is
+  /// the tray's own flash and the outlets are its phases. With a ratio set the flash is
+  /// `PVrefluxflash(refluxRatio, 0)` - a *temperature* search for the state whose vapour
+  /// fraction satisfies `R = 1/beta - 1` - and the outlets are still the tray's phases. With
+  /// `setTotalCondenser(true)` the flash is a **bubble-point** one and the reflux is a
+  /// `Splitter` over the condensate at `R/(1+R)`; there the *distillate* is reached through
+  /// `getGasOutStream()` and the reflux through `getLiquidOutStream()`, even though both are
+  /// liquid.
+  ///
+  /// **The duty is the outlet enthalpy less the inlets',** and the condenser overrides
+  /// `getMaterialOutletEnthalpy` to add the separate liquid product when its mode has one.
+  static void condenserRows() {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane" };
+    double[] z = new double[] { 0.1, 0.3, 0.4, 0.2 };
+    condenserRow("equilibrium_partial_no_reflux", names, z, 300.0, 20.0, null, false, null, null);
+    condenserRow("partial_reflux_ratio_1_5", names, z, 300.0, 20.0, 1.5, false, null, null);
+    condenserRow("total_reflux_ratio_1_5", names, z, 300.0, 20.0, 1.5, true, null, null);
+    condenserRow("total_reflux_ratio_zero", names, z, 300.0, 20.0, 0.0, true, null, null);
+    condenserRow("liquid_reflux_split", names, z, 300.0, 20.0, null, false, 0.5, "mol/sec");
+  }
+
+  static void condenserRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, Double refluxRatio, boolean total, Double fixedReflux,
+      String fixedRefluxUnit) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, 1.0);
+    neqsim.process.equipment.distillation.Condenser condenser =
+        new neqsim.process.equipment.distillation.Condenser("cond1");
+    condenser.addStream(inlet);
+    if (total) {
+      condenser.setTotalCondenser(true);
+    }
+    if (refluxRatio != null) {
+      condenser.setRefluxRatio(refluxRatio);
+    }
+    if (fixedReflux != null) {
+      condenser.setSeparation_with_liquid_reflux(true, fixedReflux, fixedRefluxUnit);
+    }
+    condenser.run();
+
+    System.out.println(label);
+    print("feed", inlet);
+    System.out.println("total_condenser=" + condenser.isTotalCondenser());
+    System.out.println("reflux_is_set=" + condenser.isRefluxSet());
+    System.out.println("reflux_ratio=" + condenser.getRefluxRatio());
+    System.out.println("duty_W=" + condenser.getDuty());
+    System.out.println("outlet_temperature_K=" + condenser.getOutletStream().getTemperature());
+    print("gas_out", condenser.getGasOutStream());
+    print("liquid_out", condenser.getLiquidOutStream());
+    if (condenser.getLiquidProductStream() != null) {
+      print("liquid_product", condenser.getLiquidProductStream());
+    }
+    System.out.println();
+  }
+
+  /// **The reboiler, which is a tray with a boilup ratio.** `Reboiler extends SimpleTray` and
+  /// adds one branch: with no ratio set the run is the tray's flash, and with one it is
+  /// `PVrefluxflash(refluxRatio, 1)` - the same temperature search as the condenser's, asking
+  /// for the *liquid's* fraction rather than the vapour's, which makes the ratio the boilup
+  /// `V/B` rather than the reflux `L/D`.
+  static void reboilerRows() {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane" };
+    double[] z = new double[] { 0.1, 0.3, 0.4, 0.2 };
+    reboilerRow("equilibrium_no_ratio", names, z, 320.0, 25.0, null);
+    reboilerRow("vapor_boilup_ratio_2_0", names, z, 320.0, 25.0, 2.0);
+    reboilerRow("vapor_boilup_ratio_0_5", names, z, 320.0, 25.0, 0.5);
+  }
+
+  static void reboilerRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, Double boilupRatio) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, 1.0);
+    neqsim.process.equipment.distillation.Reboiler reboiler =
+        new neqsim.process.equipment.distillation.Reboiler("reb1");
+    reboiler.addStream(inlet);
+    if (boilupRatio != null) {
+      reboiler.setRefluxRatio(boilupRatio);
+    }
+    reboiler.run();
+
+    System.out.println(label);
+    print("feed", inlet);
+    System.out.println("reflux_is_set=" + reboiler.isRefluxSet());
+    System.out.println("boilup_ratio=" + reboiler.getRefluxRatio());
+    System.out.println("duty_W=" + reboiler.getDuty());
+    System.out.println("outlet_temperature_K=" + reboiler.getOutletStream().getTemperature());
+    print("gas_out", reboiler.getGasOutStream());
+    print("liquid_out", reboiler.getLiquidOutStream());
+    System.out.println();
+  }
+
+  /// **The column's stage, driven on its own.** `SimpleTray` is a `Mixer` plus a flash: it
+  /// mixes its inlets, adds `heatInput` to their total enthalpy, and flashes - at a stated
+  /// outlet temperature when one is set, otherwise to the enthalpy it holds.
+  ///
+  /// **`calcMixStreamEnthalpy` is overridden here and that is where the heat input enters.**
+  /// `Mixer`'s is the inlets' enthalpy alone; the tray's starts from `heatInput`, subtracts
+  /// an energy stream's duty when one is attached, and adds each flowing inlet's - so a tray
+  /// with a heat input is a tray whose flash is at a raised enthalpy.
+  ///
+  /// **The outlets are the flash's phases, not two re-flashed streams.** `getGasOutStream`
+  /// and `getLiquidOutStream` extract phase 0's gas and the first liquid-like phase from the
+  /// mixed system, scale each by its draw fraction, and report a **zero-flow stream with the
+  /// tray's composition** where the phase is absent. That last part is what the one-outlet
+  /// rows below measure: a subcooled feed gives a zero-flow vapour, not an error and not a
+  /// missing row.
+  ///
+  /// **`trayPressure` is a bara magnitude and negative means "the inlet's"**, which is the
+  /// class's own sentinel rather than an absent value.
+  static void trayRows() {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane" };
+    double[] z = new double[] { 0.1, 0.3, 0.4, 0.2 };
+    // One two-phase feed, the equilibrium split at the tray's own pressure.
+    trayRow("one_two_phase_feed", new double[][] { { 300.0, 20.0, 1.0 } }, names, z, -1.0, null,
+        0.0);
+    // **Two inlets, which is what a column stage receives**: vapour rising from below and
+    // liquid falling from above, at different compositions.
+    trayRow("vapour_below_liquid_above", new double[][] { { 320.0, 20.0, 1.0 }, { 290.0, 20.0, 1.0 } },
+        names, z, -1.0, null, 0.0);
+    // A stated outlet temperature takes the class's `TPflash` branch instead of the
+    // enthalpy one.
+    trayRow("outlet_temperature_320", new double[][] { { 300.0, 20.0, 1.0 } }, names, z, -1.0,
+        320.0, 0.0);
+    // A heat input, which is the enthalpy branch with a raised target.
+    trayRow("heat_input_5000_W", new double[][] { { 300.0, 20.0, 1.0 } }, names, z, -1.0, null,
+        5000.0);
+    // A tray pressure of its own, which overrides the inlet's.
+    trayRow("tray_pressure_15_bara", new double[][] { { 300.0, 20.0, 1.0 } }, names, z, 15.0, null,
+        0.0);
+    // **A subcooled feed**, where the vapour outlet is the zero-flow template.
+    trayRow("subcooled_feed_one_phase", new double[][] { { 220.0, 20.0, 1.0 } }, names, z, -1.0,
+        null, 0.0);
+    // **A superheated feed**, the mirror: the liquid outlet is the template.
+    trayRow("superheated_feed_one_phase", new double[][] { { 400.0, 20.0, 1.0 } }, names, z, -1.0,
+        null, 0.0);
+    // **The same duty at two mol/s, which settles what `PHflash(h, 0)`'s unit is.** If the
+    // flash divides the total enthalpy by the moles, the temperature rise halves against the
+    // one-mol row above; if it reads `h` as a molar quantity, the rise is the same. The whole
+    // tier's duty handling rests on which of those it is, and no unit-flow row can tell them
+    // apart.
+    trayRow("heat_input_5000_W_two_mol_per_second", new double[][] { { 300.0, 20.0, 2.0 } }, names,
+        z, -1.0, null, 5000.0);
+  }
+
+  /// **Whether NeqSim's own `PHflash` honours the enthalpy it is given.**
+  ///
+  /// The tray rows show a flash whose returned temperature's phase outlets weigh to an
+  /// enthalpy that differs from the one the flash was asked for - by `0.0`, `5.2`, `-0.4`,
+  /// `-27.3` and `+179.5` J/mol across five rows. A difference that large on a row whose
+  /// step is only `+2500` J/mol cannot be a property of either library's equations of state,
+  /// so this asks the question directly: a fresh fluid, a stated molar enthalpy, and the
+  /// state's own enthalpy read back. Nothing about a tray is involved.
+  static void phFlashRows() {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane" };
+    double[] z = new double[] { 0.1, 0.3, 0.4, 0.2 };
+    for (double duty : new double[] { 0.0, 2500.0, 5000.0, -2000.0 }) {
+      Stream inlet = feed(names, z, 300.0, 20.0, 1.0);
+      SystemInterface fluid = inlet.getThermoSystem().clone();
+      double moles = fluid.getTotalNumberOfMoles();
+      double requested = fluid.getEnthalpy() / moles + duty;
+      neqsim.thermodynamicoperations.ThermodynamicOperations ops =
+          new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid);
+      ops.PHflash(requested * moles, 0);
+      fluid.init(2);
+      double got = fluid.getEnthalpy() / fluid.getTotalNumberOfMoles();
+      System.out.println("duty_J_per_mol=" + duty);
+      System.out.println("requested_h=" + requested);
+      System.out.println("returned_h=" + got);
+      System.out.println("gap=" + (got - requested));
+      System.out.println("temperature_K=" + fluid.getTemperature());
+      System.out.println("phases=" + fluid.getNumberOfPhases());
+      System.out.println("beta=" + fluid.getBeta());
+      System.out.println();
+    }
+  }
+
+  static void trayRow(String label, double[][] inlets, String[] names, double[] z,
+      double trayPressureBara, Double outletTemperatureK, double heatInputW) {
+    neqsim.process.equipment.distillation.SimpleTray tray =
+        new neqsim.process.equipment.distillation.SimpleTray("tray1");
+    java.util.List<Stream> added = new java.util.ArrayList<Stream>();
+    for (int i = 0; i < inlets.length; i++) {
+      Stream inlet = feed(names, z, inlets[i][0], inlets[i][1], inlets[i][2]);
+      added.add(inlet);
+      tray.addStream(inlet);
+    }
+    if (trayPressureBara > 0.0) {
+      tray.setPressure(trayPressureBara);
+    }
+    if (outletTemperatureK != null) {
+      tray.setOutTemperature(outletTemperatureK, "K");
+    }
+    if (heatInputW != 0.0) {
+      tray.setHeatInput(heatInputW);
+    }
+    tray.run();
+
+    System.out.println(label);
+    System.out.println("inlets=" + inlets.length);
+    if (outletTemperatureK != null) {
+      System.out.println("outlet_temperature_K=" + outletTemperatureK);
+    }
+    System.out.println("heat_input_W=" + heatInputW);
+    System.out.println("tray_pressure_bara=" + tray.getPressure());
+    System.out.println("tray_temperature_K=" + tray.getTemperature());
+    System.out.println("mixed_phases=" + tray.getOutletStream().getThermoSystem().getNumberOfPhases());
+    System.out.println("mixed_beta=" + tray.getOutletStream().getThermoSystem().getBeta());
+    // The inlets' records, so the enthalpy the flash was given can be assembled from the
+    // capture rather than inferred - `calcMixStreamEnthalpy` is the tray's own override.
+    for (int i = 0; i < added.size(); i++) {
+      print("feed" + i, added.get(i));
+    }
+    System.out.println("inlet_total_enthalpy_W=" + tray.calcMixStreamEnthalpy0());
+    System.out.println("mixed_moles="
+        + tray.getOutletStream().getThermoSystem().getTotalNumberOfMoles());
+    print("gas_out", tray.getGasOutStream());
+    print("liquid_out", tray.getLiquidOutStream());
+    System.out.println();
+  }
+
   /// **The family's closed-form member, and the one place the two libraries can be expected
   /// to agree tightly.** `ShortcutDistillationColumn` is Fenske-Underwood-Gilliland with a
   /// Kirkbride feed tray: it flashes the feed for K-values, forms `alpha_i = K_i / K_HK`, and
@@ -628,6 +865,8 @@ public class ProcessProbe {
     return -1;
   }
 
+  /// `ComponentSplitter`: a per-component routing with each outlet flashed.
+  ///
   static void splitter() {
     // **A single-phase liquid, so the branch flash is a formality.** `Splitter.run` clones
     // the inlet fluid, subtracts `(1 - f) n` from every component and runs a `TPflash` on

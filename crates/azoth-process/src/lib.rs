@@ -10,6 +10,7 @@
 
 pub mod channel;
 pub mod check;
+pub mod column;
 pub mod flowsheet;
 pub mod kernels;
 pub mod load;
