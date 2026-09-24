@@ -1,5 +1,6 @@
 id = "unit_ops.distillation_column"
 name = "Distillation column"
+notes = "**Parked, and the parking is an order rather than a measurement.** No kernel is written for this entry in the P11 tranche: it is the one palette entry that is a *solver* rather than a composition of kernels this library already has. Measured at the pin `f0c7436c69`, `process/equipment/distillation/` is 46 files and 40,058 lines against the 15,633 of the class this entry names, of which `NaphtaliSandholmSolver` is 5,153, `RateBasedPackedColumn` 4,081, `ColumnSolverFactory` 1,085, `DistillationColumnMatrixSolver` 942 and `SimpleTray` 866. `ColumnSolverFactory` selects `AUTO` as a **ladder** - `NAPHTALI_SANDHOLM`, then `MATRIX_INSIDE_OUT`, `INSIDE_OUT`, `DAMPED_SUBSTITUTION` - so even the default is not one method. A port would also have to **add to this declaration first**: a feed stage and a product specification, which a rigorous column takes and this entry does not declare. W13a-d of the P11 plan is the work, and those four classes are what would close it."
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
 [parameters.reflux_ratio]

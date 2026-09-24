@@ -379,8 +379,18 @@ complete rather than silent about them:
 **`process/` is not in this list.** It is not physics, but it *is* a port target: the
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
-types, the stream record, the palette loader and the checker, `specs/unit_ops/` declares 24
-unit operations, and six of them carry kernels.
+types, the stream record, the palette loader and the checker, and `specs/unit_ops/` declares 24
+unit operations of which **six carry kernels**. The rest are owed, with two exceptions that are
+stated rather than outstanding. **`unit_ops.simple_absorber` is refused on measured evidence**:
+`SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point loop over
+MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a faithful
+port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and `AmineKentEisenberg`
+are the classes that would close it, and P8's tier is where it belongs. **`unit_ops.distillation_column`
+is parked**: it is the one entry that is a solver rather than a composition of kernels this
+library already has — 40,058 lines across 46 files in NeqSim's `process/equipment/distillation/`,
+`NaphtaliSandholmSolver` alone 5,153 — and the declaration would have to gain a feed stage and a
+product specification before a kernel could be written against it. Both name what would close
+them, which is the point: neither is "out of scope".
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.
