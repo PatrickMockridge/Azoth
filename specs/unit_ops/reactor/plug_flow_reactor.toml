@@ -1,5 +1,6 @@
 id = "unit_ops.plug_flow_reactor"
 name = "Plug-flow reactor"
+notes = "**Deferred with the measurement that says why: the tree has no integrator.** `PlugFlowReactor.run` is **1,261 lines** and marches the molar flows along the reactor - `calculateRate` per reaction, a catalyst bed's activity factor and bulk density, a rate-to-volumetric conversion, and an `ensureProductComponentsExist` that *adds* species the feed does not carry. Verified again: no ODE stepper exists anywhere in the workspace, so the march would be new numerical code rather than a composition. The plan of record leaves two honest answers open - the stepper becomes a spec'd calc of its own, named in this kernel's `[algorithm]` block, or the kinetics path is declared out and only the isothermal plug limit is ported - and both are a decision rather than a wiring."
 [source]
 standard = "NeqSim process/equipment/reactor/PlugFlowReactor.java"
 [parameters.length]

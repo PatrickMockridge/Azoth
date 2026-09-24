@@ -398,10 +398,25 @@ nor refused. Both solves are in scope, the sequential-substitution core and
 Naphtali-Sandholm, and the oracle is differential because NeqSim carries no absolute reference
 numbers for a column.
 
-**What P11 still owes is nine kernels**, deferred so the column's workstream could start:
-`component_splitter`, `ejector`, `flare`, `gas_scrubber`, `gibbs_reactor`,
-`plug_flow_reactor`, `stirred_tank_reactor`, `tank` and `three_phase_separator`. They are owed
-rather than dropped, and the P11 plan of record records the deferral and what it leaves owed.
+**P11's palette is closed except for two entries, and both are deferred with a measurement.**
+Seven of the nine kernels the column's unparking deferred have landed - `component_splitter`,
+`ejector`, `flare`, `gas_scrubber`, `stirred_tank_reactor`, `tank` and
+`three_phase_separator` - each a registered `process.*` id with a spec, two implementations, a
+NeqSim capture and a case set. What is left is `gibbs_reactor` and `plug_flow_reactor`, and
+their palette entries now carry why:
+
+- **`gibbs_reactor` is not the composition the P11 plan expected.** `GibbsReactor.run` does not
+  call `ChemicalEquilibrium`, and the class is 3,163 lines carrying its own Lagrange-multiplier
+  Newton solve (with an Armijo line search and Tikhonov regularisation) and its own species
+  database - `GibbsReactDatabase.csv`, vendored, whose rows carry element vectors *and*
+  per-species Gibbs, enthalpy and entropy correlations that are not the databank's formation
+  properties. A port composed from P10 would answer with different numbers than the class, so it
+  waits for a tier of its own.
+- **`plug_flow_reactor` needs an integrator, and the tree has none.** Its `run` is 1,261 lines
+  marching the molar flows with a catalyst bed's activity and bulk density, and it *adds* species
+  the feed does not carry. The stepper would be new numerical code, and the plan leaves the
+  choice open - a spec'd stepper of its own, or the kinetics path declared out and the isothermal
+  plug limit ported.
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.
