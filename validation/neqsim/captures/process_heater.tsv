@@ -1,0 +1,90 @@
+outlet_temperature_380
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=380.0
+outlet_h=4160.029214658429
+outlet_s=-12.05999807413019
+outlet_z=methane:0.9 n-butane:0.1
+duty_W=2924.2712482643196
+
+outlet_temperature_380_drop_2_bara
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=28.0
+outlet_T=380.0
+outlet_h=4195.310489987804
+outlet_s=-11.41724726618695
+outlet_z=methane:0.9 n-butane:0.1
+duty_W=2959.5525235936952
+
+duty_5000_W
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=420.4576373893361
+outlet_h=6235.757965002769
+outlet_s=-6.871260576292018
+outlet_z=methane:0.9 n-butane:0.1
+duty_W=4999.9999986086605
+
+duty_minus_5000_W
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=248.0677292845227
+outlet_h=-3764.242030067413
+outlet_s=-38.31425388422408
+outlet_z=methane:0.9 n-butane:0.1
+duty_W=-4999.999996461522
+
+no_specification
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=320.0
+outlet_h=1235.7579663941092
+outlet_s=-20.429350395514717
+outlet_z=methane:0.9 n-butane:0.1
+duty_W=0.0
+
+no_specification_drop_2_bara
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=28.0
+outlet_T=320.0
+outlet_h=1285.3807981097964
+outlet_s=-19.74519106403146
+outlet_z=methane:0.9 n-butane:0.1
+duty_W=49.6228317156872
+

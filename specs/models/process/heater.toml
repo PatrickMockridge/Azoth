@@ -1,0 +1,86 @@
+id = "process.heater"
+name = "Heater"
+kind = "direct"
+assumptions = [
+    "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist, while an outlet reports the `h` it reached because a machine changes it.",
+    "**this is `unit_ops.heater`'s arithmetic, not a second one.** The kernel in `azoth_process::kernels` is what the flowsheet calls and what this wraps.",
+    "**a temperature and a `duty` together are refused**: `Heater`'s two setters clear each other's flags, so the class's answer to both is the order they were called in - a state these inputs cannot express. Refusing keeps this a function of its declaration.",
+    "**`outlet_duty` is the state's number and not the caller's.** `run` overwrites its own `energyInput` with the enthalpy the flash reached, in every branch, so a temperature-specified heater reports the duty its outlet implies.",
+    "**neither specification is an isothermal drop.** `run`'s else branch is `T_in + dT` with `dT` defaulting to zero, and `dT` is not a palette parameter - so a heater with no temperature and no duty moves the pressure at constant temperature.",
+    "**the duty is W and the enthalpy is per mole, and they meet because a process fluid's moles are one second of flow.** `run` adds `getDuty()` (W) to `getEnthalpy()` (J) directly; here the shift is `duty / inlet_n` in J/mol, stated rather than inherited.",
+    "`pressure_drop` is applied to the inlet and the flash runs at the pressure it leaves, before the temperature or the enthalpy is set - `run` sets the pressure first, and an explicit outlet pressure (which this palette entry does not declare) would override the drop rather than add to it.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Heater` also carries a `runTransient`, a mechanical design, an electrical and an instrument design, a utility specification and bounded outlet-temperature limits. **None is ported**: this is the steady-state arithmetic the palette's three parameters reach.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",
+]
+[source]
+standard = "NeqSim process/equipment/heatexchanger/Heater.java"
+edition = "Its steady-state `run`: the pressure drop, then a `TPflash` at a stated outlet temperature or a `PHflash` at the enthalpy a stated duty implies, and the duty reported as the enthalpy the outlet reached."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. Every port of a unit operation carries the same fluid, so this is declared once.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow. A heater moves what it is given and adds no moles, so this is the outlet's too.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which `pressure_drop` reduces.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy as well.\n"
+[inputs.outlet_temperature]
+unit = "K"
+optional = true
+description = "the temperature the stream is heated to, which is `unit_ops.heater`'s own parameter. Giving it beside a `duty` is refused rather than resolved.\n"
+[inputs.duty]
+unit = "W"
+optional = true
+description = "the heat added, which sets the outlet enthalpy as `inlet_h + duty / inlet_n`. Negative removes heat, which is `unit_ops.cooler`.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+optional = true
+description = "the pressure loss across the heater, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the inlet's: a heater moves no moles.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition, which is the inlet's.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet pressure: `inlet_p - pressure_drop`, or the inlet's when no drop is given.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet temperature: `outlet_temperature` when it is given, and otherwise the one the mixture reaches at the outlet pressure carrying `outlet_h`.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or the enthalpy of the state at `outlet_temperature`. Reported because the duty a heater moves is derived from it rather than the other way round.\n"
+[outputs.outlet_duty]
+unit = "W"
+description = "the duty the heater moved, as `inlet_n * (outlet_h - inlet_h)`. This is `Heater.run`'s own recomputation after the flash, so it is the state's number and not the caller's when a temperature was specified.\n"
+[[valid_range]]
+quantity = "outlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[implementations]
+python = "azoth.process.heater"
+rust = "azoth_process::heater"

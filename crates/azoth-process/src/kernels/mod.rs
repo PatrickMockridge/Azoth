@@ -7,6 +7,7 @@
 //! `azoth-eos` rather than adding new physics.
 
 pub mod heat_exchanger;
+pub mod heater;
 pub mod mixer;
 pub mod pump;
 pub mod separator;
@@ -14,6 +15,7 @@ pub mod splitter;
 pub mod throttling_valve;
 
 pub use heat_exchanger::heat_exchanger;
+pub use heater::heater;
 pub use mixer::mixer;
 pub use pump::pump;
 pub use separator::separator;

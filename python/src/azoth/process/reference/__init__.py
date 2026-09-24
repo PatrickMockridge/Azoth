@@ -13,6 +13,7 @@ rule arriving.
 from __future__ import annotations
 
 from azoth.process.reference.heat_exchanger import heat_exchanger
+from azoth.process.reference.heater import heater
 from azoth.process.reference.mixer import mixer
 from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
@@ -21,6 +22,7 @@ from azoth.process.reference.throttling_valve import throttling_valve
 
 __all__ = [
     "heat_exchanger",
+    "heater",
     "mixer",
     "pump",
     "separator",

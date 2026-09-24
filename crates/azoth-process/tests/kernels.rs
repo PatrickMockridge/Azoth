@@ -2,7 +2,9 @@
 
 use azoth_core::units::{kelvins, pascals, watts_per_kelvin};
 use azoth_process::Stream;
-use azoth_process::kernels::{heat_exchanger, mixer, pump, separator, splitter, throttling_valve};
+use azoth_process::kernels::{
+    heat_exchanger, heater, mixer, pump, separator, splitter, throttling_valve,
+};
 
 fn close(a: f64, b: f64) {
     let scale = 1.0 + a.abs() + b.abs();
@@ -178,4 +180,65 @@ fn a_pump_raises_pressure_and_adds_work() {
     close(out.p.value, 2e6);
     close(out.n, feed.n);
     assert!(out.h.value > feed.h.value, "the pump adds work as enthalpy");
+}
+
+#[test]
+fn a_heater_holds_the_temperature_it_is_given() {
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    let out = heater(&feed, Some(kelvins(380.0)), None, None).expect("heater");
+
+    close(out.outlet.t.value, 380.0);
+    close(out.outlet.n, feed.n);
+    assert_eq!(out.outlet.z, feed.z);
+    assert_eq!(out.outlet.p, feed.p);
+    // **The duty is the state's, not a number the caller gave.** It is `n * dh` over the
+    // same two enthalpies the outlet carries, so it is exactly what a reader of the outlet
+    // record would compute - which is `Heater.run`'s own recomputation after its flash.
+    close(
+        out.duty.value,
+        feed.n * (out.outlet.h.value - feed.h.value),
+    );
+    assert!(out.duty.value > 0.0, "380 K is above the inlet's 320");
+}
+
+#[test]
+fn an_unstated_heater_is_an_isothermal_drop_and_not_a_throttling() {
+    // Neither a temperature nor a duty: `run`'s else branch is `T_in + dT` with `dT` zero,
+    // so what is left is the pressure drop - the branch a kernel written from the class's
+    // documentation alone would miss.
+    //
+    // **It holds the temperature and not the enthalpy**, which is the whole difference
+    // between this and `throttling_valve`: a real fluid's `h` depends on `P` at fixed `T`,
+    // so the outlet enthalpy moves by about `50` J/mol over these two bar and the reported
+    // duty is that movement - nonzero, and correctly so, because `run` reports `newH - oldH`
+    // for whatever its flash did. An isenthalpic reading of this branch is the mistake.
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    let out = heater(&feed, None, None, Some(pascals(2e5))).expect("heater");
+
+    close(out.outlet.p.value, 2.8e6);
+    close(out.outlet.t.value, feed.t.value);
+    close(
+        out.duty.value,
+        feed.n * (out.outlet.h.value - feed.h.value),
+    );
+}
+
+#[test]
+fn a_heater_refuses_a_temperature_and_a_duty_together() {
+    // `Heater`'s two setters clear each other's flags, so the class's answer to both is the
+    // order they were called in. A model that picked one would be inventing a rule the
+    // class does not have, and a model that silently preferred the temperature would report
+    // a duty the caller never asked for.
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    assert!(
+        heater(&feed, Some(kelvins(380.0)), Some(azoth_core::units::watts(5000.0)), None)
+            .is_err()
+    );
+}
+
+#[test]
+fn a_heater_refuses_a_drop_past_zero_pressure() {
+    let feed = binary(0.9, 100.0, 3e5, 320.0);
+    assert!(heater(&feed, None, None, Some(pascals(3e5))).is_err());
+    assert!(heater(&feed, None, None, Some(pascals(4e5))).is_err());
 }

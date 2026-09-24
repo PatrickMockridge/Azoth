@@ -166,6 +166,7 @@
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Unit operations](./process/index.md)
   - [Heat exchanger](./process/heat_exchanger.md)
+  - [Heater](./process/heater.md)
   - [Mixer](./process/mixer.md)
   - [Pump](./process/pump.md)
   - [Separator](./process/separator.md)

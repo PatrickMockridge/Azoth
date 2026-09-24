@@ -16,6 +16,7 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    HeaterResult,
     HeatExchangerResult,
     MixerResult,
     PumpResult,
@@ -29,6 +30,7 @@ from azoth.process.kernels import Stream
 __all__ = [
     "Stream",
     "heat_exchanger",
+    "heater",
     "load_flowsheet",
     "mixer",
     "pump",
@@ -40,6 +42,7 @@ __all__ = [
 
 _MIXER = "process.mixer"
 _HEAT_EXCHANGER = "process.heat_exchanger"
+_HEATER = "process.heater"
 _SEPARATOR = "process.separator"
 _THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
@@ -93,6 +96,46 @@ def pump(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+    )
+
+
+def heater(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_temperature: Q | None = None,
+    duty: Q | None = None,
+    pressure_drop: Q | None = None,
+) -> HeaterResult:
+    """Heat or cool a stream to a stated temperature, or by a stated duty.
+
+    ``components``, ``inlet_n``, ``inlet_z``, ``inlet_p`` and ``inlet_t`` are the inlet's
+    record, and ``outlet_temperature``, ``duty`` and ``pressure_drop`` are
+    ``unit_ops.heater``'s own three parameters - all optional, and the pressure drop applied
+    to the inlet before the flash.
+
+    **A temperature and a duty together are refused**, because ``Heater.setOutletTemperature``
+    and ``setDuty`` clear each other's flags: which one the class runs is the order they were
+    set in, which these arguments cannot express. With neither, the drop is isothermal,
+    because ``run``'s else branch is ``T_in + dT`` with ``dT`` zero.
+
+    Raises:
+        InvalidInputError: for both specifications at once, a pressure drop that leaves a
+            non-positive pressure, or a duty on a stream carrying no flow.
+
+    See :func:`azoth.process.reference.heater`.
+    """
+    return resolve(_HEATER)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        outlet_temperature=outlet_temperature,
+        duty=duty,
+        pressure_drop=pressure_drop,
     )
 
 

@@ -341,6 +341,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::heat_exchanger_stream, m)?)?;
     m.add_function(wrap_pyfunction!(process::pump, m)?)?;
     m.add_function(wrap_pyfunction!(process::pump_stream, m)?)?;
+    m.add_function(wrap_pyfunction!(process::heater, m)?)?;
     m.add_function(wrap_pyfunction!(process::mixer, m)?)?;
     m.add_function(wrap_pyfunction!(process::separator, m)?)?;
     m.add_function(wrap_pyfunction!(process::heat_exchanger, m)?)?;

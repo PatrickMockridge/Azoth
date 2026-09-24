@@ -1,0 +1,109 @@
+model = "process.heater"
+[[cases]]
+id = "outlet_temperature_380"
+tolerance = 0.0002
+source = "NeqSim master, `Heater.run` with `setOutletTemperature(380 K)`, from `validation/neqsim/captures/process_heater.tsv`. The fluid is methane/n-butane 0.9/0.1 at 320 K and 30 bara and 1 mol/s, a single-phase gas, so the temperature row moves a state rather than a phase boundary. **Measured: `outlet_t`, `outlet_p` and `outlet_n` are exact**, and `outlet_h` is out by `9.186e-5` relative - which is azoth's `1235.6349` against NeqSim's `1235.7579`, a difference of `-0.123` J/mol. That is the libraries' known ideal-gas heat-capacity offset, here reproduced on a third code path, and it is not this machine's arithmetic: the *state* a heater produces is the flash's, and the flash is `eos`'s business. The tolerance is set at `2e-4`, about twice the measured worst, rather than at the measurement itself - a band with no margin flakes.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 380.0
+outlet_h = 4160.029214658429
+outlet_duty = 2924.2712482643196
+[[cases]]
+id = "outlet_temperature_380_with_a_2_bara_drop"
+tolerance = 0.0002
+source = "The same row with `setPressureDrop(2.0)`, which `run` takes off the inlet pressure *before* the flash - so the outlet is at 28 bara and reaches 380 K from a lower starting enthalpy, and the duty is therefore larger than the row above despite the same stated temperature. This is the row that shows the pressure drop is applied first and the temperature second. Measured: `outlet_t` and `outlet_p` exact, `outlet_h` out by `9.109e-5` - the same offset, which is what makes this row evidence about the branch rather than about the enthalpy.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_temperature = 380.0
+pressure_drop = 200000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 2800000.0
+outlet_t = 380.0
+outlet_h = 4195.310489987804
+outlet_duty = 2959.5525235936952
+[[cases]]
+id = "duty_5000_watts"
+tolerance = 0.0002
+source = "`setDuty(5000.0)`, which is `setEnergyInput` - the enthalpy branch. The outlet temperature is solved rather than stated, and `duty_W` in the capture is the class's own recomputation after the flash: `4999.9999986086605` against the stated `5000.0`, a difference of `1.4e-6` W that is the PHflash landing beside its target. The case pins the recomputation, not the input. **Measured: `outlet_duty` agrees to `2.783e-10`** - because azoth's two enthalpies differ by exactly the duty, while NeqSim's flash landed `1.4e-6` W short of its own target; the temperature is solved here rather than stated and agrees to `2.351e-5`, about `0.01` K.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = 5000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 420.4576373893361
+outlet_h = 6235.757965002769
+outlet_duty = 4999.9999986086605
+[[cases]]
+id = "duty_minus_5000_watts"
+tolerance = 0.0002
+source = "The same branch with the sign reversed, which is the state a cooler exists in: 248.07 K. The palette's `duty` is signed and has no range check, because a heater that may not remove heat is a heater that cannot be a cooler - and this model is the entry `unit_ops.cooler` also reaches. **Measured: `outlet_duty` to `7.077e-10` and the solved temperature to `1.008e-5`.**\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+duty = -5000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 248.0677292845227
+outlet_h = -3764.242030067413
+outlet_duty = -4999.999996461522
+[[cases]]
+id = "no_specification_is_isothermal"
+tolerance = 0.0002
+source = "Neither a temperature nor a duty: `run`'s else branch, `T_in + dT` with `dT` defaulting to zero. The outlet temperature and pressure are the inlet's exactly and `outlet_duty` is `0.0` to the last digit in both libraries, because the two enthalpies subtracted are the same number. **`outlet_h` is at the same `1e-4` as the other rows and not tighter**, which is worth stating: this row looks like it should pin exactly and does not, because the record carries NeqSim's *absolute* molar enthalpy and azoth's differs from it by the ideal-gas heat-capacity offset - `9.955e-5` relative here, the same figure the rows above carry. A case pinned tighter would be pinning the enthalpy reference.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 320.0
+outlet_h = 1235.7579663941092
+outlet_duty = 0.0
+[[cases]]
+id = "no_specification_with_a_drop_is_isothermal_and_not_isenthalpic"
+tolerance = 0.0002
+source = "The row the port needed and the kernel's own test found first: neither a temperature nor a duty, with a pressure drop. The outlet holds the inlet's 320 K **and its enthalpy still moves** - azoth's `1285.2578` against NeqSim's `1285.3808`, the same `0.123` J/mol offset - so the class reports a duty of `49.62` W for a machine that was told to do nothing. That is `run` reporting `newH - oldH` for whatever its flash did, and it is why this branch is an isothermal drop rather than a throttling: a throttling holds `h`, this holds `T`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+pressure_drop = 200000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 2800000.0
+outlet_t = 320.0
+outlet_h = 1285.3807981097964
+outlet_duty = 49.6228317156872

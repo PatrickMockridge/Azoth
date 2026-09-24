@@ -346,6 +346,33 @@ class ChemicalEquilibriumResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class HeaterResult(_HasWarnings):
+    """Result of ``process.heater``.
+
+    The same record as :class:`PumpResult` with a duty beside it, which is the one number a
+    heater adds that its outlet record does not carry. **The duty is the state's and not the
+    caller's**: ``Heater.run`` overwrites its own ``energyInput`` with the enthalpy the flash
+    reached, in every branch, so it is ``outlet_n * (outlet_h - inlet_h)`` however the outlet
+    was specified.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure: the inlet's less ``pressure_drop``.
+    outlet_p: Q
+    #: Outlet temperature: the stated one, or the one the shifted enthalpy reaches.
+    outlet_t: Q
+    #: Outlet molar enthalpy.
+    outlet_h: Q
+    #: The duty moved, as ``outlet_n * (outlet_h - inlet_h)``.
+    outlet_duty: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PumpResult(_HasWarnings):
     """Result of ``process.pump``.
 

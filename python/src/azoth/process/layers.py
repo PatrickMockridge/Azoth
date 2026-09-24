@@ -227,6 +227,16 @@ NO_INTERIOR: dict[str, str] = {
         "to size itself, which is the `MechanicalDesign.calcValveSize()` path the palette "
         "entry's `valve_opening` was withdrawn for"
     ),
+    "process.heater": (
+        "the kernel is one ``Stream::from_pt`` at the stated temperature or one "
+        "``Stream::from_ph`` at the enthalpy a stated duty implies, at the pressure the drop "
+        "leaves - and the outlet record is that flash's answer in full. The capture's extra "
+        "line is ``duty_W``, which is ``Heater.run``'s own ``newH - oldH`` and therefore a "
+        "difference of the two records' enthalpies over the inlet's flow; the model reports "
+        "it as ``outlet_duty`` for exactly that reason. `getEnergyInput` is no way out of "
+        "that: `run` overwrites the field with the same difference, so it reads back the "
+        "number the record already implies rather than a layer behind it"
+    ),
     "process.separator": (
         "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
         "entrainment moves, and every one of the four is on the two outlet records - the "

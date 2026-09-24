@@ -36,6 +36,8 @@
 //       > captures/process_throttling_valve.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger \
 //       > captures/process_heat_exchanger.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe heater > captures/process_heater.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe cooler > captures/process_cooler.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
 
@@ -65,6 +67,12 @@ public class ProcessProbe {
         break;
       case "heat_exchanger":
         heatExchanger();
+        break;
+      case "heater":
+        heatRows("Heater");
+        break;
+      case "cooler":
+        heatRows("Cooler");
         break;
       case "stream":
         stream();
@@ -112,6 +120,67 @@ public class ProcessProbe {
           "entropy_production_kJ_per_molK=" + pump.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
+  }
+
+  /// `Heater` and `Cooler` on the **same rows**, because this is where `Cooler extends
+  /// Heater` stops being a claim and becomes a measurement: the class overrides
+  /// `runTransient` and a handful of getters, and not `run` - so every row below has to come
+  /// back identical through either class. A row that did not would mean the single kernel the
+  /// port rests on is wrong.
+  ///
+  /// **Six rows, one per reachable branch of `run` and one for the branch's own subtlety.**
+  /// A stated outlet temperature, the same
+  /// with a pressure drop, a stated duty, a negative duty, and neither - where `run` falls
+  /// through to `T_in + dT` with `dT` defaulting to zero, so the drop is isothermal.
+  ///
+  /// **A temperature and a duty cannot both be a row.** The two setters clear each other's
+  /// flags, so the class's answer to both is the order they were called in; the port refuses
+  /// the pair, and a probe cannot measure a state the record cannot express.
+  ///
+  /// The fluid is a single-phase gas at the inlet, so the temperature and duty rows move a
+  /// state rather than a phase boundary - except the negative-duty one, which is allowed to
+  /// reach a two-phase answer because a real cooler does.
+  static void heatRows(String which) {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.9, 0.1 };
+    heatRow(which, "outlet_temperature_380", names, z, 380.0, null, 0.0);
+    heatRow(which, "outlet_temperature_380_drop_2_bara", names, z, 380.0, null, 2.0);
+    heatRow(which, "duty_5000_W", names, z, null, 5000.0, 0.0);
+    heatRow(which, "duty_minus_5000_W", names, z, null, -5000.0, 0.0);
+    heatRow(which, "no_specification", names, z, null, null, 0.0);
+    // **And with a drop**, which is the row that settles what this branch is. The outlet
+    // holds the inlet temperature and its enthalpy moves anyway - a real fluid's `h` depends
+    // on `P` at fixed `T` - so the duty the class reports is that movement and not zero. The
+    // reading that a no-specification heater is a throttling is the mistake this measures.
+    heatRow(which, "no_specification_drop_2_bara", names, z, null, null, 2.0);
+  }
+
+  static void heatRow(String which, String label, String[] names, double[] z, Double outletK,
+      Double dutyW, double dropBara) {
+    Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+    neqsim.process.equipment.heatexchanger.Heater unit =
+        which.equals("Cooler") ? new neqsim.process.equipment.heatexchanger.Cooler("c1", inlet)
+            : new neqsim.process.equipment.heatexchanger.Heater("h1", inlet);
+    if (outletK != null) {
+      unit.setOutletTemperature(outletK);
+    }
+    if (dutyW != null) {
+      unit.setDuty(dutyW);
+    }
+    if (dropBara != 0.0) {
+      unit.setPressureDrop(dropBara);
+    }
+    unit.run();
+
+    System.out.println(label);
+    print("inlet", inlet);
+    print("outlet", unit.getOutletStream());
+    // `getDuty()` is the class's own recomputation - `newH - oldH`, after the flash and in
+    // every branch - so on the temperature rows it is the state's number and not the zero
+    // the field was initialised to. On the duty rows it is the enthalpy the flash reached,
+    // which is the input only if the flash lands exactly on it.
+    System.out.println("duty_W=" + unit.getDuty());
+    System.out.println();
   }
 
   static void splitter() {

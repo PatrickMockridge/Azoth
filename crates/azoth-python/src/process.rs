@@ -194,6 +194,44 @@ pub fn pump_stream(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.heater` - the heater's kernel as a registered id.
+///
+/// **The three optional parameters are the class's three setters, and two of them are
+/// exclusive.** A stated outlet temperature and a stated duty clear each other's flags in
+/// `Heater`, so the pair is refused here rather than resolved; `pressure_drop` is
+/// independent of both.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature = None, duty = None, pressure_drop = None))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature=None, duty=None, pressure_drop=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+pub fn heater(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_temperature: Option<f64>,
+    duty: Option<f64>,
+    pressure_drop: Option<f64>,
+) -> PyResult<crate::results::PyHeaterResult> {
+    azoth_process::heater(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_temperature.map(kelvins),
+        duty.map(watts),
+        pressure_drop.map(pascals),
+    )
+    .map(|r| crate::results::PyHeaterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.pump` - the pump's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]

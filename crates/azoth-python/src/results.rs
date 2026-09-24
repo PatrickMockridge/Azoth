@@ -57,7 +57,7 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    HeatExchangerResult, MixerResult, PumpResult, SeparatorResult, SplitterResult,
+    HeatExchangerResult, HeaterResult, MixerResult, PumpResult, SeparatorResult, SplitterResult,
     ThrottlingValveResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
@@ -649,6 +649,84 @@ impl From<&MixerResult> for PyMixerResult {
 
 /// Result of `process.throttling_valve`, transported.
 ///
+/// Result of `process.heater`, transported.
+///
+/// `PumpResult`'s five record fields plus the duty, which is the one number a machine that
+/// moves heat adds: the outlet's own record cannot carry it, because a record describes a
+/// *state* and a duty describes a step.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "HeaterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyHeaterResult {
+    /// Molar flow out, mol/s.
+    #[pyo3(get)]
+    pub outlet_n: PyQty,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub outlet_z: Vec<f64>,
+    /// Outlet pressure, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub outlet_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub outlet_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub outlet_h: PyQty,
+    /// The duty moved, as `outlet_n * (outlet_h - inlet_h)`.
+    #[pyo3(get)]
+    pub outlet_duty: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyHeaterResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HeaterResult(outlet_t={} {}, outlet_duty={} {})",
+            self.outlet_t.magnitude_si,
+            self.outlet_t.unit,
+            self.outlet_duty.magnitude_si,
+            self.outlet_duty.unit
+        )
+    }
+}
+
+impl From<&HeaterResult> for PyHeaterResult {
+    fn from(r: &HeaterResult) -> Self {
+        Self {
+            outlet_n: PyQty {
+                magnitude_si: r.outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            outlet_z: r.outlet_z.clone(),
+            outlet_p: PyQty {
+                magnitude_si: r.outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            outlet_t: PyQty {
+                magnitude_si: r.outlet_t.value,
+                unit: "K".to_string(),
+            },
+            outlet_h: PyQty {
+                magnitude_si: r.outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            outlet_duty: PyQty {
+                magnitude_si: r.outlet_duty.value,
+                unit: "W".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// The same shape as `PumpResult`, which is what a two-port unit operation's outlet is.
 #[pyclass(
     frozen,
@@ -7935,6 +8013,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
+        HeaterResult::CALC_ID => HeaterResult::FIELDS.to_vec(),
         HeatExchangerResult::CALC_ID => HeatExchangerResult::FIELDS.to_vec(),
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),

@@ -1363,6 +1363,16 @@ class HeatExchangerResult:
     warnings: list[Warning]
 
 @final
+class HeaterResult:
+    outlet_n: Qty
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    outlet_duty: Qty
+    warnings: list[Warning]
+
+@final
 class MixerResult:
     product_n: Qty
     product_z: list[float]
@@ -2578,6 +2588,16 @@ def heat_exchanger(
     hot_outlet_temperature: float | None = None,
     cold_outlet_temperature: float | None = None,
 ) -> HeatExchangerResult: ...
+def heater(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    outlet_temperature: float | None = None,
+    duty: float | None = None,
+    pressure_drop: float | None = None,
+) -> HeaterResult: ...
 def mixer(
     components: list[str],
     feed_n: list[float],
