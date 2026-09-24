@@ -102,6 +102,23 @@ impl Stream {
     /// for the reason `s` is a function of `(T, P, z)` exactly as `h` is: a sixth field
     /// would have to be kept in step with the other five at every port of every unit
     /// operation, and could then disagree with them.
+    /// The molar heat capacity at the stream's own state, J/(mol·K).
+    ///
+    /// **Derived, not carried**, for the reason [`Stream::entropy`] gives, and it is the same
+    /// call: `eos.molar_enthalpy_entropy` returns `cp` beside `h` and `s`, so this is a read of
+    /// the model the stream's enthalpy already comes from rather than a second surface.
+    ///
+    /// **It is not the ideal-gas capacity.** The departure is carried, and at the state
+    /// `PlugFlowReactor`'s own capture uses it is `0.0535` of `31.5162` J/(mol·K). Comparing it
+    /// against NeqSim's `getCp("J/molK")` gives `6.85e-4` relative, which is the library
+    /// divergence `crates/azoth-process/tests/reactor.rs` pins and not a difference in kind.
+    pub fn molar_heat_capacity(&self) -> Result<f64> {
+        let (mixture, ideal_gas) = self.mixture()?;
+        let root = self.single_phase_root(&mixture)?;
+        let state = molar_enthalpy_entropy(&mixture, &ideal_gas, self.t, self.p, &self.z, root)?;
+        Ok(state.cp.value)
+    }
+
     pub fn entropy(&self) -> Result<f64> {
         let (mixture, ideal_gas) = self.mixture()?;
         let (s, _) = ps_flash::entropy_at(&mixture, &ideal_gas, self.t, self.p, &self.z)?;

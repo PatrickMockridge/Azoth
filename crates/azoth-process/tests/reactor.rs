@@ -6,7 +6,139 @@
 //! equations integrated exactly, at two step sizes, and the two schemes held to their own
 //! orders. It is the one test in the tier that no NeqSim row can replace.
 
+use azoth_process::Stream;
 use azoth_process::reactor::stepper::{Scheme, march};
+
+/// **The plug-flow reactor against its own capture, station by station.**
+///
+/// The capture is `validation/neqsim/captures/process_plug_flow_reactor.tsv`, row `rk4_default`:
+/// methane `0.05`, oxygen `0.10`, nitrogen `0.85` at `600 K`, `5` bara and `1` mol/s; a power-law
+/// combustion with `A = 1e4`, `Ea = 80000` J/mol and `ΔH = -802000` J/mol; five metres of
+/// `0.10` m tube in a hundred RK4 steps with the property state refreshed every ten.
+///
+/// The answer is the whole profile, so this checks the class's own numbers at the inlet, the
+/// first station and the outlet - a `dT/dz` that is right only at the ends would not be the same
+/// curve.
+#[test]
+fn the_plug_flow_reactor_reproduces_the_captured_profile() {
+    use azoth_core::units::{kelvins, pascals};
+    use azoth_process::kernels::plug_flow_reactor::{ReactorSetup, plug_flow_reactor};
+    use azoth_process::reactor::kinetic_reaction::KineticReaction;
+
+    let feed = Stream::from_pt(
+        ["methane", "oxygen", "nitrogen"]
+            .iter()
+            .map(|n| (*n).to_string())
+            .collect(),
+        vec![0.05, 0.10, 0.85],
+        1.0,
+        pascals(5.0e5),
+        kelvins(600.0),
+    )
+    .expect("the three resolve");
+
+    let mut reaction = KineticReaction::new("methanecombustion");
+    reaction.add_reactant("methane", 1.0, 1.0);
+    reaction.add_reactant("oxygen", 2.0, 1.0);
+    reaction.add_product("CO2", 1.0);
+    reaction.add_product("water", 2.0);
+    reaction.pre_exponential_factor = 1.0e4;
+    reaction.activation_energy = 80_000.0;
+    reaction.heat_of_reaction = -802_000.0;
+
+    let setup = ReactorSetup {
+        reactions: vec![reaction],
+        ..ReactorSetup::default()
+    };
+    let (_outlet, numbers, profile) =
+        plug_flow_reactor(&feed, &setup).expect("the reactor marches");
+
+    println!(
+        "components={:?}\nconversion={} (neqsim 0.10666898902165212)\noutlet_t={} (neqsim 733.4597018618274)\n\
+         drop={} (neqsim 1.1979021268260226e-5)\nresidence={} (neqsim 3.3649329465814315)\n\
+         t1={} (neqsim 600.5421)\nt100={} (neqsim 733.4597)\nrate1={} (neqsim 5.428858e-2)",
+        profile.components,
+        numbers.conversion,
+        numbers.outlet_temperature,
+        numbers.pressure_drop_bar,
+        numbers.residence_time,
+        profile.temperatures[1],
+        profile.temperatures[100],
+        profile.rates[1],
+    );
+
+    assert_eq!(
+        profile.components,
+        vec!["methane", "oxygen", "nitrogen", "CO2", "water"],
+        "the products are appended in the reaction's stoichiometry order"
+    );
+    assert_eq!(
+        profile.positions.len(),
+        101,
+        "one station per step, plus the inlet"
+    );
+
+    // **The rate at a station is the tightest check, and it is the one that says the inputs are
+    // right.** It reads the composition, the corrected molar density, the temperature and the
+    // Arrhenius constant at once, with no integration to accumulate anything: `5e-6` relative.
+    let rate = (profile.rates[1] - 5.428_858e-2).abs() / 5.428_858e-2;
+    assert!(
+        rate < 1e-4,
+        "the first station's rate is {} against the capture's 5.428858e-2, {rate} relative",
+        profile.rates[1]
+    );
+
+    // **The temperatures drift, and the drift is the heat capacity.** `dT/dz` divides by
+    // `Cp * ΣF`, and `eos`'s Cp is `6.85e-4` below the class's (the divergence
+    // `the_reactor_heat_capacity_is_the_eos_one_and_diverges_by_seven_per_ten_thousand` pins):
+    // the first station is right to `7e-7` and the outlet is `4.2e-4` out, which is that
+    // divergence integrated over a hundred steps and not an error in the march.
+    let first = (profile.temperatures[1] - 600.5421).abs() / 600.5421;
+    assert!(
+        first < 1e-5,
+        "the first station is {} K against the capture's 600.5421, {first} relative",
+        profile.temperatures[1]
+    );
+    let outlet = (numbers.outlet_temperature - 733.459_701_861_827_4).abs() / 733.459_701_861_827_4;
+    assert!(
+        outlet < 1e-3,
+        "outlet {} K against the capture's 733.4597018618274, {outlet} relative",
+        numbers.outlet_temperature
+    );
+
+    // The conversion inherits the temperature drift through the rate, so it is looser than the
+    // rate it comes from and tighter than the temperature it follows.
+    let conversion =
+        (numbers.conversion - 0.106_668_989_021_652_12).abs() / 0.106_668_989_021_652_12;
+    assert!(
+        conversion < 5e-3,
+        "conversion {} against the capture's 0.10666898902165212, {conversion} relative",
+        numbers.conversion
+    );
+
+    // **The residence time is the quirk, and it is the reason this test exists.**
+    // `calculateResidenceTime` runs before the class's final state update, so it reads the
+    // last *refreshed* state - a ninety-step temperature on a hundred-step march - and not the
+    // outlet's. Using the outlet gives `3.2132` s; the capture says `3.3649`.
+    let residence =
+        (numbers.residence_time - 3.364_932_946_581_431_5).abs() / 3.364_932_946_581_431_5;
+    assert!(
+        residence < 1e-3,
+        "residence {} s against the capture's 3.3649329465814315, {residence} relative - if this \
+         is near 4.5 per cent, the port is reading the outlet state where the class reads the \
+         last refresh",
+        numbers.residence_time
+    );
+
+    // And the pressure row is the empty tube's, the class's default with no bed set: `4.8e-4`.
+    let drop =
+        (numbers.pressure_drop_bar - 1.197_902_126_826_022_6e-5).abs() / 1.197_902_126_826_022_6e-5;
+    assert!(
+        drop < 5e-3,
+        "the drop is {} bar against the capture's 1.1979021268260226e-5, {drop} relative",
+        numbers.pressure_drop_bar
+    );
+}
 
 /// **The reactor's heat capacity exists, and it is `6.85e-4` below the class's.**
 ///

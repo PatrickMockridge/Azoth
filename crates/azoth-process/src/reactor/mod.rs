@@ -13,4 +13,10 @@
 //! callers of [`stepper::march`] get the same two schemes, the same fixed step
 //! `length / numberOfSteps`, and the same absence of step-size control.
 
+pub mod catalyst_bed;
+pub mod kinetic_reaction;
 pub mod stepper;
+
+pub use catalyst_bed::CatalystBed;
+pub use kinetic_reaction::{KineticReaction, RateBasis, RateType};
+pub use stepper::{Scheme, march};

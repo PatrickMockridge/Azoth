@@ -21,6 +21,7 @@ pub mod heater;
 pub mod manifold;
 pub mod mixer;
 pub mod pipe;
+pub mod plug_flow_reactor;
 pub mod pump;
 pub mod separator;
 pub mod shortcut_distillation_column;
