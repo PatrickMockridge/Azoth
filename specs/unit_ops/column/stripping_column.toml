@@ -1,0 +1,61 @@
+id = "unit_ops.stripping_column"
+name = "Stripping column"
+notes = "**`AbsorptionColumn` with the two feeds renamed, and that is the whole class.** `StrippingColumn extends AbsorptionColumn` and its 90 lines add nothing to the arithmetic: `addStrippingGasStream` is `addGasInStream`, `addRichLiquidStream` is `addSolventInStream`, and the two product getters are the base's. The class's own javadoc states the reason - absorption and stripping are the same counter-current equilibrium-stage equations, and the thermodynamic driving force sets the direction of component transfer - so the stripping gas enters stage 0 and the rich liquid the top stage, exactly where an absorber's gas and solvent enter. **Nothing calls it**: measured at the pin `f0c7436c69`, `StrippingColumn` is constructed at no place under `src/main`, and no class extends it. Its declaration is the base's, with the two inlets named for what they carry rather than for what the base calls them."
+[source]
+standard = "NeqSim process/equipment/absorber/StrippingColumn.java"
+[parameters.number_of_stages]
+unit = "dimensionless"
+description = "the actual trays; a tray is numbered 0 at the bottom, where the stripping gas enters, to `number_of_stages - 1`, where the rich liquid enters"
+[parameters.top_pressure]
+unit = "Pa"
+description = "the pressure at the top stage, inherited from `DistillationColumn.setTopPressure`, which takes bara"
+[parameters.bottom_pressure]
+unit = "Pa"
+description = "the pressure at the bottom stage, inherited from `DistillationColumn.setBottomPressure`, which takes bara"
+[parameters.murphree_efficiency]
+unit = "dimensionless"
+description = "the column-wide Murphree tray efficiency, where 1 is the ideal stage"
+[parameters.component_murphree_efficiency]
+unit = "dimensionless"
+description = "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone"
+[parameters.max_allowable_gas_load_factor]
+unit = "dimensionless"
+description = "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15"
+[parameters.solver_type]
+description = "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares"
+[[ports]]
+name = "stripping_gas"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "rich_liquid"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "overhead_gas"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "lean_liquid"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

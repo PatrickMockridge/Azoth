@@ -1,17 +1,51 @@
 id = "unit_ops.distillation_column"
 name = "Distillation column"
-notes = "**Parked, and the parking is an order rather than a measurement.** No kernel is written for this entry in the P11 tranche: it is the one palette entry that is a *solver* rather than a composition of kernels this library already has. Measured at the pin `f0c7436c69`, `process/equipment/distillation/` is 46 files and 40,058 lines against the 15,633 of the class this entry names, of which `NaphtaliSandholmSolver` is 5,153, `RateBasedPackedColumn` 4,081, `ColumnSolverFactory` 1,085, `DistillationColumnMatrixSolver` 942 and `SimpleTray` 866. `ColumnSolverFactory` selects `AUTO` as a **ladder** - `NAPHTALI_SANDHOLM`, then `MATRIX_INSIDE_OUT`, `INSIDE_OUT`, `DAMPED_SUBSTITUTION` - so even the default is not one method. A port would also have to **add to this declaration first**: a feed stage and a product specification, which a rigorous column takes and this entry does not declare. W13a-d of the P11 plan is the work, and those four classes are what would close it."
+notes = "**Unparked, and its closure is a package rather than a class.** Measured at the pin `f0c7436c69`, `process/equipment/distillation/` is 46 files and 40,058 lines against the 15,633 of the class this entry names, of which `NaphtaliSandholmSolver` is 5,153, `RateBasedPackedColumn` 4,081, `ColumnSolverFactory` 1,085, `DistillationColumnMatrixSolver` 942 and `SimpleTray` 866. **`DistillationColumn` is constructed at seven places under `src/main`** - `EquipmentFactory:463`, `JsonProcessBuilder:1245`, `DexpiEquipmentFactory:351`, `DPCUModule:145`, `FlowsheetSynthesisEngine:365`, `SarirAtmosphericFractionationCase:133`, `DoeBigHillVacuumFractionationCase:79` - and every other class the rigorous family needs is constructed at none of them. `ColumnSolverFactory` selects `AUTO` as a **ladder** - `NAPHTALI_SANDHOLM`, then `MATRIX_INSIDE_OUT`, `INSIDE_OUT`, `DAMPED_SUBSTITUTION` - so the default is not one method. **`reflux_ratio` is withdrawn**: `setCondenserRefluxRatio` builds a `REFLUX_RATIO` top specification and sets it on the condenser, so a standalone parameter would be a second spelling of one degree of freedom. **The pressures are bara on the class's two setters** and are declared here in Pa. **A specification's target unit follows its type** - dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty, which is `ColumnSpecification.defaultTargetUnit`'s own convention - so that parameter carries no unit. **Side draws, pumparounds, reactive trays, the per-stage efficiency vector, tray hydraulics and mechanical design are not ported**, and `SimpleTray.setLiquidSideDrawFraction`, `ReactiveTray`, `DistillationColumn.setMurphreeEfficiency(int, double)`, `TrayHydraulicsCalculator` and `DistillationColumnMechanicalDesign` are the classes that would close them."
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
-[parameters.reflux_ratio]
-unit = "dimensionless"
-description = "the reflux ratio"
 [parameters.number_of_stages]
 unit = "dimensionless"
-description = "the number of theoretical stages"
+description = "the theoretical trays between the ends, which is the constructor's `numberOfTraysLocal`; a reboiler or a condenser adds one stage each on top of it"
+[parameters.feed_stage]
+unit = "dimensionless"
+description = "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one and the last stage is the condenser; `addFeedStream` refuses an index outside `[0, number_of_stages + has_reboiler + has_condenser)`"
+[parameters.murphree_efficiency]
+unit = "dimensionless"
+description = "the Murphree tray efficiency applied to every equilibrium stage, where 1 is the ideal stage; the class defaults it to 1.0"
+[parameters.has_reboiler]
+description = "whether the column has a reboiler at stage 0, which is the constructor's `hasReboiler`"
+[parameters.has_condenser]
+description = "whether the column has a condenser at the top stage, which is the constructor's `hasCondenser`"
+[parameters.top_pressure]
+unit = "Pa"
+description = "the pressure at the top stage; `setTopPressure` takes bara, and the solver refuses a column that has neither this nor a feed to initialize from"
+[parameters.bottom_pressure]
+unit = "Pa"
+description = "the pressure at the bottom stage; `setBottomPressure` takes bara, and the two fix the profile the stage pressures interpolate"
+[parameters.reboiler_temperature]
+unit = "K"
+description = "the reboiler's temperature, which with the bottom specification is what pins the bottom of the column; the class defaults it to 273.15 K"
+[parameters.condenser_temperature]
+unit = "K"
+description = "the condenser's temperature, which with the top specification is what pins the top of the column; the class defaults it to 270.15 K"
+[parameters.top_specification_type]
+description = "which of `ColumnSpecification`'s five types constrains the top product - product_purity, reflux_ratio, component_recovery, product_flow_rate or duty - and product_purity and component_recovery also need `top_specification_component`"
+[parameters.top_specification_target]
+description = "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty"
+[parameters.top_specification_component]
+description = "the component a purity or a recovery constrains; unread by the other three types"
+[parameters.bottom_specification_type]
+description = "which of `ColumnSpecification`'s five types constrains the bottom product, which is the same five as the top specification's and its own degree of freedom"
+[parameters.bottom_specification_target]
+description = "the target value, in the unit its type implies, as the top specification's is"
+[parameters.bottom_specification_component]
+description = "the component a purity or a recovery constrains; unread by the other three types"
+[parameters.solver_type]
+description = "which of the class's ten solving strategies runs - direct_substitution, damped_substitution, inside_out, matrix_inside_out, wegstein, sum_rates, newton, naphtali_sandholm, mesh_residual or auto - where auto is a ladder and not one method"
 [[ports]]
 name = "feed"
 direction = "in"
+multiplicity = "many"
 [ports.fields]
 n = { dimension = "molar_flow" }
 z = { dimension = "dimensionless", shape = "vector" }

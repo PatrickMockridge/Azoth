@@ -30,7 +30,9 @@ pub struct Source {
 #[serde(deny_unknown_fields)]
 pub struct Param {
     /// The parameter's canonical unit, for a quantity parameter; omitted for an
-    /// enum or boolean. Drawn from the same vocabulary as a calc input's unit.
+    /// enum, a boolean, a name, or a quantity whose unit is carried by another
+    /// parameter — the distillation column's specification target, whose unit
+    /// follows its type. Drawn from the same vocabulary as a calc input's unit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
     pub description: String,

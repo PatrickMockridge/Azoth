@@ -1,0 +1,51 @@
+id = "unit_ops.shortcut_distillation_column"
+name = "Shortcut distillation column"
+notes = "**Nothing calls it.** Measured at the pin `f0c7436c69`, `ShortcutDistillationColumn` is constructed at exactly one place under `src/main`, and that place is `DistillationColumn.java:5507` inside `initializeFromShortcut` - a helper of the class it initializes rather than a caller of its own. **It is not a `DistillationColumn`.** It extends `ProcessEquipmentBaseClass`, so it is a standalone closed-form calculation with no condenser, no reboiler, no feed stage, no pressure profile and no specification slots; what it has is the one feed its constructor takes. **`setNumberOfTrays` is inert**: the class's own override logs `calculates stages; setNumberOfTrays ignored` and returns, so the two recoveries and the reflux multiplier are what fix the stage count, not a tray count. The method computes Fenske's minimum stages, Underwood's minimum reflux, Gilliland's actual stages at `reflux_ratio_multiplier` times the minimum, Kirkbride's feed tray and both duties from the column's material and energy balance, flashing the feed for K-values and falling back to Wilson when the feed is single-phase. **Its stage count, feed tray, duties and relative volatility are outputs and are declared nowhere here**; tray hydraulics and `getResultsJson` are not ported."
+[source]
+standard = "NeqSim process/equipment/distillation/ShortcutDistillationColumn.java"
+[parameters.light_key]
+description = "the light key component's name, which the class refuses to run without"
+[parameters.heavy_key]
+description = "the heavy key component's name, which the class refuses to run without"
+[parameters.light_key_recovery_distillate]
+unit = "dimensionless"
+description = "the fraction of the light key's feed that leaves in the distillate; the class defaults it to 0.99"
+[parameters.heavy_key_recovery_bottoms]
+unit = "dimensionless"
+description = "the fraction of the heavy key's feed that leaves in the bottoms; the class defaults it to 0.99"
+[parameters.reflux_ratio_multiplier]
+unit = "dimensionless"
+description = "the actual reflux ratio as a multiple of Underwood's minimum, which is what Gilliland is entered with; the class defaults it to 1.2"
+[parameters.condenser_pressure]
+unit = "Pa"
+description = "the condenser pressure, which the two product streams flash at; `setCondenserPressure` takes bara, and a negative value means the feed's pressure"
+[parameters.reboiler_pressure]
+unit = "Pa"
+description = "the reboiler pressure; `setReboilerPressure` takes bara, and a negative value means the feed's pressure"
+[[ports]]
+name = "feed"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "distillate"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "bottoms"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

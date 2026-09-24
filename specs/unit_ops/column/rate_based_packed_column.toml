@@ -1,0 +1,68 @@
+id = "unit_ops.rate_based_packed_column"
+name = "Rate-based packed column"
+notes = "**A second physics, not a packed `DistillationColumn`.** `RateBasedPackedColumn` extends `ProcessEquipmentBaseClass`, not the column, and its 4,081 lines are a segment model: `number_of_segments` axial slices through the packing, each with gas and liquid film mass-transfer coefficients, an interface equilibrium, and an interphase heat balance, coupled counter-currently by a profile solver. There is no stage, no condenser, no reboiler and no MESH residual; the four streams are the whole interface, and the four enums below are the choices that change the answer. **Nothing calls it**: measured at the pin `f0c7436c69`, `RateBasedPackedColumn` is constructed at no place under `src/main`. **Its fallbacks are physics the class substitutes for absence**: a gas diffusivity of `1.5e-5` m2/s, a liquid diffusivity of `1.5e-9`, a surface tension of `0.025` N/m, thermal conductivities of `0.030` and `0.60` W/(m K) and heat capacities of 2200 and 4200 J/(kg K) stand in where a physical-property model is unavailable, so a port has to say which states take them. The packing hydraulics, the film-coefficient correlations' `PackingSpecification` data, the segment result objects and the equation-oriented solver's homotopy controls are not ported here; `PackingHydraulicsCalculator`, `PackingSpecificationLibrary` and the class's own `ColumnSolver.EQUATION_ORIENTED` path are what would close them."
+[source]
+standard = "NeqSim process/equipment/distillation/RateBasedPackedColumn.java"
+[parameters.column_diameter]
+unit = "m"
+description = "the column's internal diameter, which the hydraulics and the interfacial area are computed on; the class defaults it to 1.0"
+[parameters.packed_height]
+unit = "m"
+description = "the packed section's height, which is divided into `number_of_segments` slices; the class defaults it to 5.0"
+[parameters.number_of_segments]
+unit = "dimensionless"
+description = "the axial slices the packed height is divided into, which is the model's resolution and the size of its profile; the class defaults it to 10"
+[parameters.packing_type]
+description = "the packing's name, which `PackingSpecificationLibrary` resolves into the wetted area and film coefficients"
+[parameters.max_iterations]
+unit = "dimensionless"
+description = "the counter-current profile iteration cap, which the class defaults to 30"
+[parameters.convergence_tolerance]
+unit = "mol/s"
+description = "the outlet convergence tolerance the profile iterates to, which the class defaults to 1.0e-8"
+[parameters.mass_transfer_correlation]
+description = "onda_1968 or billet_schultes_1999, which is the wetted-area and film-coefficient correlation; the class defaults to onda_1968"
+[parameters.film_model]
+description = "overall_two_resistance, a scalar gas and liquid film pair, or maxwell_stefan_matrix, which corrects it with NeqSim's binary diffusivities and the phase composition; the class defaults to the matrix"
+[parameters.heat_transfer_model]
+description = "none, which re-equilibrates the segment outlets after material transfer alone, or chilton_colburn_analogy, which takes the heat coefficients from the packed-bed film coefficients; the class defaults to the analogy"
+[parameters.segment_solver]
+description = "sequential_explicit, which applies mass transfer then heat transfer then re-flashes, or simultaneous_residual, which solves the flux residuals and the interfacial heat balance together; the class defaults to the first"
+[parameters.column_solver]
+description = "fixed_point_profile, the counter-current liquid profile iteration, or equation_oriented, a column-wide damped Newton with homotopy continuation; the class defaults to the first"
+[[ports]]
+name = "gas_in"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "liquid_in"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "gas_out"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "liquid_out"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }

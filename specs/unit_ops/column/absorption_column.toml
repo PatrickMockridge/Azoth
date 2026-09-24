@@ -1,0 +1,61 @@
+id = "unit_ops.absorption_column"
+name = "Absorption column"
+notes = "**Not the refused family, and the distinction is the entry's first content.** This is the rigorous electrolyte-free tray absorber: `AbsorptionColumn extends DistillationColumn` and its constructor passes `false, false`, so it is the base's counter-current stage equations with no condenser and no reboiler. It is **not** `SimpleAbsorber`, and it is not `SimpleTEGAbsorber`, `SimpleAmineAbsorber` or `WaterStripperColumn`, which all extend that refused class and carry the MDEA/CO2 and TEG/water chemistry P8 declined. Porting this class closes nothing about that refusal and does not serve the dehydration use case. **The two feeds are at fixed stages and are not a `feed_stage`.** `addGasInStream` calls `addFeedStream(stream, 0)` and `addSolventInStream` calls `addFeedStream(stream, getNumberOfTrays() - 1)`, each refusing a second assignment of the same inlet, so the gas enters the bottom stage and the solvent the top one and the port arrangement is the degree of freedom rather than a parameter. **Nothing calls it**: measured at the pin `f0c7436c69`, `AbsorptionColumn` is constructed at no place under `src/main`. **`max_allowable_gas_load_factor` is a design limit and not an input to the solve** - `isGasLoadFactorWithinDesignLimit`, `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit` read it, and none of them is on the run path - so it is declared here with what reads it rather than as a parameter the separation honours. The per-stage and per-component Murphree efficiency overloads, the tray hydraulics and the mechanical design are not ported; `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)`, `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them."
+[source]
+standard = "NeqSim process/equipment/absorber/AbsorptionColumn.java"
+[parameters.number_of_stages]
+unit = "dimensionless"
+description = "the actual trays, which the constructor requires to be positive; a tray is numbered 0 at the bottom, where the gas enters, to `number_of_stages - 1`, where the solvent enters"
+[parameters.top_pressure]
+unit = "Pa"
+description = "the pressure at the top stage, inherited from `DistillationColumn.setTopPressure`, which takes bara"
+[parameters.bottom_pressure]
+unit = "Pa"
+description = "the pressure at the bottom stage, inherited from `DistillationColumn.setBottomPressure`, which takes bara"
+[parameters.murphree_efficiency]
+unit = "dimensionless"
+description = "the column-wide Murphree tray efficiency, where 1 is the ideal stage"
+[parameters.component_murphree_efficiency]
+unit = "dimensionless"
+description = "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone"
+[parameters.max_allowable_gas_load_factor]
+unit = "dimensionless"
+description = "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15"
+[parameters.solver_type]
+description = "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares"
+[[ports]]
+name = "gas_in"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "solvent_in"
+direction = "in"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "gas_out"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
+[[ports]]
+name = "liquid_out"
+direction = "out"
+[ports.fields]
+n = { dimension = "molar_flow" }
+z = { dimension = "dimensionless", shape = "vector" }
+P = { dimension = "pressure" }
+T = { dimension = "thermodynamic_temperature" }
+h = { dimension = "molar_energy" }
