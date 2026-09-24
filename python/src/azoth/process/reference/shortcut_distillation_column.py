@@ -374,13 +374,21 @@ def _states(
         feed_tray_number=feed_tray_number,
         condenser_duty=condenser_duty,
         reboiler_duty=reboiler_duty,
-        distillate_n=distillate["n"],
-        distillate_z=distillate["z"],
-        distillate_h=distillate["h"],
-        bottoms_n=bottoms["n"],
-        bottoms_z=bottoms["z"],
-        bottoms_h=bottoms["h"],
+        distillate_n=distillate.n,
+        distillate_z=distillate.z,
+        distillate_h=distillate.h,
+        bottoms_n=bottoms.n,
+        bottoms_z=bottoms.z,
+        bottoms_h=bottoms.h,
     )
+
+
+class _Product(NamedTuple):
+    """One product of the split: its molar flow, composition and enthalpy."""
+
+    n: float
+    z: tuple[float, ...]
+    h: float
 
 
 def _product(
@@ -390,7 +398,7 @@ def _product(
     stated: float | None,
     feed_p: float,
     feed_t: float,
-) -> dict[str, object]:
+) -> _Product:
     """One product: the feed's fluid at the split's composition and the stated pressure.
 
     The class sets the pressure only when the stated one is positive, so an unstated or
@@ -405,7 +413,7 @@ def _product(
     z = [m / total for m in moles]
     p = feed_p if stated is None or stated <= 0.0 else stated
     h, _ = enthalpy_at(mixture, ideal_gas, feed_t, p, z)  # type: ignore[arg-type]
-    return {"n": total, "z": tuple(z), "p": p, "h": h}
+    return _Product(n=total, z=tuple(z), h=h)
 
 
 def _bounded(split: float) -> float:

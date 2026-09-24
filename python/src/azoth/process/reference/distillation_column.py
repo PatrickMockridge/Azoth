@@ -196,10 +196,10 @@ def distillation_column(
     has_condenser: bool,
     top_pressure: Q,
     bottom_pressure: Q,
-    reboiler_temperature: Q | None = None,
-    condenser_temperature: Q | None = None,
     temperature_tolerance: float = 1.0e-6,
     max_iterations: int = 200,
+    reboiler_temperature: Q | None = None,
+    condenser_temperature: Q | None = None,
     murphree_efficiency: float | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
@@ -267,10 +267,10 @@ def distillation_column(
         ...     True,
         ...     q(19.0, "bar"),
         ...     q(20.0, "bar"),
-        ...     q(373.15, "K"),
-        ...     q(253.15, "K"),
         ...     1e-06,
         ...     200,
+        ...     q(373.15, "K"),
+        ...     q(253.15, "K"),
         ... )
         >>> round(r.distillate_n.to("mol/s").magnitude, 4)
         3.7915

@@ -75,6 +75,12 @@ description = "the pressure at the top stage.\n"
 [inputs.bottom_pressure]
 unit = "Pa"
 description = "the pressure at stage 0. The two fix the profile the tray pressures interpolate.\n"
+[inputs.temperature_tolerance]
+unit = "K"
+description = "the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named.\n"
 [inputs.reboiler_temperature]
 unit = "K"
 optional = true
@@ -83,12 +89,6 @@ description = "the reboiler's temperature, which pins the bottom tray's flash. *
 unit = "K"
 optional = true
 description = "the condenser's temperature, which pins the top tray's flash. Absent as the reboiler's is. **A pin wins over a directly-applied duty**: the tray tests its stated outlet temperature first and takes a `TPflash` there, so a heat input a duty specification wrote is never read.\n"
-[inputs.temperature_tolerance]
-unit = "K"
-description = "the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
-[inputs.max_iterations]
-unit = "dimensionless"
-description = "the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named.\n"
 [inputs.murphree_efficiency]
 unit = "dimensionless"
 optional = true

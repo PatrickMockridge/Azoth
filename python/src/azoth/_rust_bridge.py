@@ -3959,10 +3959,10 @@ def distillation_column(
     has_condenser: bool,
     top_pressure: Q,
     bottom_pressure: Q,
-    reboiler_temperature: Q | None = None,
-    condenser_temperature: Q | None = None,
     temperature_tolerance: float = 1.0e-6,
     max_iterations: int = 200,
+    reboiler_temperature: Q | None = None,
+    condenser_temperature: Q | None = None,
     murphree_efficiency: float | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
@@ -3992,16 +3992,17 @@ def distillation_column(
         has_condenser,
         input_to_si(spec, "top_pressure", top_pressure),
         input_to_si(spec, "bottom_pressure", bottom_pressure),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
+        int(_si(spec, "max_iterations", max_iterations)),
         # **Absent means no pin**, which is what `setReboilerTemperature` not having been
-        # called does - and what makes a duty specification reachable at all.
+        # called does - and what makes a duty specification reachable at all. **The optional
+        # inputs cross last**, in the order the model's own signature declares them.
         None
         if reboiler_temperature is None
         else input_to_si(spec, "reboiler_temperature", reboiler_temperature),
         None
         if condenser_temperature is None
         else input_to_si(spec, "condenser_temperature", condenser_temperature),
-        _si(spec, "temperature_tolerance", temperature_tolerance),
-        int(_si(spec, "max_iterations", max_iterations)),
         murphree_efficiency,
         solver_type,
         top_specification_type,
@@ -4014,8 +4015,8 @@ def distillation_column(
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
         tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
-        tray_gas_n=tuple(from_si(v, "mol/s") for v in result.tray_gas_n),
-        tray_liquid_n=tuple(from_si(v, "mol/s") for v in result.tray_liquid_n),
+        tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_liquid_n),
         distillate_n=from_si(result.distillate_n.magnitude_si, result.distillate_n.unit),
         distillate_z=tuple(result.distillate_z),
         distillate_p=from_si(result.distillate_p.magnitude_si, result.distillate_p.unit),

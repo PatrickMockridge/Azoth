@@ -9977,12 +9977,12 @@ pub struct PyDistillationColumnResult {
     /// Each tray's pressure.
     #[pyo3(get)]
     pub tray_pressure: Vec<PyQty>,
-    /// Each tray's vapour traffic, mol/s.
+    /// Each tray's vapour traffic.
     #[pyo3(get)]
-    pub tray_gas_n: Vec<f64>,
-    /// Each tray's liquid traffic, mol/s.
+    pub tray_gas_n: Vec<PyQty>,
+    /// Each tray's liquid traffic.
     #[pyo3(get)]
-    pub tray_liquid_n: Vec<f64>,
+    pub tray_liquid_n: Vec<PyQty>,
     /// Distillate molar flow, mol/s.
     #[pyo3(get)]
     pub distillate_n: PyQty,
@@ -10064,8 +10064,16 @@ impl From<&DistillationColumnResult> for PyDistillationColumnResult {
                 .iter()
                 .map(|p| quantity(p.value, "Pa"))
                 .collect(),
-            tray_gas_n: r.tray_gas_n.clone(),
-            tray_liquid_n: r.tray_liquid_n.clone(),
+            tray_gas_n: r
+                .tray_gas_n
+                .iter()
+                .map(|n| quantity(*n, "mol/s"))
+                .collect(),
+            tray_liquid_n: r
+                .tray_liquid_n
+                .iter()
+                .map(|n| quantity(*n, "mol/s"))
+                .collect(),
             distillate_n: quantity(r.distillate_n, "mol/s"),
             distillate_z: r.distillate_z.clone(),
             distillate_p: quantity(r.distillate_p.value, "Pa"),
