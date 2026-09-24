@@ -591,6 +591,12 @@ public class ProcessProbe {
     // bottom's - so this is the row that says a location is a degree of freedom rather than a
     // mirrored spelling of the top's. The condenser stays pinned at -20 C here.
     specificationRow("spec_bottom_purity_0_98_n_butane", "n-butane", 0.98, null, true);
+    // **The second solve on the same column**, so the column's own capture carries the state
+    // the port's mesh solve is held to beside the substitution core's - the two are the pair
+    // this tranche pins. The ladder capture holds the same row among the ten strategies.
+    solverRow("binary_methane_butane_mesh_solve", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6,
+        200, true, false, "NAPHTALI_SANDHOLM");
   }
 
   static void specificationRow(String label, String component, double target, Boolean recovery,

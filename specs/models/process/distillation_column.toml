@@ -28,7 +28,7 @@ assumptions = [
     "**the second solve linearises the whole column at once**: `N` tray blocks of `C + 2` variables, `C` component balances, the energy equation and `sum(K x) = 1`, with a finite-difference Jacobian and a block-tridiagonal solve.",
     "**its seed is the class's warm start**: the substitution core's converged trays, which `initializeTrayStateFromColumn` maps onto the MESH variables.",
     "**the class's cold seed is not ported**, and that is measured: without `runBostonSullivanRefinement` its first Newton step moves the variables by `1e11` times their own size.",
-    "**the mesh solve is Rust only**: the Python reference refuses `solver_type = naphtali_sandholm` by name, and no case states the strategy.",
+    "**both implementations carry it**: the Python reference is `_column_mesh.py`, and the case `binary_mesh_solve` pins the pair against the capture's own `naphtali_sandholm` row.",
     "**`AUTO` is a ladder and not one method** - the parking note's finding - so it is refused with them rather than silently resolved.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**NeqSim's own deethanizer state is written on SRK**, and on PR it does not converge in NeqSim at all - the capture keeps that as evidence.",

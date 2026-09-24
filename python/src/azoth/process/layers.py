@@ -467,6 +467,7 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
         int(inputs["max_iterations"]),
         _spec_of(inputs, "top"),
         _spec_of(inputs, "bottom"),
+        str(inputs["solver_type"]) if "solver_type" in inputs else None,
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -781,6 +782,17 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_column.tsv",
         block=10,
         identified_by=("#label", "spec_bottom_purity_0_98_n_butane"),
+    ),
+    # **The second solve's row**, on the column capture's own last block: the same binary
+    # column under `solver_type = "naphtali_sandholm"`, whose layer is the same profile read
+    # off a mesh solve's own state. The ladder capture holds the identical row among the ten
+    # strategies - a measurement, not an oracle, so it is not a case.
+    LayerCase(
+        model="process.distillation_column",
+        case="binary_mesh_solve",
+        capture="process_column.tsv",
+        block=11,
+        identified_by=("#label", "binary_methane_butane_mesh_solve"),
     ),
     # The column's converged rows. **Both are cases, and the second is there because a looser
     # gate is a different measurement** rather than a sloppier version of the first: where a

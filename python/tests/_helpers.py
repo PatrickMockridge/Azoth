@@ -145,6 +145,18 @@ _UNCOMPARED_FIELDS: frozenset[str] = frozenset(
         "total_iterations",
         "outer_iterations",
         "total_inner_iterations",
+        # **`distillation_column`'s three closure measures, which are where each solve stopped
+        # rather than what it converged to.** The first is a mean tray-temperature change under
+        # the substitution core and the scaled MESH norm under the mesh solve; the other two are
+        # the products' imbalances, and all three are numbers of order `1e-9` against a feed. On
+        # the mesh case's row the two implementations report `9.2816e-9` and `9.2872e-9` for the
+        # first and `8.385e-11` and `8.409e-11` for the second, so the relative agreement is the
+        # *seventh* digit of a quantity that is already a residual. The crate's own column tests
+        # assert all three per case against the capture, which is where the claim belongs; the
+        # case's tolerance is set by the profile and the duties, which agree to `2e-5`.
+        "temperature_residual",
+        "mass_residual",
+        "energy_residual",
         # `reactive_hybrid_eos_ge_flash`'s pass count, which is the clearest case of the rule
         # above: **the two kernels take three passes and four on the three-phase fluid**, and
         # the fourth moves the brine's bicarbonate `2e-7`. The loops stop on a composition

@@ -230,3 +230,42 @@ bottoms_t = 374.80351966552143
 bottoms_h = -6536.600986014013
 condenser_duty = -22004.102481235368
 reboiler_duty = 49560.82240422304
+
+[[cases]]
+id = "binary_mesh_solve"
+tolerance = 0.0002
+source = "The same binary column under **`solver_type = \"naphtali_sandholm\"`**, from `validation/neqsim/captures/process_column.tsv` - the same state the ladder capture holds as its `naphtali_sandholm` row, which NeqSim reaches in four iterations to `RIGOROUS_CONVERGED`. **The port takes five**, because its seed is the substitution core's answer rather than the class's cold BP/Boston-Sullivan profile, and it lands on the same state: every tray temperature within `1.6e-4` K, every traffic rate within `5e-6` relative, the distillate within `3e-13`, and the two duties within `0.4` and `1.1` W - which is the libraries' enthalpy offset, and what sets this case's tolerance.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+solver_type = "naphtali_sandholm"
+[cases.expected]
+tray_temperature = [373.15, 336.1538231834974, 303.07105352147533, 302.12253908101036, 296.84208915683996, 253.14999999999998]
+tray_pressure = [2000000.0, 1980000.0, 1960000.0, 1940000.0, 1920000.0, 1900000.0]
+tray_gas_n = [1.3732781432407117, 0.525903134833042, 4.576181492897451, 4.55803955854207, 4.451759778195404, 3.7914996439673083]
+tray_liquid_n = [3.6992043923236553, 5.072482535564368, 4.225107527156697, 0.7846818489301433, 0.7665399145747628, 0.6602601342280967]
+distillate_n = 3.7914996439673083
+distillate_z = [0.9659099052335057, 0.03409009476649429]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+distillate_h = -1258.4513198898358
+bottoms_n = 3.6992043923236553
+bottoms_z = [0.02246562977820057, 0.9775343702217995]
+bottoms_p = 2000000.0
+bottoms_t = 373.15
+bottoms_h = -6818.722955040299
+condenser_duty = -21323.042177706004
+reboiler_duty = 47786.58295288164

@@ -150,6 +150,10 @@ class _States(NamedTuple):
     tray_gas_n: tuple[float, ...]
     #: Each tray's liquid traffic, mol/s.
     tray_liquid_n: tuple[float, ...]
+    #: Each tray's vapour composition.
+    tray_gas_z: tuple[tuple[float, ...], ...]
+    #: Each tray's liquid composition.
+    tray_liquid_z: tuple[tuple[float, ...], ...]
     #: The distillate's molar flow.
     distillate_n: float
     #: The distillate's composition.
@@ -347,6 +351,7 @@ def distillation_column(
         iterations_cap,
         top_specification,
         bottom_specification,
+        solver_type,
     )
 
     return DistillationColumnResult(
@@ -392,6 +397,7 @@ def _states(
     max_iterations: int,
     top_specification: Specification | None = None,
     bottom_specification: Specification | None = None,
+    solver_type: str | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share."""
     tray_count = number_of_stages + int(has_reboiler) + int(has_condenser)
@@ -447,6 +453,48 @@ def _states(
         return None
 
     modes = [end_mode(i, specification_at(i)) for i in range(tray_count)]
+
+    if solver_type == "naphtali_sandholm":
+        # **The mesh solve, warmed from this one.** The class's own `initializeTrayStateFromColumn`
+        # maps a column's converged trays onto the MESH variables, and a port that owns both
+        # solves can always take that path - so the substitution core runs first and its answer
+        # is the seed.
+        if top_specification is not None or bottom_specification is not None:
+            raise InvalidInputError(
+                "solver_type",
+                "a product specification re-runs the whole column inside "
+                "`solveWithSpecificationTargets`, which is a second integration this port does "
+                "not carry: state the ends' temperatures instead",
+            )
+        from azoth.process.reference._column_mesh import mesh_states
+
+        return mesh_states(
+            components,
+            feed_n,
+            list(feed_z),
+            feed_t,
+            feed_p,
+            feed_stage,
+            list(pressures),
+            [pinned if (pinned := pin(i)) is not None else float("nan") for i in range(tray_count)],
+            seed=_states(
+                components,
+                feed_n,
+                feed_z,
+                feed_t,
+                feed_p,
+                number_of_stages,
+                feed_stage,
+                has_reboiler,
+                has_condenser,
+                top_pressure,
+                bottom_pressure,
+                reboiler_temperature,
+                condenser_temperature,
+                temperature_tolerance,
+                max_iterations,
+            ),
+        )
 
     def end_temperature(i: int) -> float | None:
         """The temperature the tray's own mode states, where it states a finite one.
@@ -740,6 +788,13 @@ def _states(
         tray_liquid_n=tuple(
             stream["n"] if (stream := liquid[i]) is not None else 0.0 for i in range(tray_count)
         ),
+        tray_gas_z=tuple(
+            tuple(stream["z"]) if (stream := gas[i]) is not None else () for i in range(tray_count)
+        ),
+        tray_liquid_z=tuple(
+            tuple(stream["z"]) if (stream := liquid[i]) is not None else ()
+            for i in range(tray_count)
+        ),
         distillate_n=distillate["n"],
         distillate_z=tuple(distillate["z"]),
         distillate_h=distillate["h"],
@@ -798,14 +853,28 @@ def _refuse_unported(murphree_efficiency: float | None, solver_type: str | None)
             f"applies after each run are the classes that would close it. Omitted means the "
             f"ideal stage, which is the class's own default of one",
         )
-    if solver_type is not None and solver_type != "direct_substitution":
-        raise InvalidInputError(
-            "solver_type",
-            f"solver_type = {solver_type} is not ported. Only `direct_substitution` is, which "
-            f"is the class's own default; `naphtali_sandholm` is `NaphtaliSandholmSolver` and "
-            f"the rest are `ColumnSolverFactory`'s inside-out family, where `auto` is a ladder "
-            f"rather than one method",
-        )
+    if solver_type is None or solver_type in ("direct_substitution", "naphtali_sandholm"):
+        return
+    unported = {
+        "damped_substitution": "DampedSubstitutionSolver",
+        "inside_out": "InsideOutSolver",
+        "matrix_inside_out": "MatrixInsideOutSolver",
+        "wegstein": "WegsteinSolver",
+        "sum_rates": "SumRatesSolver",
+        "newton": "TemperatureNewtonSolver",
+        "mesh_residual": "MeshResidualSolver",
+        "auto": "AutoSolver",
+    }
+    raise InvalidInputError(
+        "solver_type",
+        f"solver_type = {solver_type} is not ported: `ColumnSolverFactory."
+        f"{unported.get(solver_type, 'AutoSolver')}` is the class that would close it. **The "
+        f"capture measures why it is refused rather than ported**: "
+        f"`validation/neqsim/captures/process_column_solvers.tsv` puts every one of the ten "
+        f"strategies within `2.5e-6` K of every other on the binary column's tray 1 and within "
+        f"`1.1e-7` relative on its distillate, so they are path variants rather than different "
+        f"physics",
+    )
 
 
 def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
