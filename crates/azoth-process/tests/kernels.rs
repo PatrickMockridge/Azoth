@@ -1258,10 +1258,7 @@ fn a_stirred_tank_reactor_reacts_and_flashes() {
     .expect("the reaction data carries methanecombustion");
     println!(
         "adiabatic t={} h={} z={:?} duty={}",
-        adiabatic.t.value,
-        adiabatic.h.value,
-        adiabatic.z,
-        duty.value
+        adiabatic.t.value, adiabatic.h.value, adiabatic.z, duty.value
     );
     println!("neqsim adiabatic t=498.5366986205672 h=6861.2392872763785 duty=0.0");
 
@@ -1276,7 +1273,12 @@ fn a_stirred_tank_reactor_reacts_and_flashes() {
     // Adiabatic: the flash carries the feed's enthalpy and the vessel supplies nothing.
     close(adiabatic.h.value, feed.h.value);
     close(duty.value, 0.0);
-    relative(adiabatic.t.value, 498.5366986205672, 1e-5, "the adiabatic outlet");
+    relative(
+        adiabatic.t.value,
+        498.5366986205672,
+        1e-5,
+        "the adiabatic outlet",
+    );
 
     // The isothermal branch holds its temperature and reports what that costs.
     let (held, duty) = azoth_process::kernels::stirred_tank_reactor::stirred_tank_reactor(
@@ -1286,18 +1288,25 @@ fn a_stirred_tank_reactor_reacts_and_flashes() {
     .expect("the same reaction");
     println!(
         "isothermal t={} h={} duty={}",
-        held.t.value,
-        held.h.value,
-        duty.value
+        held.t.value, held.h.value, duty.value
     );
     println!("neqsim isothermal t=800 h=16686.180909326755 duty=9824.941623206952");
     close(held.t.value, 800.0);
-    assert!(duty.value > 9000.0, "an 800 K vessel supplies 9824 W: {}", duty.value);
-    assert_eq!(held.z, adiabatic.z, "a held temperature changes the state, not the extent");
+    assert!(
+        duty.value > 9000.0,
+        "an 800 K vessel supplies 9824 W: {}",
+        duty.value
+    );
+    assert_eq!(
+        held.z, adiabatic.z,
+        "a held temperature changes the state, not the extent"
+    );
 
     // A stated reactor pressure *replaces* the feed's rather than dropping from it.
-    let (pressed, _) =
-        azoth_process::kernels::stirred_tank_reactor::stirred_tank_reactor(&feed, &setup(true, Some(800.0), Some(3.0)))
-            .expect("the same reaction");
+    let (pressed, _) = azoth_process::kernels::stirred_tank_reactor::stirred_tank_reactor(
+        &feed,
+        &setup(true, Some(800.0), Some(3.0)),
+    )
+    .expect("the same reaction");
     close(pressed.p.value, 3.0e5);
 }

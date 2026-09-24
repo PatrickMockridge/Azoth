@@ -1,6 +1,8 @@
 //! `unit_ops.stirred_tank_reactor` - a stoichiometric conversion, then a flash.
 
-use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, joules_per_mole, pascals, watts};
+use azoth_core::units::{
+    Power, Pressure, ThermodynamicTemperature, joules_per_mole, pascals, watts,
+};
 use azoth_core::{AzothError, Result};
 use azoth_eos::{ph_flash, pt_flash};
 use azoth_reactions::databank::stoichiometry;

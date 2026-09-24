@@ -79,13 +79,7 @@ pub fn stirred_tank_reactor(
         &mut warnings,
     )?;
 
-    let feed = Stream::from_pt(
-        components.to_vec(),
-        feed_z.to_vec(),
-        feed_n,
-        feed_p,
-        feed_t,
-    )?;
+    let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let (product, heat_duty) = kernel(
         &feed,
         &ReactorSetup {
