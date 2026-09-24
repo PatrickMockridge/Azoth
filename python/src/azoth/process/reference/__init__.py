@@ -18,6 +18,7 @@ from azoth.process.reference.expander import expander
 from azoth.process.reference.filter import filter
 from azoth.process.reference.heat_exchanger import heat_exchanger
 from azoth.process.reference.heater import heater
+from azoth.process.reference.manifold import manifold
 from azoth.process.reference.mixer import mixer
 from azoth.process.reference.pipe import pipe
 from azoth.process.reference.pump import pump
@@ -32,6 +33,7 @@ __all__ = [
     "filter",
     "heat_exchanger",
     "heater",
+    "manifold",
     "mixer",
     "pipe",
     "pump",

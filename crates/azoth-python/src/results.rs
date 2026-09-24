@@ -59,8 +59,8 @@ use azoth_eos::results::{
 };
 use azoth_process::{
     CompressorResult, CoolerResult, ExpanderResult, FilterResult, HeatExchangerResult,
-    HeaterResult, MixerResult, PumpResult, SeparatorResult, SplitterResult, ThrottlingValveResult,
-    pipe::PipeResult,
+    HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult, SplitterResult,
+    ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -1084,6 +1084,86 @@ impl From<&HeaterResult> for PyHeaterResult {
                 magnitude_si: r.outlet_duty.value,
                 unit: "W".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.manifold`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ManifoldResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyManifoldResult {
+    /// Molar flow out, mol/s, one entry per outlet.
+    #[pyo3(get)]
+    pub products_n: Vec<PyQty>,
+    /// Outlet compositions, one row per outlet.
+    #[pyo3(get)]
+    pub products_z: Vec<Vec<f64>>,
+    /// Outlet pressures.
+    #[pyo3(get)]
+    pub products_p: Vec<PyQty>,
+    /// Outlet temperatures.
+    #[pyo3(get)]
+    pub products_t: Vec<PyQty>,
+    /// Outlet molar enthalpies.
+    #[pyo3(get)]
+    pub products_h: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyManifoldResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ManifoldResult(products_n={} outlet(s))",
+            self.products_n.len()
+        )
+    }
+}
+
+impl From<&ManifoldResult> for PyManifoldResult {
+    fn from(r: &ManifoldResult) -> Self {
+        Self {
+            products_n: r
+                .products_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
+            products_z: r.products_z.clone(),
+            products_p: r
+                .products_p
+                .iter()
+                .map(|p| PyQty {
+                    magnitude_si: p.value,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            products_t: r
+                .products_t
+                .iter()
+                .map(|t| PyQty {
+                    magnitude_si: t.value,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            products_h: r
+                .products_h
+                .iter()
+                .map(|h| PyQty {
+                    magnitude_si: h.value,
+                    unit: "J/mol".to_string(),
+                })
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }
@@ -8422,6 +8502,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PipeResult::CALC_ID => PipeResult::FIELDS.to_vec(),
         HeatExchangerResult::CALC_ID => HeatExchangerResult::FIELDS.to_vec(),
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
+        ManifoldResult::CALC_ID => ManifoldResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),

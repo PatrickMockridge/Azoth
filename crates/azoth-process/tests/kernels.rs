@@ -436,3 +436,48 @@ fn a_water_line_takes_the_aqueous_viscosity() {
     assert_eq!(out.regime, FlowRegime::Laminar);
     assert!((out.outlet.p.value - 499992.6009196372).abs() / 5.0e5 < 1e-9);
 }
+
+/// The manifold's rows, printed so the case can be written from azoth's own numbers.
+#[test]
+fn a_manifold_joins_and_divides() {
+    let first = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into()],
+        vec![0.9, 0.1],
+        1.0,
+        pascals(30.0e5),
+        kelvins(320.0),
+    )
+    .expect("first feed");
+    let second = Stream::from_pt(
+        vec!["methane".into(), "n-butane".into()],
+        vec![0.3, 0.7],
+        2.0,
+        pascals(10.0e5),
+        kelvins(300.0),
+    )
+    .expect("second feed");
+
+    let outs =
+        azoth_process::kernels::manifold::manifold(&[first.clone(), second.clone()], &[0.25, 0.75])
+            .expect("manifold");
+    println!("outs {}", outs.len());
+    for (i, out) in outs.iter().enumerate() {
+        println!(
+            "out{i}: n={} p={} t={} h={} z={:?}",
+            out.n, out.p.value, out.t.value, out.h.value, out.z
+        );
+    }
+    println!("neqsim products0_n=0.75 products1_n=2.25 T=292.53258807480535 P=1000000 z=0.5/0.5");
+    println!("neqsim product_n=3.0 h=-6804.587611589724 (its branch h: -42407.18, -8650.65)");
+
+    // The zero-flow row: the first feed is stated at nothing, so the mixture is the second.
+    let mut empty = first.clone();
+    empty.n = 0.0;
+    let outs = azoth_process::kernels::manifold::manifold(&[empty, second.clone()], &[0.5, 0.5])
+        .expect("manifold");
+    println!(
+        "zero-flow row: out0 n={} t={} h={} z={:?}",
+        outs[0].n, outs[0].t.value, outs[0].h.value, outs[0].z
+    );
+    println!("neqsim: n=1.0, T=299.9999999999398, h=-10824.760384299883, z=0.3/0.7");
+}

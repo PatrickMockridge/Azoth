@@ -616,6 +616,28 @@ class HeatExchangerResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ManifoldResult(_HasWarnings):
+    """Result of ``process.manifold``.
+
+    Two ``many`` ports, which no other id in this namespace has: the outlets carry the same
+    five vectors a splitter's do, and the feeds arrive as :class:`MixerResult`'s do.
+    """
+
+    #: Molar flow out, one entry per outlet.
+    products_n: tuple[Q, ...]
+    #: Outlet compositions, one row per outlet.
+    products_z: tuple[tuple[float, ...], ...]
+    #: Outlet pressures.
+    products_p: tuple[Q, ...]
+    #: Outlet temperatures.
+    products_t: tuple[Q, ...]
+    #: Outlet molar enthalpies.
+    products_h: tuple[Q, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class MixerResult(_HasWarnings):
     """Result of ``process.mixer``.
 

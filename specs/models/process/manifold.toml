@@ -1,0 +1,90 @@
+id = "process.manifold"
+name = "Manifold"
+kind = "direct"
+assumptions = [
+    "**this is `process.mixer` and `process.splitter` composed.** `Manifold.run` is `localmixer.run()` then `localsplitter.run()` over the mixture, so every assumption those two carry holds here - including that NeqSim's branch enthalpies do not conserve energy and neither reproduces them.",
+    "**the feeds are one port, so every field has one entry per feed**, as `process.mixer`'s are: `feed_n`, `feed_z`, `feed_p` and `feed_t`, with the fluid's `components` declared once.",
+    "**a feed at or below the low-flow threshold is not mixed.** `Mixer.mixStream` skips an inlet whose `getFlowRate(\"kg/hr\") <= getMinimumFlow()`, and the threshold is `1e-20` kg/hr - which the palette declares no way to change. Measured: a zero-flow feed leaves the mixture as the other feed alone.",
+    "**the outlet count is the factor count.** `Manifold.getNumberOfOutputStreams` is `splitFactors.length`, which is why the palette entry's single `outlet` was corrected to a `many` one with this kernel - an entry that could not say how many outlets a manifold has could not describe the machine.",
+    "**the mixture is at the lowest feed pressure and carries the feeds' joined enthalpy**, both `process.mixer`'s rules: a manifold cannot raise its own pressure, and mixing adds no heat and no work.",
+    "**the split factors are normalised, so only their ratios mean anything**, as `process.splitter`'s are.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Manifold` also carries header and branch diameters, a wall thickness and a support arrangement, which are mechanical design rather than steady-state arithmetic, and no kernel here reads them.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/manifold/Manifold.java` is the port source, through its `run`.",
+    "`validation/neqsim/captures/process_manifold.tsv` - two feeds into two outlets, into three, and one at zero flow.",
+]
+[source]
+standard = "NeqSim process/equipment/manifold/Manifold.java"
+edition = "Its `run`: the low-flow filter, `localmixer.run()`, the splitter re-attached to the mixture, and `localsplitter.run()`."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name. Every feed carries this fluid, so it is declared once.\n"
+[inputs.feed_n]
+type = "vector"
+unit = "mol/s"
+length = "one per feed"
+description = "each feed's molar flow, whose sum is the mixture's. A feed at or below the low-flow threshold is not mixed.\n"
+[inputs.feed_z]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per feed, one column per component"
+description = "each feed's composition. The mixture's is these weighted by `feed_n`.\n"
+[inputs.feed_p]
+type = "vector"
+unit = "Pa"
+length = "one per feed"
+description = "each feed's pressure. The lowest is the mixture's: a manifold cannot raise its own pressure.\n"
+[inputs.feed_t]
+type = "vector"
+unit = "K"
+length = "one per feed"
+description = "each feed's temperature, which with its pressure and composition fixes its enthalpy.\n"
+[inputs.split_factors]
+type = "vector"
+unit = "dimensionless"
+length = "one per outlet"
+description = "the fraction of the mixture to each outlet, which is `unit_ops.manifold`'s own parameter and is normalised by its sum.\n"
+[outputs]
+[outputs.products_n]
+type = "vector"
+unit = "mol/s"
+length = "one per outlet"
+description = "each outlet's molar flow: the mixture's times its fraction.\n"
+[outputs.products_z]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per outlet, one column per component"
+description = "each outlet's composition, which is the mixture's: a split changes no state.\n"
+[outputs.products_p]
+type = "vector"
+unit = "Pa"
+length = "one per outlet"
+description = "each outlet's pressure, which is the mixture's.\n"
+[outputs.products_t]
+type = "vector"
+unit = "K"
+length = "one per outlet"
+description = "each outlet's temperature, which is the mixture's.\n"
+[outputs.products_h]
+type = "vector"
+unit = "J/mol"
+length = "one per outlet"
+description = "each outlet's molar enthalpy, which is the mixture's - and **not** the capture's, for the reason `process.splitter` gives.\n"
+[[valid_range]]
+quantity = "split_factors"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a negative fraction is not a split; the splitter kernel refuses one rather than clamping as NeqSim does"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[implementations]
+python = "azoth.process.manifold"
+rust = "azoth_process::manifold"

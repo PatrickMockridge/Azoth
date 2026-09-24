@@ -7,6 +7,7 @@
 //!   - specs/models/process/filter.toml
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
+//!   - specs/models/process/manifold.toml
 //!   - specs/models/process/mixer.toml
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/pump.toml
@@ -985,6 +986,138 @@ pub static HEATER_SPEC: ModelSpec = ModelSpec {
     cases: HEATER_CASES,
 };
 
+static MANIFOLD_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "split_factors",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a negative fraction is not a split; the splitter kernel refuses one rather than clamping as NeqSim does",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "feed_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+];
+
+static MANIFOLD_CASES: &[TestCase] = &[
+    TestCase {
+        id: "two_feeds_two_outlets",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[
+            ("feed_n", &[1.0, 2.0]),
+            ("feed_p", &[3000000.0, 1000000.0]),
+            ("feed_t", &[320.0, 300.0]),
+            ("split_factors", &[0.25, 0.75]),
+        ],
+        matrices: &[("feed_z", &[0.9, 0.1, 0.3, 0.7])],
+        expected: &[],
+        expected_vectors: &[
+            ("products_n", &[0.75, 2.25]),
+            ("products_p", &[1000000.0, 1000000.0]),
+            ("products_t", &[292.53239958887025, 292.53239958887025]),
+            ("products_h", &[-6804.671364046703, -6804.671364046703]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "two_feeds_three_outlets",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[
+            ("feed_n", &[1.0, 2.0]),
+            ("feed_p", &[3000000.0, 1000000.0]),
+            ("feed_t", &[320.0, 300.0]),
+            ("split_factors", &[0.2, 0.3, 0.5]),
+        ],
+        matrices: &[("feed_z", &[0.9, 0.1, 0.3, 0.7])],
+        expected: &[],
+        expected_vectors: &[
+            ("products_n", &[0.6, 0.9, 1.5]),
+            ("products_p", &[1000000.0, 1000000.0, 1000000.0]),
+            (
+                "products_t",
+                &[292.53239958887025, 292.53239958887025, 292.53239958887025],
+            ),
+            (
+                "products_h",
+                &[-6804.671364046703, -6804.671364046703, -6804.671364046703],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_zero_flow_feed_is_dropped",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[],
+        flags: &[],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[],
+        vectors: &[
+            ("feed_n", &[0.0, 2.0]),
+            ("feed_p", &[3000000.0, 1000000.0]),
+            ("feed_t", &[320.0, 300.0]),
+            ("split_factors", &[0.5, 0.5]),
+        ],
+        matrices: &[("feed_z", &[0.9, 0.1, 0.3, 0.7])],
+        expected: &[],
+        expected_vectors: &[
+            ("products_n", &[1.0, 1.0]),
+            ("products_p", &[1000000.0, 1000000.0]),
+            ("products_t", &[300.0, 300.0]),
+            ("products_h", &[-10824.824519313497, -10824.824519313497]),
+        ],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.manifold`.
+pub static MANIFOLD_SPEC: ModelSpec = ModelSpec {
+    id: "process.manifold",
+    kind: "direct",
+    algorithm: None,
+    checks: MANIFOLD_CHECKS,
+    cases: MANIFOLD_CASES,
+};
+
 static MIXER_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -1720,6 +1853,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &FILTER_SPEC,
     &HEAT_EXCHANGER_SPEC,
     &HEATER_SPEC,
+    &MANIFOLD_SPEC,
     &MIXER_SPEC,
     &PIPE_SPEC,
     &PUMP_SPEC,

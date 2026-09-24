@@ -19,6 +19,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.filter`](./filter.md) | `direct composition` | NeqSim process/equipment/filter/Filter.java |
 | [`process.heat_exchanger`](./heat_exchanger.md) | `direct composition` | NeqSim process/equipment/heatexchanger/HeatExchanger.java |
 | [`process.heater`](./heater.md) | `direct composition` | NeqSim process/equipment/heatexchanger/Heater.java |
+| [`process.manifold`](./manifold.md) | `direct composition` | NeqSim process/equipment/manifold/Manifold.java |
 | [`process.mixer`](./mixer.md) | `direct composition` | NeqSim process/equipment/mixer/Mixer.java |
 | [`process.pipe`](./pipe.md) | `direct composition` | NeqSim process/equipment/pipeline/AdiabaticPipe.java |
 | [`process.pump`](./pump.md) | `direct composition` | NeqSim process/equipment/pump/Pump.java |

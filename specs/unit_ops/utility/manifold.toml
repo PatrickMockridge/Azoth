@@ -1,7 +1,11 @@
 id = "unit_ops.manifold"
 name = "Manifold"
+notes = "**Its outlet is many, and the entry said one.** `Manifold.run` is a mixer and a splitter composed - `localmixer.run()`, then `localsplitter.run()` over the mixture - and its outlet count is `splitFactors.length`, so an entry with a single outlet could not describe the machine. It also declares no way to state the split; `split_factors` is that, and it is `unit_ops.splitter`'s own parameter."
 [source]
 standard = "NeqSim process/equipment/manifold/Manifold.java"
+[parameters.split_factors]
+unit = "dimensionless"
+description = "the fraction of the mixture to each outlet, one entry per outlet, summing to 1"
 [[ports]]
 name = "feed"
 direction = "in"
@@ -15,6 +19,7 @@ h = { dimension = "molar_energy" }
 [[ports]]
 name = "outlet"
 direction = "out"
+multiplicity = "many"
 [ports.fields]
 n = { dimension = "molar_flow" }
 z = { dimension = "dimensionless", shape = "vector" }

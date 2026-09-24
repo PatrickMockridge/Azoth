@@ -1,0 +1,52 @@
+model = "process.manifold"
+[[cases]]
+id = "two_feeds_two_outlets"
+tolerance = 0.0001
+source = "NeqSim master, `Manifold.run` with `setSplitFactors([0.25, 0.75])`, from `validation/neqsim/captures/process_manifold.tsv`. Two feeds of methane/n-butane at 320 K/30 bara/1 mol/s and 300 K/10 bara/2 mol/s - a mixture at neither feed's state, and the lowest feed's pressure, which are `process.mixer`'s own two rules. **This is `process.mixer` and `process.splitter` composed**: `Manifold.run` is `localmixer.run()` then `localsplitter.run()` over the mixture, and every measure below is one of those two models' own. Measured: the outlet flows, pressures and compositions exact, the temperature to `6.4e-7` and the enthalpy to `1.2e-5` - the libraries' ideal-gas offset travelling through the flash.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = [1.0, 2.0]
+feed_z = [[0.9, 0.1], [0.3, 0.7]]
+feed_p = [3000000.0, 1000000.0]
+feed_t = [320.0, 300.0]
+split_factors = [0.25, 0.75]
+[cases.expected]
+products_n = [0.75, 2.25]
+products_z = [[0.5, 0.5], [0.5, 0.5]]
+products_p = [1000000.0, 1000000.0]
+products_t = [292.53239958887025, 292.53239958887025]
+products_h = [-6804.671364046703, -6804.671364046703]
+[[cases]]
+id = "two_feeds_three_outlets"
+tolerance = 0.0001
+source = "The same feeds into three outlets, which is the row the palette correction rests on: `Manifold.getNumberOfOutputStreams` is `splitFactors.length`, so an entry declaring a single outlet could not describe this machine. The entry is corrected to a `many` outlet with a `split_factors` parameter in the commit that carries this kernel.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = [1.0, 2.0]
+feed_z = [[0.9, 0.1], [0.3, 0.7]]
+feed_p = [3000000.0, 1000000.0]
+feed_t = [320.0, 300.0]
+split_factors = [0.2, 0.3, 0.5]
+[cases.expected]
+products_n = [0.6, 0.9, 1.5]
+products_z = [[0.5, 0.5], [0.5, 0.5], [0.5, 0.5]]
+products_p = [1000000.0, 1000000.0, 1000000.0]
+products_t = [292.53239958887025, 292.53239958887025, 292.53239958887025]
+products_h = [-6804.671364046703, -6804.671364046703, -6804.671364046703]
+[[cases]]
+id = "a_zero_flow_feed_is_dropped"
+tolerance = 0.0001
+source = "A feed stated at **zero** flow, which the mixer does not join: `Mixer.mixStream` skips an inlet whose `getFlowRate(\\\"kg/hr\\\") <= getMinimumFlow()`, and the threshold's default is `1e-20` kg/hr. **The rule is inert for every flow a case can state** - `1e-20` kg/hr is `1e-24` mol/s - so what this row measures is its zero end, and the mixture comes back as the other feed alone: flow, temperature and composition all the second feed's. A flow of `1e-21` kg/s was tried first and read back as `0.0`, which is NeqSim's own underflow rather than its comparison.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = [0.0, 2.0]
+feed_z = [[0.9, 0.1], [0.3, 0.7]]
+feed_p = [3000000.0, 1000000.0]
+feed_t = [320.0, 300.0]
+split_factors = [0.5, 0.5]
+[cases.expected]
+products_n = [1.0, 1.0]
+products_z = [[0.3, 0.7], [0.3, 0.7]]
+products_p = [1000000.0, 1000000.0]
+products_t = [300.0, 300.0]
+products_h = [-10824.824519313497, -10824.824519313497]

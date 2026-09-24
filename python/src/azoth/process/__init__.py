@@ -22,6 +22,7 @@ from azoth.core.result import (
     FilterResult,
     HeaterResult,
     HeatExchangerResult,
+    ManifoldResult,
     MixerResult,
     PipeResult,
     PumpResult,
@@ -41,6 +42,7 @@ __all__ = [
     "heat_exchanger",
     "heater",
     "load_flowsheet",
+    "manifold",
     "mixer",
     "pipe",
     "pump",
@@ -50,6 +52,7 @@ __all__ = [
     "validate",
 ]
 
+_MANIFOLD = "process.manifold"
 _MIXER = "process.mixer"
 _PIPE = "process.pipe"
 _HEAT_EXCHANGER = "process.heat_exchanger"
@@ -396,6 +399,42 @@ def mixer(
         feed_p=feed_p,
         feed_t=feed_t,
         outlet_pressure=outlet_pressure,
+    )
+
+
+def manifold(
+    components: list[str],
+    feed_n: list[Q],
+    feed_z: list[list[float]],
+    feed_p: list[Q],
+    feed_t: list[Q],
+    split_factors: list[float],
+) -> ManifoldResult:
+    """Join a manifold's feeds and divide the mixture between its outlets.
+
+    ``Manifold.run`` is a mixer and a splitter composed - ``localmixer.run()``, then
+    ``localsplitter.run()`` over the mixture - so every rule :func:`mixer` and
+    :func:`splitter` state holds here. The one rule that is the manifold's own is the
+    low-flow filter: a feed whose mass flow is at or below ``1e-20`` kg/hr is not mixed, and
+    the palette declares no way to change that.
+
+    The outlet count is ``split_factors``' length, which is why ``unit_ops.manifold``'s
+    ``outlet`` is a ``many`` one: an entry with a single outlet could not describe the
+    machine.
+
+    Raises:
+        InvalidInputError: where the feeds' shapes disagree, a factor is negative, or no
+            feed is above the low-flow threshold.
+
+    See :func:`azoth.process.reference.manifold`.
+    """
+    return resolve(_MANIFOLD)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        split_factors=split_factors,
     )
 
 

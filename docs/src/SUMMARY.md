@@ -172,6 +172,7 @@
   - [Filter](./process/filter.md)
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)
+  - [Manifold](./process/manifold.md)
   - [Mixer](./process/mixer.md)
   - [Pipe](./process/pipe.md)
   - [Pump](./process/pump.md)

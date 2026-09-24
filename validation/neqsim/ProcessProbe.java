@@ -40,6 +40,7 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe cooler > captures/process_cooler.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe filter > captures/process_filter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe pipe > captures/process_pipe.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe manifold > captures/process_manifold.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
 
@@ -87,6 +88,9 @@ public class ProcessProbe {
         break;
       case "pipe":
         pipeRows();
+        break;
+      case "manifold":
+        manifoldRows();
         break;
       case "stream":
         stream();
@@ -353,6 +357,67 @@ public class ProcessProbe {
     System.out.println("phase_dynamic_viscosity_kg_per_msec="
         + f.getPhase(0).getPhysicalProperties().getViscosity());
     System.out.println("system_viscosity_kg_per_msec=" + f.getViscosity("kg/msec"));
+    System.out.println();
+  }
+
+  /// `Manifold`: a mixer and a splitter in one, with a minimum-flow rule between them.
+  ///
+  /// **Its `run` is four statements and the thirds and fourth are the composition**:
+  /// `propagateMinimumFlow()` pushes the manifold's threshold onto both, `localmixer.run()`
+  /// joins the feeds, `refreshLocalSplitter()` re-attaches the splitter's inlet to the
+  /// mixture, and `localsplitter.run()` divides it. Nothing else is the manifold's own.
+  ///
+  /// **The threshold's default is `1e-20`** - `ProcessEquipmentBaseClass.DEFAULT_MINIMUM_FLOW`
+  /// - so the rule is inert for any feed a case states, and a feed at or below it is dropped
+  /// by the mixer rather than joined. The palette declares no minimum-flow parameter, so the
+  /// rows below exercise the default only.
+  ///
+  /// **The palette entry declares one outlet for a class whose outlet count is
+  /// `splitFactors.length`**, so the entry is corrected with this kernel: `outlet` gains a
+  /// `many` multiplicity and the entry a `split_factors` parameter, as `unit_ops.splitter`
+  /// has. The rows carry two outlets and three, which is what makes the correction a
+  /// measurement.
+  static void manifoldRows() {
+    manifoldRow("two_feeds_two_outlets", new double[] { 0.25, 0.75 });
+    manifoldRow("two_feeds_three_outlets", new double[] { 0.2, 0.3, 0.5 });
+    manifoldRow("a_zero_flow_feed_is_dropped", new double[] { 0.5, 0.5 });
+  }
+
+  static void manifoldRow(String label, double[] factors) {
+    Stream first = feed(new String[] { "methane", "n-butane" }, new double[] { 0.9, 0.1 }, 320.0, 30.0,
+        1.0);
+    Stream second = feed(new String[] { "methane", "n-butane" }, new double[] { 0.3, 0.7 }, 300.0, 10.0,
+        2.0);
+
+    neqsim.process.equipment.manifold.Manifold manifold =
+        new neqsim.process.equipment.manifold.Manifold("mf1");
+    manifold.addStream(first);
+    manifold.addStream(second);
+    manifold.setSplitFactors(factors);
+    if (label.equals("a_zero_flow_feed_is_dropped")) {
+      // **A stated zero, not an underflow.** `Mixer.mixStream` skips an inlet whose
+      // `getFlowRate("kg/hr") <= getMinimumFlow()`, and the threshold's default is `1e-20`
+      // kg/hr - so the rule is inert for every flow a case can state, and what this row
+      // exercises is the *zero* end of it. A flow of `1e-21 kg/s` was tried first and read
+      // back as `0.0`, which is NeqSim's own underflow rather than its comparison.
+      first.setFlowRate(0.0, "kg/sec");
+      first.run();
+    }
+    manifold.run();
+
+    StringBuilder given = new StringBuilder("split_factors=");
+    for (int i = 0; i < factors.length; i++) {
+      given.append(factors[i]).append(i + 1 < factors.length ? " " : "");
+    }
+    System.out.println(label);
+    System.out.println(given);
+    print("feed0", first);
+    print("feed1", second);
+    print("product", manifold.getMixedStream());
+    for (int i = 0; i < factors.length; i++) {
+      print("products" + i, manifold.getSplitStream(i));
+    }
+    System.out.println("outlet_count=" + manifold.getNumberOfOutputStreams());
     System.out.println();
   }
 

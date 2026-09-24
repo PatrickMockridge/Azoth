@@ -171,6 +171,59 @@ def _pipe(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _manifold(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.manifold`'s layers, from the two routes it composes.
+
+    **The mixture's own rows and each branch's flow**, which is what the manifold adds to
+    its two children: `Manifold.run` is `localmixer.run()` then `localsplitter.run()` over
+    the mixture, and the capture prints the mixture beside the branches. The branch
+    *enthalpies* are deliberately not dumped: `process.splitter`'s own case declares them
+    as a divergence, and the manifold's branches carry the same one - stated once, in the
+    model that owns it, rather than twice.
+    """
+    from azoth.process.reference.manifold import DEFAULT_MINIMUM_FLOW_KG_PER_HOUR, _mass_flow
+    from azoth.process.reference.mixer import _route as mix_route
+    from azoth.process.reference.splitter import _route as split_route
+
+    components = [str(name) for name in inputs["components"]]
+    feed_n = [float(value) for value in inputs["feed_n"]]
+    feed_z = [[float(x) for x in row] for row in inputs["feed_z"]]
+    feed_p = [float(value) for value in inputs["feed_p"]]
+    feed_t = [float(value) for value in inputs["feed_t"]]
+    factors = [float(value) for value in inputs["split_factors"]]
+
+    keep = [
+        index
+        for index in range(len(feed_n))
+        if _mass_flow(components, feed_z[index], feed_n[index]) * 3600.0
+        > DEFAULT_MINIMUM_FLOW_KG_PER_HOUR
+    ]
+    mixture = mix_route(
+        components,
+        [feed_n[index] for index in keep],
+        [feed_z[index] for index in keep],
+        [feed_p[index] for index in keep],
+        [feed_t[index] for index in keep],
+        None,
+    )
+    branches = split_route(
+        components,
+        mixture.product_t.to("K").magnitude,
+        mixture.pressure,
+        list(mixture.z),
+        factors,
+    )
+
+    dump = {
+        "product_n": mixture.n_total,
+        "product_h": mixture.h_out,
+        "product_T": mixture.product_t.to("K").magnitude,
+    }
+    for index, fraction in enumerate(branches.fractions):
+        dump[f"products{index}_n"] = mixture.n_total * fraction
+    return dump
+
+
 def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.heat_exchanger`'s layers, from the reference's own factored arithmetic.
 
@@ -297,6 +350,7 @@ def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
 #: One model's layers, keyed by the model id a case names.
 DUMPERS: dict[str, Dumper] = {
     "process.expander": _expander,
+    "process.manifold": _manifold,
     "process.pipe": _pipe,
     "process.pump": _pump,
     "process.splitter": _splitter,
@@ -510,6 +564,30 @@ LAYER_CASES: tuple[LayerCase, ...] = (
     # *because the case records the divergence*, not because the model reproduces it: the
     # layers that moved there are the Reynolds number and the friction factor, and this is
     # where a reader sees by how much.
+    # The manifold's three rows: two outlets, three, and one feed at zero flow. It is the
+    # first id whose capture prints *both* of its composed models' rows - the mixture and
+    # the branches - so the dumper reports both and the comparison is the composition.
+    LayerCase(
+        model="process.manifold",
+        case="two_feeds_two_outlets",
+        capture="process_manifold.tsv",
+        block=0,
+        identified_by=("split_factors", "0.25 0.75"),
+    ),
+    LayerCase(
+        model="process.manifold",
+        case="two_feeds_three_outlets",
+        capture="process_manifold.tsv",
+        block=1,
+        identified_by=("split_factors", "0.2 0.3 0.5"),
+    ),
+    LayerCase(
+        model="process.manifold",
+        case="a_zero_flow_feed_is_dropped",
+        capture="process_manifold.tsv",
+        block=2,
+        identified_by=("split_factors", "0.5 0.5"),
+    ),
     LayerCase(
         model="process.pipe",
         case="gas_methane_co2_1000m",

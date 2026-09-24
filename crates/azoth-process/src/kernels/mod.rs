@@ -12,6 +12,7 @@ pub mod expander;
 pub mod filter;
 pub mod heat_exchanger;
 pub mod heater;
+pub mod manifold;
 pub mod mixer;
 pub mod pipe;
 pub mod pump;

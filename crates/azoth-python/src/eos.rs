@@ -15,8 +15,9 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::results::{
-    PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
-    PyCapillaryDewPointResult, PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
+    PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyAqueousViscosityResult,
+    PyArgonSolidPhaseResult, PyBwrsPhaseResult, PyCapillaryDewPointResult,
+    PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
     PyCo2WaterDiffusivityResult, PyCostaldMolarVolumeResult, PyCriticalPointResult,
     PyDesmukhMatherPhaseResult, PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult,
     PyGeUnifacPhaseResult, PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult,
@@ -45,7 +46,7 @@ use crate::results::{
     PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
     PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
     PyVanLaarAcidActivityCoefficientsResult, PyVdw1fMixBinaryResult, PyVhFlashResult,
-    PyAqueousViscosityResult, PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
+    PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
     PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
     PyWilsonActivityCoefficientsResult,
 };

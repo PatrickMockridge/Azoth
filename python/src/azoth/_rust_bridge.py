@@ -92,6 +92,7 @@ from azoth.core.result import (
     KineticRateLawResult,
     KineticsResult,
     LiquidHeatCapacityResult,
+    ManifoldResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
     MatcopAlphaResult,
@@ -4137,6 +4138,38 @@ def pipe(
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         pressure_drop=from_si(result.pressure_drop.magnitude_si, result.pressure_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def manifold(
+    components: Sequence[str],
+    feed_n: Sequence[Q],
+    feed_z: Sequence[Sequence[float]],
+    feed_p: Sequence[Q],
+    feed_t: Sequence[Q],
+    split_factors: Sequence[float],
+) -> ManifoldResult:
+    """`process.manifold`, computed in Rust.
+
+    The feeds cross as vectors and a matrix, as `process.mixer`'s do, and the factors as a
+    vector, as `process.splitter`'s do - because the manifold is those two composed.
+    """
+    spec = _models_gen.model("process.manifold")
+    result = _core.manifold(
+        list(components),
+        [input_to_si(spec, "feed_n", v) for v in feed_n],
+        [[_si(spec, "feed_z", x) for x in row] for row in feed_z],
+        [input_to_si(spec, "feed_p", v) for v in feed_p],
+        [input_to_si(spec, "feed_t", v) for v in feed_t],
+        [float(f) for f in split_factors],
+    )
+    return ManifoldResult(
+        products_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_n),
+        products_z=tuple(tuple(row) for row in result.products_z),
+        products_p=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_p),
+        products_t=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_t),
+        products_h=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_h),
         warnings=_warnings(result.warnings),
     )
 

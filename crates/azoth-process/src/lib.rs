@@ -29,9 +29,9 @@ pub use load::{load_palette, parse_flowsheet};
 // cross-impl test and a NeqSim capture can address it.
 pub use models::{
     CompressorResult, CoolerResult, ExpanderResult, FilterResult, HeatExchangerResult,
-    HeaterResult, MixerResult, PipeResult, PumpResult, SeparatorResult, SplitterResult,
-    ThrottlingValveResult, compressor, cooler, expander, filter, heat_exchanger, heater, mixer,
-    pipe, pump, separator, splitter, throttling_valve,
+    HeaterResult, ManifoldResult, MixerResult, PipeResult, PumpResult, SeparatorResult,
+    SplitterResult, ThrottlingValveResult, compressor, cooler, expander, filter, heat_exchanger,
+    heater, manifold, mixer, pipe, pump, separator, splitter, throttling_valve,
 };
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

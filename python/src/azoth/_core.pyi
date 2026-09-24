@@ -1416,6 +1416,15 @@ class HeaterResult:
     warnings: list[Warning]
 
 @final
+class ManifoldResult:
+    products_n: list[Qty]
+    products_z: list[list[float]]
+    products_p: list[Qty]
+    products_t: list[Qty]
+    products_h: list[Qty]
+    warnings: list[Warning]
+
+@final
 class MixerResult:
     product_n: Qty
     product_z: list[float]
@@ -2708,6 +2717,14 @@ def heater(
     duty: float | None = None,
     pressure_drop: float | None = None,
 ) -> HeaterResult: ...
+def manifold(
+    components: list[str],
+    feed_n: list[float],
+    feed_z: list[list[float]],
+    feed_p: list[float],
+    feed_t: list[float],
+    split_factors: list[float],
+) -> ManifoldResult: ...
 def mixer(
     components: list[str],
     feed_n: list[float],

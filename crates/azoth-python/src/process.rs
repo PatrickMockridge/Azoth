@@ -563,6 +563,38 @@ pub fn mixer(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.manifold` - the manifold's kernel as a registered id.
+///
+/// **`many` at both ends**: the feeds cross as `process.mixer`'s vectors do and the outlets
+/// as `process.splitter`'s do, because the manifold is those two composed.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
+#[allow(non_snake_case)] // the record's own field names
+pub fn manifold(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: Vec<f64>,
+    feed_z: Vec<Vec<f64>>,
+    feed_p: Vec<f64>,
+    feed_t: Vec<f64>,
+    split_factors: Vec<f64>,
+) -> PyResult<crate::results::PyManifoldResult> {
+    let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
+    let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
+        feed_t.into_iter().map(kelvins).collect();
+    azoth_process::manifold(
+        &components,
+        &feed_n,
+        &feed_z,
+        &pressures,
+        &temperatures,
+        &split_factors,
+    )
+    .map(|r| crate::results::PyManifoldResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.splitter` - the splitter's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
