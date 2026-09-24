@@ -57,6 +57,8 @@ fn binary(solver_type: SolverType) -> ColumnSetup {
         max_iterations: 200,
         top_specification: None,
         bottom_specification: None,
+        top_feed: None,
+        tray_temperatures: None,
         solver_type,
     }
 }
@@ -93,6 +95,8 @@ fn deethanizer(solver_type: SolverType) -> ColumnSetup {
         max_iterations: 80,
         top_specification: None,
         bottom_specification: None,
+        top_feed: None,
+        tray_temperatures: None,
         solver_type,
     }
 }

@@ -155,6 +155,20 @@ public class ProcessProbe {
   }
 
   /// A PR fluid on the classic mixing rule with NeqSim's own kij.
+  /// A feed stated as a **mass** flow, which is how the absorber's own tests state theirs.
+  static Stream feedMass(String name, String[] names, double[] z, double temperatureK,
+      double pressureBara, double kgPerHour) {
+    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream stream = new Stream(name, fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
   static Stream feed(String[] names, double[] z, double temperatureK, double pressureBara,
       double molPerSecond) {
     SystemInterface fluid = new SystemPrEos(temperatureK, pressureBara);
@@ -717,6 +731,116 @@ public class ProcessProbe {
       solverRow("deethanizer_naphtali_sandholm", deethanizer, deethanizerZ, 283.15, 25.0, 10000.0,
           8, 6, 0.0, 80.0, 24.0, 25.0, 1.0e-5, 200, true, false, "NAPHTALI_SANDHOLM");
     }
+  }
+
+
+  /// **The absorber and the stripper, which are one machine with two names.**
+  /// `AbsorptionColumn extends DistillationColumn` with `super(name, trays, false, false)`, so
+  /// there is no condenser and no reboiler, and its two inlets are fixed: the gas enters stage 0
+  /// and the solvent the top stage (`addGasInStream` is `addFeedStream(stream, 0)`,
+  /// `addSolventInStream` is `addFeedStream(stream, getNumberOfTrays() - 1)`). `StrippingColumn`
+  /// renames the same two inlets. Both rows here are the classes' own tests, re-cased on PR:
+  /// each pins **every tray** to one temperature, because an isothermal absorber is what those
+  /// tests solve, and each is printed on the class's own product getters.
+  static void absorberRows() {
+    String[] gas = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
+        "n-heptane" };
+    double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
+    double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    String[] strip = new String[] { "methane", "propane", "n-butane", "n-pentane", "n-heptane" };
+    double[] stripZ = new double[] { 0.9900, 0.0080, 0.0015, 0.0005, 0.0 };
+    double[] richZ = new double[] { 0.02, 0.08, 0.12, 0.15, 0.63 };
+
+    // **Three rows per machine, and the difference between them is the gate.**
+    // `AbsorptionColumnTest` and `StrippingColumnTest` both solve an isothermal column: they
+    // pin every stage to one temperature, which makes `solveSequential`'s own gate - the mean
+    // tray-temperature change - zero, so the solve stops after its first sweep. Those rows are
+    // evidence of that, and the two unpinned rows are the column.
+    absorberRow("lean_oil_absorber_pinned_1e2", gas, gasZ, 2000.0, 30.0, gas, pureHeptane, 600.0,
+        20.0, 5, 15.0, 298.15, 1.0e-2, "DIRECT_SUBSTITUTION");
+    absorberRow("lean_oil_absorber_unpinned_1e2", gas, gasZ, 2000.0, 30.0, gas, pureHeptane,
+        600.0, 20.0, 5, 15.0, 0.0, 1.0e-2, "DIRECT_SUBSTITUTION");
+    absorberRow("lean_oil_absorber", gas, gasZ, 2000.0, 30.0, gas, pureHeptane, 600.0, 20.0, 5,
+        15.0, 0.0, 1.0e-4, "DIRECT_SUBSTITUTION");
+    // The stripper's own case states `MESH_RESIDUAL`, which this port refuses, so the row
+    // keeps the class's own strategy beside the answer it produces.
+    absorberRow("hydrocarbon_stripper_pinned_1e2", strip, stripZ, 150.0, 70.0, strip, richZ,
+        900.0, 70.0, 5, 12.0, 343.15, 1.0e-2, "MESH_RESIDUAL");
+    absorberRow("hydrocarbon_stripper_unpinned_1e2", strip, stripZ, 150.0, 70.0, strip, richZ,
+        900.0, 70.0, 5, 12.0, 0.0, 1.0e-2, "DIRECT_SUBSTITUTION");
+    absorberRow("hydrocarbon_stripper", strip, stripZ, 150.0, 70.0, strip, richZ, 900.0, 70.0, 5,
+        12.0, 0.0, 1.0e-4, "DIRECT_SUBSTITUTION");
+  }
+
+  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
+      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
+      double solventC, int trays, double bara, double stageC, double tolerance, String solver) {
+    Stream gas = feedMass("gas", gasNames, gasZ, gasC + 273.15, bara, gasKgPerHour);
+    Stream solvent = feedMass("solvent", solventNames, solventZ, solventC + 273.15, bara,
+        solventKgPerHour);
+
+    // **The subclass for the stripper's row**, which is what the class's own test builds: it
+    // renames the two inlets and adds no arithmetic, and a row is held to the class it names.
+    boolean stripper = label.contains("stripper");
+    neqsim.process.equipment.absorber.AbsorptionColumn column = stripper
+        ? new neqsim.process.equipment.absorber.StrippingColumn(label, trays)
+        : new neqsim.process.equipment.absorber.AbsorptionColumn(label, trays);
+    if (stripper) {
+      ((neqsim.process.equipment.absorber.StrippingColumn) column).addStrippingGasStream(gas);
+      ((neqsim.process.equipment.absorber.StrippingColumn) column).addRichLiquidStream(solvent);
+    } else {
+      column.addGasInStream(gas);
+      column.addSolventInStream(solvent);
+    }
+    column.setTopPressure(bara);
+    column.setBottomPressure(bara);
+    // **A stage temperature of zero means no pin at all**, which is the experiment that says
+    // whether the class's isothermal rows are a converged counter-current state or the first
+    // sweep of one.
+    if (stageC > 0.0) {
+      for (int tray = 0; tray < column.getNumberOfTrays(); tray++) {
+        column.getTray(tray).setOutletTemperature(stageC + 273.15);
+      }
+    }
+    column.setTemperatureTolerance(tolerance);
+    column.setMassBalanceTolerance(5.0e-2);
+    column.setEnthalpyBalanceTolerance(5.0e-2);
+    column.setMaxNumberOfIterations(80, true);
+    column.setSolverType(
+        neqsim.process.equipment.distillation.DistillationColumn.SolverType.valueOf(solver));
+    // **Through a `ProcessSystem`, which is how the class's own tests drive it**: the two feeds
+    // are units in the flowsheet and the column runs after them, where a direct `column.run()`
+    // leaves the tray inlets in a state the tests never see.
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(gas);
+    process.add(solvent);
+    process.add(column);
+    process.run();
+
+    System.out.println(label);
+    System.out.println("trays=" + trays);
+    System.out.println("pressure_bara=" + bara);
+    System.out.println("stage_temperature_K=" + (stageC > 0.0 ? stageC + 273.15 : 0.0));
+    System.out.println("temperature_tolerance=" + tolerance);
+    System.out.println("solver_requested=" + solver);
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("solver=" + column.getLastSolverTypeUsed());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("mass_residual=" + column.getLastMassResidual());
+    System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    System.out.println("gas_in_mol_per_sec=" + gas.getFlowRate("mol/sec"));
+    System.out.println("solvent_in_mol_per_sec=" + solvent.getFlowRate("mol/sec"));
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("gas_out", column.getGasOutStream());
+    print("liquid_out", column.getLiquidOutStream());
+    System.out.println();
   }
 
   static void columnRow(String label, String[] names, double[] z, double feedTemperatureK,

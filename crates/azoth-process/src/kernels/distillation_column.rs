@@ -132,6 +132,18 @@ pub struct ColumnSetup {
     pub top_specification: Option<Specification>,
     /// The bottom product's specification, or `None`.
     pub bottom_specification: Option<Specification>,
+    /// **The second inlet, which enters the top stage.** `AbsorptionColumn.addSolventInStream`
+    /// is `addFeedStream(stream, getNumberOfTrays() - 1)` and `StrippingColumn.addRichLiquidStream`
+    /// is the same call: the gas and the stripping gas enter stage 0 through `feed`, and the
+    /// solvent and the rich liquid enter the top stage through this. The class refuses a second
+    /// assignment of either inlet, so two is the whole of the arrangement.
+    pub top_feed: Option<Stream>,
+    /// **One outlet-temperature pin per tray**, `NaN` where a tray has none - which is what
+    /// `SimpleTray.setOutletTemperature` states and what an absorber's own tests use: they pin
+    /// every stage to one temperature and solve an isothermal column. A finite entry here wins
+    /// over the two ends' own fields, which are the same mechanism reached by the setters the
+    /// base class carries.
+    pub tray_temperatures: Option<Vec<f64>>,
     /// Which solving strategy to run.
     pub solver_type: SolverType,
 }
@@ -258,8 +270,10 @@ struct Network {
     feed_stage: usize,
     /// The tray count, which the ends are part of.
     tray_count: usize,
-    /// The feed.
+    /// The feed, which enters `feed_stage`.
     feed: Stream,
+    /// The second inlet, which enters the top stage.
+    top_feed: Option<Stream>,
     /// How each end is run.
     modes: Vec<EndMode>,
 }
@@ -291,10 +305,25 @@ impl Network {
                 inlets.push(at(l));
             }
         }
-        if i == self.feed_stage {
-            inlets.push(self.feed.clone());
-        }
+        inlets.extend(self.feeds_at(i).into_iter().cloned());
         inlets
+    }
+
+    /// The feed a tray carries, if any: the main one at its stage, the second at the top.
+    ///
+    /// **The two are the class's two inlets**, and a tray can carry both only if the feed
+    /// stage *is* the top stage - which is a column whose feed and solvent arrive together.
+    fn feeds_at(&self, i: usize) -> Vec<&Stream> {
+        let mut feeds = Vec::new();
+        if i == self.feed_stage {
+            feeds.push(&self.feed);
+        }
+        if i + 1 == self.tray_count {
+            if let Some(top) = self.top_feed.as_ref() {
+                feeds.push(top);
+            }
+        }
+        feeds
     }
 
     /// Run one tray from its neighbours' current state.
@@ -469,8 +498,32 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             _ => EndMode::Temperature(pin.unwrap_or(f64::NAN)),
         }
     };
+    // **A per-tray pin is the tray's own stated outlet temperature**, and it is applied where
+    // it is finite: `SimpleTray.setOutletTemperature` is one mechanism, whether a caller
+    // reaches it tray by tray or through the ends' setters.
+    let tray_pin = |i: usize| -> Option<f64> {
+        setup
+            .tray_temperatures
+            .as_ref()
+            .and_then(|pins| pins.get(i).copied())
+            .filter(|temperature| temperature.is_finite())
+    };
+    if let Some(pins) = setup.tray_temperatures.as_ref() {
+        if pins.len() != tray_count {
+            return Err(AzothError::invalid_input(
+                "tray_temperatures",
+                format!(
+                    "a column of {tray_count} trays needs one pin each, and {} were stated",
+                    pins.len()
+                ),
+            ));
+        }
+    }
     let modes: Vec<EndMode> = (0..tray_count)
         .map(|i| {
+            if let Some(temperature) = tray_pin(i) {
+                return EndMode::Temperature(temperature);
+            }
             if i == 0 && setup.has_reboiler {
                 end_mode(
                     setup.bottom_specification.as_ref(),
@@ -494,6 +547,7 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         feed_stage: setup.feed_stage,
         tray_count,
         feed: setup.feed.clone(),
+        top_feed: setup.top_feed.clone(),
         modes,
     };
 
@@ -518,7 +572,10 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         0.0
     };
 
-    let feed_enthalpy = setup.feed.n * setup.feed.h.value;
+    let feeds: Vec<&Stream> = std::iter::once(&setup.feed)
+        .chain(setup.top_feed.iter())
+        .collect();
+    let feed_enthalpy: f64 = feeds.iter().map(|feed| feed.n * feed.h.value).sum();
     let products_enthalpy = distillate.n * distillate.h.value + bottoms.n * bottoms.h.value;
     let energy_residual = if feed_enthalpy.abs() > 0.0 {
         (feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy).abs()
@@ -529,8 +586,11 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
 
     // The component closure: the worst component's imbalance against the feed, relative.
     let mut mass_residual = 0.0_f64;
-    for (c, &zi) in setup.feed.z.iter().enumerate() {
-        let supplied = setup.feed.n * zi;
+    for (c, ci) in setup.feed.z.iter().enumerate() {
+        let supplied: f64 = feeds
+            .iter()
+            .map(|feed| feed.n * feed.z.get(c).copied().unwrap_or(*ci))
+            .sum();
         let delivered =
             distillate.n * fraction_of(&distillate, c) + bottoms.n * fraction_of(&bottoms, c);
         if supplied.abs() > 1.0e-12 {
@@ -681,9 +741,9 @@ fn seed_network(net: &mut Network, setup: &ColumnSetup) -> Result<Vec<f64>> {
             net.gas[i - 1].as_ref().expect("the tray below has run"),
             temperature,
         )];
-        if i == first_feed {
-            inlets.push(setup.feed.clone());
-        }
+        // **The external feeds are never re-stated**, which is what the class's own
+        // `refreshInternalExternalFeedSystems` restores - and a tray can carry two of them.
+        inlets.extend(net.feeds_at(i).into_iter().cloned());
         net.run_with(i, &inlets)?;
     }
     for (i, &temperature) in temperatures
@@ -701,9 +761,7 @@ fn seed_network(net: &mut Network, setup: &ColumnSetup) -> Result<Vec<f64>> {
             net.liquid[i + 1].as_ref().expect("the tray above has run"),
             temperature,
         ));
-        if i == first_feed {
-            inlets.push(setup.feed.clone());
-        }
+        inlets.extend(net.feeds_at(i).into_iter().cloned());
         net.run_with(i, &inlets)?;
     }
     if setup.has_reboiler {

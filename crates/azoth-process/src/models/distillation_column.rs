@@ -201,6 +201,8 @@ pub fn distillation_column(
         max_iterations,
         top_specification,
         bottom_specification,
+        top_feed: None,
+        tray_temperatures: None,
         solver_type: solver,
     })?;
 

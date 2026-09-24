@@ -39,6 +39,8 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         max_iterations: 200,
         top_specification: None,
         bottom_specification: None,
+        top_feed: None,
+        tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
     }
 }
@@ -268,6 +270,8 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         max_iterations: 80,
         top_specification: None,
         bottom_specification: None,
+        top_feed: None,
+        tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
     });
 
