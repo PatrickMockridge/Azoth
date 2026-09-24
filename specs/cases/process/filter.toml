@@ -1,0 +1,49 @@
+model = "process.filter"
+[[cases]]
+id = "pressure_drop_1_bar"
+tolerance = 0.0002
+source = "NeqSim master, `Filter.run` with `setDeltaP(1.0)` and the default `FIXED` pressure-drop model, from `validation/neqsim/captures/process_filter.tsv`. The fluid is methane/n-butane 0.9/0.1 at 320 K, 30 bara and 1 mol/s - the same fluid `process.heater`'s cases use, so the isothermal branch there and this entry's whole arithmetic are priced on one state. **The row that says what a filter is**: the outlet holds 320 K and its enthalpy rises to `1260.58` from the inlet's `1235.76`, which is `24.8` J/mol of pressure dependence - a throttling valve would hold the enthalpy and this does not. Measured against azoth: `outlet_t` and `outlet_p` exact, `outlet_h` out by the libraries' `9.2e-5` ideal-gas offset.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+pressure_drop = 100000.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 2900000.0
+outlet_t = 320.0
+outlet_h = 1260.5800684104881
+applied_drop = 100000.0
+[[cases]]
+id = "no_pressure_drop"
+tolerance = 0.0002
+source = "`setDeltaP(0.0)`: below the class's own `1e-10` bar threshold `run` sets no pressure and runs no flash, so the outlet is the cloned inlet. The case is the *state*, and the state is the inlet's to the last digit - `outlet_h` is `1235.7579663941092` on both ports because nothing was flashed, which is why this row's enthalpy is compared at the same `2e-4` as the others and yet agrees exactly.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+pressure_drop = 0.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 320.0
+outlet_h = 1235.7579663941092
+applied_drop = 0.0
+# **The capture's third row is not a case here, and the reason is measured.**
+#
+# `pressure_drop_35_bar_past_the_inlet` does what the class says: the drop is clamped to
+# `P_in - 1e-6 bar`, and the outlet lands a millionth of a bar above vacuum. NeqSim's cubic
+# walks into that state and comes back with `1968.3` J/mol; **azoth's refuses to converge** -
+# `1.9e-9` against its `1e-12`, at the 101st iteration - so there is no azoth number to
+# compare, and pinning NeqSim's would be pinning an extrapolation.
+#
+# So the row is declared uncased in `azoth.process.layers.UNCASED_ROWS` and kept in the
+# capture as the evidence for the assumption that says why. What the clamp itself does is held
+# by `crates/azoth-process/tests/kernels.rs`: the request is clamped, and the flash after it is
+# what refuses.

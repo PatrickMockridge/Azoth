@@ -1,0 +1,79 @@
+id = "process.filter"
+name = "Filter"
+kind = "direct"
+assumptions = [
+    "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist.",
+    "**it holds the temperature, which is what separates a filter from a throttling valve.** `run` sets the reduced pressure and runs a `TPflash`, so the outlet is at the feed's temperature and its enthalpy moves; a valve holds the enthalpy. Measured: `24.8` J/mol per bar.",
+    "**a drop larger than the inlet pressure is clamped rather than refused.** `run` applies `min(max(0, dP), max(0, P_in - 1e-6 bar))` and logs, so the outlet lands a millionth of a bar above vacuum; `applied_drop` reports it and the model warns when it differs from the request.",
+    "**and that clamped state is one no cubic can evaluate.** NeqSim extrapolates to `1968.3` J/mol there and azoth's does not converge (`1.9e-9` against `1e-12`), so the port reproduces the clamp and the flash after it refuses.",
+    "**a drop below the class's own `1e-10` bar threshold runs no flash at all** and the outlet is the cloned inlet. A `TPflash` at the same state *is* that state, so this has no second branch and the two agree exactly - which the capture's second row is.",
+    "**the particle-capture curve is not ported, and it is not on the outlet either.** `concentrationLoadingModelEnabled` is false by default, and with it off `updateParticleCapturePerformance` zeroes two fields and returns: nothing about a particle reaches the fluid.",
+    "**`Cv` is not an output.** `run` computes `sqrt(dP) / massFlow`, a number whose unit (`bar**0.5 * hr / kg`) this library has no dimension for; the standard flow coefficient is `hydraulics.control_valve_cv`'s. It is a function of two values the result already carries.",
+    "**the pressure-drop selector is not ported.** `FilterPressureDropModel`'s `FLOW_SCALED`, `TABULATED` and `ERGUN` replace the fixed drop with a curve, a table or a packed-bed correlation; the palette's `pressure_drop` is the `FIXED` branch, and the others need media geometry.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `Filter` also carries `runTransient` with solids loading, breakthrough, backwash and regeneration, and an element-integrity check. **None is ported.**",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/filter/Filter.java` is the port source, through its steady-state `run`.",
+    "`validation/neqsim/captures/process_filter.tsv` - three rows: an ordinary drop, none at all, and one larger than the inlet pressure.",
+]
+[source]
+standard = "NeqSim process/equipment/filter/Filter.java"
+edition = "Its steady-state `run`: the fixed pressure drop clamped to leave a positive outlet, and a `TPflash` at the feed's temperature."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. Every port of a unit operation carries the same fluid, so this is declared once.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow. A filter moves what it is given and adds no moles, so this is the outlet's too.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which the drop reduces.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which is also the outlet's: the flash is a `TPflash` at it.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+description = "the pressure loss across the filter, which is `unit_ops.filter`'s own parameter and the `FIXED` branch of the class's model selector. A drop past the inlet pressure is clamped rather than refused.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the inlet's: a filter moves no moles.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition, which is the inlet's: nothing about a particle reaches the fluid.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet pressure: `inlet_p - applied_drop`.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet temperature, which is the inlet's.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy, which is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so an isothermal drop moves it.\n"
+[outputs.applied_drop]
+unit = "Pa"
+description = "the drop actually applied: `pressure_drop` unless it exceeded what the inlet pressure allows, in which case the clamp's value. This is `Filter.getDeltaP()` after `run`, and it is an output because it can differ from the input.\n"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "pressure_drop"
+min = 0
+min_inclusive = true
+severity = "warning"
+rationale = "a negative drop would raise the pressure. `Filter.setDeltaP` clamps it to zero rather than refusing, so this is a warning and the kernel clamps - a refusal here would be inventing a bound the class does not have."
+[implementations]
+python = "azoth.process.filter"
+rust = "azoth_process::filter"

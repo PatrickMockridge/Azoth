@@ -346,6 +346,31 @@ class ChemicalEquilibriumResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FilterResult(_HasWarnings):
+    """Result of ``process.filter``.
+
+    A two-port record with the drop beside it, for the reason :class:`HeaterResult` carries
+    its duty: the *applied* drop can differ from the requested one, so a result that reported
+    only the outlet would make a clamped row indistinguishable from an ordinary one.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure: the inlet's less ``applied_drop``.
+    outlet_p: Q
+    #: Outlet temperature, which is the inlet's.
+    outlet_t: Q
+    #: Outlet molar enthalpy, which is not the inlet's: the drop is isothermal.
+    outlet_h: Q
+    #: The drop actually applied.
+    applied_drop: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CoolerResult(_HasWarnings):
     """Result of ``process.cooler``.
 

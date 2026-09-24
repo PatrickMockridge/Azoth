@@ -31,6 +31,7 @@
 //! per outlet and `products_z` a matrix with one row per outlet.
 
 pub mod cooler;
+pub mod filter;
 pub mod heat_exchanger;
 pub mod heater;
 pub mod mixer;
@@ -40,6 +41,7 @@ pub mod splitter;
 pub mod throttling_valve;
 
 pub use cooler::{CoolerResult, cooler};
+pub use filter::{FilterResult, filter};
 pub use heat_exchanger::{HeatExchangerResult, heat_exchanger};
 pub use heater::{HeaterResult, heater};
 pub use mixer::{MixerResult, mixer};

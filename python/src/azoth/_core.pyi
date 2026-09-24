@@ -1359,6 +1359,16 @@ class CoolerResult:
     warnings: list[Warning]
 
 @final
+class FilterResult:
+    outlet_n: Qty
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    applied_drop: Qty
+    warnings: list[Warning]
+
+@final
 class HeatExchangerResult:
     hot_out_n: Qty
     hot_out_z: list[float]
@@ -2592,6 +2602,14 @@ def cooler(
     duty: float | None = None,
     pressure_drop: float | None = None,
 ) -> CoolerResult: ...
+def filter(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    pressure_drop: float,
+) -> FilterResult: ...
 def heat_exchanger(
     hot_components: list[str],
     cold_components: list[str],

@@ -3,7 +3,7 @@
 use azoth_core::units::{kelvins, pascals, watts_per_kelvin};
 use azoth_process::Stream;
 use azoth_process::kernels::{
-    heat_exchanger, heater, mixer, pump, separator, splitter, throttling_valve,
+    filter, heat_exchanger, heater, mixer, pump, separator, splitter, throttling_valve,
 };
 
 fn close(a: f64, b: f64) {
@@ -241,4 +241,45 @@ fn a_heater_refuses_a_drop_past_zero_pressure() {
     let feed = binary(0.9, 100.0, 3e5, 320.0);
     assert!(heater(&feed, None, None, Some(pascals(3e5))).is_err());
     assert!(heater(&feed, None, None, Some(pascals(4e5))).is_err());
+}
+
+#[test]
+fn a_filter_drops_the_pressure_and_holds_the_temperature() {
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    let outcome = filter(&feed, pascals(1e5)).expect("filter");
+
+    close(outcome.outlet.p.value, 2.9e6);
+    close(outcome.outlet.t.value, feed.t.value);
+    close(outcome.applied_drop.value, 1e5);
+    close(outcome.outlet.n, feed.n);
+    // **The enthalpy moves, and that is the whole difference from `throttling_valve`.** A
+    // filter's drop is isothermal, so a real fluid's pressure dependence shows up here; the
+    // valve holds `h` and lets `T` fall. Measured on this fluid the two differ by `24.8`
+    // J/mol over one bar, which is far above any tolerance this suite compares at.
+    assert!(
+        (outcome.outlet.h.value - feed.h.value).abs() > 1.0,
+        "an isothermal drop moves the enthalpy: {} against {}",
+        outcome.outlet.h.value,
+        feed.h.value
+    );
+}
+
+#[test]
+fn a_filter_clamps_a_drop_past_the_inlet_pressure_into_a_state_the_cubic_refuses() {
+    // The class clamps: `min(max(0, dP), max(0, P_in - 1e-6 bar))`, and logs a warning rather
+    // than failing. So the outlet lands a millionth of a bar above vacuum - and **that is a
+    // state no cubic can evaluate**: NeqSim extrapolates to `1968.3` J/mol there, and this
+    // library's solver does not converge, so the port reproduces the clamp and then refuses
+    // the flash it implies.
+    //
+    // The refusal is the assertion. A kernel that returned a number here would be returning
+    // an extrapolation, and the case records the row as uncased for exactly this reason.
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    assert!(
+        filter(&feed, pascals(35e5)).is_err(),
+        "the clamped state is below what the cubic converges at, and refusing it is the port"
+    );
+    // A drop that leaves a state the equation of state can be evaluated at is answered, so
+    // the refusal above is about the state and not about large numbers.
+    assert!(filter(&feed, pascals(29.9e5)).is_ok());
 }

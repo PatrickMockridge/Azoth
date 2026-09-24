@@ -17,6 +17,7 @@ from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
     CoolerResult,
+    FilterResult,
     HeaterResult,
     HeatExchangerResult,
     MixerResult,
@@ -31,6 +32,7 @@ from azoth.process.kernels import Stream
 __all__ = [
     "Stream",
     "cooler",
+    "filter",
     "heat_exchanger",
     "heater",
     "load_flowsheet",
@@ -45,6 +47,7 @@ __all__ = [
 _MIXER = "process.mixer"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COOLER = "process.cooler"
+_FILTER = "process.filter"
 _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
 _THROTTLING_VALVE = "process.throttling_valve"
@@ -99,6 +102,38 @@ def pump(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+    )
+
+
+def filter(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    pressure_drop: Q,
+) -> FilterResult:
+    """Drop a stream's pressure by a fixed amount at a constant temperature.
+
+    **It holds the temperature**, which is what separates the entry from
+    :func:`throttling_valve`: ``Filter.run`` sets the reduced pressure and flashes, so the
+    outlet is at the feed's temperature and its enthalpy moves with the pressure - about
+    ``24.8`` J/mol per bar on the fluid these cases share.
+
+    A drop larger than the inlet pressure is **clamped rather than refused**, which is what
+    ``Filter.run`` does: the outlet lands a millionth of a bar above vacuum and
+    ``applied_drop`` reports what was applied, with a warning when it differs from the
+    request.
+
+    See :func:`azoth.process.reference.filter`.
+    """
+    return resolve(_FILTER)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        pressure_drop=pressure_drop,
     )
 
 

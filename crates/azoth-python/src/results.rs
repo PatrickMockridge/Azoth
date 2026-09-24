@@ -57,8 +57,8 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    CoolerResult, HeatExchangerResult, HeaterResult, MixerResult, PumpResult, SeparatorResult,
-    SplitterResult, ThrottlingValveResult,
+    CoolerResult, FilterResult, HeatExchangerResult, HeaterResult, MixerResult, PumpResult,
+    SeparatorResult, SplitterResult, ThrottlingValveResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -649,6 +649,80 @@ impl From<&MixerResult> for PyMixerResult {
 
 /// Result of `process.throttling_valve`, transported.
 ///
+/// Result of `process.filter`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FilterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFilterResult {
+    /// Molar flow out, mol/s.
+    #[pyo3(get)]
+    pub outlet_n: PyQty,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub outlet_z: Vec<f64>,
+    /// Outlet pressure, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub outlet_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub outlet_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub outlet_h: PyQty,
+    /// The drop actually applied, which differs from the request on a clamped row.
+    #[pyo3(get)]
+    pub applied_drop: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFilterResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FilterResult(outlet_p={} {}, applied_drop={} {})",
+            self.outlet_p.magnitude_si,
+            self.outlet_p.unit,
+            self.applied_drop.magnitude_si,
+            self.applied_drop.unit
+        )
+    }
+}
+
+impl From<&FilterResult> for PyFilterResult {
+    fn from(r: &FilterResult) -> Self {
+        Self {
+            outlet_n: PyQty {
+                magnitude_si: r.outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            outlet_z: r.outlet_z.clone(),
+            outlet_p: PyQty {
+                magnitude_si: r.outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            outlet_t: PyQty {
+                magnitude_si: r.outlet_t.value,
+                unit: "K".to_string(),
+            },
+            outlet_h: PyQty {
+                magnitude_si: r.outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            applied_drop: PyQty {
+                magnitude_si: r.applied_drop.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `process.cooler`, transported.
 ///
 /// Field for field `PyHeaterResult`, and its own class for the reason the model's result is
@@ -8093,6 +8167,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
         HeaterResult::CALC_ID => HeaterResult::FIELDS.to_vec(),
         CoolerResult::CALC_ID => CoolerResult::FIELDS.to_vec(),
+        FilterResult::CALC_ID => FilterResult::FIELDS.to_vec(),
         HeatExchangerResult::CALC_ID => HeatExchangerResult::FIELDS.to_vec(),
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),

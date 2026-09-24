@@ -243,6 +243,17 @@ NO_INTERIOR: dict[str, str] = {
         "that: `run` overwrites the field with the same difference, so it reads back the "
         "number the record already implies rather than a layer behind it"
     ),
+    "process.filter": (
+        "the kernel is one ``enthalpy_at`` at the pressure the drop leaves, and the temperature "
+        "is the inlet's - so the outlet record is that state in full. The capture's two extra "
+        "lines are the applied drop, which the model reports as ``applied_drop``, and "
+        "``Cv = sqrt(dP) / massFlow``, which the class computes from the two states and this "
+        "port leaves out on purpose: it is a function of the applied drop and the inlet's mass "
+        "flow, both of which the result already carries, and its unit is one this library has "
+        "no dimension for. **The capture's third row is uncased rather than dumped**: the "
+        "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
+        "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
+    ),
     "process.separator": (
         "the kernel forms the flash's ``beta``, the two phase compositions and the moles the "
         "entrainment moves, and every one of the four is on the two outlet records - the "

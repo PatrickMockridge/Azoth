@@ -1,0 +1,48 @@
+pressure_drop_1_bar
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=29.0
+outlet_T=320.0
+outlet_h=1260.5800684104881
+outlet_s=-20.092165075812563
+outlet_z=methane:0.9 n-butane:0.1
+applied_deltaP_bara=1.0
+cv_sqrt_bar_per_kg_per_hr=0.013716743754766569
+
+no_pressure_drop
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=320.0
+outlet_h=1235.7579663941092
+outlet_s=-20.429350395514717
+outlet_z=methane:0.9 n-butane:0.1
+applied_deltaP_bara=0.0
+cv_sqrt_bar_per_kg_per_hr=0.0
+
+pressure_drop_35_bar_past_the_inlet
+inlet_n=1.0
+inlet_P=30.0
+inlet_T=320.0
+inlet_h=1235.7579663941092
+inlet_s=-20.429350395514717
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=1.0000000010279564E-6
+outlet_T=320.0
+outlet_h=1968.2914119226114
+outlet_s=124.32560124046772
+outlet_z=methane:0.9 n-butane:0.1
+applied_deltaP_bara=29.999999
+cv_sqrt_bar_per_kg_per_hr=0.07512969844787594
+

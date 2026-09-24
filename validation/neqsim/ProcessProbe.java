@@ -38,6 +38,7 @@
 //       > captures/process_heat_exchanger.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heater > captures/process_heater.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe cooler > captures/process_cooler.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe filter > captures/process_filter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
 
@@ -73,6 +74,9 @@ public class ProcessProbe {
         break;
       case "cooler":
         heatRows("Cooler");
+        break;
+      case "filter":
+        filterRows();
         break;
       case "stream":
         stream();
@@ -180,6 +184,48 @@ public class ProcessProbe {
     // the field was initialised to. On the duty rows it is the enthalpy the flash reached,
     // which is the input only if the flash lands exactly on it.
     System.out.println("duty_W=" + unit.getDuty());
+    System.out.println();
+  }
+
+  /// `Filter`, whose steady state is a pressure drop and a flash - and two things the class
+  /// does that a kernel written from its name would not.
+  ///
+  /// **It holds the temperature.** `Filter.run` reduces the pressure and runs a `TPflash`, so
+  /// the outlet is at the feed's temperature and its enthalpy moves with the pressure. A
+  /// throttling valve is the isenthalpic reading of the same words, and the no-specification
+  /// heater's capture already prices that difference at `49.6` J/mol over two bar.
+  ///
+  /// **A drop larger than the inlet pressure is clamped, not refused.** `run` takes
+  /// `min(max(0, dP), max(0, P_in - 1e-6 bar))` and logs a warning, so the third row lands a
+  /// millionth of a bar above vacuum rather than failing.
+  ///
+  /// The particle-capture curve is deliberately absent from these rows because it is absent
+  /// from the outlet: `concentrationLoadingModelEnabled` is false by default, and with it off
+  /// `updateParticleCapturePerformance` zeroes two output fields and returns. The class's own
+  /// `Cv = sqrt(dP) / massFlow` is printed, because it is the one number `run` computes from
+  /// the two states that is not on either record.
+  static void filterRows() {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.9, 0.1 };
+    filterRow("pressure_drop_1_bar", names, z, 1.0);
+    filterRow("no_pressure_drop", names, z, 0.0);
+    filterRow("pressure_drop_35_bar_past_the_inlet", names, z, 35.0);
+  }
+
+  static void filterRow(String label, String[] names, double[] z, double dropBara) {
+    Stream inlet = feed(names, z, 320.0, 30.0, 1.0);
+    neqsim.process.equipment.filter.Filter unit =
+        new neqsim.process.equipment.filter.Filter("f1", inlet);
+    unit.setDeltaP(dropBara);
+    unit.run();
+
+    System.out.println(label);
+    print("inlet", inlet);
+    print("outlet", unit.getOutletStream());
+    // The drop the class *applied*, which differs from the one set on the clamped row, and
+    // the coefficient it derives from the mass flow it sees.
+    System.out.println("applied_deltaP_bara=" + unit.getDeltaP());
+    System.out.println("cv_sqrt_bar_per_kg_per_hr=" + unit.getCvFactor());
     System.out.println();
   }
 

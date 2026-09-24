@@ -194,6 +194,37 @@ pub fn pump_stream(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.filter` - the filter's kernel as a registered id.
+///
+/// The drop is required: the class defaults `deltaP` to `0.01` bar, which the palette entry
+/// does not declare, and inventing a default here would be answering a question the caller
+/// did not ask.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop))]
+#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop)")]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are six
+pub fn filter(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    pressure_drop: f64,
+) -> PyResult<crate::results::PyFilterResult> {
+    azoth_process::filter(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(pressure_drop),
+    )
+    .map(|r| crate::results::PyFilterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.cooler` - `Heater.run` reached through `Cooler`, as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature = None, duty = None, pressure_drop = None))]
