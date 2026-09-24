@@ -241,3 +241,23 @@ fn hydrocarbon_stripper() -> ColumnSetup {
         solver_type: SolverType::DirectSubstitution,
     }
 }
+
+/// **The class's own isothermal case is refused by the port's own closure gate.**
+///
+/// Pinning every tray makes the base's gate - the mean tray-temperature change - zero, so the
+/// solve stops after its first sweep. The state that sweep lands on has an energy closure of
+/// `0.28` against the class's default gate of `1.6e-2`, so the port refuses it: the class's own
+/// test accepts the same state only because it loosens that gate to `5e-2`, which is a settable
+/// this port has not carried. The capture keeps the row as evidence.
+#[test]
+fn a_pinned_column_stops_after_one_sweep_and_is_refused() {
+    let mut setup = lean_oil();
+    setup.tray_temperatures = Some(vec![298.15; 5]);
+    setup.temperature_tolerance = 1.0e-2;
+
+    let error = distillation_column(&setup).expect_err("the closure gate refuses the state");
+    assert!(
+        matches!(error, azoth_core::AzothError::SolverNotConverged { .. }),
+        "{error}"
+    );
+}

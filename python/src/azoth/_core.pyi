@@ -1354,6 +1354,28 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class AbsorptionColumnResult:
+    tray_temperature: list[Qty]
+    tray_pressure: list[Qty]
+    tray_gas_n: list[Qty]
+    tray_liquid_n: list[Qty]
+    gas_out_n: Qty
+    gas_out_z: list[float]
+    gas_out_p: Qty
+    gas_out_t: Qty
+    gas_out_h: Qty
+    liquid_out_n: Qty
+    liquid_out_z: list[float]
+    liquid_out_p: Qty
+    liquid_out_t: Qty
+    liquid_out_h: Qty
+    iterations: int
+    temperature_residual: float
+    mass_residual: float
+    energy_residual: float
+    warnings: list[Warning]
+
+@final
 class ComponentSplitterResult:
     overhead_n: Qty
     overhead_z: list[float]
@@ -2802,6 +2824,28 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def absorption_column(
+    gas_components: list[str],
+    solvent_components: list[str],
+    gas_n: float,
+    gas_z: list[float],
+    gas_p: float,
+    gas_t: float,
+    solvent_n: float,
+    solvent_z: list[float],
+    solvent_p: float,
+    solvent_t: float,
+    number_of_stages: float,
+    top_pressure: float,
+    bottom_pressure: float,
+    temperature_tolerance: float,
+    max_iterations: float,
+    tray_temperatures: list[float] | None = None,
+    murphree_efficiency: float | None = None,
+    component_murphree_efficiency: list[float] | None = None,
+    max_allowable_gas_load_factor: float | None = None,
+    solver_type: str | None = None,
+) -> AbsorptionColumnResult: ...
 def component_splitter(
     components: list[str],
     feed_n: float,

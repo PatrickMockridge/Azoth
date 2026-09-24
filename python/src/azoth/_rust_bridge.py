@@ -27,6 +27,7 @@ from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
+    AbsorptionColumnResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     AqueousViscosityResult,
@@ -4161,6 +4162,82 @@ def splitter(
         products_p=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_p),
         products_t=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_t),
         products_h=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_h),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def absorption_column(
+    gas_components: Sequence[str],
+    gas_n: Q,
+    gas_z: Sequence[float],
+    gas_p: Q,
+    gas_t: Q,
+    solvent_components: Sequence[str],
+    solvent_n: Q,
+    solvent_z: Sequence[float],
+    solvent_p: Q,
+    solvent_t: Q,
+    number_of_stages: int,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    temperature_tolerance: float,
+    max_iterations: int,
+    tray_temperatures: Sequence[float] | None = None,
+    murphree_efficiency: float | None = None,
+    component_murphree_efficiency: Sequence[float] | None = None,
+    max_allowable_gas_load_factor: float | None = None,
+    solver_type: str | None = None,
+) -> AbsorptionColumnResult:
+    """Solve a tray absorber; see :func:`azoth.process.reference.absorption_column`.
+
+    The declared inputs cross in SI magnitudes, and **the two that are refused cross as they
+    are**: a refusal must be the kernel's, so that the two implementations refuse for the same
+    stated reason rather than each in its own words.
+    """
+    spec = _models_gen.model("process.absorption_column")
+    result = _core.absorption_column(
+        list(gas_components),
+        list(solvent_components),
+        input_to_si(spec, "gas_n", gas_n),
+        [_si(spec, "gas_z", v) for v in gas_z],
+        input_to_si(spec, "gas_p", gas_p),
+        input_to_si(spec, "gas_t", gas_t),
+        input_to_si(spec, "solvent_n", solvent_n),
+        [_si(spec, "solvent_z", v) for v in solvent_z],
+        input_to_si(spec, "solvent_p", solvent_p),
+        input_to_si(spec, "solvent_t", solvent_t),
+        int(_si(spec, "number_of_stages", number_of_stages)),
+        input_to_si(spec, "top_pressure", top_pressure),
+        input_to_si(spec, "bottom_pressure", bottom_pressure),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
+        int(_si(spec, "max_iterations", max_iterations)),
+        None if tray_temperatures is None else [float(v) for v in tray_temperatures],
+        murphree_efficiency,
+        None
+        if component_murphree_efficiency is None
+        else [float(v) for v in component_murphree_efficiency],
+        max_allowable_gas_load_factor,
+        solver_type,
+    )
+    return AbsorptionColumnResult(
+        tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
+        tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
+        tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_liquid_n),
+        gas_out_n=from_si(result.gas_out_n.magnitude_si, result.gas_out_n.unit),
+        gas_out_z=tuple(result.gas_out_z),
+        gas_out_p=from_si(result.gas_out_p.magnitude_si, result.gas_out_p.unit),
+        gas_out_t=from_si(result.gas_out_t.magnitude_si, result.gas_out_t.unit),
+        gas_out_h=from_si(result.gas_out_h.magnitude_si, result.gas_out_h.unit),
+        liquid_out_n=from_si(result.liquid_out_n.magnitude_si, result.liquid_out_n.unit),
+        liquid_out_z=tuple(result.liquid_out_z),
+        liquid_out_p=from_si(result.liquid_out_p.magnitude_si, result.liquid_out_p.unit),
+        liquid_out_t=from_si(result.liquid_out_t.magnitude_si, result.liquid_out_t.unit),
+        liquid_out_h=from_si(result.liquid_out_h.magnitude_si, result.liquid_out_h.unit),
+        iterations=result.iterations,
+        temperature_residual=result.temperature_residual,
+        mass_residual=result.mass_residual,
+        energy_residual=result.energy_residual,
         warnings=_warnings(result.warnings),
     )
 

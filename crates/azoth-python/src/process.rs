@@ -491,6 +491,73 @@ pub fn distillation_column(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.absorption_column` - the tray absorber as a registered id.
+///
+/// **The column's own profile shape with the class's own product names**, and two inlets where
+/// the column has one: the gas at stage 0 through `feed` and the solvent at the top stage
+/// through `top_feed`, which is `addGasInStream` and `addSolventInStream`.
+#[pyfunction]
+#[pyo3(
+    signature = (gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, solver_type = None)
+)]
+#[pyo3(
+    text_signature = "(gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, solver_type=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input
+pub fn absorption_column(
+    py: Python<'_>,
+    // **The two component lists come first**, which is the order the generated stub states:
+    // `gen_stub` puts every `type = "components"` input ahead of the scalars, and a binding
+    // whose positional order disagreed with its own stub would be a trap for a positional
+    // caller - see `process.distillation_column`'s own note on the optional inputs.
+    gas_components: Vec<String>,
+    solvent_components: Vec<String>,
+    gas_n: f64,
+    gas_z: Vec<f64>,
+    gas_p: f64,
+    gas_t: f64,
+    solvent_n: f64,
+    solvent_z: Vec<f64>,
+    solvent_p: f64,
+    solvent_t: f64,
+    number_of_stages: usize,
+    top_pressure: f64,
+    bottom_pressure: f64,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    tray_temperatures: Option<Vec<f64>>,
+    murphree_efficiency: Option<f64>,
+    component_murphree_efficiency: Option<Vec<f64>>,
+    max_allowable_gas_load_factor: Option<f64>,
+    solver_type: Option<&str>,
+) -> PyResult<crate::results::PyAbsorptionColumnResult> {
+    azoth_process::absorption_column(
+        &gas_components,
+        gas_n,
+        &gas_z,
+        pascals(gas_p),
+        kelvins(gas_t),
+        &solvent_components,
+        solvent_n,
+        &solvent_z,
+        pascals(solvent_p),
+        kelvins(solvent_t),
+        number_of_stages,
+        pascals(top_pressure),
+        pascals(bottom_pressure),
+        tray_temperatures.as_deref(),
+        temperature_tolerance,
+        max_iterations,
+        murphree_efficiency,
+        component_murphree_efficiency.as_deref(),
+        max_allowable_gas_load_factor,
+        solver_type,
+    )
+    .map(|r| crate::results::PyAbsorptionColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.throttling_valve` - the valve's kernel as a registered id.
 #[pyfunction]
 #[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]
@@ -707,7 +774,6 @@ pub fn stirred_tank_reactor(
     .map(|r| crate::results::PyStirredTankReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
-
 
 /// `process.flare` - the flare's kernel as a registered id.
 ///

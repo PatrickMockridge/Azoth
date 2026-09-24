@@ -798,8 +798,11 @@ public class ProcessProbe {
     // whether the class's isothermal rows are a converged counter-current state or the first
     // sweep of one.
     if (stageC > 0.0) {
+      // **The setter is kelvin**, which is what the classes' own tests state their stage
+      // temperature in; `setTemperature(double)`, the other convention in this library, is
+      // Celsius, and the two differ by 273.15.
       for (int tray = 0; tray < column.getNumberOfTrays(); tray++) {
-        column.getTray(tray).setOutletTemperature(stageC + 273.15);
+        column.getTray(tray).setOutletTemperature(stageC);
       }
     }
     column.setTemperatureTolerance(tolerance);
@@ -820,7 +823,7 @@ public class ProcessProbe {
     System.out.println(label);
     System.out.println("trays=" + trays);
     System.out.println("pressure_bara=" + bara);
-    System.out.println("stage_temperature_K=" + (stageC > 0.0 ? stageC + 273.15 : 0.0));
+    System.out.println("stage_temperature_K=" + (stageC > 0.0 ? stageC : 0.0));
     System.out.println("temperature_tolerance=" + tolerance);
     System.out.println("solver_requested=" + solver);
     System.out.println("solved=" + column.solved());

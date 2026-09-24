@@ -16,6 +16,7 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    AbsorptionColumnResult,
     ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
@@ -44,6 +45,7 @@ from azoth.process.kernels import Stream
 
 __all__ = [
     "Stream",
+    "absorption_column",
     "component_splitter",
     "compressor",
     "cooler",
@@ -77,6 +79,7 @@ _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
+_ABSORPTION_COLUMN = "process.absorption_column"
 _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
 _EJECTOR = "process.ejector"
@@ -217,6 +220,76 @@ def distillation_column(
         bottom_specification_type=bottom_specification_type,
         bottom_specification_target=bottom_specification_target,
         bottom_specification_component=bottom_specification_component,
+    )
+
+
+def absorption_column(
+    gas_components: list[str],
+    gas_n: Q,
+    gas_z: list[float],
+    gas_p: Q,
+    gas_t: Q,
+    solvent_components: list[str],
+    solvent_n: Q,
+    solvent_z: list[float],
+    solvent_p: Q,
+    solvent_t: Q,
+    number_of_stages: int,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    temperature_tolerance: float,
+    max_iterations: int,
+    tray_temperatures: list[float] | None = None,
+    murphree_efficiency: float | None = None,
+    component_murphree_efficiency: list[float] | None = None,
+    max_allowable_gas_load_factor: float | None = None,
+    solver_type: str | None = None,
+) -> AbsorptionColumnResult:
+    """Solve a tray absorber, or a stripper.
+
+    ``AbsorptionColumn extends DistillationColumn`` and overrides no ``run``, so this is the
+    column's counter-current stage solve with **no condenser, no reboiler and two inlets**: the
+    gas enters stage 0 and the solvent the top stage, which is what ``addGasInStream`` and
+    ``addSolventInStream`` call. A stripper is the same machine with its inlets named for what
+    they carry.
+
+    The answer is the profile - each tray's temperature, pressure and both traffic rates - and
+    the class's own two products: ``getGasOutStream`` is the treated gas and
+    ``getLiquidOutStream`` the loaded solvent.
+
+    **The class's own tests pin every tray, and a pinned column stops after one sweep**:
+    ``SimpleTray.setOutletTemperature`` makes the base's own gate - the mean tray-temperature
+    change - exactly zero. ``tray_temperatures`` is that mechanism, and the capture's pinned
+    rows are kept as evidence rather than as the oracle.
+
+    **Declared and refused by name**: the Murphree efficiency of either kind, and every solving
+    strategy this port does not carry. ``max_allowable_gas_load_factor`` is accepted and does
+    not enter the solve - ``isGasLoadFactorWithinDesignLimit`` reads it and no part of ``run``
+    does.
+
+    See :func:`azoth.process.reference.absorption_column`.
+    """
+    return resolve(_ABSORPTION_COLUMN)(  # type: ignore[no-any-return]
+        gas_components=gas_components,
+        gas_n=gas_n,
+        gas_z=gas_z,
+        gas_p=gas_p,
+        gas_t=gas_t,
+        solvent_components=solvent_components,
+        solvent_n=solvent_n,
+        solvent_z=solvent_z,
+        solvent_p=solvent_p,
+        solvent_t=solvent_t,
+        number_of_stages=number_of_stages,
+        top_pressure=top_pressure,
+        bottom_pressure=bottom_pressure,
+        temperature_tolerance=temperature_tolerance,
+        max_iterations=max_iterations,
+        tray_temperatures=tray_temperatures,
+        murphree_efficiency=murphree_efficiency,
+        component_murphree_efficiency=component_murphree_efficiency,
+        max_allowable_gas_load_factor=max_allowable_gas_load_factor,
+        solver_type=solver_type,
     )
 
 

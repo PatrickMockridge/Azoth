@@ -10425,6 +10425,114 @@ impl PyDistillationColumnResult {
     }
 }
 
+/// Result of `process.absorption_column`, transported.
+///
+/// **The same profile shape as the column's, with the products named for the machine**: the
+/// class's own `getGasOutStream` and `getLiquidOutStream`, and no duties, because there is no
+/// condenser and no reboiler.
+#[pyclass(module = "azoth._core")]
+pub struct PyAbsorptionColumnResult {
+    /// Each tray's temperature.
+    #[pyo3(get)]
+    pub tray_temperature: Vec<PyQty>,
+    /// Each tray's pressure.
+    #[pyo3(get)]
+    pub tray_pressure: Vec<PyQty>,
+    /// Each tray's vapour traffic.
+    #[pyo3(get)]
+    pub tray_gas_n: Vec<PyQty>,
+    /// Each tray's liquid traffic.
+    #[pyo3(get)]
+    pub tray_liquid_n: Vec<PyQty>,
+    /// The treated gas's molar flow.
+    #[pyo3(get)]
+    pub gas_out_n: PyQty,
+    /// The treated gas's composition.
+    #[pyo3(get)]
+    pub gas_out_z: Vec<f64>,
+    /// The treated gas's pressure.
+    #[pyo3(get)]
+    pub gas_out_p: PyQty,
+    /// The treated gas's temperature.
+    #[pyo3(get)]
+    pub gas_out_t: PyQty,
+    /// The treated gas's molar enthalpy.
+    #[pyo3(get)]
+    pub gas_out_h: PyQty,
+    /// The loaded solvent's molar flow.
+    #[pyo3(get)]
+    pub liquid_out_n: PyQty,
+    /// The loaded solvent's composition.
+    #[pyo3(get)]
+    pub liquid_out_z: Vec<f64>,
+    /// The loaded solvent's pressure.
+    #[pyo3(get)]
+    pub liquid_out_p: PyQty,
+    /// The loaded solvent's temperature.
+    #[pyo3(get)]
+    pub liquid_out_t: PyQty,
+    /// The loaded solvent's molar enthalpy.
+    #[pyo3(get)]
+    pub liquid_out_h: PyQty,
+    /// Iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The mean tray-temperature change at the last iteration.
+    #[pyo3(get)]
+    pub temperature_residual: f64,
+    /// The products' worst component imbalance against both feeds.
+    #[pyo3(get)]
+    pub mass_residual: f64,
+    /// The enthalpy closure.
+    #[pyo3(get)]
+    pub energy_residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+impl From<&AbsorptionColumnResult> for PyAbsorptionColumnResult {
+    fn from(r: &AbsorptionColumnResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            tray_temperature: r
+                .tray_temperature
+                .iter()
+                .map(|t| quantity(t.value, "K"))
+                .collect(),
+            tray_pressure: r
+                .tray_pressure
+                .iter()
+                .map(|p| quantity(p.value, "Pa"))
+                .collect(),
+            tray_gas_n: r.tray_gas_n.iter().map(|n| quantity(*n, "mol/s")).collect(),
+            tray_liquid_n: r
+                .tray_liquid_n
+                .iter()
+                .map(|n| quantity(*n, "mol/s"))
+                .collect(),
+            gas_out_n: quantity(r.gas_out_n, "mol/s"),
+            gas_out_z: r.gas_out_z.clone(),
+            gas_out_p: quantity(r.gas_out_p.value, "Pa"),
+            gas_out_t: quantity(r.gas_out_t.value, "K"),
+            gas_out_h: quantity(r.gas_out_h.value, "J/mol"),
+            liquid_out_n: quantity(r.liquid_out_n, "mol/s"),
+            liquid_out_z: r.liquid_out_z.clone(),
+            liquid_out_p: quantity(r.liquid_out_p.value, "Pa"),
+            liquid_out_t: quantity(r.liquid_out_t.value, "K"),
+            liquid_out_h: quantity(r.liquid_out_h.value, "J/mol"),
+            iterations: r.iterations,
+            temperature_residual: r.temperature_residual,
+            mass_residual: r.mass_residual,
+            energy_residual: r.energy_residual,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 impl From<&DistillationColumnResult> for PyDistillationColumnResult {
     fn from(r: &DistillationColumnResult) -> Self {
         let quantity = |magnitude_si: f64, unit: &str| PyQty {

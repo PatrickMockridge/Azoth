@@ -398,8 +398,17 @@ def _states(
     top_specification: Specification | None = None,
     bottom_specification: Specification | None = None,
     solver_type: str | None = None,
+    top_feed: StreamRecord | None = None,
+    tray_temperatures: tuple[float, ...] | None = None,
 ) -> _States:
-    """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share."""
+    """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
+
+    ``top_feed`` is the class's **second inlet**, which enters the top stage:
+    `AbsorptionColumn.addSolventInStream` and `StrippingColumn.addRichLiquidStream` are both
+    `addFeedStream(stream, getNumberOfTrays() - 1)`. ``tray_temperatures`` is one outlet pin
+    per tray - `SimpleTray.setOutletTemperature` - and a column that pins every tray stops
+    after its first sweep, because the base's gate is the tray-temperature change it made zero.
+    """
     tray_count = number_of_stages + int(has_reboiler) + int(has_condenser)
     if number_of_stages == 0:
         raise InvalidInputError(
@@ -423,6 +432,10 @@ def _states(
     ]
 
     def pin(i: int) -> float | None:
+        if tray_temperatures is not None:
+            stated = tray_temperatures[i]
+            if stated == stated:  # not NaN
+                return stated
         if i == 0 and has_reboiler:
             return reboiler_temperature
         if i == tray_count - 1 and has_condenser:
@@ -548,6 +561,8 @@ def _states(
             inlets.append(at(liquid[i + 1]))
         if i == feed_stage:
             inlets.append(_feed(components, feed_n, feed_z, feed_t, feed_p))
+        if top_feed is not None and i == tray_count - 1:
+            inlets.append(top_feed)
         return inlets
 
     def temperature(i: int) -> float:
@@ -570,7 +585,10 @@ def _states(
     temperatures = [float("nan")] * tray_count
     temperatures[feed_stage] = feed_temperature
     delta_up = (feed_temperature - cond_temperature) / (tray_count - feed_stage - 1.0)
-    delta_down = (reb_temperature - feed_temperature) / feed_stage
+    # **A feed at stage 0 has no trays below it**, so the downward step is never taken and the
+    # division would be 0/0. Rust's `0.0/0.0` is a NaN that the empty loop never reads; Python
+    # raises, so the step is computed only where there is a tray to move.
+    delta_down = (reb_temperature - feed_temperature) / feed_stage if feed_stage else 0.0
     delta = 0.0
     for i in range(feed_stage + 1, tray_count):
         delta += delta_up
@@ -588,6 +606,8 @@ def _states(
         inlets = [at_temperature(present(gas[i - 1], "the tray below has run"), temperatures[i])]
         if i == feed_stage:
             inlets.append(_feed(components, feed_n, feed_z, feed_t, feed_p))
+        if top_feed is not None and i == tray_count - 1:
+            inlets.append(top_feed)
         run_with(i, inlets)
     for i in range(tray_count - 2, 0, -1):
         inlets = [
@@ -596,6 +616,8 @@ def _states(
         ]
         if i == feed_stage:
             inlets.append(_feed(components, feed_n, feed_z, feed_t, feed_p))
+        if top_feed is not None and i == tray_count - 1:
+            inlets.append(top_feed)
         run_with(i, inlets)
     if has_reboiler:
         run_with(
@@ -751,7 +773,10 @@ def _states(
         outlet_enthalpy(tray_count - 1) - inlet_enthalpy(tray_count - 1) if has_condenser else 0.0
     )
 
-    feed_enthalpy = feed_n * _feed(components, feed_n, feed_z, feed_t, feed_p)["h"]
+    feeds = [_feed(components, feed_n, feed_z, feed_t, feed_p)]
+    if top_feed is not None:
+        feeds.append(top_feed)
+    feed_enthalpy = sum(float(feed["n"]) * float(feed["h"]) for feed in feeds)
     products_enthalpy = distillate["n"] * distillate["h"] + bottoms["n"] * bottoms["h"]
     energy_residual = (
         abs(feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy) / abs(feed_enthalpy)
@@ -760,8 +785,8 @@ def _states(
     )
 
     mass_residual = 0.0
-    for c, zi in enumerate(feed_z):
-        supplied = feed_n * zi
+    for c in range(len(feed_z)):
+        supplied = sum(float(feed["n"]) * float(feed["z"][c]) for feed in feeds)
         delivered = distillate["n"] * distillate["z"][c] + bottoms["n"] * bottoms["z"][c]
         if abs(supplied) > 1.0e-12:
             mass_residual = max(mass_residual, abs(supplied - delivered) / abs(supplied))
@@ -855,7 +880,27 @@ def _refuse_unported(murphree_efficiency: float | None, solver_type: str | None)
         )
     if solver_type is None or solver_type in ("direct_substitution", "naphtali_sandholm"):
         return
-    unported = {
+    raise InvalidInputError(
+        "solver_type",
+        f"solver_type = {solver_type} is not ported: `ColumnSolverFactory."
+        f"{unported_solver_class(solver_type)}` is the class that would close it. **The "
+        f"capture measures why it is refused rather than ported**: "
+        f"`validation/neqsim/captures/process_column_solvers.tsv` puts every one of the ten "
+        f"strategies within `2.5e-6` K of every other on the binary column's tray 1 and within "
+        f"`1.1e-7` relative on its distillate, so they are path variants rather than different "
+        f"physics",
+    )
+
+
+def unported_solver_class(strategy: str) -> str:
+    """The `ColumnSolverFactory` class behind a strategy this port does not carry.
+
+    **Named per strategy, because that is what a refusal owes a caller.** `columnSolver` hands
+    back one of these for each `SolverType`, and `AutoSolver` is the ladder rather than a
+    method: `candidateSolvers` returns `NAPHTALI_SANDHOLM` first, then `MATRIX_INSIDE_OUT`,
+    `INSIDE_OUT` and `DAMPED_SUBSTITUTION`, and this port has the first and the last.
+    """
+    return {
         "damped_substitution": "DampedSubstitutionSolver",
         "inside_out": "InsideOutSolver",
         "matrix_inside_out": "MatrixInsideOutSolver",
@@ -863,18 +908,7 @@ def _refuse_unported(murphree_efficiency: float | None, solver_type: str | None)
         "sum_rates": "SumRatesSolver",
         "newton": "TemperatureNewtonSolver",
         "mesh_residual": "MeshResidualSolver",
-        "auto": "AutoSolver",
-    }
-    raise InvalidInputError(
-        "solver_type",
-        f"solver_type = {solver_type} is not ported: `ColumnSolverFactory."
-        f"{unported.get(solver_type, 'AutoSolver')}` is the class that would close it. **The "
-        f"capture measures why it is refused rather than ported**: "
-        f"`validation/neqsim/captures/process_column_solvers.tsv` puts every one of the ten "
-        f"strategies within `2.5e-6` K of every other on the binary column's tray 1 and within "
-        f"`1.1e-7` relative on its distillate, so they are path variants rather than different "
-        f"physics",
-    )
+    }.get(strategy, "AutoSolver")
 
 
 def _si(spec: dict[str, object], name: str, value: float | Q) -> float:

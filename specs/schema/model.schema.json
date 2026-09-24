@@ -109,6 +109,11 @@
           "type": "string",
           "minLength": 1,
           "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the model is written for any N."
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "Optional inputs may be omitted; an omitted vector is absent rather than empty, and the implementation must say what it then does. The scalar shape carries the same property through `calc.schema.json`; this branch is for a model whose vector input is a degree of freedom rather than a requirement - `process.absorption_column`'s per-tray pins are the first."
         }
       }
     },

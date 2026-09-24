@@ -244,7 +244,7 @@ pub fn distillation_column(
 /// and `inside_out`, `matrix_inside_out`, `mesh_residual` and a fallen-back `wegstein` land on
 /// the substitution core's own state exactly. That is a measured non-port, the shape `P10` used
 /// for the adaptive-derivative refinement that converges on nothing.
-fn unported_class(strategy: &str) -> &'static str {
+pub(crate) fn unported_class(strategy: &str) -> &'static str {
     match strategy {
         "damped_substitution" => "DampedSubstitutionSolver",
         "inside_out" => "InsideOutSolver",

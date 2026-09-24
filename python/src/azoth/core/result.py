@@ -3943,6 +3943,56 @@ class ShortcutDistillationColumnResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AbsorptionColumnResult(_HasWarnings):
+    """Result of ``process.absorption_column``.
+
+    **The profile is four vectors whose length is the tray count, and the products are the
+    class's own getters**: `getGasOutStream` is the treated gas overhead and
+    `getLiquidOutStream` the loaded solvent. There is no condenser and no reboiler, so there
+    are no duties.
+    """
+
+    #: Each tray's temperature, from the gas end at stage 0 up.
+    tray_temperature: tuple[Q, ...]
+    #: Each tray's pressure.
+    tray_pressure: tuple[Q, ...]
+    #: Each tray's vapour traffic, which is its upward traffic.
+    tray_gas_n: tuple[Q, ...]
+    #: Each tray's liquid traffic, which is its downward traffic.
+    tray_liquid_n: tuple[Q, ...]
+    #: The treated gas.
+    gas_out_n: Q
+    #: The treated gas's composition.
+    gas_out_z: tuple[float, ...]
+    #: The treated gas's pressure.
+    gas_out_p: Q
+    #: The treated gas's temperature.
+    gas_out_t: Q
+    #: The treated gas's molar enthalpy at its own state.
+    gas_out_h: Q
+    #: The loaded solvent.
+    liquid_out_n: Q
+    #: The loaded solvent's composition.
+    liquid_out_z: tuple[float, ...]
+    #: The loaded solvent's pressure.
+    liquid_out_p: Q
+    #: The loaded solvent's temperature.
+    liquid_out_t: Q
+    #: The loaded solvent's molar enthalpy at its own state.
+    liquid_out_h: Q
+    #: Iterations taken - one sweep where every tray is pinned.
+    iterations: int
+    #: The mean tray-temperature change at the last iteration, the gate the solve was held to.
+    temperature_residual: float
+    #: The products' worst component imbalance against both feeds, relative.
+    mass_residual: float
+    #: ``|H_feeds - H_products| / |H_feeds|``.
+    energy_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class DistillationColumnResult(_HasWarnings):
     """Result of ``process.distillation_column``.
 
