@@ -261,3 +261,60 @@ fn a_pinned_column_stops_after_one_sweep_and_is_refused() {
         "{error}"
     );
 }
+
+/// **The stripper's id, on the same state its case states**, which is what verifies the model
+/// layer while the extension cannot be rebuilt: `process.stripping_column` is the absorber's
+/// model under the class's own names, so this asserts the names *and* the numbers.
+#[test]
+fn the_stripping_column_id_reaches_the_absorber_model() {
+    let setup = hydrocarbon_stripper();
+    let rich = setup.top_feed.as_ref().expect("the stripper's rich liquid");
+    let out = azoth_process::stripping_column(
+        &setup.feed.components,
+        &rich.components,
+        setup.feed.n,
+        &setup.feed.z,
+        setup.feed.p,
+        setup.feed.t,
+        rich.n,
+        &rich.z,
+        rich.p,
+        rich.t,
+        setup.number_of_stages,
+        setup.top_pressure,
+        setup.bottom_pressure,
+        setup.temperature_tolerance,
+        setup.max_iterations,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("the stripper converges");
+
+    relative(
+        out.overhead_gas_n,
+        3.086389912429422,
+        1.0e-5,
+        "the stripped gas",
+    );
+    relative(
+        out.lean_liquid_n,
+        2.4096710196150735,
+        1.0e-5,
+        "the lean liquid",
+    );
+    relative(
+        out.overhead_gas_z[1],
+        0.07619406979290001,
+        1.0e-3,
+        "the stripped gas's propane",
+    );
+    absolute(
+        out.tray_temperature[0].value,
+        321.706608455782,
+        2.0e-3,
+        "the bottom tray's temperature",
+    );
+}
