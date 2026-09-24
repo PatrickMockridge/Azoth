@@ -6,9 +6,7 @@
 //!
 //! **The compressor's route with the efficiency multiplying rather than dividing**, which `Expander.run` is and which the physical rule requires: an expansion's isentropic difference is negative.
 
-use azoth_core::units::{
-    MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole,
-};
+use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{CalcResult, Result, Warning, apply_checks};
 
 use crate::kernels::expander as kernel;

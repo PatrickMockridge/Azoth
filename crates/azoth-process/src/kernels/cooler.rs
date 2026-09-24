@@ -1,7 +1,7 @@
 //! `unit_ops.cooler` - `unit_ops.heater`'s arithmetic, with the sign a cooler implies.
 
-use azoth_core::units::{Power, Pressure, ThermodynamicTemperature};
 use azoth_core::Result;
+use azoth_core::units::{Power, Pressure, ThermodynamicTemperature};
 
 use crate::kernels::heater::{HeaterOutcome, heater};
 use crate::stream::Stream;

@@ -1,7 +1,7 @@
 //! `unit_ops.filter` - a fixed pressure drop, flashed at the feed's temperature.
 
-use azoth_core::units::{Pressure, pascals};
 use azoth_core::Result;
+use azoth_core::units::{Pressure, pascals};
 
 use crate::stream::Stream;
 

@@ -1,7 +1,7 @@
 //! `unit_ops.compressor` - the isentropic route, through the kernel the pump landed.
 
-use azoth_core::units::Pressure;
 use azoth_core::Result;
+use azoth_core::units::Pressure;
 
 use crate::kernels::pump::pump;
 use crate::stream::Stream;

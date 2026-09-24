@@ -6,9 +6,7 @@
 //!
 //! **A delegation, because the route is `Pump.run`'s.** `Pump` takes it on `calculateAsCompressor` defaulting to true, and `Compressor.run`'s no-chart branch is the same three lines - so the kernel is `kernels::pump`'s and this adds nothing to it.
 
-use azoth_core::units::{
-    MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole,
-};
+use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{CalcResult, Result, Warning, apply_checks};
 
 use crate::kernels::compressor as kernel;

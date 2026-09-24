@@ -74,9 +74,7 @@ pub fn heater(
     }
 
     let outlet = match (outlet_temperature, duty) {
-        (Some(t), _) => {
-            Stream::from_pt(feed.components.clone(), feed.z.clone(), feed.n, p_out, t)?
-        }
+        (Some(t), _) => Stream::from_pt(feed.components.clone(), feed.z.clone(), feed.n, p_out, t)?,
         (None, Some(power)) => {
             if feed.n == 0.0 {
                 return Err(AzothError::invalid_input(
@@ -92,9 +90,13 @@ pub fn heater(
                 joules_per_mole(feed.h.value + power.value / feed.n),
             )?
         }
-        (None, None) => {
-            Stream::from_pt(feed.components.clone(), feed.z.clone(), feed.n, p_out, feed.t)?
-        }
+        (None, None) => Stream::from_pt(
+            feed.components.clone(),
+            feed.z.clone(),
+            feed.n,
+            p_out,
+            feed.t,
+        )?,
     };
 
     Ok(HeaterOutcome {

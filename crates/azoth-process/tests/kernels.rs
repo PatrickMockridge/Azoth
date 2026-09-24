@@ -195,10 +195,7 @@ fn a_heater_holds_the_temperature_it_is_given() {
     // **The duty is the state's, not a number the caller gave.** It is `n * dh` over the
     // same two enthalpies the outlet carries, so it is exactly what a reader of the outlet
     // record would compute - which is `Heater.run`'s own recomputation after its flash.
-    close(
-        out.duty.value,
-        feed.n * (out.outlet.h.value - feed.h.value),
-    );
+    close(out.duty.value, feed.n * (out.outlet.h.value - feed.h.value));
     assert!(out.duty.value > 0.0, "380 K is above the inlet's 320");
 }
 
@@ -218,10 +215,7 @@ fn an_unstated_heater_is_an_isothermal_drop_and_not_a_throttling() {
 
     close(out.outlet.p.value, 2.8e6);
     close(out.outlet.t.value, feed.t.value);
-    close(
-        out.duty.value,
-        feed.n * (out.outlet.h.value - feed.h.value),
-    );
+    close(out.duty.value, feed.n * (out.outlet.h.value - feed.h.value));
 }
 
 #[test]
@@ -232,8 +226,13 @@ fn a_heater_refuses_a_temperature_and_a_duty_together() {
     // a duty the caller never asked for.
     let feed = binary(0.9, 100.0, 3e6, 320.0);
     assert!(
-        heater(&feed, Some(kelvins(380.0)), Some(azoth_core::units::watts(5000.0)), None)
-            .is_err()
+        heater(
+            &feed,
+            Some(kelvins(380.0)),
+            Some(azoth_core::units::watts(5000.0)),
+            None
+        )
+        .is_err()
     );
 }
 
@@ -294,7 +293,10 @@ fn a_compressor_raises_the_pressure_along_the_inlet_entropy() {
     close(reversible.p.value, 6e6);
     close(reversible.n, feed.n);
     assert!(reversible.t.value > feed.t.value, "compression heats");
-    assert!(reversible.h.value > feed.h.value, "compression adds enthalpy");
+    assert!(
+        reversible.h.value > feed.h.value,
+        "compression adds enthalpy"
+    );
 
     // **The efficiency divides the step, and the two runs pin it without the oracle.**
     // `h_out = h_in + (h_is - h_in) / eta` with the reversible run's answer *being* `h_is`,
@@ -309,9 +311,15 @@ fn an_efficiency_of_one_leaves_the_entropy_alone() {
     // record needs no `s` field: the entropy is derived from `(T, P, z)` at both ends, so a
     // reversible step is one whose computed entropies agree.
     let feed = binary(0.9, 100.0, 3e6, 320.0);
-    for machine in [compressor(&feed, pascals(6e6), 1.0), expander(&feed, pascals(1.5e6), 1.0)] {
+    for machine in [
+        compressor(&feed, pascals(6e6), 1.0),
+        expander(&feed, pascals(1.5e6), 1.0),
+    ] {
         let out = machine.expect("the machine runs");
-        close(out.entropy().expect("the outlet's entropy"), feed.entropy().expect("the inlet's"));
+        close(
+            out.entropy().expect("the outlet's entropy"),
+            feed.entropy().expect("the inlet's"),
+        );
     }
     // And an irreversible one does not, which is what makes the invariant worth asserting:
     // at 0.75 the compressor's outlet carries more entropy than it came in with.
@@ -331,11 +339,17 @@ fn an_expander_multiplies_the_step_where_a_compressor_divides_it() {
     let reversible = expander(&feed, pascals(3e6), 1.0).expect("expander");
     let real = expander(&feed, pascals(3e6), 0.75).expect("expander");
 
-    assert!(reversible.h.value < feed.h.value, "an expansion removes enthalpy");
+    assert!(
+        reversible.h.value < feed.h.value,
+        "an expansion removes enthalpy"
+    );
     assert!(reversible.t.value < feed.t.value, "an expansion cools");
 
     let isentropic_step = reversible.h.value - feed.h.value;
-    assert!(isentropic_step < 0.0, "the step is negative: {isentropic_step}");
+    assert!(
+        isentropic_step < 0.0,
+        "the step is negative: {isentropic_step}"
+    );
     close(real.h.value - feed.h.value, isentropic_step * 0.75);
     // The direction the division would take it, stated as the assertion it fails: a divided
     // step is *below* the reversible one, i.e. more work out than reversible.
