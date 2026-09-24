@@ -124,6 +124,9 @@ public class ProcessProbe {
       case "flare":
         flareRows();
         break;
+      case "stirred_tank_reactor":
+        stirredTankReactorRows();
+        break;
       case "column":
         columnRows();
         break;
@@ -1915,6 +1918,54 @@ public class ProcessProbe {
   /// volume at 15 C. The product is therefore an energy density at one reference times a
   /// volumetric flow at another, and the duty it reports is 5.5 per cent above the same gas
   /// measured consistently. Reproduced here rather than corrected: it is what the class
+  /// **The stirred-tank reactor, whose reaction is a stoichiometry map and a conversion.**
+  ///
+  /// `StoichiometricReaction.react` takes the limiting reactant's moles times the conversion,
+  /// scales every coefficient by `coeff / |coeff_limiting|`, and adds the result to the fluid -
+  /// so the reaction is a *movement of moles* and the enthalpy that follows is the flash's.
+  /// The class then sets the outlet pressure (a stated one, or the inlet less the drop), holds
+  /// the temperature when it is isothermal, and flashes: `TPflash` when isothermal, and
+  /// `PHflash(inlet enthalpy)` when adiabatic.
+  ///
+  /// The reaction is `methanecombustion` - CH4 + 2 O2 -> CO2 + 2 H2O, the one entry the
+  /// reaction data carries whose substances are all components here - and the three rows are
+  /// the two flash branches plus a stated reactor pressure, on the same feed.
+  static void stirredTankReactorRows() {
+    reactorRow("adiabatic", false, null, null);
+    reactorRow("isothermal_800K", true, 800.0, null);
+    reactorRow("isothermal_800K_3bara", true, 800.0, 3.0);
+  }
+
+  static void reactorRow(String label, boolean isothermal, Double reactorT, Double reactorP) {
+    String[] names = new String[] { "methane", "oxygen", "CO2", "water", "nitrogen" };
+    double[] z = new double[] { 0.05, 0.10, 0.02, 0.03, 0.80 };
+    Stream inlet = feed(names, z, 500.0, 5.0, 1.0);
+    neqsim.process.equipment.reactor.StirredTankReactor reactor =
+        new neqsim.process.equipment.reactor.StirredTankReactor("cstr", inlet);
+    reactor.setIsothermal(isothermal);
+    if (reactorT != null) {
+      reactor.setReactorTemperature(reactorT);
+    }
+    if (reactorP != null) {
+      reactor.setReactorPressure(reactorP);
+    }
+    neqsim.process.equipment.reactor.StoichiometricReaction reaction =
+        new neqsim.process.equipment.reactor.StoichiometricReaction("methanecombustion");
+    reaction.addReactant("methane", 1.0);
+    reaction.addReactant("oxygen", 2.0);
+    reaction.addProduct("CO2", 1.0);
+    reaction.addProduct("water", 2.0);
+    reaction.setLimitingReactant("oxygen");
+    reaction.setConversion(0.5);
+    reactor.addReaction(reaction);
+    reactor.run();
+    System.out.println(label);
+    print("feed", inlet);
+    printOrEmpty("product", reactor.getOutletStream());
+    System.out.println("heat_duty_W=" + reactor.getHeatDuty());
+    System.out.println();
+  }
+
   /// computes.
   static void flareRows() {
     String[] binary = new String[] { "methane", "n-butane" };
