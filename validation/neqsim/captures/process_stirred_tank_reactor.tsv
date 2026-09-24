@@ -1,0 +1,45 @@
+adiabatic
+feed_n=1.0
+feed_P=5.0
+feed_T=500.0
+feed_h=6861.239286119802
+feed_s=11.137226656546531
+feed_z=methane:0.05 oxygen:0.1 CO2:0.02 water:0.03 nitrogen:0.8
+product_n=1.0
+product_P=5.0
+product_T=498.5366986205672
+product_h=6861.2392872763785
+product_s=11.341900592404551
+product_z=methane:0.025 oxygen:0.05 CO2:0.045 water:0.08 nitrogen:0.8
+heat_duty_W=0.0
+
+isothermal_800K
+feed_n=1.0
+feed_P=5.0
+feed_T=500.0
+feed_h=6861.239286119802
+feed_s=11.137226656546531
+feed_z=methane:0.05 oxygen:0.1 CO2:0.02 water:0.03 nitrogen:0.8
+product_n=1.0
+product_P=5.0
+product_T=800.0
+product_h=16686.180909326755
+product_s=26.70848269551176
+product_z=methane:0.025 oxygen:0.05 CO2:0.045 water:0.08 nitrogen:0.8
+heat_duty_W=9824.941623206952
+
+isothermal_800K_3bara
+feed_n=1.0
+feed_P=5.0
+feed_T=500.0
+feed_h=6861.239286119802
+feed_s=11.137226656546531
+feed_z=methane:0.05 oxygen:0.1 CO2:0.02 water:0.03 nitrogen:0.8
+product_n=1.0
+product_P=3.0
+product_T=800.0
+product_h=16685.47174570607
+product_s=30.95961596376546
+product_z=methane:0.025 oxygen:0.05 CO2:0.045 water:0.08 nitrogen:0.8
+heat_duty_W=9824.232459586266
+
