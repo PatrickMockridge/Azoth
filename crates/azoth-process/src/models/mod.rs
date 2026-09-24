@@ -30,6 +30,7 @@
 //! `products_n`, `products_p`, `products_t` and `products_h` are vectors with one entry
 //! per outlet and `products_z` a matrix with one row per outlet.
 
+pub mod cooler;
 pub mod heat_exchanger;
 pub mod heater;
 pub mod mixer;
@@ -38,6 +39,7 @@ pub mod separator;
 pub mod splitter;
 pub mod throttling_valve;
 
+pub use cooler::{CoolerResult, cooler};
 pub use heat_exchanger::{HeatExchangerResult, heat_exchanger};
 pub use heater::{HeaterResult, heater};
 pub use mixer::{MixerResult, mixer};

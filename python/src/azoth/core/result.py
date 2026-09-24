@@ -346,6 +346,32 @@ class ChemicalEquilibriumResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CoolerResult(_HasWarnings):
+    """Result of ``process.cooler``.
+
+    **The same fields as :class:`HeaterResult`, and its own class.** A result type is the
+    registry's handle on an id, so one class shared by two ids would be one handle for two
+    things - which is why :class:`ThrottlingValveResult` repeats :class:`PumpResult`'s five
+    fields rather than inheriting them.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure: the inlet's less ``pressure_drop``.
+    outlet_p: Q
+    #: Outlet temperature: the stated one, or the one the shifted enthalpy reaches.
+    outlet_t: Q
+    #: Outlet molar enthalpy.
+    outlet_h: Q
+    #: The duty moved, negative when heat was removed - this entry's usual case.
+    outlet_duty: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HeaterResult(_HasWarnings):
     """Result of ``process.heater``.
 

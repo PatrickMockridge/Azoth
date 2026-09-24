@@ -43,6 +43,7 @@ from azoth.core.result import (
     ColebrookResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
+    CoolerResult,
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DarcyWeisbachResult,
@@ -3950,6 +3951,45 @@ def splitter(
         products_p=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_p),
         products_t=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_t),
         products_h=tuple(from_si(value.magnitude_si, value.unit) for value in result.products_h),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def cooler(
+    components: Sequence[str],
+    inlet_n: Q,
+    inlet_z: Sequence[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_temperature: Q | None = None,
+    duty: Q | None = None,
+    pressure_drop: Q | None = None,
+) -> CoolerResult:
+    """`process.cooler`, computed in Rust.
+
+    The same three optional arguments as `process.heater`, and the same refusals: the
+    arithmetic behind both is `Heater.run`.
+    """
+    spec = _models_gen.model("process.cooler")
+    result = _core.cooler(
+        list(components),
+        input_to_si(spec, "inlet_n", inlet_n),
+        [_si(spec, "inlet_z", v) for v in inlet_z],
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        None
+        if outlet_temperature is None
+        else input_to_si(spec, "outlet_temperature", outlet_temperature),
+        None if duty is None else input_to_si(spec, "duty", duty),
+        None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+    )
+    return CoolerResult(
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
         warnings=_warnings(result.warnings),
     )
 

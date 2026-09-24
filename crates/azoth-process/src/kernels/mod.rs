@@ -6,6 +6,7 @@
 //! of what a unit operation is. These are the first few, composing the calcs in
 //! `azoth-eos` rather than adding new physics.
 
+pub mod cooler;
 pub mod heat_exchanger;
 pub mod heater;
 pub mod mixer;
@@ -14,6 +15,7 @@ pub mod separator;
 pub mod splitter;
 pub mod throttling_valve;
 
+pub use cooler::cooler;
 pub use heat_exchanger::heat_exchanger;
 pub use heater::heater;
 pub use mixer::mixer;

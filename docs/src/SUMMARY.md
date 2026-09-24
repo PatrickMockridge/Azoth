@@ -165,6 +165,7 @@
   - [Pump shaft power from flow, head and efficiency](./hydraulics/pump_power.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Unit operations](./process/index.md)
+  - [Cooler](./process/cooler.md)
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)
   - [Mixer](./process/mixer.md)

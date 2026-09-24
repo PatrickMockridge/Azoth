@@ -57,8 +57,8 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    HeatExchangerResult, HeaterResult, MixerResult, PumpResult, SeparatorResult, SplitterResult,
-    ThrottlingValveResult,
+    CoolerResult, HeatExchangerResult, HeaterResult, MixerResult, PumpResult, SeparatorResult,
+    SplitterResult, ThrottlingValveResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -649,6 +649,84 @@ impl From<&MixerResult> for PyMixerResult {
 
 /// Result of `process.throttling_valve`, transported.
 ///
+/// Result of `process.cooler`, transported.
+///
+/// Field for field `PyHeaterResult`, and its own class for the reason the model's result is
+/// its own struct: `result_fields` answers by id, so one transport for two ids is one handle
+/// for two things.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CoolerResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCoolerResult {
+    /// Molar flow out, mol/s.
+    #[pyo3(get)]
+    pub outlet_n: PyQty,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub outlet_z: Vec<f64>,
+    /// Outlet pressure, as an SI magnitude and a display unit.
+    #[pyo3(get)]
+    pub outlet_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub outlet_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub outlet_h: PyQty,
+    /// The duty moved, negative when heat was removed.
+    #[pyo3(get)]
+    pub outlet_duty: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCoolerResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CoolerResult(outlet_t={} {}, outlet_duty={} {})",
+            self.outlet_t.magnitude_si,
+            self.outlet_t.unit,
+            self.outlet_duty.magnitude_si,
+            self.outlet_duty.unit
+        )
+    }
+}
+
+impl From<&CoolerResult> for PyCoolerResult {
+    fn from(r: &CoolerResult) -> Self {
+        Self {
+            outlet_n: PyQty {
+                magnitude_si: r.outlet_n,
+                unit: "mol/s".to_string(),
+            },
+            outlet_z: r.outlet_z.clone(),
+            outlet_p: PyQty {
+                magnitude_si: r.outlet_p.value,
+                unit: "Pa".to_string(),
+            },
+            outlet_t: PyQty {
+                magnitude_si: r.outlet_t.value,
+                unit: "K".to_string(),
+            },
+            outlet_h: PyQty {
+                magnitude_si: r.outlet_h.value,
+                unit: "J/mol".to_string(),
+            },
+            outlet_duty: PyQty {
+                magnitude_si: r.outlet_duty.value,
+                unit: "W".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `process.heater`, transported.
 ///
 /// `PumpResult`'s five record fields plus the duty, which is the one number a machine that
@@ -8014,6 +8092,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
         PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
         HeaterResult::CALC_ID => HeaterResult::FIELDS.to_vec(),
+        CoolerResult::CALC_ID => CoolerResult::FIELDS.to_vec(),
         HeatExchangerResult::CALC_ID => HeatExchangerResult::FIELDS.to_vec(),
         MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),

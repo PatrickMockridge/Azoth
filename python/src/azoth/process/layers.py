@@ -227,6 +227,12 @@ NO_INTERIOR: dict[str, str] = {
         "to size itself, which is the `MechanicalDesign.calcValveSize()` path the palette "
         "entry's `valve_opening` was withdrawn for"
     ),
+    "process.cooler": (
+        "the same kernel as ``process.heater`` and therefore the same answer: `Cooler` "
+        "overrides `runTransient` and some getters and not `run`, and the probe's two "
+        "captures are byte-identical. A dumper here would be a second dump of the heater's "
+        "arithmetic under another name, which is the thing this dict exists to refuse"
+    ),
     "process.heater": (
         "the kernel is one ``Stream::from_pt`` at the stated temperature or one "
         "``Stream::from_ph`` at the enthalpy a stated duty implies, at the pressure the drop "

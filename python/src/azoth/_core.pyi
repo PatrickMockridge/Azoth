@@ -1349,6 +1349,16 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class CoolerResult:
+    outlet_n: Qty
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    outlet_duty: Qty
+    warnings: list[Warning]
+
+@final
 class HeatExchangerResult:
     hot_out_n: Qty
     hot_out_z: list[float]
@@ -2572,6 +2582,16 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def cooler(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    outlet_temperature: float | None = None,
+    duty: float | None = None,
+    pressure_drop: float | None = None,
+) -> CoolerResult: ...
 def heat_exchanger(
     hot_components: list[str],
     cold_components: list[str],

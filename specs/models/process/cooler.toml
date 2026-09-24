@@ -1,0 +1,87 @@
+id = "process.cooler"
+name = "Cooler"
+kind = "direct"
+assumptions = [
+    "**this is `process.heater`'s arithmetic and the same kernel**, so the entry exists because a palette shows both machines and not because the class computes anything new: `Cooler extends Heater` and overrides `runTransient`, the mechanical design and some getters, **not `run`**.",
+    "**the delegation is measured, not read.** The probe runs the same six rows through `Heater` and through `Cooler` and the two captures are byte-identical - so the claim that this class adds no steady-state physics is evidence rather than a reading of the source.",
+    "**the duty is signed and there is no range check on it**, which is what lets one kernel serve both entries: a negative duty is heat removed, and a cooler that may not remove heat cannot be a cooler. A positive `duty` here heats, exactly as on `process.heater`.",
+    "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.",
+    "**a temperature and a `duty` together are refused**: `Heater`'s two setters clear each other's flags, so the class's answer to both is the order they were called in - a state these inputs cannot express.",
+    "**`outlet_duty` is the state's number and not the caller's.** `run` overwrites its own `energyInput` with the enthalpy the flash reached, in every branch.",
+    "**with neither specification the drop is isothermal**, because `run`'s else branch is `T_in + dT` with `dT` defaulting to zero and `dT` is not a palette parameter.",
+    "`Cooler`'s own 258 lines are a bounded dynamic temperature-control model - a utility-valve opening, an NTU scaled by it and first-order actuator and thermal time constants - and **none of it is ported**: it reaches the outlet only through `runTransient`.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Cooler.java`, which carries no steady-state `run` of its own, and `Heater.java`, whose `run` is what this reaches.",
+    "`validation/neqsim/captures/process_cooler.tsv` - the same six rows as `process_heater.tsv`, byte for byte, which is what makes the single kernel a measurement.",
+]
+[source]
+standard = "NeqSim process/equipment/heatexchanger/Cooler.java"
+edition = "No `run` of its own: the port is `Heater.run` reached through `Cooler`, on the three setters this palette entry declares."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. Every port of a unit operation carries the same fluid, so this is declared once.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow. A cooler moves what it is given and adds no moles, so this is the outlet's too.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which `pressure_drop` reduces.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which with `inlet_p` and `inlet_z` fixes the inlet enthalpy as well.\n"
+[inputs.outlet_temperature]
+unit = "K"
+optional = true
+description = "the temperature the stream is cooled to, which is `unit_ops.cooler`'s own parameter. Giving it beside a `duty` is refused rather than resolved.\n"
+[inputs.duty]
+unit = "W"
+optional = true
+description = "the heat removed, as a negative number, which sets the outlet enthalpy as `inlet_h + duty / inlet_n`. Nothing checks the sign: a positive value heats.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+optional = true
+description = "the pressure loss across the cooler, taken off the inlet pressure before the flash. When omitted the outlet is at the inlet's pressure.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the inlet's: a cooler moves no moles.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition, which is the inlet's.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet pressure: `inlet_p - pressure_drop`, or the inlet's when no drop is given.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet temperature: `outlet_temperature` when it is given, and otherwise the one the mixture reaches at the outlet pressure carrying `outlet_h`.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy: the inlet's plus `duty / inlet_n`, or the enthalpy of the state at `outlet_temperature`.\n"
+[outputs.outlet_duty]
+unit = "W"
+description = "the duty the cooler moved, as `inlet_n * (outlet_h - inlet_h)`. Negative when heat was removed, which is the usual case for this entry.\n"
+[[valid_range]]
+quantity = "outlet_temperature"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[implementations]
+python = "azoth.process.cooler"
+rust = "azoth_process::cooler"

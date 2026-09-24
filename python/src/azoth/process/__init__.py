@@ -16,6 +16,7 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    CoolerResult,
     HeaterResult,
     HeatExchangerResult,
     MixerResult,
@@ -29,6 +30,7 @@ from azoth.process.kernels import Stream
 
 __all__ = [
     "Stream",
+    "cooler",
     "heat_exchanger",
     "heater",
     "load_flowsheet",
@@ -42,6 +44,7 @@ __all__ = [
 
 _MIXER = "process.mixer"
 _HEAT_EXCHANGER = "process.heat_exchanger"
+_COOLER = "process.cooler"
 _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
 _THROTTLING_VALVE = "process.throttling_valve"
@@ -96,6 +99,42 @@ def pump(
         inlet_t=inlet_t,
         outlet_pressure=outlet_pressure,
         isentropic_efficiency=isentropic_efficiency,
+    )
+
+
+def cooler(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_temperature: Q | None = None,
+    duty: Q | None = None,
+    pressure_drop: Q | None = None,
+) -> CoolerResult:
+    """Cool a stream to a stated temperature, or by a stated duty.
+
+    ``unit_ops.cooler``'s three parameters are ``Heater``'s three setters, reached through
+    ``Cooler`` - and ``Cooler`` adds no steady-state arithmetic to ``Heater``, so this is the
+    same call as :func:`heater` under the entry a palette shows for a machine that removes
+    heat. ``duty`` is signed and unchecked: ``-5000`` W is the usual case here, and a
+    positive value heats.
+
+    Raises:
+        InvalidInputError: for both specifications at once, a pressure drop that leaves a
+            non-positive pressure, or a duty on a stream carrying no flow.
+
+    See :func:`azoth.process.reference.cooler`.
+    """
+    return resolve(_COOLER)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        outlet_temperature=outlet_temperature,
+        duty=duty,
+        pressure_drop=pressure_drop,
     )
 
 
