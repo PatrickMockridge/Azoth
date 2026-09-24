@@ -78,6 +78,12 @@ public class ProcessProbe {
       case "filter":
         filterRows();
         break;
+      case "compressor":
+        isentropicRows("Compressor");
+        break;
+      case "expander":
+        isentropicRows("Expander");
+        break;
       case "stream":
         stream();
         break;
@@ -227,6 +233,48 @@ public class ProcessProbe {
     System.out.println("applied_deltaP_bara=" + unit.getDeltaP());
     System.out.println("cv_sqrt_bar_per_kg_per_hr=" + unit.getCvFactor());
     System.out.println();
+  }
+
+  /// `Compressor` and `Expander`, which are one machine's route with the efficiency on the
+  /// other side of the division.
+  ///
+  /// **The steady state is the isentropic step, and the inlet entropy is *derived*.** Both
+  /// classes read `getEntropy()` off the inlet system, run a `PSflash` at the outlet pressure
+  /// on it, and take the enthalpy they land on as the reversible outlet:
+  /// `Compressor.run`'s no-chart branch then divides the difference by the isentropic
+  /// efficiency, and `Expander.run`'s multiplies by it - which is the same rule, because an
+  /// expansion's difference is negative and dividing would make the machine beat the
+  /// reversible one.
+  ///
+  /// **Four rows, two per class**: the isentropic limit at an efficiency of one, and a real
+  /// machine at `0.75`. At one, the compressor's shaft work *is* the isentropic difference and
+  /// the entropy production is zero - so that row is where the oracle and the port can be
+  /// compared without an efficiency convention in between.
+  ///
+  /// `getEntropyProduction` is the second-law statement of the same step, and the only other
+  /// number either class exposes about its interior.
+  static void isentropicRows(String which) {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.9, 0.1 };
+    for (double efficiency : new double[] { 0.75, 1.0 }) {
+      boolean compressing = which.equals("Compressor");
+      double inletBara = compressing ? 30.0 : 60.0;
+      double outletBara = compressing ? 60.0 : 30.0;
+      Stream inlet = feed(names, z, 320.0, inletBara, 1.0);
+      neqsim.process.equipment.compressor.Compressor unit = compressing
+          ? new neqsim.process.equipment.compressor.Compressor("c1", inlet)
+          : new neqsim.process.equipment.expander.Expander("e1", inlet);
+      unit.setOutletPressure(outletBara);
+      unit.setIsentropicEfficiency(efficiency);
+      unit.run();
+
+      System.out.println("isentropic_efficiency=" + efficiency);
+      print("inlet", inlet);
+      print("outlet", unit.getOutletStream());
+      System.out.println("power_kW=" + unit.getPower("kW"));
+      System.out.println("entropy_production_kJ_per_molK=" + unit.getEntropyProduction("kJ/molK"));
+      System.out.println();
+    }
   }
 
   static void splitter() {

@@ -41,6 +41,7 @@ from azoth.core.result import (
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
     ColebrookResult,
+    CompressorResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
     CoolerResult,
@@ -53,6 +54,7 @@ from azoth.core.result import (
     EffectiveDiffusionResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
+    ExpanderResult,
     FilterResult,
     FlowRegime,
     FreezingPointResult,
@@ -3986,6 +3988,74 @@ def filter(
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         applied_drop=from_si(result.applied_drop.magnitude_si, result.applied_drop.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def compressor(
+    components: Sequence[str],
+    inlet_n: Q,
+    inlet_z: Sequence[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+    isentropic_efficiency: float,
+) -> CompressorResult:
+    """`process.compressor`, computed in Rust.
+
+    The component names cross unresolved, as every process model's do: the Rust side resolves
+    the mixture itself, so the two languages cannot disagree about which databank row answered.
+    """
+    spec = _models_gen.model("process.compressor")
+    result = _core.compressor(
+        list(components),
+        input_to_si(spec, "inlet_n", inlet_n),
+        [_si(spec, "inlet_z", v) for v in inlet_z],
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        float(isentropic_efficiency),
+    )
+    return CompressorResult(
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def expander(
+    components: Sequence[str],
+    inlet_n: Q,
+    inlet_z: Sequence[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+    isentropic_efficiency: float,
+) -> ExpanderResult:
+    """`process.expander`, computed in Rust.
+
+    The same arguments as `process.compressor`, and the same route: what differs is which side
+    of the division the efficiency sits on, and that is the Rust kernel's business.
+    """
+    spec = _models_gen.model("process.expander")
+    result = _core.expander(
+        list(components),
+        input_to_si(spec, "inlet_n", inlet_n),
+        [_si(spec, "inlet_z", v) for v in inlet_z],
+        input_to_si(spec, "inlet_p", inlet_p),
+        input_to_si(spec, "inlet_t", inlet_t),
+        input_to_si(spec, "outlet_pressure", outlet_pressure),
+        float(isentropic_efficiency),
+    )
+    return ExpanderResult(
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         warnings=_warnings(result.warnings),
     )
 

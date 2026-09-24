@@ -1,0 +1,32 @@
+isentropic_efficiency=0.75
+inlet_n=1.0
+inlet_P=60.0
+inlet_T=320.0
+inlet_h=486.60416477115996
+inlet_s=-27.885632804216442
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=286.82511684097125
+outlet_h=-618.9331837187178
+outlet_s=-26.592477783421735
+outlet_z=methane:0.9 n-butane:0.1
+power_kW=-1.1055373484898778
+entropy_production_kJ_per_molK=0.001293155020794707
+
+isentropic_efficiency=1.0
+inlet_n=1.0
+inlet_P=60.0
+inlet_T=320.0
+inlet_h=486.60416477115996
+inlet_s=-27.885632804216442
+inlet_z=methane:0.9 n-butane:0.1
+outlet_n=1.0
+outlet_P=30.0
+outlet_T=283.09454605780746
+outlet_h=-987.4456325302849
+outlet_s=-27.885632808973597
+outlet_z=methane:0.9 n-butane:0.1
+power_kW=-1.4740497973014448
+entropy_production_kJ_per_molK=-4.757156474299862E-12
+

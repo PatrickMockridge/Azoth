@@ -3,7 +3,8 @@
 use azoth_core::units::{kelvins, pascals, watts_per_kelvin};
 use azoth_process::Stream;
 use azoth_process::kernels::{
-    filter, heat_exchanger, heater, mixer, pump, separator, splitter, throttling_valve,
+    compressor, expander, filter, heat_exchanger, heater, mixer, pump, separator, splitter,
+    throttling_valve,
 };
 
 fn close(a: f64, b: f64) {
@@ -282,4 +283,64 @@ fn a_filter_clamps_a_drop_past_the_inlet_pressure_into_a_state_the_cubic_refuses
     // A drop that leaves a state the equation of state can be evaluated at is answered, so
     // the refusal above is about the state and not about large numbers.
     assert!(filter(&feed, pascals(29.9e5)).is_ok());
+}
+
+#[test]
+fn a_compressor_raises_the_pressure_along_the_inlet_entropy() {
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    let reversible = compressor(&feed, pascals(6e6), 1.0).expect("compressor");
+    let real = compressor(&feed, pascals(6e6), 0.75).expect("compressor");
+
+    close(reversible.p.value, 6e6);
+    close(reversible.n, feed.n);
+    assert!(reversible.t.value > feed.t.value, "compression heats");
+    assert!(reversible.h.value > feed.h.value, "compression adds enthalpy");
+
+    // **The efficiency divides the step, and the two runs pin it without the oracle.**
+    // `h_out = h_in + (h_is - h_in) / eta` with the reversible run's answer *being* `h_is`,
+    // so the real run's step is the reversible one over 0.75 to the last digit.
+    let isentropic_step = reversible.h.value - feed.h.value;
+    close(real.h.value - feed.h.value, isentropic_step / 0.75);
+}
+
+#[test]
+fn an_efficiency_of_one_leaves_the_entropy_alone() {
+    // **The isentropic claim, as an invariant rather than a number** - and the reason the
+    // record needs no `s` field: the entropy is derived from `(T, P, z)` at both ends, so a
+    // reversible step is one whose computed entropies agree.
+    let feed = binary(0.9, 100.0, 3e6, 320.0);
+    for machine in [compressor(&feed, pascals(6e6), 1.0), expander(&feed, pascals(1.5e6), 1.0)] {
+        let out = machine.expect("the machine runs");
+        close(out.entropy().expect("the outlet's entropy"), feed.entropy().expect("the inlet's"));
+    }
+    // And an irreversible one does not, which is what makes the invariant worth asserting:
+    // at 0.75 the compressor's outlet carries more entropy than it came in with.
+    let real = compressor(&feed, pascals(6e6), 0.75).expect("compressor");
+    assert!(
+        real.entropy().expect("entropy") > feed.entropy().expect("entropy"),
+        "an efficiency below one produces entropy"
+    );
+}
+
+#[test]
+fn an_expander_multiplies_the_step_where_a_compressor_divides_it() {
+    // `Expander.run` multiplies by the efficiency where `Compressor.run` divides, and the
+    // reason is the sign: an expansion's isentropic difference is negative, so dividing by an
+    // efficiency below one would recover *more* work than the reversible machine.
+    let feed = binary(0.9, 100.0, 6e6, 320.0);
+    let reversible = expander(&feed, pascals(3e6), 1.0).expect("expander");
+    let real = expander(&feed, pascals(3e6), 0.75).expect("expander");
+
+    assert!(reversible.h.value < feed.h.value, "an expansion removes enthalpy");
+    assert!(reversible.t.value < feed.t.value, "an expansion cools");
+
+    let isentropic_step = reversible.h.value - feed.h.value;
+    assert!(isentropic_step < 0.0, "the step is negative: {isentropic_step}");
+    close(real.h.value - feed.h.value, isentropic_step * 0.75);
+    // The direction the division would take it, stated as the assertion it fails: a divided
+    // step is *below* the reversible one, i.e. more work out than reversible.
+    assert!(
+        isentropic_step / 0.75 < isentropic_step,
+        "dividing would beat the reversible machine"
+    );
 }

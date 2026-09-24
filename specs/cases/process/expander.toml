@@ -1,0 +1,37 @@
+model = "process.expander"
+[[cases]]
+id = "the_reversible_limit_at_efficiency_one"
+tolerance = 0.0005
+source = "NeqSim master, `Expander.run` with `setOutletPressure(30 bara)` and `setIsentropicEfficiency(1.0)`, from `validation/neqsim/captures/process_expander.tsv`. The fluid is the compressor's, expanded from 60 bara rather than compressed to it, so the two captures bracket one state. At an efficiency of one the outlet's entropy is the inlet's to `4.8e-12` and the production is `-4.8e-15` kJ/(mol K): the reversible limit, and again a number the record has no field for. **Measured: `outlet_h` to `1.18e-4`**, and the reason it is a larger *relative* figure than the compressor's is arithmetic rather than physics: the libraries' enthalpy offset is an absolute `~0.12` J/mol, and this outlet's enthalpy is `-987` against the compressor's `+3049`. The band is `5e-4`, about four times the measured worst.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 1.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 283.09454605780746
+outlet_h = -987.4456325302849
+[[cases]]
+id = "the_efficiency_multiplies_the_step_and_not_divides_it"
+tolerance = 0.0005
+source = "**The row that distinguishes an expander from a compressor.** The isentropic step here is `-987.4456325302849 - 486.60416477115996 = -1474.0497973014449` J/mol, and `0.75` of it added to the inlet gives `-618.9331837187178` - the capture's number. Dividing instead would give `486.60416477115996 - 1965.4 = -1478.8`, recovering *more* work than the reversible machine, which is the direction an efficiency below one cannot go. **Measured: `outlet_h` to `1.91e-4`** - the same absolute offset on the smaller number, which is why this file's band is wider than the compressor's.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 6000000.0
+inlet_t = 320.0
+outlet_pressure = 3000000.0
+isentropic_efficiency = 0.75
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 3000000.0
+outlet_t = 286.82511684097125
+outlet_h = -618.9331837187178

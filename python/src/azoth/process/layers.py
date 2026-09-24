@@ -76,6 +76,70 @@ def _pump(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _compressor(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.compressor`'s layers, from the reference's own factored arithmetic.
+
+    **The isentropic outlet is in the dump and not in the capture**, and that is worth
+    stating: `Compressor` keeps its reversible enthalpy in a local, so the probe cannot print
+    it - but the capture's efficiency-of-one row *is* that state, which is why that row is in
+    the case set at all. A wrong isentropic step cannot reach both rows' enthalpies and both
+    rows' entropy productions at once.
+    """
+    from azoth.process.reference.compressor import _states
+
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        float(inputs["inlet_t"]),
+        float(inputs["inlet_p"]),
+        [float(v) for v in inputs["inlet_z"]],
+        float(inputs["outlet_pressure"]),
+        float(inputs["isentropic_efficiency"]),
+    )
+    n = float(inputs["inlet_n"])
+    return {
+        "inlet_h": states.h_in,
+        "inlet_s": states.s_in,
+        "isentropic_h": states.h_isentropic,
+        "outlet_h": states.h_out,
+        "outlet_T": states.outlet_t.to("K").magnitude,
+        # `getPower` is `dH = h_out - h_in` over the machine, which is what the class's own
+        # `power_kW` line prints - in kW against the record's J/mol.
+        "power_kW": n * states.dh_actual / 1000.0,
+        "entropy_production_kJ_per_molK": (states.s_out - states.s_in) / 1000.0,
+    }
+
+
+def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.expander`'s layers, from the reference's own factored arithmetic.
+
+    The same six as the compressor's plus the isentropic enthalpy, and the same reasoning:
+    `Expander.run`'s second-law statement is the only other number it exposes, and the
+    efficiency-of-one row is where the reversible state is the answer.
+    """
+    from azoth.process.reference.expander import _states
+
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        float(inputs["inlet_t"]),
+        float(inputs["inlet_p"]),
+        [float(v) for v in inputs["inlet_z"]],
+        float(inputs["outlet_pressure"]),
+        float(inputs["isentropic_efficiency"]),
+    )
+    n = float(inputs["inlet_n"])
+    return {
+        "inlet_h": states.h_in,
+        "inlet_s": states.s_in,
+        "isentropic_h": states.h_isentropic,
+        "outlet_h": states.h_out,
+        "outlet_T": states.outlet_t.to("K").magnitude,
+        # Negative, and it should be: `getPower` is the work the machine does, and an
+        # expander produces it.
+        "power_kW": n * states.dh_actual / 1000.0,
+        "entropy_production_kJ_per_molK": (states.s_out - states.s_in) / 1000.0,
+    }
+
+
 def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.heat_exchanger`'s layers, from the reference's own factored arithmetic.
 
@@ -201,9 +265,11 @@ def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
 
 #: One model's layers, keyed by the model id a case names.
 DUMPERS: dict[str, Dumper] = {
+    "process.expander": _expander,
     "process.pump": _pump,
     "process.splitter": _splitter,
     "process.mixer": _mixer,
+    "process.compressor": _compressor,
     "process.heat_exchanger": _heat_exchanger,
 }
 
@@ -364,6 +430,50 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    # The isentropic pair. **Both rows of each are cases, and the efficiency-of-one row is
+    # the one that matters**: its reversible step *is* its answer, so the capture states the
+    # isentropic enthalpy the class keeps in a local - and its entropy production is zero by
+    # construction, which is why it is compared on an absolute bound.
+    LayerCase(
+        model="process.compressor",
+        case="the_reversible_limit_at_efficiency_one",
+        capture="process_compressor.tsv",
+        block=1,
+        identified_by=("isentropic_efficiency", "1.0"),
+        # The pump's bound and the pump's reason: 1e-9 kJ/(mol*K) is 1e-6 J/(mol*K), four
+        # orders below any physical irreversibility and four above the double-precision
+        # rounding of an enthalpy near 2.5e4. **Measured on these rows**: the compressor's two
+        # sides are `-1.4e-17` and `1.4e-15`, and the expander's `-4.8e-12` and `1.4e-12` -
+        # both zero, and neither of them equal.
+        diagnostic=(("entropy_production_kJ_per_molK", 1e-9),),
+    ),
+    LayerCase(
+        model="process.compressor",
+        case="the_efficiency_divides_the_step",
+        capture="process_compressor.tsv",
+        block=0,
+        identified_by=("isentropic_efficiency", "0.75"),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="the_reversible_limit_at_efficiency_one",
+        capture="process_expander.tsv",
+        block=1,
+        identified_by=("isentropic_efficiency", "1.0"),
+        # The pump's bound and the pump's reason: 1e-9 kJ/(mol*K) is 1e-6 J/(mol*K), four
+        # orders below any physical irreversibility and four above the double-precision
+        # rounding of an enthalpy near 2.5e4. **Measured on these rows**: the compressor's two
+        # sides are `-1.4e-17` and `1.4e-15`, and the expander's `-4.8e-12` and `1.4e-12` -
+        # both zero, and neither of them equal.
+        diagnostic=(("entropy_production_kJ_per_molK", 1e-9),),
+    ),
+    LayerCase(
+        model="process.expander",
+        case="the_efficiency_multiplies_the_step_and_not_divides_it",
+        capture="process_expander.tsv",
+        block=0,
+        identified_by=("isentropic_efficiency", "0.75"),
+    ),
     LayerCase(
         model="process.pump",
         case="butane_5_to_20_bara_at_250_k",

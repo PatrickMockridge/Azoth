@@ -16,7 +16,9 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    CompressorResult,
     CoolerResult,
+    ExpanderResult,
     FilterResult,
     HeaterResult,
     HeatExchangerResult,
@@ -31,7 +33,9 @@ from azoth.process.kernels import Stream
 
 __all__ = [
     "Stream",
+    "compressor",
     "cooler",
+    "expander",
     "filter",
     "heat_exchanger",
     "heater",
@@ -46,7 +50,9 @@ __all__ = [
 
 _MIXER = "process.mixer"
 _HEAT_EXCHANGER = "process.heat_exchanger"
+_COMPRESSOR = "process.compressor"
 _COOLER = "process.cooler"
+_EXPANDER = "process.expander"
 _FILTER = "process.filter"
 _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
@@ -134,6 +140,74 @@ def filter(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         pressure_drop=pressure_drop,
+    )
+
+
+def compressor(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+    isentropic_efficiency: float,
+) -> CompressorResult:
+    """Raise a stream's pressure along an isentrope, dividing the step by the efficiency.
+
+    **The entropy is derived, not carried.** The record has five fields and ``s`` is not one
+    of them: it is a function of ``(T, P, z)``, and the flash at the inlet decides it. At an
+    efficiency of one the outlet's entropy equals the inlet's, which is what the captured
+    reversible row is for.
+
+    ``h_out = h_in + (h_isentropic - h_in) / eta``. :func:`expander` is the same route with a
+    multiplication, because an expansion's isentropic difference is negative.
+
+    Raises:
+        InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
+
+    See :func:`azoth.process.reference.compressor`.
+    """
+    return resolve(_COMPRESSOR)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        outlet_pressure=outlet_pressure,
+        isentropic_efficiency=isentropic_efficiency,
+    )
+
+
+def expander(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    outlet_pressure: Q,
+    isentropic_efficiency: float,
+) -> ExpanderResult:
+    """Drop a stream's pressure along an isentrope, multiplying the step by the efficiency.
+
+    ``h_out = h_in + (h_isentropic - h_in) * eta`` - the compressor's rule with the efficiency
+    on the other side of the division, because an expansion's isentropic difference is
+    negative and dividing would make the machine beat the reversible one at any efficiency
+    below one. The captured pair of rows is what holds that: `0.75` of the step is
+    ``-618.933`` J/mol and the step divided would be ``-1478.8``.
+
+    Raises:
+        InvalidInputError: where the shapes disagree or the efficiency is outside ``(0, 1]``.
+
+    See :func:`azoth.process.reference.expander`.
+    """
+    return resolve(_EXPANDER)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        outlet_pressure=outlet_pressure,
+        isentropic_efficiency=isentropic_efficiency,
     )
 
 

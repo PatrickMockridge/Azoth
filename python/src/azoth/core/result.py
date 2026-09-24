@@ -371,6 +371,52 @@ class FilterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CompressorResult(_HasWarnings):
+    """Result of ``process.compressor``.
+
+    The five record fields, as :class:`PumpResult` has them, because the route is the same
+    one: a turbomachine changes the pressure, the temperature and the enthalpy, and moves no
+    moles. **The shaft power is not a field**, for the reason ``s`` is not one - ``getPower`` is
+    ``n * (outlet_h - inlet_h)``, which the record already carries.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure.
+    outlet_p: Q
+    #: Outlet temperature, solved from the shifted enthalpy.
+    outlet_t: Q
+    #: Outlet molar enthalpy: the inlet's plus the isentropic step over the efficiency.
+    outlet_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ExpanderResult(_HasWarnings):
+    """Result of ``process.expander``.
+
+    ``CompressorResult``'s fields and its own class, for the reason every pair of ids in this
+    registry has two: a result type is the registry's handle on an id.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure.
+    outlet_p: Q
+    #: Outlet temperature, solved from the shifted enthalpy.
+    outlet_t: Q
+    #: Outlet molar enthalpy: the inlet's plus the isentropic step times the efficiency.
+    outlet_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CoolerResult(_HasWarnings):
     """Result of ``process.cooler``.
 

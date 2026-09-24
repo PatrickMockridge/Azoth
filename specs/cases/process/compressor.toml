@@ -1,0 +1,37 @@
+model = "process.compressor"
+[[cases]]
+id = "the_reversible_limit_at_efficiency_one"
+tolerance = 0.0001
+source = "NeqSim master, `Compressor.run` with `setOutletPressure(60 bara)` and `setIsentropicEfficiency(1.0)`, from `validation/neqsim/captures/process_compressor.tsv`. The fluid is methane/n-butane 0.9/0.1 at 320 K, 30 bara and 1 mol/s - the same fluid the heater's and filter's cases use, so the tier's states are comparable. **This is the row that proves the entropy is derived rather than carried**: at an efficiency of one the outlet's entropy is the inlet's to `1.3e-14` (`-20.42935039551473` against `-20.429350395514717`) and the step's entropy production is `-1.4e-17` kJ/(mol K), which is zero. Nothing on the record carries `s`, so a port that agreed here had to compute it. **Measured: `outlet_t` to `1.1e-5` and `outlet_h` to `3.59e-5`** - the libraries' ideal-gas heat-capacity offset, which lands on the outlet temperature because this row's temperature is *solved* rather than stated. The band is `1e-4`, about three times the measured worst.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_pressure = 6000000.0
+isentropic_efficiency = 1.0
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 6000000.0
+outlet_t = 368.7592218240752
+outlet_h = 3049.9081133820987
+[[cases]]
+id = "the_efficiency_divides_the_step"
+tolerance = 0.0001
+source = "The same state at `setIsentropicEfficiency(0.75)`. **The two rows pin the rule without the oracle having to state it**: the isentropic step is `3049.9081133820987 - 1235.7579663941092 = 1814.1501469879895` J/mol from the row above, and this row's outlet is that over `0.75` added to the inlet - `3654.624827852691`, which is the capture's number. `power_kW` in the capture is the same difference times the flow, so it carries no information the two enthalpies do not. **Measured: `outlet_h` to `2.87e-5`.**\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+inlet_n = 1.0
+inlet_z = [0.9, 0.1]
+inlet_p = 3000000.0
+inlet_t = 320.0
+outlet_pressure = 6000000.0
+isentropic_efficiency = 0.75
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.9, 0.1]
+outlet_p = 6000000.0
+outlet_t = 380.2120359420128
+outlet_h = 3654.624827852691

@@ -194,6 +194,68 @@ pub fn pump_stream(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.compressor` - the isentropic route as a registered id.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
+pub fn compressor(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+    isentropic_efficiency: f64,
+) -> PyResult<crate::results::PyCompressorResult> {
+    azoth_process::compressor(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+        isentropic_efficiency,
+    )
+    .map(|r| crate::results::PyCompressorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.expander` - the same route with the efficiency multiplying.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
+pub fn expander(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+    isentropic_efficiency: f64,
+) -> PyResult<crate::results::PyExpanderResult> {
+    azoth_process::expander(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+        isentropic_efficiency,
+    )
+    .map(|r| crate::results::PyExpanderResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.filter` - the filter's kernel as a registered id.
 ///
 /// The drop is required: the class defaults `deltaP` to `0.01` bar, which the palette entry
