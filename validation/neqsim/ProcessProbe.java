@@ -53,6 +53,8 @@
 //       > captures/process_column_reboiler.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe shortcut_column \
 //       > captures/process_shortcut_distillation_column.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe ejector \
+//       > captures/process_ejector.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
 
@@ -116,8 +118,12 @@ public class ProcessProbe {
       case "tank":
         tankRows();
         break;
+      case "ejector":
+        ejectorRows();
+        break;
       case "column":
         columnRows();
+        break;
         break;
       case "condenser":
         condenserRows();
@@ -1687,6 +1693,63 @@ public class ProcessProbe {
     System.out.println("corrected_density=" + fluid.getPhase(0).getDensity("kg/m3"));
     System.out.println("system_density=" + fluid.getDensity("kg/m3"));
     System.out.println("viscosity=" + fluid.getViscosity("kg/msec"));
+    System.out.println();
+  }
+
+  /// **A gas ejector: a motive stream entrains a suction stream and discharges above the
+  /// suction pressure.**
+  ///
+  /// Four rows. The first is the class at its own defaults - every efficiency the field
+  /// initialiser sets, and the mixing pressure the class *estimates* rather than being
+  /// given - and the rest move one thing each: a lower motive-nozzle efficiency, a higher
+  /// discharge pressure, and a heavier suction fluid. The class's own reported quantities
+  /// (the entrainment ratio, the compression ratio, the area ratio, the critical back
+  /// pressure and the three Mach numbers) are printed beside the record, because the
+  /// machine's whole subject is what those say about the state.
+  static void ejectorRows() {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.9, 0.1 };
+    runEjector("defaults", names, z, 400.0, 30.0, 300.0, 5.0, 10.0, null, null, null, null);
+    runEjector("motive_nozzle_efficiency_0.5", names, z, 400.0, 30.0, 300.0, 5.0, 10.0, 0.5, null, null, null);
+    runEjector("discharge_14_bara", names, z, 400.0, 30.0, 300.0, 5.0, 14.0, null, null, null, null);
+    runEjector("heavier_suction", new String[] { "methane", "n-butane" }, new double[] { 0.5, 0.5 }, 400.0, 30.0,
+        300.0, 5.0, 10.0, null, null, null, null);
+  }
+
+  static void runEjector(String label, String[] names, double[] z, double motiveTemperatureK,
+      double motivePressureBara, double suctionTemperatureK, double suctionPressureBara, double dischargePressureBara,
+      Double motiveEfficiency, Double diffuserEfficiency, Double suctionEfficiency, Double mixingEfficiency) {
+    Stream motive = feed(names, z, motiveTemperatureK, motivePressureBara, 1.0);
+    Stream suction = feed(names, z, suctionTemperatureK, suctionPressureBara, 0.5);
+    neqsim.process.equipment.ejector.Ejector ejector =
+        new neqsim.process.equipment.ejector.Ejector("ej", motive, suction);
+    ejector.setDischargePressure(dischargePressureBara);
+    if (motiveEfficiency != null) {
+      ejector.setEfficiencyIsentropic(motiveEfficiency);
+    }
+    if (diffuserEfficiency != null) {
+      ejector.setDiffuserEfficiency(diffuserEfficiency);
+    }
+    if (suctionEfficiency != null) {
+      ejector.setSuctionNozzleEfficiency(suctionEfficiency);
+    }
+    if (mixingEfficiency != null) {
+      ejector.setMixingEfficiency(mixingEfficiency);
+    }
+    ejector.run();
+    System.out.println(label);
+    print("motive", motive);
+    print("suction", suction);
+    printOrEmpty("outlet", ejector.getOutStream());
+    System.out.println("entrainment_ratio=" + ejector.getEntrainmentRatio());
+    System.out.println("compression_ratio=" + ejector.getCompressionRatio());
+    System.out.println("expansion_ratio=" + ejector.getExpansionRatio());
+    System.out.println("area_ratio=" + ejector.getAreaRatio());
+    System.out.println("critical_back_pressure=" + ejector.getCriticalBackPressure());
+    System.out.println("motive_nozzle_mach=" + ejector.getMotiveNozzleMach());
+    System.out.println("suction_mach=" + ejector.getSuctionMach());
+    System.out.println("mixing_mach=" + ejector.getMixingMach());
+    System.out.println("motive_choked=" + ejector.isMotiveChoked());
     System.out.println();
   }
 

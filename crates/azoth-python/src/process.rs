@@ -663,6 +663,56 @@ pub fn tank(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.ejector` - the ejector's kernel as a registered id.
+///
+/// **Two inlets carrying two fluids and one outlet.** The four efficiencies are the class's
+/// five parameters less the mixing pressure, which the palette does not declare and `run`
+/// therefore estimates.
+#[pyfunction]
+#[pyo3(signature = (motive_components, suction_components, motive_n, motive_z, motive_p, motive_t, suction_n, suction_z, suction_p, suction_t, discharge_pressure, motive_nozzle_efficiency, suction_nozzle_efficiency, mixing_efficiency, diffuser_efficiency))]
+#[pyo3(
+    text_signature = "(motive_components, suction_components, motive_n, motive_z, motive_p, motive_t, suction_n, suction_z, suction_p, suction_t, discharge_pressure, motive_nozzle_efficiency, suction_nozzle_efficiency, mixing_efficiency, diffuser_efficiency)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are fifteen
+pub fn ejector(
+    py: Python<'_>,
+    motive_components: Vec<String>,
+    suction_components: Vec<String>,
+    motive_n: f64,
+    motive_z: Vec<f64>,
+    motive_p: f64,
+    motive_t: f64,
+    suction_n: f64,
+    suction_z: Vec<f64>,
+    suction_p: f64,
+    suction_t: f64,
+    discharge_pressure: f64,
+    motive_nozzle_efficiency: f64,
+    suction_nozzle_efficiency: f64,
+    mixing_efficiency: f64,
+    diffuser_efficiency: f64,
+) -> PyResult<crate::results::PyEjectorResult> {
+    azoth_process::ejector(
+        &motive_components,
+        motive_n,
+        &motive_z,
+        pascals(motive_p),
+        kelvins(motive_t),
+        &suction_components,
+        suction_n,
+        &suction_z,
+        pascals(suction_p),
+        kelvins(suction_t),
+        pascals(discharge_pressure),
+        motive_nozzle_efficiency,
+        suction_nozzle_efficiency,
+        mixing_efficiency,
+        diffuser_efficiency,
+    )
+    .map(|r| crate::results::PyEjectorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.three_phase_separator` - the separator's kernel as a registered id.
 ///
 /// **Six entrainment fractions and three outlets.** The fractions cross in `run`'s own

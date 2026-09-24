@@ -1411,6 +1411,15 @@ class DistillationColumnResult:
     warnings: list[Warning]
 
 @final
+class EjectorResult:
+    outlet_n: Qty
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    warnings: list[Warning]
+
+@final
 class ExpanderResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2814,6 +2823,23 @@ def distillation_column(
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
 ) -> DistillationColumnResult: ...
+def ejector(
+    motive_components: list[str],
+    suction_components: list[str],
+    motive_n: float,
+    motive_z: list[float],
+    motive_p: float,
+    motive_t: float,
+    suction_n: float,
+    suction_z: list[float],
+    suction_p: float,
+    suction_t: float,
+    discharge_pressure: float,
+    motive_nozzle_efficiency: float,
+    suction_nozzle_efficiency: float,
+    mixing_efficiency: float,
+    diffuser_efficiency: float,
+) -> EjectorResult: ...
 def expander(
     components: list[str],
     inlet_n: float,

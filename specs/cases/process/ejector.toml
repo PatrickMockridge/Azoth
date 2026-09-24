@@ -1,0 +1,109 @@
+model = "process.ejector"
+
+[[cases]]
+id = "the_class_at_its_own_defaults"
+tolerance = 0.0002
+source = "NeqSim master, `Ejector.run` on 1 mol/s of 0.9/0.1 methane/n-butane at 30 bara and 400 K expanding into 0.5 mol/s of the same fluid at 5 bara, discharging at 10 bara, from `validation/neqsim/captures/process_ejector.tsv`. The efficiencies are the class's own field initialisers - `0.75`, `0.90`, `0.85` and `0.80` - and the mixing pressure is its estimate rather than a stated input. **No temperature, pressure or flow is an input of the machine beyond the two inlets and the discharge**: the outlet's `357.55` K is what the momentum-and-diffuser route leaves, and the entrainment `0.5`, compression `2.0` and expansion `3.0` are `0.5/1.0`, `10/5` and `30/10` read back off the record. The enthalpies are `0.35` J/mol apart, which is the libraries' enthalpy model offset - the same magnitude the separator's and the tank's rows carry.\n"
+[cases.inputs]
+motive_components = ["methane", "n-butane"]
+motive_n = 1.0
+motive_z = [0.9, 0.1]
+motive_p = 3000000.0
+motive_t = 400.0
+suction_components = ["methane", "n-butane"]
+suction_n = 0.5
+suction_z = [0.9, 0.1]
+suction_p = 500000.0
+suction_t = 300.0
+discharge_pressure = 1000000.0
+motive_nozzle_efficiency = 0.75
+suction_nozzle_efficiency = 0.9
+mixing_efficiency = 0.85
+diffuser_efficiency = 0.8
+[cases.expected]
+outlet_n = 1.5
+outlet_z = [0.9, 0.10000000000000002]
+outlet_p = 1000000.0
+outlet_t = 357.55282081845144
+outlet_h = 3446.5843564496936
+
+[[cases]]
+id = "a_worse_motive_nozzle_entrains_the_same_and_discharges_hotter"
+tolerance = 0.0002
+source = "The capture's second row: the same machine with `setEfficiencyIsentropic(0.5)`. **The parameter the palette entry did not declare, and it moves the outlet by `95` J/mol** - the motive's expansion keeps less of its enthalpy drop, so its jet is slower, and the diffuser recovers less of a slower mixture: the outlet comes back at `359.58` K against the defaults' `357.55`, and the entrainment is unchanged at `0.5`, because the two stream's flows are still what they are. The class reports the motive nozzle's Mach falling from `1.58` to `1.24` beside it.\n"
+[cases.inputs]
+motive_components = ["methane", "n-butane"]
+motive_n = 1.0
+motive_z = [0.9, 0.1]
+motive_p = 3000000.0
+motive_t = 400.0
+suction_components = ["methane", "n-butane"]
+suction_n = 0.5
+suction_z = [0.9, 0.1]
+suction_p = 500000.0
+suction_t = 300.0
+discharge_pressure = 1000000.0
+motive_nozzle_efficiency = 0.5
+suction_nozzle_efficiency = 0.9
+mixing_efficiency = 0.85
+diffuser_efficiency = 0.8
+[cases.expected]
+outlet_n = 1.5
+outlet_z = [0.9, 0.10000000000000002]
+outlet_p = 1000000.0
+outlet_t = 359.5821295331475
+outlet_h = 3541.935633243748
+
+[[cases]]
+id = "a_higher_discharge_pressure_recovers_more"
+tolerance = 0.0005
+source = "The capture's third row: discharging at 14 bara instead of 10. The diffuser's pressure rise is larger, so more of the mixing velocity's kinetic energy comes back as enthalpy and the outlet is *cooler* - `358.32` K against `357.55` - even though the discharge is denser. The class reports the compression ratio at `2.8` and the mixing Mach past one, at `1.05`. **The tolerance is this row's**, at `5e-4`: the libraries' enthalpy offset is `1.1` J/mol here against `0.35` on the others, which is `3.3e-4` of a `3403` J/mol outlet. The offset grows with the state's density, so the row that discharges hardest carries the widest band.\n"
+[cases.inputs]
+motive_components = ["methane", "n-butane"]
+motive_n = 1.0
+motive_z = [0.9, 0.1]
+motive_p = 3000000.0
+motive_t = 400.0
+suction_components = ["methane", "n-butane"]
+suction_n = 0.5
+suction_z = [0.9, 0.1]
+suction_p = 500000.0
+suction_t = 300.0
+discharge_pressure = 1400000.0
+motive_nozzle_efficiency = 0.75
+suction_nozzle_efficiency = 0.9
+mixing_efficiency = 0.85
+diffuser_efficiency = 0.8
+[cases.expected]
+outlet_n = 1.5
+outlet_z = [0.9, 0.10000000000000002]
+outlet_p = 1400000.0
+outlet_t = 358.3237392844819
+outlet_h = 3403.07504324092
+
+[[cases]]
+id = "a_heavier_suction_discharges_cooler"
+tolerance = 0.0002
+source = "The capture's fourth row: an equimolar methane/n-butane fluid on both sides instead of 0.9/0.1. The heavier mixture carries less enthalpy per mole through the same pressure ratio, so the outlet lands at `356.91` K and `5223.36` J/mol - and the density the two empirical velocities are built from is a mixture property, so the design velocities move with the fluid.\n"
+[cases.inputs]
+motive_components = ["methane", "n-butane"]
+motive_n = 1.0
+motive_z = [0.5, 0.5]
+motive_p = 3000000.0
+motive_t = 400.0
+suction_components = ["methane", "n-butane"]
+suction_n = 0.5
+suction_z = [0.5, 0.5]
+suction_p = 500000.0
+suction_t = 300.0
+discharge_pressure = 1000000.0
+motive_nozzle_efficiency = 0.75
+suction_nozzle_efficiency = 0.9
+mixing_efficiency = 0.85
+diffuser_efficiency = 0.8
+[cases.expected]
+outlet_n = 1.5
+outlet_z = [0.5, 0.5]
+outlet_p = 1000000.0
+outlet_t = 356.90811887938446
+outlet_h = 5223.362705020146

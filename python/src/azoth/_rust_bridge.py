@@ -54,6 +54,7 @@ from azoth.core.result import (
     DewPressureResult,
     DewTemperatureResult,
     DistillationColumnResult,
+    EjectorResult,
     EffectiveDiffusionResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
@@ -4332,6 +4333,60 @@ def tank(
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ejector(
+    motive_components: Sequence[str],
+    motive_n: Q,
+    motive_z: Sequence[float],
+    motive_p: Q,
+    motive_t: Q,
+    suction_components: Sequence[str],
+    suction_n: Q,
+    suction_z: Sequence[float],
+    suction_p: Q,
+    suction_t: Q,
+    discharge_pressure: Q,
+    motive_nozzle_efficiency: float,
+    suction_nozzle_efficiency: float,
+    mixing_efficiency: float,
+    diffuser_efficiency: float,
+) -> EjectorResult:
+    """`process.ejector`, computed in Rust.
+
+    **Two component lists, as `process.heat_exchanger`'s does**: a motive stream and a suction
+    stream need not carry the same fluid, so neither list is the plain `components` the
+    single-inlet unit operations declare.
+    """
+    spec = _models_gen.model("process.ejector")
+    # **The two component lists cross first**, which is the transport shape `_dispatch` gives
+    # a model with more than one `components` input: the fluid is named once per port and the
+    # rest of that port's fields follow - the arrangement `process.heat_exchanger` set.
+    result = _core.ejector(
+        list(motive_components),
+        list(suction_components),
+        input_to_si(spec, "motive_n", motive_n),
+        [_si(spec, "motive_z", v) for v in motive_z],
+        input_to_si(spec, "motive_p", motive_p),
+        input_to_si(spec, "motive_t", motive_t),
+        input_to_si(spec, "suction_n", suction_n),
+        [_si(spec, "suction_z", v) for v in suction_z],
+        input_to_si(spec, "suction_p", suction_p),
+        input_to_si(spec, "suction_t", suction_t),
+        input_to_si(spec, "discharge_pressure", discharge_pressure),
+        _si(spec, "motive_nozzle_efficiency", motive_nozzle_efficiency),
+        _si(spec, "suction_nozzle_efficiency", suction_nozzle_efficiency),
+        _si(spec, "mixing_efficiency", mixing_efficiency),
+        _si(spec, "diffuser_efficiency", diffuser_efficiency),
+    )
+    return EjectorResult(
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         warnings=_warnings(result.warnings),
     )
 

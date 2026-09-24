@@ -16,6 +16,7 @@ from azoth.process.reference.component_splitter import component_splitter
 from azoth.process.reference.compressor import compressor
 from azoth.process.reference.distillation_column import distillation_column
 from azoth.process.reference.cooler import cooler
+from azoth.process.reference.ejector import ejector
 from azoth.process.reference.expander import expander
 from azoth.process.reference.filter import filter
 from azoth.process.reference.gas_scrubber import gas_scrubber
@@ -37,6 +38,7 @@ __all__ = [
     "compressor",
     "distillation_column",
     "cooler",
+    "ejector",
     "expander",
     "filter",
     "gas_scrubber",

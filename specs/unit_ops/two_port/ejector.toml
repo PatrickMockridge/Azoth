@@ -1,8 +1,11 @@
 id = "unit_ops.ejector"
 name = "Ejector"
-notes = "Declared with two inlets, so it is not a two-port machine and its family directory is a misnomer for it. The declaration is the machine; the directory is where someone filed it."
+notes = "Declared with two inlets, so it is not a two-port machine and its family directory is a misnomer for it. The declaration is the machine; the directory is where someone filed it. **The entry was missing the efficiency that moves the answer most**: `run` expands the motive stream with `efficiencyIsentropic`, a field of its own defaulting to `0.75` with its own setter, and only the suction nozzle's, the mixing chamber's and the diffuser's efficiencies were declared - so `motive_nozzle_efficiency` is here now, and all four are read."
 [source]
 standard = "NeqSim process/equipment/ejector/Ejector.java"
+[parameters.motive_nozzle_efficiency]
+unit = "dimensionless"
+description = "the motive nozzle's isentropic efficiency, `setEfficiencyIsentropic` - the field the entry used to leave undeclared while `run` read it"
 [parameters.discharge_pressure]
 unit = "Pa"
 description = "the pressure the diffuser discharges at, `setDischargePressure`"

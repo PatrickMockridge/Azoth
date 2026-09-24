@@ -545,6 +545,16 @@ NO_INTERIOR: dict[str, str] = {
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
         "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
     ),
+    "process.ejector": (
+        "the kernel forms the mixing pressure, four velocities, two efficiencies' enthalpy "
+        "drops and the joined fluid's static enthalpy - and the outlet record carries the "
+        "answer to all of them, because the last flash *is* the state the diffuser lands on. "
+        "**The one intermediate not on the record is the class's own instrumentation**: the "
+        "entrainment, compression and expansion ratios and the area ratio are ratios of the "
+        "record's fields (`n`, `P` and `P`), and the Mach numbers need a speed of sound the "
+        "port would have to model separately rather than derive. A dumper would be dumping "
+        "arithmetic the capture's own ratios already state"
+    ),
     "process.three_phase_separator": (
         "the kernel forms the multiphase flash's three fractions, the three compositions and "
         "the moles the entrainment moves, and every one of them is on the three outlet "

@@ -59,9 +59,10 @@ use azoth_eos::results::{
 };
 use azoth_process::{
     ComponentSplitterResult, CompressorResult, CoolerResult, DistillationColumnResult,
-    ExpanderResult, FilterResult, GasScrubberResult, HeatExchangerResult, HeaterResult,
-    ManifoldResult, MixerResult, PumpResult, SeparatorResult, ShortcutDistillationColumnResult,
-    SplitterResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult, pipe::PipeResult,
+    EjectorResult, ExpanderResult, FilterResult, GasScrubberResult, HeatExchangerResult,
+    HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult,
+    ShortcutDistillationColumnResult, SplitterResult, TankResult, ThreePhaseSeparatorResult,
+    ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -1551,6 +1552,67 @@ impl From<&TankResult> for PyTankResult {
             liquid_p: quantity(r.liquid_p.value, "Pa"),
             liquid_t: quantity(r.liquid_t.value, "K"),
             liquid_h: quantity(r.liquid_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.ejector`, transported.
+///
+/// One outlet, five fields: a two-inlet machine still discharges through one port.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "EjectorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyEjectorResult {
+    /// Outlet molar flow, mol/s.
+    #[pyo3(get)]
+    pub outlet_n: PyQty,
+    /// Outlet composition.
+    #[pyo3(get)]
+    pub outlet_z: Vec<f64>,
+    /// Outlet pressure.
+    #[pyo3(get)]
+    pub outlet_p: PyQty,
+    /// Outlet temperature.
+    #[pyo3(get)]
+    pub outlet_t: PyQty,
+    /// Outlet molar enthalpy.
+    #[pyo3(get)]
+    pub outlet_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyEjectorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "EjectorResult(outlet_n={} {}, outlet_t={} {})",
+            self.outlet_n.magnitude_si,
+            self.outlet_n.unit,
+            self.outlet_t.magnitude_si,
+            self.outlet_t.unit
+        )
+    }
+}
+
+impl From<&EjectorResult> for PyEjectorResult {
+    fn from(r: &EjectorResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            outlet_n: quantity(r.outlet_n, "mol/s"),
+            outlet_z: r.outlet_z.clone(),
+            outlet_p: quantity(r.outlet_p.value, "Pa"),
+            outlet_t: quantity(r.outlet_t.value, "K"),
+            outlet_h: quantity(r.outlet_h.value, "J/mol"),
             warnings: transport(&r.warnings),
         }
     }
@@ -8867,6 +8929,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         TankResult::CALC_ID => TankResult::FIELDS.to_vec(),
         ThreePhaseSeparatorResult::CALC_ID => ThreePhaseSeparatorResult::FIELDS.to_vec(),
+        EjectorResult::CALC_ID => EjectorResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

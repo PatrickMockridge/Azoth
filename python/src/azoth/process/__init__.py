@@ -20,6 +20,7 @@ from azoth.core.result import (
     CompressorResult,
     CoolerResult,
     DistillationColumnResult,
+    EjectorResult,
     ExpanderResult,
     FilterResult,
     GasScrubberResult,
@@ -45,6 +46,7 @@ __all__ = [
     "compressor",
     "cooler",
     "distillation_column",
+    "ejector",
     "expander",
     "filter",
     "gas_scrubber",
@@ -73,6 +75,7 @@ _COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
 _DISTILLATION_COLUMN = "process.distillation_column"
 _COOLER = "process.cooler"
+_EJECTOR = "process.ejector"
 _EXPANDER = "process.expander"
 _FILTER = "process.filter"
 _HEATER = "process.heater"
@@ -598,6 +601,59 @@ def tank(
         feed_z=feed_z,
         feed_p=feed_p,
         feed_t=feed_t,
+    )
+
+
+def ejector(
+    motive_components: list[str],
+    motive_n: Q,
+    motive_z: list[float],
+    motive_p: Q,
+    motive_t: Q,
+    suction_components: list[str],
+    suction_n: Q,
+    suction_z: list[float],
+    suction_p: Q,
+    suction_t: Q,
+    discharge_pressure: Q,
+    motive_nozzle_efficiency: float,
+    suction_nozzle_efficiency: float,
+    mixing_efficiency: float,
+    diffuser_efficiency: float,
+) -> EjectorResult:
+    """Expand a motive stream, entrain a suction stream with it, and diffuse the mixture.
+
+    **A gas ejector on NeqSim's quasi one-dimensional route**: each stream expands
+    isentropically to the mixing pressure, drops to the enthalpy its own nozzle efficiency
+    leaves, is given the velocity ``sqrt(2 dh)`` that implies, and the two momenta mix; a
+    diffuser then recovers the mixing velocity's kinetic energy up to ``discharge_pressure``.
+
+    **The mixing pressure is the class's own estimate**, not an input - ``setMixingPressure``
+    exists and the palette does not declare it - and so are the two design velocities the
+    outlet's final ``v^2/2`` is taken at.
+
+    Raises:
+        InvalidInputError: where an efficiency is outside ``(0, 1]`` or a stream's shapes
+            disagree.
+
+    See :func:`azoth.process.reference.ejector`.
+    """
+    return resolve(_EJECTOR)(  # type: ignore[no-any-return]
+        motive_components=motive_components,
+        motive_n=motive_n,
+        motive_z=motive_z,
+        motive_p=motive_p,
+        motive_t=motive_t,
+        suction_components=suction_components,
+        suction_n=suction_n,
+        suction_z=suction_z,
+        suction_p=suction_p,
+        suction_t=suction_t,
+        discharge_pressure=discharge_pressure,
+        motive_nozzle_efficiency=motive_nozzle_efficiency,
+        suction_nozzle_efficiency=suction_nozzle_efficiency,
+        mixing_efficiency=mixing_efficiency,
+        diffuser_efficiency=diffuser_efficiency,
     )
 
 

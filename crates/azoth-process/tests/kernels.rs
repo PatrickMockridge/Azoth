@@ -3,6 +3,7 @@
 use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_eos::RootSide;
 use azoth_process::Stream;
+use azoth_process::kernels::ejector::EjectorSetup;
 use azoth_process::kernels::three_phase_separator::Entrainment;
 use azoth_process::kernels::{
     FlowRegime, compressor, expander, filter, heat_exchanger, heater, mixer, pipe, pump, separator,
@@ -1093,4 +1094,74 @@ fn an_entrainment_moves_moles_between_the_phases() {
     close(out_of_oil.0.n, plain.0.n + plain.1.n * 0.05);
     close(out_of_oil.1.n, plain.1.n * 0.95);
     close(out_of_oil.2.n, plain.2.n);
+}
+
+/// **An ejector entrains a low-pressure stream with a high-pressure one, and discharges
+/// between them.** The invariants are the machine's own: the moles are the two inlets' sum,
+/// the outlet is above the suction and below the motive, and a worse nozzle discharges
+/// hotter.
+#[test]
+fn an_ejector_discharges_between_its_inlets() {
+    let motive = binary(0.9, 1.0, 30.0e5, 400.0);
+    let suction = binary(0.9, 0.5, 5.0e5, 300.0);
+    let defaults = EjectorSetup {
+        discharge_pressure: pascals(10.0e5),
+        motive_nozzle_efficiency: 0.75,
+        suction_nozzle_efficiency: 0.90,
+        mixing_efficiency: 0.85,
+        diffuser_efficiency: 0.80,
+    };
+    let out =
+        azoth_process::kernels::ejector::ejector(&motive, &suction, defaults).expect("ejector");
+
+    println!(
+        "outlet n={} p={} T={} h={} z={:?}",
+        out.n, out.p.value, out.t.value, out.h.value, out.z
+    );
+    println!("neqsim n=1.5 p=1000000.0 T=357.55282081845144 h=3446.5843564496936");
+
+    close(out.n, motive.n + suction.n);
+    close(out.p.value, 10.0e5);
+    close(out.z[0], 0.9);
+    assert!(
+        out.p.value > suction.p.value && out.p.value < motive.p.value,
+        "an ejector discharges between its inlets, and {} Pa is not between {} and {}",
+        out.p.value,
+        suction.p.value,
+        motive.p.value
+    );
+    relative(out.n, 1.5, 1e-12, "the outlet flow");
+    relative(
+        out.t.value,
+        357.55282081845144,
+        1e-4,
+        "the outlet temperature",
+    );
+
+    // **The parameter the palette entry did not declare moves the answer.** A poorer motive
+    // nozzle keeps less of the expansion's enthalpy drop, so the jet is slower, the mixing
+    // velocity and the diffuser's recovery fall with it, and the outlet comes back hotter.
+    let poorer = azoth_process::kernels::ejector::ejector(
+        &motive,
+        &suction,
+        EjectorSetup {
+            motive_nozzle_efficiency: 0.5,
+            ..defaults
+        },
+    )
+    .expect("ejector");
+    println!("poorer nozzle: T={} h={}", poorer.t.value, poorer.h.value);
+    println!("neqsim poorer: T=359.5821295331475 h=3541.935633243748");
+    assert!(
+        poorer.t.value > out.t.value,
+        "a worse nozzle leaves the outlet hotter: {} against {}",
+        poorer.t.value,
+        out.t.value
+    );
+    relative(
+        poorer.t.value,
+        359.5821295331475,
+        1e-4,
+        "the poorer nozzle's temperature",
+    );
 }

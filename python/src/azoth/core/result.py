@@ -647,6 +647,28 @@ class GasScrubberResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class EjectorResult(_HasWarnings):
+    """Result of ``process.ejector``.
+
+    One outlet: a two-inlet machine still discharges through one port, and its record is the
+    same five fields every other outlet carries.
+    """
+
+    #: Outlet molar flow.
+    outlet_n: Q
+    #: Outlet composition.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure.
+    outlet_p: Q
+    #: Outlet temperature.
+    outlet_t: Q
+    #: Outlet molar enthalpy.
+    outlet_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ThreePhaseSeparatorResult(_HasWarnings):
     """Result of ``process.three_phase_separator``.
 

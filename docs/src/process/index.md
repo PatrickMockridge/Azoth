@@ -17,6 +17,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.compressor`](./compressor.md) | `direct composition` | NeqSim process/equipment/compressor/Compressor.java |
 | [`process.cooler`](./cooler.md) | `direct composition` | NeqSim process/equipment/heatexchanger/Cooler.java |
 | [`process.distillation_column`](./distillation_column.md) | `sequential_substitution_sweeps` | NeqSim process/equipment/distillation/DistillationColumn.java |
+| [`process.ejector`](./ejector.md) | `direct composition` | NeqSim process/equipment/ejector/Ejector.java |
 | [`process.expander`](./expander.md) | `direct composition` | NeqSim process/equipment/compressor/Compressor.java |
 | [`process.filter`](./filter.md) | `direct composition` | NeqSim process/equipment/filter/Filter.java |
 | [`process.gas_scrubber`](./gas_scrubber.md) | `direct composition` | NeqSim process/equipment/separator/GasScrubber.java |

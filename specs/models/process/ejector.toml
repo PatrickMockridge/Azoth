@@ -1,0 +1,129 @@
+id = "process.ejector"
+name = "Ejector"
+kind = "direct"
+assumptions = [
+    "**the machine is a gas ejector, and `run` is a quasi one-dimensional route**: each stream is expanded isentropically to the mixing pressure, dropped to the enthalpy its nozzle efficiency leaves, given a velocity, mixed by momentum, and diffused back up to the discharge pressure.",
+    "**the mixing pressure is the class's own estimate, not an input.** `setMixingPressure` exists and the palette does not declare it, so `run`'s `estimateDefaultMixingPressure` decides - in **bara**, which is the unit it is written in, down to a `0.01` floor that is a bar and not a pascal.",
+    "**the two design velocities are empirical correlations, and they decide the answer.** Each blends `sqrt(2·target/rho)` with a logarithmic flow term, clamped - `[25, 120]` m/s at the suction, `[10, 60]` at the diffuser - and the outlet's enthalpy is what the diffuser's `v^2/2` leaves.",
+    "**the motive nozzle's efficiency was undeclared and is now a parameter.** `run` reads `efficiencyIsentropic` - default `0.75`, its own setter - with only the other three efficiencies declared beside it, so the entry described a machine whose largest loss had no name.",
+    "**a stream that carries nothing is returned as the motive stream**, which is `run`'s own guard rather than a division by zero: with no mass flow at all the class clones the motive inlet and stops.",
+    "**the class's own diagnostics are not outputs.** The three ratios, the area ratio, the critical back pressure and the Mach numbers are `run`'s instruments; the record carries `n`, `z`, `P`, `T` and `h`, and the three ratios are readable off it. The areas and lengths are mechanical design.",
+    "**the two phases of the class's own size are not here**: `MechanicalDesign` is not ported, so `updateDesign`'s areas, diameters, lengths and volumes are absent rather than guessed.",
+    "the fluids are PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/ejector/Ejector.java` is the port source, through its `run`.",
+    "`validation/neqsim/captures/process_ejector.tsv` - four rows: the class at its own defaults, a motive nozzle efficiency of `0.5`, a 14 bara discharge, and a heavier suction fluid, each with the class's reported ratios, area ratio and Mach numbers beside the record.",
+]
+[source]
+standard = "NeqSim process/equipment/ejector/Ejector.java"
+edition = "Its steady-state `run`: an isentropic expansion of each stream to the estimated mixing pressure, the nozzle efficiency's enthalpy drop, `sqrt(2 dh)` velocities, a momentum mix, and a diffuser that recovers `v^2/2` up to the discharge pressure. **The sizing is mechanical design and is absent.**"
+[inputs]
+[inputs.motive_components]
+type = "components"
+description = "the motive stream's substances, by name. A different list from the suction stream's is allowed, so this is not the plain `components` the single-inlet unit operations declare.\n"
+[inputs.motive_n]
+unit = "mol/s"
+description = "the motive inlet's molar flow.\n"
+[inputs.motive_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per motive-side component"
+description = "the motive inlet's composition.\n"
+[inputs.motive_p]
+unit = "Pa"
+description = "the motive inlet's pressure, which is the whole reason an ejector works: it expands to the mixing pressure and drives the machine.\n"
+[inputs.motive_t]
+unit = "K"
+description = "the motive inlet's temperature, which with `motive_p` fixes its enthalpy and so the expansion's drop.\n"
+[inputs.suction_components]
+type = "components"
+description = "the suction stream's substances, by name.\n"
+[inputs.suction_n]
+unit = "mol/s"
+description = "the suction inlet's molar flow, which the entrainment is measured against.\n"
+[inputs.suction_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per suction-side component"
+description = "the suction inlet's composition.\n"
+[inputs.suction_p]
+unit = "Pa"
+description = "the suction inlet's pressure, which the discharge pressure is above and the mixing pressure is below.\n"
+[inputs.suction_t]
+unit = "K"
+description = "the suction inlet's temperature.\n"
+[inputs.discharge_pressure]
+unit = "Pa"
+description = "the pressure the diffuser discharges at, `unit_ops.ejector`'s own parameter. The machine's whole subject is that this is above the suction pressure and below the motive's.\n"
+[inputs.motive_nozzle_efficiency]
+unit = "dimensionless"
+description = "the motive nozzle's isentropic efficiency, `Ejector.efficiencyIsentropic`. The entry's fourth declared parameter, and the one it had been missing.\n"
+[inputs.suction_nozzle_efficiency]
+unit = "dimensionless"
+description = "the suction nozzle's isentropic efficiency, applied to the suction stream's own expansion to the mixing pressure.\n"
+[inputs.mixing_efficiency]
+unit = "dimensionless"
+description = "the mixing chamber's momentum-transfer efficiency, which multiplies the ideal mixture velocity.\n"
+[inputs.diffuser_efficiency]
+unit = "dimensionless"
+description = "the diffuser's pressure-recovery efficiency, which is the share of the mixing velocity's kinetic energy the pressure rise recovers.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet's molar flow, which is the two inlets' sum.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component of the joined fluid"
+description = "the outlet's composition, the two inlets' mole-weighted mixture.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet's pressure, which is the stated discharge pressure.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet's temperature, which the final flash solves for.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet's molar enthalpy at its own state.\n"
+[[valid_range]]
+quantity = "discharge_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; the diffuser discharges at it\n"
+[[valid_range]]
+quantity = "motive_nozzle_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an isentropic efficiency, in (0, 1]\n"
+[[valid_range]]
+quantity = "suction_nozzle_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "an isentropic efficiency, in (0, 1]\n"
+[[valid_range]]
+quantity = "mixing_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a momentum-transfer efficiency, in (0, 1]\n"
+[[valid_range]]
+quantity = "diffuser_efficiency"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a pressure-recovery efficiency, in (0, 1]\n"
+[implementations]
+python = "azoth.process.ejector"
+rust = "azoth_process::ejector"

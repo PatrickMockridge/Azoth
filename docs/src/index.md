@@ -239,6 +239,7 @@ Five sections, and the difference between them is the point:
 - [`process.compressor`](./process/compressor.md) — Compressor
 - [`process.cooler`](./process/cooler.md) — Cooler
 - [`process.distillation_column`](./process/distillation_column.md) — Distillation column
+- [`process.ejector`](./process/ejector.md) — Ejector
 - [`process.expander`](./process/expander.md) — Expander
 - [`process.filter`](./process/filter.md) — Filter
 - [`process.gas_scrubber`](./process/gas_scrubber.md) — Gas scrubber
