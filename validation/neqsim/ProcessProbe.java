@@ -124,6 +124,8 @@ public class ProcessProbe {
       case "column":
         columnRows();
         break;
+      case "column_solvers":
+        columnSolverRows(args);
         break;
       case "condenser":
         condenserRows();
@@ -670,10 +672,66 @@ public class ProcessProbe {
     System.out.println();
   }
 
+  /// **The ladder, measured rather than described.** `ColumnSolverFactory` carries ten
+  /// strategies and `AUTO` is one of them - a probe over candidates rather than a method - so a
+  /// caller who states nothing gets whichever of them the column's own conditions select. These
+  /// rows state each one explicitly on the same two columns, which is what decides whether the
+  /// rungs are different physics or different paths to one answer.
+  static void columnSolverRows(String[] only) {
+    String[] binary = new String[] { "methane", "n-butane" };
+    double[] binaryZ = new double[] { 0.5, 0.5 };
+    String[] deethanizer = new String[] { "methane", "ethane", "propane", "i-butane", "n-butane",
+        "i-pentane", "n-pentane", "n-hexane" };
+    double[] deethanizerZ = new double[] { 0.22, 0.34, 0.20, 0.08, 0.08, 0.03, 0.03, 0.02 };
+    String[] solvers = new String[] { "DIRECT_SUBSTITUTION", "DAMPED_SUBSTITUTION", "INSIDE_OUT",
+        "MATRIX_INSIDE_OUT", "WEGSTEIN", "SUM_RATES", "NEWTON", "NAPHTALI_SANDHOLM",
+        "MESH_RESIDUAL", "AUTO" };
+
+    for (String solver : solvers) {
+      // `args[0]` is this subcommand; a solver name given after it narrows the run.
+      if (only.length > 1 && !solver.equalsIgnoreCase(only[1])) {
+        continue;
+      }
+      solverRow("binary_methane_butane_" + solver.toLowerCase(), binary, binaryZ, 300.0, 20.0,
+          1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, true, false, solver);
+    }
+    // **The deethanizer is captured under the one strategy that converges it.** Every other
+    // strategy falls back to `DAMPED_SUBSTITUTION` and stops at the iteration cap - which the
+    // `deethanizer_pr_soft_limit` row of the column capture already records for
+    // `DIRECT_SUBSTITUTION` - and two of them cost more than a sweep can pay: measured here,
+    // `MESH_RESIDUAL` takes 594 s for the pair and `AUTO` on this column had not returned after
+    // 900 s. The failure rows are a measurement of the cap rather than of the column.
+    if (only.length < 2 || solvers[7].equalsIgnoreCase(only[1])) {
+      solverRow("deethanizer_naphtali_sandholm", deethanizer, deethanizerZ, 283.15, 25.0, 10000.0,
+          8, 6, 0.0, 80.0, 24.0, 25.0, 1.0e-5, 200, true, false, "NAPHTALI_SANDHOLM");
+    }
+  }
+
   static void columnRow(String label, String[] names, double[] z, double feedTemperatureK,
       double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
       double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
       boolean condenser, boolean totalCondenser) {
+    runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
+        condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
+        totalCondenser, null);
+  }
+
+  /// **The same column under a stated `SolverType`.** `setSolverType` is explicit rather than a
+  /// fallback, so the row reports which strategy was actually used and what that strategy's own
+  /// residuals are - the two things that decide whether a second solve agrees with the first.
+  static void solverRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
+      double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
+      boolean condenser, boolean totalCondenser, String solver) {
+    runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
+        condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
+        totalCondenser, solver);
+  }
+
+  static void runColumn(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
+      double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
+      boolean condenser, boolean totalCondenser, String solver) {
     SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], z[i]);
@@ -697,6 +755,10 @@ public class ProcessProbe {
       column.setCondenserRefluxRatio(1.5);
     }
     column.setMaxNumberOfIterations(maxIterations, true);
+    if (solver != null) {
+      column.setSolverType(
+          neqsim.process.equipment.distillation.DistillationColumn.SolverType.valueOf(solver));
+    }
     column.run();
 
     System.out.println(label);
@@ -708,6 +770,9 @@ public class ProcessProbe {
     System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
     System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
     System.out.println("tray_count=" + column.getNumberOfTrays());
+    if (solver != null) {
+      System.out.println("solver_requested=" + solver);
+    }
     System.out.println("solved=" + column.solved());
     System.out.println("iterations=" + column.getLastIterationCount());
     System.out.println("solver=" + column.getLastSolverTypeUsed());

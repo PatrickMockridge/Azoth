@@ -14,7 +14,7 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
 use azoth_process::kernels::distillation_column::{
-    ColumnSetup, Specification, SpecificationKind, distillation_column,
+    ColumnSetup, SolverType, Specification, SpecificationKind, distillation_column,
 };
 
 fn column(top: Option<Specification>, bottom: Option<Specification>, pin: bool) -> ColumnSetup {
@@ -39,6 +39,7 @@ fn column(top: Option<Specification>, bottom: Option<Specification>, pin: bool) 
         max_iterations: 200,
         top_specification: top,
         bottom_specification: bottom,
+        solver_type: SolverType::DirectSubstitution,
     }
 }
 
@@ -197,11 +198,11 @@ fn a_duty_specification_under_a_pin_moves_nothing() {
 
 /// **A reflux-ratio specification is not reproduced, and the reason is measured.**
 ///
-/// The class applies it directly to the condenser, whose own mode is `PVrefluxflash(ratio, 0)`
-/// - a temperature search for the state whose vapour fraction is `1/(1 + ratio)`. On this row
-/// NeqSim reports `402.24` K, which for a 19 bara mixture that is 82 % methane is beyond its
-/// dew point: a state there is single-phase, and this port's `pv_reflux_flash` therefore refuses
-/// to converge rather than landing on it.
+/// The class applies it directly to the condenser, whose own mode is `PVrefluxflash(ratio, 0)`,
+/// a temperature search for the state whose vapour fraction is `1/(1 + ratio)`. On this row
+/// NeqSim reports `402.24` K, which for a 19 bara mixture that is 82 % methane is past its dew
+/// point: a state there is single-phase, and this port's `pv_reflux_flash` therefore refuses to
+/// converge rather than landing on it.
 ///
 /// So the row is *not* an oracle and is declared uncased. What is asserted here is the refusal,
 /// because a spec type that quietly returned the wrong state would be worse than one that says

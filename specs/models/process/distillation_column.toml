@@ -18,10 +18,14 @@ assumptions = [
     "**there is no specification homotopy here, and that is a measurement.** `getEffectiveSpecificationHomotopySteps` returns three staged targets only when the solver is `AUTO`, and the field it otherwise reads is one - so the continuation the class carries belongs to the solver this port refuses.",
     "**a pin wins over a directly-applied duty.** The tray tests its stated outlet temperature first and takes a `TPflash` there, so a heat input a `DUTY` wrote is never read: the capture's inert row reports `-21323.04` W for a target of `-20000`.",
     "**nothing reports that gap**: a `DUTY` is not *adjusted*, so its residual is zero by construction - a zero that means \"not checked\" rather than \"satisfied\".",
-    "**a reflux-ratio specification is not reproduced, and the reason is measured.** The end's `PVrefluxflash` searches for the state whose vapour fraction is `1/(1 + ratio)`; NeqSim lands on `402.24` K, beyond the dew point of a 19 bara mixture that is 82 per cent methane.",
+    "**a reflux-ratio specification is not reproduced, and the reason is measured.** The end's `PVrefluxflash` searches for the state whose vapour fraction is `1/(1 + ratio)`; NeqSim lands on `402.24` K, past the dew point of the captured mixture.",
     "**this port's flash refuses to converge there** rather than landing on a state its own equations do not place.",
     "**`murphree_efficiency` is declared and refused.** The palette declares it because it is the machine's; its arithmetic is not ported, and `SimpleTray.setMurphreeEfficiency` would close it. A refused parameter is refused by name rather than answered with the ideal stage.",
-    "**`solver_type` is refused for everything but `direct_substitution`**, which is the class's own default. The other nine are `NaphtaliSandholmSolver`, `ColumnSolverFactory`'s inside-out family and the rest.",
+    "**two of `solver_type`'s ten strategies are ported**: `direct_substitution`, the class's own default, and `naphtali_sandholm`, the simultaneous MESH correction. The other eight are refused by name.",
+    "**the second solve linearises the whole column at once**: `N` tray blocks of `C + 2` variables, `C` component balances, the energy equation and `sum(K x) = 1`, with a finite-difference Jacobian and a block-tridiagonal solve.",
+    "**its seed is the class's warm start**: the substitution core's converged trays, which `initializeTrayStateFromColumn` maps onto the MESH variables.",
+    "**the class's cold seed is not ported**, and that is measured: without `runBostonSullivanRefinement` its first Newton step moves the variables by `1e11` times their own size.",
+    "**the mesh solve is Rust only**: the Python reference refuses `solver_type = naphtali_sandholm` by name, and no case states the strategy.",
     "**`AUTO` is a ladder and not one method** - the parking note's finding - so it is refused with them rather than silently resolved.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**NeqSim's own deethanizer state is written on SRK**, and on PR it does not converge in NeqSim at all - the capture keeps that as evidence.",
@@ -29,6 +33,7 @@ assumptions = [
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/DistillationColumn.java` is the port source, through `init` and `solveSequential`; the stage is `SimpleTray.java`, ported as `crates/azoth-process/src/column/tray.rs`.",
     "`validation/neqsim/captures/process_column.tsv` - eleven rows: NeqSim's own deethanizer taken to 80 and to 200 iterations, the binary column at a `1e-6` and at a `1e-2` gate, one row per specification type, and the bottom location on the same purity its top case asks for.",
+    "`validation/neqsim/captures/process_column_solvers.tsv` - the binary column under each of `ColumnSolverFactory`'s ten strategies and the deethanizer under `naphtali_sandholm`, which is the only one of the ten that converges it.",
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
@@ -97,7 +102,7 @@ description = "**not ported**: the column-wide Murphree tray efficiency, which `
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]
 optional = true
-description = "**only `direct_substitution` is ported**, which is the class's own default. The rest are refused by name - `NaphtaliSandholmSolver`, `ColumnSolverFactory`'s inside-out family - and `auto` is a ladder rather than one method.\n"
+description = "**`direct_substitution` and `naphtali_sandholm` are ported**; the rest are refused by name - `ColumnSolverFactory`'s inside-out family, its damping strategies, `sum_rates` and `newton` - and `auto` is a ladder rather than one method.\n"
 [inputs.top_specification_type]
 type = "enum"
 values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
@@ -190,7 +195,7 @@ unit = "dimensionless"
 description = "the iterations taken. **One apart from NeqSim's on the captured row** - 14 against 15 - because where a solve stops is where its answer is.\n"
 [outputs.temperature_residual]
 unit = "dimensionless"
-description = "the mean tray-temperature change at the last iteration, in K - the gate the solve was held to.\n"
+description = "the mean tray-temperature change at the last iteration, in K - the gate the solve was held to. **Under `naphtali_sandholm` it is the scaled MESH norm** instead, which is that solver's own measure; NeqSim reports a `NaN` in this field there.\n"
 [outputs.mass_residual]
 unit = "dimensionless"
 description = "the products' worst component imbalance against the feed, relative. **The closure and not the class's MESH norm** - see the assumptions.\n"

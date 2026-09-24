@@ -65,6 +65,37 @@ pub struct ColumnOutcome {
     pub energy_residual: f64,
 }
 
+/// Which of the class's ten solving strategies the column runs.
+///
+/// **Two of the ten are ported and eight are refused by name.** `DIRECT_SUBSTITUTION` is the
+/// class's own default and the sequential-substitution core; `NAPHTALI_SANDHOLM` is the
+/// simultaneous MESH correction, which is a *different* answer only where the substitution
+/// core's own path matters - and it is the only strategy under which NeqSim converges the
+/// deethanizer at all, which is why it is the second solve rather than a later one. The
+/// remaining eight are `ColumnSolverFactory`'s:
+/// `DAMPED_SUBSTITUTION`, `WEGSTEIN`, `SUM_RATES`, `NEWTON`, `INSIDE_OUT`,
+/// `MATRIX_INSIDE_OUT`, `MESH_RESIDUAL` and `AUTO` - and `AUTO` is a *ladder* over the
+/// others rather than a method, which is what `ColumnSolverFactory`'s `candidateSolvers`
+/// makes it: the ladder is stated and refused rather than silently resolved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SolverType {
+    /// Sequential substitution with the class's own adaptive relaxation.
+    DirectSubstitution,
+    /// Full MESH simultaneous correction, by `NaphtaliSandholmSolver`.
+    NaphtaliSandholm,
+}
+
+impl SolverType {
+    /// The name the model's enum declares, in the class's own spelling.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::DirectSubstitution => "direct_substitution",
+            Self::NaphtaliSandholm => "naphtali_sandholm",
+        }
+    }
+}
+
 /// Everything a column solve takes.
 ///
 /// **The stage count excludes the two ends**, which is `DistillationColumn`'s own rule:
@@ -101,6 +132,8 @@ pub struct ColumnSetup {
     pub top_specification: Option<Specification>,
     /// The bottom product's specification, or `None`.
     pub bottom_specification: Option<Specification>,
+    /// Which solving strategy to run.
+    pub solver_type: SolverType,
 }
 
 /// Which of `ColumnSpecification`'s five types a specification is.
@@ -415,6 +448,10 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             )
         })
         .collect();
+
+    if setup.solver_type == SolverType::NaphtaliSandholm {
+        return crate::column::naphtali_sandholm::solve(setup, &pressures);
+    }
     // **An end's mode, and a direct specification is what changes it.** `applyDirectSpecification`
     // writes a reflux ratio or a duty onto the end itself, so those two types never reach the
     // outer loop; everything else is driven by moving the end's temperature.

@@ -17,7 +17,9 @@
 //! prints both of its outlets. That is what lets D2 pin a stage's arithmetic before a column
 //! exists to contain it.
 
+pub mod block_tridiagonal;
 pub mod condenser;
+pub mod naphtali_sandholm;
 pub mod reboiler;
 pub mod tray;
 

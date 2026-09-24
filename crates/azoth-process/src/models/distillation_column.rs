@@ -130,7 +130,7 @@ pub fn distillation_column(
     bottom_specification_target: Option<f64>,
     bottom_specification_component: Option<&str>,
 ) -> Result<DistillationColumnResult> {
-    refuse_unported(murphree_efficiency, solver_type)?;
+    refuse_unported(murphree_efficiency)?;
 
     // **The end is the parameter's name, not a value.** `ColumnSpecification` carries a
     // location - TOP or BOTTOM - and the class holds exactly two of them, so a declaration
@@ -165,6 +165,22 @@ pub fn distillation_column(
         &mut warnings,
     )?;
 
+    let solver = match solver_type.unwrap_or("direct_substitution") {
+        "direct_substitution" => kernel::SolverType::DirectSubstitution,
+        "naphtali_sandholm" => kernel::SolverType::NaphtaliSandholm,
+        other => {
+            return Err(AzothError::invalid_input(
+                "solver_type",
+                format!(
+                    "solver_type = {other} is not ported. `direct_substitution` is the \
+                     class's own default and `naphtali_sandholm` is `NaphtaliSandholmSolver`; \
+                     the rest are `ColumnSolverFactory`'s inside-out family and damping \
+                     strategies, where `auto` is a ladder over them rather than one method"
+                ),
+            ));
+        }
+    };
+
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let out = kernel(&kernel::ColumnSetup {
         feed,
@@ -180,6 +196,7 @@ pub fn distillation_column(
         max_iterations,
         top_specification,
         bottom_specification,
+        solver_type: solver,
     })?;
 
     Ok(DistillationColumnResult {
@@ -215,8 +232,7 @@ pub fn distillation_column(
 /// there nothing read it and nothing was coming, and here the class that reads each one is
 /// named and its stage is known. A form field that errors with the reason beats a form field
 /// that is silently absent, and beats one that answers with the ideal stage.
-#[allow(clippy::too_many_arguments)]
-fn refuse_unported(murphree_efficiency: Option<f64>, solver_type: Option<&str>) -> Result<()> {
+fn refuse_unported(murphree_efficiency: Option<f64>) -> Result<()> {
     if let Some(efficiency) = murphree_efficiency {
         return Err(AzothError::invalid_input(
             "murphree_efficiency",
@@ -225,17 +241,6 @@ fn refuse_unported(murphree_efficiency: Option<f64>, solver_type: Option<&str>) 
                  `SimpleTray.setMurphreeEfficiency` and the per-tray correction the column \
                  solver applies after each run are the classes that would close it. Omitted \
                  means the ideal stage, which is the class's own default of one"
-            ),
-        ));
-    }
-    if let Some(strategy) = solver_type.filter(|s| *s != "direct_substitution") {
-        return Err(AzothError::invalid_input(
-            "solver_type",
-            format!(
-                "solver_type = {strategy} is not ported. Only `direct_substitution` is, which \
-                 is the class's own default; `naphtali_sandholm` is `NaphtaliSandholmSolver` \
-                 and the rest are `ColumnSolverFactory`'s inside-out family, where `auto` is a \
-                 ladder rather than one method"
             ),
         ));
     }

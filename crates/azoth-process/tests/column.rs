@@ -9,7 +9,7 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
-use azoth_process::kernels::distillation_column::{ColumnSetup, distillation_column};
+use azoth_process::kernels::distillation_column::{ColumnSetup, SolverType, distillation_column};
 
 fn binary_feed() -> Stream {
     Stream::from_pt(
@@ -39,6 +39,7 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         max_iterations: 200,
         top_specification: None,
         bottom_specification: None,
+        solver_type: SolverType::DirectSubstitution,
     }
 }
 
@@ -267,6 +268,7 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         max_iterations: 80,
         top_specification: None,
         bottom_specification: None,
+        solver_type: SolverType::DirectSubstitution,
     });
 
     let out = out.expect(

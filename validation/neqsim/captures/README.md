@@ -48,7 +48,16 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe separator > captures/process_separato
 java -cp .:neqsim-f0c7436.jar ProcessProbe throttling_valve > captures/process_throttling_valve.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger > captures/process_heat_exchanger.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe stream > captures/process_stream_properties.tsv
+java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
+java -cp .:neqsim-f0c7436.jar ProcessProbe column_solvers > captures/process_column_solvers.tsv
 ```
+
+**`ProcessProbe column_solvers` takes a solver's name after the subcommand** to run one
+strategy alone, which is how a slow rung is measured without paying for the others. The
+capture is the whole ladder: the binary column under all ten of `ColumnSolverFactory`'s
+strategies and the deethanizer under `NAPHTALI_SANDHOLM`, which is the only one that converges
+it. Two of the ten are left out of the deethanizer rows on purpose, and the probe says which:
+`MESH_RESIDUAL` takes 594 s for the pair and `AUTO` had not returned after 900 s.
 
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
