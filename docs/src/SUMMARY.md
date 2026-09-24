@@ -172,6 +172,7 @@
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)
   - [Mixer](./process/mixer.md)
+  - [Pipe](./process/pipe.md)
   - [Pump](./process/pump.md)
   - [Separator](./process/separator.md)
   - [Splitter](./process/splitter.md)

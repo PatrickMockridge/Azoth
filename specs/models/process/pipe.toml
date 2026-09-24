@@ -1,0 +1,97 @@
+id = "process.pipe"
+name = "Pipe"
+kind = "direct"
+assumptions = [
+    "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)` - the same flash decides it - so accepting one would let a case hand over a state that does not exist.",
+    "**the outlet pressure is solved from the line, not stated.** `AdiabaticPipe.run` iterates `calcPressureOut()` against the state it is evaluating at until the two agree to `1e-2` bar or twenty-five passes run out, and the outlet is a flash at the pressure it settled on, at the inlet's temperature.",
+    "**two equations, one per phase, and the branch is the phase's label.** A gas takes the compressible `P1^2 - P2^2` form - `Z`, molar mass and temperature, no density - and anything else takes Darcy-Weisbach. The label is NeqSim's `PhaseEos.init` rule, which `eos` ports.",
+    "**and the class uses two densities.** The liquid velocity takes the *physical-properties* density, translated; the Reynolds number takes `getKinematicViscosity()`, which divides by the **untranslated cubic** `M/(Z R T / P)`. Measured on the butane row: `567.33` against `603.86`, 6%.",
+    "**the aqueous viscosity branch is not ported.** An aqueous phase takes `WaterPhysicalProperties` and a water correlation (`8.551e-4` Pa s at 300 K) where `eos.viscosity` is the PFCT form the gas and oil branches use (`5.31e-4`). A water line's Reynolds number is `1.61` times NeqSim's.",
+    "**the transition band is interpolated, not refused.** Between `Re` 2300 and 4000 the class blends the laminar value at 2300 with the Haaland value at 4000, and this reproduces it rather than declining the band.",
+    "**a level line only.** The class's balance carries `rho g (z_in - z_out)`, and the palette entry declares no elevations - so the gravity term is zero here rather than defaulted to something. A line with a rise is not a state this entry describes.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**`getEffectiveLength`'s fittings are not ported**: with none added it is the physical length, which is what the entry's `length` is. `setPressureOut`/`calcFlow`, the transient, and the Beggs-and-Brill multiphase limit are out too.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pipeline/AdiabaticPipe.java` is the port source, through its `run` and `calcPressureOut`.",
+    "Haaland, S. E. (1983). \"Simple and explicit formulas for the friction factor in turbulent pipe flow.\" Journal of Fluids Engineering 105(1), 89-90. DOI 10.1115/1.3240948. The friction factor, in the form the class writes it.",
+    "`validation/neqsim/captures/process_pipe.tsv` - a gas line, a hydrocarbon liquid line, and a water line.",
+]
+[source]
+standard = "NeqSim process/equipment/pipeline/AdiabaticPipe.java"
+edition = "Its steady-state `run`: the outlet pressure iterated to `1e-2` bar, the compressible form for a gas and Darcy-Weisbach for a liquid, and a `TPflash` at the answer."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank. Every port of a unit operation carries the same fluid, so this is declared once.\n"
+[inputs.inlet_n]
+unit = "mol/s"
+description = "the inlet's molar flow. A line moves what it is given and adds no moles, so this is the outlet's too.\n"
+[inputs.inlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, summing to one.\n"
+[inputs.inlet_p]
+unit = "Pa"
+description = "the inlet pressure, which is the `P1` of the compressible form and the datum the friction drop is taken off.\n"
+[inputs.inlet_t]
+unit = "K"
+description = "the inlet temperature, which is also the outlet's: the class sets no temperature and the line is adiabatic.\n"
+[inputs.length]
+unit = "m"
+description = "the pipe's length, which is `unit_ops.pipe`'s own parameter and the `L` of both equations. No fittings are added to it.\n"
+[inputs.diameter]
+unit = "m"
+description = "the internal diameter, which sets the area the velocity is taken over and the `D` of both equations.\n"
+[inputs.roughness]
+unit = "m"
+description = "the sand-grain roughness height, which enters the Haaland form as `roughness / diameter`.\n"
+[outputs]
+[outputs.outlet_n]
+unit = "mol/s"
+description = "the outlet molar flow, which is the inlet's: a line moves no moles.\n"
+[outputs.outlet_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the outlet composition, which is the inlet's.\n"
+[outputs.outlet_p]
+unit = "Pa"
+description = "the outlet pressure the line's friction implies. This is the model's answer rather than an input, and `inlet_p - outlet_p` is the pressure drop the class reports.\n"
+[outputs.outlet_t]
+unit = "K"
+description = "the outlet temperature, which is the inlet's: the line is adiabatic and the class sets no temperature.\n"
+[outputs.outlet_h]
+unit = "J/mol"
+description = "the outlet molar enthalpy. Reported because it is *not* the inlet's: a real fluid's enthalpy depends on pressure at fixed temperature, so a drop moves it.\n"
+[outputs.pressure_drop]
+unit = "Pa"
+description = "`inlet_p - outlet_p`, which is `AdiabaticPipe.getPressureDrop()`. **Declared rather than left to a subtraction**: the drop is a small difference of two large numbers, so a case pinning only `outlet_p` compares it at the precision of the *pressure*.\n"
+[[valid_range]]
+quantity = "inlet_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[[valid_range]]
+quantity = "length"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a pipe's length is a positive length; the kernel refuses zero with the same message"
+[[valid_range]]
+quantity = "diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter of zero has no area to take a velocity over"
+[[valid_range]]
+quantity = "roughness"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a sand-grain height is a positive length, and a smooth pipe states a small one rather than zero"
+[implementations]
+python = "azoth.process.pipe"
+rust = "azoth_process::pipe"

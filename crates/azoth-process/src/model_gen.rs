@@ -8,6 +8,7 @@
 //!   - specs/models/process/heat_exchanger.toml
 //!   - specs/models/process/heater.toml
 //!   - specs/models/process/mixer.toml
+//!   - specs/models/process/pipe.toml
 //!   - specs/models/process/pump.toml
 //!   - specs/models/process/separator.toml
 //!   - specs/models/process/splitter.toml
@@ -1064,6 +1065,170 @@ pub static MIXER_SPEC: ModelSpec = ModelSpec {
     cases: MIXER_CASES,
 };
 
+static PIPE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "inlet_t",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "length",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a pipe's length is a positive length; the kernel refuses zero with the same message",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a diameter of zero has no area to take a velocity over",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "roughness",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a sand-grain height is a positive length, and a smooth pipe states a small one rather than zero",
+        },
+    },
+];
+
+static PIPE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "gas_methane_co2_1000m",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 5000000.0),
+            ("inlet_t", 300.0),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["methane", "CO2"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[0.7, 0.3])],
+        matrices: &[],
+        expected: &[
+            ("outlet_n", 1.0),
+            ("outlet_p", 4999978.227836236),
+            ("outlet_t", 300.0),
+            ("outlet_h", -231.601245143823),
+            ("pressure_drop", 21.77216376398931),
+        ],
+        expected_vectors: &[("outlet_z", &[0.7, 0.3])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "liquid_n_butane_1000m",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 2000000.0),
+            ("inlet_t", 300.0),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["n-butane"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("outlet_n", 1.0),
+            ("outlet_p", 1999981.6572976355),
+            ("outlet_t", 300.0),
+            ("pressure_drop", 18.3427023645),
+        ],
+        expected_vectors: &[("outlet_z", &[1.0])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "water_1000m_and_the_unported_aqueous_viscosity",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("inlet_n", 1.0),
+            ("inlet_p", 500000.0),
+            ("inlet_t", 300.0),
+            ("length", 1000.0),
+            ("diameter", 0.1),
+            ("roughness", 1e-05),
+        ],
+        flags: &[],
+        lists: &[("components", &["water"])],
+        strings: &[],
+        vectors: &[("inlet_z", &[1.0])],
+        matrices: &[],
+        expected: &[
+            ("outlet_n", 1.0),
+            ("outlet_p", 499995.40557063156),
+            ("outlet_t", 300.0),
+            ("outlet_h", -44728.052572021756),
+            ("pressure_drop", 4.59442936844),
+        ],
+        expected_vectors: &[("outlet_z", &[1.0])],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.pipe`.
+pub static PIPE_SPEC: ModelSpec = ModelSpec {
+    id: "process.pipe",
+    kind: "direct",
+    algorithm: None,
+    checks: PIPE_CHECKS,
+    cases: PIPE_CASES,
+};
+
 static PUMP_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -1557,6 +1722,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &HEAT_EXCHANGER_SPEC,
     &HEATER_SPEC,
     &MIXER_SPEC,
+    &PIPE_SPEC,
     &PUMP_SPEC,
     &SEPARATOR_SPEC,
     &SPLITTER_SPEC,

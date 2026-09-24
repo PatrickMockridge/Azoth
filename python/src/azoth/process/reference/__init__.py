@@ -19,6 +19,7 @@ from azoth.process.reference.filter import filter
 from azoth.process.reference.heat_exchanger import heat_exchanger
 from azoth.process.reference.heater import heater
 from azoth.process.reference.mixer import mixer
+from azoth.process.reference.pipe import pipe
 from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
 from azoth.process.reference.splitter import splitter
@@ -32,6 +33,7 @@ __all__ = [
     "heat_exchanger",
     "heater",
     "mixer",
+    "pipe",
     "pump",
     "separator",
     "splitter",

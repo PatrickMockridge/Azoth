@@ -39,6 +39,7 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe heater > captures/process_heater.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe cooler > captures/process_cooler.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe filter > captures/process_filter.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe pipe > captures/process_pipe.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
 
@@ -83,6 +84,9 @@ public class ProcessProbe {
         break;
       case "expander":
         isentropicRows("Expander");
+        break;
+      case "pipe":
+        pipeRows();
         break;
       case "stream":
         stream();
@@ -275,6 +279,81 @@ public class ProcessProbe {
       System.out.println("entropy_production_kJ_per_molK=" + unit.getEntropyProduction("kJ/molK"));
       System.out.println();
     }
+  }
+
+  /// `AdiabaticPipe`, which is a different shape of unit operation: **its outlet pressure is
+  /// solved from the geometry**, in a loop, rather than stated.
+  ///
+  /// `run` iterates `calcPressureOut()` against the state it is evaluating at, to `1e-2` bar or
+  /// twenty-five passes, and the arithmetic inside is **a different equation per phase**:
+  /// a compressible `P1^2 - P2^2` form for a gas, and Darcy-Weisbach for a liquid - where the
+  /// liquid branch deliberately recomputes the velocity from the *physical-properties* density
+  /// rather than the cubic's volume, because "cubic EOS liquid volumes are inaccurate for polar
+  /// fluids (e.g. water)".
+  ///
+  /// **Three rows, and the third is the asymmetry.** A gas line, a hydrocarbon liquid line, and
+  /// a water line. The probe prints both densities and both viscosities the class can reach, so
+  /// that the port's choice is compared against the one the arithmetic actually used:
+  ///
+  /// * `phase.getPhysicalProperties().getKinematicViscosity()` is what `calcPressureOut` reads.
+  ///   `GasPhysicalProperties` and `LiquidPhysicalProperties` both default their viscosity to
+  ///   `PFCTViscosityMethodHeavyOil` - for every mixture, water included - which is the
+  ///   correlation `eos.viscosity` ports.
+  /// * `system.getViscosity("kg/msec")` is a **different route** with its own dispatch, and it
+  ///   is the one that gives water `8.55e-4` against the correlation's `5.30e-4`. That
+  ///   divergence is real and belongs to a call the pipe does not make.
+  static void pipeRows() {
+    // **The gas is methane/CO2 and not methane/n-butane, and that is a measurement.**
+    // 0.9/0.1 methane/n-butane at 320 K and 30 bara is the one state in this tier where
+    // azoth's cubic lands on a different root from NeqSim's - `Z = 0.87296` against
+    // `0.91976`, recorded in `crates/azoth-process/tests/stream.rs` - and the pipe reads
+    // `Z` for its velocity and its `P1^2 - P2^2` term, so a gas row on that fluid would be
+    // measuring `eos.pt_flash` rather than the hydraulics. Methane/CO2 at 300 K and 50 bara
+    // is a state where the two roots agree.
+    pipeRow("gas_methane_co2_1000m", new String[] { "methane", "CO2" }, new double[] { 0.7, 0.3 },
+        300.0, 50.0, 1.0, 1000.0, 0.1, 1.0e-5);
+    pipeRow("liquid_n_butane_1000m", new String[] { "n-butane" }, new double[] { 1.0 }, 300.0,
+        20.0, 1.0, 1000.0, 0.1, 1.0e-5);
+    pipeRow("liquid_water_1000m", new String[] { "water" }, new double[] { 1.0 }, 300.0, 5.0, 1.0,
+        1000.0, 0.1, 1.0e-5);
+  }
+
+  static void pipeRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, double molPerSecond, double length, double diameter,
+      double roughness) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, molPerSecond);
+    neqsim.process.equipment.pipeline.AdiabaticPipe pipe =
+        new neqsim.process.equipment.pipeline.AdiabaticPipe("pipe1", inlet);
+    pipe.setLength(length);
+    pipe.setDiameter(diameter);
+    pipe.setPipeWallRoughness(roughness);
+    pipe.run();
+
+    System.out.println(label);
+    print("inlet", inlet);
+    print("outlet", pipe.getOutletStream());
+    System.out.println("velocity_m_per_s=" + pipe.getVelocity());
+    System.out.println("reynolds_number=" + pipe.getReynoldsNumber());
+    System.out.println("friction_factor=" + pipe.getFrictionFactor());
+    System.out.println("flow_regime=" + pipe.getFlowRegime());
+    System.out.println("pressure_drop_bara=" + pipe.getPressureDrop());
+
+    // **The state the arithmetic was evaluated at, and the two routes to a viscosity.** The
+    // outlet's system because that is the object `calcPressureOut` reads, and both routes
+    // because the port has to use the first and the second is where the known water
+    // divergence lives.
+    SystemInterface f = pipe.getOutletStream().getThermoSystem();
+    System.out.println("phase_type=" + f.getPhase(0).getType());
+    System.out.println("phase_total_volume=" + f.getPhase(0).getTotalVolume());
+    System.out.println("phase_z=" + f.getPhase(0).getZ());
+    System.out.println("phase_density_kg_per_m3=" + f.getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println("system_density_kg_per_m3=" + f.getDensity("kg/m3"));
+    System.out.println("phase_kinematic_viscosity_m2_per_s="
+        + f.getPhase(0).getPhysicalProperties().getKinematicViscosity());
+    System.out.println("phase_dynamic_viscosity_kg_per_msec="
+        + f.getPhase(0).getPhysicalProperties().getViscosity());
+    System.out.println("system_viscosity_kg_per_msec=" + f.getViscosity("kg/msec"));
+    System.out.println();
   }
 
   static void splitter() {

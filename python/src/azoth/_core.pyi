@@ -1420,6 +1420,16 @@ class MixerResult:
     warnings: list[Warning]
 
 @final
+class PipeResult:
+    outlet_n: Qty
+    outlet_z: list[float]
+    outlet_p: Qty
+    outlet_t: Qty
+    outlet_h: Qty
+    pressure_drop: Qty
+    warnings: list[Warning]
+
+@final
 class PumpResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2685,6 +2695,16 @@ def mixer(
     feed_t: list[float],
     outlet_pressure: float | None = None,
 ) -> MixerResult: ...
+def pipe(
+    components: list[str],
+    inlet_n: float,
+    inlet_z: list[float],
+    inlet_p: float,
+    inlet_t: float,
+    length: float,
+    diameter: float,
+    roughness: float,
+) -> PipeResult: ...
 def pump(
     components: list[str],
     inlet_n: float,

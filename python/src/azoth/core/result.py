@@ -371,6 +371,32 @@ class FilterResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PipeResult(_HasWarnings):
+    """Result of ``process.pipe``.
+
+    The record plus ``pressure_drop``, which is the one output the record does not carry and
+    the reason it is declared rather than left to a caller's subtraction: the drop is a small
+    difference of two large pressures, so a case that pinned only ``outlet_p`` would compare
+    it at the precision of the *pressure*.
+    """
+
+    #: Molar flow out, which is the inlet's.
+    outlet_n: Q
+    #: Outlet composition, one entry per component.
+    outlet_z: tuple[float, ...]
+    #: Outlet pressure, which the line solves rather than takes.
+    outlet_p: Q
+    #: Outlet temperature, which is the inlet's.
+    outlet_t: Q
+    #: Outlet molar enthalpy, which is not the inlet's - the drop is isothermal.
+    outlet_h: Q
+    #: ``inlet_p - outlet_p``, which is ``AdiabaticPipe.getPressureDrop()``.
+    pressure_drop: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CompressorResult(_HasWarnings):
     """Result of ``process.compressor``.
 

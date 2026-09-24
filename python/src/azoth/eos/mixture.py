@@ -66,6 +66,11 @@ class Component:
     #: absence NeqSim uses, so a zero takes the fallback correlation
     #: ``0.29056 - 0.08775*omega``.
     rackett_z: float = 0.0
+    #: The Peneloux volume-translation parameter, in ``m**3/mol``, subtracted from the
+    #: untranslated molar volume: ``v_corr = v - c``. Zero for a component without a
+    #: translation, which is the plain PR/SRK/RK forms; the databank fills it from
+    #: :func:`azoth.eos.pr_peneloux_shift` and the component's own Rackett compressibility.
+    volume_shift: float = 0.0
     molar_mass: Q | None = None
     alpha_params: tuple[float, ...] = ()
     association: AssociationParameters | None = None
@@ -217,6 +222,17 @@ class Mixture:
     #: mixture built from constants. **A `Component` carries critical constants and no name**,
     #: so a model that has to look a substance up by name has nowhere else to read it.
     names: tuple[str, ...] | None = field(default=None)
+
+    def volume_shift(self, x: list[float]) -> float:
+        """The mixture's volume translation, ``sum_i x_i c_i``.
+
+        Linear in the mole fractions, which is the rule `eos.pr_peneloux_shift`'s own spec
+        states - and the same one Rust's ``Mixture::volume_shift`` applies, so a density
+        built from either language is the same number.
+        """
+        return sum(
+            xi * component.volume_shift for xi, component in zip(x, self.components, strict=True)
+        )
 
     def index_of(self, name: str) -> int | None:
         """The index of a component by name, or ``None`` where there is none.

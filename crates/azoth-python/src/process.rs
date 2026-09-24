@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use azoth_core::units::{joules_per_mole, kelvins, pascals, watts, watts_per_kelvin};
+use azoth_core::units::{joules_per_mole, kelvins, meters, pascals, watts, watts_per_kelvin};
 use azoth_process::{self, Stream};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -284,6 +284,39 @@ pub fn filter(
         pascals(pressure_drop),
     )
     .map(|r| crate::results::PyFilterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.pipe` - the line's kernel as a registered id.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
+pub fn pipe(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    length: f64,
+    diameter: f64,
+    roughness: f64,
+) -> PyResult<crate::results::PyPipeResult> {
+    azoth_process::pipe(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        meters(length),
+        meters(diameter),
+        meters(roughness),
+    )
+    .map(|r| crate::results::PyPipeResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

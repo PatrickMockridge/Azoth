@@ -140,6 +140,37 @@ def _expander(inputs: Mapping[str, Any]) -> dict[str, float]:
     }
 
 
+def _pipe(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.pipe`'s layers, from the reference's own factored arithmetic.
+
+    **Every number the capture prints about the line's interior is here**, including the
+    pressure drop in the capture's own unit: the probe reports `bara` and the arithmetic is
+    in pascals, so a dump that crossed the SI figure would be a unit conversion nobody wrote
+    down. `passes` is the one layer with no counterpart - the capture cannot print how many
+    passes the class's loop took - and it is dumped anyway so that the *path* is visible
+    beside the answer it produced.
+    """
+    from azoth.process.reference.pipe import _route
+
+    states = _route(
+        [str(name) for name in inputs["components"]],
+        float(inputs["inlet_n"]),
+        [float(v) for v in inputs["inlet_z"]],
+        float(inputs["inlet_p"]),
+        float(inputs["inlet_t"]),
+        float(inputs["length"]),
+        float(inputs["diameter"]),
+        float(inputs["roughness"]),
+    )
+    return {
+        "velocity_m_per_s": states.velocity,
+        "reynolds_number": states.reynolds,
+        "friction_factor": states.friction_factor,
+        "pressure_drop_bara": (float(inputs["inlet_p"]) - states.p_out) / 1.0e5,
+        "passes": float(states.passes),
+    }
+
+
 def _heat_exchanger(inputs: Mapping[str, Any]) -> dict[str, float]:
     """`process.heat_exchanger`'s layers, from the reference's own factored arithmetic.
 
@@ -266,6 +297,7 @@ def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
 #: One model's layers, keyed by the model id a case names.
 DUMPERS: dict[str, Dumper] = {
     "process.expander": _expander,
+    "process.pipe": _pipe,
     "process.pump": _pump,
     "process.splitter": _splitter,
     "process.mixer": _mixer,
@@ -473,6 +505,61 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         capture="process_expander.tsv",
         block=0,
         identified_by=("isentropic_efficiency", "0.75"),
+    ),
+    # The pipe's three rows, one per branch and one that diverges. The water row is a case
+    # *because the case records the divergence*, not because the model reproduces it: the
+    # layers that moved there are the Reynolds number and the friction factor, and this is
+    # where a reader sees by how much.
+    LayerCase(
+        model="process.pipe",
+        case="gas_methane_co2_1000m",
+        capture="process_pipe.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "gas_methane_co2_1000m"),
+    ),
+    LayerCase(
+        model="process.pipe",
+        case="liquid_n_butane_1000m",
+        capture="process_pipe.tsv",
+        block=1,
+        identified_by=(LABEL_KEY, "liquid_n_butane_1000m"),
+    ),
+    LayerCase(
+        model="process.pipe",
+        case="water_1000m_and_the_unported_aqueous_viscosity",
+        capture="process_pipe.tsv",
+        block=2,
+        identified_by=(LABEL_KEY, "liquid_water_1000m"),
+        # **The unported aqueous viscosity, as three declared divergences.** The capture's
+        # Reynolds number is `1.61` times this library's, its friction factor is the laminar
+        # `64/Re` and therefore `1.61` times *smaller*, and its pressure drop follows the
+        # viscosity. The bounds sit a little under each ratio, so what is asserted is that
+        # the divergence is still there and several times wide - not its last digits.
+        divergence=(
+            Divergence(
+                key="reynolds_number",
+                # **Under one, because the direction here is the *opposite* of the other
+                # two**: this port's viscosity is the lower one, so its Reynolds number is
+                # the higher and the ratio `capture / azoth` is `0.62`. The bound is that
+                # reciprocal read as a floor, and it says the same thing: the two are more
+                # than a factor of `1.5` apart, in whichever direction.
+                at_least=0.5,
+                reason="NeqSim's aqueous phase takes WaterPhysicalProperties and a water "
+                "correlation; `eos.viscosity` is the PFCT form its gas and oil branches use, "
+                "so this port's viscosity is the lower one and its Re the higher",
+            ),
+            Divergence(
+                key="friction_factor",
+                at_least=1.5,
+                reason="`64 / Re` on a laminar line, so the factor is the reciprocal of the "
+                "same ratio",
+            ),
+            Divergence(
+                key="pressure_drop_bara",
+                at_least=1.5,
+                reason="the drop follows the viscosity on a laminar line",
+            ),
+        ),
     ),
     LayerCase(
         model="process.pump",

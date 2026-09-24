@@ -1,0 +1,66 @@
+model = "process.pipe"
+# One row per branch of the class's steady state, and a fourth that is a divergence.
+[[cases]]
+id = "gas_methane_co2_1000m"
+tolerance = 0.0005
+source = "NeqSim master, `AdiabaticPipe.run` with `setLength(1000)`, `setDiameter(0.1)` and `setPipeWallRoughness(1e-5)`, from `validation/neqsim/captures/process_pipe.tsv`. Methane/CO2 0.7/0.3 at 300 K, 50 bara and 1 mol/s - **not the methane/n-butane the rest of this tier's captures use**, because 0.9/0.1 methane/n-butane at 320 K and 30 bara is the one state where azoth's cubic lands on a different root from NeqSim's (`Z = 0.87296` against `0.91976`, recorded in `crates/azoth-process/tests/stream.rs`), and a pipe reads `Z` for its velocity and its `P1^2 - P2^2` term. On a gas whose root agrees, the row is faithful: measured, `outlet_p` to `1.9e-9`, `pressure_drop` to `4.4e-4` and the velocity to `1.4e-4`.\\n"
+[cases.inputs]
+components = ["methane", "CO2"]
+inlet_n = 1.0
+inlet_z = [0.7, 0.3]
+inlet_p = 5000000.0
+inlet_t = 300.0
+length = 1000.0
+diameter = 0.1
+roughness = 1.0e-05
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [0.7, 0.3]
+outlet_p = 4999978.227836236
+outlet_t = 300.0
+outlet_h = -231.601245143823
+pressure_drop = 21.772163763989312
+[[cases]]
+id = "liquid_n_butane_1000m"
+tolerance = 1e-06
+source = "The same geometry on a hydrocarbon liquid: n-butane at 300 K and 20 bara. **This is the tightest row in the process tier, at `1e-6`, and the measured agreement is `6.2e-8`** - a residual that is where the two *loops* stop rather than the arithmetic, since the same one-pass state reproduces to `1e-14`. It is the row where the class's two densities were found. NeqSim's velocity takes the physical-properties density (`567.33` kg/m3, translated) and its Reynolds number takes `getKinematicViscosity()`, which divides by the untranslated cubic (`603.86`). A port that used one density for both is 6% out on `Re` and 1.9% on the friction factor, and this row would not have closed.\\n"
+[cases.inputs]
+components = ["n-butane"]
+inlet_n = 1.0
+inlet_z = [1.0]
+inlet_p = 2000000.0
+inlet_t = 300.0
+length = 1000.0
+diameter = 0.1
+roughness = 1.0e-05
+# **`outlet_h` is deliberately not recorded here.** This row is the tier's tightest - the
+# two pressures to `1e-9` - and the enthalpy carries the libraries' ideal-gas offset, which
+# is `3.4e-6` relative whatever the machine does. A case has one tolerance, so pinning the
+# enthalpy would loosen the row that exists to pin the densities; the gas case below records
+# it at `1e-4` instead.
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [1.0]
+outlet_p = 1999981.6572976355
+outlet_t = 300.0
+pressure_drop = 18.3427023645
+[[cases]]
+id = "water_1000m_and_the_unported_aqueous_viscosity"
+tolerance = 0.0001
+source = "**The row this library cannot match, pinned as it is.** NeqSim's phase-typed dispatch gives an aqueous phase `WaterPhysicalProperties` and a water correlation - `8.551e-4` Pa s at 300 K - where `eos.viscosity` is the PFCT form the *gas* and *oil* branches use and gives `5.31e-4`. The velocity is exact (`6e-8`, because the *density* is the physics this port does have) and the pressure drop is `1.61` times NeqSim's, which is the viscosity ratio on a laminar line. **The values below are azoth's and not the capture's, and that is the point of the row**: NeqSim gives `outlet_p = 499992.6009196372` and a drop of `7.399080362802124` Pa, and this library gives `499995.40557063156` and `4.5944` Pa - the same ratio, `1.61`, that the viscosities are apart. A case that pinned only `outlet_p` at the capture's tolerance would call this row faithful at `6e-6`, because a 7 Pa drop on 5 bar is invisible in the pressure; pinning the *drop* is what makes the divergence a recorded number rather than a rounding error.\\n"
+[cases.inputs]
+components = ["water"]
+inlet_n = 1.0
+inlet_z = [1.0]
+inlet_p = 500000.0
+inlet_t = 300.0
+length = 1000.0
+diameter = 0.1
+roughness = 1.0e-05
+[cases.expected]
+outlet_n = 1.0
+outlet_z = [1.0]
+outlet_p = 499995.40557063156
+outlet_t = 300.0
+outlet_h = -44728.052572021756
+pressure_drop = 4.59442936844

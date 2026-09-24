@@ -241,6 +241,7 @@ Five sections, and the difference between them is the point:
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.mixer`](./process/mixer.md) — Mixer
+- [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.pump`](./process/pump.md) — Pump
 - [`process.separator`](./process/separator.md) — Separator
 - [`process.splitter`](./process/splitter.md) — Splitter

@@ -1,10 +1,10 @@
 //! The kernels' balance invariants: moles and enthalpy are conserved.
 
-use azoth_core::units::{kelvins, pascals, watts_per_kelvin};
+use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_process::Stream;
 use azoth_process::kernels::{
-    compressor, expander, filter, heat_exchanger, heater, mixer, pump, separator, splitter,
-    throttling_valve,
+    FlowRegime, compressor, expander, filter, heat_exchanger, heater, mixer, pipe, pump, separator,
+    splitter, throttling_valve,
 };
 
 fn close(a: f64, b: f64) {
@@ -357,4 +357,83 @@ fn an_expander_multiplies_the_step_where_a_compressor_divides_it() {
         isentropic_step / 0.75 < isentropic_step,
         "dividing would beat the reversible machine"
     );
+}
+
+/// The line's own three rows, against `validation/neqsim/captures/process_pipe.tsv`.
+///
+/// **The gas row is a different fluid from the other captures in this tier, and the reason
+/// is a measurement**: 0.9/0.1 methane/n-butane at 320 K and 30 bara is the one state where
+/// azoth's cubic lands on a different root from NeqSim's (`Z = 0.87296` against `0.91976`,
+/// recorded in `tests/stream.rs`), and a pipe reads `Z` for its velocity and its
+/// `P1^2 - P2^2` term - so a gas row on that fluid would measure `eos.pt_flash` rather than
+/// the hydraulics.
+#[test]
+fn a_pipe_solves_a_gas_line() {
+    let feed = Stream::from_pt(
+        vec!["methane".into(), "CO2".into()],
+        vec![0.7, 0.3],
+        1.0,
+        pascals(50.0e5),
+        kelvins(300.0),
+    )
+    .expect("methane/CO2 resolves");
+    let out = pipe(&feed, meters(1000.0), meters(0.1), meters(1.0e-5)).expect("pipe");
+
+    assert!((out.outlet.p.value - 49.99978227836236e5).abs() / 50.0e5 < 1e-6);
+    assert!((out.velocity - 0.05491620934533985).abs() / 0.05491620934533985 < 1e-4);
+    assert!((out.reynolds - 21377.405123798144).abs() / 21377.405123798144 < 1e-4);
+    assert!((out.friction_factor - 0.025488330998681204).abs() < 1e-6);
+    assert_eq!(out.regime, FlowRegime::Turbulent);
+}
+
+/// **The liquid row, and the two densities it takes.** This reproduces the capture's state
+/// to fourteen digits, and it is the row that found the quirk: NeqSim's *velocity* takes the
+/// physical-properties density (`567.33`, translated) and its *Reynolds number* takes
+/// `getKinematicViscosity()`, which divides by the untranslated cubic (`603.86`). A port
+/// that used one density for both is 6% out on the Reynolds number.
+#[test]
+fn a_pipe_solves_a_liquid_line_with_two_densities() {
+    let feed = Stream::from_pt(
+        vec!["n-butane".into()],
+        vec![1.0],
+        1.0,
+        pascals(20.0e5),
+        kelvins(300.0),
+    )
+    .expect("n-butane resolves");
+    let out = pipe(&feed, meters(1000.0), meters(0.1), meters(1.0e-5)).expect("pipe");
+
+    assert!((out.reynolds - 4912.595137899346).abs() / 4912.595137899346 < 1e-9);
+    assert!((out.friction_factor - 0.038002601910602105).abs() / 0.038002601910602105 < 1e-9);
+    assert!((out.outlet.p.value - 1999981.6572976355).abs() / 20.0e5 < 1e-9);
+    assert_eq!(out.regime, FlowRegime::Turbulent);
+}
+
+/// **The water row, which this library cannot match and does not pretend to.** NeqSim's
+/// aqueous phase takes `WaterPhysicalProperties` and a water correlation
+/// (`8.551e-4` Pa·s); `eos.viscosity` is the PFCT correlation the *gas* and *oil* branches
+/// use, and gives `5.31e-4`. The density is right - the velocity here agrees to `6e-8` -
+/// and the Reynolds number is `1.61` times too high, which is the viscosity ratio.
+///
+/// The row is asserted as it is, so that landing the aqueous branch fails this test rather
+/// than passing unnoticed.
+#[test]
+fn a_water_line_diverges_on_the_unported_aqueous_viscosity() {
+    let feed = Stream::from_pt(
+        vec!["water".into()],
+        vec![1.0],
+        1.0,
+        pascals(5.0e5),
+        kelvins(300.0),
+    )
+    .expect("water resolves");
+    let out = pipe(&feed, meters(1000.0), meters(0.1), meters(1.0e-5)).expect("pipe");
+
+    assert!((out.velocity - 0.002331069853012549).abs() / 0.002331069853012549 < 1e-6);
+    let ratio = out.reynolds / 231.24476346337397;
+    assert!(
+        (ratio - 1.61).abs() < 0.02,
+        "the aqueous branch is unported, and this is the ratio that says so: {ratio}"
+    );
+    assert_eq!(out.regime, FlowRegime::Laminar);
 }

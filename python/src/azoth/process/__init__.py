@@ -23,6 +23,7 @@ from azoth.core.result import (
     HeaterResult,
     HeatExchangerResult,
     MixerResult,
+    PipeResult,
     PumpResult,
     SeparatorResult,
     SplitterResult,
@@ -41,6 +42,7 @@ __all__ = [
     "heater",
     "load_flowsheet",
     "mixer",
+    "pipe",
     "pump",
     "separator",
     "splitter",
@@ -49,6 +51,7 @@ __all__ = [
 ]
 
 _MIXER = "process.mixer"
+_PIPE = "process.pipe"
 _HEAT_EXCHANGER = "process.heat_exchanger"
 _COMPRESSOR = "process.compressor"
 _COOLER = "process.cooler"
@@ -284,6 +287,45 @@ def heater(
         outlet_temperature=outlet_temperature,
         duty=duty,
         pressure_drop=pressure_drop,
+    )
+
+
+def pipe(
+    components: list[str],
+    inlet_n: Q,
+    inlet_z: list[float],
+    inlet_p: Q,
+    inlet_t: Q,
+    length: Q,
+    diameter: Q,
+    roughness: Q,
+) -> PipeResult:
+    """Drop a stream's pressure along a line, solving the outlet pressure it implies.
+
+    ``length``, ``diameter`` and ``roughness`` are ``unit_ops.pipe``'s three parameters, and
+    the outlet pressure is *not* one of them: a line's drop is a function of its geometry and
+    its fluid, which is what makes a pipe a different shape of unit operation from the
+    two-port machines around it.
+
+    **Two equations, one per phase**, chosen by the phase label: a gas takes the compressible
+    ``P1^2 - P2^2`` form and anything else Darcy-Weisbach. **The aqueous viscosity branch is
+    not ported**, so a water line's Reynolds number is ``1.61`` times NeqSim's; the case
+    records it.
+
+    Raises:
+        InvalidInputError: where the geometry is not positive.
+
+    See :func:`azoth.process.reference.pipe`.
+    """
+    return resolve(_PIPE)(  # type: ignore[no-any-return]
+        components=components,
+        inlet_n=inlet_n,
+        inlet_z=inlet_z,
+        inlet_p=inlet_p,
+        inlet_t=inlet_t,
+        length=length,
+        diameter=diameter,
+        roughness=roughness,
     )
 
 

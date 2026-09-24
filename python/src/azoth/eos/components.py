@@ -77,6 +77,7 @@ from azoth.eos.reference._furst_mixing import (
 )
 from azoth.eos.reference._henry import HenryRecord
 from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
+from azoth.eos.reference.pr_peneloux_shift import pr_peneloux_shift
 
 COMPONENTS_CSV = "data/components/components.csv"
 KIJ_CSV = "data/components/kij.csv"
@@ -626,6 +627,18 @@ class DatabankEntry:
             Pc=self.Pc,
             omega=self.omega,
             rackett_z=self.rackett_z,
+            # **The volume translation is wired here and nowhere else.** `Mixture` carries a
+            # per-component shift and the linear rule for it; nothing filled it in for a
+            # databank mixture, so every density this library computed was the untranslated
+            # cubic - where NeqSim's physical-properties density applies the translation, and
+            # a pipe's liquid branch is built on it.
+            #
+            # `z_ra=self.rackett_z` and not the correlation: the table's own Rackett
+            # compressibility is what NeqSim reads, and zero - its spelling of absence - is
+            # what makes the shift calc fall back.
+            volume_shift=pr_peneloux_shift(self.omega, self.Tc, self.Pc, self.rackett_z)
+            .c.to("m**3/mol")
+            .magnitude,
             molar_mass=self.molar_mass,
             alpha_params=params,
             wax_former=self.wax_former,
