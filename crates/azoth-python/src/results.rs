@@ -10064,11 +10064,7 @@ impl From<&DistillationColumnResult> for PyDistillationColumnResult {
                 .iter()
                 .map(|p| quantity(p.value, "Pa"))
                 .collect(),
-            tray_gas_n: r
-                .tray_gas_n
-                .iter()
-                .map(|n| quantity(*n, "mol/s"))
-                .collect(),
+            tray_gas_n: r.tray_gas_n.iter().map(|n| quantity(*n, "mol/s")).collect(),
             tray_liquid_n: r
                 .tray_liquid_n
                 .iter()
