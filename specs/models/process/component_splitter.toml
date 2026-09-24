@@ -1,0 +1,93 @@
+id = "process.component_splitter"
+name = "Component splitter"
+kind = "direct"
+assumptions = [
+    "**the factor is per component and the outlet count is two.** `run` loops `for i in 0..2` and reads `splitFactor[k]` as the fraction of component *k* routed to the first, the second taking the remainder - so the outlets carry different *compositions*, which separates this from `process.splitter`.",
+    "**each outlet is flashed at the feed's state**: `run` sets the component moles on an empty fluid and runs a `TPflash`. The captured first row is where it shows - the feed is two-phase, the overhead comes out all-vapour and the bottoms all-liquid.",
+    "**the class's `mass` basis is a no-op, and one basis is ported.** The mass branch computes `feedMoles * M * fraction / M`, which is `feedMoles * fraction` - the molar split - so a caller asking for the mass basis gets the same answer.",
+    "**the outlet enthalpies are the state's and not the class's.** Measured, the first row's bottoms reads `-14431.32` where a fresh NeqSim fluid at that outlet's own state gives `-20309.25` - which is what this library gives. The layer diff declares the divergence per row.",
+    "**a component's split fraction is a fraction.** NeqSim does not check, and a negative factor would give negative moles; this refuses one, as `process.splitter` refuses a negative factor.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `ComponentSplitter` also carries a `getMassBalance`, which is an accounting check on the two outlets rather than arithmetic, and no kernel here reads it.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/ComponentSplitter.java` is the port source, through its `run`.",
+    "`validation/neqsim/captures/process_component_splitter.tsv` - a near-total separation, an even routing, and one that takes all of a component.",
+    "`validation/neqsim/CsFresh.java` - the measurement the outlet enthalpies are pinned to: a fresh fluid at each outlet's own state, which is what the class's own outlet does not reproduce.",
+]
+[source]
+standard = "NeqSim process/equipment/splitter/ComponentSplitter.java"
+edition = "Its `run`: the per-component routing, and a `TPflash` on each outlet. **The outlet enthalpies are recomputed rather than carried**, for the reason the assumptions give."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the inlet's molar flow, whose components the factors divide.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the inlet composition, component by component the routing reads.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the inlet pressure, which both outlets flash at.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the inlet temperature, which both outlets flash at.\n"
+[inputs.split_factors]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the fraction of each component routed to the overhead, which is `unit_ops.component_splitter`'s own parameter; the bottoms takes the remainder.\n"
+[outputs]
+[outputs.overhead_n]
+unit = "mol/s"
+description = "the overhead's molar flow: the components' routed amounts summed.\n"
+[outputs.overhead_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overhead's composition: the routed amounts over their sum.\n"
+[outputs.overhead_p]
+unit = "Pa"
+description = "the overhead's pressure, which is the feed's.\n"
+[outputs.overhead_t]
+unit = "K"
+description = "the overhead's temperature, which is the feed's: the outlet is flashed at it.\n"
+[outputs.overhead_h]
+unit = "J/mol"
+description = "the overhead's molar enthalpy, the *state's* at its own composition - and not the class's, for the reason the assumptions give.\n"
+[outputs.bottoms_n]
+unit = "mol/s"
+description = "the bottoms' molar flow: what the overhead did not take.\n"
+[outputs.bottoms_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the bottoms' composition.\n"
+[outputs.bottoms_p]
+unit = "Pa"
+description = "the bottoms' pressure, which is the feed's.\n"
+[outputs.bottoms_t]
+unit = "K"
+description = "the bottoms' temperature, which is the feed's.\n"
+[outputs.bottoms_h]
+unit = "J/mol"
+description = "the bottoms' molar enthalpy, the state's at its own composition.\n"
+[[valid_range]]
+quantity = "split_factors"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a negative fraction would route negative moles; the kernel refuses one rather than letting it through"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature"
+[implementations]
+python = "azoth.process.component_splitter"
+rust = "azoth_process::component_splitter"

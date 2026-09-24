@@ -12,6 +12,7 @@ rule arriving.
 
 from __future__ import annotations
 
+from azoth.process.reference.component_splitter import component_splitter
 from azoth.process.reference.compressor import compressor
 from azoth.process.reference.cooler import cooler
 from azoth.process.reference.expander import expander
@@ -29,6 +30,7 @@ from azoth.process.reference.splitter import splitter
 from azoth.process.reference.throttling_valve import throttling_valve
 
 __all__ = [
+    "component_splitter",
     "compressor",
     "cooler",
     "expander",

@@ -704,6 +704,34 @@ pub fn splitter(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.component_splitter` - the component splitter's kernel as a registered id.
+///
+/// The factors are one per **component**, not one per outlet.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
+#[allow(non_snake_case)] // the record's own field names
+pub fn component_splitter(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    split_factors: Vec<f64>,
+) -> PyResult<crate::results::PyComponentSplitterResult> {
+    azoth_process::component_splitter(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        &split_factors,
+    )
+    .map(|r| crate::results::PyComponentSplitterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Validate a flowsheet's TOML against a palette directory, returning the
 /// diagnostic lines (empty when the flowsheet is clean).
 #[pyfunction]

@@ -1,0 +1,72 @@
+near_total_separation
+split_factors=0.98 0.05 0.02
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-8984.628375744884
+feed_s=-40.04224197691045
+feed_z=methane:0.5 n-butane:0.3 n-pentane:0.2
+overhead_n=0.509
+overhead_P=20.0
+overhead_T=300.0
+overhead_h=551.7022676649342
+overhead_s=-20.881898579255047
+overhead_z=methane:0.962671905697446 n-butane:0.029469548133595282 n-pentane:0.007858546168958742
+bottoms_n=0.491
+bottoms_P=20.0
+bottoms_T=300.0
+bottoms_h=-14431.31737097011
+bottoms_s=-45.83189790740936
+bottoms_z=methane:0.02036659877800409 n-butane:0.5804480651731161 n-pentane:0.39918533604887985
+overhead_phases=1
+bottoms_phases=1
+feed_phases=2
+
+an_even_routing
+split_factors=0.5 0.5 0.5
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-8984.628375744884
+feed_s=-40.04224197691045
+feed_z=methane:0.5 n-butane:0.3 n-pentane:0.2
+overhead_n=0.5
+overhead_P=20.0
+overhead_T=300.0
+overhead_h=-18823.736249563553
+overhead_s=-72.83926822297268
+overhead_z=methane:0.5 n-butane:0.3 n-pentane:0.2
+bottoms_n=0.5
+bottoms_P=20.0
+bottoms_T=300.0
+bottoms_h=-18823.736249563553
+bottoms_s=-72.83926822297268
+bottoms_z=methane:0.5 n-butane:0.3 n-pentane:0.2
+overhead_phases=2
+bottoms_phases=2
+feed_phases=2
+
+all_of_one_component
+split_factors=1.0 0.5 0.0
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-8984.628375744884
+feed_s=-40.04224197691045
+feed_z=methane:0.5 n-butane:0.3 n-pentane:0.2
+overhead_n=0.65
+overhead_P=20.0
+overhead_T=300.0
+overhead_h=-45658.95719525274
+overhead_s=-171.27456763719022
+overhead_z=methane:0.7692307692307692 n-butane:0.23076923076923075 n-pentane:0.0
+bottoms_n=0.35
+bottoms_P=20.0
+bottoms_T=300.0
+bottoms_h=-16148.108249686693
+bottoms_s=-49.753154783233704
+bottoms_z=methane:0.0 n-butane:0.4285714285714286 n-pentane:0.5714285714285715
+overhead_phases=2
+bottoms_phases=1
+feed_phases=2
+

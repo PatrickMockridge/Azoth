@@ -1,10 +1,11 @@
 id = "unit_ops.component_splitter"
 name = "Component splitter"
+notes = "**The outlet count is fixed at two and the factor is per component, and the entry said neither.** The parameter is `split_factors` and not `split_fractions`, which is the class's own `setSplitFactors` and `unit_ops.splitter`'s spelling. `ComponentSplitter.run` loops `for i in 0..2` - an overhead and a bottoms - and reads `splitFactor[k]` as the fraction of component *k* routed to the first of them, the second taking the remainder. So `split_fractions` is one entry per **component** and not, as this entry said, one entry per component per outlet, which would be a matrix. **Its `splitBasis` of mass is a no-op**: the class computes `feedMoles * fraction` on both bases - the molar mass cancels - so the two bases are the same split and this ports one."
 [source]
 standard = "NeqSim process/equipment/splitter/ComponentSplitter.java"
-[parameters.split_fractions]
+[parameters.split_factors]
 unit = "dimensionless"
-description = "the fraction of each component to each outlet, one entry per component per outlet"
+description = "the fraction of each component routed to the first outlet, one entry per component; the second outlet takes the remainder"
 [[ports]]
 name = "feed"
 direction = "in"

@@ -29,11 +29,12 @@ pub use load::{load_palette, parse_flowsheet};
 // connection carries, while a model takes the record field by field so that a case, a
 // cross-impl test and a NeqSim capture can address it.
 pub use models::{
-    CompressorResult, CoolerResult, ExpanderResult, FilterResult, GasScrubberResult,
-    HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PipeResult, PumpResult,
-    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, ThrottlingValveResult,
-    compressor, cooler, expander, filter, gas_scrubber, heat_exchanger, heater, manifold, mixer,
-    pipe, pump, separator, shortcut_distillation_column, splitter, throttling_valve,
+    ComponentSplitterResult, CompressorResult, CoolerResult, ExpanderResult, FilterResult,
+    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PipeResult,
+    PumpResult, SeparatorResult, ShortcutDistillationColumnResult, SplitterResult,
+    ThrottlingValveResult, component_splitter, compressor, cooler, expander, filter, gas_scrubber,
+    heat_exchanger, heater, manifold, mixer, pipe, pump, separator, shortcut_distillation_column,
+    splitter, throttling_valve,
 };
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

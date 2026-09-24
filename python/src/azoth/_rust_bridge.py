@@ -42,6 +42,7 @@ from azoth.core.result import (
     Co2PhaseResult,
     Co2WaterDiffusivityResult,
     ColebrookResult,
+    ComponentSplitterResult,
     CompressorResult,
     ConductionPlaneWallResult,
     ControlValveCvResult,
@@ -3914,8 +3915,12 @@ def shortcut_distillation_column(
         _si(spec, "light_key_recovery_distillate", light_key_recovery_distillate),
         _si(spec, "heavy_key_recovery_bottoms", heavy_key_recovery_bottoms),
         _si(spec, "reflux_ratio_multiplier", reflux_ratio_multiplier),
-        None if condenser_pressure is None else input_to_si(spec, "condenser_pressure", condenser_pressure),
-        None if reboiler_pressure is None else input_to_si(spec, "reboiler_pressure", reboiler_pressure),
+        None
+        if condenser_pressure is None
+        else input_to_si(spec, "condenser_pressure", condenser_pressure),
+        None
+        if reboiler_pressure is None
+        else input_to_si(spec, "reboiler_pressure", reboiler_pressure),
     )
     return ShortcutDistillationColumnResult(
         distillate_n=from_si(result.distillate_n.magnitude_si, result.distillate_n.unit),
@@ -4271,6 +4276,39 @@ def gas_scrubber(
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def component_splitter(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    split_factors: Sequence[float],
+) -> ComponentSplitterResult:
+    """`process.component_splitter`, computed in Rust."""
+    spec = _models_gen.model("process.component_splitter")
+    result = _core.component_splitter(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", v) for v in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        [float(f) for f in split_factors],
+    )
+    return ComponentSplitterResult(
+        overhead_n=from_si(result.overhead_n.magnitude_si, result.overhead_n.unit),
+        overhead_z=tuple(result.overhead_z),
+        overhead_p=from_si(result.overhead_p.magnitude_si, result.overhead_p.unit),
+        overhead_t=from_si(result.overhead_t.magnitude_si, result.overhead_t.unit),
+        overhead_h=from_si(result.overhead_h.magnitude_si, result.overhead_h.unit),
+        bottoms_n=from_si(result.bottoms_n.magnitude_si, result.bottoms_n.unit),
+        bottoms_z=tuple(result.bottoms_z),
+        bottoms_p=from_si(result.bottoms_p.magnitude_si, result.bottoms_p.unit),
+        bottoms_t=from_si(result.bottoms_t.magnitude_si, result.bottoms_t.unit),
+        bottoms_h=from_si(result.bottoms_h.magnitude_si, result.bottoms_h.unit),
         warnings=_warnings(result.warnings),
     )
 

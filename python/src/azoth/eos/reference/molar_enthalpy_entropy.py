@@ -186,7 +186,12 @@ def molar_enthalpy_entropy(
 
     # The two ideal-gas terms that no coefficient switches off.
     s_ideal -= MOLAR_GAS_CONSTANT * math.log(p_si / p_ref)
-    s_ideal -= MOLAR_GAS_CONSTANT * sum(zi * math.log(zi) for zi in z)
+    # **`0 ln 0 = 0`**, which is the convention the ideal-mixing term is defined with and not
+    # a tolerance: a component the mixture does not contain contributes nothing to its
+    # entropy, and `math.log(0)` raises where the limit is zero. Exposed by the first model
+    # that routes a component *entirely* away - `process.component_splitter`, whose outlet
+    # compositions carry exact zeros by construction.
+    s_ideal -= MOLAR_GAS_CONSTANT * sum(zi * math.log(zi) for zi in z if zi > 0.0)
 
     h_departure = MOLAR_GAS_CONSTANT * t_si * state.h_dep_rt
     s_departure = MOLAR_GAS_CONSTANT * state.s_dep_r

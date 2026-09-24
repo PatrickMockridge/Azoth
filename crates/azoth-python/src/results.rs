@@ -58,9 +58,10 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    CompressorResult, CoolerResult, ExpanderResult, FilterResult, GasScrubberResult,
-    HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult, SeparatorResult,
-    ShortcutDistillationColumnResult, SplitterResult, ThrottlingValveResult, pipe::PipeResult,
+    ComponentSplitterResult, CompressorResult, CoolerResult, ExpanderResult, FilterResult,
+    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult,
+    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, ThrottlingValveResult,
+    pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -1308,6 +1309,87 @@ impl From<&SeparatorResult> for PySeparatorResult {
         }
     }
 }
+/// Result of `process.component_splitter`, transported.
+///
+/// Two named outlets rather than a vector, because the class fixes the count at two.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ComponentSplitterResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyComponentSplitterResult {
+    /// Overhead molar flow, mol/s.
+    #[pyo3(get)]
+    pub overhead_n: PyQty,
+    /// Overhead composition.
+    #[pyo3(get)]
+    pub overhead_z: Vec<f64>,
+    /// Overhead pressure.
+    #[pyo3(get)]
+    pub overhead_p: PyQty,
+    /// Overhead temperature.
+    #[pyo3(get)]
+    pub overhead_t: PyQty,
+    /// Overhead molar enthalpy.
+    #[pyo3(get)]
+    pub overhead_h: PyQty,
+    /// Bottoms molar flow, mol/s.
+    #[pyo3(get)]
+    pub bottoms_n: PyQty,
+    /// Bottoms composition.
+    #[pyo3(get)]
+    pub bottoms_z: Vec<f64>,
+    /// Bottoms pressure.
+    #[pyo3(get)]
+    pub bottoms_p: PyQty,
+    /// Bottoms temperature.
+    #[pyo3(get)]
+    pub bottoms_t: PyQty,
+    /// Bottoms molar enthalpy.
+    #[pyo3(get)]
+    pub bottoms_h: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyComponentSplitterResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ComponentSplitterResult(overhead_n={} {}, bottoms_n={} {})",
+            self.overhead_n.magnitude_si,
+            self.overhead_n.unit,
+            self.bottoms_n.magnitude_si,
+            self.bottoms_n.unit
+        )
+    }
+}
+
+impl From<&ComponentSplitterResult> for PyComponentSplitterResult {
+    fn from(r: &ComponentSplitterResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            overhead_n: quantity(r.overhead_n, "mol/s"),
+            overhead_z: r.overhead_z.clone(),
+            overhead_p: quantity(r.overhead_p.value, "Pa"),
+            overhead_t: quantity(r.overhead_t.value, "K"),
+            overhead_h: quantity(r.overhead_h.value, "J/mol"),
+            bottoms_n: quantity(r.bottoms_n, "mol/s"),
+            bottoms_z: r.bottoms_z.clone(),
+            bottoms_p: quantity(r.bottoms_p.value, "Pa"),
+            bottoms_t: quantity(r.bottoms_t.value, "K"),
+            bottoms_h: quantity(r.bottoms_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `process.gas_scrubber`, transported.
 ///
 /// **Two single-multiplicity ports, so ten fields.** The record is five fields per port
@@ -8588,6 +8670,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         ManifoldResult::CALC_ID => ManifoldResult::FIELDS.to_vec(),
         SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
         GasScrubberResult::CALC_ID => GasScrubberResult::FIELDS.to_vec(),
+        ComponentSplitterResult::CALC_ID => ComponentSplitterResult::FIELDS.to_vec(),
         ShortcutDistillationColumnResult::CALC_ID => {
             ShortcutDistillationColumnResult::FIELDS.to_vec()
         }

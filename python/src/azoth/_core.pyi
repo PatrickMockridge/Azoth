@@ -1354,6 +1354,20 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class ComponentSplitterResult:
+    overhead_n: Qty
+    overhead_z: list[float]
+    overhead_p: Qty
+    overhead_t: Qty
+    overhead_h: Qty
+    bottoms_n: Qty
+    bottoms_z: list[float]
+    bottoms_p: Qty
+    bottoms_t: Qty
+    bottoms_h: Qty
+    warnings: list[Warning]
+
+@final
 class CompressorResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -2691,6 +2705,14 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def component_splitter(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    split_factors: list[float],
+) -> ComponentSplitterResult: ...
 def compressor(
     components: list[str],
     inlet_n: float,

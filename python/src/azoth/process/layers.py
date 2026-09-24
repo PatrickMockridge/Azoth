@@ -349,7 +349,7 @@ def _mixer(inputs: Mapping[str, Any]) -> dict[str, float]:
 
 #: One model's layers, keyed by the model id a case names.
 def _shortcut_distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
-    """`process.shortcut_distillation_column`'s layers, from the reference's own factored arithmetic.
+    """`process.shortcut_distillation_column`'s layers, from the reference's own arithmetic.
 
     **The layers are the K-values and the relative volatilities, because everything
     downstream of `alpha` is rearrangement.** Fenske, Underwood, Molokanov and Kirkbride are
@@ -388,7 +388,36 @@ def _shortcut_distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]
     return layers
 
 
+def _component_splitter(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.component_splitter`'s layers, from the reference's own arithmetic.
+
+    **The flows, temperatures and compositions are compared; the two enthalpies are declared
+    divergences**, for the reason the sets beside `LAYER_CASES` give. The capture's own
+    units, as bare magnitudes: the harness compares numbers.
+    """
+    from azoth.core.units import ureg
+    from azoth.process.reference.component_splitter import component_splitter
+
+    result = component_splitter(
+        [str(name) for name in inputs["components"]],
+        ureg.Quantity(float(inputs["feed_n"]), "mol/s"),
+        [float(v) for v in inputs["feed_z"]],
+        ureg.Quantity(float(inputs["feed_p"]), "Pa"),
+        ureg.Quantity(float(inputs["feed_t"]), "K"),
+        [float(v) for v in inputs["split_factors"]],
+    )
+    return {
+        "overhead_n": result.overhead_n.to("mol/s").magnitude,
+        "overhead_T": result.overhead_t.to("K").magnitude,
+        "overhead_h": result.overhead_h.to("J/mol").magnitude,
+        "bottoms_n": result.bottoms_n.to("mol/s").magnitude,
+        "bottoms_T": result.bottoms_t.to("K").magnitude,
+        "bottoms_h": result.bottoms_h.to("J/mol").magnitude,
+    }
+
+
 DUMPERS: dict[str, Dumper] = {
+    "process.component_splitter": _component_splitter,
     "process.expander": _expander,
     "process.manifold": _manifold,
     "process.pipe": _pipe,
@@ -531,6 +560,64 @@ class LayerCase:
     divergence: tuple[Divergence, ...] = ()
 
 
+#: The component splitter's diverging layers, **per row**, because how far apart the class's
+#: enthalpies are from the state's is a property of the state.
+#:
+#: **`ComponentSplitter.run` reports outlet enthalpies that are not the states it reports.**
+#: The first row's bottoms reads `-14431.31737097011` where a *fresh* NeqSim fluid at that
+#: outlet's own composition, temperature and pressure gives `-20309.24832914077`, and a fresh
+#: fluid is what this port computes. The bounds sit a little under each measured ratio, so
+#: what is asserted is that the divergence is still there and at least as wide - not its last
+#: digits. The first row's overhead is the narrowest at `1.06`, which is worth seeing: the
+#: defect is large where the outlet crosses a phase boundary and small where it does not.
+_COMPONENT_SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
+    Divergence(
+        key="overhead_h",
+        at_least=1.05,
+        reason="`run` reports an enthalpy the outlet's own composition does not have; a "
+        "fresh NeqSim fluid at that state gives the port's number, and on this row the two "
+        "are 6% apart",
+    ),
+    Divergence(
+        key="bottoms_h",
+        at_least=1.3,
+        reason="the same, and wider here: `-14431.32` against the fresh fluid's `-20309.25`",
+    ),
+)
+
+#: The even-routing row, where both outlets carry the *feed's* composition and the class's
+#: enthalpy is more than twice the state's.
+_COMPONENT_SPLITTER_EVEN_DIVERGENCE: tuple[Divergence, ...] = (
+    Divergence(
+        key="overhead_h",
+        at_least=2.0,
+        reason="both outlets are the feed, so the state's enthalpy is the feed's `-8984.69` "
+        "and the class reports `-18823.74`",
+    ),
+    Divergence(
+        key="bottoms_h",
+        at_least=2.0,
+        reason="the same number on the other outlet",
+    ),
+)
+
+#: The all-of-one-component row, where the overhead loses a component entirely and the two
+#: enthalpies part by more than forty times.
+_COMPONENT_SPLITTER_SEPARATION_DIVERGENCE: tuple[Divergence, ...] = (
+    Divergence(
+        key="overhead_h",
+        at_least=40.0,
+        reason="the overhead takes all of the methane and none of the pentane, and the class "
+        "reports `-45658.96` where the state is `-1032.85`",
+    ),
+    Divergence(
+        key="bottoms_h",
+        at_least=1.3,
+        reason="`-16148.11` against the state's `-21393.95`",
+    ),
+)
+
+
 #: The splitter's three divergent layers, declared once because both its rows carry the
 #: same split and therefore the same bands.
 #:
@@ -564,6 +651,33 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    # The component splitter's three rows. The two enthalpies are declared divergences - see
+    # `_COMPONENT_SPLITTER_DIVERGENCE` - and the flows, compositions and temperatures are
+    # compared, which is what the class gets right.
+    LayerCase(
+        model="process.component_splitter",
+        case="near_total_separation",
+        capture="process_component_splitter.tsv",
+        block=0,
+        identified_by=("split_factors", "0.98 0.05 0.02"),
+        divergence=_COMPONENT_SPLITTER_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.component_splitter",
+        case="an_even_routing_is_the_feed_twice",
+        capture="process_component_splitter.tsv",
+        block=1,
+        identified_by=("split_factors", "0.5 0.5 0.5"),
+        divergence=_COMPONENT_SPLITTER_EVEN_DIVERGENCE,
+    ),
+    LayerCase(
+        model="process.component_splitter",
+        case="all_of_one_component",
+        capture="process_component_splitter.tsv",
+        block=2,
+        identified_by=("split_factors", "1.0 0.5 0.0"),
+        divergence=_COMPONENT_SPLITTER_SEPARATION_DIVERGENCE,
+    ),
     # The shortcut column's four rows. **Their block order is the probe's**, and the two
     # degenerate rows are the gap between the fourth and the fifth: `UNCASED_ROWS` declares
     # them, and this tuple names the other four by position.
@@ -595,7 +709,6 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=4,
         identified_by=("#label", "binary_methane_nbutane"),
     ),
-
     # The isentropic pair. **Both rows of each are cases, and the efficiency-of-one row is
     # the one that matters**: its reversible step *is* its answer, so the capture states the
     # isentropic enthalpy the class keeps in a local - and its entropy production is zero by
@@ -885,7 +998,16 @@ def compare(
         theirs = float(block[key])
         if key in divergence:
             declared = divergence[key]
+            # **The distance between the two, in whichever direction it runs.** A divergence
+            # whose sign flips from row to row cannot be stated as `capture / azoth >= n`,
+            # because half its rows sit below one - `process.component_splitter`'s outlet
+            # enthalpies are `0.71` and `0.75` on two rows and `2.09` on the third, the class
+            # reporting an enthalpy below the state's on one state and above on another.
+            # `max(r, 1/r)` says what the older rule said wherever the capture was the larger
+            # - `process.splitter`'s three ratios are all above one, so its bounds read
+            # identically - and says something on the rows where it was not.
             ratio = abs(theirs) / abs(mine) if mine else float("inf")
+            ratio = max(ratio, 1.0 / ratio) if ratio > 0.0 else float("inf")
             out.append(
                 LayerDiff(
                     key=key,

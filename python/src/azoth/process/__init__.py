@@ -16,6 +16,7 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    ComponentSplitterResult,
     CompressorResult,
     CoolerResult,
     ExpanderResult,
@@ -37,6 +38,7 @@ from azoth.process.kernels import Stream
 
 __all__ = [
     "Stream",
+    "component_splitter",
     "compressor",
     "cooler",
     "expander",
@@ -61,6 +63,7 @@ _MIXER = "process.mixer"
 _PIPE = "process.pipe"
 _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
+_COMPONENT_SPLITTER = "process.component_splitter"
 _COMPRESSOR = "process.compressor"
 _COOLER = "process.cooler"
 _EXPANDER = "process.expander"
@@ -152,6 +155,41 @@ def filter(
         inlet_p=inlet_p,
         inlet_t=inlet_t,
         pressure_drop=pressure_drop,
+    )
+
+
+def component_splitter(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    split_factors: list[float],
+) -> ComponentSplitterResult:
+    """Divide a stream between two outlets component by component, flashing each.
+
+    **The factor is per component and the outlet count is two.** ``ComponentSplitter.run``
+    loops ``for i in 0..2`` and reads ``splitFactor[k]`` as the fraction of component *k* to
+    the overhead, so the outlets carry different compositions - which is what separates this
+    from :func:`splitter`.
+
+    **The outlet enthalpies are the state's and not the class's**: a fresh NeqSim fluid at
+    the first captured row's bottoms gives ``-20309.24832914077`` where the class reports
+    ``-14431.31737097011``, the same defect :func:`splitter` records.
+
+    Raises:
+        InvalidInputError: where the factors are not one per component, or any is outside
+            ``[0, 1]``.
+
+    See :func:`azoth.process.reference.component_splitter`.
+    """
+    return resolve(_COMPONENT_SPLITTER)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        split_factors=split_factors,
     )
 
 

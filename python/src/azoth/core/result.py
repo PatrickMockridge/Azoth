@@ -397,6 +397,38 @@ class PipeResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ComponentSplitterResult(_HasWarnings):
+    """Result of ``process.component_splitter``.
+
+    Two named outlets, because the class fixes the count at two and the factor is per
+    component - so the two records carry different *compositions*.
+    """
+
+    #: Overhead molar flow.
+    overhead_n: Q
+    #: Overhead composition.
+    overhead_z: tuple[float, ...]
+    #: Overhead pressure.
+    overhead_p: Q
+    #: Overhead temperature.
+    overhead_t: Q
+    #: Overhead molar enthalpy, the state's at its own composition.
+    overhead_h: Q
+    #: Bottoms molar flow.
+    bottoms_n: Q
+    #: Bottoms composition.
+    bottoms_z: tuple[float, ...]
+    #: Bottoms pressure.
+    bottoms_p: Q
+    #: Bottoms temperature.
+    bottoms_t: Q
+    #: Bottoms molar enthalpy, the state's at its own composition.
+    bottoms_h: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class CompressorResult(_HasWarnings):
     """Result of ``process.compressor``.
 

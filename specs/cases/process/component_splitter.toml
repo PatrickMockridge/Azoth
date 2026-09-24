@@ -1,0 +1,76 @@
+model = "process.component_splitter"
+# **The flows, compositions and temperatures are the class's; the enthalpies are not.**
+#
+# `ComponentSplitter.run` reports outlet enthalpies that are not the states it reports: for
+# the first row's bottoms the class gives `-14431.31737097011` where a **fresh NeqSim fluid**
+# at that outlet's own composition, temperature and pressure gives `-20309.24832914077` -
+# measured by `validation/neqsim/CsFresh.java`. So the class's outlet is not a state its own
+# flash produces, which is the same defect `process.splitter` records on its branch
+# enthalpies, and these cases pin the *state*: azoth's `-20309.3130975143`, 0.065 J/mol from
+# the fresh fluid. The layer diff declares the divergence.
+[[cases]]
+id = "near_total_separation"
+tolerance = 0.0001
+source = "NeqSim master, `ComponentSplitter.run` with `setSplitFactors([0.98, 0.05, 0.02])`, from `validation/neqsim/captures/process_component_splitter.tsv`. The factor is **per component**: `splitFactor[k]` is the fraction of component *k* routed to the overhead, and the bottoms takes the remainder - so the outlet flows are `0.509` and `0.491` and the two compositions differ, which is what separates this from `unit_ops.splitter`. Both are exact against the capture: the flows and compositions agree to the last digit and the temperatures are the feed's. The feed is **two-phase** at 300 K and 20 bar, so the split moves each outlet across a phase boundary - the overhead comes out all-vapour and the bottoms all-liquid - which is why the outlet enthalpies are not a weighted average of the feed's.\\n"
+[cases.inputs]
+components = ["methane", "n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+split_factors = [0.98, 0.05, 0.02]
+[cases.expected]
+overhead_n = 0.509
+overhead_z = [0.962671905697446, 0.029469548133595282, 0.007858546168958742]
+overhead_p = 2000000.0
+overhead_t = 300.0
+overhead_h = 586.1865477077167
+bottoms_n = 0.491
+bottoms_z = [0.02036659877800409, 0.5804480651731161, 0.39918533604887985]
+bottoms_p = 2000000.0
+bottoms_t = 300.0
+bottoms_h = -20309.3130975143
+[[cases]]
+id = "an_even_routing_is_the_feed_twice"
+tolerance = 0.0001
+source = "Every factor at `0.5`: each outlet takes half of every component, so both carry the *feed's* composition and the split is a plain halving. Measured, the flows are `0.5` each and both compositions are the feed's to the last digit - and **both enthalpies are the feed's own `-8984.69`**, because the state did not move. The class reports `-18823.736249563553` for both, which is neither the feed's enthalpy nor anything its flash produces; the case pins the state.\\n"
+[cases.inputs]
+components = ["methane", "n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+split_factors = [0.5, 0.5, 0.5]
+[cases.expected]
+overhead_n = 0.5
+overhead_z = [0.5, 0.3, 0.2]
+overhead_p = 2000000.0
+overhead_t = 300.0
+overhead_h = -8984.692382765697
+bottoms_n = 0.5
+bottoms_z = [0.5, 0.3, 0.2]
+bottoms_p = 2000000.0
+bottoms_t = 300.0
+bottoms_h = -8984.692382765697
+[[cases]]
+id = "all_of_one_component"
+tolerance = 0.0001
+source = "A factor of `1.0` for methane and `0.0` for n-pentane, so the overhead takes all of the first and none of the third: the routing is a *separation* rather than a division, and the two outlets' compositions have no component in common. The flows are `0.65` and `0.35` - `0.5 + 0.15` and `0.15 + 0.2` - and each outlet is again flashed at the feed's state. The class's enthalpies here are `-45658.95719525274` and `-16148.108249686693`, neither of which is a state of its own composition; the case pins `-1032.853638221404` and `-21393.95295200862`.\\n"
+[cases.inputs]
+components = ["methane", "n-butane", "n-pentane"]
+feed_n = 1.0
+feed_z = [0.5, 0.3, 0.2]
+feed_p = 2000000.0
+feed_t = 300.0
+split_factors = [1.0, 0.5, 0.0]
+[cases.expected]
+overhead_n = 0.65
+overhead_z = [0.7692307692307692, 0.23076923076923075, 0.0]
+overhead_p = 2000000.0
+overhead_t = 300.0
+overhead_h = -1032.853638221404
+bottoms_n = 0.35
+bottoms_z = [0.0, 0.4285714285714286, 0.5714285714285715]
+bottoms_p = 2000000.0
+bottoms_t = 300.0
+bottoms_h = -21393.95295200862

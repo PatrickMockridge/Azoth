@@ -32,9 +32,10 @@ use crate::spec_gen;
 /// assert!((r.c.value - (-6.349504285100194e-06)).abs() < 1e-18);
 ///
 /// // Water, whose databank row carries a Rackett compressibility - and a shift of the
-/// // opposite sign to the one the fallback correlation would give it.
-/// let r = pr_peneloux_shift(0.3443, kelvins(647.096), pascals(22_064_000.0), Some(0.235662374))?;
-/// assert!((r.c.value - 2.929079216846814e-06).abs() < 1e-18);
+/// // opposite sign to the one the fallback correlation would give it. **The constants are
+/// // the table's, not IAPWS's**: `374.15` C and `220.89` bar, which the table states.
+/// let r = pr_peneloux_shift(0.3443, kelvins(647.3), pascals(22_089_000.0), Some(0.235662374))?;
+/// assert!((r.c.value - 2.929079399385604e-06).abs() < 1e-18);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the published equation

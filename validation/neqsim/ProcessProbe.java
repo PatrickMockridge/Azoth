@@ -43,6 +43,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe manifold > captures/process_manifold.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe gas_scrubber \
 //       > captures/process_gas_scrubber.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe component_splitter \
+//       > captures/process_component_splitter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe tray > captures/process_column_tray.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
@@ -104,6 +106,9 @@ public class ProcessProbe {
         break;
       case "gas_scrubber":
         gasScrubberRows();
+        break;
+      case "component_splitter":
+        componentSplitterRows();
         break;
       case "column":
         columnRows();
@@ -974,6 +979,48 @@ public class ProcessProbe {
 
   /// `ComponentSplitter`: a per-component routing with each outlet flashed.
   ///
+  /// **The factor is per component and the outlet count is two.** `run` loops `for i in 0..2`
+  /// and reads `splitFactor[k]` as the fraction of component *k* to the overhead, so the two
+  /// outlets carry different *compositions* - which is what separates this from `Splitter`,
+  /// whose outlets carry one state at different flows. `run` then sets each outlet's component
+  /// moles on an empty fluid and runs a `TPflash`, so each outlet is a state of its own.
+  ///
+  /// **Three rows, and the third is the edge.** A near-total separation, an even routing
+  /// whose outlets are the feed, and one that sends *all* of a component one way.
+  static void componentSplitterRows() {
+    String[] names = new String[] { "methane", "n-butane", "n-pentane" };
+    double[] z = new double[] { 0.5, 0.3, 0.2 };
+    componentRow("near_total_separation", names, z, new double[] { 0.98, 0.05, 0.02 });
+    componentRow("an_even_routing", names, z, new double[] { 0.5, 0.5, 0.5 });
+    componentRow("all_of_one_component", names, z, new double[] { 1.0, 0.5, 0.0 });
+  }
+
+  static void componentRow(String label, String[] names, double[] z, double[] factors) {
+    Stream inlet = feed(names, z, 300.0, 20.0, 1.0);
+    neqsim.process.equipment.splitter.ComponentSplitter splitter =
+        new neqsim.process.equipment.splitter.ComponentSplitter("cs1", inlet);
+    splitter.setSplitFactors(factors);
+    splitter.run();
+
+    StringBuilder given = new StringBuilder("split_factors=");
+    for (int i = 0; i < factors.length; i++) {
+      given.append(factors[i]).append(i + 1 < factors.length ? " " : "");
+    }
+    System.out.println(label);
+    System.out.println(given);
+    print("feed", inlet);
+    print("overhead", splitter.getSplitStream(0));
+    print("bottoms", splitter.getSplitStream(1));
+    // The phase count each outlet settles on, because a material balance can move a stream
+    // across a phase boundary and the enthalpy is not a function of the record alone.
+    System.out.println("overhead_phases="
+        + splitter.getSplitStream(0).getThermoSystem().getNumberOfPhases());
+    System.out.println("bottoms_phases="
+        + splitter.getSplitStream(1).getThermoSystem().getNumberOfPhases());
+    System.out.println("feed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    System.out.println();
+  }
+
   static void splitter() {
     // **A single-phase liquid, so the branch flash is a formality.** `Splitter.run` clones
     // the inlet fluid, subtracts `(1 - f) n` from every component and runs a `TPflash` on

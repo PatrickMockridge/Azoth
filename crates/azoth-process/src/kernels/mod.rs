@@ -6,6 +6,7 @@
 //! of what a unit operation is. These are the first few, composing the calcs in
 //! `azoth-eos` rather than adding new physics.
 
+pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;
 pub mod distillation_column;
@@ -23,6 +24,7 @@ pub mod shortcut_distillation_column;
 pub mod splitter;
 pub mod throttling_valve;
 
+pub use component_splitter::component_splitter;
 pub use compressor::compressor;
 pub use cooler::cooler;
 pub use distillation_column::{ColumnOutcome, ColumnSetup, TrayProfile, distillation_column};

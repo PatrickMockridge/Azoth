@@ -179,7 +179,15 @@ pub fn molar_enthalpy_entropy(
     // mole of mixture - an ideal gas's entropy falls by `R ln(P/P_ref)` however many
     // components it has - and the mixing one is `-R sum z_i ln z_i`.
     s_ideal -= MOLAR_GAS_CONSTANT * (p.value / p_ref).ln();
-    s_ideal -= MOLAR_GAS_CONSTANT * z.iter().map(|&zi| zi * zi.ln()).sum::<f64>();
+    // **`0 ln 0 = 0`**, the convention the ideal-mixing term is defined with: a component the
+    // mixture does not contain contributes nothing to its entropy, and `0.0 * (-inf)` is a
+    // NaN that would poison the whole sum. Exposed by the first model that routes a component
+    // entirely away - `process.component_splitter`, whose outlets carry exact zeros.
+    s_ideal -= MOLAR_GAS_CONSTANT
+        * z.iter()
+            .filter(|&&zi| zi > 0.0)
+            .map(|&zi| zi * zi.ln())
+            .sum::<f64>();
 
     let h_departure = MOLAR_GAS_CONSTANT * t.value * state.h_dep_rt;
     let s_departure = MOLAR_GAS_CONSTANT * state.s_dep_r;
