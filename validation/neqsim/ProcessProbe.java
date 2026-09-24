@@ -127,6 +127,9 @@ public class ProcessProbe {
       case "stirred_tank_reactor":
         stirredTankReactorRows();
         break;
+      case "plug_flow_reactor":
+        plugFlowReactorRows();
+        break;
       case "column":
         columnRows();
         break;
@@ -1963,6 +1966,132 @@ public class ProcessProbe {
     print("feed", inlet);
     printOrEmpty("product", reactor.getOutletStream());
     System.out.println("heat_duty_W=" + reactor.getHeatDuty());
+    System.out.println();
+  }
+
+  /// **A plug-flow reactor is a profile, so the profile is the capture.**
+  ///
+  /// `PlugFlowReactor.run` marches `[F1..Fn, T, P]` along the tube with a scheme it writes out
+  /// inline - `IntegrationMethod.EULER` or `RK4`, RK4 by default, a fixed step
+  /// `length / numberOfSteps`, no step-size control - and stores every station in a
+  /// `ReactorAxialProfile` whose `toCSV()` is printed here verbatim. A single outlet row would
+  /// pin one number where the answer is a curve.
+  ///
+  /// The reaction is a power-law methane combustion, so the products are species the feed does
+  /// not carry: `ensureProductComponentsExist` adds each at `1.0e-20` and re-inits, which is the
+  /// behaviour that made this class a tier rather than a kernel.
+  ///
+  /// **Properties are frozen by default.** `thermodynamicCoupling` defaults to
+  /// `FROZEN_PROPERTIES`, which re-flashes only every `propertyUpdateFrequency` (10) steps and
+  /// never for the RK4 sub-states - so the rate law reads a *stale* temperature and composition
+  /// between updates. The last two rows measure that: the same reactor at a frequency of 1 and
+  /// the default 10 are different answers, and the difference is the coupling and not the
+  /// chemistry.
+  ///
+  /// `concentration_probe` is the other measurement a port needs and cannot guess:
+  /// `getPhase(0).getDensity("mol/m3")` against `getDensity("kg/m3") / molarMass`, which says
+  /// whether the unit-carrying molar density carries the Peneloux volume translation.
+  static void plugFlowReactorRows() {
+    plugFlowReactorRow("rk4_default", "RK4", 100, 10, false, 1.0);
+    plugFlowReactorRow("euler_default", "EULER", 100, 10, false, 1.0);
+    plugFlowReactorRow("rk4_coarse", "RK4", 50, 10, false, 1.0);
+    plugFlowReactorRow("rk4_every_step", "RK4", 100, 1, false, 1.0);
+    plugFlowReactorRow("isothermal_rk4", "RK4", 100, 10, false, 1.0);
+    plugFlowReactorRow("bed_rk4", "RK4", 100, 10, true, 1.0);
+    plugFlowReactorRow("bed_half_activity", "RK4", 100, 10, true, 0.5);
+    concentrationProbe();
+  }
+
+  static void plugFlowReactorRow(String label, String method, int steps, int updateEvery,
+      boolean withBed, double activity) {
+    String[] names = new String[] { "methane", "oxygen", "nitrogen" };
+    double[] z = new double[] { 0.05, 0.10, 0.85 };
+    Stream inlet = feed(names, z, 600.0, 5.0, 1.0);
+
+    neqsim.process.equipment.reactor.PlugFlowReactor reactor =
+        new neqsim.process.equipment.reactor.PlugFlowReactor("pfr", inlet);
+    reactor.setLength(5.0, "m");
+    reactor.setDiameter(0.10, "m");
+    reactor.setNumberOfSteps(steps);
+    reactor.setIntegrationMethod(method);
+    reactor.setPropertyUpdateFrequency(updateEvery);
+    if (label.startsWith("isothermal")) {
+      reactor.setEnergyMode(neqsim.process.equipment.reactor.PlugFlowReactor.EnergyMode.ISOTHERMAL);
+    }
+    if (withBed) {
+      // **Three millimetre pellets at a void fraction of 0.40 are the class's own defaults**,
+      // and a bed is what makes the Ergun equation the pressure row rather than the empty-tube
+      // Darcy branch - measured, the two differ by four orders of magnitude on this gas.
+      neqsim.process.equipment.reactor.CatalystBed bed =
+          new neqsim.process.equipment.reactor.CatalystBed(3.0, 0.40, 800.0);
+      bed.setActivityFactor(activity);
+      reactor.setCatalystBed(bed);
+    }
+
+    neqsim.process.equipment.reactor.KineticReaction reaction =
+        new neqsim.process.equipment.reactor.KineticReaction("methanecombustion");
+    reaction.addReactant("methane", 1.0, 1.0);
+    reaction.addReactant("oxygen", 2.0, 1.0);
+    reaction.addProduct("CO2", 1.0);
+    reaction.addProduct("water", 2.0);
+    reaction.setPreExponentialFactor(1.0e4);
+    reaction.setActivationEnergy(80000.0);
+    reaction.setHeatOfReaction(-802000.0);
+    reactor.addReaction(reaction);
+
+    reactor.run();
+    System.out.println(label);
+    print("feed", inlet);
+    printOrEmpty("product", reactor.getOutletStream());
+    System.out.println("conversion=" + reactor.getConversion());
+    System.out.println("pressure_drop_bar=" + reactor.getPressureDrop());
+    System.out.println("outlet_temperature_K=" + reactor.getOutletTemperature());
+    System.out.println("residence_time_s=" + reactor.getResidenceTime());
+    System.out.println("heat_duty_W=" + reactor.getHeatDuty());
+    System.out.println("profile=");
+    System.out.println(reactor.getAxialProfile().toCSV());
+    System.out.println();
+  }
+
+  /// **Does a molar density carry the volume translation?** One state, two ways to read it.
+  ///
+  /// `KineticReaction.getConcentration` is `x_i * getPhase(0).getDensity("mol/m3")`, and this
+  /// probe printed once already that a *mass* density asked with a unit is the Peneloux-corrected
+  /// one. Whether the molar density behaves the same way is a measurement, not a reading.
+  static void concentrationProbe() {
+    SystemInterface fluid = new SystemPrEos(600.0, 5.0);
+    fluid.addComponent("methane", 0.05);
+    fluid.addComponent("oxygen", 0.10);
+    fluid.addComponent("nitrogen", 0.85);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("probe", fluid);
+    stream.setFlowRate(1.0, "mol/sec");
+    stream.run();
+    SystemInterface flashed = stream.getThermoSystem();
+    double molarMass = flashed.getMolarMass("kg/mol");
+    System.out.println("concentration_probe");
+    System.out.println("molar_density_with_unit=" + flashed.getPhase(0).getDensity("mol/m3"));
+    System.out.println("mass_density_with_unit=" + flashed.getPhase(0).getDensity("kg/m3"));
+    System.out.println("mass_density_bare=" + flashed.getPhase(0).getDensity());
+    System.out.println("molar_mass_kg_per_mol=" + molarMass);
+    System.out.println("mass_over_molar=" + (flashed.getPhase(0).getDensity("kg/m3") / molarMass));
+
+    // **The superficial velocity is the one intermediate a reader cannot guess.** The class
+    // computes `getVolume("m3") / getNumberOfMoles() * getTotalNumberOfMoles() / totalArea`, and
+    // whether the first call is extensive or per-mole is exactly what this prints.
+    double area = Math.PI * 0.1 * 0.1 / 4.0;
+    double volume = flashed.getVolume("m3");
+    double numberOfMoles = flashed.getNumberOfMoles();
+    double totalMoles = flashed.getTotalNumberOfMoles();
+    System.out.println("velocity_probe");
+    System.out.println("volume_m3=" + volume);
+    System.out.println("number_of_moles=" + numberOfMoles);
+    System.out.println("total_number_of_moles=" + totalMoles);
+    System.out.println("tube_area_m2=" + area);
+    System.out.println("superficial_velocity_m_s=" + (volume / numberOfMoles * totalMoles / area));
+    System.out.println("gas_density_kg_m3=" + flashed.getDensity("kg/m3"));
+    System.out.println("gas_phase_density_kg_m3=" + flashed.getPhase(0).getDensity("kg/m3"));
+    System.out.println("gas_viscosity_pa_s=" + flashed.getPhase(0).getViscosity("kg/msec"));
     System.out.println();
   }
 
