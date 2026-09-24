@@ -129,6 +129,25 @@ FURST_CONSTANTS = (
     "furst_parameters.csv",
 )
 
+#: ISO 6976's per-component gas-quality constants, compiled to `data/standards/`.
+#:
+#: **The older of NeqSim's two tables, because `Stream.LCV()` reads it.** NeqSim ships
+#: `ISO6976constants.csv` and `ISO6976constants2016.csv` and has a class for each -
+#: `Standard_ISO6976` queries `ISO6976constants`, and `Standard_ISO6976_2016 extends
+#: Standard_ISO6976` queries the revision. **They disagree**: on methane the older file has
+#: `Z15 = 0.998000` against `0.998020`, `srtb15 = 0.044700` against `0.044520`, a molar mass
+#: of `16.043000` against `16.042460` g/mol and a superior calorific value of `890.630`
+#: against `890.580` kJ/mol at 25 °C - a revision of the constants moves them, which is what
+#: a revision is for. `unit_ops.flare`'s duty is
+#: `Stream.LCV()` and `Stream.LCV()` builds `new Standard_ISO6976(fluid, 0, 15.55,
+#: "volume")`, so the table the flare reads is this one. Compiling the 2016 file instead
+#: would be porting the sibling class, and the port would then disagree with the machine it
+#: is porting.
+ISO6976_CONSTANTS = ("ISO6976constants.csv", "iso6976.csv")
+
+#: Where the compiled standard constants go.
+STANDARDS_DIR = ROOT / "data" / "standards"
+
 #: How many species each family's rows name, from `PhreeqcPitzerParameterCatalog.Family`.
 #: A family the file does not carry compiles to no rows, which is how `MU`, `ETA` and
 #: `ALPHAS` come out: the enum declares them and the shipped catalogue has none.
@@ -174,6 +193,12 @@ NEQSIM_COMMIT = _upstream("commit")
 #: - fifty commits apart - so a citation built from it names two different trees. The commit
 #: is the pin, and `master` is the only readable name that resolves to the bytes vendored
 #: here. The version is kept beside it because a reader recognises it.
+#: The ISO 6976 table's own citation: the same upstream pin, the file that answered.
+ISO6976_CITATION = (
+    f"NeqSim master ({NEQSIM_COMMIT[:7]}) ISO6976constants.csv (Equinor/NTNU), Apache-2.0, "
+    f"retrieved {_upstream('retrieved')}"
+)
+
 CITATION = (
     f"NeqSim master ({NEQSIM_COMMIT[:7]}) COMP.csv (Equinor/NTNU), Apache-2.0, "
     f"retrieved {_upstream('retrieved')}"
@@ -466,6 +491,99 @@ def build_unifac(source: Path, file_id: str) -> tuple[tuple[str, ...], list[dict
     return header, rows
 
 
+#: The compiled ISO 6976 table's columns. **Named for what they are, not for NeqSim's
+#: spellings**: `srtb15` is the standard's summation factor at 15 °C, and the two names it
+#: would suggest - a compression factor and a square root - are both wrong, since the
+#: *square of the sum* is what the compression factor subtracts.
+ISO6976_HEADER = (
+    "name",
+    "molar_mass_kg_per_mol",
+    "compression_factor_0c",
+    "compression_factor_15c",
+    "compression_factor_20c",
+    "summation_factor_0c",
+    "summation_factor_15c",
+    "summation_factor_20c",
+    "superior_calorific_value_j_per_mol_0c",
+    "superior_calorific_value_j_per_mol_15c",
+    "superior_calorific_value_j_per_mol_20c",
+    "superior_calorific_value_j_per_mol_25c",
+    "superior_calorific_value_j_per_mol_60f",
+    "inferior_calorific_value_j_per_mol_0c",
+    "inferior_calorific_value_j_per_mol_15c",
+    "inferior_calorific_value_j_per_mol_20c",
+    "inferior_calorific_value_j_per_mol_25c",
+    "inferior_calorific_value_j_per_mol_60f",
+    "carbon_count",
+    "citation",
+)
+
+#: NeqSim column -> compiled column, for the fields that cross unchanged in value.
+ISO6976_PASSTHROUGH = {
+    "Z0": "compression_factor_0c",
+    "Z15": "compression_factor_15c",
+    "Z20": "compression_factor_20c",
+    "srtb0": "summation_factor_0c",
+    "srtb15": "summation_factor_15c",
+    "srtb20": "summation_factor_20c",
+}
+
+#: The calorific values, whose NeqSim columns are in kJ/mol and whose compiled columns are
+#: in J/mol - the unit `azoth-core` carries, and the one the specification states.
+ISO6976_CALORIFIC = {
+    "Hsupmolar0": "superior_calorific_value_j_per_mol_0c",
+    "Hsupmolar15": "superior_calorific_value_j_per_mol_15c",
+    "Hsupmolar20": "superior_calorific_value_j_per_mol_20c",
+    "Hsupmolar25": "superior_calorific_value_j_per_mol_25c",
+    "Hsupmolar60F": "superior_calorific_value_j_per_mol_60f",
+    "Hinfmolar0": "inferior_calorific_value_j_per_mol_0c",
+    "Hinfmolar15": "inferior_calorific_value_j_per_mol_15c",
+    "Hinfmolar20": "inferior_calorific_value_j_per_mol_20c",
+    "Hinfmolar25": "inferior_calorific_value_j_per_mol_25c",
+    "Hinfmolar60F": "inferior_calorific_value_j_per_mol_60f",
+}
+
+
+def build_iso6976(
+    source: Path, components: set[str]
+) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """The standard's gas-quality constants, for the components the databank carries.
+
+    **The two unit conversions are NeqSim's own, read out of its use rather than guessed.**
+    `MolarMass` crosses as g/mol: `Standard_ISO6976`'s `relDensIdeal` divides it by
+    `molarMassAir`, `28.96546` g/mol, and the class's mass-basis branch divides `Mmix` by
+    `1000` on its way to a value per kilogram - so the file is g/mol and the compiled column
+    is kg/mol, as the component table's is. `Hsupmolar*` and `Hinfmolar*` cross as kJ/mol:
+    methane's `Hsupmolar25` is `890.630`, which is the standard's `890.63` kJ/mol, and
+    `Stream.LCV()` multiplies the returned value by `1.0e3` to reach joules.
+
+    **Rows are the components the databank carries, matched by name.** The file's 56 rows
+    include sixteen the component table does not have - propylene, acetylene, carbon
+    monoxide and the rest - and a composition is built from databank names, so those rows
+    are unreachable rather than merely unused.
+    """
+    rows: list[dict[str, str]] = []
+    skipped: list[str] = []
+    reader = csv.DictReader(source.open(encoding="utf-8"))
+    for row in reader:
+        name = (row["ComponentName"] or "").strip().lower()
+        if name not in components:
+            skipped.append(row["ComponentName"])
+            continue
+        values = {"name": name, "citation": ISO6976_CITATION}
+        for upstream, compiled in ISO6976_PASSTHROUGH.items():
+            values[compiled] = repr(float(row[upstream]))
+        for upstream, compiled in ISO6976_CALORIFIC.items():
+            values[compiled] = repr(float(row[upstream]) * 1000.0)
+        values["molar_mass_kg_per_mol"] = repr(float(row["MolarMass"]) / 1000.0)
+        values["carbon_count"] = str(int(row["numberOfCarbon"]))
+        rows.append(values)
+    if not rows:
+        raise ValueError(f"{source.name}: no row matched a component the databank carries")
+    rows.sort(key=lambda row: row["name"])
+    return ISO6976_HEADER, rows
+
+
 def build_phreeqc(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
     """The PHREEQC Pitzer catalogue, re-rendered so both kernels read it the same way.
 
@@ -695,6 +813,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     kij = build_kij(resources, {row["name"] for row in components})
+    iso6976 = build_iso6976(SOURCES / ISO6976_CONSTANTS[0], {row["name"] for row in components})
 
     outputs = [
         (OUT_DIR / "components.csv", COMPONENT_HEADER, components),
@@ -705,6 +824,7 @@ def main(argv: list[str] | None = None) -> int:
         ],
         (OUT_DIR / PHREEQC_CATALOG[2], *phreeqc),
         (OUT_DIR / FURST_CONSTANTS[2], *furst),
+        (STANDARDS_DIR / ISO6976_CONSTANTS[1], *iso6976),
     ]
 
     if args.check:

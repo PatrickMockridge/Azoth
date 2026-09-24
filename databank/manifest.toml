@@ -8274,127 +8274,158 @@ unit = "text"
 id = "neqsim/ISO6976constants.csv"
 upstream_path = "src/main/resources/data/ISO6976constants.csv"
 vendored_source = "databank/sources/neqsim/ISO6976constants.csv"
+compiled_to = "data/standards/iso6976.csv"
 source_rows = 56
+compiled_rows = 40
+generated = ["citation"]
+[[upstreams.files.rows]]
+selector = "ComponentName not a row of the compiled component table"
+count = 16
+reason = """\
+    dropped: a composition is built from the component table's names, and these sixteen \
+    - propylene, cis- and trans-2-butene, 2-methylpropene, propadiene, 1,2- and \
+    1,3-butadiene, acetylene, methylcyclohexane, methanethiol, hydrogen cyanide, carbon \
+    monoxide, carbonyl sulfide, carbon disulfide, sulfur dioxide and iC5 - are not rows of \
+    it. A gas carrying one cannot be stated, so their constants are unreachable rather than \
+    merely unused."""
 [[upstreams.files.columns]]
 name = "ID"
-disposition = "vendored"
-as = "id"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "dropped"
+reason = """\
+    not-a-value: the row's ordinal in the upstream file"""
 [[upstreams.files.columns]]
 name = "ComponentName"
-disposition = "vendored"
-as = "componentname"
+disposition = "used"
+as = "name"
 unit = "text"
-reason = "not-ported: vendored whole; nothing reads it yet"
+reason = """\
+        selected on and carried: the lowercase of this column is matched against the component     table, and the compiled `name` is the table's own spelling. **This is the older of     NeqSim's two ISO 6976 tables, and it is the one compiled**: `Stream.LCV()` builds     `new Standard_ISO6976(fluid, 0, 15.55, "volume")`, that class queries     `ISO6976constants`, and `unit_ops.flare`'s duty is `Stream.LCV()`.     `Standard_ISO6976_2016` reads the revision beside it, whose columns stay vendored and     unread."""
 [[upstreams.files.columns]]
 name = "MolarMass"
-disposition = "vendored"
-as = "molarmass"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "molar_mass_kg_per_mol"
+unit = "kg/mol"
+reason = """\
+        divided by 1000: the file is g/mol, which is what `Standard_ISO6976`'s `relDensIdeal`     assumes when it divides by `molarMassAir`'s `28.96546` g/mol and what its mass-basis     branch divides by 1000 to leave a value per kilogram. The compiled column is kg/mol,     as the component table's is."""
 [[upstreams.files.columns]]
 name = "Z0"
-disposition = "vendored"
-as = "z0"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "compression_factor_0c"
+unit = "dimensionless"
+reason = """\
+    used: compiled to `data/standards/iso6976.csv`, in SI"""
 [[upstreams.files.columns]]
 name = "Z15"
-disposition = "vendored"
-as = "z15"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "compression_factor_15c"
+unit = "dimensionless"
+reason = """\
+    used: compiled to `data/standards/iso6976.csv`, in SI"""
 [[upstreams.files.columns]]
 name = "Z20"
-disposition = "vendored"
-as = "z20"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "compression_factor_20c"
+unit = "dimensionless"
+reason = """\
+    used: compiled to `data/standards/iso6976.csv`, in SI"""
 [[upstreams.files.columns]]
 name = "srtb0"
-disposition = "vendored"
-as = "srtb0"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "summation_factor_0c"
+unit = "dimensionless"
+reason = """\
+        the standard's summation factor, dimensionless as it is used: the mixture's     compression factor is `1 - (sum z_i sqrt(b_i))^2`, so the *square of the sum* is what     the factor subtracts and nothing beside it carries a unit. NeqSim's column name reads     as if `b` crossed already rooted, which is why the compiled one is named for what it     is."""
 [[upstreams.files.columns]]
 name = "srtb15"
-disposition = "vendored"
-as = "srtb15"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "summation_factor_15c"
+unit = "dimensionless"
+reason = """\
+        the standard's summation factor, dimensionless as it is used: the mixture's     compression factor is `1 - (sum z_i sqrt(b_i))^2`, so the *square of the sum* is what     the factor subtracts and nothing beside it carries a unit. NeqSim's column name reads     as if `b` crossed already rooted, which is why the compiled one is named for what it     is."""
 [[upstreams.files.columns]]
 name = "srtb20"
-disposition = "vendored"
-as = "srtb20"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "summation_factor_20c"
+unit = "dimensionless"
+reason = """\
+        the standard's summation factor, dimensionless as it is used: the mixture's     compression factor is `1 - (sum z_i sqrt(b_i))^2`, so the *square of the sum* is what     the factor subtracts and nothing beside it carries a unit. NeqSim's column name reads     as if `b` crossed already rooted, which is why the compiled one is named for what it     is."""
 [[upstreams.files.columns]]
 name = "Hsupmolar0"
-disposition = "vendored"
-as = "hsupmolar0"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "superior_calorific_value_j_per_mol_0c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hsupmolar15"
-disposition = "vendored"
-as = "hsupmolar15"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "superior_calorific_value_j_per_mol_15c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hsupmolar20"
-disposition = "vendored"
-as = "hsupmolar20"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "superior_calorific_value_j_per_mol_20c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hsupmolar25"
-disposition = "vendored"
-as = "hsupmolar25"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "superior_calorific_value_j_per_mol_25c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hsupmolar60F"
-disposition = "vendored"
-as = "hsupmolar60f"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "superior_calorific_value_j_per_mol_60f"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hinfmolar0"
-disposition = "vendored"
-as = "hinfmolar0"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "inferior_calorific_value_j_per_mol_0c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hinfmolar15"
-disposition = "vendored"
-as = "hinfmolar15"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "inferior_calorific_value_j_per_mol_15c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hinfmolar20"
-disposition = "vendored"
-as = "hinfmolar20"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "inferior_calorific_value_j_per_mol_20c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hinfmolar25"
-disposition = "vendored"
-as = "hinfmolar25"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "inferior_calorific_value_j_per_mol_25c"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "Hinfmolar60F"
-disposition = "vendored"
-as = "hinfmolar60f"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "inferior_calorific_value_j_per_mol_60f"
+unit = "J/mol"
+reason = """\
+        multiplied by 1000: the file is kJ/mol - methane's `Hsupmolar25` is `890.630`, which     is the standard's `890.63` kJ/mol - and `Stream.LCV()` multiplies the value it returns     by `1.0e3` on its way to joules."""
 [[upstreams.files.columns]]
 name = "numberOfCarbon"
-disposition = "vendored"
-as = "numberofcarbon"
-unit = "neqsim-internal"
-reason = "not-ported: vendored whole; nothing reads it yet"
+disposition = "used"
+as = "carbon_count"
+unit = "count"
+reason = """\
+    used: compiled to `data/standards/iso6976.csv`, in SI"""
 [[upstreams.files]]
 id = "neqsim/ISO6976constants2016.csv"
 upstream_path = "src/main/resources/data/ISO6976constants2016.csv"
