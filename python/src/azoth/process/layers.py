@@ -546,6 +546,14 @@ NO_INTERIOR: dict[str, str] = {
         "clamp lands the outlet at a microbar, where this library's cubic refuses to converge "
         "and NeqSim's extrapolates - so there is no layer to compare, and that is the finding"
     ),
+    "process.stirred_tank_reactor": (
+        "the kernel forms the reacted composition, the outlet pressure and the flashed state, "
+        "and **every one of them is on the record** - the composition is the product's ``z``, the "
+        "pressure its ``P``, the state its ``T`` and ``h``. The extent is the one intermediate "
+        "the record does not carry, and it is not hidden: the composition *is* the extent, "
+        "applied. The duty the isothermal branch reports is a difference of the two records' "
+        "enthalpies over the flow, which is an output rather than a layer"
+    ),
     "process.flare": (
         "the kernel is a *pass-through*: `run` clones the inlet into the outlet, so the whole "
         "record is the answer and there is no intermediate between the two ports. Its two "

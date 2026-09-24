@@ -34,6 +34,7 @@ from azoth.core.result import (
     SeparatorResult,
     ShortcutDistillationColumnResult,
     SplitterResult,
+    StirredTankReactorResult,
     TankResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
@@ -62,6 +63,7 @@ __all__ = [
     "separator",
     "shortcut_distillation_column",
     "splitter",
+    "stirred_tank_reactor",
     "tank",
     "three_phase_separator",
     "throttling_valve",
@@ -87,6 +89,7 @@ _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
+_STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
 _TANK = "process.tank"
 _THREE_PHASE_SEPARATOR = "process.three_phase_separator"
 

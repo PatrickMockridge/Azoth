@@ -1439,6 +1439,15 @@ class FilterResult:
     warnings: list[Warning]
 
 @final
+class StirredTankReactorResult:
+    product_n: Qty
+    product_z: list[float]
+    product_p: Qty
+    product_t: Qty
+    product_h: Qty
+    heat_duty: Qty
+    warnings: tuple[Warning, ...]
+@final
 class FlareResult:
     product_n: Qty
     product_z: list[float]
@@ -2981,6 +2990,20 @@ def shortcut_distillation_column(
     condenser_pressure: float | None = None,
     reboiler_pressure: float | None = None,
 ) -> ShortcutDistillationColumnResult: ...
+def stirred_tank_reactor(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    reaction: str,
+    limiting_reactant: str,
+    conversion: float,
+    isothermal: bool,
+    reactor_temperature: float | None = None,
+    reactor_pressure: float | None = None,
+    pressure_drop: float | None = None,
+) -> StirredTankReactorResult: ...
 def splitter(
     components: list[str],
     feed_n: float,

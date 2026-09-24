@@ -56,6 +56,7 @@ from azoth.core.result import (
     DistillationColumnResult,
     EjectorResult,
     FlareResult,
+    StirredTankReactorResult,
     Iso6976Result,
     EffectiveDiffusionResult,
     EosCgPhaseResult,

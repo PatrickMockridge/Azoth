@@ -663,6 +663,52 @@ pub fn tank(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.stirred_tank_reactor` - the reactor's kernel as a registered id.
+///
+/// **Eight parameters where the palette entry declared none.** The reaction, the limiting
+/// reactant, the conversion, the isothermal flag, the held temperature and pressure and the
+/// pressure drop are all `run`'s own, and a kernel that took none of them could only be a
+/// pass-through.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature = None, reactor_pressure = None, pressure_drop = None))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, reaction, limiting_reactant, conversion, isothermal, reactor_temperature=None, reactor_pressure=None, pressure_drop=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are twelve
+pub fn stirred_tank_reactor(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    reaction: &str,
+    limiting_reactant: &str,
+    conversion: f64,
+    isothermal: bool,
+    reactor_temperature: Option<f64>,
+    reactor_pressure: Option<f64>,
+    pressure_drop: Option<f64>,
+) -> PyResult<crate::results::PyStirredTankReactorResult> {
+    azoth_process::stirred_tank_reactor(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        reaction,
+        limiting_reactant,
+        conversion,
+        isothermal,
+        reactor_temperature.map(kelvins),
+        reactor_pressure.map(pascals),
+        pascals(pressure_drop.unwrap_or(0.0)),
+    )
+    .map(|r| crate::results::PyStirredTankReactorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+
 /// `process.flare` - the flare's kernel as a registered id.
 ///
 /// **The record through and two numbers beside it.** `Flare.run` clones the inlet into the

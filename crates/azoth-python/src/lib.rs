@@ -363,6 +363,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::three_phase_separator, m)?)?;
     m.add_function(wrap_pyfunction!(process::ejector, m)?)?;
     m.add_function(wrap_pyfunction!(process::flare, m)?)?;
+    m.add_function(wrap_pyfunction!(process::stirred_tank_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(process::validate_flowsheet, m)?)?;
 
     // The standards namespace.

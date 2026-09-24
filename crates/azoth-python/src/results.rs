@@ -1697,6 +1697,71 @@ impl From<&Iso6976Result> for PyIso6976Result {
     }
 }
 
+/// Result of `process.stirred_tank_reactor`, transported.
+///
+/// The product's record and the duty, which is nonzero only when the vessel is isothermal.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "StirredTankReactorResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyStirredTankReactorResult {
+    /// Product molar flow, mol/s.
+    #[pyo3(get)]
+    pub product_n: PyQty,
+    /// Product composition.
+    #[pyo3(get)]
+    pub product_z: Vec<f64>,
+    /// Product pressure.
+    #[pyo3(get)]
+    pub product_p: PyQty,
+    /// Product temperature.
+    #[pyo3(get)]
+    pub product_t: PyQty,
+    /// Product molar enthalpy.
+    #[pyo3(get)]
+    pub product_h: PyQty,
+    /// The heat the vessel supplied, W.
+    #[pyo3(get)]
+    pub heat_duty: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyStirredTankReactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "StirredTankReactorResult(product_n={} {}, product_t={} {})",
+            self.product_n.magnitude_si,
+            self.product_n.unit,
+            self.product_t.magnitude_si,
+            self.product_t.unit
+        )
+    }
+}
+
+impl From<&StirredTankReactorResult> for PyStirredTankReactorResult {
+    fn from(r: &StirredTankReactorResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            product_n: quantity(r.product_n, "mol/s"),
+            product_z: r.product_z.clone(),
+            product_p: quantity(r.product_p.value, "Pa"),
+            product_t: quantity(r.product_t.value, "K"),
+            product_h: quantity(r.product_h.value, "J/mol"),
+            heat_duty: quantity(r.heat_duty.value, "W"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `process.ejector`, transported.
 ///
 /// One outlet, five fields: a two-inlet machine still discharges through one port.

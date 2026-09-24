@@ -1,0 +1,100 @@
+id = "process.stirred_tank_reactor"
+name = "Stirred-tank reactor"
+kind = "direct"
+assumptions = [
+    "**the reaction is a movement of moles, and the flash is what follows.** `react` takes the limiting reactant's moles times the conversion and scales every coefficient by the limiting one's; `run` then sets the pressure, holds the temperature when isothermal, and flashes.",
+    "**there is no energy balance over the reaction itself.** The adiabatic branch flashes at the *feed's* own enthalpy, so the heat the reaction releases shows up as the temperature the flash lands on - and the isothermal branch reports the duty it had to supply.",
+    "**the palette entry declared no parameters, and now declares the ones `run` reads**: the reaction, the limiting reactant, the conversion, the isothermal flag, the held temperature and pressure, and the pressure drop.",
+    "**a stoichiometry row naming a substance the feed does not carry is skipped**, which is the class's own behaviour: `addComponent` throws for a component the fluid has no slot for and the catch drops it. A reaction whose products are not in the feed moves less material than its stoichiometry says.",
+    "**the extent is the limiting reactant's, not the stoichiometry's.** A conversion that would take any substance below zero is refused here rather than allowed to overwrite its slot - the class's `addComponent` would carry a negative mole count.",
+    "**the energy-port branch is not ported.** `run` takes `PHflash(inlet + duty)` when an energy port is connected and in `SPECIFICATION` mode; that is an `EnergyStream` this library's five-field record has no place for, and the duty is declared out with the port named rather than guessed at.",
+    "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "NeqSim's `StirredTankReactor` also carries a vessel volume, a residence time, an agitator power per volume and a `runTransient`. **None is ported**: `run` reads the first three only through energy ports and mechanical design, and the transient needs a holdup.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/StirredTankReactor.java` is the port source, through its `run`, and `StoichiometricReaction.java` is the reaction it applies.",
+    "`data/reactions/stoichiometry.csv` - the stoichiometry the `reaction` input resolves against, from NeqSim's reaction data.",
+    "`validation/neqsim/captures/process_stirred_tank_reactor.tsv` - three rows on a methane/oxygen/nitrogen feed: adiabatic, isothermal at 800 K, and isothermal at a stated 3 bara.",
+]
+[source]
+standard = "NeqSim process/equipment/reactor/StirredTankReactor.java"
+edition = "Its steady-state `run`: every reaction applied, the pressure set, the temperature held when isothermal, then a `TPflash` or a `PHflash` at the inlet's enthalpy. **The energy-port branch is declared out.**"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the fluid's substances, by name, resolved against the component databank.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the feed's molar flow, which the reaction does not change: a stoichiometry that balances moves moles without making or destroying them.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed's composition, which the reaction moves before the flash.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the feed's pressure, which the outlet keeps less `pressure_drop` unless a reactor pressure is stated.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the feed's temperature, which fixes the enthalpy an adiabatic vessel carries through.\n"
+[inputs.reaction]
+type = "string"
+description = "the reaction's id in the reaction data, which is what `addReaction` names.\n"
+[inputs.limiting_reactant]
+type = "string"
+description = "the component whose moles times `conversion` set the extent of the reaction.\n"
+[inputs.conversion]
+unit = "dimensionless"
+description = "the fractional conversion of the limiting reactant, in `[0, 1]`.\n"
+[inputs.isothermal]
+type = "boolean"
+description = "whether the vessel holds its temperature, which is the class's `isothermal` flag.\n"
+[inputs.reactor_temperature]
+unit = "K"
+optional = true
+description = "the temperature an isothermal vessel holds. Required when `isothermal` is true, permitted and unused otherwise.\n"
+[inputs.reactor_pressure]
+unit = "Pa"
+optional = true
+description = "the pressure the vessel holds, `setReactorPressure`. When omitted the outlet is the feed's less `pressure_drop`.\n"
+[inputs.pressure_drop]
+unit = "Pa"
+description = "the pressure drop the outlet takes where no reactor pressure is stated, `setPressureDrop`.\n"
+[outputs]
+[outputs.product_n]
+unit = "mol/s"
+description = "the product's molar flow, which a balanced stoichiometry leaves equal to the feed's.\n"
+[outputs.product_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the product's composition after the reaction.\n"
+[outputs.product_p]
+unit = "Pa"
+description = "the product's pressure: the stated reactor pressure, or the feed's less the drop.\n"
+[outputs.product_t]
+unit = "K"
+description = "the product's temperature: the held one when isothermal, and otherwise the one the flash lands on at the feed's enthalpy.\n"
+[outputs.product_h]
+unit = "J/mol"
+description = "the product's molar enthalpy at its own state.\n"
+[outputs.heat_duty]
+unit = "W"
+description = "the heat the vessel had to supply: the outlet's total enthalpy less the feed's when isothermal, and zero when adiabatic.\n"
+[[valid_range]]
+quantity = "conversion"
+min = 0
+min_inclusive = true
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a conversion is a fraction of the limiting reactant\n"
+[[valid_range]]
+quantity = "pressure_drop"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a vessel passes pressure down, not up\n"
+[implementations]
+python = "azoth.process.stirred_tank_reactor"
+rust = "azoth_process::stirred_tank_reactor"

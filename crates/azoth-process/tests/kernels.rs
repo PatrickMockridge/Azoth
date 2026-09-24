@@ -4,6 +4,7 @@ use azoth_core::units::{kelvins, meters, pascals, watts_per_kelvin};
 use azoth_eos::RootSide;
 use azoth_process::Stream;
 use azoth_process::kernels::ejector::EjectorSetup;
+use azoth_process::kernels::stirred_tank_reactor::ReactorSetup;
 use azoth_process::kernels::three_phase_separator::Entrainment;
 use azoth_process::kernels::{
     FlowRegime, compressor, expander, filter, heat_exchanger, heater, mixer, pipe, pump, separator,
@@ -1222,4 +1223,81 @@ fn a_flare_passes_its_record_through_and_reports_two_numbers() {
         numbers.heat_duty.value,
         consistently
     );
+}
+
+/// **A stoichiometric reaction moves moles, and the flash decides the state.** The extent is
+/// the limiting reactant's, and the adiabatic branch carries the feed's own enthalpy through -
+/// so the heat the reaction releases is the temperature the flash lands on.
+#[test]
+fn a_stirred_tank_reactor_reacts_and_flashes() {
+    let feed = Stream::from_pt(
+        ["methane", "oxygen", "CO2", "water", "nitrogen"]
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect(),
+        vec![0.05, 0.10, 0.02, 0.03, 0.80],
+        1.0,
+        pascals(5.0e5),
+        kelvins(500.0),
+    )
+    .expect("the five components resolve");
+    let setup = |isothermal: bool, temperature: Option<f64>, pressure: Option<f64>| ReactorSetup {
+        reaction: "methanecombustion".to_string(),
+        limiting_reactant: "oxygen".to_string(),
+        conversion: 0.5,
+        isothermal,
+        reactor_temperature: temperature.map(kelvins),
+        reactor_pressure: pressure.map(|bar| pascals(bar * 1.0e5)),
+        pressure_drop: pascals(0.0),
+    };
+
+    let (adiabatic, duty) = azoth_process::kernels::stirred_tank_reactor::stirred_tank_reactor(
+        &feed,
+        &setup(false, None, None),
+    )
+    .expect("the reaction data carries methanecombustion");
+    println!(
+        "adiabatic t={} h={} z={:?} duty={}",
+        adiabatic.t.value,
+        adiabatic.h.value,
+        adiabatic.z,
+        duty.value
+    );
+    println!("neqsim adiabatic t=498.5366986205672 h=6861.2392872763785 duty=0.0");
+
+    // The extent is the limiting reactant's: 0.10 mol of oxygen times 0.5, scaled by each
+    // coefficient over the limiting one's (2).
+    close(adiabatic.z[0], 0.025);
+    close(adiabatic.z[1], 0.05);
+    close(adiabatic.z[2], 0.045);
+    close(adiabatic.z[3], 0.08);
+    close(adiabatic.z[4], 0.8);
+    close(adiabatic.n, feed.n);
+    // Adiabatic: the flash carries the feed's enthalpy and the vessel supplies nothing.
+    close(adiabatic.h.value, feed.h.value);
+    close(duty.value, 0.0);
+    relative(adiabatic.t.value, 498.5366986205672, 1e-5, "the adiabatic outlet");
+
+    // The isothermal branch holds its temperature and reports what that costs.
+    let (held, duty) = azoth_process::kernels::stirred_tank_reactor::stirred_tank_reactor(
+        &feed,
+        &setup(true, Some(800.0), None),
+    )
+    .expect("the same reaction");
+    println!(
+        "isothermal t={} h={} duty={}",
+        held.t.value,
+        held.h.value,
+        duty.value
+    );
+    println!("neqsim isothermal t=800 h=16686.180909326755 duty=9824.941623206952");
+    close(held.t.value, 800.0);
+    assert!(duty.value > 9000.0, "an 800 K vessel supplies 9824 W: {}", duty.value);
+    assert_eq!(held.z, adiabatic.z, "a held temperature changes the state, not the extent");
+
+    // A stated reactor pressure *replaces* the feed's rather than dropping from it.
+    let (pressed, _) =
+        azoth_process::kernels::stirred_tank_reactor::stirred_tank_reactor(&feed, &setup(true, Some(800.0), Some(3.0)))
+            .expect("the same reaction");
+    close(pressed.p.value, 3.0e5);
 }

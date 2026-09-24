@@ -30,6 +30,7 @@ from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
 from azoth.process.reference.shortcut_distillation_column import shortcut_distillation_column
 from azoth.process.reference.splitter import splitter
+from azoth.process.reference.stirred_tank_reactor import stirred_tank_reactor
 from azoth.process.reference.tank import tank
 from azoth.process.reference.three_phase_separator import three_phase_separator
 from azoth.process.reference.throttling_valve import throttling_valve
@@ -53,6 +54,7 @@ __all__ = [
     "separator",
     "shortcut_distillation_column",
     "splitter",
+    "stirred_tank_reactor",
     "tank",
     "three_phase_separator",
     "throttling_valve",

@@ -19,6 +19,7 @@
 //!   - specs/models/process/separator.toml
 //!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
+//!   - specs/models/process/stirred_tank_reactor.toml
 //!   - specs/models/process/tank.toml
 //!   - specs/models/process/three_phase_separator.toml
 //!   - specs/models/process/throttling_valve.toml
@@ -1096,6 +1097,88 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
             ),
             ("distillate_z", &[0.9659099052324753, 0.034090094767524684]),
             ("bottoms_z", &[0.020064767825946687, 0.9799352321740532]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "binary_mesh_solve",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0002,
+        numbers: &[
+            ("feed_n", 7.490704036290964),
+            ("feed_p", 2000000.0),
+            ("feed_t", 300.0),
+            ("number_of_stages", 4.0),
+            ("feed_stage", 2.0),
+            ("top_pressure", 1900000.0),
+            ("bottom_pressure", 2000000.0),
+            ("reboiler_temperature", 373.15),
+            ("condenser_temperature", 253.14999999999998),
+            ("temperature_tolerance", 1e-06),
+            ("max_iterations", 200.0),
+        ],
+        flags: &[("has_reboiler", true), ("has_condenser", true)],
+        lists: &[("components", &["methane", "n-butane"])],
+        strings: &[("solver_type", "naphtali_sandholm")],
+        vectors: &[("feed_z", &[0.49999999999999994, 0.49999999999999994])],
+        matrices: &[],
+        expected: &[
+            ("distillate_n", 3.7914996439673083),
+            ("distillate_p", 1900000.0),
+            ("distillate_t", 253.14999999999998),
+            ("distillate_h", -1258.4513198898358),
+            ("bottoms_n", 3.6992043923236553),
+            ("bottoms_p", 2000000.0),
+            ("bottoms_t", 373.15),
+            ("bottoms_h", -6818.722955040299),
+            ("condenser_duty", -21323.042177706004),
+            ("reboiler_duty", 47786.58295288164),
+        ],
+        expected_vectors: &[
+            (
+                "tray_temperature",
+                &[
+                    373.15,
+                    336.1538231834974,
+                    303.07105352147533,
+                    302.12253908101036,
+                    296.84208915683996,
+                    253.14999999999998,
+                ],
+            ),
+            (
+                "tray_pressure",
+                &[
+                    2000000.0, 1980000.0, 1960000.0, 1940000.0, 1920000.0, 1900000.0,
+                ],
+            ),
+            (
+                "tray_gas_n",
+                &[
+                    1.3732781432407117,
+                    0.525903134833042,
+                    4.576181492897451,
+                    4.55803955854207,
+                    4.451759778195404,
+                    3.7914996439673083,
+                ],
+            ),
+            (
+                "tray_liquid_n",
+                &[
+                    3.6992043923236553,
+                    5.072482535564368,
+                    4.225107527156697,
+                    0.7846818489301433,
+                    0.7665399145747628,
+                    0.6602601342280967,
+                ],
+            ),
+            ("distillate_z", &[0.9659099052335057, 0.03409009476649429]),
+            ("bottoms_z", &[0.02246562977820057, 0.9775343702217995]),
         ],
         expected_strings: &[],
     },
@@ -3341,6 +3424,159 @@ pub static SPLITTER_SPEC: ModelSpec = ModelSpec {
     cases: SPLITTER_CASES,
 };
 
+static STIRRED_TANK_REACTOR_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "conversion",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: Some(1.0),
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a conversion is a fraction of the limiting reactant",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "pressure_drop",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a vessel passes pressure down, not up",
+        },
+    },
+];
+
+static STIRRED_TANK_REACTOR_CASES: &[TestCase] = &[
+    TestCase {
+        id: "adiabatic",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0005,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 500000.0),
+            ("feed_t", 500.0),
+            ("conversion", 0.5),
+            ("pressure_drop", 0.0),
+        ],
+        flags: &[("isothermal", false)],
+        lists: &[(
+            "components",
+            &["methane", "oxygen", "CO2", "water", "nitrogen"],
+        )],
+        strings: &[
+            ("reaction", "methanecombustion"),
+            ("limiting_reactant", "oxygen"),
+        ],
+        vectors: &[("feed_z", &[0.05, 0.1, 0.02, 0.03, 0.8])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 1.0),
+            ("product_p", 500000.0),
+            ("product_t", 498.5366986205672),
+            ("product_h", 6861.2392872763785),
+            ("heat_duty", 0.0),
+        ],
+        expected_vectors: &[("product_z", &[0.025, 0.05, 0.045, 0.08, 0.8])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "isothermal_800_k",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.002,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 500000.0),
+            ("feed_t", 500.0),
+            ("conversion", 0.5),
+            ("reactor_temperature", 800.0),
+            ("pressure_drop", 0.0),
+        ],
+        flags: &[("isothermal", true)],
+        lists: &[(
+            "components",
+            &["methane", "oxygen", "CO2", "water", "nitrogen"],
+        )],
+        strings: &[
+            ("reaction", "methanecombustion"),
+            ("limiting_reactant", "oxygen"),
+        ],
+        vectors: &[("feed_z", &[0.05, 0.1, 0.02, 0.03, 0.8])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 1.0),
+            ("product_p", 500000.0),
+            ("product_t", 800.0),
+            ("product_h", 16686.180909326755),
+            ("heat_duty", 9824.941623206952),
+        ],
+        expected_vectors: &[("product_z", &[0.025, 0.05, 0.045, 0.08, 0.8])],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "isothermal_800_k_3bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.002,
+        numbers: &[
+            ("feed_n", 1.0),
+            ("feed_p", 500000.0),
+            ("feed_t", 500.0),
+            ("conversion", 0.5),
+            ("reactor_temperature", 800.0),
+            ("reactor_pressure", 300000.0),
+            ("pressure_drop", 0.0),
+        ],
+        flags: &[("isothermal", true)],
+        lists: &[(
+            "components",
+            &["methane", "oxygen", "CO2", "water", "nitrogen"],
+        )],
+        strings: &[
+            ("reaction", "methanecombustion"),
+            ("limiting_reactant", "oxygen"),
+        ],
+        vectors: &[("feed_z", &[0.05, 0.1, 0.02, 0.03, 0.8])],
+        matrices: &[],
+        expected: &[
+            ("product_n", 1.0),
+            ("product_p", 300000.0),
+            ("product_t", 800.0),
+            ("product_h", 16685.47174570607),
+            ("heat_duty", 9824.232459586266),
+        ],
+        expected_vectors: &[("product_z", &[0.025, 0.05, 0.045, 0.08, 0.8])],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `process.stirred_tank_reactor`.
+pub static STIRRED_TANK_REACTOR_SPEC: ModelSpec = ModelSpec {
+    id: "process.stirred_tank_reactor",
+    kind: "direct",
+    algorithm: None,
+    checks: STIRRED_TANK_REACTOR_CHECKS,
+    cases: STIRRED_TANK_REACTOR_CASES,
+};
+
 static TANK_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -4079,6 +4315,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &SEPARATOR_SPEC,
     &SHORTCUT_DISTILLATION_COLUMN_SPEC,
     &SPLITTER_SPEC,
+    &STIRRED_TANK_REACTOR_SPEC,
     &TANK_SPEC,
     &THREE_PHASE_SEPARATOR_SPEC,
     &THROTTLING_VALVE_SPEC,

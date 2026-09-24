@@ -32,10 +32,12 @@ pub use models::{
     ComponentSplitterResult, CompressorResult, CoolerResult, DistillationColumnResult,
     EjectorResult, ExpanderResult, FilterResult, FlareResult, GasScrubberResult,
     HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PipeResult, PumpResult,
-    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, TankResult,
+    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
+    TankResult,
     ThreePhaseSeparatorResult, ThrottlingValveResult, component_splitter, compressor, cooler,
     distillation_column, ejector, expander, filter, flare, gas_scrubber, heat_exchanger, heater,
-    manifold, mixer, pipe, pump, separator, shortcut_distillation_column, splitter, tank,
+    manifold, mixer, pipe, pump, separator, shortcut_distillation_column, splitter,
+    stirred_tank_reactor, tank,
     three_phase_separator, throttling_valve,
 };
 pub use stream::Stream;

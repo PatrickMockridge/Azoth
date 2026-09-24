@@ -647,6 +647,31 @@ class GasScrubberResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class StirredTankReactorResult(_HasWarnings):
+    """Result of ``process.stirred_tank_reactor``.
+
+    The product's record and the duty the vessel supplied - nonzero only when it is isothermal,
+    because an adiabatic vessel supplies nothing and the reaction's heat shows up in the
+    temperature instead.
+    """
+
+    #: Product molar flow.
+    product_n: Q
+    #: Product composition.
+    product_z: tuple[float, ...]
+    #: Product pressure.
+    product_p: Q
+    #: Product temperature.
+    product_t: Q
+    #: Product molar enthalpy.
+    product_h: Q
+    #: The heat the vessel supplied.
+    heat_duty: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlareResult(_HasWarnings):
     """Result of ``process.flare``.
 

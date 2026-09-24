@@ -1,0 +1,73 @@
+model = "process.stirred_tank_reactor"
+
+[[cases]]
+id = "adiabatic"
+tolerance = 0.0005
+source = "NeqSim master, `StirredTankReactor.run` on a 0.05/0.10/0.02/0.03/0.80 methane/oxygen/CO2/water/nitrogen feed at 500 K and 5 bara, with the `methanecombustion` reaction at 50 per cent conversion of its limiting reactant (oxygen), from `validation/neqsim/captures/process_stirred_tank_reactor.tsv`. **The composition is the class's own movement of moles**: 0.05 mol of oxygen reacts, every coefficient scaled by the limiting one's, so methane leaves at 0.025 and the products at 0.045 and 0.08. **Adiabatic: the vessel flashes at the feed's own enthalpy**, so the heat the combustion releases is the temperature the flash lands on - 498.54 K, two and a half kelvin below the feed - and the duty it reports is zero. The tolerance is the libraries' enthalpy offset, `6e-4` K here, and `1.4` J/mol of `6861` on the product enthalpy, which sets the tolerance."
+[cases.inputs]
+components = ["methane", "oxygen", "CO2", "water", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.02, 0.03, 0.8]
+feed_p = 500000.0
+feed_t = 500.0
+reaction = "methanecombustion"
+limiting_reactant = "oxygen"
+conversion = 0.5
+isothermal = false
+pressure_drop = 0.0
+[cases.expected]
+product_n = 1.0
+product_z = [0.025, 0.05, 0.045, 0.08, 0.8]
+product_p = 500000.0
+product_t = 498.5366986205672
+product_h = 6861.2392872763785
+heat_duty = 0.0
+
+[[cases]]
+id = "isothermal_800_k"
+tolerance = 0.002
+source = "The capture's second row: the same feed and reaction with the vessel held at 800 K. **The duty is what the class had to supply** - the outlet's total enthalpy less the feed's, `9824.94` W - and the product's composition is the adiabatic row's, because a held temperature changes the state and not the extent. **The tolerance is this row's**: the `10` J/mol the product's enthalpy differs by is the libraries' offset at 800 K - `6e-4` relative here against `2e-4` on the adiabatic row - and the duty inherits it."
+[cases.inputs]
+components = ["methane", "oxygen", "CO2", "water", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.02, 0.03, 0.8]
+feed_p = 500000.0
+feed_t = 500.0
+reaction = "methanecombustion"
+limiting_reactant = "oxygen"
+conversion = 0.5
+isothermal = true
+reactor_temperature = 800.0
+pressure_drop = 0.0
+[cases.expected]
+product_n = 1.0
+product_z = [0.025, 0.05, 0.045, 0.08, 0.8]
+product_p = 500000.0
+product_t = 800.0
+product_h = 16686.180909326755
+heat_duty = 9824.941623206952
+
+[[cases]]
+id = "isothermal_800_k_3bara"
+tolerance = 0.002
+source = "The capture's third row: the same vessel with `setReactorPressure(3.0)` instead of the feed's own pressure. The outlet leaves at 3 bara rather than 5 - which is the class's own branch, since a stated reactor pressure *replaces* the feed's rather than dropping from it - and the duty falls by `0.7` W with the pressure. The tolerance is the row above's, for the same reason."
+[cases.inputs]
+components = ["methane", "oxygen", "CO2", "water", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.02, 0.03, 0.8]
+feed_p = 500000.0
+feed_t = 500.0
+reaction = "methanecombustion"
+limiting_reactant = "oxygen"
+conversion = 0.5
+isothermal = true
+reactor_temperature = 800.0
+reactor_pressure = 300000.0
+pressure_drop = 0.0
+[cases.expected]
+product_n = 1.0
+product_z = [0.025, 0.05, 0.045, 0.08, 0.8]
+product_p = 300000.0
+product_t = 800.0
+product_h = 16685.47174570607
+heat_duty = 9824.232459586266

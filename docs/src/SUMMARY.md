@@ -184,6 +184,7 @@
   - [Separator](./process/separator.md)
   - [Shortcut distillation column](./process/shortcut_distillation_column.md)
   - [Splitter](./process/splitter.md)
+  - [Stirred-tank reactor](./process/stirred_tank_reactor.md)
   - [Tank](./process/tank.md)
   - [Three-phase separator](./process/three_phase_separator.md)
   - [Throttling valve](./process/throttling_valve.md)

@@ -30,6 +30,7 @@
 //! `products_n`, `products_p`, `products_t` and `products_h` are vectors with one entry
 //! per outlet and `products_z` a matrix with one row per outlet.
 
+pub mod absorption_column;
 pub mod component_splitter;
 pub mod compressor;
 pub mod cooler;
@@ -48,10 +49,12 @@ pub mod pump;
 pub mod separator;
 pub mod shortcut_distillation_column;
 pub mod splitter;
+pub mod stirred_tank_reactor;
 pub mod tank;
 pub mod three_phase_separator;
 pub mod throttling_valve;
 
+pub use absorption_column::{AbsorptionColumnResult, absorption_column};
 pub use component_splitter::{ComponentSplitterResult, component_splitter};
 pub use compressor::{CompressorResult, compressor};
 pub use cooler::{CoolerResult, cooler};
@@ -72,6 +75,7 @@ pub use shortcut_distillation_column::{
     ShortcutDistillationColumnResult, shortcut_distillation_column,
 };
 pub use splitter::{SplitterResult, splitter};
+pub use stirred_tank_reactor::{StirredTankReactorResult, stirred_tank_reactor};
 pub use tank::{TankResult, tank};
 pub use three_phase_separator::{ThreePhaseSeparatorResult, three_phase_separator};
 pub use throttling_valve::{ThrottlingValveResult, throttling_valve};
