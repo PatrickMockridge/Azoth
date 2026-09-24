@@ -59,6 +59,7 @@ NAMESPACES = {
     "thermal": "Heat transfer",
     "eos": "Equations of state",
     "reactions": "Reactions",
+    "standards": "Standards",
     "process": "Unit operations",
 }
 

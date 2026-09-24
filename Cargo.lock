@@ -120,6 +120,7 @@ dependencies = [
  "azoth-hydraulics",
  "azoth-process",
  "azoth-reactions",
+ "azoth-standards",
  "azoth-thermal",
  "pyo3",
  "uom",
@@ -135,6 +136,16 @@ dependencies = [
  "csv",
  "serde",
  "toml",
+ "uom",
+]
+
+[[package]]
+name = "azoth-standards"
+version = "0.1.0"
+dependencies = [
+ "azoth-core",
+ "azoth-test-support",
+ "csv",
  "uom",
 ]
 

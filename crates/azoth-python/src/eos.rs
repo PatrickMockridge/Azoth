@@ -3875,6 +3875,7 @@ fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
     azoth_eos::model_gen::models()
         .iter()
         .chain(azoth_reactions::model_gen::models().iter())
+        .chain(azoth_standards::model_gen::models().iter())
         .chain(azoth_process::model_gen::models().iter())
         .copied()
 }

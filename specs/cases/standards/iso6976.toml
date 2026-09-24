@@ -1,0 +1,127 @@
+model = "standards.iso6976"
+
+[[cases]]
+id = "pure_methane_15_25"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on pure methane at the volumetric reference 15.0 C and the energy reference 25.0 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane"]
+z = [1.0]
+volumetric_reference_temperature = 288.15
+energy_reference_temperature = 298.15
+[cases.expected]
+molar_mass = 0.016042999999999998
+compression_factor = 0.99800191
+relative_density = 0.5547423719626038
+density_ideal = 0.6784954068722058
+density_real = 0.679853815983384
+superior_calorific_value = 890630.0
+inferior_calorific_value = 802600.0
+
+[[cases]]
+id = "methane_butane_15_25"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on 0.9/0.1 methane/n-butane at the volumetric reference 15.0 C and the energy reference 25.0 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane", "n-butane"]
+z = [0.9, 0.1]
+volumetric_reference_temperature = 288.15
+energy_reference_temperature = 298.15
+[cases.expected]
+molar_mass = 0.020250999999999998
+compression_factor = 0.9965260764
+relative_density = 0.7012856208949791
+density_ideal = 0.8564614152321285
+density_real = 0.8594470686869911
+superior_calorific_value = 1089307.0
+inferior_calorific_value = 988072.0000000001
+
+[[cases]]
+id = "sales_gas_15_25"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on a sales gas - 0.85/0.07/0.03/0.02/0.03 methane/ethane/propane/n-butane/nitrogen at the volumetric reference 15.0 C and the energy reference 25.0 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane", "nitrogen"]
+z = [0.85, 0.07, 0.03, 0.02, 0.03]
+volumetric_reference_temperature = 288.15
+energy_reference_temperature = 298.15
+[cases.expected]
+molar_mass = 0.019067225
+compression_factor = 0.997220179824
+relative_density = 0.6598322847124574
+density_ideal = 0.8063968449977494
+density_real = 0.808644731938809
+superior_calorific_value = 990406.8999999999
+inferior_calorific_value = 896654.5000000001
+
+[[cases]]
+id = "sour_gas_15_25"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on a sour gas - 0.8/0.15/0.05 methane/CO2/nitrogen at the volumetric reference 15.0 C and the energy reference 25.0 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane", "CO2", "nitrogen"]
+z = [0.8, 0.15, 0.05]
+volumetric_reference_temperature = 288.15
+energy_reference_temperature = 298.15
+[cases.expected]
+molar_mass = 0.020836575
+compression_factor = 0.997710855975
+relative_density = 0.7207070392979196
+density_ideal = 0.8812267301906272
+density_real = 0.8832486134767571
+superior_calorific_value = 712504.0
+inferior_calorific_value = 642080.0
+
+[[cases]]
+id = "methane_butane_0_15_55"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on the same binary at the flare's reference pair at the volumetric reference 0.0 C and the energy reference 15.55 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane", "n-butane"]
+z = [0.9, 0.1]
+volumetric_reference_temperature = 273.15
+energy_reference_temperature = 288.7
+[cases.expected]
+molar_mass = 0.020250999999999998
+compression_factor = 0.9958022559
+relative_density = 0.7016760102400963
+density_ideal = 0.9034938927297743
+density_real = 0.907302516515392
+superior_calorific_value = 1090322.0
+inferior_calorific_value = 988179.0000000001
+
+[[cases]]
+id = "sales_gas_0_15_55"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on the sales gas at the flare's reference pair at the volumetric reference 0.0 C and the energy reference 15.55 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane", "ethane", "propane", "n-butane", "nitrogen"]
+z = [0.85, 0.07, 0.03, 0.02, 0.03]
+volumetric_reference_temperature = 273.15
+energy_reference_temperature = 288.7
+[cases.expected]
+molar_mass = 0.019067225
+compression_factor = 0.996656963239
+relative_density = 0.6600928776978187
+density_ideal = 0.8506800325319478
+density_real = 0.8535334261523173
+superior_calorific_value = 991349.9999999999
+inferior_calorific_value = 896756.7000000001
+
+[[cases]]
+id = "pure_methane_0_15_55"
+tolerance = 1e-09
+source = "NeqSim master, `Standard_ISO6976` on pure methane at the flare's reference pair at the volumetric reference 0.0 C and the energy reference 15.55 C, from `validation/neqsim/captures/process_gas_quality.tsv`. The reference type is `molar` and the reference state `real`; the capture prints the class's own units (g/mol and kJ/mol) and this case states SI, so the molar mass divides by 1000 and the calorific values multiply by it. **The class answers exactly these numbers**: the compression factor, the relative density and the two densities agree to the last bit, because this calc is the class's own sums."
+[cases.inputs]
+components = ["methane"]
+z = [1.0]
+volumetric_reference_temperature = 273.15
+energy_reference_temperature = 288.7
+[cases.expected]
+molar_mass = 0.016042999999999998
+compression_factor = 0.997599
+relative_density = 0.5548720372209514
+density_ideal = 0.7157549020326784
+density_real = 0.7174775656678469
+superior_calorific_value = 891510.0
+inferior_calorific_value = 802690.0

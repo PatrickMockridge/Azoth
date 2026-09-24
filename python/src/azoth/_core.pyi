@@ -1693,6 +1693,17 @@ class ReferencePotentialsResult:
     warnings: list[Warning]
 
 @final
+class Iso6976Result:
+    molar_mass: Qty
+    compression_factor: float
+    relative_density: float
+    density_ideal: Qty
+    density_real: Qty
+    superior_calorific_value: Qty
+    inferior_calorific_value: Qty
+    warnings: list[Warning]
+
+@final
 class ConductionPlaneWallResult:
     q: Qty
     warnings: list[Warning]
@@ -3069,6 +3080,12 @@ def reference_potentials(
     source: str,
     T: float,
 ) -> ReferencePotentialsResult: ...
+def iso6976(
+    components: list[str],
+    z: list[float],
+    volumetric_reference_temperature: float,
+    energy_reference_temperature: float,
+) -> Iso6976Result: ...
 def conduction_plane_wall(k: float, A: float, dT: float, L: float) -> ConductionPlaneWallResult: ...
 
 # --- introspection --------------------------------------------------------

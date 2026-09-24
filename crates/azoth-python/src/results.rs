@@ -73,6 +73,7 @@ use azoth_reactions::reactive_ph_flash::ReactivePhFlashResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
 use azoth_reactions::reactive_tp_flash::ReactiveTpFlashResult;
 use azoth_reactions::reference_potentials::ReferencePotentialsResult;
+use azoth_standards::Iso6976Result;
 use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
@@ -1552,6 +1553,75 @@ impl From<&TankResult> for PyTankResult {
             liquid_p: quantity(r.liquid_p.value, "Pa"),
             liquid_t: quantity(r.liquid_t.value, "K"),
             liquid_h: quantity(r.liquid_h.value, "J/mol"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `standards.iso6976`, transported.
+///
+/// The standard's quantities in SI: molar quantities per mole and densities per cubic metre.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "Iso6976Result"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIso6976Result {
+    /// The mixture's molar mass, kg/mol.
+    #[pyo3(get)]
+    pub molar_mass: PyQty,
+    /// The mixture's compression factor.
+    #[pyo3(get)]
+    pub compression_factor: f64,
+    /// Density relative to dry air.
+    #[pyo3(get)]
+    pub relative_density: f64,
+    /// The ideal-gas density, kg/m³.
+    #[pyo3(get)]
+    pub density_ideal: PyQty,
+    /// The real-gas density, kg/m³.
+    #[pyo3(get)]
+    pub density_real: PyQty,
+    /// Superior molar calorific value, J/mol.
+    #[pyo3(get)]
+    pub superior_calorific_value: PyQty,
+    /// Inferior molar calorific value, J/mol.
+    #[pyo3(get)]
+    pub inferior_calorific_value: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIso6976Result {
+    fn __repr__(&self) -> String {
+        format!(
+            "Iso6976Result(molar_mass={} {}, inferior_calorific_value={} {})",
+            self.molar_mass.magnitude_si,
+            self.molar_mass.unit,
+            self.inferior_calorific_value.magnitude_si,
+            self.inferior_calorific_value.unit
+        )
+    }
+}
+
+impl From<&Iso6976Result> for PyIso6976Result {
+    fn from(r: &Iso6976Result) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            molar_mass: quantity(r.molar_mass.value, "kg/mol"),
+            compression_factor: r.compression_factor.value,
+            relative_density: r.relative_density.value,
+            density_ideal: quantity(r.density_ideal.value, "kg/m**3"),
+            density_real: quantity(r.density_real.value, "kg/m**3"),
+            superior_calorific_value: quantity(r.superior_calorific_value.value, "J/mol"),
+            inferior_calorific_value: quantity(r.inferior_calorific_value.value, "J/mol"),
             warnings: transport(&r.warnings),
         }
     }
@@ -8930,6 +9000,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         TankResult::CALC_ID => TankResult::FIELDS.to_vec(),
         ThreePhaseSeparatorResult::CALC_ID => ThreePhaseSeparatorResult::FIELDS.to_vec(),
         EjectorResult::CALC_ID => EjectorResult::FIELDS.to_vec(),
+        Iso6976Result::CALC_ID => Iso6976Result::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

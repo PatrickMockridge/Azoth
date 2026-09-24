@@ -55,6 +55,7 @@ from azoth.core.result import (
     DewTemperatureResult,
     DistillationColumnResult,
     EjectorResult,
+    Iso6976Result,
     EffectiveDiffusionResult,
     EosCgPhaseResult,
     EquilibriumConstantResult,
@@ -4333,6 +4334,42 @@ def tank(
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def iso6976(
+    components: Sequence[str],
+    z: Sequence[float],
+    volumetric_reference_temperature: Q,
+    energy_reference_temperature: Q,
+) -> Iso6976Result:
+    """`standards.iso6976`, computed in Rust.
+
+    The component names cross unresolved, as the process models' do: the Rust side resolves
+    each against the standard's own table, so the two languages cannot disagree about which
+    row answered. The two reference temperatures cross as kelvins, which is the unit the
+    spec declares.
+    """
+    spec = _models_gen.model("standards.iso6976")
+    result = _core.iso6976(
+        list(components),
+        [_si(spec, "z", value) for value in z],
+        input_to_si(spec, "volumetric_reference_temperature", volumetric_reference_temperature),
+        input_to_si(spec, "energy_reference_temperature", energy_reference_temperature),
+    )
+    return Iso6976Result(
+        molar_mass=from_si(result.molar_mass.magnitude_si, result.molar_mass.unit),
+        compression_factor=result.compression_factor,
+        relative_density=result.relative_density,
+        density_ideal=from_si(result.density_ideal.magnitude_si, result.density_ideal.unit),
+        density_real=from_si(result.density_real.magnitude_si, result.density_real.unit),
+        superior_calorific_value=from_si(
+            result.superior_calorific_value.magnitude_si, result.superior_calorific_value.unit
+        ),
+        inferior_calorific_value=from_si(
+            result.inferior_calorific_value.magnitude_si, result.inferior_calorific_value.unit
+        ),
         warnings=_warnings(result.warnings),
     )
 

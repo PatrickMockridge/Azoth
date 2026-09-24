@@ -647,6 +647,34 @@ class GasScrubberResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class Iso6976Result(_HasWarnings):
+    """Result of ``standards.iso6976``.
+
+    The standard's quantities, in SI: molar quantities per mole and the densities per cubic
+    metre at the reference state. The Wobbe index is deliberately absent - it is a calorific
+    value per unit volume, and this library has no energy-per-volume dimension - and
+    ``inferior_calorific_value`` beside ``density_real`` composes to it.
+    """
+
+    #: The mixture's molar mass.
+    molar_mass: Q
+    #: The mixture's compression factor at the volumetric reference temperature.
+    compression_factor: float
+    #: Density relative to dry air at the volumetric reference temperature.
+    relative_density: float
+    #: The ideal-gas density at the reference pressure and volumetric reference temperature.
+    density_ideal: Q
+    #: The real-gas density there.
+    density_real: Q
+    #: Superior (gross) molar calorific value at the energy reference temperature.
+    superior_calorific_value: Q
+    #: Inferior (net) molar calorific value at the energy reference temperature.
+    inferior_calorific_value: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class EjectorResult(_HasWarnings):
     """Result of ``process.ejector``.
 

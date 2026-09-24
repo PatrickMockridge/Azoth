@@ -1,0 +1,76 @@
+id = "standards.iso6976"
+name = "Calorific values and density of a natural gas (ISO 6976)"
+kind = "direct"
+assumptions = [
+    "**the standard's tabulated per-component constants come from `data/standards/iso6976.csv`**, compiled from NeqSim's `ISO6976constants.csv` by `tools/gen_databank.py`. The composition names its components and the table answers with their molar masses, summation factors and calorific values.",
+    "**the tables are the *original* revision, not the 2016 one.** `Standard_ISO6976` queries `ISO6976constants` and `Standard_ISO6976_2016` queries the revision; they disagree on the compression factors and the molar masses, and the class `Stream.LCV()` builds is the first of the two.",
+    "**the energy and volume reference temperatures select the standard's rows, and are the caller's.** The calorific values are stated at the energy reference temperature and the densities at the volumetric one, so `Hsup` at 0 °C and at 25 °C are different numbers of the same quantity.",
+    "**`R` is `8.314510` J/(mol*K) and the reference pressure `1.01325` bar**, both NeqSim's own rather than the current CODATA values: the port reproduces the standard as the class implements it.",
+    "**the reference temperatures are refused outside the standard's set rather than corrected.** `checkReferenceCondition` silently rewrites an unrecognised value to 15 or 25 C; this refuses, because a number quietly not the one asked for is worse.",
+    "**a component the table has no row for is refused, not skipped.** ISO 6976 is a *gas* standard: 16 of the table's 56 rows name substances the component databank does not carry, and a composition naming one of them has no calorific value here rather than a partial one.",
+    "**the Wobbe index is not an output.** It is a calorific value per unit *volume*, and this library's unit vocabulary has no energy-per-volume dimension; the volumetric quantities are therefore expressed as a molar calorific value beside a density, which composes to the same thing.",
+]
+references = [
+    "ISO 6976:1995, \"Natural gas - Calculation of calorific values, density, relative density and Wobbe index from composition\".",
+    "NeqSim master, `standards/gasquality/Standard_ISO6976.java` - the class this ports, and the source of the two constants above.",
+    "`validation/neqsim/captures/process_gas_quality.tsv` - the class's own answers for four gases, from `StandardsProbe`.",
+]
+[source]
+standard = "ISO 6976"
+edition = "1995; ported through NeqSim's `Standard_ISO6976`, which queries `ISO6976constants`"
+[inputs]
+[inputs.components]
+type = "components"
+description = "the gas's substances, by name. Every one must have a row in the standard's table, which is a narrower set than the component databank.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the gas's composition, in the order the components are listed.\n"
+[inputs.volumetric_reference_temperature]
+unit = "K"
+description = "the temperature the ideal and real densities and the relative density are formed at, **in kelvin**: the standard states it in Celsius and the offset is exact. The metering set is 273.15, 288.15, 288.7 (60 F) and 293.15 K; the 60 F value reads the 15 C column.\n"
+[inputs.energy_reference_temperature]
+unit = "K"
+description = "the temperature the calorific values are stated at, in kelvin - the combustion reference, not the metering one. 273.15, 288.15, 293.15, 298.15 and 288.7 (60 F) K; the last uses the table's 60 F column.\n"
+[outputs]
+[outputs.molar_mass]
+unit = "kg/mol"
+description = "the mixture's molar mass, `sum z_i M_i`.\n"
+[outputs.compression_factor]
+unit = "dimensionless"
+description = "the mixture's compression factor at the volumetric reference temperature, `1 - (sum z_i sqrt(b_i))**2`.\n"
+[outputs.relative_density]
+unit = "dimensionless"
+description = "the mixture's density relative to dry air at the volumetric reference temperature, with the air's own compression factor applied: `sum z_i M_i / M_air * Z_air / Z`.\n"
+[outputs.density_ideal]
+unit = "kg/m**3"
+description = "the density of an ideal gas of this molar mass at the reference pressure and the volumetric reference temperature, `P M / (R T)`.\n"
+[outputs.density_real]
+unit = "kg/m**3"
+description = "the same with the mixture's own compression factor divided out, which is the standard's real-gas density.\n"
+[outputs.superior_calorific_value]
+unit = "J/mol"
+description = "the mixture's superior (gross) molar calorific value, `sum z_i Hsup_i`, at the energy reference temperature.\n"
+[outputs.inferior_calorific_value]
+unit = "J/mol"
+description = "the mixture's inferior (net) molar calorific value, `sum z_i Hinf_i` - the superior less the latent heat of the water the combustion forms, which the standard's table already carries.\n"
+[[valid_range]]
+quantity = "volumetric_reference_temperature"
+min = 273.15
+min_inclusive = true
+max = 293.15
+max_inclusive = true
+severity = "error"
+rationale = "the standard's metering temperatures, 0 to 20 C; 15.55 C is the 60 F reference and is inside this interval\n"
+[[valid_range]]
+quantity = "energy_reference_temperature"
+min = 273.15
+min_inclusive = true
+max = 298.15
+max_inclusive = true
+severity = "error"
+rationale = "the standard's combustion temperatures, 0 to 25 C\n"
+[implementations]
+python = "azoth.standards.iso6976"
+rust = "azoth_standards::iso6976"

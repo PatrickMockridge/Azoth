@@ -271,6 +271,13 @@ Five sections, and the difference between them is the point:
 - [`reactions.reactive_tp_flash`](./reactions/reactive_tp_flash.md) — Reactive flash at fixed temperature and pressure
 - [`reactions.reference_potentials`](./reactions/reference_potentials.md) — Reference potentials from an independent reaction basis
 
+**Standards** - [`standards/index.md`](./standards/index.md):
+
+
+*Models* — whose specs fix a procedure rather than an equation:
+
+- [`standards.iso6976`](./standards/iso6976.md) — Calorific values and density of a natural gas (ISO 6976)
+
 **Heat transfer** - [`thermal/index.md`](./thermal/index.md):
 
 - [`thermal.conduction_plane_wall`](./thermal/conduction_plane_wall.md)

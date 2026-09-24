@@ -40,6 +40,7 @@ mod overlay;
 mod process;
 mod reactions;
 mod results;
+mod standards;
 mod thermal;
 
 use results::{
@@ -362,6 +363,9 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::three_phase_separator, m)?)?;
     m.add_function(wrap_pyfunction!(process::ejector, m)?)?;
     m.add_function(wrap_pyfunction!(process::validate_flowsheet, m)?)?;
+
+    // The standards namespace.
+    m.add_function(wrap_pyfunction!(standards::iso6976, m)?)?;
 
     // Re-export the Python exception classes so both backends raise the same
     // objects rather than two lookalike hierarchies.

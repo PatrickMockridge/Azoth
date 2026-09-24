@@ -196,6 +196,8 @@
   - [Reactive equilibrium as an operation on one phase](./reactions/reactive_phase_equilibrium.md)
   - [Reactive flash at fixed temperature and pressure](./reactions/reactive_tp_flash.md)
   - [Reference potentials from an independent reaction basis](./reactions/reference_potentials.md)
+- [Standards](./standards/index.md)
+  - [Calorific values and density of a natural gas (ISO 6976)](./standards/iso6976.md)
 - [Heat transfer](./thermal/index.md)
   - [Steady conduction through a plane wall](./thermal/conduction_plane_wall.md)
 <!-- END GENERATED: calcs -->

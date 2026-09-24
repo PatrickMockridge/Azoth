@@ -1,0 +1,19 @@
+[package]
+name = "azoth-standards"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Standard and regulatory calculations: ISO 6976 gas quality"
+
+[dependencies]
+azoth-core.workspace = true
+uom.workspace = true
+csv.workspace = true
+
+[dev-dependencies]
+azoth-test-support.workspace = true
+
+[lints]
+workspace = true
