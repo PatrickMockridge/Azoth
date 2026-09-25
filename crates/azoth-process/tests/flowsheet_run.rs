@@ -252,3 +252,123 @@ fn the_session_addresses_every_value_by_a_stable_path() {
     assert!(paths.contains(&"recycle_1".to_string()));
     assert!(paths.windows(2).all(|pair| pair[0] <= pair[1]), "sorted");
 }
+
+/// **The one row NeqSim itself is required for.**
+///
+/// `validation/neqsim/captures/process_flowsheet.tsv` is the first capture in this repository
+/// built by a `ProcessSystem`: every other probe drives a unit standalone, because
+/// `SimulationInterface.run()` defaults to `run(UUID.randomUUID())`, but a **recycle** needs the
+/// sequential loop around it. So this is the only external measurement of the executor, and it
+/// holds the loop's *convergence* - the pass it stopped on and the residual it stopped with - as
+/// well as its destination.
+///
+/// The row is `demo_condensing`: the shipped graph with the heater at 250 K, which is the one
+/// whose tear carries material. At 320 K the separator's liquid is nil and NeqSim **deactivates**
+/// the recycle outright (see `a_tear_that_carries_material_converges`), so the empty row measures
+/// a path this port does not carry.
+#[test]
+fn the_executor_reproduces_the_captured_convergence() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let mut flowsheet: Flowsheet = toml::from_str(&text).expect("it parses");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    flowsheet
+        .instances
+        .iter_mut()
+        .find(|instance| instance.id == "hx1")
+        .expect("the heater is declared")
+        .parameters
+        .insert("outlet_temperature".to_string(), toml::Value::Float(250.0));
+
+    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let session = Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
+        .expect("the flowsheet runs");
+
+    let capture =
+        std::fs::read_to_string(root().join("validation/neqsim/captures/process_flowsheet.tsv"))
+            .expect("the capture is there");
+    let row = capture_row(&capture, "demo_condensing");
+
+    // **The destination.** The separator's liquid, in mol/s and in composition.
+    let liquid = session
+        .stream("sep1.liquid")
+        .expect("the separator produced one");
+    let expected_n = number(&row, "sep1_liquid_n");
+    assert!(
+        (liquid.n - expected_n).abs() / expected_n < 1e-9,
+        "the liquid is {} mol/s and NeqSim's is {expected_n}",
+        liquid.n
+    );
+    let expected_z = composition(row.get("sep1_liquid_z").expect("the composition is there"));
+    for (i, want) in expected_z.iter().enumerate() {
+        assert!(
+            (liquid.z[i] - want).abs() < 1e-12,
+            "component {i}: {} against {want}",
+            liquid.z[i]
+        );
+    }
+
+    // **And the convergence, which is what makes this an executor's oracle rather than a
+    // kernel's.** A tear that lands in the same place by a different number of passes is a
+    // different machine.
+    let tear = session.tear("recycle_1").expect("the recycle is named");
+    assert_eq!(
+        tear.iterations,
+        number(&row, "recycle_iterations") as u32,
+        "the port stopped on a different pass"
+    );
+    let residuals = tear.residuals.expect("measured");
+    let expected_flow = number(&row, "recycle_error_flow");
+    assert!(
+        (residuals.flow - expected_flow).abs() / expected_flow < 1e-9,
+        "the flow residual is {} and NeqSim's is {expected_flow}",
+        residuals.flow
+    );
+    // The composition residual is a sum of `~1e-14` differences - a rounding-level quantity, so
+    // it is bounded rather than compared.
+    let expected_composition = number(&row, "recycle_error_composition");
+    assert!(
+        residuals.composition < expected_composition.max(1e-12),
+        "the composition residual is {} against NeqSim's {expected_composition}",
+        residuals.composition
+    );
+    assert!(tear.solved, "the port did not report the tear solved");
+    assert!(session.converged());
+}
+
+/// One row of the capture's `key=value` lines, selected by its label.
+///
+/// The rows are separated by a blank line and the first line of each is its label.
+fn capture_row(capture: &str, label: &str) -> BTreeMap<String, String> {
+    let block = capture
+        .split("\n\n")
+        .find(|block| block.lines().next() == Some(label))
+        .unwrap_or_else(|| panic!("the capture has no `{label}` row"));
+    block
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect()
+}
+
+/// One field of a row as a number.
+fn number(row: &BTreeMap<String, String>, key: &str) -> f64 {
+    row.get(key)
+        .unwrap_or_else(|| panic!("the row has no `{key}`"))
+        .parse()
+        .unwrap_or_else(|_| panic!("`{key}` is not a number"))
+}
+
+/// A `name:value name:value` composition.
+fn composition(field: &str) -> Vec<f64> {
+    field
+        .split_whitespace()
+        .map(|pair| {
+            pair.split_once(':')
+                .expect("a composition is `name:value`")
+                .1
+                .parse()
+                .expect("a mole fraction is a number")
+        })
+        .collect()
+}

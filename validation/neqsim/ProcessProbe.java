@@ -61,6 +61,8 @@
 //       > captures/process_gibbs_reactor.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_steps \
 //       > captures/process_gibbs_reactor_steps.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe flowsheet \
+//       > captures/process_flowsheet.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.stream.StreamInterface;
@@ -139,6 +141,9 @@ public class ProcessProbe {
         break;
       case "gibbs_steps":
         gibbsReactorSteps();
+        break;
+      case "flowsheet":
+        flowsheetRows();
         break;
       case "column":
         columnRows();
@@ -2707,6 +2712,108 @@ public class ProcessProbe {
       }
       System.out.println(row);
     }
+    System.out.println();
+  }
+
+  /// **The one thing `ProcessSystem` is required for.** Every other row in this file drives a
+  /// single unit or a stream, because `SimulationInterface.run()` defaults to
+  /// `run(UUID.randomUUID())` and a unit runs standalone. A **recycle** needs the sequential loop
+  /// around it - the tear has to be evaluated against the previous pass - so this is the first
+  /// and only row that builds a `ProcessSystem`.
+  ///
+  /// **It is `specs/flowsheets/demo.toml`'s graph**: feed, mixer, pump, heater, separator, with the
+  /// separator's liquid returned to the mixer. The wiring is NeqSim's own idiom - the recycle's
+  /// inlet is the produced stream and the mixer takes the recycle's *outlet* - and the recycle is
+  /// added last, which is where an insertion-order run puts it.
+  ///
+  /// **The converged state is the answer and the residuals are what make the convergence
+  /// checkable.** A tear that lands in the same place by a different number of passes is a
+  /// different machine, so the row prints both: every unit's outlet record, and the recycle's
+  /// iteration count with its four residuals.
+  static void flowsheetRows() {
+    flowsheetRow("demo", 320.0);
+    // **And the same graph with the heater cold enough to condense.** At 320 K and 20 bar this
+    // feed is all vapour, so the separator's liquid is nil and the tear carries nothing - the
+    // recycle converges on the zero-flow floor rather than on a comparison. At 250 K the tear
+    // carries material and the loop has something to converge, which is the row worth having.
+    flowsheetRow("demo_condensing", 250.0);
+  }
+
+  static void flowsheetRow(String label, double heaterK) {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.9, 0.1 };
+
+    SystemInterface fluid = new SystemPrEos(300.0, 5.0);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream feed = new Stream("feed_1", fluid);
+    feed.setFlowRate(1.0, "mol/sec");
+    feed.run();
+
+    neqsim.process.equipment.mixer.Mixer mix1 = new neqsim.process.equipment.mixer.Mixer("mix1");
+    mix1.addStream(feed);
+
+    neqsim.process.equipment.pump.Pump p1 = new neqsim.process.equipment.pump.Pump("p1", mix1.getOutletStream());
+    p1.setOutletPressure(20.0, "bara");
+    p1.setIsentropicEfficiency(0.75);
+
+    neqsim.process.equipment.heatexchanger.Heater hx1 = new neqsim.process.equipment.heatexchanger.Heater("hx1", p1.getOutletStream());
+    hx1.setOutletTemperature(heaterK, "K");
+
+    neqsim.process.equipment.separator.Separator sep1 = new neqsim.process.equipment.separator.Separator("sep1", hx1.getOutletStream());
+    // The class takes the drop in bara and the entrainment as a fraction of the vapour's
+    // moles carried into the liquid, on the `feed` basis the palette entry declares.
+    sep1.setPressureDrop(0.5);
+    sep1.setEntrainment(0.0, "mole", "feed", "gas", "oil");
+
+    // The tear: the separator's liquid returns to the mixer.
+    //
+    // **The outlet stream is made here, and that is not decoration.** `Recycle.outletStream`
+    // starts as `null` (`Recycle.java:51`) and is only assigned inside `run` (`:1246`), so the
+    // idiom NeqSim's own example uses - `mixer.addStream(recycle.getOutletStream())` at
+    // `simpleTopSideProcess2.java:47` - wires a **null**, and `Mixer.getCanonicalStreamIndices`
+    // then dereferences it. Making the stream first is what `ProcessRecipesDocumentationTest:121`
+    // does (`recycle.setOutletStream(recycleTear)`).
+    neqsim.process.equipment.util.Recycle recycle1 = new neqsim.process.equipment.util.Recycle("recycle_1");
+    recycle1.addStream(sep1.getLiquidOutStream());
+    neqsim.process.equipment.stream.Stream tear =
+        new neqsim.process.equipment.stream.Stream("recycle_1_tear", fluid.clone());
+    tear.setFlowRate(0.0, "mol/sec");
+    tear.run();
+    recycle1.setOutletStream(tear);
+    mix1.addStream(tear);
+
+    neqsim.process.processmodel.ProcessSystem operations = new neqsim.process.processmodel.ProcessSystem();
+    operations.add(feed);
+    operations.add(mix1);
+    operations.add(p1);
+    operations.add(hx1);
+    operations.add(sep1);
+    operations.add(recycle1);
+    // **`runSequential` is not what `run()` does by default.** `useOptimizedExecution` is `true`
+    // (`ProcessSystem.java:273`), so `run(id)` takes `runOptimized` and the legacy sequential path
+    // is reached only with this flag off - which is the path azoth's executor is a port of, and so
+    // the one an oracle for it has to drive.
+    operations.setUseOptimizedExecution(false);
+    operations.run();
+
+    System.out.println(label);
+    System.out.println("heater_k=" + heaterK);
+    System.out.println("execution=runSequential");
+    print("feed_1", feed);
+    print("mix1_product", mix1.getOutletStream());
+    print("p1_outlet", p1.getOutletStream());
+    print("hx1_outlet", hx1.getOutletStream());
+    print("sep1_liquid", sep1.getLiquidOutStream());
+    printOrEmpty("sep1_vapour", sep1.getGasOutStream());
+    System.out.println("recycle_iterations=" + recycle1.getIterations());
+    System.out.println("recycle_solved=" + recycle1.solved());
+    System.out.println("recycle_error_flow=" + recycle1.getErrorFlow());
+    System.out.println("recycle_error_composition=" + recycle1.getErrorComposition());
+    System.out.println("recycle_error_temperature=" + recycle1.getErrorTemperature());
+    System.out.println("recycle_error_pressure=" + recycle1.getErrorPressure());
     System.out.println();
   }
 
