@@ -27,7 +27,7 @@ is named at the foot of this page.
 | an edit as one typed command | **yes** — `middleware::command`, fourteen variants, each a structure edit that leaves the checker to rule on the result |
 | a graph a canvas draws | **yes** — `middleware::graph`, in xyflow's own node/edge shape, with the layout in one `[layout]` table the document carries |
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
-| a result as JSON | **half** — a session's result writes JSON from Rust (`executor::json`) and the envelope embeds that value; the twenty-seven *model* result dataclasses in `azoth.core.result` are still not serialisable, and a codec per model is the second writer `executor::json` exists to avoid |
+| a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be |
 | a tool schema for an agent | **yes** — `middleware::tools`, one tool per command, projected from the command model rather than written beside it, and **served over MCP** by `azoth mcp`, which is that schema's projection and not a second one |
 
 ## The layers

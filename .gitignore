@@ -35,6 +35,10 @@ docs/book/
 .dsh/
 .claude/skills/
 .opencode/skills/
+# A second checkout of this repository, made by an agent tool's worktree feature. A nested
+# checkout is not part of this one - and `ruff` and `git status` both walk into it if it is
+# not here, which is how it showed up as a dozen lint errors in another session's files.
+.claude/worktrees/
 
 # --- Lean ---
 # `.lake` holds the compiled oleans and the packages Lake fetched, which for

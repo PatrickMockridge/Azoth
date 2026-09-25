@@ -26,7 +26,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any, cast
 
+from azoth.core import serialise
 from azoth.core.units import Q
 from azoth.core.warnings import Warning, WarningCode
 
@@ -147,6 +149,21 @@ class _HasWarnings:
     __slots__ = ()
 
     warnings: tuple[Warning, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        """This result as JSON-shaped data.
+
+        **Inherited rather than written 187 times.** The walk is :mod:`azoth.core.serialise`'s, over
+        ``dataclasses.fields``, so a result is serialisable by being a frozen dataclass and nothing
+        else - which is what makes "a result as JSON" one writer rather than a codec per model.
+        """
+        # The walk's return is `Any` - it writes whatever a field holds - and the dataclass branch
+        # is the one a result takes, which is a mapping.
+        return cast("dict[str, Any]", serialise.to_dict(self))
+
+    def to_json(self) -> str:
+        """This result as the JSON document, for a file, a cell or a wire."""
+        return serialise.to_json(self)
 
     @property
     def is_clean(self) -> bool:
@@ -1648,6 +1665,16 @@ class WilkeChangDiffusivityResult(_HasWarnings):
     """Result of ``eos.wilke_chang_diffusivity``."""
 
     #: The binary diffusion coefficient.
+    d: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class ChapmanEnskogDiffusivityResult(_HasWarnings):
+    """Result of ``eos.chapman_enskog_diffusivity``."""
+
+    #: The pair's binary diffusion coefficient.
     d: Q
     #: Caveats.
     warnings: tuple[Warning, ...]

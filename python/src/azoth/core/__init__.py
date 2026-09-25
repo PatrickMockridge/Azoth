@@ -64,6 +64,7 @@ from azoth.core.result import (
     SwameeJainResult,
     Vdw1fMixBinaryResult,
 )
+from azoth.core.serialise import pint_name, to_dict, to_json, unit_name
 from azoth.core.solver import (
     Convergence,
     CubicRootsOutcome,
@@ -130,10 +131,14 @@ __all__ = [
     "cubic_roots",
     "fixed_point",
     "from_si",
+    "pint_name",
     "quantity",
     "require_converged",
     "require_cubic_converged",
+    "to_dict",
+    "to_json",
     "to_si",
     "unit_for",
+    "unit_name",
     "ureg",
 ]

@@ -26,8 +26,9 @@ from __future__ import annotations
 
 from array import array
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
+from azoth.core import serialise
 from azoth.core.warnings import Warning, WarningCode
 
 if TYPE_CHECKING:
@@ -54,6 +55,18 @@ class BatchResult:
     def __len__(self) -> int:
         """How many elements the batch covered."""
         return len(self.warnings)
+
+    # **The same two methods the scalar results inherit**, written out because this is not a
+    # `_HasWarnings`: its warnings are one tuple *per element* rather than a tuple, so it is a
+    # different shape with the same need. Both delegate to the one writer in
+    # :mod:`azoth.core.serialise`, so there is still one place a value becomes a document.
+    def to_dict(self) -> dict[str, Any]:
+        """This batch as JSON-shaped data."""
+        return cast("dict[str, Any]", serialise.to_dict(self))
+
+    def to_json(self) -> str:
+        """This batch as the JSON document."""
+        return serialise.to_json(self)
 
     @property
     def is_clean(self) -> bool:
