@@ -1,6 +1,7 @@
 # Summary
 
 - [azoth](./index.md)
+- [Inherent safety](./safety.md)
 - [Architecture](./architecture/index.md)
   - [The specification](./architecture/specification.md)
   - [Spec files](./architecture/spec-files.md)

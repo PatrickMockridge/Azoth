@@ -42,6 +42,9 @@ different states, and the API keeps them different.
 Both are visible in every result: each carries its warnings, and each can be
 asked whether it is clean.
 
+Both are consequences of one design choice, which [Inherent safety](./safety.md) argues:
+the library may be wrong, but it may not be wrong *quietly*.
+
 ## Reading a calculation page
 
 Each page has the same shape, and the order is deliberate:
