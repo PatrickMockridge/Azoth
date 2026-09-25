@@ -227,9 +227,7 @@ def test_a_supplied_feed_replaces_the_document_s() -> None:
     as_written = process.run_flowsheet(demo, palette_dir=palette)
     declared = as_written.streams["sep1.liquid"].n.magnitude
 
-    doubled = process.run_flowsheet(
-        demo, {"feed_1": _binary(0.9, 2.0, 5e5, 300.0)}, palette
-    )
+    doubled = process.run_flowsheet(demo, {"feed_1": _binary(0.9, 2.0, 5e5, 300.0)}, palette)
     assert doubled.streams["sep1.liquid"].n.magnitude == pytest.approx(2.0 * declared)
 
     with pytest.raises(azoth.InvalidInputError, match="feed_9"):
@@ -244,3 +242,123 @@ def test_run_flowsheet_refuses_a_flowsheet_it_cannot_read() -> None:
     # `useGraphBasedExecution` is a flag, so there are two orders and not a menu.
     with pytest.raises(ValueError, match="insertion"):
         process.run_flowsheet(demo, palette_dir=palette, execution_order="kahn")
+
+
+def _demo() -> str:
+    return (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
+
+
+def test_the_palette_comes_back_as_a_form_per_entry() -> None:
+    """The declaration a unit-op window *is*, and the embedded bundle is the shipped palette."""
+    entries = process.forms()
+    assert len(entries) == 29
+    assert sum(1 for entry in entries if entry["model"]) == 27
+    assert sum(1 for entry in entries if entry["runnable"]) == 26
+
+    pump = next(entry for entry in entries if entry["id"] == "unit_ops.pump")
+    pressure = next(p for p in pump["parameters"] if p["name"] == "outlet_pressure")
+    # The kind is what picks a widget, and it is the model's own declaration - not in the palette.
+    assert pressure["kind"] == "quantity"
+    assert pressure["unit"] == "Pa"
+    assert pressure["dimension"] == "pressure"
+    assert pressure["required"] is True
+
+    efficiency = next(p for p in pump["parameters"] if p["name"] == "isentropic_efficiency")
+    assert efficiency["kind"] == "quantity"
+    assert efficiency["range"][0]["min"] == 0.0
+    assert efficiency["range"][0]["min_inclusive"] is False
+    assert efficiency["range"][0]["max"] == 1.0
+    assert efficiency["range"][0]["rationale"]
+
+
+def test_the_agent_tools_are_the_command_model() -> None:
+    names = [tool["name"] for tool in process.tools()]
+    assert len(names) == 14
+    assert names[:4] == ["add_instance", "remove_instance", "connect", "disconnect"]
+
+    add = process.tools()[0]["input_schema"]
+    assert add["additionalProperties"] is False
+    assert add["properties"]["command"]["const"] == "add_instance"
+    assert len(add["properties"]["unit"]["enum"]) == 29
+
+
+def test_a_session_holds_a_document_and_marks_its_values_stale() -> None:
+    """The state `run_flowsheet` cannot give: an edit re-checks, and the values go older."""
+    session = process.Session(_demo())
+    assert session.ok is True
+    assert session.dirty is True
+    assert session.paths == []
+
+    ran = session.run()
+    assert ran["session"]["converged"] is True
+    # The flags are read off the envelope, which is what a front-end is handed.
+    assert ran["dirty"] is False, "the values are the document's now"
+    assert "p1.outlet.P" in session.paths
+    _close(session.value("p1.outlet.P"), 2.0e6, 1e-9)
+
+    edited = session.apply(
+        {
+            "command": "set_parameter",
+            "instance": "p1",
+            "name": "outlet_pressure",
+            "value": 4.0e6,
+        }
+    )
+    assert edited["ok"] is True
+    assert edited["dirty"] is True, "the values are older than the document"
+    session.run()
+    _close(session.value("p1.outlet.P"), 4.0e6, 1e-9)
+
+
+def test_a_broken_edit_is_reported_by_the_check_that_follows_it() -> None:
+    session = process.Session(_demo())
+    envelope = session.apply({"command": "remove_instance", "id": "hx1"})
+
+    assert envelope["ok"] is False
+    codes = [diagnostic["code"] for diagnostic in envelope["diagnostics"]]
+    assert codes == ["underfed_port", "underfed_port"]
+    # Each diagnostic says what to put a mark on, and where in the text to find it.
+    target = envelope["diagnostics"][0]["target"]
+    assert target == {
+        "kind": "handle",
+        "role": "instance",
+        "node": "p1",
+        "port": "outlet",
+        "index": None,
+    }
+    assert session.ok is False
+
+
+def test_the_graph_is_the_editor_s_own_node_and_edge_document() -> None:
+    session = process.Session(_demo())
+    graph = session.graph
+    assert [node["id"] for node in graph["nodes"]] == [
+        "instance:mix1",
+        "instance:p1",
+        "instance:hx1",
+        "instance:sep1",
+        "input:feed_1",
+        "product:vapour_product",
+    ]
+    assert len(graph["edges"]) == 6
+    # A handle's id is the stream's own path, so an edge and the session agree without a mapping.
+    loop_back = graph["edges"][-1]
+    assert loop_back["data"]["kind"] == "recycle"
+    assert loop_back["data"]["path"] == "recycle_1"
+    assert loop_back["sourceHandle"] == "sep1.liquid"
+
+
+def test_a_command_that_is_not_one_raises_and_the_document_that_is_not_one_raises() -> None:
+    session = process.Session(_demo())
+    with pytest.raises(ValueError, match="delete_everything"):
+        session.apply({"command": "delete_everything"})
+    with pytest.raises(ValueError):
+        process.Session("this is not TOML")
+
+
+def test_the_document_a_session_holds_writes_and_reads_back() -> None:
+    session = process.Session(_demo())
+    session.apply({"command": "add_product", "name": "purge"})
+    document = process.Session(session.document)
+    assert "purge" in document.document
+    assert document.ok is True

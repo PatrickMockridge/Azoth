@@ -17,6 +17,7 @@ without editing the document.
 from __future__ import annotations
 
 import json
+import pathlib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -27,12 +28,23 @@ from azoth.core.units import Q, from_si
 from azoth.process.kernels import Stream
 
 __all__ = [
+    "EMBEDDED_PALETTE",
     "FlowsheetResult",
     "FlowsheetStream",
     "Residuals",
+    "Session",
     "TearResult",
+    "catalogue",
+    "forms",
     "run_flowsheet",
+    "tools",
 ]
+
+
+def _document(text: str) -> dict[str, Any]:
+    """The wire's JSON as a mapping, which is what every call to the session answers with."""
+    document: dict[str, Any] = json.loads(text)
+    return document
 
 
 def _quantity(field: Mapping[str, Any]) -> Q:
@@ -227,3 +239,144 @@ def run_flowsheet(
             execution_order,
         )
     )
+
+
+#: What a document is opened against when a caller names no palette. ``None`` is the bundle
+#: the extension carries, which is what makes a notebook need no path: the same 29 specs are
+#: compiled in, and a test in the Rust crate holds the bundle to the tree byte for byte.
+EMBEDDED_PALETTE: None = None
+
+
+def forms(palette_dir: str | None = EMBEDDED_PALETTE) -> list[dict[str, Any]]:
+    """The unit-operation palette as one form per entry.
+
+    This is the declaration a unit-op window *is*: each entry's ports and parameters, the
+    unit and dimension of each, and the model's own bounds with the rationale a field shows
+    on a violation. ``kind`` is what picks a widget — ``quantity``, ``vector``, ``boolean``,
+    ``enum``, ``string``, or ``unknown`` for the two entries no model declares.
+
+    The document is the middleware's, not this module's: :func:`azoth.process.catalogue`
+    returns what the CLI prints and the browser renders.
+    """
+    return list(json.loads(catalogue(palette_dir))["unit_ops"])
+
+
+def tools(palette_dir: str | None = EMBEDDED_PALETTE) -> list[dict[str, Any]]:
+    """The agent's tool schema: one tool per command, with the envelope as every call's answer.
+
+    Derived from the command model rather than written beside it, so what an agent may do and
+    what an editor may do are the same set.
+    """
+    return list(json.loads(catalogue(palette_dir, with_tools=True))["tools"])
+
+
+def catalogue(palette_dir: str | None = EMBEDDED_PALETTE, *, with_tools: bool = False) -> str:
+    """The palette as a front-end reads it, as the wire's JSON.
+
+    The raw document, for a caller that would rather parse it itself; :func:`forms` and
+    :func:`tools` are the two halves of it.
+    """
+    return _core.catalogue(palette_dir, with_tools)
+
+
+class Session:
+    """A live flowsheet: the one stateful object the middleware has.
+
+    :func:`run_flowsheet` is one call and an immutable result — right for a script, and not
+    enough for a form. A session holds the document, so an edit re-checks it in the same call
+    and a run's values belong to the document that produced them.
+
+    **Two states, and ``dirty`` is the difference.** The diagnostics are always current
+    because a check is cheap and local; the values are not, because a run is the physics. An
+    edit marks them stale rather than leaving them to be read as the current document's, and a
+    run that *failed* discards them entirely — they described the document as it was.
+
+    Every call that changes something returns the whole envelope: the document, the graph, the
+    diagnostics, the paths and the run. That is the same object a browser is handed, so a
+    notebook and an editor read one surface rather than two.
+    """
+
+    __slots__ = ("_inner",)
+
+    def __init__(self, document: str, palette_dir: str | None = EMBEDDED_PALETTE) -> None:
+        """Open a document from its TOML.
+
+        Raises:
+            ValueError: on a document this schema cannot read. A document that reads but does
+                not check opens with its diagnostics rather than failing — a form has to be
+                able to show a broken flowsheet, because showing it is how a user fixes it.
+        """
+        self._inner = _core.Session(document, palette_dir)
+
+    @classmethod
+    def open(cls, path: str, palette_dir: str | None = EMBEDDED_PALETTE) -> Session:
+        """Open a document from a file."""
+        return cls(pathlib.Path(path).read_text(encoding="utf-8"), palette_dir)
+
+    def apply(self, command: Mapping[str, Any] | str) -> dict[str, Any]:
+        """Apply one command, and return the envelope it left.
+
+        The command is the command model's, as a mapping or as its JSON:
+        ``{"command": "remove_instance", "id": "hx1"}``. A command that names something
+        absent is not refused — it leaves the document as it was and the check that follows
+        is what reports it, so the envelope's diagnostics are the answer.
+        """
+        text = command if isinstance(command, str) else json.dumps(command)
+        return _document(self._inner.apply(text))
+
+    def run(self) -> dict[str, Any]:
+        """Run the document, and return the envelope it left.
+
+        A run the document cannot survive is reported in the envelope's ``run_error`` rather
+        than raised: a failed run is a state a caller shows, not an exception.
+        """
+        return _document(self._inner.run())
+
+    def envelope(self) -> dict[str, Any]:
+        """Everything as it stands, without running anything."""
+        return _document(self._inner.envelope())
+
+    @property
+    def document(self) -> str:
+        """The document as TOML, which is what :meth:`save` writes."""
+        return self._inner.document()
+
+    @property
+    def graph(self) -> dict[str, Any]:
+        """The connection graph, as the editor's own node/edge document."""
+        return _document(self._inner.graph())
+
+    @property
+    def diagnostics(self) -> list[dict[str, Any]]:
+        """What the checker last said, each with a code, a severity and a target."""
+        envelope: dict[str, Any] = self.envelope()
+        return list(envelope["diagnostics"])
+
+    @property
+    def paths(self) -> list[str]:
+        """Every value's path, empty until the document has run."""
+        return list(self._inner.paths)
+
+    @property
+    def ok(self) -> bool:
+        """Whether the document can run: no diagnostic of error severity."""
+        return bool(self._inner.ok)
+
+    @property
+    def dirty(self) -> bool:
+        """Whether the values are older than the document."""
+        return bool(self._inner.dirty)
+
+    @property
+    def run_error(self) -> str | None:
+        """Why the last run failed, where one did."""
+        error = self._inner.run_error
+        return None if error is None else str(error)
+
+    def value(self, path: str) -> float:
+        """One value by path, e.g. ``p1.outlet.P``, in the unit the path's field declares."""
+        return float(self._inner.value(path))
+
+    def save(self, path: str) -> None:
+        """Write the document to a file, as the TOML a :meth:`open` reads back."""
+        pathlib.Path(path).write_text(self.document, encoding="utf-8")

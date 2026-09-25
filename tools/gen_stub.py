@@ -237,6 +237,13 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
         (("fitting_id", "str"), ("n_ld", "float"), ("k", "float")),
     ),
     (
+        "Session",
+        "A live flowsheet: the middleware's session, which holds the document so an edit "
+        "re-checks it and a run's values belong to the document that produced them. Every "
+        "mutating call returns the whole envelope as the wire's JSON.",
+        (),
+    ),
+    (
         "Stream",
         "A material stream: composition, molar flow, pressure, temperature and molar "
         "enthalpy. All SI magnitudes - `p` in pascals, `t` in kelvin, `h` in J/mol, "
@@ -318,6 +325,12 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     (
         "run_flowsheet(flowsheet: str, feeds: dict[str, Stream] | None = ...,"
         " palette_dir: str = ..., execution_order: str = ...)",
+        "str",
+    ),
+    # The palette as a front-end reads it. The document is the middleware's, so the
+    # returns are the wire's JSON and `azoth.process.forms`/`tools` are its two halves.
+    (
+        "catalogue(palette_dir: str | None = ..., with_tools: bool = ...)",
         "str",
     ),
 )
@@ -635,6 +648,30 @@ def render_vocabulary() -> str:
             out.append(
                 "    def __init__(self, associating: bool, schemes: list[str],"
                 " values: list[list[float]]) -> None: ..."
+            )
+        if name == "Session":
+            # **A handle, not a record.** Its state is a document and its methods are what a
+            # caller does to one, so the stub declares the calls `azoth.process.Session`
+            # makes and nothing else.
+            out.extend(
+                [
+                    "    def __init__(self, document: str, palette_dir: str | None = ...)"
+                    " -> None: ...",
+                    "    def apply(self, command: str) -> str: ...",
+                    "    def run(self) -> str: ...",
+                    "    def envelope(self) -> str: ...",
+                    "    def document(self) -> str: ...",
+                    "    def graph(self) -> str: ...",
+                    "    def value(self, path: str) -> float: ...",
+                    "    @property",
+                    "    def paths(self) -> list[str]: ...",
+                    "    @property",
+                    "    def ok(self) -> bool: ...",
+                    "    @property",
+                    "    def dirty(self) -> bool: ...",
+                    "    @property",
+                    "    def run_error(self) -> str | None: ...",
+                ]
             )
         if name == "Stream":
             out.append(

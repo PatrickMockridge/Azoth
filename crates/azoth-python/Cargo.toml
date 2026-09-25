@@ -22,6 +22,9 @@ azoth-eos.workspace = true
 azoth-reactions.workspace = true
 azoth-standards.workspace = true
 azoth-process.workspace = true
+# The session binding reads and writes the wire's JSON, which is the middleware's document
+# rather than a second encoding of it.
+serde_json.workspace = true
 uom.workspace = true
 pyo3 = { workspace = true }
 

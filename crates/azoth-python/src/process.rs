@@ -1402,3 +1402,125 @@ pub fn run_flowsheet<'py>(
     let session = Session::run(sheet, &palette, &feeds, order).map_err(|e| to_pyerr(py, e))?;
     azoth_process::executor::to_json(&session).map_err(|e| to_pyerr(py, e))
 }
+
+/// The palette a caller asked for: a directory, or the bundle the extension carries.
+///
+/// **`None` is the embedded palette**, which is what makes a notebook need no path at all: the
+/// same 29 specs are compiled into the extension (`palette_gen`), and a test in the process crate
+/// holds the bundle to the tree byte for byte. A directory is still accepted, because a caller
+/// with an edited palette has one.
+fn palette_from(palette_dir: Option<&str>) -> Result<Vec<azoth_process::UnitOpSpec>, String> {
+    match palette_dir {
+        Some(dir) => azoth_process::load_palette(Path::new(dir)),
+        None => azoth_process::load_palette_text(azoth_process::palette_gen::PALETTE),
+    }
+}
+
+/// The palette as a front-end reads it: one form per entry, and the agent's tools on request.
+///
+/// **One document, and the same one the CLI and the wasm module print.** The assembly is
+/// `middleware::catalogue`'s, so a notebook cannot be told a different palette from an editor.
+#[pyfunction]
+#[pyo3(signature = (palette_dir = None, with_tools = false))]
+#[pyo3(text_signature = "(palette_dir=None, with_tools=False)")]
+pub fn catalogue(palette_dir: Option<&str>, with_tools: bool) -> PyResult<String> {
+    let palette = palette_from(palette_dir).map_err(PyValueError::new_err)?;
+    azoth_process::middleware::catalogue(&palette, with_tools)
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// A live flowsheet: the middleware's session, as a Python object holds it.
+///
+/// **The state a notebook needs and `run_flowsheet` cannot give it.** That function is one call
+/// and an immutable result; this holds the document, so an edit re-checks it in the same call and
+/// a run's values belong to the document that produced them.
+#[pyclass(module = "azoth._core", name = "Session")]
+pub struct PySession {
+    workspace: azoth_process::middleware::session::Workspace,
+}
+
+#[pymethods]
+impl PySession {
+    /// Open a document from its TOML.
+    #[new]
+    #[pyo3(signature = (document, palette_dir = None))]
+    #[pyo3(text_signature = "(document, palette_dir=None)")]
+    fn new(document: &str, palette_dir: Option<&str>) -> PyResult<Self> {
+        let palette = palette_from(palette_dir).map_err(PyValueError::new_err)?;
+        azoth_process::middleware::session::Workspace::open(document, palette)
+            .map(|workspace| Self { workspace })
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Apply one command, and return the envelope it left.
+    fn apply(&mut self, command: &str) -> PyResult<String> {
+        let command: azoth_process::middleware::command::Command =
+            serde_json::from_str(command).map_err(|error| PyValueError::new_err(error.to_string()))?;
+        self.workspace
+            .apply(&command)
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        self.envelope()
+    }
+
+    /// Run the document, and return the envelope it left.
+    ///
+    /// A run the document cannot survive is reported in the envelope (`run_error`) rather than
+    /// raised, because a failed run is a state a caller shows rather than an exception.
+    fn run(&mut self) -> PyResult<String> {
+        let _ = self.workspace.run();
+        self.envelope()
+    }
+
+    /// Everything one call answers with, as the wire's JSON.
+    fn envelope(&self) -> PyResult<String> {
+        azoth_process::middleware::envelope::to_json(&self.workspace)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// The document as TOML.
+    fn document(&self) -> PyResult<String> {
+        self.workspace
+            .document()
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// The connection graph alone, as JSON.
+    fn graph(&self) -> PyResult<String> {
+        let graph = self
+            .workspace
+            .graph()
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        serde_json::to_string(&graph).map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// One value by path, e.g. `p1.outlet.P`.
+    fn value(&self, path: &str) -> PyResult<f64> {
+        self.workspace
+            .value(path)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Every value's path, empty until the document has run.
+    #[getter]
+    fn paths(&self) -> Vec<String> {
+        self.workspace.paths()
+    }
+
+    /// Whether the document can run.
+    #[getter]
+    fn ok(&self) -> bool {
+        self.workspace.ok()
+    }
+
+    /// Whether the values are older than the document.
+    #[getter]
+    fn dirty(&self) -> bool {
+        self.workspace.dirty()
+    }
+
+    /// Why the last run failed, where one did.
+    #[getter]
+    fn run_error(&self) -> Option<String> {
+        self.workspace.run_error().map(str::to_string)
+    }
+}

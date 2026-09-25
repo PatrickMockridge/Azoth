@@ -68,7 +68,9 @@ def rust_str(value: str) -> str:
     return f'"{escaped}"'
 
 
-def emit_rust(rows: list[tuple[dict[str, Any], dict[str, Any]]], palette: list[dict[str, Any]]) -> str:
+def emit_rust(
+    rows: list[tuple[dict[str, Any], dict[str, Any]]], palette: list[dict[str, Any]]
+) -> str:
     """The input table, and the two accessors a caller needs."""
     listed = "".join(f"//!   - {entry['_path']}\n" for entry in palette)
     banner = (
@@ -108,7 +110,8 @@ def emit_rust(rows: list[tuple[dict[str, Any], dict[str, Any]]], palette: list[d
     rows_text = []
     for palette_entry, model in rows:
         inputs = "".join(
-            "            ModelInput {{ name: {}, kind: {}, values: &[{}], optional: {} }},\n".format(
+            "            ModelInput {{ name: {}, kind: {}, values: &[{}],"
+            " optional: {} }},\n".format(
                 rust_str(name),
                 rust_str(declaration.get("type", "quantity")),
                 ", ".join(rust_str(value) for value in declaration.get("values", [])),
@@ -127,9 +130,7 @@ def emit_rust(rows: list[tuple[dict[str, Any], dict[str, Any]]], palette: list[d
         )
 
     return (
-        banner
-        + "".join(rows_text)
-        + "];\n\n"
+        banner + "".join(rows_text) + "];\n\n"
         "/// Every palette entry that names a model, in palette-id order.\n"
         "#[must_use]\n"
         "pub fn model_inputs() -> &'static [ModelInputs] {\n"

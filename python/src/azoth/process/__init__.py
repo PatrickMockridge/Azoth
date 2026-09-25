@@ -7,7 +7,9 @@ under ``specs/models/process/``, a kernel in Rust and a reference here, compared
 
 The Stream-level arithmetic those models wrap is :mod:`azoth.process.kernels`, which is what
 a flowsheet's executor calls and what ``azoth check`` validates the wiring of. To *run* one,
-:func:`run_flowsheet` in :mod:`azoth.process.flowsheet`.
+:func:`run_flowsheet` in :mod:`azoth.process.flowsheet`; to hold one and edit it,
+:class:`Session` in the same module — the middleware's live document, which is also what
+:func:`forms` and :func:`tools` describe.
 """
 
 from __future__ import annotations
@@ -50,8 +52,12 @@ from azoth.process.flowsheet import (
     FlowsheetResult,
     FlowsheetStream,
     Residuals,
+    Session,
     TearResult,
+    catalogue,
+    forms,
     run_flowsheet,
+    tools,
 )
 from azoth.process.kernels import Stream
 
@@ -59,9 +65,11 @@ __all__ = [
     "FlowsheetResult",
     "FlowsheetStream",
     "Residuals",
+    "Session",
     "Stream",
     "TearResult",
     "absorption_column",
+    "catalogue",
     "component_splitter",
     "compressor",
     "cooler",
@@ -70,6 +78,7 @@ __all__ = [
     "expander",
     "filter",
     "flare",
+    "forms",
     "gas_scrubber",
     "gibbs_reactor",
     "heat_exchanger",
@@ -90,6 +99,7 @@ __all__ = [
     "tank",
     "three_phase_separator",
     "throttling_valve",
+    "tools",
     "validate",
 ]
 
