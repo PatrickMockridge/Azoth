@@ -12,6 +12,7 @@
 //! not - the driver's own tests do that, where the two codes are shown to land on different
 //! points of the same line.
 
+use azoth_eos::Cubic;
 use azoth_reactions::reactive_tp_flash::reactive_tp_flash;
 
 const BAR: f64 = 1.0e5;
@@ -33,7 +34,7 @@ fn the_water_gas_shift_is_the_captured_composition() {
         .iter()
         .map(|name| (*name).to_string())
         .collect();
-    let result = reactive_tp_flash(&components, 600.0, BAR, &[0.25; 4], 2).expect("the flash runs");
+    let result = reactive_tp_flash(&components, Cubic::Srk, 600.0, BAR, &[0.25; 4], 2).expect("the flash runs");
 
     assert!(result.converged, "the captured state converges");
     assert_eq!(result.phase_count, 2, "the constructor's pair survives");
@@ -81,7 +82,7 @@ fn the_hot_four_component_fluid_is_the_captured_composition() {
         .map(|name| (*name).to_string())
         .collect();
     let result =
-        reactive_tp_flash(&components, 1000.0, BAR, &[0.4, 0.2, 0.2, 0.2], 2).expect("it runs");
+        reactive_tp_flash(&components, Cubic::Srk, 1000.0, BAR, &[0.4, 0.2, 0.2, 0.2], 2).expect("it runs");
 
     assert!(result.converged);
     // The capture's residual, and this port's: both inside the `1e-4` the class accepts, and
@@ -121,7 +122,7 @@ fn the_non_reactive_fluid_takes_the_fallback() {
         .map(|name| (*name).to_string())
         .collect();
     let result =
-        reactive_tp_flash(&components, 300.0, 50.0 * BAR, &[0.5, 0.5], 2).expect("the flash runs");
+        reactive_tp_flash(&components, Cubic::Srk, 300.0, 50.0 * BAR, &[0.5, 0.5], 2).expect("the flash runs");
 
     assert!(result.converged);
     assert_eq!(result.total_iterations, 0, "the fallback counts none");
@@ -149,6 +150,46 @@ fn a_charged_component_is_refused() {
         .iter()
         .map(|name| (*name).to_string())
         .collect();
-    let refused = reactive_tp_flash(&components, 298.15, BAR, &[1.0, 1.0e-7], 2);
+    let refused = reactive_tp_flash(&components, Cubic::Srk, 298.15, BAR, &[1.0, 1.0e-7], 2);
     assert!(refused.is_err(), "a charged component is refused");
+}
+
+/// **The cubic is a choice the answer carries, and the capture measures how much.** The same
+/// water-gas shift on PR - the cubic the process layer's streams run - against the capture's
+/// `WGS-600K-pr` row, and against the SRK row beside it.
+///
+/// `gibbs_energy` is the field that separates them: `-2.2598216` on PR against `-2.2595355` on
+/// SRK, which is `1.3e-4` relative, while this port reproduces each row's own value to `5e-8`.
+/// The tolerance below is two orders inside that effect, so a fall-back to the wrong cubic
+/// fails here rather than passing on a rounded agreement.
+#[test]
+fn the_cubic_moves_the_answer_and_each_row_is_reproduced() {
+    let components: Vec<String> = ["CO", "water", "CO2", "hydrogen"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let feed = [0.25; 4];
+
+    let pr = reactive_tp_flash(&components, Cubic::Pr, 600.0, BAR, &feed, 2).expect("it runs");
+    let srk = reactive_tp_flash(&components, Cubic::Srk, 600.0, BAR, &feed, 2).expect("it runs");
+
+    let captured_pr = -2.259_821_586_120_850_6;
+    let captured_srk = -2.259_535_542_715_054_7;
+    assert!(
+        (pr.gibbs_energy - captured_pr).abs() / captured_pr.abs() < 1.0e-6,
+        "PR: {} against the capture's {captured_pr}",
+        pr.gibbs_energy
+    );
+    assert!(
+        (srk.gibbs_energy - captured_srk).abs() / captured_srk.abs() < 1.0e-6,
+        "SRK: {} against the capture's {captured_srk}",
+        srk.gibbs_energy
+    );
+    // And the effect the tolerance is set inside: the two rows are further apart than either
+    // is from its own capture.
+    let apart = (pr.gibbs_energy - srk.gibbs_energy).abs() / srk.gibbs_energy.abs();
+    assert!(
+        apart > 1.0e-4,
+        "the cubics are only {apart} apart on this state, so the case would not separate them"
+    );
 }

@@ -183,8 +183,8 @@ pub fn reactive_phase_equilibrium(
 /// driver's `getOverallMoles` reads and what its frozen element inventory is built from.
 /// A charged component is refused: the RAND solve's ionic branch is not ported.
 #[pyfunction]
-#[pyo3(signature = (components, T, P, moles, max_phases))]
-#[pyo3(text_signature = "(components, T, P, moles, max_phases)")]
+#[pyo3(signature = (components, T, P, moles, max_phases, cubic = "srk"))]
+#[pyo3(text_signature = "(components, T, P, moles, max_phases, cubic = \"srk\")")]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the flash's own name
 pub fn reactive_tp_flash(
     py: Python<'_>,
@@ -193,9 +193,11 @@ pub fn reactive_tp_flash(
     P: f64,
     moles: Vec<f64>,
     max_phases: f64,
+    cubic: &str,
 ) -> PyResult<PyReactiveTpFlashResult> {
     azoth_reactions::reactive_tp_flash::reactive_tp_flash(
         &components,
+        cubic.parse().map_err(pyo3::exceptions::PyValueError::new_err)?,
         T,
         P,
         &moles,
@@ -242,8 +244,8 @@ pub fn reactive_hybrid_eos_ge_flash(
 /// `enthalpy` is the **thermochemical** specification - the fluid's sensible enthalpy plus the
 /// formation inventory - and `T` is where the secant search starts.
 #[pyfunction]
-#[pyo3(signature = (components, T, P, moles, enthalpy, max_phases))]
-#[pyo3(text_signature = "(components, T, P, moles, enthalpy, max_phases)")]
+#[pyo3(signature = (components, T, P, moles, enthalpy, max_phases, cubic = "srk"))]
+#[pyo3(text_signature = "(components, T, P, moles, enthalpy, max_phases, cubic = \"srk\")")]
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the flash's own name
 pub fn reactive_ph_flash(
     py: Python<'_>,
@@ -253,9 +255,11 @@ pub fn reactive_ph_flash(
     moles: Vec<f64>,
     enthalpy: f64,
     max_phases: f64,
+    cubic: &str,
 ) -> PyResult<PyReactivePhFlashResult> {
     azoth_reactions::reactive_ph_flash::reactive_ph_flash(
         &components,
+        cubic.parse().map_err(pyo3::exceptions::PyValueError::new_err)?,
         T,
         P,
         &moles,

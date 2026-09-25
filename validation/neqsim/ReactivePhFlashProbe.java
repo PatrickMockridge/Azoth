@@ -16,6 +16,7 @@
 
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.system.SystemInterface;
+import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermodynamicoperations.flashops.reactiveflash.ReactiveMultiphasePHflash;
 import neqsim.thermodynamicoperations.flashops.reactiveflash.ReactiveMultiphaseTPflash;
@@ -26,6 +27,9 @@ public class ReactivePhFlashProbe {
     roundTrip("wgs-600K-from-500K", 600.0, 500.0, 1.0,
         new String[] { "CO", "water", "CO2", "hydrogen" },
         new double[] { 0.25, 0.25, 0.25, 0.25 });
+    roundTrip("WGS-600K-from-500K-pr", 600.0, 500.0, 1.0,
+        new String[] { "CO", "water", "CO2", "hydrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25 }, false);
     roundTrip("wgs-1000K-from-700K", 1000.0, 700.0, 1.0,
         new String[] { "CO", "water", "CO2", "hydrogen" },
         new double[] { 0.25, 0.25, 0.25, 0.25 });
@@ -38,12 +42,20 @@ public class ReactivePhFlashProbe {
   /// temperature, and ask the PH flash for the temperature back.
   static void roundTrip(String label, double equilibriumTemperature, double perturbed,
       double pressure, String[] names, double[] moles) {
+    roundTrip(label, equilibriumTemperature, perturbed, pressure, names, moles, true);
+  }
+
+  /// **The same round trip on PR**, the cubic the process layer's streams carry: the
+  /// specification is a PR fluid's thermochemical enthalpy, which is not the SRK fluid's.
+  static void roundTrip(String label, double equilibriumTemperature, double perturbed,
+      double pressure, String[] names, double[] moles, boolean srk) {
     System.out.println("fluid=" + label);
+    System.out.println("cubic=" + (srk ? "srk" : "pr"));
     System.out.println("flash_temperature_K=" + equilibriumTemperature);
     System.out.println("perturbed_temperature_K=" + perturbed);
     System.out.println("pressure_bara=" + pressure);
 
-    SystemInterface system = build(equilibriumTemperature, pressure, names, moles);
+    SystemInterface system = build(equilibriumTemperature, pressure, names, moles, srk);
     ReactiveMultiphaseTPflash tpFlash = new ReactiveMultiphaseTPflash(system);
     tpFlash.run();
     system.init(2);
@@ -81,7 +93,13 @@ public class ReactivePhFlashProbe {
   }
 
   static SystemInterface build(double temperature, double pressure, String[] names, double[] moles) {
-    SystemInterface system = new SystemSrkEos(temperature, pressure);
+    return build(temperature, pressure, names, moles, true);
+  }
+
+  static SystemInterface build(double temperature, double pressure, String[] names, double[] moles,
+      boolean srk) {
+    SystemInterface system = srk ? new SystemSrkEos(temperature, pressure)
+        : new SystemPrEos(temperature, pressure);
     for (int i = 0; i < names.length; i++) {
       system.addComponent(names[i], moles[i]);
     }

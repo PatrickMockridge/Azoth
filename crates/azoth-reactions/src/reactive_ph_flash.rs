@@ -32,8 +32,10 @@ use crate::databank::formation_properties;
 use crate::ph_flash_loop::{PhState, solve_enthalpy_spec};
 use crate::reactive_tp_flash::{ReactiveTpFlashResult, reactive_tp_flash};
 
-/// The cubic this model flashes with, from the oracle's `SystemSrkEos`.
-pub const CUBIC: Cubic = Cubic::Srk;
+/// The cubic this model flashes with **when the caller states none**, from the oracle's
+/// `SystemSrkEos`. It is the default at the boundary rather than a constant the kernel reads,
+/// and it reaches the inner `reactions.reactive_tp_flash` too.
+pub const DEFAULT_CUBIC: Cubic = Cubic::Srk;
 
 /// What the model answers with.
 ///
@@ -82,6 +84,7 @@ impl CalcResult for ReactivePhFlashResult {
 #[allow(clippy::too_many_arguments)]
 pub fn reactive_ph_flash(
     components: &[String],
+    cubic: Cubic,
     initial_temperature: f64,
     pressure: f64,
     moles: &[f64],
@@ -99,7 +102,7 @@ pub fn reactive_ph_flash(
         });
     }
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    let (mixture, ideal) = mixture_of(&names, CUBIC, None)?;
+    let (mixture, ideal) = mixture_of(&names, cubic, None)?;
 
     // The formation column, which the thermochemical convention is built on. Read here rather
     // than beside the enthalpy because it is the caller's number that carries it.
@@ -118,7 +121,14 @@ pub fn reactive_ph_flash(
     let components = components.to_vec();
     let moles = moles.to_vec();
     let mut inner = |temperature: f64| -> Result<PhState> {
-        let outcome = reactive_tp_flash(&components, temperature, pressure, &moles, max_phases)?;
+        let outcome = reactive_tp_flash(
+            &components,
+            cubic,
+            temperature,
+            pressure,
+            &moles,
+            max_phases,
+        )?;
         let (enthalpy, cp) = state_enthalpy(
             &mixture,
             &ideal,

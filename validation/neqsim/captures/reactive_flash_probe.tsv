@@ -1,6 +1,7 @@
 fluid=wgs-600K
 temperature_K=600.0
 pressure_bara=1.0
+cubic=srk
   feed[CO]=0.25
   feed[water]=0.25
   feed[CO2]=0.25
@@ -26,9 +27,39 @@ x=CO:0.07914057596379304 water:0.07914057600238047 CO2:0.42085942405709015 hydro
     total_moles=1.0
 equilibrium_moles[0]=0.0791405025480234 0.0791405025606937 0.42085906190697714 0.42085906188068767
 
+fluid=WGS-600K-pr
+temperature_K=600.0
+pressure_bara=1.0
+cubic=pr
+  feed[CO]=0.25
+  feed[water]=0.25
+  feed[CO2]=0.25
+  feed[hydrogen]=0.25
+elements=3 components=4 rank=3 independent_reactions=1
+  A[0]=1.0 0.0 1.0 0.0
+  A[1]=1.0 1.0 2.0 0.0
+  A[2]=0.0 2.0 0.0 2.0
+converged=true
+total_iterations=35
+final_residual=9.981264271630153E-5
+final_element_residual=1.2791421604855292E-5
+number_of_reactions=1
+equilibrium_total_moles=0.9999926155659098
+final_gibbs_energy=-2.2598215861208506
+lagrange_multipliers=8.093513069174366 -57.25660495553937 -8.635199462726794
+phases=2
+  phase[0]=gas beta=1.0 moles=1.0
+x=CO:0.07913815659340613 water:0.07913815526865069 CO2:0.42086184302417695 hydrogen:0.4208618451137663
+    total_moles=1.0
+  phase[1]=oil beta=1.0 moles=1.0
+x=CO:0.07913815928014808 water:0.07913815797286504 CO2:0.4208618403424973 hydrogen:0.42086184240448954
+    total_moles=1.0
+equilibrium_moles[0]=0.07913757220290475 0.07913757087815909 0.42085873519763606 0.42085873728720996
+
 fluid=methane-water-co2-hydrogen-1000K
 temperature_K=1000.0
 pressure_bara=1.0
+cubic=srk
   feed[methane]=0.4
   feed[water]=0.2
   feed[CO2]=0.2
@@ -53,6 +84,35 @@ x=methane:0.27339946207305693 water:0.03119923591091445 CO2:0.24220020190304836 
 x=methane:0.27339941576719984 water:0.031199239996557288 CO2:0.242200223311631 hydrogen:0.4532011209246119
     total_moles=1.0
 equilibrium_moles[0]=0.31815348894105516 0.03630638364131111 0.28184707706956624 0.5273876916200362
+
+fluid=methane-water-co2-hydrogen-1000K-pr
+temperature_K=1000.0
+pressure_bara=1.0
+cubic=pr
+  feed[methane]=0.4
+  feed[water]=0.2
+  feed[CO2]=0.2
+  feed[hydrogen]=0.2
+elements=3 components=4 rank=3 independent_reactions=1
+  A[0]=1.0 0.0 1.0 0.0
+  A[1]=4.0 2.0 0.0 2.0
+  A[2]=0.0 1.0 2.0 0.0
+converged=true
+total_iterations=34
+final_residual=9.639563892704928E-5
+final_element_residual=2.352388942390641E-6
+number_of_reactions=1
+equilibrium_total_moles=1.1636973883908852
+final_gibbs_energy=-2.3292640850788775
+lagrange_multipliers=1.123225562174833 -9.146510643338846 -39.12164558125413
+phases=2
+  phase[0]=gas beta=1.0 moles=1.0
+x=methane:0.27339799752901883 water:0.031197394410054 CO2:0.24220063620264068 hydrogen:0.4532039718582864
+    total_moles=1.0
+  phase[1]=oil beta=1.0 moles=1.0
+x=methane:0.27339795121849586 water:0.031197398499183848 CO2:0.24220065761342346 hydrogen:0.4532039926688968
+    total_moles=1.0
+equilibrium_moles[0]=0.3181525357158169 0.03630432639958024 0.28184824781562384 0.5273922784598641
 
 fluid=co2-water-ions
 elements=4 components=4 rank=3 independent_reactions=1

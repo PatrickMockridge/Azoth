@@ -43,8 +43,13 @@ use crate::rand_solver::{PhaseFeed, ThermoData, solve_single_phase, standard_pot
 use crate::reactive_flash::{DriverState, run};
 use crate::reactive_stability::CriticalConstants;
 
-/// The cubic this model flashes with, from the oracle's `SystemSrkEos`.
-pub const CUBIC: Cubic = Cubic::Srk;
+/// The cubic this model flashes with **when the caller states none**, from the oracle's
+/// `SystemSrkEos`.
+///
+/// It is the default at the boundary rather than a constant the kernel reads: the class is
+/// handed the caller's own `SystemInterface`, so the fluid is the caller's choice, and every
+/// captured row is this one.
+pub const DEFAULT_CUBIC: Cubic = Cubic::Srk;
 
 /// What the flash answers with.
 ///
@@ -116,6 +121,7 @@ impl CalcResult for ReactiveTpFlashResult {
 /// disagreement, or a component the databank does not carry.
 pub fn reactive_tp_flash(
     components: &[String],
+    cubic: Cubic,
     temperature: f64,
     pressure: f64,
     moles: &[f64],
@@ -170,7 +176,7 @@ pub fn reactive_tp_flash(
     }
 
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    let (mixture, ideal) = mixture_of(&names, CUBIC, None)?;
+    let (mixture, ideal) = mixture_of(&names, cubic, None)?;
 
     let constants: Vec<CriticalConstants> = mixture
         .components()

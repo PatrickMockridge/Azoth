@@ -57,6 +57,7 @@ def reactive_ph_flash(
     moles: list[Q],
     enthalpy: Q,
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactivePhFlashResult:
     """The temperature at which a reactive fluid's enthalpy matches a specification.
 
@@ -71,6 +72,8 @@ def reactive_ph_flash(
             the formation inventory. A sensible enthalpy without the inventory is a different
             number and finds a different temperature.
         max_phases: the inner flash's phase ceiling.
+        cubic: the cubic the fluid and its inner ``reactive_tp_flash`` are flashed
+            with. Omitted means ``"srk"``.
 
     Returns:
         The temperature, whether the loop converged, and the passes it cost. **The counts are
@@ -122,7 +125,7 @@ def reactive_ph_flash(
         raise InvalidInputError("moles", "the feed holds no component")
     specified = input_to_si(spec, "enthalpy", enthalpy)
 
-    fluid = from_names(list(components), eos="srk")
+    fluid = from_names(list(components), eos="srk" if cubic is None else cubic)
     coefficients = []
     formation = []
     for name in components:
@@ -153,7 +156,7 @@ def reactive_ph_flash(
     def inner(trial: float) -> PhState:
         """The inner flash at a trial temperature: its passes, its thermochemical enthalpy
         and its heat capacity."""
-        outcome = tp_flash(list(components), _quantity(trial, "K"), P, moles, float(ceiling))
+        outcome = tp_flash(list(components), _quantity(trial, "K"), P, moles, float(ceiling), cubic)
         sensible = 0.0
         heat_capacity = 0.0
         inventory = 0.0

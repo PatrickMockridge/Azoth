@@ -29,3 +29,18 @@ phase_count = 2.0
 converged = true
 total_iterations = 0.0
 phase_fraction = [0.5003348951610832, 0.4996651048389168]
+[[cases]]
+id = "wgs_600k_on_the_process_layers_cubic"
+tolerance = 1e-06
+source = "The same water-gas shift on **PR**, from the capture's own `WGS-600K-pr` row: this is the cubic the process layer's streams carry, so it is the one a reactive tray has to flash. **The case's tolerance is what proves the choice reached the flash.** Measured, the two cubics differ on `gibbs_energy` by `1.3e-4` relative (`-2.2598216` against `-2.2595355`) and the port reproduces each cubic's own value to `5.2e-8` at PR and `1.3e-7` at SRK - so a `1e-6` gate is two orders inside the effect and a silent fall-back to SRK fails it. NeqSim converges this row in 35 outer passes and the port in 35. **`equilibrium_total_moles` is deliberately not pinned**, and that is a measurement rather than an omission: the port's PR answer sits `6.3e-6` from the capture's while the two cubics are only `6.5e-6` apart, so the field cannot tell them apart and pinning it would buy a tolerance that could not distinguish anything. The split is path-decided as the SRK case says, and the capture types the two phases `gas` and `oil` where this port's driver knows only which is the vapour.\n"
+[cases.inputs]
+components = ["CO", "water", "CO2", "hydrogen"]
+T = 600.0
+P = 100000.0
+moles = [0.25, 0.25, 0.25, 0.25]
+max_phases = 2
+cubic = "pr"
+[cases.expected]
+phase_count = 2.0
+converged = true
+gibbs_energy = -2.2598215861208506

@@ -13,3 +13,18 @@ max_phases = 2
 [cases.expected]
 temperature = 600.0000397583285
 converged = true
+[[cases]]
+id = "wgs_600k_the_round_trip_on_pr"
+tolerance = 1e-03
+source = "The class's own round trip on **PR**: the fluid brought to reactive equilibrium at 600 K and 1 bar on the process layer's cubic, its thermochemical enthalpy recorded (`22973.463978924163 + -386993.3988056023` J, halved for the same double-counted system the SRK case explains), the temperature perturbed to 500 K, and the PH flash asked for it back. NeqSim returns `600.0000000` K in two outer passes; this port returns `600.0622285` K in six, which is `1.0e-4` relative - and the `1e-3` gate is the SRK case's, for its reason: the specification is NeqSim's enthalpy while the curve the loop walks is `azoth-eos`'s. **This case pins the PR path but cannot prove the cubic reached the flash, and that is measured**: the two cubics' specifications differ by `1.26` J, which is `2.8e-5` relative in temperature, *smaller* than the port's own `1.0e-4` agreement with NeqSim on this state. The choice is proved where it is visible - `reactions.reactive_tp_flash`'s PR case, whose `gibbs_energy` separates the cubics by `1.3e-4` against a `1e-6` gate.\n"
+[cases.inputs]
+components = ["CO", "water", "CO2", "hydrogen"]
+T = 500.0
+P = 100000.0
+moles = [0.25, 0.25, 0.25, 0.25]
+enthalpy = -182009.96741333907
+max_phases = 2
+cubic = "pr"
+[cases.expected]
+temperature = 600.0
+converged = true

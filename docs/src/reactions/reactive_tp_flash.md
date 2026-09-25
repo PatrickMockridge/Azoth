@@ -39,6 +39,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `components` | - | the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. **A charged one is refused**: the solve's ionic branch is not ported. |
+| `cubic` | srk / pr | *Optional.* the cubic the fluid is flashed with. **Every captured row is `srk`**, which is what the class flashes - it is handed the caller's own `SystemInterface` - so omitting it keeps them; `pr` is the cubic the process layer's streams carry, which is why a reactive tray needs it. |
 | `T` | K | absolute temperature. It sets the standard state the potentials are reduced against, and it is what the Wilson seeds and the Rachford-Rice loops are built at. |
 | `P` | Pa | absolute pressure. Converted to bara for the potentials, which is the unit NeqSim's `ln(P/P_ref)` is taken against, and taken in pascals by the cubic. |
 | `moles` | mol | the overall component amounts, which is what the driver's `getOverallMoles` reads and what its frozen element inventory is built from. Not a composition and not renormalised. |
@@ -88,6 +89,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `wgs_600k_the_class_own_two_phase_state` | components = ['CO', 'water', 'CO2', 'hydrogen'], T = 600.0, P = 100000.0, moles = [0.25, 0.25, 0.25, 0.25], max_phases = 2 | phase_count = 2.0, converged = True, equilibrium_total_moles = 0.999999128896382, gibbs_energy = -2.2595355427150547 |
 | `methane_water_has_no_reaction_to_run` | components = ['methane', 'water'], T = 300.0, P = 5000000.0, moles = [0.5, 0.5], max_phases = 2 | phase_count = 2.0, converged = True, total_iterations = 0.0, phase_fraction = [0.5003348951610832, 0.4996651048389168] |
+| `wgs_600k_on_the_process_layers_cubic` | components = ['CO', 'water', 'CO2', 'hydrogen'], T = 600.0, P = 100000.0, moles = [0.25, 0.25, 0.25, 0.25], max_phases = 2, cubic = pr | phase_count = 2.0, converged = True, gibbs_energy = -2.2598215861208506 |
 
 ## References
 

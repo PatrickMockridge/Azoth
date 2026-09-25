@@ -129,6 +129,7 @@ def reactive_tp_flash(
     P: Q,
     moles: list[Q],
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactiveTpFlashResult:
     """Simultaneous chemical and phase equilibrium at fixed temperature and pressure.
 
@@ -143,6 +144,9 @@ def reactive_tp_flash(
         max_phases: the driver's effective phase ceiling. Two is the captured states' own,
             and **one changes the answer rather than the format**: a ceiling of one skips
             the VLE initialisation and collapses the phase list.
+        cubic: the cubic the fluid is flashed with, ``"srk"`` or ``"pr"``. Omitted
+            means ``"srk"``, which is what the class flashes and what every captured
+            state is; ``"pr"`` is the cubic the process layer's streams carry.
 
     Returns:
         The phases, in the driver's own order and with no type promised, beside the
@@ -212,7 +216,7 @@ def reactive_tp_flash(
                 f"`{name}` is charged, and the RAND solve's ionic branch is not ported",
             )
 
-    fluid = from_names(list(components), eos="srk")
+    fluid = from_names(list(components), eos="srk" if cubic is None else cubic)
     reduced = reduced_parameters(fluid, temperature, pressure)
     constants = [
         CriticalConstants(

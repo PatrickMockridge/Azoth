@@ -192,6 +192,7 @@ def reactive_tp_flash(
     P: Q,
     moles: Sequence[Q],
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactiveTpFlashResult:
     """Simultaneous chemical and phase equilibrium at fixed temperature and pressure.
 
@@ -222,6 +223,7 @@ def reactive_tp_flash(
         P=P,
         moles=list(moles),
         max_phases=max_phases,
+        cubic=cubic,
     )
 
 
@@ -232,6 +234,7 @@ def reactive_ph_flash(
     moles: Sequence[Q],
     enthalpy: Q,
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactivePhFlashResult:
     """The temperature at which a reactive fluid's enthalpy matches a specification.
 
@@ -258,6 +261,7 @@ def reactive_ph_flash(
         moles=list(moles),
         enthalpy=enthalpy,
         max_phases=max_phases,
+        cubic=cubic,
     )
 
 

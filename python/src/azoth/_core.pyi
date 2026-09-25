@@ -3284,6 +3284,7 @@ def reactive_ph_flash(
     moles: list[float],
     enthalpy: float,
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactivePhFlashResult: ...
 def reactive_phase_equilibrium(
     components: list[str],
@@ -3306,6 +3307,7 @@ def reactive_tp_flash(
     P: float,
     moles: list[float],
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactiveTpFlashResult: ...
 def reference_potentials(
     components: list[str],

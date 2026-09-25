@@ -43,6 +43,11 @@ max_iterations = 500
 [inputs.components]
 type = "components"
 description = "the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. **A charged one is refused**: the solve's ionic branch is not ported."
+[inputs.cubic]
+type = "enum"
+values = ["srk", "pr"]
+optional = true
+description = "the cubic the fluid is flashed with. **Every captured row is `srk`**, which is what the class flashes - it is handed the caller's own `SystemInterface` - so omitting it keeps them; `pr` is the cubic the process layer's streams carry, which is why a reactive tray needs it."
 [inputs.T]
 unit = "K"
 description = "absolute temperature. It sets the standard state the potentials are reduced against, and it is what the Wilson seeds and the Rachford-Rice loops are built at."

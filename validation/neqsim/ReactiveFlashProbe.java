@@ -25,6 +25,7 @@
 import neqsim.thermo.component.ComponentInterface;
 import neqsim.thermo.phase.PhaseInterface;
 import neqsim.thermo.system.SystemInterface;
+import neqsim.thermo.system.SystemPrEos;
 import neqsim.thermo.system.SystemSrkEos;
 import neqsim.thermodynamicoperations.flashops.reactiveflash.FormulaMatrix;
 import neqsim.thermodynamicoperations.flashops.reactiveflash.ReactiveMultiphaseTPflash;
@@ -38,11 +39,20 @@ public class ReactiveFlashProbe {
     one("wgs-600K", 600.0, 1.0,
         new String[] { "CO", "water", "CO2", "hydrogen" },
         new double[] { 0.25, 0.25, 0.25, 0.25 });
+    // **The same two states on PR**, which is the cubic the process layer's streams carry:
+    // a reactive tray has to flash the fluid it is actually handed, so this is the row its
+    // own oracle has to be.
+    one("WGS-600K-pr", 600.0, 1.0,
+        new String[] { "CO", "water", "CO2", "hydrogen" },
+        new double[] { 0.25, 0.25, 0.25, 0.25 }, false);
     // The four-component mixture the package's own multiphase test uses, hot enough that
     // several reactions run at once.
     one("methane-water-co2-hydrogen-1000K", 1000.0, 1.0,
         new String[] { "methane", "water", "CO2", "hydrogen" },
         new double[] { 0.4, 0.2, 0.2, 0.2 });
+    one("methane-water-co2-hydrogen-1000K-pr", 1000.0, 1.0,
+        new String[] { "methane", "water", "CO2", "hydrogen" },
+        new double[] { 0.4, 0.2, 0.2, 0.2 }, false);
     // The ionic fluids: the matrix only, because the flash's ionic branch is one this port
     // refuses and the matrix is what decides how many reactions the fluid has.
     matrixOnly("co2-water-ions", 298.15,
@@ -497,11 +507,21 @@ public class ReactiveFlashProbe {
   }
 
   static void one(String label, double temperature, double pressure, String[] names, double[] moles) {
+    one(label, temperature, pressure, names, moles, true);
+  }
+
+  /// **The same row on the other cubic.** The class flashes whatever system it is handed, so
+  /// `pr` is a state NeqSim answers as readily as `srk` - it is the port's process layer that
+  /// is PR-only, which is why a reactive tray needs this row to be oracled against.
+  static void one(String label, double temperature, double pressure, String[] names,
+      double[] moles, boolean srk) {
     System.out.println("fluid=" + label);
     System.out.println("temperature_K=" + temperature);
     System.out.println("pressure_bara=" + pressure);
 
-    SystemInterface system = new SystemSrkEos(temperature, pressure);
+    System.out.println("cubic=" + (srk ? "srk" : "pr"));
+    SystemInterface system = srk ? new SystemSrkEos(temperature, pressure)
+        : new SystemPrEos(temperature, pressure);
     for (int i = 0; i < names.length; i++) {
       System.out.println("  feed[" + names[i] + "]=" + moles[i]);
       system.addComponent(names[i], moles[i]);

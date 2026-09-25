@@ -1,4 +1,5 @@
 fluid=wgs-600K-from-500K
+cubic=srk
 flash_temperature_K=600.0
 perturbed_temperature_K=500.0
 pressure_bara=1.0
@@ -21,7 +22,32 @@ final_entropy_J_per_K=73.76521171585028
 final_cp_J_per_K=75.15082379675172
 final_x=CO:0.07914054832375951 water:0.07914054832375075 CO2:0.4208594516762401 hydrogen:0.42085945167624955
 
+fluid=WGS-600K-from-500K-pr
+cubic=pr
+flash_temperature_K=600.0
+perturbed_temperature_K=500.0
+pressure_bara=1.0
+specified_sensible_enthalpy_J=22973.463978924163
+tp_flash_converged=true
+tp_flash_iterations=35
+tp_x=CO:0.07913813967523553 water:0.07913813984509187 CO2:0.4208618603745666 hydrogen:0.420861860105106
+tp_cp_J_per_K=75.15150320243922
+tp_entropy_J_per_K=73.76373661321955
+formation_inventory_at_construction=-386993.3988056023
+thermochemical_enthalpy_spec_failed=java.lang.NoSuchMethodException: neqsim.thermodynamicoperations.flashops.reactiveflash.ReactiveMultiphasePHflash.getThermochemicalEnthalpySpec()
+converged=true
+equilibrium_temperature_K=600.0
+outer_iterations=2
+total_inner_iterations=107
+final_sensible_enthalpy_J=22973.464014602927
+final_thermochemical_enthalpy=-364019.93533946096
+final_formation_inventory=-386993.3993540639
+final_entropy_J_per_K=73.76373624200593
+final_cp_J_per_K=75.15150335123735
+final_x=CO:0.0791381316393194 water:0.07913813165083965 CO2:0.42086186836401057 hydrogen:0.4208618683458303
+
 fluid=wgs-1000K-from-700K
+cubic=srk
 flash_temperature_K=1000.0
 perturbed_temperature_K=700.0
 pressure_bara=1.0
@@ -45,6 +71,7 @@ final_cp_J_per_K=79.71895522850964
 final_x=CO:0.22789278636317956 water:0.2278927863631854 CO2:0.27210721363682033 hydrogen:0.2721072136368147
 
 fluid=methane-water-co2-hydrogen-1000K-from-800K
+cubic=srk
 flash_temperature_K=1000.0
 perturbed_temperature_K=800.0
 pressure_bara=1.0

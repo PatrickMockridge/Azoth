@@ -34,6 +34,11 @@ max_iterations = 200
 [inputs.components]
 type = "components"
 description = "the substances the fluid is made of, by name. **A charged one is refused**, because the inner flash's ionic branch is not ported."
+[inputs.cubic]
+type = "enum"
+values = ["srk", "pr"]
+optional = true
+description = "the cubic the fluid is flashed with, and the one its inner `reactions.reactive_tp_flash` is called with. **Omitted means `srk`**, which is what every captured row is and what the class flashes; `pr` is the cubic the process layer's streams carry."
 [inputs.T]
 unit = "K"
 description = "the temperature the search starts from. It is not a bound and not a guess at the answer: the loop is a secant, and where the enthalpy curve is not monotone the path decides which of its crossings is found."

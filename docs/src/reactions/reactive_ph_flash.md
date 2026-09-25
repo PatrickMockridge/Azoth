@@ -29,6 +29,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `components` | - | the substances the fluid is made of, by name. **A charged one is refused**, because the inner flash's ionic branch is not ported. |
+| `cubic` | srk / pr | *Optional.* the cubic the fluid is flashed with, and the one its inner `reactions.reactive_tp_flash` is called with. **Omitted means `srk`**, which is what every captured row is and what the class flashes; `pr` is the cubic the process layer's streams carry. |
 | `T` | K | the temperature the search starts from. It is not a bound and not a guess at the answer: the loop is a secant, and where the enthalpy curve is not monotone the path decides which of its crossings is found. |
 | `P` | Pa | absolute pressure, held fixed while the temperature moves. It sets the standard state the potentials are reduced against and it is the state the cubic is evaluated at. |
 | `moles` | mol | the overall component amounts, the same input `reactions.reactive_tp_flash` takes. Not a composition and not renormalised. |
@@ -70,6 +71,7 @@ not an equation, and both implementations read it from here.
 | Case | Inputs | Expected |
 |---|---|---|
 | `wgs_600k_the_capture_specification_halved` | components = ['CO', 'water', 'CO2', 'hydrogen'], T = 500.0, P = 100000.0, moles = [0.25, 0.25, 0.25, 0.25], enthalpy = -182008.71195353585, max_phases = 2 | temperature = 600.0000397583285, converged = True |
+| `wgs_600k_the_round_trip_on_pr` | components = ['CO', 'water', 'CO2', 'hydrogen'], T = 500.0, P = 100000.0, moles = [0.25, 0.25, 0.25, 0.25], enthalpy = -182009.96741333907, max_phases = 2, cubic = pr | temperature = 600.0, converged = True |
 
 ## References
 
