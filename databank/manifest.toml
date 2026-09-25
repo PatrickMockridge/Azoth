@@ -2913,12 +2913,282 @@ reason = "unread-upstream: the table is loaded and never read. `NeqSimDataBase.j
 id = "neqsim/GibbsReactDatabase/DatabaseGibbsFreeEnergyCoeff.csv"
 upstream_path = "src/main/resources/data/GibbsReactDatabase/DatabaseGibbsFreeEnergyCoeff.csv"
 vendored_source = "databank/sources/neqsim/GibbsReactDatabase/DatabaseGibbsFreeEnergyCoeff.csv"
+compiled_to = "data/reactors/gibbs_reactor_coeffs.csv"
 source_rows = 18
+compiled_rows = 15
+generated = ["citation"]
+[[upstreams.files.rows]]
+selector = "Component not a species the compiled reactor table carries"
+count = 3
+reason = """\
+    dropped: `HNO2`, `NO` and `SO3` are rows of this file and not components azoth's \
+    component table carries, so no fluid can name them. The join is \
+    `extraCoeffMap.getOrDefault(molecule.toLowerCase(), ...)` keyed by the reactor \
+    table's own species, so their coefficients are unreachable rather than merely unread."""
+[[upstreams.files.columns]]
+name = "Component"
+disposition = "used"
+as = "name"
+unit = "text"
+reason = """\
+    selected on and carried: `loadGibbsDatabase` keys `extraCoeffMap` by \
+    `parts[0].trim().toLowerCase()` and the reactor table's `componentMap` by \
+    `molecule.toLowerCase()`, so the join is on the lowercased name and this column is \
+    its left side. The two files do not agree on case - this one writes `co2` where that \
+    one writes `CO2` - which is why the join lowercases both."""
+[[upstreams.files.columns]]
+name = "Ag"
+disposition = "used"
+as = "ag"
+unit = "kJ/mol"
+reason = """\
+    the leading coefficient of the order-5 Gibbs polynomial `Ag*T^5 + Bg*T^4 + Cg*T^3 + \
+    Dg*T^2 + Eg*T + Fg`, which `GibbsComponent.calculateGibbsEnergy` returns directly - \
+    with no unit conversion - and which `calculateObjectiveFunctionValues` adds to \
+    `RT*ln(phi)`, `RT*ln(y)` and `RT*ln(P)`, all three in kJ/mol. Measured on CO2 at \
+    298.15 K the polynomial gives -394.2203 against the same row's tabulated -394.4 \
+    kJ/mol, so the column is kJ/mol and the two are independent fits."""
+[[upstreams.files.columns]]
+name = "Bg"
+disposition = "used"
+as = "bg"
+unit = "kJ/mol"
+reason = "the second coefficient of the same polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Cg"
+disposition = "used"
+as = "cg"
+unit = "kJ/mol"
+reason = "the third coefficient of the same polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Dg"
+disposition = "used"
+as = "dg"
+unit = "kJ/mol"
+reason = "the fourth coefficient of the same polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Eg"
+disposition = "used"
+as = "eg"
+unit = "kJ/mol"
+reason = "the fifth coefficient of the same polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Fg"
+disposition = "used"
+as = "fg"
+unit = "kJ/mol"
+reason = "the sixth coefficient of the same polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Ah"
+disposition = "used"
+as = "ah"
+unit = "kJ/mol"
+reason = """\
+    the leading coefficient of the order-5 enthalpy polynomial \
+    `Ah*T^5 + Bh*T^4 + Ch*T^3 + Dh*T^2 + Eh*T + Gh`, which \
+    `GibbsComponent.calculateEnthalpy` returns directly. It is consumed by \
+    `calculateMixtureEnthalpy`, whose caller is the adiabatic branch of \
+    `solveGibbsEquilibrium`: `dH*1000/(system.getCp("J/K"))` is a temperature, so the \
+    polynomial is kJ/mol. Measured on CO2 at 298.15 K it gives -393.3517 against the row's \
+    tabulated -393.51 kJ/mol."""
+[[upstreams.files.columns]]
+name = "Bh"
+disposition = "used"
+as = "bh"
+unit = "kJ/mol"
+reason = "the second coefficient of the enthalpy polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Ch"
+disposition = "used"
+as = "ch"
+unit = "kJ/mol"
+reason = "the third coefficient of the enthalpy polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Dh"
+disposition = "used"
+as = "dh"
+unit = "kJ/mol"
+reason = "the fourth coefficient of the enthalpy polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Eh"
+disposition = "used"
+as = "eh"
+unit = "kJ/mol"
+reason = "the fifth coefficient of the enthalpy polynomial, and the same unit."
+[[upstreams.files.columns]]
+name = "Gh"
+disposition = "used"
+as = "gh"
+unit = "kJ/mol"
+reason = "the sixth coefficient of the enthalpy polynomial, and the same unit."
 [[upstreams.files]]
 id = "neqsim/GibbsReactDatabase/GibbsReactDatabase.csv"
 upstream_path = "src/main/resources/data/GibbsReactDatabase/GibbsReactDatabase.csv"
 vendored_source = "databank/sources/neqsim/GibbsReactDatabase/GibbsReactDatabase.csv"
+compiled_to = "data/reactors/gibbs_reactor.csv"
 source_rows = 79
+compiled_rows = 49
+generated = ["citation"]
+[[upstreams.files.rows]]
+selector = "molecule not a component azoth's component table carries"
+count = 17
+reason = """\
+    dropped: NeqSim's own `COMP.csv` carries all seventeen - `NO`, `N2O5`, `N2O3`, \
+    `N2O`, `NH2OH`, `N2H4`, `S`, `SO3`, `HNO2`, `NH4NO3`, `HCN`, `CS2`, `CH2O`, \
+    `C2H4O`, `NH4HSO4`, `C2H4` and `NaHSO4` - and azoth's compiled component table does \
+    not, so no fluid azoth can build names them. **This is azoth's slice and not a fact \
+    about NeqSim**: widening the component table would make these rows reachable, and \
+    this count is what says so."""
+[[upstreams.files.rows]]
+selector = "molecule NeqSim's COMP.csv has no component for"
+count = 13
+reason = """\
+    dropped: no component of this name or formula exists in NeqSim's own `COMP.csv`, so \
+    `SystemInterface.addComponent` cannot add them even on the `useAllDatabaseSpecies` \
+    branch - which is the branch that exists to add species a fluid does not carry. \
+    `S2`, `FeS`, `Fe2O3`, `FeS2`, `H2SO3`, `NH4NO2`, `(NH4)2SO4`, `(NH4)2SO3`, \
+    `NH4(HCOO)`, `NH4(CH3COO)`, `TEA`, `HSO4-` and `HCOO-` are rows of this file and \
+    substances NeqSim has no parameters for at all."""
+[[upstreams.files.columns]]
+name = "molecule"
+disposition = "used"
+as = "name"
+unit = "text"
+reason = """\
+    selected on and carried: `loadGibbsDatabase` keys `componentMap` by \
+    `molecule.toLowerCase()` and `GibbsReactor.run` looks a component up by \
+    `system.getComponent(i).getComponentName().toLowerCase()`, so this is the join key and \
+    the fluid's own spelling of a component must match it exactly. Note that the seven \
+    aliases the class adds - `c1`..`c3`, `ic4`..`nc5` - are keys into this map and are not \
+    rows of this file."""
+[[upstreams.files.columns]]
+name = "O"
+disposition = "used"
+as = "o"
+unit = "dimensionless"
+reason = """\
+    a count of atoms in the molecule, read as `elements[0]`. **The eight counts and the \
+    charge are read positionally from the `;`-split row**, and the class names only seven \
+    of them (see `Z` below), which is the misalignment this tranche reproduces."""
+[[upstreams.files.columns]]
+name = "N"
+disposition = "used"
+as = "n"
+unit = "dimensionless"
+reason = "a count of atoms, read as `elements[1]`."
+[[upstreams.files.columns]]
+name = "C"
+disposition = "used"
+as = "c"
+unit = "dimensionless"
+reason = "a count of atoms, read as `elements[2]`."
+[[upstreams.files.columns]]
+name = "H"
+disposition = "used"
+as = "h"
+unit = "dimensionless"
+reason = "a count of atoms, read as `elements[3]`."
+[[upstreams.files.columns]]
+name = "S"
+disposition = "used"
+as = "s"
+unit = "dimensionless"
+reason = "a count of atoms, read as `elements[4]`."
+[[upstreams.files.columns]]
+name = "Na"
+disposition = "used"
+as = "na"
+unit = "dimensionless"
+reason = """\
+    a count of atoms, read as `elements[5]` - **and the class calls that element `Ar`**, \
+    because `elementNames = {\"O\",\"N\",\"C\",\"H\",\"S\",\"Ar\",\"Z\"}` has seven entries \
+    for eight columns. So the element balance and the Jacobian block the class labels \
+    argon are this column. Measured, the four rows that carry a value here are `argon`, \
+    `NaNO2`, `Na+` and `NaHSO4`, and `ELEMENT_MOLAR_MASSES[5]` is `0.039948` - argon's \
+    molar mass, not sodium's - so the two labels are each right about something and \
+    neither about everything."""
+[[upstreams.files.columns]]
+name = "Ar"
+disposition = "used"
+as = "ar"
+unit = "dimensionless"
+reason = """\
+    **zero on all 79 rows**, and read as `elements[6]`, which the class calls `Z`. Since \
+    `findActiveElements` skips an element whose feed balance is within `1e-6` of zero, this \
+    balance row is never active and its Lagrange multiplier is never solved for - so one of \
+    the seven declared elements is inert by construction on this file."""
+[[upstreams.files.columns]]
+name = "Z"
+disposition = "used"
+as = "z"
+unit = "dimensionless"
+reason = """\
+    **a charge, not a count**: `OH-` is -1, `SO4--` is -2, and the cations are +1. It is \
+    read as `elements[7]` - the eighth - and `elementNames` has seven entries, so no loop \
+    in the class reaches it. The charge balance is therefore **not part of the solve**: \
+    the class balances O, N, C, H, S and the Na column under the name `Ar`, and stops. \
+    The compiled table carries it because the loader does; nothing consumes it."""
+[[upstreams.files.columns]]
+name = "A"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = """\
+    uncalled-upstream: `GibbsComponent.getHeatCapacityCoeffs` is the only member that \
+    returns these four coefficients and it has no caller anywhere in the checkout - \
+    measured by grepping all of `src/main` and `src/test` for the name, which finds only \
+    its own definition. The Gibbs branch that would consume them, \
+    `calculateCorrectedHeatCapacityCoeffs`, reads `system.getComponent(i).getCpA()` from \
+    NeqSim's own component database instead, so the four columns are parsed, stored and \
+    cloned by a getter that nothing calls."""
+[[upstreams.files.columns]]
+name = "B"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "uncalled-upstream: the second of the four coefficients `GibbsComponent.getHeatCapacityCoeffs` returns, and that getter has no caller."
+[[upstreams.files.columns]]
+name = "C"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "uncalled-upstream: the third of the four coefficients `GibbsComponent.getHeatCapacityCoeffs` returns, and that getter has no caller."
+[[upstreams.files.columns]]
+name = "D"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "uncalled-upstream: the fourth of the four coefficients `GibbsComponent.getHeatCapacityCoeffs` returns, and that getter has no caller."
+[[upstreams.files.columns]]
+name = "DHof,298"
+disposition = "used"
+as = "hf298"
+unit = "kJ/mol"
+reason = """\
+    the standard enthalpy of formation at 298.15 K, read as `deltaHf298`. It drives \
+    `calculateJ`, whose `J = deltaHf298 - (...)/1000` is in kJ/mol because `REFERENCE_TEMPERATURE` \
+    and the corrected heat-capacity coefficients make the bracket a J/mol quantity; and \
+    `calculateEnthalpy` returns `deltaHf298 + (...)/1000` as kJ/mol. Measured, water is \
+    -241.83 against CODATA's -241.826."""
+[[upstreams.files.columns]]
+name = "DGof,298,"
+disposition = "used"
+as = "gf298"
+unit = "kJ/mol"
+reason = """\
+    the standard Gibbs energy of formation at 298.15 K, read as `deltaGf298` and used as \
+    `deltaGf298/(R*REFERENCE_TEMPERATURE)` with `R_KJ = 8.314462618e-3` kJ/(mol*K), so the \
+    column is kJ/mol. **The header spells it with a trailing comma**, which is the file's \
+    own and is carried rather than tidied: the name is how a reader finds the column. \
+    Measured, water is -228.6 against CODATA's -228.582."""
+[[upstreams.files.columns]]
+name = "dSof, 298"
+disposition = "used"
+as = "sf298"
+unit = "J/(mol*K)"
+reason = """\
+    the standard molar entropy at 298.15 K, read as `deltaSf298`. `calculateEntropy` \
+    returns `(deltaSf298 + Cp*ln(T/T_ref))/1000` and its own javadoc says the return is \
+    J/(mol*K) while dividing by 1000 - so the column is J/(mol*K) and the method hands \
+    back kJ/(mol*K) under a doc comment that contradicts it. Measured, water is 188.83 \
+    against CODATA's 188.83. **The header spells it with a space after the comma**, which \
+    is the file's own and is carried rather than tidied."""
 [[upstreams.files]]
 id = "neqsim/fiscal/fiscal_parameters.json"
 upstream_path = "src/main/resources/data/fiscal/fiscal_parameters.json"

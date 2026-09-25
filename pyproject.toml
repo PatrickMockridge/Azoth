@@ -71,6 +71,7 @@ include = [
   "data/fittings/*.csv",
   "data/fluids/*.csv",
   "data/components/*.csv",
+  "data/reactors/*.csv",
   "data/reactions/*.csv",
 ]
 

@@ -385,8 +385,13 @@ def _body(path: Path) -> io.StringIO:
 
     Read as text and split with `keepends`, so a record with a newline inside a
     quoted field survives unchanged - `INTER.csv` has five of them.
+
+    **Decoded as `utf-8-sig`, because two of the sources carry a BOM.**
+    `GibbsReactDatabase.csv` and `DatabaseGibbsFreeEnergyCoeff.csv` each begin with one,
+    and left in place it becomes part of the first column's name, so the manifest and the
+    file would disagree about a column neither has got wrong.
     """
-    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    lines = path.read_text(encoding="utf-8-sig").splitlines(keepends=True)
     start = 0
     for index, line in enumerate(lines):
         if line.strip() and not line.lstrip().startswith("#"):
@@ -437,7 +442,8 @@ KEEP_TYPES = frozenset(
 
 def _records(path: Path) -> list[dict[str, str]]:
     """The file as dictionaries, blanks stripped, parsed the way `header` does."""
-    reader = csv.DictReader(_body(path))
+    text, delimiter = _dialect(path)
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
     return [
         {(k or "").strip(): (v or "").strip() for k, v in record.items()}
         for record in reader
@@ -736,9 +742,30 @@ def reasons(manifest: Manifest) -> dict[str, int]:
     return {prefix: count for prefix, count in counts.items() if count}
 
 
+def _delimiter(text: str) -> str:
+    """The delimiter the file itself uses, read from its first record.
+
+    **Read rather than assumed, because two of the declared sources are not comma files.**
+    `GibbsReactDatabase.csv` and `DatabaseGibbsFreeEnergyCoeff.csv` are semicolon-separated
+    and are parsed as such by `GibbsReactor.loadGibbsDatabase`, which splits on `;` and
+    rewrites the comma decimals. Comma-splitting them returns five fields where the file has
+    sixteen, so the column-agreement rule would compare the manifest against nonsense - and,
+    being a comparison that decides nothing, would pass.
+    """
+    first = next((line for line in text.splitlines() if line.strip()), "")
+    return ";" if first.count(";") > first.count(",") else ","
+
+
+def _dialect(path: Path) -> tuple[str, str]:
+    """The file's text and the delimiter it uses."""
+    text = _body(path).getvalue()
+    return text, _delimiter(text)
+
+
 def header(path: Path) -> tuple[str, ...]:
     """The fields of the first record."""
-    first = next(iter(csv.reader(_body(path))), None)
+    text, delimiter = _dialect(path)
+    first = next(iter(csv.reader(io.StringIO(text), delimiter=delimiter)), None)
     if not first:
         raise ValueError(f"{path}: no header line found")
     return tuple(field.strip() for field in first)
@@ -753,7 +780,12 @@ def data_rows(path: Path) -> int:
     has no embedded newlines, but one helper for both is the only way the two counts
     can be compared.
     """
-    records = [r for r in csv.reader(_body(path)) if any(field.strip() for field in r)]
+    text, delimiter = _dialect(path)
+    records = [
+        r
+        for r in csv.reader(io.StringIO(text), delimiter=delimiter)
+        if any(field.strip() for field in r)
+    ]
     return max(len(records) - 1, 0)
 
 

@@ -148,6 +148,87 @@ ISO6976_CONSTANTS = ("ISO6976constants.csv", "iso6976.csv")
 #: Where the compiled standard constants go.
 STANDARDS_DIR = ROOT / "data" / "standards"
 
+#: `GibbsReactor`'s own species database: the element vectors and the per-species
+#: Gibbs/enthalpy polynomials, compiled to `data/reactors/`.
+#:
+#: **The two files are one table and are compiled together**, because neither is a row on
+#: its own: `GibbsReactDatabase.csv` carries the element vector and the formation
+#: properties, `DatabaseGibbsFreeEnergyCoeff.csv` the order-5 Gibbs and enthalpy
+#: polynomials, and `GibbsReactor.loadGibbsDatabase` joins them on the lowercased molecule
+#: name. A species in the first and not the second takes the class's fallback branch.
+#:
+#: **This is not the databank's formation properties.** `GIBBSENERGYOFFORMATION` is already
+#: `used` from P10 and its values are not these; the class reads its own table, and a port
+#: composed from the databank would answer with different numbers than the machine it ports.
+GIBBS_REACTOR = (
+    "GibbsReactDatabase/GibbsReactDatabase.csv",
+    "gibbs_reactor.csv",
+)
+
+#: The per-species order-5 Gibbs and enthalpy polynomials, compiled to its own file.
+#:
+#: **Two compiled files rather than one joined table, because that is what the class
+#: holds**: `loadGibbsDatabase` builds `extraCoeffMap` from this file and `componentMap`
+#: from the other, and joins them at lookup time by molecule name, storing all-NaN where
+#: this file has no row. Joining them here would put that fallback in the data instead of
+#: in the reader, and a species this file omits would then have to be written as an empty
+#: cell rather than being absent.
+GIBBS_COEFFS = (
+    "GibbsReactDatabase/DatabaseGibbsFreeEnergyCoeff.csv",
+    "gibbs_reactor_coeffs.csv",
+)
+
+#: Where the compiled reactor data goes.
+REACTORS_DIR = ROOT / "data" / "reactors"
+
+#: The compiled table's columns, in order.
+#:
+#: **All eight element counts are carried, under the CSV's own names.** The class declares
+#: `elementNames = {"O","N","C","H","S","Ar","Z"}` - seven - and reads indices 0..6 of an
+#: array the loader fills with eight, so its `Ar` is this file's `Na` and its `Z` is this
+#: file's `Ar`, and this file's `Z` is read by nothing. Compiling the eight under their own
+#: names keeps that a fact about the kernel's indexing rather than about the data, which is
+#: where it has to be for the capture to pin it with a number.
+#:
+#: **`a`..`d` are not carried.** The class parses them, stores them, clones them in a getter
+#: and reads them nowhere: the fallback Gibbs branch calls
+#: `calculateCorrectedHeatCapacityCoeffs`, which reads `system.getComponent(i).getCpA()`
+#: from NeqSim's own component database. Four columns nothing reads are four columns the
+#: manifest dispositions as `not-a-value` rather than four this file copies.
+GIBBS_REACTOR_HEADER: tuple[str, ...] = (
+    "name",
+    "o",
+    "n",
+    "c",
+    "h",
+    "s",
+    "na",
+    "ar",
+    "z",
+    "hf298",
+    "gf298",
+    "sf298",
+    "citation",
+)
+
+#: The coefficient table's columns, in the upstream file's own order.
+GIBBS_COEFF_HEADER: tuple[str, ...] = (
+    "name",
+    "ag",
+    "bg",
+    "cg",
+    "dg",
+    "eg",
+    "fg",
+    "ah",
+    "bh",
+    "ch",
+    "dh",
+    "eh",
+    "gh",
+    "citation",
+)
+
 #: How many species each family's rows name, from `PhreeqcPitzerParameterCatalog.Family`.
 #: A family the file does not carry compiles to no rows, which is how `MU`, `ETA` and
 #: `ALPHAS` come out: the enum declares them and the shipped catalogue has none.
@@ -196,6 +277,14 @@ NEQSIM_COMMIT = _upstream("commit")
 #: The ISO 6976 table's own citation: the same upstream pin, the file that answered.
 ISO6976_CITATION = (
     f"NeqSim master ({NEQSIM_COMMIT[:7]}) ISO6976constants.csv (Equinor/NTNU), Apache-2.0, "
+    f"retrieved {_upstream('retrieved')}"
+)
+
+#: The reactor database's own citation: one pin and two files, because the table is the
+#: join of them.
+GIBBS_REACTOR_CITATION = (
+    f"NeqSim master ({NEQSIM_COMMIT[:7]}) GibbsReactDatabase.csv + "
+    f"DatabaseGibbsFreeEnergyCoeff.csv (Equinor/NTNU), Apache-2.0, "
     f"retrieved {_upstream('retrieved')}"
 )
 
@@ -584,6 +673,165 @@ def build_iso6976(
     return ISO6976_HEADER, rows
 
 
+#: The compiled columns that carry an element count or charge, and the twelve that carry
+#: the order-5 Gibbs and enthalpy polynomials. Both are slices of a header rather than
+#: second lists, so they cannot drift from it.
+GIBBS_ELEMENT_COLUMNS: tuple[str, ...] = GIBBS_REACTOR_HEADER[1:9]
+GIBBS_POLY_COLUMNS: tuple[str, ...] = GIBBS_COEFF_HEADER[1:13]
+
+#: Species whose formation properties are known independently of NeqSim, for the check
+#: below. Values are CODATA's standard formation Gibbs energy and enthalpy at 298.15 K in
+#: kJ/mol and the standard molar entropy in J/(mol·K), from the same tables the file's own
+#: column headings name. Agreement is to the file's three significant figures, because the
+#: file is a three-significant-figure table.
+GIBBS_ROUND_TRIP: dict[str, dict[str, float]] = {
+    "CO2": {"gf298": -394.4, "hf298": -393.5, "sf298": 213.8},
+    "water": {"gf298": -228.6, "hf298": -241.8, "sf298": 188.8},
+    "methane": {"gf298": -50.5, "hf298": -74.9, "sf298": 186.3},
+    "ammonia": {"gf298": -16.4, "hf298": -45.9, "sf298": 192.8},
+}
+
+
+def _gibbs_rows(path: Path) -> list[list[str]]:
+    """One of the two reactor files, read as `GibbsReactor.loadGibbsDatabase` reads it.
+
+    Semicolon-separated with comma decimals - `-393,51` - and the class parses every field
+    as `Double.parseDouble(parts[i].trim().replace(",", "."))`. Both files carry a UTF-8
+    BOM, which the class never sees because it reads through a `Scanner`; decoded as
+    `utf-8-sig` it does not become part of the first column's name.
+
+    A row too short for the caller is **refused rather than skipped**. The class logs a
+    warning and drops it, which for a shipped table is a species silently missing.
+    """
+    lines = path.read_text(encoding="utf-8-sig").splitlines()
+    return [
+        [field.strip().replace(",", ".") for field in line.split(";")]
+        for line in lines[1:]
+        if line.strip() and not line.strip().startswith("#")
+    ]
+
+
+def build_gibbs_reactor(
+    directory: Path, components: set[str]
+) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """`GibbsReactDatabase.csv`: the element vectors and the 298 K formation properties.
+
+    **Rows are the species a fluid can name.** The lookup is
+    `componentMap.get(system.getComponent(i).getComponentName().toLowerCase())`, so a row
+    whose name is not a component azoth's table carries is unreachable. Of the file's 79
+    rows, 49 name such a component; the other 30 are dispositioned in the manifest rather
+    than compiled.
+
+    **The first eight columns are counts and the ninth is a charge.** They are read
+    positionally from a `;`-split line, so a non-whole value means the offsets are wrong -
+    the failure no downstream number would show. Seven of the eight are counts of atoms and
+    cannot be negative; the eighth is a charge, which is whole on every row and negative on
+    the anions (`OH-` is -1, `SO4--` is -2).
+
+    **The `A`..`D` columns are not compiled.** The class parses them, stores them, clones
+    them in a getter and reads them nowhere: the fallback Gibbs branch calls
+    `calculateCorrectedHeatCapacityCoeffs`, which reads `system.getComponent(i).getCpA()`
+    from NeqSim's own component database. Four columns nothing reads are four the manifest
+    dispositions as `not-a-value` rather than four this file copies.
+    """
+    rows: list[dict[str, str]] = []
+    for parts in _gibbs_rows(directory / GIBBS_REACTOR[0]):
+        if len(parts) < 16:
+            raise ValueError(
+                f"{GIBBS_REACTOR[0]}: the row for {parts[0]!r} has {len(parts)} columns, "
+                f"where the loader reads at least 16 - a molecule, eight element counts, "
+                f"four heat-capacity coefficients and three formation properties"
+            )
+        name = parts[0]
+        if name.lower() not in components:
+            continue
+        elements = [float(value) for value in parts[1:9]]
+        for column, value in zip(GIBBS_ELEMENT_COLUMNS, elements, strict=True):
+            floor = -8 if column == "z" else 0
+            if value < floor or value != int(value):
+                raise ValueError(
+                    f"{GIBBS_REACTOR[0]}: {name!r} has {value!r} for {column}, and this "
+                    f"column is a whole number no smaller than {floor}"
+                )
+        values = {
+            "name": name,
+            "hf298": repr(float(parts[13])),
+            "gf298": repr(float(parts[14])),
+            "sf298": repr(float(parts[15])),
+            "citation": GIBBS_REACTOR_CITATION,
+        }
+        for column, value in zip(GIBBS_ELEMENT_COLUMNS, elements, strict=True):
+            values[column] = str(int(value))
+        rows.append(values)
+
+    if not rows:
+        raise ValueError(f"{GIBBS_REACTOR[0]}: no row named a component azoth carries")
+    return GIBBS_REACTOR_HEADER, rows
+
+
+def build_gibbs_coeffs(
+    directory: Path, species: set[str]
+) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """`DatabaseGibbsFreeEnergyCoeff.csv`: the order-5 Gibbs and enthalpy polynomials.
+
+    **A separate file, joined at lookup time**, because that is what `loadGibbsDatabase`
+    does: `componentMap` and `extraCoeffMap` are built independently and joined by molecule
+    name, and a species with no row here takes the class's fallback branch. Joining them at
+    compile time would move that fallback out of the reader.
+
+    **Rows are the species the reactor table compiled**, not the file's own 18: the three it
+    omits - `HNO2`, `NO` and `SO3` - are species azoth's component table does not carry, so
+    no fluid can name them and the join can never reach their coefficients.
+
+    **The join is on the lowercased name, and this lowercases both sides** because the class
+    does: `componentMap` is keyed by `molecule.toLowerCase()` and `extraCoeffMap` by
+    `parts[0].trim().toLowerCase()`. The two files do not agree on case - this one writes
+    `co2` where that one writes `CO2` - so a case-sensitive join keeps 8 of the 15 rows and
+    says nothing.
+    """
+    wanted = {name.lower() for name in species}
+    rows: list[dict[str, str]] = []
+    for parts in _gibbs_rows(directory / GIBBS_COEFFS[0]):
+        if len(parts) != 13:
+            raise ValueError(
+                f"{GIBBS_COEFFS[0]}: a row has {len(parts)} columns where the loader "
+                f"reads 13 - a molecule and six Gibbs and six enthalpy coefficients"
+            )
+        name = parts[0]
+        if name.lower() not in wanted:
+            continue
+        values = {"name": name, "citation": GIBBS_REACTOR_CITATION}
+        for index, column in enumerate(GIBBS_POLY_COLUMNS):
+            values[column] = repr(float(parts[index + 1]))
+        rows.append(values)
+    if not rows:
+        raise ValueError(f"{GIBBS_COEFFS[0]}: no row named a compiled reactor species")
+    return GIBBS_COEFF_HEADER, rows
+
+
+def check_gibbs_reactor(rows: list[dict[str, str]]) -> list[str]:
+    """The formation properties against values known independently of NeqSim.
+
+    **The defence against a uniform misalignment.** Every column here is read positionally
+    from a `;`-split line, so swapping two of them moves all 49 rows together and every row
+    still looks like a row. The file is a three-significant-figure table, so the check is to
+    that precision and no tighter - the class's own polynomials reproduce these same values
+    only to a few kJ/mol, which is why they are not the check.
+    """
+    by_name = {row["name"]: row for row in rows}
+    problems: list[str] = []
+    for name, expected in GIBBS_ROUND_TRIP.items():
+        row = by_name.get(name)
+        if row is None:
+            problems.append(f"{name}: not in the compiled reactor table")
+            continue
+        for field, want in expected.items():
+            got = float(row[field])
+            if abs(got - want) > 0.5:
+                problems.append(f"{name}.{field}: got {got!r}, expected about {want!r}")
+    return problems
+
+
 def build_phreeqc(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
     """The PHREEQC Pitzer catalogue, re-rendered so both kernels read it the same way.
 
@@ -814,6 +1062,20 @@ def main(argv: list[str] | None = None) -> int:
 
     kij = build_kij(resources, {row["name"] for row in components})
     iso6976 = build_iso6976(SOURCES / ISO6976_CONSTANTS[0], {row["name"] for row in components})
+    reactor = build_gibbs_reactor(SOURCES, {row["name"] for row in components})
+    coeffs = build_gibbs_coeffs(SOURCES, {row["name"] for row in reactor[1]})
+
+    problems = check_gibbs_reactor(reactor[1])
+    if problems:
+        print(
+            "gen_databank: the compiled reactor table does not reproduce values known "
+            "independently of NeqSim. This is a bug in build_gibbs_reactor's column "
+            "offsets, not in NeqSim:",
+            file=sys.stderr,
+        )
+        for problem in problems:
+            print(f"  {problem}", file=sys.stderr)
+        return 1
 
     outputs = [
         (OUT_DIR / "components.csv", COMPONENT_HEADER, components),
@@ -825,6 +1087,8 @@ def main(argv: list[str] | None = None) -> int:
         (OUT_DIR / PHREEQC_CATALOG[2], *phreeqc),
         (OUT_DIR / FURST_CONSTANTS[2], *furst),
         (STANDARDS_DIR / ISO6976_CONSTANTS[1], *iso6976),
+        (REACTORS_DIR / GIBBS_REACTOR[1], *reactor),
+        (REACTORS_DIR / GIBBS_COEFFS[1], *coeffs),
     ]
 
     if args.check:
@@ -840,7 +1104,8 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"gen_databank: {len(components)} component(s), {len(kij)} kij row(s), "
             f"{len(phreeqc[1])} PHREEQC Pitzer row(s), {len(furst[1])} Furst "
-            f"constant(s) up to date"
+            f"constant(s), {len(reactor[1])} Gibbs reactor species and "
+            f"{len(coeffs[1])} coefficient row(s) up to date"
         )
         return 0
 

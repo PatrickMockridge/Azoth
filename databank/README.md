@@ -14,6 +14,7 @@ databank/sources/          upstream files, whole, at a named revision      EXIST
         |  compile             tools/gen_databank.py
         v
 data/components/           the files both languages read                   EXISTS
+data/reactors/             GibbsReactor's species database                 EXISTS
         |  derive              tools/gen_keycard.py
         v
 databank/keycard.toml      the baseline card: the subset a user overrides  EXISTS
@@ -40,12 +41,12 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.toml` is the record of what was taken
 
 Every resource file NeqSim ships is declared once, and every column of every one of
-them whose columns are enumerated — 31 files, 1,497 columns — is listed with what was
+them whose columns are enumerated — 33 files, 1,526 columns — is listed with what was
 done with it and a reason; the other six are vendored whole, three of them because
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (37 vendored file(s), 1497 column(s), 1477 carried of which 1160 read, 0 not-vendored entr(ies))
+check_manifest: OK (37 vendored file(s), 1526 column(s), 1502 carried of which 1185 read, 0 not-vendored entr(ies))
   317  carried, nothing reads it yet
   1090  carried with no unit NeqSim states (neqsim-internal)
   276  not-ported
@@ -53,7 +54,7 @@ check_manifest: OK (37 vendored file(s), 1497 column(s), 1477 carried of which 1
    10  empty-upstream
     1  superseded-by
     7  unreachable-upstream
-   10  uncalled-upstream
+   14  uncalled-upstream
    11  unread-upstream
 ```
 
@@ -61,7 +62,7 @@ check_manifest: OK (37 vendored file(s), 1497 column(s), 1477 carried of which 1
 the number that matters.** NeqSim is the target, not a reference: each carried column is a
 physical property whose model NeqSim implements and azoth has not ported, and the
 `not-ported` reason names the class that would close it — **276 columns carry it**, carried
-and dropped together, with a handful `unreachable-upstream`, ten `uncalled-upstream`, eleven
+and dropped together, with a handful `unreachable-upstream`, fourteen `uncalled-upstream`, eleven
 `unread-upstream` and the rest `not-a-value` or `empty-upstream` — `PhaseHydrate`,
 `CPAMixingRuleHandler`, `SolidFlash1`, `PhasePCSAFTa`, `ParachorSurfaceTension` and the rest.
 The check refuses a `not-ported` reason with no NeqSim name in it, so the list cannot drift
