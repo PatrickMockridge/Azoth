@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::ExecutionOrder;
 use azoth_process::executor::{STREAM_FIELDS, Session, run};
+use azoth_process::recycle::Acceleration;
 use azoth_process::{Flowsheet, Stream, load_palette};
 
 fn root() -> PathBuf {
@@ -371,4 +372,105 @@ fn composition(field: &str) -> Vec<f64> {
                 .expect("a mole fraction is a number")
         })
         .collect()
+}
+
+/// **The round trip, over every flowsheet the repository ships.**
+///
+/// This is `Azoth.Rho`'s `*@P ≅ P` in code: reading a written flowsheet gives the value that was
+/// written. Two directions are checked, because one alone passes on a writer that loses
+/// something:
+///
+/// * the value comes back **unchanged** - `from_toml(to_toml(f)) == f`;
+/// * writing the re-read value again is **byte-identical** to the first write - `to_toml` is a
+///   fixed point of itself. A writer that dropped a field the reader defaulted would satisfy the
+///   first and fail this one.
+///
+/// **The output is not the input's bytes, and the test does not claim it is.** TOML has no
+/// comments to round-trip and this schema writes its fields in the struct's order, so the shipped
+/// file comes back tidied - `demo.toml`'s blank lines and its `[instances.parameters]` placement
+/// both change. What is claimed is the value.
+#[test]
+fn every_shipped_flowsheet_round_trips() {
+    let directory = root().join("specs/flowsheets");
+    let mut checked = 0;
+    for entry in std::fs::read_dir(&directory).expect("the flowsheets are there") {
+        let path = entry.expect("readable").path();
+        if path.extension().and_then(|e| e.to_str()) != Some("toml") {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).expect("readable");
+        let original = Flowsheet::from_toml(&text)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+
+        let written = original
+            .to_toml()
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let reparsed = Flowsheet::from_toml(&written).unwrap_or_else(|error| {
+            panic!(
+                "{}: the written form does not read back: {error}\n{written}",
+                path.display()
+            )
+        });
+
+        assert_eq!(
+            original,
+            reparsed,
+            "{}: the value changed across the round trip\n{written}",
+            path.display()
+        );
+        assert_eq!(
+            written,
+            reparsed.to_toml().expect("it writes again"),
+            "{}: writing is not a fixed point of itself",
+            path.display()
+        );
+        checked += 1;
+    }
+    assert!(
+        checked > 0,
+        "no flowsheet was checked, so this test decided nothing"
+    );
+}
+
+/// **A declaration that states no convergence parameter writes none of them**, and one that states
+/// some writes only those.
+///
+/// This is the half of the round trip the shipped file cannot exercise: `demo.toml` states no
+/// `[[recycles]]` settings at all, so a writer that emitted the defaults would round-trip
+/// *semantically* - the reader puts them back - and would still be wrong, because it would have
+/// turned a declaration that takes the class's defaults into one that pins them.
+#[test]
+fn an_unstated_recycle_parameter_is_not_written() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml")).expect("there");
+    let flowsheet = Flowsheet::from_toml(&text).expect("it parses");
+    let written = flowsheet.to_toml().expect("it writes");
+    assert!(
+        !written.contains("flow_tolerance"),
+        "an unstated tolerance was written out:\n{written}"
+    );
+    assert!(!written.contains("acceleration_method"), "{written}");
+
+    // And the ones that *are* stated survive - every setting the schema gained, since that is the
+    // surface this file exists to hold.
+    let mut stated = flowsheet.clone();
+    stated.recycles[0].flow_tolerance = Some(1e-6);
+    stated.recycles[0].composition_tolerance = Some(2e-6);
+    stated.recycles[0].temperature_tolerance = Some(3e-6);
+    stated.recycles[0].pressure_tolerance = Some(4e-6);
+    stated.recycles[0].max_iterations = Some(42);
+    stated.recycles[0].minimum_flow = Some(1e-9);
+    stated.recycles[0].acceleration_method = Some("wegstein".to_string());
+    let written = stated.to_toml().expect("it writes");
+    let round = Flowsheet::from_toml(&written).expect("it reads");
+    assert_eq!(
+        round, stated,
+        "a stated setting did not survive:\n{written}"
+    );
+
+    // **And the reader resolves them the way the class does**, so the round trip preserves the
+    // machine and not only the document.
+    let settings = round.recycles[0].settings().expect("they resolve");
+    assert_eq!(settings.flow_tolerance, 1e-6);
+    assert_eq!(settings.max_iterations, 42);
+    assert_eq!(settings.acceleration, Acceleration::Wegstein);
 }

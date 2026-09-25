@@ -31,6 +31,42 @@ pub struct Connection {
     pub to: String,
 }
 
+impl Flowsheet {
+    /// Read a flowsheet from TOML.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] on a document this schema cannot read, naming what
+    /// the parser said - the same refusal [`crate::check::validate`] gives a *valid* document it
+    /// cannot accept.
+    pub fn from_toml(text: &str) -> azoth_core::Result<Self> {
+        toml::from_str(text)
+            .map_err(|error| azoth_core::AzothError::invalid_input("flowsheet", error.to_string()))
+    }
+
+    /// Write a flowsheet back to TOML.
+    ///
+    /// **This is the shadow of `Azoth.Rho`'s round trip.** `*@P ≅ P` is the claim that printing a
+    /// parsed process and reading it again is the identity, and the code's version of it is that
+    /// `from_toml(to_toml(f))` is `f`. The test beside this holds both directions: the value comes
+    /// back unchanged, and writing it a second time is byte-identical to the first - which is the
+    /// half that catches a writer depending on something it does not preserve.
+    ///
+    /// **The output is not the input's bytes.** TOML has no comments to round-trip and this schema
+    /// writes its fields in the struct's order, so a hand-written file comes back tidied. What is
+    /// claimed is the *value*, and the claim is checkable because the value is what the checker,
+    /// the executor and the registry all read.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] if the value cannot be written, which TOML's own
+    /// rule about ordering a table before a scalar makes possible in principle - a `Vec` field
+    /// placed before a plain one in the struct would trip it - and which the test over
+    /// `specs/flowsheets/` would catch rather than a caller.
+    pub fn to_toml(&self) -> azoth_core::Result<String> {
+        toml::to_string(self)
+            .map_err(|error| azoth_core::AzothError::invalid_input("flowsheet", error.to_string()))
+    }
+}
+
 /// A torn loop: a connection whose stream closes a cycle and is the tear.
 ///
 /// `stream` is the recycle's name — the fresh name the calculus binds with
