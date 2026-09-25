@@ -256,11 +256,7 @@ mod tests {
                 connection("b.outlet", "a.inlet"),
                 connection("b.outlet", "out"),
             ],
-            recycles: vec![Recycle {
-                stream: "recycle_1".to_string(),
-                from: "b.outlet".to_string(),
-                to: "a.inlet".to_string(),
-            }],
+            recycles: vec![Recycle::new("recycle_1", "b.outlet", "a.inlet")],
         };
         assert_eq!(
             execution_order(&flowsheet, ExecutionOrder::Topological).expect("it orders"),

@@ -361,9 +361,11 @@ mod tests {
         let flat = wegstein(&[1.0], &[2.0], Some(&[0.0]), Some(&[2.0]), -5.0, 0.0);
         assert_eq!(flat, vec![1.0], "q = 0 does not move");
 
-        // And the clamp: a slope of 0.5 would give q = -1, inside the bounds.
+        // And the clamp: a slope of 0.5 gives q = 0.5/(0.5 - 1) = -1, which is inside the
+        // bounds, so the step is `q*g + (1-q)*x` = `-1.5 + 2.0` = `0.5` - a point the original
+        // never visited, which is what acceleration is for.
         let half = wegstein(&[1.0], &[1.5], Some(&[0.0]), Some(&[1.0]), -5.0, 0.0);
-        assert!((half[0] - (-1.0 * 1.5 + 2.0 * 1.0)).abs() < 1e-12);
+        assert!((half[0] - 0.5).abs() < 1e-12, "got {}", half[0]);
     }
 
     /// The percentage form of the temperature and pressure residuals, and the mixed unit of the

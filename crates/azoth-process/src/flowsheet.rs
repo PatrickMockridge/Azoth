@@ -35,11 +35,88 @@ pub struct Connection {
 ///
 /// `stream` is the recycle's name — the fresh name the calculus binds with
 /// restriction, used once where it is written and once where it is read.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// **The convergence parameters are `Recycle`'s own, and every one is optional.** A
+/// declaration that states none takes the class's defaults, which is what keeps
+/// `specs/flowsheets/demo.toml` validating unchanged — and a declaration that states one
+/// carries it rather than inventing a number. See [`crate::recycle`] for what each means.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Recycle {
     pub stream: String,
     pub from: String,
     pub to: String,
+    /// `Recycle.flowTolerance`, defaulting to `1e-2`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow_tolerance: Option<f64>,
+    /// `Recycle.compositionTolerance`, defaulting to `1e-2`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub composition_tolerance: Option<f64>,
+    /// `Recycle.temperatureTolerance`, defaulting to `1e-2`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temperature_tolerance: Option<f64>,
+    /// `Recycle.pressureTolerance`, defaulting to `1e-2`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pressure_tolerance: Option<f64>,
+    /// `Recycle.maxIterations`, defaulting to `10`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_iterations: Option<u32>,
+    /// `Recycle.minimumFlow`, kg/hr, defaulting to `1e-20`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_flow: Option<f64>,
+    /// `Recycle`'s `AccelerationMethod`: `direct_substitution`, `wegstein` or `broyden`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub acceleration_method: Option<String>,
+}
+
+impl Recycle {
+    /// A tear with the class's defaults, for a caller that states none.
+    ///
+    /// Every convergence parameter starts unstated, which is what a declaration that carries
+    /// only `stream`, `from` and `to` means - and what keeps a runtime `Recycle` and a declared
+    /// one the same object.
+    #[must_use]
+    pub fn new(stream: &str, from: &str, to: &str) -> Self {
+        Self {
+            stream: stream.to_string(),
+            from: from.to_string(),
+            to: to.to_string(),
+            flow_tolerance: None,
+            composition_tolerance: None,
+            temperature_tolerance: None,
+            pressure_tolerance: None,
+            max_iterations: None,
+            minimum_flow: None,
+            acceleration_method: None,
+        }
+    }
+
+    /// The tear's convergence settings, with the class's defaults where the declaration is
+    /// silent.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] on an `acceleration_method` that is none of the
+    /// three names, which a declaration can carry and the class's own enum cannot.
+    pub fn settings(&self) -> azoth_core::Result<crate::recycle::RecycleSettings> {
+        let defaults = crate::recycle::RecycleSettings::default();
+        Ok(crate::recycle::RecycleSettings {
+            flow_tolerance: self.flow_tolerance.unwrap_or(defaults.flow_tolerance),
+            composition_tolerance: self
+                .composition_tolerance
+                .unwrap_or(defaults.composition_tolerance),
+            temperature_tolerance: self
+                .temperature_tolerance
+                .unwrap_or(defaults.temperature_tolerance),
+            pressure_tolerance: self
+                .pressure_tolerance
+                .unwrap_or(defaults.pressure_tolerance),
+            max_iterations: self.max_iterations.unwrap_or(defaults.max_iterations),
+            minimum_flow_kg_per_hr: self.minimum_flow.unwrap_or(defaults.minimum_flow_kg_per_hr),
+            acceleration: match self.acceleration_method.as_deref() {
+                None => defaults.acceleration,
+                Some(name) => crate::recycle::Acceleration::named(name)?,
+            },
+        })
+    }
 }
 
 /// A flowsheet.

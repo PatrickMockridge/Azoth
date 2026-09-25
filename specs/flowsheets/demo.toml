@@ -26,6 +26,7 @@ id = "sep1"
 unit = "unit_ops.separator"
 [instances.parameters]
 pressure_drop = 5.0e4
+gas_in_liquid = 0.0
 
 [[connections]]
 from = "feed_1"

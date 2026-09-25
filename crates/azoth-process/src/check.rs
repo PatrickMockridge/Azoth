@@ -888,11 +888,7 @@ mod tests {
                 from: "p1.discharge".into(),
                 to: "p2.feed".into(),
             }],
-            recycles: vec![Recycle {
-                stream: "r1".into(),
-                from: "p2.discharge".into(),
-                to: "p1.feed".into(),
-            }],
+            recycles: vec![Recycle::new("r1", "p2.discharge", "p1.feed")],
         };
         assert!(!has_variant(&validate(&torn, &palette), |d| matches!(
             d,
