@@ -13,6 +13,7 @@ pub mod check;
 pub mod cli;
 pub mod edit;
 pub mod forms;
+pub mod mcp;
 pub mod pipe;
 pub mod report;
 pub mod run;

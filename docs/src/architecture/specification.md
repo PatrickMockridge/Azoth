@@ -122,7 +122,7 @@ are vendored and reachable.
 | P12 | Flowsheets | — |
 
 Beyond P12: the interoperation surface — the middleware a flowsheet editor, a notebook
-and an agent all drive, with the MCP server as its later projection — and then mechanical
+and an agent all drive, with the MCP server as its projection — and then mechanical
 design, safety, cost, electrical, automation, `standards/`, `statistics/`,
 `fluidmechanics/` and `pvtsimulation/` **without its `flowassurance/`**. They are last
 because they are engineering deliverables rather than thermodynamics — a statement about

@@ -36,6 +36,30 @@ pub enum Command {
 
     /// Apply one command to a flowsheet and print what it made.
     Edit(EditArgs),
+
+    /// Serve the flowsheet as MCP tools over stdio, for an agent.
+    Mcp(McpArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct McpArgs {
+    /// The flowsheet to serve. It is read once and edited in place for the life of the process;
+    /// the file itself is never written.
+    #[arg(long)]
+    pub flowsheet: std::path::PathBuf,
+
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// Do not run the document after each call.
+    ///
+    /// The default runs it, because the envelope is what every call answers with and the values
+    /// are the half of it a caller cannot otherwise ask for — there is no `run` tool, since a tool
+    /// that ran the session would be a command the command model does not have. The cost is that
+    /// every call pays the physics; this is the flag for a document where that is too much.
+    #[arg(long)]
+    pub no_run: bool,
 }
 
 #[derive(Debug, clap::Args)]

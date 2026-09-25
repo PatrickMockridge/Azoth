@@ -8,11 +8,11 @@ flowsheet is a process; quoting it and dropping it back is the identity (`*@P �
 as structural congruence), and that round trip is what an editor, a file and a notebook
 all do to the same data. The middleware is that operator made concrete.
 
-**It is built, and the three front-ends bind one surface rather than three.** The layers are
+**It is built, and every front-end binds one surface rather than its own.** The layers are
 `crates/azoth-process`'s `middleware` module; the bindings are `azoth-wasm` for a browser,
-`azoth.process` for a notebook and `azoth edit`/`azoth forms` for a shell — each a thin wrapper
-over the same calls, each answering with the same document. What is not built is named at the
-foot of this page.
+`azoth.process` for a notebook, `azoth edit`/`azoth forms` for a shell and `azoth mcp` for an agent
+— each a thin wrapper over the same calls, each answering with the same document. What is not built
+is named at the foot of this page.
 
 ## The gap
 
@@ -28,7 +28,7 @@ foot of this page.
 | a graph a canvas draws | **yes** — `middleware::graph`, in xyflow's own node/edge shape, with the layout in one `[layout]` table the document carries |
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
 | a result as JSON | **half** — a session's result writes JSON from Rust (`executor::json`) and the envelope embeds that value; the twenty-seven *model* result dataclasses in `azoth.core.result` are still not serialisable, and a codec per model is the second writer `executor::json` exists to avoid |
-| a tool schema for an agent | **yes** as the schema — `middleware::tools`, one tool per command, projected from the command model rather than written beside it. **The MCP transport is not built**, and it is a projection of this schema rather than a second one |
+| a tool schema for an agent | **yes** — `middleware::tools`, one tool per command, projected from the command model rather than written beside it, and **served over MCP** by `azoth mcp`, which is that schema's projection and not a second one |
 
 ## The layers
 
@@ -62,7 +62,7 @@ Each is a consequence of the calculus, named here because a front-end has to add
 
 ## The bindings
 
-One surface, three doors. None of them holds a second implementation, and a test on the host
+One surface, four doors. None of them holds a second implementation, and a test on the host
 covers each: the wire layer's tests are the behaviour, and a binding is exercised for the boundary
 only.
 
@@ -71,6 +71,7 @@ only.
 | a browser | `crates/azoth-wasm`, compiled with `wasm-bindgen` and carrying its own palette and databank — no fetch, no filesystem | a Node driver over the built module, in the crate |
 | a notebook | `azoth.process.Session`, which is the same `Workspace` as a Python object, with `forms()` and `tools()` beside it | `python/tests/test_process.py` |
 | a shell | `azoth forms` and `azoth edit --flowsheet F --command JSON [--run] [--json]` | `crates/azoth-cli/tests/wire.rs` |
+| an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field |
 
 `--json` prints the envelope, which is byte for byte the object a browser is handed — so the CLI
 is a way to look at the wire without a front-end, and a way to capture a fixture for one.
@@ -113,7 +114,8 @@ descriptions for the tools, derived from the command model (`list_unit_ops`, `ru
 `read_stream`, `set_parameter`, `add_instance`, `validate`, `load`, `save` in the page's own
 words — one tool per command, in the code), and an in-process runner that executes them against
 the same session a human edits. It is hosted twice — a Jupyter/Colab cell and a GUI side panel —
-and an MCP server is a projection of the same schema, named below as not built.
+and an MCP server is a projection of the same schema — `azoth mcp`, over stdio, for one document
+at a time.
 
 **Only edits are tools.** Every call returns the whole envelope, so reading a stream is reading the
 answer to the call that changed it, and loading, saving and validating are the session's own
@@ -124,8 +126,12 @@ openings rather than edits to it. A read tool would return the same document as 
 Named with the class that would close each, because a page that lists only what works is a page
 that reads as finished.
 
-- **The MCP transport.** The schema exists; a server that serves it does not, and it is a
-  transport over `middleware::tools` rather than a second surface.
+- **MCP resources, and a transport other than stdio.** The tools are served; a *resource* is a
+  second surface for a document every call already returns, with a URI grammar to invent and a
+  cache a client may serve stale — which is what `dirty` exists to prevent. The palette is already
+  `add_instance`'s `unit` enum. An HTTP transport, and a vendored `schema.json` for the protocol
+  revision plus a validator — which is what would turn a revision's drift into a failing test
+  rather than a client failure — are the same kind of not-built.
 - **A hosted session.** Every binding is local, which is what the backend decision bought: there
   is nothing to run beside the editor. A hosted or multi-user editor needs a process holding a
   `Workspace` and a protocol over the same commands, and that process does not exist.

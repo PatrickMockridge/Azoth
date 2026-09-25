@@ -15,8 +15,8 @@
 //! [`azoth_cli::report`], both of which are testable. What is left here is the
 //! wiring, which is the part an integration test against the built binary covers.
 
-use azoth_cli::cli::{CheckArgs, Cli, Command, EditArgs, FormsArgs, PipeArgs, RunArgs};
-use azoth_cli::{check, edit, forms, pipe, report, run};
+use azoth_cli::cli::{CheckArgs, Cli, Command, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs};
+use azoth_cli::{check, edit, forms, mcp, pipe, report, run};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -31,6 +31,27 @@ fn main() -> std::process::ExitCode {
         Command::Run(args) => run_flowsheet(args),
         Command::Forms(args) => run_forms(args),
         Command::Edit(args) => run_edit(args),
+        Command::Mcp(args) => run_mcp(args),
+    }
+}
+
+fn run_mcp(args: McpArgs) -> std::process::ExitCode {
+    // stdout is the wire here, so every diagnostic goes to stderr and a message that is not a
+    // JSON-RPC response never appears on it.
+    let stdin = std::io::stdin();
+    let stdout = std::io::stdout();
+    match mcp::serve(
+        &args.flowsheet,
+        &args.palette,
+        !args.no_run,
+        stdin.lock(),
+        stdout.lock(),
+    ) {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(message) => {
+            eprintln!("azoth: {message}");
+            std::process::ExitCode::from(2)
+        }
     }
 }
 
