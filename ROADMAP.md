@@ -505,9 +505,18 @@ steady state: the test over it wires half a split back to the mixer and half to 
 a tolerance that means it, the loop closes at the feed's own flow where `demo.toml` at any
 tolerance cannot.
 
+**A parameter's declaration says whether a kernel can run without it, and the checker reads it.**
+That was the last hole P12 named, and it is the one that let `specs/flowsheets/demo.toml` ship:
+`unit_ops.separator` requires `gas_in_liquid`, the file never supplied it, and `validate` printed
+`OK` for as long as the file existed - so the checker's own promise, that a flowsheet printing
+`OK` is one an executor can consume, was false. `Param` carries `required` now, set on the 75
+parameters the shims read with a non-optional accessor, and `validate` reports a
+`MissingParameter` for one left out. **The flag is held to two sources and they agree**: the
+`[inputs]` block of `specs/models/process/<id>.toml`, which marks an input `optional = true` when a
+caller may leave it out, and the shim itself - measured, all twenty-six runnable entries agree, and
+`tests/palette.rs` re-checks it on every run.
+
 **What is named as not built, with the class that would close each**: Broyden through
-`BroydenAccelerator`, for the measured reason above; and the checker rule that would have caught
-`demo.toml` shipping with a required parameter unsupplied - which needs the palette to say which
-of its parameters a kernel cannot run without, and it does not. The tier's own acceptance is the
-NeqSim capture beside it: an executor whose convergence is only checked against its own arithmetic
-is an executor nobody has measured.
+`BroydenAccelerator`, for the measured reason above. The tier's own acceptance is the NeqSim
+capture beside it: an executor whose convergence is only checked against its own arithmetic is an
+executor nobody has measured.

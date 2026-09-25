@@ -4,6 +4,7 @@ notes = "**The packing parameters do not change the separation.** `PackedColumn 
 [source]
 standard = "NeqSim process/equipment/distillation/PackedColumn.java"
 [parameters.packed_height]
+required = true
 unit = "m"
 description = "the packed bed height, which the constructor divides by a 0.5 m HETP guess to fix the base column's stage count and which the hydraulics later divides by the calculated HETP to report theoretical stages; the class defaults it to 5.0"
 [parameters.packing_type]

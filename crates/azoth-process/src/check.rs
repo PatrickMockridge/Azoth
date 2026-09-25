@@ -4,7 +4,8 @@
 //! directional channels, conservation as linearity, and feedback as restriction.
 //! This module turns those into checks a machine can run:
 //!
-//! - every instance names a palette unit op, and only its declared parameters;
+//! - every instance names a palette unit op, and **exactly** the parameters it declares —
+//!   every one it cannot run without given, and none it does not declare;
 //! - a connection joins an outlet (or feed) to an inlet (or product);
 //! - a Port-to-Port connection joins dimension-compatible field records;
 //! - an input's declared record could be a stream — one mole fraction per substance;
@@ -67,6 +68,17 @@ pub enum Diagnostic {
         unit: String,
     },
     UnknownParameter {
+        instance: String,
+        parameter: String,
+    },
+    /// An instance left out a parameter the entry declares as one a kernel cannot run without.
+    ///
+    /// **The other direction of `UnknownParameter`, and it was the hole.** The checker verified
+    /// units, ports and connections and never that a non-optional parameter was given, so its own
+    /// promise - that a flowsheet printing `OK` is one an executor can consume - was false. The
+    /// declaration carries `required` now, and the flag is held to the shim that reads it and to
+    /// the model spec that marks it optional, both, by `tests/palette.rs`.
+    MissingParameter {
         instance: String,
         parameter: String,
     },
@@ -226,6 +238,10 @@ impl Diagnostic {
             Self::UnknownParameter {
                 instance,
                 parameter,
+            }
+            | Self::MissingParameter {
+                instance,
+                parameter,
             } => at("instances", format!("{instance}.parameters.{parameter}")),
             Self::UnknownFeed { name } => at("inputs", name.clone()),
             Self::UnknownProduct { name } => at("products", name.clone()),
@@ -286,6 +302,9 @@ impl Diagnostic {
             }
             Self::UnknownParameter { parameter, .. } => {
                 format!("`{parameter}` is not a parameter the entry declares")
+            }
+            Self::MissingParameter { parameter, .. } => {
+                format!("`{parameter}` is declared and no value is given for it")
             }
             Self::UnknownFeed { name } => format!("feed `{name}` is not declared"),
             Self::UnknownProduct { name } => format!("product `{name}` is not declared"),
@@ -446,6 +465,19 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 unit: instance.unit.clone(),
             }),
             Some(spec) => {
+                // **Both directions, and the second is the rule that was missing.** A supplied
+                // parameter the entry does not declare was always reported; a *declared* one the
+                // instance left out was not, so a document could validate and then be refused by
+                // the run - which is what happened to `specs/flowsheets/demo.toml` and
+                // `unit_ops.separator`'s `gas_in_liquid` for as long as the file existed.
+                for (name, declaration) in &spec.parameters {
+                    if declaration.required && !instance.parameters.contains_key(name) {
+                        diags.push(Diagnostic::MissingParameter {
+                            instance: instance.id.clone(),
+                            parameter: name.clone(),
+                        });
+                    }
+                }
                 for parameter in instance.parameters.keys() {
                     if !spec.parameters.contains_key(parameter) {
                         diags.push(Diagnostic::UnknownParameter {
@@ -1072,6 +1104,7 @@ mod tests {
         pump.parameters.insert(
             "dp".to_string(),
             crate::unit_op::Param {
+                required: false,
                 unit: Some("Pa".to_string()),
                 description: "rise".to_string(),
             },
@@ -1299,6 +1332,7 @@ mod tests {
         spec.parameters.insert(
             "volume".to_string(),
             crate::unit_op::Param {
+                required: false,
                 unit: Some("m**3".to_string()),
                 description: "the tank's volume".to_string(),
             },
@@ -1503,6 +1537,83 @@ mod tests {
             ],
             recycles: vec![],
         }
+    }
+
+    /// **The hole this rule closes, stated as the test that would have caught it.** A parameter
+    /// the entry declares as one a kernel cannot run without, left out of an instance, used to
+    /// validate clean - and `specs/flowsheets/demo.toml` did exactly that for as long as it
+    /// existed, against `unit_ops.separator`'s `gas_in_liquid`.
+    #[test]
+    fn a_missing_required_parameter_is_reported_and_an_optional_one_is_not() {
+        // A two-port entry that declares two parameters and requires neither, built here because
+        // the shared helpers declare none at all.
+        let mut spec = two_port("unit_ops.heater");
+        for name in ["outlet_temperature", "duty"] {
+            spec.parameters.insert(
+                name.to_string(),
+                crate::unit_op::Param {
+                    required: false,
+                    unit: Some("K".to_string()),
+                    description: name.to_string(),
+                },
+            );
+        }
+        let palette = vec![spec];
+        let built = |parameters: BTreeMap<String, toml::Value>| Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("in")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "h1".into(),
+                unit: "unit_ops.heater".into(),
+                parameters,
+            }],
+            connections: vec![
+                Connection {
+                    from: "in".into(),
+                    to: "h1.feed".into(),
+                },
+                Connection {
+                    from: "h1.discharge".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+        };
+
+        // The heater declares three parameters and requires none of them, which is why the rule
+        // needs the flag rather than "every declared parameter must be given".
+        assert_clean(&built(BTreeMap::new()), &palette);
+
+        // A palette whose entry requires one, and an instance that leaves it out.
+        let mut requiring = palette.clone();
+        requiring[0]
+            .parameters
+            .get_mut("outlet_temperature")
+            .expect("declared")
+            .required = true;
+        let diags = validate(&built(BTreeMap::new()), &requiring);
+        assert!(
+            diags.iter().any(|d| matches!(
+                d,
+                Diagnostic::MissingParameter { instance, parameter }
+                    if instance == "h1" && parameter == "outlet_temperature"
+            )),
+            "{diags:?}"
+        );
+        let missing = diags
+            .iter()
+            .find(|d| matches!(d, Diagnostic::MissingParameter { .. }))
+            .expect("reported");
+        assert_eq!(missing.severity(), Severity::Error, "it cannot run");
+        assert_eq!(missing.location().section, "instances");
+        assert_eq!(missing.location().path, "h1.parameters.outlet_temperature");
+
+        // Supplying it is clean again, and an optional parameter is never demanded.
+        let mut given = BTreeMap::new();
+        given.insert("outlet_temperature".to_string(), toml::Value::Float(320.0));
+        assert_clean(&built(given), &requiring);
     }
 
     /// **The three ways to write a position a port does not have**, and they are one mistake made

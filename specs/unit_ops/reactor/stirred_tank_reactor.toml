@@ -4,13 +4,17 @@ notes = "**This entry declared no parameters at all, and `run` reads seven.** Th
 [source]
 standard = "NeqSim process/equipment/reactor/StirredTankReactor.java"
 [parameters.reaction]
+required = true
 description = "the reaction's id in the reaction data, which is what `addReaction` names"
 [parameters.limiting_reactant]
+required = true
 description = "the component whose moles times the conversion set the extent of the reaction"
 [parameters.conversion]
+required = true
 unit = "dimensionless"
 description = "the fractional conversion of the limiting reactant, in [0, 1]"
 [parameters.isothermal]
+required = true
 description = "whether the vessel holds its temperature, the class's own flag"
 [parameters.reactor_temperature]
 unit = "K"

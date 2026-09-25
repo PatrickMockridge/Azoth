@@ -3,9 +3,11 @@ name = "Compressor"
 [source]
 standard = "NeqSim process/equipment/compressor/Compressor.java"
 [parameters.outlet_pressure]
+required = true
 unit = "Pa"
 description = "the pressure the compressor raises the stream to"
 [parameters.isentropic_efficiency]
+required = true
 unit = "dimensionless"
 description = "the compressor's isentropic efficiency, between 0 and 1"
 [[ports]]

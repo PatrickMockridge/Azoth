@@ -3,12 +3,15 @@ name = "Pipe"
 [source]
 standard = "NeqSim process/equipment/pipeline/AdiabaticPipe.java"
 [parameters.length]
+required = true
 unit = "m"
 description = "pipe length"
 [parameters.diameter]
+required = true
 unit = "m"
 description = "internal pipe diameter"
 [parameters.roughness]
+required = true
 unit = "m"
 description = "sand-grain roughness height"
 [[ports]]

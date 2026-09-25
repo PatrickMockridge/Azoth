@@ -4,12 +4,14 @@ notes = "**Its stream side is `unit_ops.separator`'s and the three parameters ar
 [source]
 standard = "NeqSim process/equipment/separator/GasScrubber.java"
 [parameters.pressure_drop]
+required = true
 unit = "Pa"
 description = "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy"
 [parameters.heat_input]
 unit = "W"
 description = "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's"
 [parameters.gas_in_liquid]
+required = true
 unit = "dimensionless"
 description = "the fraction of the vapour's moles carried over into the liquid outlet, on NeqSim's `feed`/`mole` basis for `setEntrainment`"
 [[ports]]

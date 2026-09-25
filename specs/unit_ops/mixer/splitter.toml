@@ -3,6 +3,7 @@ name = "Splitter"
 [source]
 standard = "NeqSim process/equipment/splitter/Splitter.java"
 [parameters.split_factors]
+required = true
 unit = "dimensionless"
 description = "the fraction of the feed to each outlet, one entry per outlet, summing to 1"
 [[ports]]

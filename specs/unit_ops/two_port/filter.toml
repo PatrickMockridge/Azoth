@@ -3,6 +3,7 @@ name = "Filter"
 [source]
 standard = "NeqSim process/equipment/filter/Filter.java"
 [parameters.pressure_drop]
+required = true
 unit = "Pa"
 description = "the pressure loss across the filter"
 [[ports]]

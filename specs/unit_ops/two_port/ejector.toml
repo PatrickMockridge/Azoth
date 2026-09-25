@@ -4,18 +4,23 @@ notes = "Declared with two inlets, so it is not a two-port machine and its famil
 [source]
 standard = "NeqSim process/equipment/ejector/Ejector.java"
 [parameters.motive_nozzle_efficiency]
+required = true
 unit = "dimensionless"
 description = "the motive nozzle's isentropic efficiency, `setEfficiencyIsentropic` - the field the entry used to leave undeclared while `run` read it"
 [parameters.discharge_pressure]
+required = true
 unit = "Pa"
 description = "the pressure the diffuser discharges at, `setDischargePressure`"
 [parameters.diffuser_efficiency]
+required = true
 unit = "dimensionless"
 description = "the diffuser's isentropic efficiency, `setDiffuserEfficiency`"
 [parameters.suction_nozzle_efficiency]
+required = true
 unit = "dimensionless"
 description = "the suction nozzle's isentropic efficiency, `setSuctionNozzleEfficiency`"
 [parameters.mixing_efficiency]
+required = true
 unit = "dimensionless"
 description = "the mixing chamber's efficiency, `setMixingEfficiency`"
 [[ports]]

@@ -4,6 +4,7 @@ notes = "**Its outlet is many, and the entry said one.** `Manifold.run` is a mix
 [source]
 standard = "NeqSim process/equipment/manifold/Manifold.java"
 [parameters.split_factors]
+required = true
 unit = "dimensionless"
 description = "the fraction of the mixture to each outlet, one entry per outlet, summing to 1"
 [[ports]]

@@ -35,6 +35,22 @@ pub struct Param {
     /// follows its type. Drawn from the same vocabulary as a calc input's unit.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
+    /// Whether a kernel can run without it.
+    ///
+    /// **The declaration had no word for this, and the cost is on the record**: the checker
+    /// verified units, ports and connections and never that a non-optional parameter was given, so
+    /// `specs/flowsheets/demo.toml` validated for as long as it existed while
+    /// `unit_ops.separator`'s `gas_in_liquid` went unsupplied - and `validate`'s own promise, that
+    /// a flowsheet printing `OK` is one an executor can consume, was false.
+    ///
+    /// **What it means is what the shim reads.** `crates/azoth-process/src/executor/dispatch.rs`
+    /// reads a required parameter with `Parameters::si`/`number`/`flag`/`text`/`vector` and an
+    /// optional one with the `optional_*` family, and the two agree with the
+    /// `[inputs]` block of `specs/models/process/<id>.toml` - where an input is optional unless it
+    /// carries `optional = true` - for all twenty-six runnable entries, measured. That agreement
+    /// is what `every_declared_parameter_reaches_its_kernel`'s sibling in `tests/palette.rs` holds.
+    #[serde(default)]
+    pub required: bool,
     pub description: String,
 }
 

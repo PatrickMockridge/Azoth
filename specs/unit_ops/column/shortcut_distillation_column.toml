@@ -4,16 +4,21 @@ notes = "**Nothing calls it.** Measured at the pin `f0c7436c69`, `ShortcutDistil
 [source]
 standard = "NeqSim process/equipment/distillation/ShortcutDistillationColumn.java"
 [parameters.light_key]
+required = true
 description = "the light key component's name, which the class refuses to run without"
 [parameters.heavy_key]
+required = true
 description = "the heavy key component's name, which the class refuses to run without"
 [parameters.light_key_recovery_distillate]
+required = true
 unit = "dimensionless"
 description = "the fraction of the light key's feed that leaves in the distillate; the class defaults it to 0.99"
 [parameters.heavy_key_recovery_bottoms]
+required = true
 unit = "dimensionless"
 description = "the fraction of the heavy key's feed that leaves in the bottoms; the class defaults it to 0.99"
 [parameters.reflux_ratio_multiplier]
+required = true
 unit = "dimensionless"
 description = "the actual reflux ratio as a multiple of Underwood's minimum, which is what Gilliland is entered with; the class defaults it to 1.2"
 [parameters.condenser_pressure]

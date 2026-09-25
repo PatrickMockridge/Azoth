@@ -4,17 +4,22 @@ notes = "**Landed, and the deferral note's measurement is what the tier cost.** 
 [source]
 standard = "NeqSim process/equipment/reactor/GibbsReactor.java"
 [parameters.energy_mode]
+required = true
 description = "isothermal, the class's own default, or adiabatic, where the energy balance moves the temperature inside the loop"
 [parameters.damping_composition]
+required = true
 unit = "dimensionless"
 description = "the fraction of each Newton step the compositions take, the class's default 0.05; the multipliers take the whole step"
 [parameters.max_iterations]
+required = true
 unit = "dimensionless"
 description = "the iteration cap, the class's default 5000; reaching it returns success with `converged` false"
 [parameters.convergence_tolerance]
+required = true
 unit = "dimensionless"
 description = "the bound on the undamped step's norm, the class's default 1e-3"
 [parameters.min_iterations]
+required = true
 unit = "dimensionless"
 description = "the floor below which the tolerance is not consulted, the class's default 100"
 

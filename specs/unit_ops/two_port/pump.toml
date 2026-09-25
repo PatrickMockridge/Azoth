@@ -3,9 +3,11 @@ name = "Pump"
 [source]
 standard = "NeqSim process/equipment/pump/Pump.java"
 [parameters.outlet_pressure]
+required = true
 unit = "Pa"
 description = "the pressure the pump raises the stream to"
 [parameters.isentropic_efficiency]
+required = true
 unit = "dimensionless"
 description = "the pump's isentropic efficiency, between 0 and 1"
 [[ports]]

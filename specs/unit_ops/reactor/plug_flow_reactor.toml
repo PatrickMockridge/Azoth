@@ -4,31 +4,41 @@ notes = "**Landed, and the two things the deferral note said were missing are wh
 [source]
 standard = "NeqSim process/equipment/reactor/PlugFlowReactor.java"
 [parameters.length]
+required = true
 unit = "m"
 description = "tube length, the class's default 5.0"
 [parameters.diameter]
+required = true
 unit = "m"
 description = "tube internal diameter, the class's default 0.10"
 [parameters.number_of_tubes]
+required = true
 unit = "dimensionless"
 description = "how many tubes the flow is split across, the class's default 1"
 [parameters.energy_mode]
+required = true
 description = "how the temperature moves - adiabatic, isothermal or coolant - where adiabatic is the class's default"
 [parameters.coolant_temperature]
+required = true
 unit = "K"
 description = "the coolant's temperature on the coolant branch, the class's default 298.15"
 [parameters.overall_heat_transfer_coefficient]
+required = true
 unit = "W/(m**2*K)"
 description = "the coolant branch's U, the class's default 50.0"
 [parameters.number_of_steps]
+required = true
 unit = "dimensionless"
 description = "the fixed number of steps the march takes, the class's default 100, floored at 10 by the setter"
 [parameters.integration_method]
+required = true
 description = "rk4 or euler, where rk4 is the class's default and any other name is it too"
 [parameters.property_update_frequency]
+required = true
 unit = "dimensionless"
 description = "steps between re-flashes on the frozen coupling, the class's default 10"
 [parameters.thermodynamic_coupling]
+required = true
 description = "frozen_properties, the class's default, or fully_coupled, which re-flashes for every residual evaluation"
 [parameters.catalyst_effectiveness_enabled]
 description = "whether the pellet's effectiveness factor scales the rate; off by default"
@@ -48,22 +58,29 @@ description = "the pellet diameter the Ergun equation and the Thiele modulus rea
 unit = "dimensionless"
 description = "the bed's void fraction, the class's default 0.40"
 [parameters.reaction]
+required = true
 description = "the rate law's name, and the stoichiometry the species set is widened by"
 [parameters.reaction_orders]
+required = true
 unit = "dimensionless"
 description = "one power-law order per reactant the reaction data names, in the table's order - the argument `addReactant` takes a third time and the one the data does not carry"
 [parameters.rate_type]
+required = true
 description = "power_law, lhhw or equilibrium - where equilibrium is evaluated as a power law, the class's own dispatch"
 [parameters.pre_exponential_factor]
+required = true
 unit = "dimensionless"
 description = "A in k(T) = A * T**n * exp(-Ea/(R*T)); the class's default 1.0e10"
 [parameters.activation_energy]
+required = true
 unit = "J/mol"
 description = "Ea in the same expression, the class's default 100000"
 [parameters.temperature_exponent]
+required = true
 unit = "dimensionless"
 description = "n in the same expression, the class's default 0; a magnitude below 1e-10 is taken as exactly zero"
 [parameters.heat_of_reaction]
+required = true
 unit = "J/mol"
 description = "the reaction's enthalpy, which the energy balance consumes; the class's default 0"
 [parameters.key_component]

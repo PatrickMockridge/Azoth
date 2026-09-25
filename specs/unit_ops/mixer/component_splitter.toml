@@ -4,6 +4,7 @@ notes = "**The outlet count is fixed at two and the factor is per component, and
 [source]
 standard = "NeqSim process/equipment/splitter/ComponentSplitter.java"
 [parameters.split_factors]
+required = true
 unit = "dimensionless"
 description = "the fraction of each component routed to the first outlet, one entry per component; the second outlet takes the remainder"
 [[ports]]

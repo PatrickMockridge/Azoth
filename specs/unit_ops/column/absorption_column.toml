@@ -4,12 +4,15 @@ notes = "**Not the refused family, and the distinction is the entry's first cont
 [source]
 standard = "NeqSim process/equipment/absorber/AbsorptionColumn.java"
 [parameters.number_of_stages]
+required = true
 unit = "dimensionless"
 description = "the actual trays, which the constructor requires to be positive; a tray is numbered 0 at the bottom, where the gas enters, to `number_of_stages - 1`, where the solvent enters"
 [parameters.top_pressure]
+required = true
 unit = "Pa"
 description = "the pressure at the top stage, inherited from `DistillationColumn.setTopPressure`, which takes bara"
 [parameters.bottom_pressure]
+required = true
 unit = "Pa"
 description = "the pressure at the bottom stage, inherited from `DistillationColumn.setBottomPressure`, which takes bara"
 [parameters.murphree_efficiency]

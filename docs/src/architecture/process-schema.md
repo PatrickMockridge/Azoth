@@ -61,6 +61,15 @@ A port's `multiplicity` is `one` by default and `many` for a mixer's inlets or a
 splitter's outlets. A field's `shape` is `scalar` by default and `vector` for
 composition.
 
+A parameter declares `required = true` when a kernel cannot run without it — the fact a
+form's asterisk and the checker's `MissingParameter` both need, and one the declaration
+carried no word for until P12's close-out. It is held to two sources that agree: the
+`[inputs]` block of `specs/models/process/<id>.toml`, which marks an input `optional = true`
+when a caller may leave it out, and the shim in
+`crates/azoth-process/src/executor/dispatch.rs`, which reads a required parameter with
+`Parameters::si`/`number`/`flag`/`text`/`vector` and an optional one with the `optional_*`
+family. `tests/palette.rs` re-checks the agreement on every run.
+
 The palette is grouped by family under `specs/unit_ops/`: two-port machines, separators,
 mixer/splitter, the heat exchanger, columns, reactors and utility units. Two kinds of
 NeqSim equipment are deliberately **not** palette entries: the solver/control blocks
@@ -132,7 +141,8 @@ rather than measured, and its loop stops at one pass.
 
 `azoth_process::validate` runs the calculus's rules:
 
-- every instance names a palette unit op, and only its declared parameters;
+- every instance names a palette unit op, and **exactly** its declared parameters — every one
+  it cannot run without given, and none it does not declare;
 - a connection joins an outlet (or feed) to an inlet (or product);
 - a Port-to-Port connection joins dimension-compatible field records;
 - an input's record could be a stream — one mole fraction per substance, and a fluid that

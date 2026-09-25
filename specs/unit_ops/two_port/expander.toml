@@ -3,9 +3,11 @@ name = "Expander"
 [source]
 standard = "NeqSim process/equipment/expander/Expander.java"
 [parameters.outlet_pressure]
+required = true
 unit = "Pa"
 description = "the pressure the expander lets the stream down to"
 [parameters.isentropic_efficiency]
+required = true
 unit = "dimensionless"
 description = "the expander's isentropic efficiency, between 0 and 1"
 [[ports]]

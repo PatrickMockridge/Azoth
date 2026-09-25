@@ -4,6 +4,7 @@ notes = "**`valve_opening` is withdrawn, and the sizing mode with it.** `Throttl
 [source]
 standard = "NeqSim process/equipment/valve/ThrottlingValve.java"
 [parameters.outlet_pressure]
+required = true
 unit = "Pa"
 description = "the pressure the valve drops the stream to"
 [[ports]]

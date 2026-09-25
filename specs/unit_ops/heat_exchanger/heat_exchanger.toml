@@ -7,6 +7,7 @@ standard = "NeqSim process/equipment/heatexchanger/HeatExchanger.java"
 unit = "W/K"
 description = "the overall heat transfer coefficient times the area, which is what the rating is sized against; used when no outlet temperature is pinned"
 [parameters.flow_arrangement]
+required = true
 description = "counterflow, parallelflow or shell_and_tube, which picks the effectiveness relation; NeqSim spells these \"concentric tube counterflow\", \"concentric tube paralellflow\" and \"shell and tube\" and defaults to the first"
 [parameters.hot_outlet_temperature]
 unit = "K"

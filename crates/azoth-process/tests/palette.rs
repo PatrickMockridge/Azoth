@@ -108,12 +108,75 @@ fn model_root() -> &'static Path {
 
 /// The inputs a `process.*` model declares, read from its spec.
 fn declared_inputs(name: &str) -> Option<HashSet<String>> {
+    Some(
+        declared_inputs_by_optionality(name)?
+            .keys()
+            .cloned()
+            .collect(),
+    )
+}
+
+/// The same, with whether each input is optional - which is the model's own word for whether a
+/// caller may leave it out.
+fn declared_inputs_by_optionality(name: &str) -> Option<toml::map::Map<String, toml::Value>> {
     let path = model_root().join(format!("{name}.toml"));
     let text = std::fs::read_to_string(&path).ok()?;
     let document: toml::Value =
         toml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let inputs = document.get("inputs")?.as_table()?;
-    Some(inputs.keys().cloned().collect())
+    Some(inputs.clone())
+}
+
+/// **The palette's `required` flag, held to the model spec that knows.**
+///
+/// A model's `[inputs]` block marks an input `optional = true` when a caller may leave it out, and
+/// the palette now carries the same fact on `Param::required`. They are two spellings of one
+/// thing, and this is the gate that keeps them one thing: without it, an entry could declare a
+/// parameter optional that its kernel refuses without, or required one the kernel is happy to
+/// default - and the checker's `MissingParameter` would be wrong in the direction that either
+/// breaks working documents or misses a broken one.
+///
+/// **Scoped like its sibling** to the entries that have a kernel, because an entry with no kernel
+/// has no model either and its parameters describe a machine that does not exist yet.
+#[test]
+fn every_required_parameter_is_the_ones_its_model_marks_required() {
+    let kernels = kernel_names();
+    let mut checked = 0;
+
+    for spec in load_palette() {
+        let short = spec.id.trim_start_matches("unit_ops.");
+        if !kernels.iter().any(|kernel| kernel == short) {
+            continue;
+        }
+        let inputs = declared_inputs_by_optionality(short).unwrap_or_else(|| {
+            panic!(
+                "{} has a kernel but no model spec to hold its `required` flags to",
+                spec.id
+            )
+        });
+
+        for (name, declaration) in &spec.parameters {
+            let Some(input) = inputs.get(name) else {
+                // The sibling gate reports a parameter no model takes.
+                continue;
+            };
+            let optional = input.get("optional").and_then(toml::Value::as_bool) == Some(true);
+            assert_eq!(
+                declaration.required,
+                !optional,
+                "{} declares `{name}` with required = {}, and its model at \
+                 specs/models/process/{short}.toml says {}",
+                spec.id,
+                declaration.required,
+                if optional { "optional" } else { "required" }
+            );
+            checked += 1;
+        }
+    }
+    assert!(
+        checked > 0,
+        "no entry was checked, so this test decided nothing"
+    );
 }
 
 /// **The process layer's sibling of `test_cross_impl.py::test_signatures_agree_across_languages`.**
