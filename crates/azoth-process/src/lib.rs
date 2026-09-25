@@ -10,6 +10,7 @@
 
 pub mod channel;
 pub mod check;
+pub mod order;
 pub mod column;
 pub mod executor;
 pub mod flowsheet;
@@ -23,6 +24,7 @@ pub mod unit_op;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{Diagnostic, validate, validate_palette};
+pub use order::{ExecutionOrder, execution_order};
 pub use flowsheet::{Connection, Flowsheet, Instance, Recycle};
 pub use load::{load_palette, parse_flowsheet};
 // **The kernels stay under `kernels` and the ids take the flat names**, which is the split

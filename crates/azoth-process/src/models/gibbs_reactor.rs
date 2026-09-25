@@ -73,6 +73,7 @@ impl CalcResult for GibbsReactorResult {
 /// * [`azoth_core::AzothError::InvalidInput`] on a feed the spec's ranges refuse, on a fluid that
 ///   cannot be resolved, or on the singular Newton system the class answers with a pseudo-inverse
 ///   this port does not carry.
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are ten
 pub fn gibbs_reactor(
     components: &[String],
     feed_n: f64,
