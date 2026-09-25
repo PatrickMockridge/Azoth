@@ -106,14 +106,22 @@ fn round_trip(
     let (mixture, ideal) = mixture_of(&NAMES, Cubic::Srk, None).expect("the databank carries them");
     let formation = formation_enthalpies();
 
-    let reference =
-        reactive_tp_flash(&components, Cubic::Srk, flash_temperature, PRESSURE_PA, &FEED, 2).expect("it runs");
+    let reference = reactive_tp_flash(
+        &components,
+        Cubic::Srk,
+        flash_temperature,
+        PRESSURE_PA,
+        &FEED,
+        2,
+    )
+    .expect("it runs");
     let (specified, _) =
         thermochemical(&mixture, &ideal, flash_temperature, &reference, &formation)
             .expect("the enthalpy");
 
     let mut inner = |temperature: f64| -> Result<PhState> {
-        let outcome = reactive_tp_flash(&components, Cubic::Srk, temperature, PRESSURE_PA, &FEED, 2)?;
+        let outcome =
+            reactive_tp_flash(&components, Cubic::Srk, temperature, PRESSURE_PA, &FEED, 2)?;
         let (enthalpy, cp) = thermochemical(&mixture, &ideal, temperature, &outcome, &formation)?;
         Ok(PhState {
             iterations: outcome.total_iterations,
@@ -174,9 +182,17 @@ fn the_water_gas_shift_finds_its_temperature_back() {
     // composition matches the one the specification was built from, which is the consistency the
     // class's own test asserts.
     let components: Vec<String> = NAMES.iter().map(|name| (*name).to_string()).collect();
-    let reference = reactive_tp_flash(&components, Cubic::Srk, 600.0, PRESSURE_PA, &FEED, 2).expect("it runs");
-    let settled =
-        reactive_tp_flash(&components, Cubic::Srk, result.temperature, PRESSURE_PA, &FEED, 2).expect("it runs");
+    let reference =
+        reactive_tp_flash(&components, Cubic::Srk, 600.0, PRESSURE_PA, &FEED, 2).expect("it runs");
+    let settled = reactive_tp_flash(
+        &components,
+        Cubic::Srk,
+        result.temperature,
+        PRESSURE_PA,
+        &FEED,
+        2,
+    )
+    .expect("it runs");
     for (index, (back, want)) in overall(&settled)
         .iter()
         .zip(overall(&reference))

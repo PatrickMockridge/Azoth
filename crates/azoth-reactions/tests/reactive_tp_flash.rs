@@ -34,7 +34,8 @@ fn the_water_gas_shift_is_the_captured_composition() {
         .iter()
         .map(|name| (*name).to_string())
         .collect();
-    let result = reactive_tp_flash(&components, Cubic::Srk, 600.0, BAR, &[0.25; 4], 2).expect("the flash runs");
+    let result = reactive_tp_flash(&components, Cubic::Srk, 600.0, BAR, &[0.25; 4], 2)
+        .expect("the flash runs");
 
     assert!(result.converged, "the captured state converges");
     assert_eq!(result.phase_count, 2, "the constructor's pair survives");
@@ -81,8 +82,15 @@ fn the_hot_four_component_fluid_is_the_captured_composition() {
         .iter()
         .map(|name| (*name).to_string())
         .collect();
-    let result =
-        reactive_tp_flash(&components, Cubic::Srk, 1000.0, BAR, &[0.4, 0.2, 0.2, 0.2], 2).expect("it runs");
+    let result = reactive_tp_flash(
+        &components,
+        Cubic::Srk,
+        1000.0,
+        BAR,
+        &[0.4, 0.2, 0.2, 0.2],
+        2,
+    )
+    .expect("it runs");
 
     assert!(result.converged);
     // The capture's residual, and this port's: both inside the `1e-4` the class accepts, and
@@ -121,8 +129,8 @@ fn the_non_reactive_fluid_takes_the_fallback() {
         .iter()
         .map(|name| (*name).to_string())
         .collect();
-    let result =
-        reactive_tp_flash(&components, Cubic::Srk, 300.0, 50.0 * BAR, &[0.5, 0.5], 2).expect("the flash runs");
+    let result = reactive_tp_flash(&components, Cubic::Srk, 300.0, 50.0 * BAR, &[0.5, 0.5], 2)
+        .expect("the flash runs");
 
     assert!(result.converged);
     assert_eq!(result.total_iterations, 0, "the fallback counts none");
@@ -191,5 +199,47 @@ fn the_cubic_moves_the_answer_and_each_row_is_reproduced() {
     assert!(
         apart > 1.0e-4,
         "the cubics are only {apart} apart on this state, so the case would not separate them"
+    );
+}
+
+/// **The one state where the label means something.** The `NR = 0` methane/water fluid is
+/// answered by a conventional VLE flash, whose pair is indexed by vapour and liquid - so
+/// `phase_type` names them - while a *reacting* solve's two phases converge to the same
+/// composition and the field is deliberately empty.
+///
+/// The capture types that pair `gas` and `aqueous`; this port's two words are its own, because
+/// NeqSim's names are its `init(1)` bookkeeping and not a state this model computes. What the
+/// label actually carries is *which row a caller may send up the column*, and that is the index
+/// this delegation itself used.
+#[test]
+fn the_phase_label_is_the_delegations_own_index() {
+    let components: Vec<String> = ["methane", "water"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let immiscible = reactive_tp_flash(&components, Cubic::Srk, 300.0, 50.0 * BAR, &[0.5, 0.5], 2)
+        .expect("the immiscible fluid flashes");
+    assert_eq!(
+        immiscible.phase_type,
+        vec!["vapour".to_string(), "liquid".to_string()],
+        "the VLE pair is indexed vapour-first here"
+    );
+    assert!(
+        immiscible.phase_fraction[0] > 0.4 && immiscible.phase_fraction[0] < 0.6,
+        "the two phases are of comparable size: {:?}",
+        immiscible.phase_fraction
+    );
+
+    // The reacting state, where the label is withheld.
+    let wgs: Vec<String> = ["CO", "water", "CO2", "hydrogen"]
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect();
+    let reacting = reactive_tp_flash(&wgs, Cubic::Srk, 600.0, BAR, &[0.25; 4], 2).expect("it runs");
+    assert!(
+        reacting.phase_type.is_empty(),
+        "a reacting solve's phases come out of the loop as copies of the feed, so nothing is \
+         named: {:?}",
+        reacting.phase_type
     );
 }

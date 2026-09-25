@@ -1061,6 +1061,11 @@ class ReactiveTpFlashResult(_HasWarnings):
 
     #: How many phases the driver stopped on.
     phase_count: int
+    #: **Which row is the vapour, where the driver built a vapour/liquid pair, and empty where
+    #: it did not.** The ``NR = 0`` delegation indexes its phases by vapour and liquid; a
+    #: reacting solve's phases are two copies of the feed, identical on every captured state,
+    #: so naming one of them the vapour would be picking a row.
+    phase_type: tuple[str, ...]
     #: Each phase's mole numbers, one row per phase and one column per component, in the
     #: driver's own order. **No phase type is promised**: NeqSim's types are its system's
     #: bookkeeping - `gas`, `oil`, `aqueous` - and not a state this model computes.

@@ -290,8 +290,22 @@ def reactive_tp_flash(
         )
         rows.append(tuple(from_si(value, "mol") for value in held))
 
+    # **The label is the driver's own index, where it built a pair, and nothing where it did
+    # not.** The `NR = 0` delegation and the VLE initialisation index their phases by vapour and
+    # liquid; a reacting solve's phases come out of the loop as two copies of the feed, so naming
+    # one of them the vapour would be picking a row.
+    phase_type = (
+        tuple(
+            "vapour" if index == outcome.gas_index else "liquid"
+            for index in range(len(outcome.phases))
+        )
+        if outcome.gas_index is not None
+        else ()
+    )
+
     return ReactiveTpFlashResult(
         phase_count=len(outcome.phases),
+        phase_type=phase_type,
         phase_moles=tuple(rows),
         phase_fraction=tuple(phase.beta for phase in outcome.phases),
         converged=outcome.converged,

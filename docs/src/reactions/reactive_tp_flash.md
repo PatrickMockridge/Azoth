@@ -50,6 +50,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
+| `phase_type` | - | which row is the vapour and which the liquid, **in this port's two words**: NeqSim's `gas`/`oil`/`aqueous` are its `init(1)` bookkeeping, not a state this model computes. It is the binary the driver's VLE initialisation seeds, and what a tray forms its two outlets from. |
 | `phase_count` | dimensionless | How many phases the driver stopped on: one where the analysis found the fluid stable or a ceiling of one collapsed it, two otherwise. |
 | `phase_moles` | mol | Each phase's mole numbers, `n[j][i]`. Rows are in the driver's own order and **no phase type is promised** - NeqSim's types are its system's bookkeeping, not a state this model computes. |
 | `phase_fraction` | dimensionless | Each phase's share of the fluid, and **the fraction the driver weighs it by**: on a neutral fluid that is the one its bookkeeping left rather than the solve's own, so the two do not agree. |
@@ -74,8 +75,8 @@ not an equation, and both implementations read it from here.
 - **the composition is the answer and it is pinned.** The moles summed over the phases agree with the capture to `1e-6` at 600 K and `1.2e-5` at 300 K; the per-phase rows are reported and no agreement is claimed for them.
 - **the removal step reads the stale array too.** `removeNegligiblePhases` tests `system.getBeta(j)`, so a phase the solve drove to nothing is not removed; and the next iterate re-reads it, so the fraction a solve starts from never moves.
 - **`removePhaseKeepTotalComposition` touches no moles.** The name describes an intent the method does not carry out: it shifts the phase *index* array and decrements the count. That is what a phase leaving the list is here.
-- **SRK, and every phase takes the vapour root.** The oracle's systems are `SystemSrkEos`, and NeqSim clones phase 0 - a `gas` phase - for a phase it adds. Rooting the water-rich phase liquid collapses the 300 K split; the vapour root reproduces it.
-- **no phase type is reported.** NeqSim's types come from `init(1)`'s assignment - `gas`, then `oil` for the second phase, `aqueous` for a water-bearing fallback - and are its bookkeeping, not a quantity this model computes.
+- **every phase takes the vapour root.** NeqSim clones phase 0 - a `gas` phase - for a phase it adds, so both phases of a VLE-initialised split are solved that way: rooting the water-rich phase liquid collapses the 300 K split. **`srk` is the default cubic; `pr` is the process layer's.**
+- **the phase type is this port's two words, not NeqSim's names.** NeqSim's come from `init(1)` - `gas`, `oil`, `aqueous` - and are its bookkeeping, so `phase_type` reports the binary the VLE initialisation seeds: `vapour` and `liquid`.
 - **`NR = 0` is a different flash.** A fluid with no independent reaction and more than one phase goes to a conventional VLE flash: Wilson K-values, then `K_i = phi_liq / phi_vap` by successive substitution, to `1e-12`.
 - **the single-phase branch reports no Gibbs energy.** Where the analysis finds the fluid stable the driver returns before `computeGibbsEnergy`, so `gibbs_energy` is `0.0` - and `converged` is `true` whatever the solve reported, which is the class's own overwriting.
 - **the relaxed multiphase tolerance is what a multiphase answer is worth.** Such a solve stops at `maxE < 1e-4` against `1e-9` for one phase, so two codes can stop at different points inside it: the 1000 K fluid does.

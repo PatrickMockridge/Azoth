@@ -2524,6 +2524,9 @@ pub struct PyReactiveTpFlashResult {
     /// How many phases the driver stopped on.
     #[pyo3(get)]
     pub phase_count: u32,
+    /// Which row is the vapour, where the driver built a vapour/liquid pair.
+    #[pyo3(get)]
+    pub phase_type: Vec<String>,
     /// Each phase's mole numbers, one row per phase and one column per component.
     #[pyo3(get)]
     pub phase_moles: Vec<Vec<PyQty>>,
@@ -2567,6 +2570,7 @@ impl From<&ReactiveTpFlashResult> for PyReactiveTpFlashResult {
     fn from(r: &ReactiveTpFlashResult) -> Self {
         Self {
             phase_count: r.phase_count as u32,
+            phase_type: r.phase_type.clone(),
             phase_moles: r
                 .phase_moles
                 .iter()

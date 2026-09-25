@@ -8,20 +8,25 @@
 //!
 //! # The cubic, and the root every phase takes
 //!
-//! **SRK**, because the oracle's systems are `SystemSrkEos` and every captured number is an SRK
-//! number. And **every phase takes the cubic's vapour root**, which is not a shortcut: NeqSim's
-//! reactive flash clones phase 0 - a `gas` phase - for the new phase it adds, so both phases of
-//! a VLE-initialised split are `gas`-typed there. The measurement is in the capture: rooting the
-//! water-rich phase liquid collapses the 300 K split to a single phase, where the vapour root
-//! reproduces it.
+//! **`srk` is the default and every captured row is it** - the oracle's systems are
+//! `SystemSrkEos` - and the caller states it: `pr` is the cubic the process layer's streams
+//! carry, which is why a reactive tray needs the choice at all. And **every phase takes the
+//! cubic's vapour root**, which is not a shortcut: NeqSim's reactive flash clones phase 0 - a
+//! `gas` phase - for the new phase it adds, so both phases of a VLE-initialised split are
+//! solved that way. The measurement is in the capture: rooting the water-rich phase liquid
+//! collapses the 300 K split to a single phase, where the vapour root reproduces it.
 //!
 //! # What the phases are called
 //!
-//! Nothing here names them. NeqSim's phase *types* come from `init(1)`'s assignment - `gas`,
-//! `liquid`, `oil`, `aqueous` - and the capture records that the VLE-initialised liquid of the
-//! 300 K state is `oil` while the constructor's pair are both `gas`. A type is a property of
-//! NeqSim's system bookkeeping and not of the state this model computes, so the phases come
-//! back in the driver's own order with their mole numbers and fractions and nothing else.
+//! **`phase_type` names the vapour where the driver built a vapour/liquid pair, and says
+//! nothing where it did not.** The `NR = 0` delegation and the VLE initialisation index their
+//! phases by vapour and liquid, so the label there is the driver's own index; a *reacting*
+//! solve's phases come out of the RAND loop as two copies of the feed, identical on every
+//! captured state, and naming one of two identical rows the vapour would be picking a row.
+//! NeqSim's own `gas`/`oil`/`aqueous` come from `init(1)`'s assignment - the capture records
+//! that the VLE-initialised liquid of the 300 K state is `oil` while the constructor's pair are
+//! both `gas` - and are its system bookkeeping, which this model does not carry and does not
+//! claim to.
 //!
 //! # The one closure that is not the class's
 //!
@@ -60,6 +65,17 @@ pub const DEFAULT_CUBIC: Cubic = Cubic::Srk;
 pub struct ReactiveTpFlashResult {
     /// How many phases the driver stopped on.
     pub phase_count: usize,
+    /// **Which row is the vapour, where the driver built a vapour/liquid pair**, in this port's
+    /// two words - and **empty where it did not.**
+    ///
+    /// The `NR = 0` delegation and the VLE initialisation index their phases by vapour and
+    /// liquid, and there the label is the driver's own; a *reacting* solve's phases come out of
+    /// the RAND loop as two copies of the feed, identical on every captured state, and NeqSim's
+    /// `gas`/`oil` there is its `init(1)` bookkeeping over a cloned phase rather than a state
+    /// this model computes. Labelling one of two identical rows the vapour would be picking a
+    /// row, so this reports nothing instead - which is what tells a caller forming two outlets
+    /// that the split is not one it may trust.
+    pub phase_type: Vec<String>,
     /// Each phase's moles, one row per phase and one column per component, in the driver's own
     /// phase order - **and no phase type is promised**, because a type is NeqSim's system
     /// bookkeeping and not a state this model computes.
@@ -93,6 +109,7 @@ impl CalcResult for ReactiveTpFlashResult {
     const CALC_ID: &'static str = "reactions.reactive_tp_flash";
     const FIELDS: &'static [&'static str] = &[
         "phase_count",
+        "phase_type",
         "phase_moles",
         "phase_fraction",
         "converged",
@@ -310,6 +327,13 @@ pub fn reactive_tp_flash(
         })
         .collect();
 
+    let phase_type: Vec<String> = match outcome.gas_index {
+        Some(gas) => (0..phases.len())
+            .map(|index| if index == gas { "vapour" } else { "liquid" }.to_string())
+            .collect(),
+        None => Vec::new(),
+    };
+
     let (residual, element_residual) = outcome
         .solution
         .as_ref()
@@ -318,6 +342,7 @@ pub fn reactive_tp_flash(
 
     Ok(ReactiveTpFlashResult {
         phase_count: phases.len(),
+        phase_type,
         phase_moles: phases,
         phase_fraction: outcome.phases.iter().map(|phase| phase.beta).collect(),
         converged: outcome.converged,

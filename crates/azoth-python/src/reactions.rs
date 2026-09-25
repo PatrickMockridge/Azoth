@@ -197,7 +197,9 @@ pub fn reactive_tp_flash(
 ) -> PyResult<PyReactiveTpFlashResult> {
     azoth_reactions::reactive_tp_flash::reactive_tp_flash(
         &components,
-        cubic.parse().map_err(pyo3::exceptions::PyValueError::new_err)?,
+        cubic
+            .parse()
+            .map_err(pyo3::exceptions::PyValueError::new_err)?,
         T,
         P,
         &moles,
@@ -259,7 +261,9 @@ pub fn reactive_ph_flash(
 ) -> PyResult<PyReactivePhFlashResult> {
     azoth_reactions::reactive_ph_flash::reactive_ph_flash(
         &components,
-        cubic.parse().map_err(pyo3::exceptions::PyValueError::new_err)?,
+        cubic
+            .parse()
+            .map_err(pyo3::exceptions::PyValueError::new_err)?,
         T,
         P,
         &moles,

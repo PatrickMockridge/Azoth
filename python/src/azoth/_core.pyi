@@ -1780,6 +1780,7 @@ class ReactivePhaseEquilibriumResult:
 @final
 class ReactiveTpFlashResult:
     phase_count: int
+    phase_type: list[str]
     phase_moles: list[list[Qty]]
     phase_fraction: list[float]
     converged: bool

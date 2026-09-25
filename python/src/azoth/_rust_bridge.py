@@ -5196,6 +5196,7 @@ def reactive_tp_flash(
     )
     return ReactiveTpFlashResult(
         phase_count=result.phase_count,
+        phase_type=tuple(result.phase_type),
         phase_moles=tuple(
             tuple(from_si(value.magnitude_si, value.unit) for value in row)
             for row in result.phase_moles

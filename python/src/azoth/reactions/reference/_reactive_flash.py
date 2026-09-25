@@ -102,6 +102,11 @@ class FlashOutcome(NamedTuple):
     equilibrium_total_moles: float
     gibbs_energy: float
     solution: RandSolution | None
+    #: **Which row is the vapour, where the driver built a vapour/liquid pair** - the ``NR = 0``
+    #: delegation and the VLE initialisation - and ``None`` on every other branch. It is the
+    #: index the driver itself used, not a phase type: NeqSim's ``gas``/``oil``/``aqueous``
+    #: come from its ``init(1)`` bookkeeping, which this model does not carry.
+    gas_index: int | None = None
 
 
 def _normalise(values: list[float]) -> list[float]:
@@ -531,7 +536,7 @@ def run(
     independent_reactions = nc - _rank(state.a_matrix)
     if independent_reactions == 0:
         if len(phases) <= 1 or any(charge != 0.0 for charge in state.charges):
-            return FlashOutcome(phases, True, 0, state.total_moles, 0.0, None)
+            return FlashOutcome(phases, True, 0, state.total_moles, 0.0, None, None)
         flashed = non_reactive_flash(
             feed_fractions,
             state.constants,
@@ -540,8 +545,10 @@ def run(
             1,
             phase_ln_phi,
         )
-        return FlashOutcome(flashed.phases, True, 0, state.total_moles, 0.0, None)
+        # `non_reactive_flash` is called with a liquid index of 1, so the vapour is row 0.
+        return FlashOutcome(flashed.phases, True, 0, state.total_moles, 0.0, None, 0)
 
+    seeded_gas: int | None = None
     if state.max_phases > 1 and len(phases) == 1:
         initialisation = vle_initialization(
             feed_fractions, state.constants, state.temperature, state.pressure
@@ -553,6 +560,7 @@ def run(
                 ),
                 PhaseFeed(fractions=initialisation.vapour, beta=initialisation.vapour_fraction),
             ]
+            seeded_gas = 1
 
     # ``isTraceIonMultiphaseCase``: **a multiphase fluid whose ions are all traces is answered
     # by the split it already has.** The class's comment gives the reason - the RAND solve "can
@@ -642,6 +650,7 @@ def run(
         equilibrium_total_moles=looped.equilibrium_total_moles,
         gibbs_energy=_render_gibbs(looped.phases, looped.solution, phase_ln_phi),
         solution=looped.solution,
+        gas_index=seeded_gas,
     )
 
 

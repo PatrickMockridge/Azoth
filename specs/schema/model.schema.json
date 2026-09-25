@@ -64,6 +64,7 @@
         { "$ref": "calc.schema.json#/$defs/quantity" },
         { "$ref": "#/$defs/components_quantity" },
         { "$ref": "#/$defs/vector_quantity" },
+        { "$ref": "#/$defs/vector_string" },
         { "$ref": "#/$defs/matrix_quantity" }
       ]
     },
@@ -114,6 +115,21 @@
           "type": "boolean",
           "default": false,
           "description": "Optional inputs may be omitted; an omitted vector is absent rather than empty, and the implementation must say what it then does. The scalar shape carries the same property through `calc.schema.json`; this branch is for a model whose vector input is a degree of freedom rather than a requirement - `process.absorption_column`'s per-tray pins are the first."
+        }
+      }
+    },
+
+    "vector_string": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "description"],
+      "properties": {
+        "type": { "const": "vector_string" },
+        "description": { "type": "string", "minLength": 1 },
+        "length": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What the length means, e.g. 'one entry per phase'. Prose rather than a number, because the model is written for any N."
         }
       }
     },

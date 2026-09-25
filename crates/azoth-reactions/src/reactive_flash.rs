@@ -759,6 +759,13 @@ pub struct FlashOutcome {
     pub gibbs_energy: f64,
     /// The last solve, where one ran.
     pub solution: Option<RandSolution>,
+    /// **Which row is the vapour, where the driver built a vapour/liquid pair** - the `NR = 0`
+    /// delegation and the VLE initialisation - and `None` on every other branch.
+    ///
+    /// It is not the phases' *type*: NeqSim's `gas`/`oil`/`aqueous` come from its `init(1)`
+    /// bookkeeping, which this model does not carry. What it is is the index the driver itself
+    /// used, which is what a caller forming two outlets needs.
+    pub gas_index: Option<usize>,
 }
 
 /// `ReactiveMultiphaseTPflash.run`: the driver, composed.
@@ -803,6 +810,7 @@ pub fn run(
                 equilibrium_total_moles: state.total_moles,
                 gibbs_energy: 0.0,
                 solution: None,
+                gas_index: None,
             });
         }
         let flashed = non_reactive_flash(
@@ -821,11 +829,15 @@ pub fn run(
             equilibrium_total_moles: state.total_moles,
             gibbs_energy: 0.0,
             solution: None,
+            gas_index: Some(1 - liquid_index_of(state.charges)),
         });
     }
 
     // `initializeWithVLEFlash`: only when more than one phase is allowed and the system holds
     // one, and only where the Rachford-Rice root is interior.
+    // **The pair it seeds is (liquid, vapour) in that order**, so a run seeded this way knows
+    // its vapour row even after the loop solves over it - which is what `seeded_gas` carries.
+    let mut seeded_gas: Option<usize> = None;
     if state.max_phases > 1 && phases.len() == 1 {
         if let Some(initialisation) = vle_initialization(
             &feed_fractions,
@@ -843,6 +855,7 @@ pub fn run(
                     beta: initialisation.vapour_fraction,
                 },
             ];
+            seeded_gas = Some(1);
         }
     }
 
@@ -872,6 +885,7 @@ pub fn run(
                 equilibrium_total_moles: state.total_moles,
                 gibbs_energy: total_gibbs_energy(&entries),
                 solution: None,
+                gas_index: None,
             });
         }
     }
@@ -916,6 +930,7 @@ pub fn run(
                 equilibrium_total_moles: single.total_moles,
                 gibbs_energy: 0.0,
                 solution: Some(single.solution),
+                gas_index: None,
             });
         }
         unstable_trials = outcome.unstable_trials;
@@ -963,6 +978,7 @@ pub fn run(
 
     let gibbs_energy = render_phases(&looped.phases, &looped.solution, &mut *phase_ln_phi)?;
     Ok(FlashOutcome {
+        gas_index: seeded_gas,
         phases: looped.phases,
         converged: looped.converged,
         total_iterations: looped.total_iterations,
