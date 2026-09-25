@@ -1,0 +1,124 @@
+# The facts the normative pages state, and the probe that measures each.
+#
+# This file holds no measured value. A `{hole}` is a name for a measurement, never a
+# number, and `tools/check_doc_claims.py` refuses one that carries a value - because a
+# check that can be satisfied by editing this file is a check that gets satisfied by
+# editing this file. When a claim fails, the page or the tree is what changes.
+#
+# `text` is a contiguous span of the page with each measured value replaced by a hole.
+# Whitespace is the only liberty taken in matching, so a span that wraps in the source
+# may be written here on one line; punctuation must be exact, because a page that
+# retypes an em dash is a stale declaration rather than a claim that quietly moved.
+#
+# Probes: specs.calcs, specs.models, specs.ids, unit_ops.declared, unit_ops.kernels,
+# unit_ops.dispatch, unit_ops.refusals, vocabulary.units, lean.axioms_gated,
+# lean.axioms_dim, lean.gate_printed, lean.modules, pairs.eos_files, skills.total,
+# skills.azoth, skills.screening_p11, path, lean.gated.
+# `python tools/check_doc_claims.py --probe <name>` prints one measurement.
+
+# --- what the library carries -------------------------------------------------
+
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "azoth has **{total} ids** — {calcs} calculations and {models} models."
+measure = { total = "specs.ids", calcs = "specs.calcs", models = "specs.models" }
+
+[[claim]]
+page = "README.md"
+text = "The full catalog — {calcs} calculations and {models} models"
+measure = { calcs = "specs.calcs", models = "specs.models" }
+
+# --- the unit-operation palette -----------------------------------------------
+#
+# Four claims, four probes, because "carries a kernel" and "is dispatchable" are
+# different sets: `unit_ops.packed_column` has a kernel and is refused by name.
+
+[[claim]]
+page = "ROADMAP.md"
+text = "declares {declared} unit operations of which **{kernels} carry kernels**"
+measure = { declared = "unit_ops.declared", kernels = "unit_ops.kernels" }
+
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "declares {declared} unit operations with typed channels"
+measure = { declared = "unit_ops.declared" }
+
+[[claim]]
+page = "docs/src/architecture/process-schema.md"
+text = "**{kernels} of the {declared} palette entries carry a registered `process.*` id**"
+measure = { kernels = "unit_ops.kernels", declared = "unit_ops.declared" }
+
+[[claim]]
+page = "docs/src/index.md"
+text = "{declared} unit operations declared on typed channels, {kernels} of them with kernels"
+measure = { declared = "unit_ops.declared", kernels = "unit_ops.kernels" }
+
+[[claim]]
+page = "docs/src/architecture/middleware.md"
+text = "the `DISPATCH` table, {entries} entries and {refusals} refusals by name"
+measure = { entries = "unit_ops.dispatch", refusals = "unit_ops.refusals" }
+
+# --- the Lean gate ------------------------------------------------------------
+#
+# The page states the number of gated lines, not a count of claims: the file prints
+# axioms for the witness theorems beside the claims they keep from being vacuous, and
+# says why. Those are the files' own numbers and a reader can count them.
+
+[[claim]]
+page = "docs/src/calculus/index.md"
+text = "**{gated}** `#print axioms` lines in `Azoth/Axioms.lean`, {dim} of them `Azoth.Dim`'s, and **{gate}** in the generated `Azoth/Gate.lean`"
+measure = { gated = "lean.axioms_gated", dim = "lean.axioms_dim", gate = "lean.gate_printed" }
+
+[[claim]]
+page = "docs/src/calculus/index.md"
+text = "{modules} modules in all"
+measure = { modules = "lean.modules" }
+
+[[claim]]
+page = "docs/src/calculus/index.md"
+text = "`{theorem}` is the adequacy claim"
+measure = { theorem = "lean.gated" }
+
+# --- the vocabulary and the validation record ---------------------------------
+
+[[claim]]
+page = "README.md"
+text = "{units}-unit vocabulary"
+measure = { units = "vocabulary.units" }
+
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "`validation/eos/` holds {cases} paired cases"
+measure = { cases = "pairs.eos_files" }
+
+# --- paths and the skills catalog ---------------------------------------------
+
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "the readers are `{python_reader}` and"
+measure = { python_reader = "path" }
+
+[[claim]]
+page = "docs/src/agentic/roadmap.md"
+text = "{calcs} calculations and {models} models the library implements"
+measure = { calcs = "specs.calcs", models = "specs.models" }
+
+[[claim]]
+page = "docs/src/agentic/roadmap.md"
+text = "{azoth_basis} are: the four `library/` skills"
+measure = { azoth_basis = "skills.azoth" }
+
+[[claim]]
+page = "docs/src/agentic/roadmap.md"
+text = "The remaining {placeholders} are placeholders — {screening} `screening`, {advisory} `advisory` and {data_retrieval} `data-retrieval`"
+measure = { placeholders = "skills.placeholders", screening = "skills.screening", advisory = "skills.advisory", data_retrieval = "skills.data_retrieval" }
+
+# --- what CI cannot measure ----------------------------------------------------
+#
+# A skip must still quote text its page carries, so a skip whose sentence is rewritten
+# goes stale loudly rather than staying silent.
+
+[[skip]]
+page = "docs/src/architecture/specification.md"
+text = "NeqSim master is 1,299,006 lines of Java across 3,410 files."
+reason = "no NeqSim checkout in CI; the page states the command that measures it (`find src/main/java -name '*.java' | wc -l` at the pinned revision)"

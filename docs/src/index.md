@@ -379,10 +379,11 @@ and a whole new domain, which is a new crate.
 ## The batch API
 
 `azoth.batch` evaluates almost all of these calculations over arrays, with one call
-crossing into the Rust core instead of N. It is a loop over the same scalar kernels, not
-a second implementation, so the cross-language claim is unchanged — and it deliberately
-gives up one thing the scalar API provides, which is unit checking: inputs are plain
-numbers in the spec's canonical unit, and outputs are SI base magnitudes with a unit map.
+crossing into the compiled implementation instead of N. It is a loop over the same scalar
+kernels, not a second implementation, so the cross-language claim is unchanged — and it
+deliberately gives up one thing the scalar API provides, which is unit checking: inputs are
+plain numbers in the spec's canonical unit, and outputs are SI base magnitudes with a unit
+map.
 `orifice_flow` is the live example, whose `d` is in **millimetres**, so `d=[50.0]` means
 50 mm.
 

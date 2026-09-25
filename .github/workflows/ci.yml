@@ -46,6 +46,14 @@ jobs:
       # done with it. It also prints the tally, because the interesting number is how
       # many columns are absent because the model does not exist yet.
       - run: python tools/check_manifest.py
+      # The numbers and paths the normative pages state, against the tree that produces
+      # them. `check_links.py` says a link resolves and `prose_lint.py` says a page is
+      # written well; neither says a page is *true*, and `prose_lint.py` excludes
+      # `docs/src` on purpose - so until this line nothing read the docs for facts, and
+      # a page quoting a count the code moved went stale with every gate green.
+      # `docs/claims.toml` declares the claims and holds no measured value, so a failure
+      # is fixed on the page or in the tree and never by editing the declaration.
+      - run: python tools/check_doc_claims.py
       # The skill catalog against the SKILL.md files it points at, and each SKILL.md
       # against the required sections. Needs no `azoth` import, so it runs before the
       # library is built.

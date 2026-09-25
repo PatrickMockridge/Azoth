@@ -2,8 +2,8 @@
 
 Educational gas water-content and dehydration screening using the public GPSA Bukacek saturated-water-content correlation. USE WHEN: a task needs a public, screening-level estimate of saturated water content in natural gas, a check against a sales-gas water spec, or a decision on whether a stated stream composition is already DEHYDRATED or merely cooled and knocked out (the saturation test), before detailed dehydration design or before asserting any hydrate/ice finding.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. This is a property correlation, which is tranche P1's tree, and it is not among the ones P1 ported.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. This is a property correlation, which is tranche P1's tree, and it is not among the ones P1 ported. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

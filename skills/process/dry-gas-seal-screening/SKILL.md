@@ -2,8 +2,8 @@
 
 Educational dry gas seal supply and condensation screening for centrifugal compressors. USE WHEN: a task needs a public, screening-level estimate of seal-gas and separation-gas supply demand and a seal-gas condensation-margin check (cavity temperature versus hydrocarbon dew point) before detailed dry gas seal system design per API 692.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. The specification puts **mechanical design** beyond P12, so no tranche backs it.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. The specification puts **mechanical design** beyond P12, so no tranche backs it. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

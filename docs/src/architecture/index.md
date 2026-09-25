@@ -1,8 +1,9 @@
 # Architecture
 
 azoth is a chemical-engineering calculation and data library: the thermodynamics,
-hydraulics and heat transfer of a process, in Python for the ecosystem and Rust for the
-engine. It is a port of Equinor's [NeqSim](https://github.com/equinor/neqsim), and what it
+hydraulics and heat transfer of a process, **written twice from one declaration — once in
+Rust and once in Python**. It is a port of Equinor's
+[NeqSim](https://github.com/equinor/neqsim), and what it
 carries is what NeqSim carries, named as NeqSim names it.
 
 Everything on this page is stated once, here. A later page that repeats it is wrong,
@@ -45,9 +46,10 @@ carry.
 **Every generated file on the right comes from a file on the left, and CI regenerates
 all of them and fails on a diff.** So a specification is not a document that is
 supposed to match the code; it is the thing the code was made from. `tools/` also
-holds the checkers - `spec_lint`, `prose_lint`, `check_links`, `check_user_data`,
-`check_manifest`, `check_lean_axioms` - which generate nothing and are what fail the
-build.
+holds the checkers, which generate nothing and are what fail the build: `spec_lint`,
+`prose_lint`, `check_links`, `check_json_keys`, `check_numerics`, `check_manifest`,
+`check_lean_axioms`, `check_doc_claims`, `check_user_data`, `check_wheel_data` and
+`validate_skills`.
 
 ## What is true, and where it is written
 
@@ -62,8 +64,9 @@ build.
 | the licence obligations for the vendored data | `NOTICE`, `LICENSE-CC-BY-4.0` |
 | what the library promises and does not | [the specification](./specification.md) |
 
-`tools/check_lean_axioms.py` reads `lean/Azoth/Axioms.lean` and refuses any axiom the
-development was not allowed to use, so the Lean half is checked rather than trusted.
+`tools/check_lean_axioms.py` reads the two gate files, `lean/Azoth/Axioms.lean` and the
+generated `lean/Azoth/Gate.lean`, and refuses any axiom the development was not allowed to
+use, so the Lean half is checked rather than trusted.
 
 ## Two implementations, mirrored
 
@@ -116,5 +119,9 @@ dumping ground.
 - [The specification](./specification.md) is the normative statement: what azoth is
   for, what it owes a reader, and the policy decisions behind the shape of it.
 - [Spec files](./spec-files.md) is the format of everything under `specs/`.
+- [The process schema](./process-schema.md) is the palette, the flowsheet and the rules
+  the checker holds a flowsheet to — the calculus made concrete for a unit operation.
+- [The middleware](./middleware.md) is what sits between that schema and its front-ends,
+  and the list of what is still not built.
 - [The calculus of thermodynamic dimensionality](../calculus/index.md) is the formal
   layer: the types, the vocabulary, and what a keycard is as a capability.

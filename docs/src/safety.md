@@ -140,8 +140,8 @@ agreement. If the extension is missing, every cross-language test passes on the 
 while the guarantee the project promises is exercised by nothing: the suite stays green and
 the guarantee evaporates. `AZOTH_REQUIRE_RUST=1` closes that, turning "the extension is
 missing" from a quiet fallback into a failure, and CI runs the cross-implementation job with
-it set. Were Python a surface over the Rust engine, a silent fallback would cost nothing;
-because the two are mirrors, it would hide the whole comparison.
+it set. Were one implementation a binding over the other, a silent fallback would cost
+nothing; because the two are mirrors, it would hide the whole comparison.
 
 The same asymmetry shows up in the keycard. A card is read by
 `python/src/azoth/keycard.py` and by `azoth_eos::card` independently, so a Rust-native
@@ -157,8 +157,8 @@ which half is which is the same discipline as everywhere else on this page, so:
 What is already true. The Rust implementation has no Python dependency — it compiles to a
 library and a CLI. The keycard is a value a caller passes rather than a global in force, so a
 Rust-native caller supplies their own authority rather than inheriting a Python session's.
-The unit-operation and executor layers compose, and the engine is built for large or many
-concurrent simulations.
+The unit-operation and executor layers compose, and the Rust implementation is built for
+large or many concurrent simulations.
 
 What is not. Port coverage is incomplete. Everything ported ships `unverified`, and a port
 is accepted on azoth's own tests rather than on its provenance — that NeqSim implements

@@ -2,8 +2,8 @@
 
 Educational gas-scrubber sizing screening using the public Souders-Brown / K-factor relation for vertical separators with a mist-eliminator gas-load check. USE WHEN: a task needs a public, screening-level estimate of the Souders-Brown velocity, required vessel diameter, velocity utilisation, and mist-eliminator load for a vertical gas scrubber before detailed separator design.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. azoth's `process.gas_scrubber` is an **equilibrium flash split**; the Souders-Brown K-factor sizing this screening wants is not ported.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. azoth's `process.gas_scrubber` is an **equilibrium flash split**; the Souders-Brown K-factor sizing this screening wants is not ported.
 
 ## References
 

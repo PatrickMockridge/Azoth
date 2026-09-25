@@ -1,8 +1,8 @@
 # azoth
 
 Chemical-engineering calculations — equations of state, flashes, property models, and the
-hydraulics and heat transfer around them — in **Python for the ecosystem and Rust for the
-engine**, with an agentic layer on top. The algorithms are ported from
+hydraulics and heat transfer around them — **written twice from one declaration, once in
+Rust and once in Python**, with an agentic layer on top. The algorithms are ported from
 [NeqSim](https://github.com/equinor/neqsim) under Apache-2.0 and credited in
 [`NOTICE`](NOTICE).
 
@@ -56,7 +56,7 @@ chemistry that cannot run away over a relief valve that catches it.
   constructor — so a card cannot exist without having passed every refusal.
 - **Two implementations, mirrored, and compared.** Because both are complete, neither can
   cover for the other, so the cross-implementation tests run with `AZOTH_REQUIRE_RUST=1`:
-  a missing Rust core is a hard failure rather than a quiet fallback, because a suite that
+  a missing extension is a hard failure rather than a quiet fallback, because a suite that
   stays green on the Python path while the Rust one is absent is a guarantee that has
   evaporated.
 - **A formal layer underneath, and a gate on it.** A quantity's dimension and the

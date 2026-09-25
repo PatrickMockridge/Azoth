@@ -8,26 +8,36 @@ the mapping, so an agent can tell "validated" from "placeholder" at a glance.
 
 ## What is `azoth`-basis, and what is still a placeholder
 
-A skill whose `calculation_basis` is `azoth` drives the validated library. Fifteen
+A skill whose `calculation_basis` is `azoth` drives the validated library. Seventeen
 are: the four `library/` skills, four under `eos/`, four under `flow-assurance/`,
-two under `hydraulics/` and one under `thermal/`, driving the 67 calculations and
-93 models the library implements.
+two under `hydraulics/`, two under `process/` and one under `thermal/`, driving the
+68 calculations and 118 models the library implements.
 
-The remaining 75 are placeholders — 47 `screening`, 18 `advisory` and 10
-`data-retrieval` — and each `screening` one names the single tranche that will
-back its physics:
+The remaining 73 are placeholders — 45 `screening`, 18 `advisory` and 10
+`data-retrieval` — and each `screening` one names **what would back it**, which is a
+tranche where a tranche covers the physics and a named family where none does:
 
-- **Unit operations and the flowsheet** — 39 skills wait on P11: 30 under
-  `process/` and 9 under `safety/`. The specification places the tier after the
-  physics, and the kernels are nearly closed: `specs/unit_ops/` declares 29 palette
-  entries and 27 carry a kernel. **The P12 executor they were waiting on is built**, so what
-  gates them now is the middleware rather than the backend: the form schema and the agent tool
-  schema are the two rows of that gap table still open.
-- **Reference equations of state, and the PVT chain** — 7 skills wait on P4: six
-  under `pvt/` and `azoth-near-well-and-injectivity` under `subsurface/`.
-- **Cooldown** — `azoth-surf-cooldown-screening` is the one skill waiting on P9,
-  which it keeps for the hydrate temperature it compares against. The cooldown
-  itself is long-tail work under Tier 4 rather than a tranche's.
+- **What a tranche covers** — 7 skills under P4 (six under `pvt/`,
+  `azoth-near-well-and-injectivity` under `subsurface/`); `azoth-surf-cooldown-screening`
+  under P9, which it keeps for the hydrate temperature it compares against, the cooldown
+  itself being Tier 4 long-tail rather than a tranche's; and
+  `azoth-water-dewpoint-dehydration-screening` under P1, whose correlation P1's tree
+  covers and did not port.
+- **What no tranche covers** — the specification puts **mechanical design**, `safety/`,
+  `statistics/`, `automation`, `standards/` and `fluidmechanics/` *beyond* P12, so a skill
+  whose physics belongs to one of those names the family rather than the nearest
+  P-number. 17 are mechanical design (vibration, noise, wall thickness, flexibility,
+  erosion, seals, turbines, vessel sizing), 9 are `safety/`, 3 `statistics/`, 3
+  `automation`, 2 `standards/` and 1 `fluidmechanics/`.
+- **What is a unit operation and a flowsheet away** — `azoth-teg-dehydration-modeling`
+  keeps the P11 label, because P11's palette is the tranche that built the absorber,
+  flash, column, stripper and recycle it composes. What it does not have is the plant:
+  no such flowsheet ships, and the unit operations it would stand on are `unverified`.
+
+**A skill is promoted when the library computes its arithmetic, not when a tranche
+closes.** Reading the two as the same is what left 39 skills labelled P11 after P11 and
+P12 had both closed — a `screening` skill *had* to name a tranche, so a noise screen and
+a PSV orifice calculation named the nearest one.
 
 Three physics families that once blocked a set of skills have landed:
 
@@ -77,17 +87,17 @@ tranche's: the `pvt/` pseudocomponent and regression skills wait on Tier 1 of
 
 ## Tranche → domain → skills
 
-The `tranche` field in `skills.toml` is the machine-readable form of this table,
-and `tools/validate_skills.py` requires a `screening` skill to name exactly one.
-A domain's `azoth`-basis skills carry none, because they drive the library rather
-than wait on it:
+The `tranche` field in `skills.toml` is the machine-readable form of this table, and
+`tools/validate_skills.py` requires a `screening` skill to name what would back it —
+a P-number, or one of the beyond-P12 families the specification names. A domain's
+`azoth`-basis skills carry none, because they drive the library rather than wait on it:
 
-| Domain | Basis now | Backed by tranche |
+| Domain | Basis now | Backed by |
 |---|---|---|
 | `library` | `azoth` | P0 (done) |
 | `eos`, `hydraulics`, `thermal` | `azoth` | P0–P2 (done) |
-| `process` | `screening` | P11 |
-| `safety` | `screening` | P11 |
+| `process` | `azoth`, `screening` | P11 (done), and the beyond-P12 families |
+| `safety` | `screening` | `safety` — beyond P12, so no tranche |
 | `pvt` | `screening` | P4 |
 | `subsurface` | `screening` | P4 |
 | `flow-assurance` | `azoth`, `screening`, `advisory`, `data-retrieval` | P9 |
@@ -97,25 +107,29 @@ than wait on it:
 | `reporting` | `advisory` | none needed |
 | `engineering-data` | `data-retrieval` | none needed |
 
-The tranches are the P0–P12 order in
+The P-numbers are the P0–P12 order in
 [The specification](../architecture/specification.md), mapped one-to-one to NeqSim's
-classes in [`ROADMAP.md`](../../../ROADMAP.md). `(done)` means the `azoth`-basis skills
-for that domain are written, not that every class in the tranche is ported.
+classes in [`ROADMAP.md`](../../../ROADMAP.md); the families are the trees that page puts
+beyond P12. `(done)` means the `azoth`-basis skills for that domain are written, not that
+every class in the tranche is ported.
 
 ## How a placeholder becomes real
 
-- **At `azoth`-basis**: the fifteen skills named above.
-- **As a tranche lands**: the `screening` placeholder for a domain is promoted to
-  `azoth`-basis in the same commit, and its `tranche` field is removed.
+- **At `azoth`-basis**: the skills named above.
+- **As the calculation that backs it lands**: the `screening` placeholder is promoted to
+  `azoth`-basis in that commit, its `tranche` field is removed, and its `SKILL.md` is
+  rewritten to drive the ids — a promotion that left the placeholder text in place would
+  be a page claiming a number nothing produced.
 
 A `screening` skill is not a promise the library will compute the result — it is an
-honest marker that it does not yet. Until its tranche lands, its
+honest marker that it does not yet. Until its calculation lands, its
 `Related Azoth functionality` section names the NeqSim class that does, today.
 
 ## The agentic surface
 
 The tool schema and session an agent drives — the reflection surface an editor and a
-notebook share with a model — is gated on P12, like the unit-operation tier it describes.
-It is stated in [The middleware](../architecture/middleware.md), not here: a skill is an
+notebook share with a model — is built: `middleware::tools`, one tool per command,
+projected from the command model rather than written beside it. It is stated in
+[The middleware](../architecture/middleware.md), not here: a skill is an
 instruction an agent reads, a tool schema is the machine-readable form of the same
 commands.

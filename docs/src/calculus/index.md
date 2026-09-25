@@ -33,8 +33,9 @@ Nine layers, each a page here and the Lean module it is stated against:
 | Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (the extensionality claim) | [Processes and channels](./process.md) |
 
 Two further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
-`#print axioms` line for each general theorem, and the generated `Azoth/Gate.lean` the
-one per canonical unit. Eleven modules in all, and every layer the calculus states has one.
+`#print axioms` line for each general theorem and for the witness theorems beside some of
+them, and the generated `Azoth/Gate.lean` the one per canonical unit. Eleven modules in all,
+and every layer the calculus states has one.
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
 Python, JSON Schema and Lean. It is specified separately, in
@@ -44,10 +45,14 @@ authority is a generator rather than a proof.
 ## Status: what the gate covers, and what is still specified
 
 **The axiom gate is what makes a proof count.** `tools/check_lean_axioms.py` refuses a
-theorem resting on anything outside the three axioms Lean permits — 41 claims in
-`Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, and 37 in the generated
+theorem resting on anything outside the three axioms Lean permits — **44** `#print axioms`
+lines in `Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, and **37** in the generated
 `Azoth/Gate.lean`, one per canonical unit, checking that the table's exponents name the
-dimension `lean-units` calls by that name.
+dimension `lean-units` calls by that name. **Not every gated line is a claim**: the file
+names the witness theorems beside the claims they keep from being vacuous, and says why —
+"a gate whose only gated theorems are the ones it satisfies is a gate that cannot fail" — so
+the line count is what the gate holds, and the claims are fewer than the lines. Both numbers
+are the files' own, and a reader can count them.
 
 Most of the nine are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
 [Raw and normalised variables](./normalisation.md) and [Reflection and

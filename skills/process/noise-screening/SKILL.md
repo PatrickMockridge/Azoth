@@ -2,8 +2,8 @@
 
 Standards-based gas-valve and restriction noise screening at a stated receiver distance using either a current measured A-weighted level or a conservative pressure-drop energy model. USE WHEN: a task needs noise triage, receiver/workplace assessment, or routing to detailed IEC 60534-8-3 prediction while keeping acoustic-induced-vibration assessment separate.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. The specification puts **mechanical design** beyond P12, so no tranche backs it.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. The specification puts **mechanical design** beyond P12, so no tranche backs it. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

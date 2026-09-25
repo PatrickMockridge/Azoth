@@ -182,9 +182,10 @@ run - `ChemEq`, `ChemicalReactionFactory`, `ChemicalReactionModelAudit`, `Ploadi
 carried rather than owed. [The port roadmap](../../../ROADMAP.md) names each.
 
 The middleware's shape is [The middleware](./middleware.md). **The backend it was deferred on
-has closed** — the kernels and the executor are both in — so what is open is the surface itself:
-an interoperation layer sits on top of them, not beside them, and that page's gap table is the
-list.
+has closed and the surface is built on it** — the kernels and the executor are both in, an
+interoperation layer sits on top of them rather than beside them, and three front-ends bind
+one surface. What is still not built is that page's own list, and it is named there rather
+than here.
 
 ---
 

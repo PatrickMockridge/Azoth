@@ -2,8 +2,8 @@
 
 Educational separator screening indicators for gas load, residence time, and capacity warnings. USE WHEN: a task needs public separator capacity screening without proprietary design methods.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. azoth's `process.separator` is an **equilibrium flash split**; the gas-load, residence-time and capacity indicators this screening wants are not ported.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. azoth's `process.separator` is an **equilibrium flash split**; the gas-load, residence-time and capacity indicators this screening wants are not ported.
 
 ## References
 

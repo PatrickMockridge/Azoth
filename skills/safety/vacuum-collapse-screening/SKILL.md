@@ -2,8 +2,8 @@
 
 Educational vacuum-collapse (implosion) screening for a blocked-in vessel that cools down, with vacuum-depth and external-rating flags. USE WHEN: a task needs a public, screening-level check of whether a closed vessel cooldown or steam/vapour condensation can pull a vacuum below the external pressure rating, without proprietary vacuum-collapse design methods.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. The specification puts `safety/` **beyond P12**, so no tranche backs it.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. The specification puts `safety/` **beyond P12**, so no tranche backs it. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

@@ -69,22 +69,32 @@ directly, so reflection changes how a loop is *named* and not what it computes.
 *Status: **specified**, for the same reason: it is about a loop expressed by
 reflection, and there is neither.*
 
-## What this layer is for, and what it is not yet
+## What this layer is for
 
 Reflection is where three things that look unrelated turn out to be one:
 
-- **Feedback.** A recycle with a parameterised body, above.
 - **Interoperation.** A process as a value, so a description of a plant is data.
-  Neither the current code nor any tool this library talks to has this yet.
+- **Feedback.** A recycle with a parameterised body, above.
 - **Extension.** A caller supplying a unit operation this library does not
   implement, as a process rather than as a new kernel in two languages.
 
-None of the three is implemented, and this page does not claim otherwise. What it
-fixes is that they are the *same* problem, and that the calculus already has the
-operator for it — so a future flowsheet layer is a use of this, rather than a
-parallel language invented beside it.
+**The first is built, and it is this operator made concrete.** A flowsheet is a
+process; quoting it and dropping it back is the identity; and that round trip is
+what an editor, a file and a notebook each do to the same document. There is one
+interoperation layer — `crates/azoth-process`'s `middleware` module — and three
+bindings of it, for a browser, a notebook and a shell, none of which holds a
+document of its own. **The executor is built as well, and it is a use of this
+rather than a layer beside it**: [the middleware](../architecture/middleware.md)
+states how, and this page does not restate it.
 
-**There is deliberately no executor here.** Turning a process into something a
-machine runs is a flowsheet engine, which is tranche P12 and has to arrive after
-the unit operations it would compose. The claim this page exists for is the round
-trip, and the round trip is a theorem before it is a feature.
+**The other two are not built**, and what the calculus contributes is that they are
+the *same* problem, with the operator for it already written. A loop whose body
+arrives as a process, and a unit operation the caller supplies as a process, are
+both **specified**: the layer's operators exist and the things they would operate
+on do not. What is not built is named at the foot of
+[the middleware](../architecture/middleware.md) rather than copied here.
+
+The round trip is what makes a front-end a *reading* of one artifact instead of a
+translation of it, and it is why the three bindings were built on this operator
+rather than each inventing a serialiser. The claim this page exists for is the
+round trip, and the round trip is a theorem before it is a feature.

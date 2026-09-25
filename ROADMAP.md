@@ -46,9 +46,14 @@ it is what the rest of the port stands on:
 
 - the single `databank → keycard → every calculation` path, so a calculation names its
   components and every constant it reads comes through one route;
-- the `not-yet` columns the manifest names — the collision and liquid-viscosity
-  constants `eos.viscosity` and `eos.thermal_conductivity` read. `eos.molar_enthalpy_entropy`
-  already reads the databank, and `eos.ideal_gas_cp` stays a scalar calc by design.
+- the **gas diffusivity method**, which is what the collision columns' `LJEPS` is unread
+  for: NeqSim's
+  `physicalproperties/methods/gasphysicalproperties/diffusivity/Diffusivity` is not ported,
+  and the manifest carries the column under `not-ported` with `roadmap:P1` as its consumer.
+  **`eos.viscosity` and `eos.thermal_conductivity` do not read it** — they port
+  `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod`, neither of which touches these
+  columns, and both are ported. `eos.molar_enthalpy_entropy` already reads the databank, and
+  `eos.ideal_gas_cp` stays a scalar calc by design.
 
 ### Tier 1 — oil and gas
 
@@ -463,10 +468,9 @@ fix rather than the executor's to work around.
 
 **The interoperation surface is built.** It is `crates/azoth-process`'s `middleware` module and
 three bindings of it — `azoth-wasm` for a browser, `azoth.process.Session` for a notebook, and
-`azoth edit`/`azoth forms` for a shell — and its shape is
-[The middleware](docs/src/architecture/middleware.md), which also names what is still not built:
-the MCP transport, a hosted session, the twenty-seven model result dataclasses as JSON, and the
-hop from a signed GitHub Release to a package index. The editor it feeds is `ui/`.
+`azoth edit`/`azoth forms` for a shell. Its shape is
+[The middleware](docs/src/architecture/middleware.md), and **what is still not built is named
+there** rather than counted here. The editor it feeds is `ui/`.
 
 **Three holes in the checker closed on the way, and each was the same shape.** The checker
 verified units, ports, names and connections, and never that a value was *there*, was of the
@@ -490,13 +494,13 @@ converges its recycle, held to a NeqSim `ProcessSystem` capture, and every insta
 cross-checked against that unit's own registered model, which is the claim "the executor calls
 the kernels" made testable.
 
-**A flowsheet is a self-contained simulation.** Its `[[inputs]]` declare each boundary inlet's
-fluid and state - `components`, `n`, `z`, `P` and `T`, with `h` derived from them - and its
-`products` are the run's calculation, so the document runs with no argument but the file: from
-the library, from `azoth run --flowsheet` and from `azoth.process.run_flowsheet`, whose `feeds`
-parameter is an override of a boundary the document already states. The checker gained the shape
-rule that holds an input's record to being one, and the shipped document's own input is held to
-the NeqSim capture's feed rather than agreeing with it by memory.
+**A flowsheet is a self-contained simulation**, and the document's shape is
+[the process schema](docs/src/architecture/process-schema.md)'s. What this tier added is that it
+runs with no argument but the file: from the library, from `azoth run --flowsheet` and from
+`azoth.process.run_flowsheet`, whose `feeds` parameter is an override of a boundary the document
+already states. The checker gained the shape rule that holds an input's record to being one, and
+the shipped document's own input is held to the NeqSim capture's feed rather than agreeing with
+it by memory.
 
 **The low-flow cutoff is ported, and it closed a divergence rather than adding a feature.**
 `Recycle.deactivateOnLowFlow` switches a tear off when its inlet carries less than `minimumFlow`
@@ -507,13 +511,13 @@ unit, so the extra pass the outer loop still insists on does not advance the tea
 That is why the capture beside this reads `recycle_iterations=1` for the shipped document while
 the loop around it runs twice, and the port now reproduces both numbers.
 
-**The tear's acceleration is carried, and it used to be a silent no-op.**
-`[[recycles]]`'s `acceleration_method` was accepted, validated and then ignored - and the port
-already had Wegstein's arithmetic in `azoth_process::recycle`, ported and tested with no caller.
-Wegstein is now wired where `Recycle.run` applies it, held to `captures/process_flowsheet_accelerated.tsv`
-at `1.9e-11` relative, and both methods' arithmetic is held step by step to
-`captures/process_acceleration.tsv` - which is where each one's delay boundary and Wegstein's `q`
-factors are visible. **Broyden is refused by name**, and the reason is measured rather than
+**The tear's acceleration is carried, and Broyden is refused with the measurement that closes
+it.** The two methods and `[[recycles]]`'s own convergence fields are
+[the process schema](docs/src/architecture/process-schema.md)'s. What is recorded here is the
+evidence. Wegstein is wired where `Recycle.run` applies it, held to
+`captures/process_flowsheet_accelerated.tsv` at `1.9e-11` relative, and both methods' arithmetic
+is held step by step to `captures/process_acceleration.tsv` - which is where each one's delay
+boundary and Wegstein's `q` factors are visible. Broyden's refusal is measured rather than
 conservative: the class writes its accelerated composition through `Component.setx` on both
 phases, a two-phase system does not read back what it was written, and on the condensing graph at
 a tolerance the loop never closes at, NeqSim runs all hundred passes at `8.6243` mol/s where the
@@ -521,26 +525,19 @@ transcribed step reports convergence after eighteen at `0.0833`. That capture al
 class's Broyden step taking the wrong sign against its own comment - `dx = -B^{-1} f` written,
 `+B^{-1} f` computed - which walks away from a fixed point one Newton step would reach.
 
-**A `many` outlet is addressable by position, so a splitter can be wired.** `unit_ops.splitter`
-declares its outlets as one port named `products`, so a two-way split returns two streams under one
-name - and the executor used to refuse it outright. An endpoint's grammar is now `name`,
-`instance.port` or `instance.port[i]`, spelled once in `flowsheet::split_endpoint` and read by the
-checker, the order and the session, and a run binds each stream of a `many` port under the path a
-connection would have written. That is what a **purge** needs, and a purge is what gives a loop a
-steady state: the test over it wires half a split back to the mixer and half to a boundary, and at
-a tolerance that means it, the loop closes at the feed's own flow where `demo.toml` at any
-tolerance cannot.
+**A `many` outlet is addressable by position, so a splitter can be wired.** The grammar is
+[the process schema](docs/src/architecture/process-schema.md)'s. What it buys is a **purge**,
+and a purge is what gives a loop a steady state: the test over it wires half a split back to the
+mixer and half to a boundary, and at a tolerance that means it, the loop closes at the feed's own
+flow where `demo.toml` at any tolerance cannot.
 
 **A parameter's declaration says whether a kernel can run without it, and the checker reads it.**
 That was the last hole P12 named, and it is the one that let `specs/flowsheets/demo.toml` ship:
 `unit_ops.separator` requires `gas_in_liquid`, the file never supplied it, and `validate` printed
 `OK` for as long as the file existed - so the checker's own promise, that a flowsheet printing
-`OK` is one an executor can consume, was false. `Param` carries `required` now, set on the 75
-parameters the shims read with a non-optional accessor, and `validate` reports a
-`MissingParameter` for one left out. **The flag is held to two sources and they agree**: the
-`[inputs]` block of `specs/models/process/<id>.toml`, which marks an input `optional = true` when a
-caller may leave it out, and the shim itself - measured, all twenty-six runnable entries agree, and
-`tests/palette.rs` re-checks it on every run.
+`OK` is one an executor can consume, was false. `Param` now carries `required`, as
+[the process schema](docs/src/architecture/process-schema.md) states, and the flag's two sources
+agree on all twenty-six runnable entries - which `tests/palette.rs` re-checks on every run.
 
 **What is named as not built, with the class that would close each**: Broyden through
 `BroydenAccelerator`, for the measured reason above. The tier's own acceptance is the NeqSim

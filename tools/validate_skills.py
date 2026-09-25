@@ -37,9 +37,31 @@ SKILLS_DIR = ROOT / "skills"
 #: `neqsim-java`: the skill drives the validated library rather than a placeholder.
 BASIS = ("azoth", "screening", "advisory", "data-retrieval", "hybrid")
 
-#: The port tranche a `screening` skill is backed by, one of the P0-P12 tranches in
-#: `docs/src/architecture/specification.md`. `azoth`-basis skills omit it.
-TRANCHES = frozenset(f"P{i}" for i in range(13))
+#: What a `screening` skill is backed by. `azoth`-basis skills omit it.
+#:
+#: The P-number tranches are `docs/src/architecture/specification.md`'s order. The
+#: named families are the ones that page puts **beyond** P12 - "mechanical design,
+#: safety, cost, electrical, automation, `standards/`, `statistics/`" - because a
+#: tranche numbering cannot name something that has no tranche.
+#:
+#: **The field is what would back the skill, and it is required to be honest.** A
+#: skill used to have to name a P-number, and the ones whose physics no tranche
+#: covers named the nearest - which is how a noise screening and a PSV orifice
+#: calculation came to read `P11` after P11 had closed. A named family is the
+#: honest answer where the physics belongs to a tree the port does not reach.
+TRANCHES = frozenset(f"P{i}" for i in range(13)) | frozenset(
+    (
+        "mechanical-design",
+        "safety",
+        "statistics",
+        "cost",
+        "electrical",
+        "automation",
+        "standards",
+        "fluidmechanics",
+        "pvtsimulation",
+    )
+)
 
 NAME = re.compile(r"^azoth-[a-z0-9]+(-[a-z0-9]+)*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
@@ -94,9 +116,12 @@ def problems(entries: list[dict[str, object]]) -> list[str]:
 
         tranche = entry.get("tranche")
         if tranche is not None and tranche not in TRANCHES:
-            found.append(f"{where}: tranche {tranche!r} is not one of P0..P12")
+            found.append(
+                f"{where}: tranche {tranche!r} is not one of P0..P12 or the beyond-P12 "
+                f"families {sorted(TRANCHES - {f'P{i}' for i in range(13)})}"
+            )
         if basis == "screening" and tranche is None:
-            found.append(f"{where}: a screening skill names the tranche that will back it")
+            found.append(f"{where}: a screening skill names what will back it")
 
         path = str(entry.get("path", ""))
         resolved = ROOT / path

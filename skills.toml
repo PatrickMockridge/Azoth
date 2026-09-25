@@ -285,7 +285,7 @@ version = "0.1.0"
 description = "Educational acoustic-induced-vibration (AIV) screening using the public Energy Institute likelihood-of-failure form for gas pressure-reducing devices. USE WHEN: a task needs a public, screening-level estimate of sound power level, pipe diameter-to-thickness ratio, allowable sound power level, and an AIV likelihood-of-failure index for a control valve, relief valve, or restriction orifice before detailed vibration assessment."
 calculation_basis = "screening"
 path = "skills/process/acoustic-induced-vibration-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -294,7 +294,7 @@ version = "0.1.0"
 description = "Educational screening of the maximum allowable condensable-contaminant concentration in a gas feeding a fixed adsorbent bed (mercury guard bed, molecular sieve, catalyst guard) before capillary condensation floods the sorbent pores. USE WHEN: a task needs a public, screening-level contaminant ppmv limit from the Kelvin equation and a sorbent pore radius, or needs to explain why a bed degrades with no free liquid at the inlet."
 calculation_basis = "screening"
 path = "skills/process/adsorbent-capillary-condensation-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -303,7 +303,7 @@ version = "0.1.0"
 description = "Educational ageing-trend and remaining-life screening for a repairable equipment population from its corrective-failure history: Laplace centroid trend test, Crow-AMSAA / NHPP power-law intensity fit, projection of the failure load to a required end-of-life year, and a maintain-versus-replace economic crossover. USE WHEN: a task asks whether equipment is degrading with age, whether a failure history shows a worsening trend, how many failures to expect between now and a life-extension target year, or whether to keep repairing versus replace, before a qualified life-extension or technical-condition assessment."
 calculation_basis = "screening"
 path = "skills/process/ageing-life-extension-screening/SKILL.md"
-tranche = "P11"
+tranche = "statistics"
 tags = ["process"]
 
 [[skill]]
@@ -312,7 +312,7 @@ version = "0.1.0"
 description = "Link a NeqSim process simulation and engineering documents to a CFD study, single-phase or multiphase. Merges P&ID, STID, datasheet and plant-data inputs into a traceable design basis, converts a flashed NeqSim fluid into CFD boundary conditions, takes both phases and the interfacial tension from a multiphase flash and screens which multiphase model is defensible, writes and runs a complete OpenFOAM case (steady single-phase RANS or transient volume of fluid) for arbitrary geometry, reads the solved fields back, gates the study on wall treatment / mesh independence / turbulence model, and converts local-versus-bulk results into enhancement factors for one-dimensional models. Tonal-noise requests are first gated on source topology, internal geometry, synchronized spectra, event conditions, acoustic terminations, and structural boundaries; steady RANS is never presented as tonal-source diagnosis. USE WHEN: a task needs local flow detail a one-dimensional model cannot generate - velocity or shear peaks at bends, welds, restrictions, tees, headers or tube bundles, flow maldistribution across a bundle or manifold, stratified or slug two-phase behaviour in a line, a pressure-drop check on real geometry, a CFD/FEM report qualification, or a fail-closed readiness assessment for aeroacoustic or flow-induced tonal noise."
 calculation_basis = "screening"
 path = "skills/process/cfd-coupling/SKILL.md"
-tranche = "P11"
+tranche = "fluidmechanics"
 tags = ["process"]
 
 [[skill]]
@@ -321,7 +321,7 @@ version = "0.1.0"
 description = "Set up anti-surge recycle control for a centrifugal compressor in NeqSim, including compressor-chart generation, steady-state AntiSurgeRecycleCalculator use, dynamic AntiSurgeController PI control, and CompressorAntiSurgeApplication topology binding for hot/cold recycle valves and speed runback. USE WHEN: a task needs to protect a NeqSim compressor from surge with a recycle (spill-back) loop and a compressor performance chart is either supplied or must be generated."
 calculation_basis = "screening"
 path = "skills/process/compressor-antisurge-recycle/SKILL.md"
-tranche = "P11"
+tranche = "automation"
 tags = ["process"]
 
 [[skill]]
@@ -330,7 +330,7 @@ version = "0.1.0"
 description = "Educational compressor operating window screening against surge and stonewall margins. USE WHEN: a task needs a public, screening-level check that a centrifugal compressor operating point sits inside the surge and stonewall limits before detailed performance review."
 calculation_basis = "screening"
 path = "skills/process/compressor-operating-window-check/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -339,7 +339,7 @@ version = "0.1.0"
 description = "Educational centrifugal-compressor power screening using the public polytropic-head equation (API 617 / API 619 style). USE WHEN: a task needs a public, screening-level estimate of polytropic head, discharge temperature, and gas power for a single compression stage before detailed compressor selection."
 calculation_basis = "screening"
 path = "skills/process/compressor-power-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -348,7 +348,7 @@ version = "0.1.0"
 description = "Educational control-valve sizing screening that estimates the required flow coefficient (Kv/Cv) and flags choked flow per public IEC 60534-2-1 / ISA-75.01 equations for liquid and gas service. USE WHEN: a task needs a public, screening-level required Cv and a choked-flow flag before detailed control-valve selection."
 calculation_basis = "screening"
 path = "skills/process/control-valve-cv-screening/SKILL.md"
-tranche = "P11"
+tranche = "standards"
 tags = ["process"]
 
 [[skill]]
@@ -357,7 +357,7 @@ version = "0.1.0"
 description = "Educational dry gas seal supply and condensation screening for centrifugal compressors. USE WHEN: a task needs a public, screening-level estimate of seal-gas and separation-gas supply demand and a seal-gas condensation-margin check (cavity temperature versus hydrocarbon dew point) before detailed dry gas seal system design per API 692."
 calculation_basis = "screening"
 path = "skills/process/dry-gas-seal-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -366,7 +366,7 @@ version = "0.1.0"
 description = "Set up measurement devices and PID-style controllers for NeqSim dynamic process simulations. USE WHEN: a task needs to add transmitters, controller devices, valve manipulation, setpoints, controller action, and autotuning workflow guidance before runTransient calculations."
 calculation_basis = "screening"
 path = "skills/process/dynamic-instrument-controller-setup/SKILL.md"
-tranche = "P11"
+tranche = "automation"
 tags = ["process"]
 
 [[skill]]
@@ -375,7 +375,7 @@ version = "0.1.0"
 description = "Prepare NeqSim ProcessSystem and ProcessModel flowsheets for dynamic simulation, including equipment holdup, mechanical-design, and volume-readiness checks. USE WHEN: a task needs to convert a steady-state NeqSim process into a dynamic-ready model before runTransient calculations."
 calculation_basis = "screening"
 path = "skills/process/dynamic-process-preparation/SKILL.md"
-tranche = "P11"
+tranche = "automation"
 tags = ["process"]
 
 [[skill]]
@@ -384,7 +384,7 @@ version = "0.1.0"
 description = "Link a NeqSim process simulation and engineering documents to a finite-element model of the solid: heat conduction through a layered wall, transient cooldown, species diffusion in porous rock, and the thermal and pressure stress that follow. Merges P&ID, STID, datasheet, insulation-specification and inspection inputs into a traceable design basis, converts a flashed NeqSim fluid into a film coefficient, a Biot and Fourier number and a mesh and time-step target, solves the layered one-dimensional problem with a dependency-free finite-element solver verified against the closed-form resistance, generates a structured Gmsh mesh in two dimensions or swept into three (revolved pipe or vessel wall, extruded plate or block) and a runnable scikit-fem or FEniCSx case, screens which backend is defensible (scikit-fem, FEniCSx, SfePy, MFEM, OpenSeesPy, PyNite), renders the mesh and the solved field off-screen with PyVista including surface, cut-plane and clipped three-dimensional views, gates the study on discretisation, mesh independence, energy balance and boundary placement, and reduces the field to the U-value, U-multiplier, hot-spot factor and no-touch time a one-dimensional NeqSim model consumes. USE WHEN: a task needs a temperature or stress field inside a solid that a one-dimensional heat-transfer coefficient cannot produce - a local insulation defect, a support or clamp short-circuit, a buried or non-radial soil path, a nozzle or wall discontinuity, a cooldown or thermal-shock transient, diffusion through a porous medium - when a three-dimensional geometry or a rendered field is needed, or when an existing thermal or stress finite-element report must be qualified before its numbers are trusted."
 calculation_basis = "screening"
 path = "skills/process/fem-coupling/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -393,7 +393,7 @@ version = "0.1.0"
 description = "Educational fired-heater duty and radiant-flux screening using public energy-balance relations (API 560 style). USE WHEN: a task needs a public, screening-level estimate of process duty, fired duty, fuel rate, and average radiant flux for a fired heater before detailed thermal design."
 calculation_basis = "screening"
 path = "skills/process/fired-heater-duty-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -402,7 +402,7 @@ version = "0.1.0"
 description = "Educational flow-induced vibration (FIV) screening using a public fluid kinetic-energy (rho v^2) likelihood-of-failure index. USE WHEN: a task needs a public, screening-level check of whether a main-line flow velocity and density produce a kinetic-energy level that warrants a detailed Energy Institute style FIV assessment before piping vibration design."
 calculation_basis = "screening"
 path = "skills/process/flow-induced-vibration-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -411,7 +411,7 @@ version = "0.1.0"
 description = "Educational gas-scrubber sizing screening using the public Souders-Brown / K-factor relation for vertical separators with a mist-eliminator gas-load check. USE WHEN: a task needs a public, screening-level estimate of the Souders-Brown velocity, required vessel diameter, velocity utilisation, and mist-eliminator load for a vertical gas scrubber before detailed separator design."
 calculation_basis = "screening"
 path = "skills/process/gas-scrubber-sizing-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -420,7 +420,7 @@ version = "0.1.0"
 description = "Educational gas-turbine performance screening using open ISO 3977 / GL1029 style derate factors. USE WHEN: a task needs a public, screening-level estimate of site-rated shaft power, site heat rate, thermal efficiency, fuel heat input, exhaust mass flow, and exhaust temperature for a gas-turbine driver before detailed package selection."
 calculation_basis = "screening"
 path = "skills/process/gas-turbine-performance-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -429,7 +429,7 @@ version = "0.1.0"
 description = "Educational process line velocity screening against erosional velocity and recommended velocity guidelines. USE WHEN: a task needs a public, screening-level check that a pipe or line operates within erosional and recommended velocity limits before detailed line sizing."
 calculation_basis = "screening"
 path = "skills/process/line-velocity-check/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -438,7 +438,7 @@ version = "0.1.0"
 description = "Standards-based gas-valve and restriction noise screening at a stated receiver distance using either a current measured A-weighted level or a conservative pressure-drop energy model. USE WHEN: a task needs noise triage, receiver/workplace assessment, or routing to detailed IEC 60534-8-3 prediction while keeping acoustic-induced-vibration assessment separate."
 calculation_basis = "screening"
 path = "skills/process/noise-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -447,7 +447,7 @@ version = "0.1.0"
 description = "Educational process-pipe wall-thickness screening using the public ASME B31.3 hoop-stress (Barlow style) equation. USE WHEN: a task needs a public, screening-level minimum wall-thickness estimate and a check against a nominal schedule wall before detailed piping or pipeline mechanical design."
 calculation_basis = "screening"
 path = "skills/process/pipe-wall-thickness-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -456,26 +456,24 @@ version = "0.1.0"
 description = "Educational piping-flexibility screening using open ASME B31.3 / B16.5 style relations. USE WHEN: a task needs a public, screening-level check of hoop (sustained) stress, thermal expansion, displacement (expansion) stress range, and a flange-rating pressure check for a process pipe run before detailed pipe-stress analysis."
 calculation_basis = "screening"
 path = "skills/process/piping-flexibility-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
 name = "azoth-pressure-drop-screening"
 version = "0.1.0"
-description = "Educational single-phase line pressure-drop screening against a recommended pressure-gradient guideline. USE WHEN: a task needs a public, screening-level Darcy-Weisbach pressure-drop estimate and a check against NORSOK P-002 / GPSA style line pressure-gradient guidelines before detailed hydraulic design."
-calculation_basis = "screening"
+description = "Single-phase line pressure drop from the Darcy-Weisbach relation, with the Reynolds number and the friction factor. USE WHEN: a task needs a screening pressure drop or pressure gradient for a single-phase line before detailed hydraulic design."
+calculation_basis = "azoth"
 path = "skills/process/pressure-drop-screening/SKILL.md"
-tranche = "P11"
-tags = ["process"]
+tags = ["process", "hydraulics"]
 
 [[skill]]
 name = "azoth-pump-hydraulics-screening"
 version = "0.1.0"
-description = "Educational centrifugal-pump hydraulics screening for hydraulic/shaft power, NPSH-available, and best-efficiency-point window using public pump relations and affinity laws. USE WHEN: a task needs a public, screening-level pump power, NPSH-available estimate, and BEP-window check before detailed pump selection."
-calculation_basis = "screening"
+description = "Hydraulic and shaft power for a centrifugal pump from its head, flow and efficiency. USE WHEN: a task needs a screening shaft power or a hydraulic power for a pump duty before a vendor selection."
+calculation_basis = "azoth"
 path = "skills/process/pump-hydraulics-screening/SKILL.md"
-tranche = "P11"
-tags = ["process"]
+tags = ["process", "hydraulics"]
 
 [[skill]]
 name = "azoth-reciprocating-compressor-screening"
@@ -483,7 +481,7 @@ version = "0.1.0"
 description = "Educational reciprocating-compressor screening using the public clearance volumetric-efficiency relation (API 618 / API 619 style). USE WHEN: a task needs a public, screening-level estimate of volumetric efficiency, actual inlet capacity, staging, discharge temperature, and rod-load utilisation for a reciprocating compressor before detailed selection."
 calculation_basis = "screening"
 path = "skills/process/reciprocating-compressor-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -492,7 +490,7 @@ version = "0.1.0"
 description = "Educational reliability and availability screening from an ISO 14224 / OREDA style failure rate and repair time, with simple parallel-redundancy and planned-downtime handling. USE WHEN: a task needs a public, screening-level estimate of MTBF, steady-state availability, mission reliability, and expected failures for an equipment item or a simple redundant system before detailed RAM analysis."
 calculation_basis = "screening"
 path = "skills/process/reliability-data-screening/SKILL.md"
-tranche = "P11"
+tranche = "statistics"
 tags = ["process"]
 
 [[skill]]
@@ -501,7 +499,7 @@ version = "0.1.0"
 description = "Educational sand-erosion and remaining-wall-life screening for solids-bearing lines. USE WHEN: a task needs a public, screening-level estimate of sand erosion rate, cumulative wall loss, and remaining wall life from a sand production rate before detailed DNV RP O501 erosion analysis."
 calculation_basis = "screening"
 path = "skills/process/sand-erosion-screening/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -510,7 +508,7 @@ version = "0.1.0"
 description = "Educational separator screening indicators for gas load, residence time, and capacity warnings. USE WHEN: a task needs public separator capacity screening without proprietary design methods."
 calculation_basis = "screening"
 path = "skills/process/separator-modelling/SKILL.md"
-tranche = "P11"
+tranche = "mechanical-design"
 tags = ["process"]
 
 [[skill]]
@@ -528,7 +526,7 @@ version = "0.1.0"
 description = "Monte Carlo uncertainty quantification, tornado sensitivity and global sensitivity analysis for NeqSim tasks. Supplies inverse-CDF marginals (uniform, triangular, normal, log-normal fitted from a stated P10/P90, deterministic), unit-hypercube samplers (seeded pseudo-random, Latin hypercube, Halton), a technical/economic model split that caches the expensive flowsheet stage so price and cost parameters never trigger a re-solve, linear-interpolation percentiles in the ascending p10<=p50<=p90 convention the task gate enforces, a scale-invariant split-half convergence check, a swing-ranked one-at-a-time tornado, optional SALib Saltelli/Sobol' and Morris backends that expose the interaction effects a tornado is blind to, an optional chaospy polynomial-chaos surrogate that reaches the same statistics in one to two orders of magnitude fewer model evaluations, and emission of the uncertainty block that the task report generator and CI gate consume. USE WHEN: a task must report P10/P50/P90, a tornado diagram or a probability of a negative outcome, a Monte Carlo loop wraps an expensive NeqSim simulation, parameters must be ranked before a sensitivity budget is committed, an interaction between uncertain inputs is suspected, or an existing uncertainty block must be audited for sample count, convergence and percentile convention."
 calculation_basis = "screening"
 path = "skills/process/uncertainty-quantification/SKILL.md"
-tranche = "P11"
+tranche = "statistics"
 tags = ["process"]
 
 [[skill]]
@@ -537,7 +535,7 @@ version = "0.1.0"
 description = "Educational utility-balance screening for instrument air demand, fuel gas Wobbe index, and cooling water duty/flow with a simple capacity margin roll-up (NORSOK U-001 / ISA-7.0.01 style). USE WHEN: a task needs a public, screening-level estimate of instrument air demand, cooling water flow, fuel gas Wobbe index compliance, and utility capacity utilisation before detailed utility-system design."
 calculation_basis = "screening"
 path = "skills/process/utility-balance-screening/SKILL.md"
-tranche = "P11"
+tranche = "standards"
 tags = ["process"]
 
 [[skill]]
@@ -546,7 +544,7 @@ version = "0.1.0"
 description = "Educational gas water-content and dehydration screening using the public GPSA Bukacek saturated-water-content correlation. USE WHEN: a task needs a public, screening-level estimate of saturated water content in natural gas, a check against a sales-gas water spec, or a decision on whether a stated stream composition is already DEHYDRATED or merely cooled and knocked out (the saturation test), before detailed dehydration design or before asserting any hydrate/ice finding."
 calculation_basis = "screening"
 path = "skills/process/water-dewpoint-dehydration-screening/SKILL.md"
-tranche = "P11"
+tranche = "P1"
 tags = ["process"]
 
 [[skill]]
@@ -633,7 +631,7 @@ version = "0.1.0"
 description = "Educational blowdown and depressurization screening with time-to-target and low-temperature flags. USE WHEN: a task needs a public, screening-level blowdown time indicator and auto-refrigeration low-temperature triage without proprietary blowdown design methods."
 calculation_basis = "screening"
 path = "skills/safety/depressurization-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -642,7 +640,7 @@ version = "0.1.0"
 description = "Educational fire-water and deluge coverage screening: area versus dedicated object demand, deluge nozzle-net sizing from both the flow and the spacing criterion, and fire-monitor screening with wind drift. USE WHEN: a task asks whether a process area has adequate fire-water coverage, how many deluge nozzles are needed, or whether monitors or passive fire protection can substitute for a fixed system."
 calculation_basis = "screening"
 path = "skills/safety/firewater-deluge-design/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -651,7 +649,7 @@ version = "0.1.0"
 description = "Educational flare thermal-radiation screening using the public API 521 / API 537 point-source equation. USE WHEN: a task needs a public, screening-level estimate of radiant heat flux at a distance from a flare and a check against allowable radiation limits before detailed flare and radiation design."
 calculation_basis = "screening"
 path = "skills/safety/flare-radiation-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -660,7 +658,7 @@ version = "0.1.0"
 description = "Educational Gaussian point-source gas-dispersion screening that estimates the downwind distance to a target concentration (LFL or toxic ppm) using the public Pasquill-Gifford / Briggs rural model. USE WHEN: a task needs a public, screening-level distance-to-LFL or distance-to-ppm estimate for a continuous gas release before detailed dispersion or consequence analysis."
 calculation_basis = "screening"
 path = "skills/safety/gas-dispersion-distance-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -669,7 +667,7 @@ version = "0.1.0"
 description = "Educational jet-fire thermal-radiation screening that estimates the radiative flux at a distance, or the distance to a target flux, using the public single-point-source flame radiation model. USE WHEN: a task needs a public, screening-level jet-fire radiation flux or a distance to a personnel/equipment thermal limit before detailed fire-consequence analysis."
 calculation_basis = "screening"
 path = "skills/safety/jet-fire-radiation-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -678,7 +676,7 @@ version = "0.1.0"
 description = "Educational pressure-safety-valve orifice screening using the public API 520 Part I critical gas-flow equation. USE WHEN: a task needs a public, screening-level required PSV orifice area and a mapped API orifice letter before detailed relief-valve sizing and selection."
 calculation_basis = "screening"
 path = "skills/safety/psv-orifice-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -687,7 +685,7 @@ version = "0.1.0"
 description = "Educational fire-case relief load screening indicators for pressure relief devices. USE WHEN: a task needs public, screening-level fire-case relief load estimates and capacity flags without proprietary relief design methods."
 calculation_basis = "screening"
 path = "skills/safety/relief-load-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -696,7 +694,7 @@ version = "0.1.0"
 description = "Educational process safety-function coverage screening using the public API RP 14C / ISO 10418 SAFE-chart concept. USE WHEN: a task needs a public, screening-level check of whether a process component has the typically required protective functions (PSH, PSL, PSV, LSH, LSL, etc.) before a formal SAFE-chart and safety analysis review."
 calculation_basis = "screening"
 path = "skills/safety/safety-function-coverage-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]
@@ -705,7 +703,7 @@ version = "0.1.0"
 description = "Educational vacuum-collapse (implosion) screening for a blocked-in vessel that cools down, with vacuum-depth and external-rating flags. USE WHEN: a task needs a public, screening-level check of whether a closed vessel cooldown or steam/vapour condensation can pull a vacuum below the external pressure rating, without proprietary vacuum-collapse design methods."
 calculation_basis = "screening"
 path = "skills/safety/vacuum-collapse-screening/SKILL.md"
-tranche = "P11"
+tranche = "safety"
 tags = ["safety"]
 
 [[skill]]

@@ -2,8 +2,8 @@
 
 Educational utility-balance screening for instrument air demand, fuel gas Wobbe index, and cooling water duty/flow with a simple capacity margin roll-up (NORSOK U-001 / ISA-7.0.01 style). USE WHEN: a task needs a public, screening-level estimate of instrument air demand, cooling water flow, fuel gas Wobbe index compliance, and utility capacity utilisation before detailed utility-system design.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. The `standards/` tree is **beyond P12** in the specification's order, so no tranche backs it.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. The `standards/` tree is **beyond P12** in the specification's order, so no tranche backs it. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

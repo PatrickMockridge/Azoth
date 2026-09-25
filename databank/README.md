@@ -25,7 +25,7 @@ comes from the compiled files. The card is the **subset a user may override** - 
 cubic's `Tc`, `Pc` and `omega` and the Peng-Robinson `kij` - stated in the format a
 user's card takes, so the library's data and a user's data are one object. It is not
 the source of the compiled files, which carry every column the manifest dispositions;
-`databank/compiled/` does not exist because the compiled files live at `data/`, where
+`databank/compiled/` does not exist because the compiled files live at `data/`, where <!-- doc-claims-ok: the sentence says this path is absent -->
 the two languages read them at fixed paths - Rust embeds them with `include_str!`, and
 `python/src/azoth/_data.py` finds them by walking up from the package.
 

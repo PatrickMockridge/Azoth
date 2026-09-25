@@ -2,8 +2,8 @@
 
 Educational screening of the maximum allowable condensable-contaminant concentration in a gas feeding a fixed adsorbent bed (mercury guard bed, molecular sieve, catalyst guard) before capillary condensation floods the sorbent pores. USE WHEN: a task needs a public, screening-level contaminant ppmv limit from the Kelvin equation and a sorbent pore radius, or needs to explain why a bed degrades with no free liquid at the inlet.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. The specification puts **mechanical design** beyond P12, so no tranche backs it.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. The specification puts **mechanical design** beyond P12, so no tranche backs it. The validated engine today is NeqSim's, credited in `NOTICE`.
 
 ## References
 

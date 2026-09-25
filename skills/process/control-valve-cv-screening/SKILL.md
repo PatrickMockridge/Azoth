@@ -2,8 +2,8 @@
 
 Educational control-valve sizing screening that estimates the required flow coefficient (Kv/Cv) and flags choked flow per public IEC 60534-2-1 / ISA-75.01 equations for liquid and gas service. USE WHEN: a task needs a public, screening-level required Cv and a choked-flow flag before detailed control-valve selection.
 
-This is an `screening` skill and, until azoth ports the calculation, a placeholder: it
-produces no azoth number. Azoth backs this at tranche P11.
+This is a `screening` skill and, until azoth ports the calculation, a placeholder: it
+produces no azoth number. azoth's `hydraulics.control_valve_cv` is the **liquid, non-choked** relation and gives the flow *from* a coefficient; the required-coefficient direction and the IEC 60534-2-1 choked-flow criterion are not ported.
 
 ## When to Use
 
@@ -47,7 +47,7 @@ Azoth has not ported this calculation; nothing here produces a number.
 
 ## Related Azoth functionality
 
-None yet. Azoth backs this at tranche P11. The validated engine today is NeqSim's, credited in `NOTICE`.
+None yet. azoth's `hydraulics.control_valve_cv` is the **liquid, non-choked** relation and gives the flow *from* a coefficient; the required-coefficient direction and the IEC 60534-2-1 choked-flow criterion are not ported.
 
 ## References
 
