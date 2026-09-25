@@ -116,7 +116,18 @@ only**, because an output is calculated and has nothing to state.
 
 `products` is written *before* `[[inputs]]`, and that order is not cosmetic: TOML has no
 way to reopen a key after an array of tables, so a value written after one belongs to the
-last element of it.
+last element of it. For the same reason `[layout]` is written *after* every array of tables:
+it is a table, and the writer emits its tables in field order.
+
+**`[layout]` is a view and not physics.** `[layout.instances]`, `[layout.inputs]` and
+`[layout.products]` each map a name to an `[x, y]` pair, and nothing in the run reads one: the
+checker ignores it, the executor never sees it, and a flowsheet written by hand carries none —
+the projection derives a deterministic layout from the connection graph and uses a stored
+position only where one exists. It is in the document so that one artifact is the whole editor
+state, which is what makes the round trip lossless for a figure drawn rather than only for a
+document typed. **A table and not a pair of fields on `[[instances]]`**, because `products` is
+names only — an output is calculated and has nothing to state — so a per-instance position
+could not cover the boundary, and one table covers all three kinds uniformly.
 
 `from` is a feed name or `instance.port` (an outlet); `to` is a product name or
 `instance.port` (an inlet). A recycle is a connection that closes a loop, its stream
@@ -142,7 +153,9 @@ rather than measured, and its loop stops at one pass.
 `azoth_process::validate` runs the calculus's rules:
 
 - every instance names a palette unit op, and **exactly** its declared parameters — every one
-  it cannot run without given, and none it does not declare;
+  it cannot run without given, none it does not declare, and **each value of the kind its
+  declaration states** (the kind is not in the palette, so it is read from the model's own input
+  declaration — the same table a form chooses a widget from);
 - a connection joins an outlet (or feed) to an inlet (or product);
 - a Port-to-Port connection joins dimension-compatible field records;
 - an input's record could be a stream — one mole fraction per substance, and a fluid that
@@ -157,6 +170,44 @@ databank's answer and is refused at the run.
 
 `azoth check --flowsheet <file>` runs it from the command line; a cargo test walks
 `specs/unit_ops/` and `specs/flowsheets/` and holds every shipped file to it.
+
+## The wire projection
+
+A front-end does not read the document; it reads a projection of it, and the projection is stated
+here because two of its rules are what make an editor mechanical rather than a translation.
+
+```text
+a node    instance:sep1          input:feed_1          product:vapour_product
+a handle  sep1.liquid            s1.products[0]        feed_1
+an edge   e0 … over the connections then the recycles, in document order
+```
+
+**A node's id is `{role}:{name}`.** Instance-versus-boundary is disjoint by the name rule above;
+boundary-versus-boundary is not, which is why the prefix cannot be dropped — a bare name would
+merge an input and a product of the same name into one node.
+
+**A handle's id is the stream's own path** — `feed_1`, `sep1.liquid`, `s1.products[0]` — so the
+handle an edge attaches to, the session's key for the same stream and the edge's `data.path` are
+one string rather than three spellings reconciled in three places. A feed's handle is the feed's
+name and a product's is the product's, which makes every edge the same shape (`source` → `target`)
+and needs no special case at the boundary. A `one` port draws one handle; a `many` **inlet** draws
+one however many connections reach it, which is how a mixer is wired; a `many` **outlet** draws one
+per stream it returns.
+
+**How many streams a `many` outlet returns is a value and not a declaration** — the checker says so
+itself — so the projection draws the union of what the document addresses and what the instance's
+vector parameter says, and an entry with two vector parameters would be ambiguous and leave the
+wiring alone to decide.
+
+The graph is emitted in **xyflow's** node/edge shape — `id`, `type`, `position`, `data`, `source`,
+`target`, `sourceHandle`, `targetHandle` — so the editor's model is the schema's. A `[[connections]]`
+entry has no id in the schema, so its position in the document is its identity and the edge id is
+that position.
+
+**The projection never refuses a document.** A canvas has to draw a broken flowsheet, because
+drawing it is how a user fixes it: an instance naming a unit op the palette does not carry gets a
+node with no ports, and an edge naming an instance nobody declared keeps the id it implies — which
+the checker's `UnknownInstance` explains, and which is reported rather than repaired.
 
 ## The kernels
 

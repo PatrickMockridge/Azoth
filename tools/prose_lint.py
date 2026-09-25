@@ -77,6 +77,11 @@ SEARCH: tuple[tuple[str, str], ...] = (
     ("python/tests", "*.py"),
     ("specs", "*.toml"),
     ("tools", "*.py"),
+    # The editor, so the standard covers the front-end's prose too rather than exempting the one
+    # tree that was written after it. TypeScript only: the JSON under `ui/test/fixtures/` is the
+    # CLI's output, not anyone's writing.
+    ("ui/src", "*.ts"),
+    ("ui/src", "*.tsx"),
 )
 
 

@@ -461,10 +461,20 @@ fix rather than the executor's to work around.
 
 ## Beyond the port
 
-The interoperation surface — the middleware a flowsheet editor, a notebook and an agent
-all drive — is built after the port, not beside it. Its shape is
-[The middleware](docs/src/architecture/middleware.md), and the order it gates on is
-[the specification](docs/src/architecture/specification.md)'s, which states it once.
+**The interoperation surface is built.** It is `crates/azoth-process`'s `middleware` module and
+three bindings of it — `azoth-wasm` for a browser, `azoth.process.Session` for a notebook, and
+`azoth edit`/`azoth forms` for a shell — and its shape is
+[The middleware](docs/src/architecture/middleware.md), which also names what is still not built:
+the MCP transport, a hosted session, the twenty-seven model result dataclasses as JSON, and the
+hop from a signed GitHub Release to a package index. The editor it feeds is `ui/`.
+
+**Three holes in the checker closed on the way, and each was the same shape.** The checker
+verified units, ports, names and connections, and never that a value was *there*, was of the
+*right kind*, or *named* something the run could do: `MissingParameter` (closed with P12),
+`ParameterKind`, and `Acceleration` — a tear's `acceleration_method` reached `executor::session`
+and nothing else, so a misspelt name, or `broyden`, validated clean and then failed the run. The
+first two were reachable from a form; the third became reachable when the command model gave a
+front-end a way to write one.
 
 **Nothing in this tier is waiting on a prerequisite, and the three that were are now cases.**
 The paragraph here used to name them: `pipe` waited on a density and a viscosity assembled from

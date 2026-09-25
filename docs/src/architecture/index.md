@@ -24,12 +24,23 @@ specs/schema/*.json      the contract each of those is held to
         │                              lean/Azoth/Vocabulary.lean, Gate.lean
         ├─► tools/gen_docs.py       ─► docs/src/**, including docs/src/SUMMARY.md
         ├─► tools/gen_stub.py       ─► python/src/azoth/_core.pyi
-        └─► tools/provenance.py     ─► provenance.json
+        ├─► tools/provenance.py     ─► provenance.json
+        └─► tools/gen_model_inputs.py ─► crates/azoth-process/src/model_inputs_gen.rs
+
+specs/unit_ops/**/*.toml ─► tools/gen_palette.py ─► crates/azoth-process/src/palette_gen.rs
 
 databank/sources/neqsim/*.csv ─► tools/gen_databank.py ─► data/components/*.csv
 keycard.toml                  ─► tools/gen_user_data.py ─► data/fittings/*.csv
                                                            data/fluids/*.csv
 ```
+
+**Two of those read a specification nothing else compiles from.** The process palette is
+declared in `specs/unit_ops/`, one file per entry, and it is read *at run time* by
+`load_palette` rather than generated — because the schema is the `UnitOpSpec` type and the checker
+and a front-end have to read the same declaration. `gen_palette.py` therefore embeds those files as
+text (a browser has no filesystem) and `gen_model_inputs.py` compiles the one thing the model
+generator drops: the inputs' names, kinds and optionals, which a form needs and a bound does not
+carry.
 
 **Every generated file on the right comes from a file on the left, and CI regenerates
 all of them and fails on a diff.** So a specification is not a document that is
