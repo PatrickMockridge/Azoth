@@ -30,6 +30,46 @@ pub enum Command {
 
     /// Run a flowsheet to its steady state.
     Run(RunArgs),
+
+    /// Print the unit-operation palette as a form per entry.
+    Forms(FormsArgs),
+
+    /// Apply one command to a flowsheet and print what it made.
+    Edit(EditArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct FormsArgs {
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// Include the agent's tool schema, projected from the command model.
+    #[arg(long)]
+    pub tools: bool,
+}
+
+#[derive(Debug, clap::Args)]
+pub struct EditArgs {
+    /// The flowsheet to edit.
+    #[arg(long)]
+    pub flowsheet: std::path::PathBuf,
+
+    /// The command, as the JSON object the middleware's command model reads.
+    #[arg(long)]
+    pub command: String,
+
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// Run the edited document as well, and report what it reached.
+    #[arg(long)]
+    pub run: bool,
+
+    /// Print the whole envelope as JSON rather than as a report.
+    #[arg(long)]
+    pub json: bool,
 }
 
 #[derive(Debug, clap::Args)]

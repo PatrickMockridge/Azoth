@@ -15,8 +15,8 @@
 //! [`azoth_cli::report`], both of which are testable. What is left here is the
 //! wiring, which is the part an integration test against the built binary covers.
 
-use azoth_cli::cli::{CheckArgs, Cli, Command, PipeArgs, RunArgs};
-use azoth_cli::{check, pipe, report, run};
+use azoth_cli::cli::{CheckArgs, Cli, Command, EditArgs, FormsArgs, PipeArgs, RunArgs};
+use azoth_cli::{check, edit, forms, pipe, report, run};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -29,6 +29,44 @@ fn main() -> std::process::ExitCode {
         },
         Command::Check(args) => run_check(args),
         Command::Run(args) => run_flowsheet(args),
+        Command::Forms(args) => run_forms(args),
+        Command::Edit(args) => run_edit(args),
+    }
+}
+
+fn run_forms(args: FormsArgs) -> std::process::ExitCode {
+    match forms::forms_json(&args.palette, args.tools) {
+        Ok(text) => {
+            println!("{text}");
+            std::process::ExitCode::SUCCESS
+        }
+        Err(message) => {
+            eprintln!("azoth: {message}");
+            std::process::ExitCode::from(2)
+        }
+    }
+}
+
+fn run_edit(args: EditArgs) -> std::process::ExitCode {
+    match edit::edit(
+        &args.flowsheet,
+        &args.palette,
+        &args.command,
+        args.run,
+        args.json,
+    ) {
+        Ok(report) => {
+            println!("{}", report.text);
+            if report.ok {
+                std::process::ExitCode::SUCCESS
+            } else {
+                std::process::ExitCode::from(2)
+            }
+        }
+        Err(message) => {
+            eprintln!("azoth: {message}");
+            std::process::ExitCode::from(2)
+        }
     }
 }
 

@@ -443,3 +443,99 @@ fn a_recycle_parameter_is_five_numbers_a_count_and_a_name() {
     .expect_err("a name where a count belongs is refused");
     assert!(error.to_string().contains("number"), "{error}");
 }
+
+/// **The agent's tools are the command model, not a surface beside it.** The names are read off
+/// each variant's `Debug` form, so a command cannot arrive without a tool and a tool cannot
+/// arrive without a command - and the schema's `command` tag is held to the tool's own name,
+/// because a schema that spelled it differently would describe a call the deserialiser refuses
+/// with no clue why.
+#[test]
+fn every_command_has_a_tool_and_no_tool_is_a_second_surface() {
+    let tools = azoth_process::middleware::tools::tools(&palette());
+    let commands = every_command();
+    assert_eq!(
+        tools.len(),
+        commands.len(),
+        "a tool per command, and no more"
+    );
+
+    let variants: Vec<String> = commands
+        .iter()
+        .map(|command| {
+            let debug = format!("{command:?}");
+            let end = debug.find(['{', '(', ' ']).unwrap_or(debug.len());
+            let mut snake = String::new();
+            for (index, character) in debug[..end].char_indices() {
+                if character.is_uppercase() && index > 0 {
+                    snake.push('_');
+                }
+                snake.extend(character.to_lowercase());
+            }
+            snake
+        })
+        .collect();
+
+    assert_eq!(
+        tools.iter().map(|tool| tool.name).collect::<Vec<_>>(),
+        variants
+    );
+
+    for tool in &tools {
+        let schema = &tool.input_schema;
+        assert_eq!(schema["type"], "object");
+        assert_eq!(schema["additionalProperties"], false, "{}", tool.name);
+        assert_eq!(
+            schema["properties"]["command"]["const"], tool.name,
+            "{}'s tag is not its own name",
+            tool.name
+        );
+        assert!(
+            schema["required"]
+                .as_array()
+                .expect("an array")
+                .contains(&serde_json::json!("command")),
+            "{} does not require its tag",
+            tool.name
+        );
+        assert!(
+            !tool.description.is_empty(),
+            "{} says nothing about itself",
+            tool.name
+        );
+    }
+
+    // **The schema describes calls the deserialiser accepts.** A tool object with its `command`
+    // tag and every required property beside it reads as that command - which is the property
+    // that makes the schema usable rather than merely present.
+    for (tool, command) in tools.iter().zip(&commands) {
+        let mut call = serde_json::Map::new();
+        for name in schema_root_properties(tool) {
+            call.insert(name.clone(), value_for(command, &name));
+        }
+        call.insert("command".to_string(), serde_json::json!(tool.name));
+        let text = serde_json::Value::Object(call).to_string();
+        let read: Command = serde_json::from_str(&text)
+            .unwrap_or_else(|error| panic!("{}: {error}\n{text}", tool.name));
+        assert_eq!(&read, command, "{}", tool.name);
+    }
+}
+
+/// The properties a tool's schema requires, `command` included.
+fn schema_root_properties(tool: &azoth_process::middleware::tools::Tool) -> Vec<String> {
+    tool.input_schema["required"]
+        .as_array()
+        .expect("an array")
+        .iter()
+        .filter_map(serde_json::Value::as_str)
+        .map(str::to_string)
+        .collect()
+}
+
+/// A value for one property, read off the command the tool describes.
+fn value_for(command: &Command, property: &str) -> serde_json::Value {
+    let document = serde_json::to_value(command).expect("a command writes");
+    document
+        .get(property)
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!("any"))
+}

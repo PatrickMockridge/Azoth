@@ -5,9 +5,14 @@
 //! into a velocity, a friction factor, the fitting loss, the warnings that survive to the
 //! report - and the rendering in [`report`]. What is left in `main.rs` is resolving the
 //! arguments into a calculation and printing what comes back.
+//!
+//! [`edit`] and [`forms`] are the middleware's two doors here: one command against a document,
+//! and the palette as the forms a front-end renders.
 
 pub mod check;
 pub mod cli;
+pub mod edit;
+pub mod forms;
 pub mod pipe;
 pub mod report;
 pub mod run;
