@@ -120,13 +120,16 @@ pub struct SessionReport {
     pub tears: Vec<TearReport>,
 }
 
-/// Write a session's result as JSON.
+/// A session's result, as the document a caller reads or embeds.
+///
+/// **The one stream encoder**, extracted from `to_json` so that the middleware's envelope can
+/// carry the value rather than parse the string back. `to_json` is this value written, so the two
+/// cannot disagree - and the tests that pin the published bytes are what says so.
 ///
 /// # Errors
-/// [`AzothError::InvalidInput`] if a magnitude is not finite, or if the document cannot be
-/// written - neither of which a session that ran should be able to reach, and both of which are
-/// refused rather than written as `null`.
-pub fn to_json(session: &Session) -> Result<String> {
+/// [`AzothError::InvalidInput`] if a magnitude is not finite - which a session that ran should not
+/// be able to reach, and which is refused rather than written as `null`.
+pub fn session_report(session: &Session) -> Result<SessionReport> {
     let mut streams = BTreeMap::new();
     for (endpoint, stream) in &session.report().streams {
         streams.insert(
@@ -157,14 +160,21 @@ pub fn to_json(session: &Session) -> Result<String> {
             }),
         })
         .collect();
-    let report = SessionReport {
+    Ok(SessionReport {
         flowsheet: session.flowsheet().id.clone(),
         converged: session.report().converged,
         iterations: session.report().iterations,
         streams,
         tears,
-    };
-    serde_json::to_string(&report).map_err(|error| {
+    })
+}
+
+/// Write a session's result as JSON.
+///
+/// # Errors
+/// Whatever [`session_report`] refuses, or a write that fails - which for this shape it cannot.
+pub fn to_json(session: &Session) -> Result<String> {
+    serde_json::to_string(&session_report(session)?).map_err(|error| {
         AzothError::invalid_input("json", format!("the report could not be written: {error}"))
     })
 }

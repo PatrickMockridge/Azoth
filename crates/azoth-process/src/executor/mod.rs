@@ -28,5 +28,5 @@ pub mod json;
 pub mod session;
 
 pub use dispatch::{DISPATCH, Kernel, Parameters, UNRUNNABLE, dispatch, kernel_for};
-pub use json::{Quantity, SessionReport, StreamRecord, TearReport, to_json};
+pub use json::{Quantity, SessionReport, StreamRecord, TearReport, session_report, to_json};
 pub use session::{MAX_PASSES, RunReport, STREAM_FIELDS, Session, TearRecord, run};
