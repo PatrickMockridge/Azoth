@@ -344,3 +344,159 @@ fn a_column_refuses_a_stage_it_does_not_have() {
     setup.temperature_tolerance = 0.0;
     assert!(distillation_column(&setup).is_err());
 }
+
+/// The three per-tray draw vectors a side-draw test states, in the order a setup carries them.
+type DrawVectors = (Option<Vec<f64>>, Option<Vec<f64>>, Option<Vec<f64>>);
+
+/// The captured binary column with one tray's draw stated, which is the same setup three of the
+/// tests below vary.
+fn drawn_column(vectors: DrawVectors) -> ColumnSetup {
+    let mut setup = binary_column(1.0e-6);
+    setup.gas_side_draw_fractions = vectors.0;
+    setup.liquid_side_draw_fractions = vectors.1;
+    setup.pumparound_fractions = vectors.2;
+    setup
+}
+
+/// A per-tray vector of one kind: a zero everywhere but the named tray.
+fn on_tray(index: usize, fraction: f64) -> Vec<f64> {
+    let mut vector = vec![0.0; 6];
+    vector[index] = fraction;
+    vector
+}
+
+/// **The column's draw is the tray's own phase, and the tray's own traffic is what is left.**
+///
+/// Against `validation/neqsim/captures/process_side_draw.tsv` and the same block in
+/// `process_column.tsv`: tray 3 of the four-stage column drawing a quarter of its vapour. The
+/// capture's `columnReportsSideDrawAsOutletStream` and `columnEnergyBalanceIncludesSideDraw-
+/// Streams` are the class's own tests of this, and their numbers are what the case is held to.
+/// What is asserted here is the *identity* rather than the numbers, which is the port's own
+/// statement of the mechanism: the draw plus what the tray keeps is the vapour the tray formed,
+/// and the draw is the stated fraction of it.
+///
+/// **The draw carries the tray's own state**, so it is at the tray's temperature and pressure
+/// and not the product's: measured in the capture at 302.176 K and 19.4 bara against a
+/// distillate of 253.15 K at 19.0.
+#[test]
+fn a_column_draw_is_the_fraction_of_the_trays_own_phase() {
+    let drawn = distillation_column(&drawn_column((Some(on_tray(3, 0.25)), None, None)))
+        .expect("the column converges with a draw open");
+
+    assert_eq!(drawn.gas_side_draws.len(), 6);
+    let kept = drawn.trays[3].gas_n;
+    let side = drawn.gas_side_draws[3]
+        .as_ref()
+        .expect("tray 3 withdraws vapour")
+        .n;
+    // NeqSim's own row: the tray's vapour is `4.5419` mol/s, of which `3.4064` goes up and
+    // `1.1355` is withdrawn.
+    relative(
+        side + kept,
+        4.541891923509715,
+        1.0e-5,
+        "the tray's own vapour",
+    );
+    relative(
+        side,
+        0.25 * (side + kept),
+        1.0e-12,
+        "the quarter that is withdrawn",
+    );
+    relative(
+        kept,
+        3.4064189426322864,
+        1.0e-5,
+        "the traffic above the tray",
+    );
+    relative(side, 1.1354729808774289, 1.0e-5, "the draw itself");
+    absolute(
+        drawn.gas_side_draws[3].as_ref().expect("the draw").t.value,
+        drawn.trays[3].temperature.value,
+        1.0e-9,
+        "the draw is at the tray's own temperature",
+    );
+    // Every other tray drew nothing, and the vectors say so rather than repeating a flow.
+    assert_eq!(
+        drawn
+            .liquid_side_draws
+            .iter()
+            .filter(|d| d.is_some())
+            .count(),
+        0
+    );
+    assert_eq!(drawn.pumparounds.iter().filter(|d| d.is_some()).count(), 0);
+    assert_eq!(
+        drawn.gas_side_draws.iter().filter(|d| d.is_some()).count(),
+        1
+    );
+}
+
+/// **The closure counts the draws, which is what the class's own mass-balance test asserts.**
+///
+/// `columnReportsSideDrawAsOutletStream` asserts `getMassBalance("kg/hr")` is zero to the feed
+/// flow x `1e-6`; the port's equivalent is the products' component imbalance against the feed.
+/// **A closure that ignored what the trays withdrew would report a phantom imbalance rather
+/// than a gate miss**: measured, the two states below read `0.248` and `0.070` where they read
+/// `4.1e-8` and `9.7e-9`.
+///
+/// The gate is `1e-6` because the *solve's own* closure is not tighter than that: this column
+/// with no draw at all leaves `3.9e-8`, and the draw states sit in the same band
+/// (`1.0e-8` to `4.2e-8`). Holding the draw states to a band the undrawn state cannot meet
+/// would be asserting the draw's arithmetic through the solver's stopping rule.
+#[test]
+fn the_columns_closures_count_what_the_trays_withdrew() {
+    for vectors in [
+        (Some(on_tray(3, 0.25)), None, None),
+        (None, Some(on_tray(3, 0.10)), Some(on_tray(3, 0.05))),
+    ] {
+        let out = distillation_column(&drawn_column(vectors))
+            .expect("the column converges with a draw open");
+        let drawn: f64 = out
+            .gas_side_draws
+            .iter()
+            .chain(out.liquid_side_draws.iter())
+            .chain(out.pumparounds.iter())
+            .flatten()
+            .map(|draw| draw.n)
+            .sum();
+        assert!(drawn > 0.0, "the state under test draws something");
+        assert!(
+            out.mass_residual < 1.0e-6,
+            "mass {} with {drawn} mol/s withdrawn",
+            out.mass_residual
+        );
+        assert!(
+            out.energy_residual < 1.0e-6,
+            "energy {} with {drawn} mol/s withdrawn",
+            out.energy_residual
+        );
+    }
+}
+
+/// **A fraction on an end is refused by name**, because this port's ends are
+/// `column::reboiler` and `column::condenser` rather than stages.
+#[test]
+fn a_fraction_on_an_end_is_refused_by_name() {
+    for index in [0, 5] {
+        for which in 0..3 {
+            let mut vectors = (None, None, None);
+            match which {
+                0 => vectors.0 = Some(on_tray(index, 0.1)),
+                1 => vectors.1 = Some(on_tray(index, 0.1)),
+                _ => vectors.2 = Some(on_tray(index, 0.1)),
+            }
+            let error = distillation_column(&drawn_column(vectors))
+                .expect_err("an end has no tray outlet to split");
+            let message = error.to_string();
+            assert!(
+                message.contains("reboiler") || message.contains("condenser"),
+                "tray {index} names the end it is not: {message}"
+            );
+        }
+    }
+    // And a vector that is not one entry per tray, which is the shape the fraction is stated in.
+    let error = distillation_column(&drawn_column((Some(vec![0.1, 0.2]), None, None)))
+        .expect_err("six trays need six fractions");
+    assert!(error.to_string().contains("2 fraction(s)"), "{error}");
+}

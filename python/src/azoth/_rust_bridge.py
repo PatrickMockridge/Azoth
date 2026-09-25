@@ -4030,9 +4030,7 @@ def distillation_column(
         reactive,
         None if reactive_start_tray is None else int(reactive_start_tray),
         None if reactive_end_tray is None else int(reactive_end_tray),
-        None
-        if gas_side_draw_fractions is None
-        else [float(v) for v in gas_side_draw_fractions],
+        None if gas_side_draw_fractions is None else [float(v) for v in gas_side_draw_fractions],
         None
         if liquid_side_draw_fractions is None
         else [float(v) for v in liquid_side_draw_fractions],

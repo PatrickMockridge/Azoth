@@ -49,8 +49,8 @@ pub struct PackedColumnResult {
     pub bottoms_t: ThermodynamicTemperature,
     /// Bottoms molar enthalpy.
     pub bottoms_h: MolarEnergy,
-    /// **The vapour each tray withdrew**, which is the base column's and empty for this id: the
-    /// packing does not change a draw, and its fractions are not declared here.
+    /// **The vapour each tray withdrew**, which is empty for this id: the packing does not change
+    /// a draw, and the three fractions are the base column's own inputs rather than this id's.
     pub gas_side_draw_n: Vec<f64>,
     /// The liquid each tray withdrew as a liquid side draw.
     pub liquid_side_draw_n: Vec<f64>,

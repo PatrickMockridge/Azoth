@@ -348,10 +348,19 @@ def distillation_column(
     )
     draws = None
     if draws_stated:
+        # **A kind that states nothing stays `None` rather than becoming an empty vector.** The
+        # two mean different things: an absent vector is "no tray draws this", which the kernel
+        # skips, and an empty one is a vector of the wrong length, which the kernel refuses. The
+        # three are independent - a column may draw vapour on one tray and nothing else anywhere -
+        # so encoding them all as tuples would refuse a state the kernel accepts.
         draws = (
-            tuple(float(v) for v in (gas_side_draw_fractions or ())),
-            tuple(float(v) for v in (liquid_side_draw_fractions or ())),
-            tuple(float(v) for v in (pumparound_fractions or ())),
+            None
+            if gas_side_draw_fractions is None
+            else tuple(float(v) for v in gas_side_draw_fractions),
+            None
+            if liquid_side_draw_fractions is None
+            else tuple(float(v) for v in liquid_side_draw_fractions),
+            None if pumparound_fractions is None else tuple(float(v) for v in pumparound_fractions),
         )
 
     if draws_stated and solver_type == "naphtali_sandholm":
@@ -477,7 +486,8 @@ def _states(
     top_feed: StreamRecord | None = None,
     tray_temperatures: tuple[float, ...] | None = None,
     reactive: tuple[int, int] | None = None,
-    draws: tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]] | None = None,
+    draws: tuple[tuple[float, ...] | None, tuple[float, ...] | None, tuple[float, ...] | None]
+    | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
 
@@ -513,10 +523,17 @@ def _states(
             f"a convergence tolerance is a positive number, and {temperature_tolerance} is not one",
         )
 
-    pressures = [
-        bottom_pressure + (top_pressure - bottom_pressure) * i / (tray_count - 1)
-        for i in range(tray_count)
-    ]
+    # A one-tray column is its own case: the interpolation divides by `tray_count - 1`, so a
+    # single tray takes the bottom's own pressure rather than a `0/0` - the mirror of the kernel's
+    # own guard.
+    span = tray_count - 1
+    pressures = (
+        [bottom_pressure]
+        if span == 0
+        else [
+            bottom_pressure + (top_pressure - bottom_pressure) * i / span for i in range(tray_count)
+        ]
+    )
 
     def pin(i: int) -> float | None:
         if tray_temperatures is not None:
@@ -638,7 +655,9 @@ def _states(
         """The three fractions a tray states, a zero where a vector is absent."""
         if draws is None:
             return (0.0, 0.0, 0.0)
-        return tuple(vector[i] if i < len(vector) else 0.0 for vector in draws)  # type: ignore[return-value]
+        return tuple(  # type: ignore[return-value]
+            0.0 if vector is None or i >= len(vector) else vector[i] for vector in draws
+        )
 
     def run_with(i: int, inlets: list[StreamRecord]) -> None:
         kind, value = modes[i]
@@ -692,6 +711,8 @@ def _states(
             ("gas_side_draw_fractions", "liquid_side_draw_fractions", "pumparound_fractions"),
             strict=True,
         ):
+            if vector is None:
+                continue
             if len(vector) != tray_count:
                 raise InvalidInputError(
                     name,
@@ -743,7 +764,10 @@ def _states(
     reb_temperature = liquid[0]["t"] if liquid[0] is not None else feed_temperature
     temperatures = [float("nan")] * tray_count
     temperatures[feed_stage] = feed_temperature
-    delta_up = (feed_temperature - cond_temperature) / (tray_count - feed_stage - 1.0)
+    # **The mirror of the step below**: a column whose feed tray is its top has no trays above
+    # it, so the step is never taken - and on a one-tray column both steps are.
+    above = tray_count - feed_stage - 1
+    delta_up = (feed_temperature - cond_temperature) / above if above else 0.0
     # **A feed at stage 0 has no trays below it**, so the downward step is never taken and the
     # division would be 0/0. Rust's `0.0/0.0` is a NaN that the empty loop never reads; Python
     # raises, so the step is computed only where there is a tray to move.
@@ -936,7 +960,15 @@ def _states(
     if top_feed is not None:
         feeds.append(top_feed)
     feed_enthalpy = sum(float(feed["n"]) * float(feed["h"]) for feed in feeds)
-    products_enthalpy = distillate["n"] * distillate["h"] + bottoms["n"] * bottoms["h"]
+    # **The draws are a third route out of the column**, exactly as they are in the kernel's own
+    # closure: a feed leaves as the two products *and* whatever the trays withdrew, so a residual
+    # that ignored them would report an imbalance that is not there. Measured on the binary column
+    # drawing a quarter of tray 3's vapour, the ignoring form reports a mass residual of 0.248.
+    held = [draw for kind in drawn for draw in kind if draw is not None]
+    drawn_enthalpy = sum(draw["n"] * draw["h"] for draw in held)
+    products_enthalpy = (
+        distillate["n"] * distillate["h"] + bottoms["n"] * bottoms["h"] + drawn_enthalpy
+    )
     energy_residual = (
         abs(feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy) / abs(feed_enthalpy)
         if abs(feed_enthalpy) > 0.0
@@ -946,7 +978,10 @@ def _states(
     mass_residual = 0.0
     for c in range(len(feed_z)):
         supplied = sum(float(feed["n"]) * float(feed["z"][c]) for feed in feeds)
-        delivered = distillate["n"] * distillate["z"][c] + bottoms["n"] * bottoms["z"][c]
+        withdrawn = sum(draw["n"] * draw["z"][c] for draw in held)
+        delivered = (
+            distillate["n"] * distillate["z"][c] + bottoms["n"] * bottoms["z"][c] + withdrawn
+        )
         if abs(supplied) > 1.0e-12:
             mass_residual = max(mass_residual, abs(supplied - delivered) / abs(supplied))
 

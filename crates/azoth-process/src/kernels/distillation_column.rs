@@ -618,13 +618,19 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         ));
     }
 
-    // Pressures run linearly from the bottom to the top, which is the class's own rule.
+    // Pressures run linearly from the bottom to the top, which is the class's own rule. **A
+    // one-tray column is its own case**: the interpolation divides by `tray_count - 1`, so a
+    // single tray ends the run at the bottom's own pressure rather than at a `0/0`.
     let pressures: Vec<Pressure> = (0..tray_count)
         .map(|i| {
+            let span = tray_count - 1;
+            if span == 0 {
+                return setup.bottom_pressure;
+            }
             pascals(
                 setup.bottom_pressure.value
                     + (setup.top_pressure.value - setup.bottom_pressure.value) * i as f64
-                        / (tray_count - 1) as f64,
+                        / span as f64,
             )
         })
         .collect();
@@ -839,9 +845,16 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     })
 }
 
-/// The product leaving an end: the vapour for a condenser, the liquid for a reboiler.
+/// The product leaving an end: `getLiquidOutStream` for a reboiler, `getGasOutStream` for a
+/// condenser.
+///
+/// **The end decides, and the index does not.** They are the same tray only on a one-tray column
+/// with no ends, where the class's own column still publishes two products - the tray's vapour
+/// upward and its liquid downward - so a lookup keyed on the index would hand both ends the
+/// liquid and name the missing one the condenser. The condenser's fallback to the liquid is its
+/// own total-condenser mode, where the class's `getGasOutStream` is the condensate.
 fn end_product(net: &Network, i: usize, which: &str) -> Result<Stream> {
-    let stream = if i == 0 {
+    let stream = if which == "reboiler" {
         net.liquid[i].clone()
     } else {
         net.gas[i].clone().or_else(|| net.liquid[i].clone())

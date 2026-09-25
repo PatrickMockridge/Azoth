@@ -550,6 +550,36 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     """
     from azoth.process.reference.distillation_column import _states
 
+    # **Every declared input the case states is passed on, the section and the draws included.**
+    # A dump that dropped one would compare a different column's profile against the capture and
+    # call the difference a divergence: measured, the side-draw row's dump without its draw is
+    # `4.9e-2` from the capture on tray 0.
+    section = None
+    if inputs.get("reactive"):
+        start, end = inputs.get("reactive_start_tray"), inputs.get("reactive_end_tray")
+        section = (-1, -1) if start is None or end is None else (int(start), int(end))
+    draws = None
+    if any(
+        name in inputs
+        for name in (
+            "gas_side_draw_fractions",
+            "liquid_side_draw_fractions",
+            "pumparound_fractions",
+        )
+    ):
+
+        def vector(name: str) -> tuple[float, ...] | None:
+            # Absent and present-but-null are the same here: a case that states one draw kind
+            # leaves the other two out entirely.
+            values = inputs.get(name)
+            return tuple(float(v) for v in values) if values is not None else None
+
+        draws = (
+            vector("gas_side_draw_fractions"),
+            vector("liquid_side_draw_fractions"),
+            vector("pumparound_fractions"),
+        )
+
     states = _states(
         [str(name) for name in inputs["components"]],
         float(inputs["feed_n"]),
@@ -569,6 +599,8 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
         _spec_of(inputs, "top"),
         _spec_of(inputs, "bottom"),
         str(inputs["solver_type"]) if "solver_type" in inputs else None,
+        reactive=section,
+        draws=draws,
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -576,6 +608,11 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
         layers[f"tray{i}_pressure_bara"] = states.tray_pressure[i] / 1.0e5
         layers[f"tray{i}_gas_n"] = states.tray_gas_n[i]
         layers[f"tray{i}_liquid_n"] = states.tray_liquid_n[i]
+    # The three draws the capture states, summed: **its side-draw rows draw on one tray**, so the
+    # sum is that tray's draw and the diff holds the mechanism's own number.
+    layers["gas_side_draw_n"] = sum(states.gas_side_draw_n)
+    layers["liquid_side_draw_n"] = sum(states.liquid_side_draw_n)
+    layers["pumparound_n"] = sum(states.pumparound_n)
     return layers
 
 
@@ -1201,6 +1238,17 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=13,
         identified_by=("#label", "binary_reactive_column_pr"),
     ),
+    # **The side-draw block**, four below the reactive one and the last state in this capture: the
+    # binary column with tray 3 drawing a quarter of its vapour. The three blocks above it are the
+    # class's own one-tray columns, which this port refuses, and the block below it is the same
+    # column drawing liquid and a pumparound, which NeqSim reconciles - see `UNCASED_ROWS`.
+    LayerCase(
+        model="process.distillation_column",
+        case="a_tray_withdraws_a_quarter_of_its_vapour",
+        capture="process_column.tsv",
+        block=17,
+        identified_by=("#label", "side_draw_column_binary_gas_quarter"),
+    ),
     # The packed column's two cases sit on blocks 12 and 13. **Its first block is the base
     # column's own `binary_rigorous` state**, because the packing does not change the separation:
     # NeqSim's `PackedColumn` at `2.0` m and its `DistillationColumn` at four stages report
@@ -1288,7 +1336,25 @@ UNCASED_ROWS: dict[str, int] = {
     # The column's own, one more: the reactive block's *standard* twin, which is the same state
     # at the same gate as the case two blocks above and is kept as the measurement the reactive
     # row is identical to.
-    "process_column.tsv": 6,
+    # And the side-draw capture's four: the class's own three one-tray columns, and the binary
+    # column drawing liquid and a pumparound. **The three are the class's own states for this
+    # mechanism** - `columnReportsSideDrawAsOutletStream` and `columnEnergyBalanceIncludes-
+    # SideDrawStreams` run a one-tray column with no ends and a pure feed, and the class is happy
+    # with the zero-flow product that leaves: the methane rows report a bottoms of `n = 0` with an
+    # enthalpy of `-Infinity` (`getMaterialOutletEnthalpy` divides an empty system's enthalpy by
+    # its zero moles) and a mass balance of exactly `0.0`. **The port refuses all three by name**,
+    # because its products must exist: the two methane rows have no liquid for the bottom to
+    # publish, and the pentane row's one tray is all liquid, so the column's two products would be
+    # the same stream and the closure counts it twice - refused as `SolverNotConverged` with a
+    # residual of `0.75`.
+    # The fourth is a divergence rather than a refusal. **NeqSim does not close its own balance
+    # there**: it answers `RECONCILED_PRODUCTS` with a mass balance of `-2.449` kg/hr against a
+    # 1000 kg/hr feed and an energy error of `6.4e-2`, and its two products come out `0.0200`
+    # mol/s larger than the port's. The port closes to `9.7e-9` and treats the drawn liquid as a
+    # net outlet, which is what `SimpleTray`'s own split does - a pumparound fraction *without* a
+    # return. What the class's reconciliation restores is the pumparound's return, which is
+    # `ColumnPumparound`'s subject and is named out of this tranche.
+    "process_column.tsv": 10,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

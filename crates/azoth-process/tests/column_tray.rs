@@ -27,6 +27,18 @@ fn feed(t: f64, p_bar: f64, n: f64) -> Stream {
     .expect("the fluid resolves")
 }
 
+/// One pure component at its own state, which is the fluid the class's own side-draw test uses.
+fn pure_feed(name: &str, t: f64, p_bar: f64, n: f64) -> Stream {
+    Stream::from_pt(
+        vec![name.into()],
+        vec![1.0],
+        n,
+        pascals(p_bar * 1.0e5),
+        kelvins(t),
+    )
+    .expect("the fluid resolves")
+}
+
 /// The molar enthalpy the stage's flash was asked for: the inlets' own records plus the
 /// duty, over the flow.
 fn flash_target(inlets: &[Stream], duty: f64) -> f64 {
@@ -435,4 +447,144 @@ fn a_liquid_draw_and_a_pumparound_may_not_withdraw_more_than_the_liquid() {
         false,
     );
     assert!(out_of_range.is_err(), "a fraction above one");
+}
+
+/// **The split against the class's own numbers**, from the capture's `side_draw_*` rows in
+/// `process_column_tray.tsv` and `process_side_draw.tsv`.
+///
+/// **Every row is a pure component, and that is what makes the flows an oracle.** NeqSim's own
+/// `SimpleTraySideDrawTest.gasSideDrawSplitsTrayOutletFlow` runs two standalone trays on one
+/// pure-methane feed - a reference and one drawing a quarter of its vapour - and asserts that
+/// the reference's vapour equals the drawing tray's own vapour plus its draw, and that the draw
+/// is the fraction of it. On a pure fluid the flash cannot move either the composition or the
+/// mass flow, so the split is exact arithmetic on the capture's `100` kg/hr and the two libraries
+/// agree to the last digit whatever their equation of state. The capture prints `1.7314578182246327`
+/// mol/s for the methane feed and `0.3850003850003849` for the pentane one, and the rows below
+/// take those flows as stated: the class's own conversion from `100` kg/hr, which is a property
+/// of the component's molar mass rather than of a cubic.
+///
+/// **The pumparound row has no test in the class.** It is the one state where two liquid
+/// fractions compose - `0.20` and `0.30`, which leave half the tray's liquid in it - and the pair
+/// is what `validateLiquidSplitFractions` bounds.
+#[test]
+fn the_side_draw_split_is_the_classs_own_numbers() {
+    let inlets = [pure_feed("methane", 300.0, 10.0, 1.7314578182246327)];
+    let reference = tray(&inlets, None, None, watts(0.0), SideDraws::NONE, false)
+        .expect("the reference tray solves");
+    let reference_gas = reference.gas.as_ref().expect("methane is a vapour").n;
+    relative(
+        reference_gas,
+        1.7314578182246327,
+        1.0e-12,
+        "the reference tray's vapour",
+    );
+    assert!(
+        reference.liquid.is_none(),
+        "a pure methane tray at 300 K and 10 bara has no liquid to publish"
+    );
+
+    let quarter = tray(
+        &inlets,
+        None,
+        None,
+        watts(0.0),
+        SideDraws {
+            gas: 0.25,
+            ..SideDraws::NONE
+        },
+        false,
+    )
+    .expect("the drawing tray solves");
+    relative(
+        quarter.gas.as_ref().expect("vapour").n,
+        1.2985933636684746,
+        1.0e-12,
+        "the vapour the tray keeps",
+    );
+    let side = quarter.gas_side_draw.as_ref().expect("a quarter is drawn");
+    relative(side.n, 0.4328644545561582, 1.0e-12, "the draw");
+    relative(
+        side.n + quarter.gas.as_ref().expect("vapour").n,
+        reference_gas,
+        1.0e-12,
+        "the whole",
+    );
+    assert_eq!(side.z, vec![1.0], "the draw carries the tray's composition");
+    assert_eq!(side.t.value, 300.0, "and its temperature");
+    assert_eq!(side.p.value, 10.0e5, "and its pressure");
+
+    // The liquid rows: n-pentane at 300 K and 2 bara is a subcooled liquid, so the tray has no
+    // vapour to publish and the fraction comes off the liquid.
+    let pentane = [pure_feed("n-pentane", 300.0, 2.0, 0.3850003850003849)];
+    let liquid_quarter = tray(
+        &pentane,
+        None,
+        None,
+        watts(0.0),
+        SideDraws {
+            liquid: 0.25,
+            ..SideDraws::NONE
+        },
+        false,
+    )
+    .expect("the liquid tray solves");
+    assert!(liquid_quarter.gas.is_none(), "pentane is a liquid here");
+    relative(
+        liquid_quarter.liquid.as_ref().expect("liquid").n,
+        0.2887502887502887,
+        1.0e-12,
+        "the liquid the tray keeps",
+    );
+    relative(
+        liquid_quarter
+            .liquid_side_draw
+            .as_ref()
+            .expect("a quarter is drawn")
+            .n,
+        0.09625009625009623,
+        1.0e-12,
+        "the liquid draw",
+    );
+
+    let composed = tray(
+        &pentane,
+        None,
+        None,
+        watts(0.0),
+        SideDraws {
+            liquid: 0.20,
+            pumparound: 0.30,
+            ..SideDraws::NONE
+        },
+        false,
+    )
+    .expect("the pair is within the tray's liquid");
+    let liquid = composed.liquid.as_ref().expect("liquid");
+    let drawn = composed.liquid_side_draw.as_ref().expect("the draw");
+    let pumped = composed.pumparound.as_ref().expect("the pumparound");
+    relative(
+        liquid.n,
+        0.19250019250019246,
+        1.0e-12,
+        "the half that stays",
+    );
+    relative(drawn.n, 0.077000077000077, 1.0e-12, "the 0.20 draw");
+    relative(
+        pumped.n,
+        0.11550011550011546,
+        1.0e-12,
+        "the 0.30 pumparound",
+    );
+    relative(
+        drawn.n + pumped.n + liquid.n,
+        0.3850003850003849,
+        1.0e-12,
+        "the three parts against the whole",
+    );
+    // **Both draws are the one liquid**: the same composition, temperature and pressure, and both
+    // the same as what the tray keeps - which is the whole of the mechanism.
+    assert_eq!(drawn.z, pumped.z);
+    assert_eq!(drawn.z, liquid.z);
+    assert_eq!(drawn.h.value, liquid.h.value);
+    assert_eq!(pumped.h.value, liquid.h.value);
 }

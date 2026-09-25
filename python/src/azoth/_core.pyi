@@ -2986,6 +2986,9 @@ def distillation_column(
     reactive: bool | None = None,
     reactive_start_tray: float | None = None,
     reactive_end_tray: float | None = None,
+    gas_side_draw_fractions: list[float] | None = None,
+    liquid_side_draw_fractions: list[float] | None = None,
+    pumparound_fractions: list[float] | None = None,
 ) -> DistillationColumnResult: ...
 def ejector(
     motive_components: list[str],

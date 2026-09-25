@@ -407,6 +407,22 @@ this record follows — each class beside the column is either ported or recorde
 the class and the blocker named — and it replaces an earlier sentence here which claimed the five
 were "neither owed nor refused", which the fifth entry's own measurement contradicted.
 
+**The trays' side draws and pumparounds are in as well.** `SimpleTray`'s three draw fractions
+are a split of the tray's own outlet phase — `getGasOutStream` is the vapour scaled by
+`1 - gasSideDrawFraction`, `getLiquidOutStream` the liquid by `1 - liquid - pumparound`, and each
+draw that same phase scaled by its own fraction — so a draw carries the tray's composition,
+temperature and pressure and a different flow. **Both of the column's closures count them**,
+which is what `columnReportsSideDrawAsOutletStream` asserts, and a fraction on an end is refused
+because this port's ends are kernels rather than stages. What is owed is not a split but a
+recycle: the draw's **flow-rate specification** (`ColumnSideDrawSpecification`,
+`DistillationColumn.addSideDrawFlowSpecification`), which moves the fraction until a target flow
+is met through the class's own tear loop, and the pumparound's **return** to another tray
+(`ColumnPumparound`, a return tray and a temperature drop). Both are iterated by the column's own
+solver and belong to P12's executor, and the capture carries the measurement that says so: on the
+liquid-and-pumparound row NeqSim's own balance does not close — it answers `RECONCILED_PRODUCTS`
+with a `2.4e-3` imbalance and products `0.02` mol/s above this port's — where this port closes
+to `1e-8`, because the class is reconciling against a return this port has no tray to return to.
+
 **P11's palette is closed.** The nine kernels the column's unparking deferred have all landed -
 `component_splitter`, `ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`,
 `stirred_tank_reactor`, `tank` and `three_phase_separator` - each a registered `process.*` id

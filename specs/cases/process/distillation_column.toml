@@ -304,3 +304,44 @@ bottoms_n = 3.6992043068302056
 bottoms_z = [0.02246562977682579, 0.9775343702231742]
 bottoms_p = 2000000.0
 bottoms_t = 373.15
+[[cases]]
+id = "a_tray_withdraws_a_quarter_of_its_vapour"
+tolerance = 0.0002
+source = "**One tray of the binary column drawing a quarter of its vapour**, from `validation/neqsim/captures/process_side_draw.tsv` and the same state in `process_column.tsv`: tray 3 of the four-stage column, `setGasSideDrawFraction(3, 0.25)`. **The draw is a split of the tray's own phase** - the class's `getGasOutStream` is the vapour scaled by `1 - gasSideDrawFraction` and the draw the same vapour scaled by its own fraction - so the traffic the column solves with is the residual and the draw carries the tray's own composition, temperature and pressure: measured here at tray 3's own 302.176 K and 19.4 bara with its vapour's `[0.81928, 0.18072]`. NeqSim's own `columnReportsSideDrawAsOutletStream` asserts the draw is in the column's outlet list (the capture's `outlet_count=3`) and the mass balance closes to the feed flow x `1e-6`; `columnEnergyBalanceIncludesSideDrawStreams` asserts the same for the energy balance, and the capture's own rows close at `0.0` kg/hr and `5.3e-9`. **The port reaches the same state**: every tray temperature within `2.5e-5` K, every traffic rate within `4.5e-6` relative, both products within `1e-5`, and the draw itself within `1.6e-7` - so the split is the class's arithmetic rather than a rearrangement of it. The tolerance is the column's own, set by the duties, which are enthalpy differences carrying the libraries' ideal-gas offset.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+gas_side_draw_fractions = [0.0, 0.0, 0.0, 0.25, 0.0, 0.0]
+[cases.expected]
+tray_temperature = [373.15, 336.108248965338, 302.9486926962596, 302.176262813985, 296.8868602276468, 253.14999999999998]
+tray_pressure = [2000000.0, 1980000.0, 1960000.0000000002, 1939999.9999999998, 1920000.0, 1900000.0]
+tray_gas_n = [1.3096365729266322, 0.5012729640466913, 4.555208335579094, 3.4064189426322864, 3.326737912684381, 2.8325022360746734]
+tray_liquid_n = [3.522728819338862, 4.832365584635262, 4.024001697736857, 0.5872330329782942, 0.5739166229257071, 0.4942356000132337]
+distillate_n = 2.8325022360746734
+distillate_z = [0.9659099056011061, 0.03409009439889399]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+distillate_h = -1258.4513186521688
+bottoms_n = 3.522728819338862
+bottoms_z = [0.022465630022693486, 0.9775343699773065]
+bottoms_p = 2000000.0
+bottoms_t = 373.15
+bottoms_h = -6818.722951136671
+gas_side_draw_n = [0.0, 0.0, 0.0, 1.1354729808774289, 0.0, 0.0]
+liquid_side_draw_n = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+pumparound_n = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+condenser_duty = -15958.712451056435
+reboiler_duty = 45574.29525375976

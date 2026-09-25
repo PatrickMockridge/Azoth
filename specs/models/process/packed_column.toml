@@ -186,6 +186,15 @@ description = "the bottoms' temperature, which is the reboiler's own.\n"
 [outputs.bottoms_h]
 unit = "J/mol"
 description = "the bottoms' molar enthalpy at its own state.\n"
+[outputs.gas_side_draw_n]
+unit = "mol/s"
+description = "the vapour each tray withdrew. **Empty on every state of this id**, which declares no draw fraction: `PackedColumn extends DistillationColumn`, so the base's three draw parameters are what a packed column draws by, and `process.distillation_column` is where a draw is stated.\n"
+[outputs.liquid_side_draw_n]
+unit = "mol/s"
+description = "the liquid each tray withdrew as a side draw, empty because this id declares no draw fraction.\n"
+[outputs.pumparound_n]
+unit = "mol/s"
+description = "the liquid each tray withdrew as a pumparound, empty for the same reason.\n"
 [outputs.condenser_duty]
 unit = "W"
 description = "the condenser's duty: its products' enthalpy less the vapour's that came in, which is negative for a condenser.\n"

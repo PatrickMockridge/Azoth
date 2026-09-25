@@ -76,6 +76,9 @@ not an equation, and both implementations read it from here.
 | `bottoms_p` | Pa | the bottoms' pressure, which is `bottom_pressure` where there is a reboiler. |
 | `bottoms_t` | K | the bottoms' temperature, which is the reboiler's own. |
 | `bottoms_h` | J/mol | the bottoms' molar enthalpy at its own state. |
+| `gas_side_draw_n` | mol/s | the vapour each tray withdrew. **Empty on every state of this id**, which declares no draw fraction: `PackedColumn extends DistillationColumn`, so the base's three draw parameters are what a packed column draws by, and `process.distillation_column` is where a draw is stated. |
+| `liquid_side_draw_n` | mol/s | the liquid each tray withdrew as a side draw, empty because this id declares no draw fraction. |
+| `pumparound_n` | mol/s | the liquid each tray withdrew as a pumparound, empty for the same reason. |
 | `condenser_duty` | W | the condenser's duty: its products' enthalpy less the vapour's that came in, which is negative for a condenser. |
 | `reboiler_duty` | W | the reboiler's duty: its boilup and its bottoms less the downcomer's enthalpy. |
 | `iterations` | dimensionless | the iterations taken. **Where a solve stops is where its answer is**, so this is the base's count on the same state. |
