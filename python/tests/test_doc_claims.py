@@ -58,7 +58,9 @@ def specs(calculations: int, models: int) -> list[str]:
 # --- the declaration's own rules ---------------------------------------------
 
 
-def test_a_claim_that_agrees_with_the_tree_passes(tmp_path, monkeypatch):
+def test_a_claim_that_agrees_with_the_tree_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(
         tmp_path,
         monkeypatch,
@@ -76,7 +78,9 @@ def test_a_claim_that_agrees_with_the_tree_passes(tmp_path, monkeypatch):
     assert claim.check() == []
 
 
-def test_a_claim_the_tree_contradicts_fails_naming_both(tmp_path, monkeypatch):
+def test_a_claim_the_tree_contradicts_fails_naming_both(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(
         tmp_path,
         monkeypatch,
@@ -98,7 +102,9 @@ def test_a_claim_the_tree_contradicts_fails_naming_both(tmp_path, monkeypatch):
     assert "--probe specs.calcs" in failures[0]
 
 
-def test_a_declaration_that_carries_a_value_is_refused(tmp_path, monkeypatch):
+def test_a_declaration_that_carries_a_value_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The rule that stops the check being tuned until it passes."""
     tool = rooted(
         tmp_path,
@@ -116,7 +122,9 @@ measure = { 3 = "specs.calcs" }
         tool.load_claims()
 
 
-def test_a_template_that_stops_matching_is_a_broken_declaration(tmp_path, monkeypatch):
+def test_a_template_that_stops_matching_is_a_broken_declaration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(
         tmp_path,
         monkeypatch,
@@ -136,7 +144,9 @@ def test_a_template_that_stops_matching_is_a_broken_declaration(tmp_path, monkey
     assert "matches its page 0 time(s)" in failures[0]
 
 
-def test_a_probe_that_measures_nothing_is_a_failure_not_a_pass(tmp_path, monkeypatch):
+def test_a_probe_that_measures_nothing_is_a_failure_not_a_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A check that did not run is not a check that has passed."""
     tool = rooted(tmp_path, monkeypatch, "docs/page.md\nthe library has 0 calculations.")
     claim = tool.Claim(
@@ -155,7 +165,9 @@ def test_a_probe_that_measures_nothing_is_a_failure_not_a_pass(tmp_path, monkeyp
     assert "could not measure" in failures[0]
 
 
-def test_an_unknown_probe_is_named_with_the_ones_that_exist(tmp_path, monkeypatch):
+def test_an_unknown_probe_is_named_with_the_ones_that_exist(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(
         tmp_path,
         monkeypatch,
@@ -177,7 +189,7 @@ def test_an_unknown_probe_is_named_with_the_ones_that_exist(tmp_path, monkeypatc
 # --- reading a captured hole --------------------------------------------------
 
 
-def test_a_hole_reads_digits_separators_and_number_words():
+def test_a_hole_reads_digits_separators_and_number_words() -> None:
     tool: Any = gate()
     assert tool.as_int("184") == 184
     assert tool.as_int("1,299,006") == 1_299_006
@@ -188,7 +200,7 @@ def test_a_hole_reads_digits_separators_and_number_words():
         tool.as_int("about forty")
 
 
-def test_a_hole_captures_one_token_so_it_cannot_reach_back_into_prose():
+def test_a_hole_captures_one_token_so_it_cannot_reach_back_into_prose() -> None:
     """A hole allowed spaces would let the leftmost match start in the sentence before."""
     tool: Any = gate()
     pattern = tool.template_to_regex("{declared} unit operations declared on typed channels")
@@ -199,7 +211,9 @@ def test_a_hole_captures_one_token_so_it_cannot_reach_back_into_prose():
 # --- the path sweep -----------------------------------------------------------
 
 
-def test_the_sweep_names_an_inline_code_path_that_does_not_exist(tmp_path, monkeypatch):
+def test_the_sweep_names_an_inline_code_path_that_does_not_exist(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(tmp_path, monkeypatch, "docs/page.md\nsee `crates/gone/src/lib.rs` for it")
     checked, failures, escapes = tool.sweep_paths([tmp_path / "docs" / "page.md"])
     assert checked == 1 and escapes == []
@@ -207,7 +221,9 @@ def test_the_sweep_names_an_inline_code_path_that_does_not_exist(tmp_path, monke
     assert "crates/gone/src/lib.rs" in failures[0]
 
 
-def test_an_escape_exempts_only_the_path_that_is_absent(tmp_path, monkeypatch):
+def test_an_escape_exempts_only_the_path_that_is_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The usual case: one line names a path because it is gone and another that is there."""
     tool = rooted(
         tmp_path,
@@ -226,18 +242,20 @@ def test_an_escape_exempts_only_the_path_that_is_absent(tmp_path, monkeypatch):
     assert escapes == ["docs/page.md:1 'crates/gone/'"]
 
 
-def test_an_escape_that_exempts_nothing_is_stale(tmp_path, monkeypatch):
+def test_an_escape_that_exempts_nothing_is_stale(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(tmp_path, monkeypatch, "docs/page.md", "crates/real/src/lib.rs")
     page = tmp_path / "docs" / "page.md"
-    page.write_text(
-        "`crates/real/src/lib.rs` <!-- doc-claims-ok: leftover -->\n", encoding="utf-8"
-    )
+    page.write_text("`crates/real/src/lib.rs` <!-- doc-claims-ok: leftover -->\n", encoding="utf-8")
     _, failures, _ = tool.sweep_paths([page])
     assert len(failures) == 1
     assert "exempts nothing" in failures[0]
 
 
-def test_an_escape_without_a_reason_is_refused(tmp_path, monkeypatch):
+def test_an_escape_without_a_reason_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(tmp_path, monkeypatch, "docs/page.md")
     page = tmp_path / "docs" / "page.md"
     page.write_text("`crates/gone/` <!-- doc-claims-ok: -->\n", encoding="utf-8")
@@ -246,7 +264,9 @@ def test_an_escape_without_a_reason_is_refused(tmp_path, monkeypatch):
     assert "no reason" in failures[0]
 
 
-def test_the_sweep_leaves_upstream_names_and_globs_alone(tmp_path, monkeypatch):
+def test_the_sweep_leaves_upstream_names_and_globs_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The prefix rule is what keeps NeqSim's vocabulary out without an allowlist."""
     tool = rooted(tmp_path, monkeypatch, "docs/page.md")
     page = tmp_path / "docs" / "page.md"
@@ -262,7 +282,9 @@ def test_the_sweep_leaves_upstream_names_and_globs_alone(tmp_path, monkeypatch):
 # --- skips --------------------------------------------------------------------
 
 
-def test_a_skip_goes_stale_when_its_sentence_leaves_the_page(tmp_path, monkeypatch):
+def test_a_skip_goes_stale_when_its_sentence_leaves_the_page(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     tool = rooted(tmp_path, monkeypatch, "docs/page.md\nthe page was reworded entirely.")
     skips = [
         {
@@ -271,7 +293,7 @@ def test_a_skip_goes_stale_when_its_sentence_leaves_the_page(tmp_path, monkeypat
             "reason": "no checkout in CI",
         }
     ]
-    failures = tool.check_skips(skips, [])
+    failures = tool.check_skips(skips)
     assert len(failures) == 1
     assert "stale" in failures[0]
 
@@ -279,9 +301,9 @@ def test_a_skip_goes_stale_when_its_sentence_leaves_the_page(tmp_path, monkeypat
 # --- and the tree this all runs against ---------------------------------------
 
 
-def test_the_shipped_tree_passes(monkeypatch):
+def test_the_shipped_tree_passes(monkeypatch: pytest.MonkeyPatch) -> None:
     """The real declaration against the real tree - the check's own subject."""
     tool: Any = gate()
     monkeypatch.setattr(tool, "ROOT", REPO_ROOT)
-    monkeypatch.setattr(sys, "path", sys.path + [str(REPO_ROOT / "tools")])
+    monkeypatch.setattr(sys, "path", [*sys.path, str(REPO_ROOT / "tools")])
     assert tool.main([]) == 0

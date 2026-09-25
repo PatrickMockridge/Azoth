@@ -62,6 +62,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+
 def claims_path() -> Path:
     """The declaration, resolved at call time so a test can redirect `ROOT`.
 
@@ -69,6 +70,7 @@ def claims_path() -> Path:
     it; `docs-drift` covers its being committed.
     """
     return ROOT / "docs" / "claims.toml"
+
 
 #: A token that begins a repository-relative path. The sweep uses this to tell an
 #: azoth path from a NeqSim class or an upstream directory, which is why the
@@ -101,7 +103,7 @@ IS_PATTERN = re.compile(r"[*?<>{}()\[\]]")
 
 def page_files() -> list[Path]:
     """Every page this check reads: the book, plus the root pages `check_links` guards."""
-    import check_links  # noqa: PLC0415 - sibling tool, imported for its own list
+    import check_links  # sibling tool, imported for its own page list
 
     pages = sorted(p for p in (ROOT / "docs" / "src").rglob("*.md") if p.name != "SUMMARY.md")
     pages += [ROOT / name for name in check_links.ROOT_PAGES if (ROOT / name).exists()]
@@ -352,11 +354,33 @@ VALIDATES = {
 
 #: English tens and units, so a page that writes "Twenty-seven" is measured too.
 _WORDS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
-    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
-    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
-    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
-    "eighty": 80, "ninety": 90,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
 }
 
 
@@ -559,7 +583,7 @@ def sweep_paths(pages: list[Path]) -> tuple[int, list[str], list[str]]:
     return checked, failures, escapes
 
 
-def check_skips(skips: list[dict], pages: list[Path]) -> list[str]:
+def check_skips(skips: list[dict]) -> list[str]:
     """A skip must still quote text its page carries, so it goes stale rather than silent."""
     failures: list[str] = []
     for skip in skips:
@@ -613,7 +637,7 @@ def main(argv: list[str] | None = None) -> int:
     failures += [f for claim in claims for f in claim.check()]
     checked, sweep_failures, escapes = sweep_paths(pages)
     failures += sweep_failures
-    failures += check_skips(skips, pages)
+    failures += check_skips(skips)
 
     if failures:
         for failure in failures:
