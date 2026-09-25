@@ -5,8 +5,9 @@ that holds a flowsheet to the calculus's rules. Each id is a registered model: a
 under ``specs/models/process/``, a kernel in Rust and a reference here, compared by
 ``test_cross_impl`` against a committed NeqSim capture.
 
-The Stream-level arithmetic those models wrap is :mod:`azoth.process.kernels`, which is
-what a flowsheet's executor will call and what ``azoth check`` validates the wiring of.
+The Stream-level arithmetic those models wrap is :mod:`azoth.process.kernels`, which is what
+a flowsheet's executor calls and what ``azoth check`` validates the wiring of. To *run* one,
+:func:`run_flowsheet` in :mod:`azoth.process.flowsheet`.
 """
 
 from __future__ import annotations
@@ -45,10 +46,21 @@ from azoth.core.result import (
     ThrottlingValveResult,
 )
 from azoth.core.units import Q
+from azoth.process.flowsheet import (
+    FlowsheetResult,
+    FlowsheetStream,
+    Residuals,
+    TearResult,
+    run_flowsheet,
+)
 from azoth.process.kernels import Stream
 
 __all__ = [
+    "FlowsheetResult",
+    "FlowsheetStream",
+    "Residuals",
     "Stream",
+    "TearResult",
     "absorption_column",
     "component_splitter",
     "compressor",
@@ -69,6 +81,7 @@ __all__ = [
     "pipe",
     "plug_flow_reactor",
     "pump",
+    "run_flowsheet",
     "separator",
     "shortcut_distillation_column",
     "splitter",

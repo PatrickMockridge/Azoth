@@ -312,6 +312,14 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ),
     ("pump_stream(feed: Stream, outlet_pressure: float, efficiency: float)", "Stream"),
     ("validate_flowsheet(flowsheet: str, palette_dir: str)", "list[str]"),
+    # The executor. Its return is the JSON document `executor::json` writes rather than a
+    # transport type: `azoth.process.run_flowsheet` is what reads it into dataclasses, and
+    # `FlowsheetResult.document` hands the same string back.
+    (
+        "run_flowsheet(flowsheet: str, feeds: dict[str, Stream], palette_dir: str,"
+        " execution_order: str = ...)",
+        "str",
+    ),
 )
 
 #: The exception hierarchy, re-exported from `azoth.core.errors` so both backends raise

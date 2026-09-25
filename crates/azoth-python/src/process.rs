@@ -4,13 +4,15 @@
 //! implementation. The `Stream` value and the kernels run in Rust; Python supplies
 //! SI magnitudes at the boundary and reads the streams back.
 
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
     joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals, square_meters_per_second,
     watts, watts_per_kelvin, watts_per_square_meter_kelvin,
 };
-use azoth_process::{self, Stream};
+use azoth_process::executor::Session;
+use azoth_process::{self, ExecutionOrder, Stream};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -1348,4 +1350,46 @@ pub fn validate_flowsheet(flowsheet: &str, palette_dir: &str) -> PyResult<Vec<St
         lines.push(format!("{d:?}"));
     }
     Ok(lines)
+}
+
+/// Run a flowsheet to its steady state, returning the session's result as JSON.
+///
+/// `feeds` supplies the boundary inlets, keyed by the names the flowsheet's `feeds` declares,
+/// and it is the caller's rather than the document's: a flowsheet names its feeds and states
+/// nothing about the fluid, so what flows in is an argument to this call and not a field of the
+/// schema.
+///
+/// **The document is `executor::json`'s and is not written again here.** One codec, on the
+/// session's result, is the whole point of that module - a second writer is a second chance for
+/// the two to disagree about what a quantity looks like on the wire.
+#[pyfunction]
+#[pyo3(signature = (flowsheet, feeds, palette_dir, execution_order = "insertion"))]
+#[pyo3(text_signature = "(flowsheet, feeds, palette_dir, execution_order='insertion')")]
+pub fn run_flowsheet<'py>(
+    py: Python<'py>,
+    flowsheet: &str,
+    feeds: HashMap<String, PyRef<'py, PyStream>>,
+    palette_dir: &str,
+    execution_order: &str,
+) -> PyResult<String> {
+    let palette =
+        azoth_process::load_palette(Path::new(palette_dir)).map_err(PyValueError::new_err)?;
+    let sheet = azoth_process::parse_flowsheet(flowsheet).map_err(PyValueError::new_err)?;
+    let order = match execution_order {
+        "insertion" => ExecutionOrder::Insertion,
+        "topological" => ExecutionOrder::Topological,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "`{other}` is not an execution order: `ProcessSystem.useGraphBasedExecution` is a \
+                 flag, so the two are `insertion` (the class's default) and `topological`"
+            )));
+        }
+    };
+    let feeds: BTreeMap<String, Stream> = feeds
+        .iter()
+        .map(|(name, stream)| (name.clone(), stream.to_stream()))
+        .collect();
+
+    let session = Session::run(sheet, &palette, &feeds, order).map_err(|e| to_pyerr(py, e))?;
+    azoth_process::executor::to_json(&session).map_err(|e| to_pyerr(py, e))
 }

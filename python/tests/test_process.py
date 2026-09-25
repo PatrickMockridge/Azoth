@@ -105,3 +105,108 @@ def test_validate_holds_the_demo_and_rejects_a_double_fed_inlet() -> None:
     )
     diagnostics = process.validate(broken, palette)
     assert any("OverfedPort" in line for line in diagnostics)
+
+
+def test_run_flowsheet_runs_the_shipped_flowsheet() -> None:
+    """The Python surface is the executor's, and the shipped document runs through it.
+
+    **What this test is allowed to pin, and what it is not.** The executor's arithmetic is
+    Rust's and is checked where it lives - `tests/executor_calls_kernels.rs` holds each
+    instance's outlet to that unit's own registered model, measured at `5.7e-12` relative on
+    the pump. So a divergence from the capture here would not be the bridge's, and the one
+    number pinned below is pinned as *the capture's*, with the band its measurement gives.
+    """
+    palette = str(REPO_ROOT / "specs" / "unit_ops")
+    demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
+
+    result = process.run_flowsheet(demo, {"feed_1": _binary(0.9, 1.0, 5e5, 300.0)}, palette)
+
+    assert result.flowsheet == "flowsheets.demo"
+    assert result.converged
+    assert result.iterations == 2, "a recycle takes a second observation before it converges"
+    assert set(result.streams) == {
+        "feed_1",
+        "mix1.product",
+        "p1.outlet",
+        "hx1.outlet",
+        "sep1.vapour",
+        "sep1.liquid",
+        "vapour_product",
+    }
+
+    # **The shipped document's recycle is empty**, which is measured rather than incidental: at
+    # 20 bar and 320 K that feed is all vapour, so the tear carries nothing, `solved()`'s
+    # zero-flow floor is what ends the loop, and the four residuals are exactly zero because
+    # there was nothing to compare. `a_tear_that_carries_material_converges` in the executor's
+    # own Rust tests is the same graph with the heater cold enough to condense.
+    (tear,) = result.tears
+    assert tear.stream == "recycle_1"
+    assert tear.iterations == 2
+    assert tear.solved
+    assert tear.residuals is not None
+    assert (tear.residuals.flow, tear.residuals.composition) == (0.0, 0.0)
+    assert (tear.residuals.temperature, tear.residuals.pressure) == (0.0, 0.0)
+    assert result.streams["sep1.liquid"].n.magnitude == 0.0
+
+    # `p1.outlet.T`, against `captures/process_flowsheet.tsv`'s `416.011567832174`. The measured
+    # difference is `0.012 K`, and it is upstream of the execution layer rather than in it.
+    pump_out = result.streams["p1.outlet"]
+    _close(pump_out.n.magnitude, 1.0)
+    _close(pump_out.p.to("bar").magnitude, 20.0)
+    assert abs(pump_out.t.magnitude - 416.011567832174) < 0.05
+
+
+def test_the_document_is_the_one_the_fields_were_read_from() -> None:
+    """**One codec, and no second writer on the Python side.**
+
+    `FlowsheetResult.document` is byte-identical to what the extension returned, so a
+    front-end handed the document and a caller reading `.streams` cannot disagree about a
+    quantity - there is one text and the dataclasses are a reading of it. A Python
+    re-encode of the parsed fields would be a second writer with its own key order and its
+    own number formatting, which is the drift `executor::json` exists to make impossible.
+    """
+    import json
+
+    from azoth import _core
+
+    palette = str(REPO_ROOT / "specs" / "unit_ops")
+    demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
+    feed = _binary(0.9, 1.0, 5e5, 300.0)
+
+    result = process.run_flowsheet(demo, {"feed_1": feed}, palette)
+    assert result.document == _core.run_flowsheet(demo, {"feed_1": feed._inner}, palette)
+
+    raw = json.loads(result.document)
+    assert raw["flowsheet"] == result.flowsheet
+    assert raw["converged"] is result.converged
+    assert raw["iterations"] == result.iterations
+    assert set(raw["streams"]) == set(result.streams)
+    for endpoint, record in raw["streams"].items():
+        stream = result.streams[endpoint]
+        assert record["n"]["magnitude_si"] == stream.n.magnitude
+
+    # And the document is read-only by the name it is held through: a frozen result whose
+    # mapping could be mutated in place would be frozen in name only.
+    with pytest.raises(TypeError):
+        result.streams["feed_1"] = result.streams["p1.outlet"]  # type: ignore[index]
+
+
+def test_run_flowsheet_refuses_what_it_cannot_run() -> None:
+    """The two refusals a caller meets first, each named rather than guessed at."""
+    palette = str(REPO_ROOT / "specs" / "unit_ops")
+    demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
+
+    # A feed the document declares and the caller does not supply. The message is the
+    # executor's, and it names the *producer* rather than the absent consumer - the finding
+    # `check.rs`'s diagnostics carry.
+    with pytest.raises(azoth.InvalidInputError, match="feed_1"):
+        process.run_flowsheet(demo, {}, palette)
+
+    # `useGraphBasedExecution` is a flag, so there are two orders and not a menu.
+    with pytest.raises(ValueError, match="insertion"):
+        process.run_flowsheet(
+            demo,
+            {"feed_1": _binary(0.9, 1.0, 5e5, 300.0)},
+            palette,
+            execution_order="kahn",
+        )

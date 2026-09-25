@@ -370,6 +370,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::plug_flow_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(process::gibbs_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(process::validate_flowsheet, m)?)?;
+    m.add_function(wrap_pyfunction!(process::run_flowsheet, m)?)?;
 
     // The standards namespace.
     m.add_function(wrap_pyfunction!(standards::iso6976, m)?)?;
