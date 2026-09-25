@@ -146,6 +146,19 @@ pub enum Diagnostic {
         endpoint: String,
         detail: String,
     },
+    /// A parameter's value is not the kind of thing its declaration says it is.
+    ///
+    /// **The same shape of hole `MissingParameter` closed, one layer down.** The instance pass
+    /// compared parameter *names* and never their values, so `outlet_pressure = "high"` validated
+    /// clean and the run refused it at `Parameters::si` - and the checker's promise, that a
+    /// flowsheet printing `OK` is one an executor can consume, was false again. The kind is not in
+    /// the palette (`Param` carries a unit and no type), so the rule reads the form the model's
+    /// inputs generate, which is the same table a widget renders from.
+    ParameterKind {
+        instance: String,
+        parameter: String,
+        detail: String,
+    },
     UnrecycledLoop {
         detail: String,
     },
@@ -198,6 +211,110 @@ impl std::fmt::Display for Location {
     }
 }
 
+/// Which of the three kinds of node a `Target` is about.
+///
+/// **The role is the node id's own prefix and nothing else spells it.** An id is
+/// `{role}:{name}` - `instance:sep1`, `input:feed_1`, `product:vapour_product` - so a wire record
+/// says the role and a front-end reads the id without a second mapping. Two roles cannot collide
+/// on one name, which is not a convenience: `NameCollision` makes an instance id and a boundary
+/// name disjoint, and the boundary-to-boundary case it does *not* cover is the reason the prefix
+/// cannot be dropped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NodeRole {
+    Instance,
+    Input,
+    Product,
+}
+
+impl NodeRole {
+    /// The name a front-end switches on, which is also the id's prefix.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Instance => "instance",
+            Self::Input => "input",
+            Self::Product => "product",
+        }
+    }
+
+    /// The node id this role gives a name.
+    ///
+    /// The inverse is `split_node_id`, and the two are the only places the `:` is written.
+    #[must_use]
+    pub fn node_id(self, name: &str) -> String {
+        format!("{}:{name}", self.name())
+    }
+}
+
+/// Split a node id into its role and its name.
+///
+/// **The inverse of [`NodeRole::node_id`]**, and it returns `None` rather than guessing a role for
+/// an id it does not recognise - a node the projection did not make is not one to invent a role
+/// for.
+#[must_use]
+pub fn split_node_id(id: &str) -> Option<(NodeRole, &str)> {
+    let (role, name) = id.split_once(':')?;
+    let role = match role {
+        "instance" => NodeRole::Instance,
+        "input" => NodeRole::Input,
+        "product" => NodeRole::Product,
+        _ => return None,
+    };
+    Some((role, name))
+}
+
+// The serialised name is `NodeRole::name`'s rather than serde's, so the two cannot disagree —
+// which is the same reason `Severity::name` exists instead of a `Serialize` derive.
+impl serde::Serialize for NodeRole {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.name())
+    }
+}
+
+/// The one thing in a document a diagnostic is about, in the shape a front-end draws it.
+///
+/// **`Location` says where to look in the text; this says what to put a mark on.** A widget drawing
+/// a graph has no use for `instances/m1.ports.feed` and needs the node and the handle; a widget
+/// drawing a table row needs the path. Both are derived from the same variant fields, in this file,
+/// so neither can be a table that goes stale beside the enum.
+///
+/// **A `[[connections]]` entry has no id in the schema**, so a pair of endpoints is its identity
+/// and `Edge` carries that pair rather than an id. Two identical connections - which the checker
+/// permits, since neither `OverfedPort` nor the feed rule fires on a `many` inlet - therefore
+/// resolve to the same target, and that is right: the diagnostic is about the endpoints, not about
+/// one row.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Target {
+    /// An instance, a feed or a product, as the node it is drawn as.
+    Node { role: NodeRole, id: String },
+    /// One port of an instance, at a position where the port has more than one.
+    ///
+    /// A `many` *inlet* takes several edges on one handle, so `index` is `None` there; a `many`
+    /// *outlet* returns a stream per position, so the index is what names the handle.
+    Handle {
+        role: NodeRole,
+        node: String,
+        port: String,
+        index: Option<usize>,
+    },
+    /// One parameter of one instance - the field a form marks.
+    Parameter { node: String, name: String },
+    /// A connection or a recycle, named by the endpoints it joins.
+    Edge { from: String, to: String },
+    /// A name as the document wrote it, where which node it is cannot be said.
+    Endpoint { endpoint: String },
+    /// An entry of the palette, and the part of its declaration at fault.
+    Palette {
+        id: String,
+        port: Option<String>,
+        parameter: Option<String>,
+        field: Option<String>,
+    },
+    /// The document itself, which is where a fact about its shape is about.
+    Document,
+}
+
 impl Diagnostic {
     /// How bad this is.
     ///
@@ -209,6 +326,150 @@ impl Diagnostic {
         match self {
             Self::UnusedFeed { .. } | Self::UnusedProduct { .. } => Severity::Warning,
             _ => Severity::Error,
+        }
+    }
+
+    /// The name a front-end switches on, which is the variant's own.
+    ///
+    /// **The match is exhaustive on purpose**: a new variant is a compile error until it has a
+    /// code, so a diagnostic cannot reach a front-end as an unrecognised string. `tests/middleware`
+    /// holds each code to the variant's own `Debug` name, which is the second half of the same
+    /// promise - the first half being that there is one place to write it.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::UnknownDimension { .. } => "unknown_dimension",
+            Self::UnknownParameterUnit { .. } => "unknown_parameter_unit",
+            Self::DuplicateUnitOpId { .. } => "duplicate_unit_op_id",
+            Self::DuplicatePort { .. } => "duplicate_port",
+            Self::DuplicateInstance { .. } => "duplicate_instance",
+            Self::DuplicateFeed { .. } => "duplicate_feed",
+            Self::DuplicateProduct { .. } => "duplicate_product",
+            Self::NameCollision { .. } => "name_collision",
+            Self::UnknownUnitOp { .. } => "unknown_unit_op",
+            Self::UnknownParameter { .. } => "unknown_parameter",
+            Self::MissingParameter { .. } => "missing_parameter",
+            Self::UnknownFeed { .. } => "unknown_feed",
+            Self::UnknownProduct { .. } => "unknown_product",
+            Self::UnknownInstance { .. } => "unknown_instance",
+            Self::UnknownPort { .. } => "unknown_port",
+            Self::ProducerNotOutlet { .. } => "producer_not_outlet",
+            Self::ConsumerNotInlet { .. } => "consumer_not_inlet",
+            Self::TypeMismatch { .. } => "type_mismatch",
+            Self::OverfedPort { .. } => "overfed_port",
+            Self::UnderfedPort { .. } => "underfed_port",
+            Self::UnusedFeed { .. } => "unused_feed",
+            Self::UnusedProduct { .. } => "unused_product",
+            Self::InputRecord { .. } => "input_record",
+            Self::EndpointIndex { .. } => "endpoint_index",
+            Self::ParameterKind { .. } => "parameter_kind",
+            Self::UnrecycledLoop { .. } => "unrecycled_loop",
+        }
+    }
+
+    /// What in the document this is about, as the thing a front-end draws.
+    #[must_use]
+    pub fn target(&self) -> Target {
+        let node = |role: NodeRole, id: &str| Target::Node {
+            role,
+            id: id.to_string(),
+        };
+        let handle = |instance: &str, port: &str| Target::Handle {
+            role: NodeRole::Instance,
+            node: instance.to_string(),
+            port: port.to_string(),
+            index: None,
+        };
+        let field = |node: &str, name: &str| Target::Parameter {
+            node: node.to_string(),
+            name: name.to_string(),
+        };
+        match self {
+            Self::UnknownDimension {
+                unit_op,
+                port,
+                field,
+                ..
+            } => Target::Palette {
+                id: unit_op.clone(),
+                port: Some(port.clone()),
+                parameter: None,
+                field: Some(field.clone()),
+            },
+            Self::UnknownParameterUnit {
+                unit_op, parameter, ..
+            } => Target::Palette {
+                id: unit_op.clone(),
+                port: None,
+                parameter: Some(parameter.clone()),
+                field: None,
+            },
+            Self::DuplicateUnitOpId { id } => Target::Palette {
+                id: id.clone(),
+                port: None,
+                parameter: None,
+                field: None,
+            },
+            Self::DuplicatePort { unit_op, port } => Target::Palette {
+                id: unit_op.clone(),
+                port: Some(port.clone()),
+                parameter: None,
+                field: None,
+            },
+            Self::DuplicateInstance { id } => node(NodeRole::Instance, id),
+            Self::DuplicateFeed { name } => node(NodeRole::Input, name),
+            Self::DuplicateProduct { name } => node(NodeRole::Product, name),
+            // Which of the two roles it collides with is not decidable from the name alone, so the
+            // target is the name as written rather than a guess between an input and a product.
+            Self::NameCollision { name } => Target::Endpoint {
+                endpoint: name.clone(),
+            },
+            Self::UnknownUnitOp { instance, .. } => node(NodeRole::Instance, instance),
+            Self::UnknownParameter {
+                instance,
+                parameter,
+            }
+            | Self::MissingParameter {
+                instance,
+                parameter,
+            }
+            | Self::ParameterKind {
+                instance,
+                parameter,
+                ..
+            } => field(instance, parameter),
+            Self::UnknownFeed { name } | Self::UnknownProduct { name } => Target::Endpoint {
+                endpoint: name.clone(),
+            },
+            Self::UnknownInstance { name } => Target::Endpoint {
+                endpoint: name.clone(),
+            },
+            Self::UnknownPort { instance, port }
+            | Self::ProducerNotOutlet { instance, port }
+            | Self::ConsumerNotInlet { instance, port }
+            | Self::OverfedPort { instance, port, .. }
+            | Self::UnderfedPort { instance, port, .. } => handle(instance, port),
+            Self::TypeMismatch { from, to, .. } => Target::Edge {
+                from: from.clone(),
+                to: to.clone(),
+            },
+            Self::UnusedFeed { name } => node(NodeRole::Input, name),
+            Self::UnusedProduct { name } => node(NodeRole::Product, name),
+            Self::InputRecord { name, .. } => node(NodeRole::Input, name),
+            // An index is a position on a port, so where the endpoint names a port the target is
+            // that port at that position; a bare name has no port to point at.
+            Self::EndpointIndex { endpoint, .. } => match split_endpoint(endpoint) {
+                Some((instance, port, index)) => Target::Handle {
+                    role: NodeRole::Instance,
+                    node: instance.to_string(),
+                    port: port.to_string(),
+                    index,
+                },
+                None => Target::Endpoint {
+                    endpoint: endpoint.clone(),
+                },
+            },
+            Self::UnrecycledLoop { .. } => Target::Document,
         }
     }
 
@@ -242,6 +503,11 @@ impl Diagnostic {
             | Self::MissingParameter {
                 instance,
                 parameter,
+            }
+            | Self::ParameterKind {
+                instance,
+                parameter,
+                ..
             } => at("instances", format!("{instance}.parameters.{parameter}")),
             Self::UnknownFeed { name } => at("inputs", name.clone()),
             Self::UnknownProduct { name } => at("products", name.clone()),
@@ -329,6 +595,7 @@ impl Diagnostic {
             }
             Self::InputRecord { detail, .. } => detail.clone(),
             Self::EndpointIndex { detail, .. } => detail.clone(),
+            Self::ParameterKind { detail, .. } => detail.clone(),
             Self::UnrecycledLoop { detail } => detail.clone(),
         }
     }

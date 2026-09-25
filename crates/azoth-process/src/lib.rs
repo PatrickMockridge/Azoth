@@ -16,6 +16,7 @@ pub mod executor;
 pub mod flowsheet;
 pub mod kernels;
 pub mod load;
+pub mod middleware;
 pub mod model_gen;
 pub mod models;
 pub mod order;
@@ -25,7 +26,9 @@ pub mod stream;
 pub mod unit_op;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
-pub use check::{Diagnostic, Location, Severity, validate, validate_palette};
+pub use check::{
+    Diagnostic, Location, NodeRole, Severity, Target, split_node_id, validate, validate_palette,
+};
 pub use flowsheet::{Connection, Flowsheet, Input, Instance, Recycle};
 pub use load::{load_palette, parse_flowsheet};
 pub use order::{ExecutionOrder, execution_order};
