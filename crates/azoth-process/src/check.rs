@@ -24,6 +24,9 @@ use crate::unit_op::UnitOpSpec;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Diagnostic {
     UnknownDimension {
+        unit_op: String,
+        port: String,
+        field: String,
         dimension: String,
     },
     /// A parameter's declared unit is not one this crate can convert.
@@ -87,6 +90,8 @@ pub enum Diagnostic {
         port: String,
     },
     TypeMismatch {
+        from: String,
+        to: String,
         detail: String,
     },
     OverfedPort {
@@ -108,6 +113,178 @@ pub enum Diagnostic {
     UnrecycledLoop {
         detail: String,
     },
+}
+
+/// How bad a diagnostic is.
+///
+/// **Two levels, because a front-end draws two.** The middleware's rule is that a red arrow is a
+/// structured `OverfedPort` and not a string, and what makes it red rather than amber is this.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Severity {
+    /// The document cannot run as written.
+    Error,
+    /// The document runs, and something about it is probably not what the author meant.
+    Warning,
+}
+
+impl Severity {
+    /// The name a front-end switches on, which is the variant's own.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Error => "error",
+            Self::Warning => "warning",
+        }
+    }
+}
+
+/// Where in a document a diagnostic is about.
+///
+/// **A section and a path**, which is what a widget needs to put a mark on the right row: the
+/// section is the table (`unit_ops`, `instances`, `connections`, `feeds`, `products`) and the path
+/// is the id within it, dotted the way the document spells it. **An empty path is the section
+/// whole** - a cycle nobody declared is a fact about `connections` and not about one row of it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Location {
+    /// The table the diagnostic is about.
+    pub section: &'static str,
+    /// The id within it, dotted; empty for the section itself.
+    pub path: String,
+}
+
+impl std::fmt::Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.path.is_empty() {
+            f.write_str(self.section)
+        } else {
+            write!(f, "{}/{}", self.section, self.path)
+        }
+    }
+}
+
+impl Diagnostic {
+    /// How bad this is.
+    ///
+    /// **Only two variants are warnings**, and both are the same statement: the document declares
+    /// something nothing uses. It runs; it is probably not what was meant. Everything else makes
+    /// the document unrunnable, which is the line the two levels are drawn on.
+    #[must_use]
+    pub fn severity(&self) -> Severity {
+        match self {
+            Self::UnusedFeed { .. } | Self::UnusedProduct { .. } => Severity::Warning,
+            _ => Severity::Error,
+        }
+    }
+
+    /// Where in the document this is about.
+    #[must_use]
+    pub fn location(&self) -> Location {
+        let at = |section: &'static str, path: String| Location { section, path };
+        match self {
+            Self::UnknownDimension {
+                unit_op,
+                port,
+                field,
+                ..
+            } => at("palette", format!("{unit_op}.ports.{port}.{field}")),
+            Self::UnknownParameterUnit {
+                unit_op, parameter, ..
+            } => at("palette", format!("{unit_op}.parameters.{parameter}")),
+            Self::DuplicateUnitOpId { id } => at("palette", id.clone()),
+            Self::DuplicatePort { unit_op, port } => {
+                at("palette", format!("{unit_op}.ports.{port}"))
+            }
+            Self::DuplicateInstance { id } => at("instances", id.clone()),
+            Self::DuplicateFeed { name } => at("feeds", name.clone()),
+            Self::DuplicateProduct { name } => at("products", name.clone()),
+            Self::NameCollision { name } => at("flowsheet", name.clone()),
+            Self::UnknownUnitOp { instance, .. } => at("instances", format!("{instance}.unit")),
+            Self::UnknownParameter {
+                instance,
+                parameter,
+            } => at("instances", format!("{instance}.parameters.{parameter}")),
+            Self::UnknownFeed { name } => at("feeds", name.clone()),
+            Self::UnknownProduct { name } => at("products", name.clone()),
+            Self::UnknownInstance { name } => at("connections", name.clone()),
+            Self::UnknownPort { instance, port }
+            | Self::ProducerNotOutlet { instance, port }
+            | Self::ConsumerNotInlet { instance, port }
+            | Self::OverfedPort { instance, port, .. }
+            | Self::UnderfedPort { instance, port, .. } => {
+                at("instances", format!("{instance}.ports.{port}"))
+            }
+            Self::TypeMismatch { from, to, .. } => at("connections", format!("{from} -> {to}")),
+            Self::UnusedFeed { name } => at("feeds", name.clone()),
+            Self::UnusedProduct { name } => at("products", name.clone()),
+            Self::UnrecycledLoop { .. } => at("connections", String::new()),
+        }
+    }
+}
+
+/// The human line, which is what a log or a terminal gets.
+///
+/// **`Debug` is left alone.** The Python bridge renders a diagnostic with `{d:?}` today and
+/// `python/tests/test_process.py` asserts that a broken flowsheet's lines contain `OverfedPort`,
+/// so a `Display` that replaced it would move a published surface for no gain. This is additive:
+/// the variant's name is still in the debug form, and a caller that wants prose has one.
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.location(), self.message())
+    }
+}
+
+impl Diagnostic {
+    /// What went wrong, in a sentence.
+    ///
+    /// Naming the subject here rather than in `Display` keeps one place that knows how to say a
+    /// variant and one place that knows where it is.
+    #[must_use]
+    pub fn message(&self) -> String {
+        match self {
+            Self::UnknownDimension { dimension, .. } => {
+                format!("`{dimension}` is not a dimension the vocabulary carries")
+            }
+            Self::UnknownParameterUnit { unit, .. } => {
+                format!("`{unit}` is not a unit the vocabulary carries")
+            }
+            Self::DuplicateUnitOpId { id } => format!("`{id}` is declared twice"),
+            Self::DuplicatePort { port, .. } => format!("port `{port}` is declared twice"),
+            Self::DuplicateInstance { id } => format!("instance `{id}` is declared twice"),
+            Self::DuplicateFeed { name } => format!("feed `{name}` is declared twice"),
+            Self::DuplicateProduct { name } => format!("product `{name}` is declared twice"),
+            Self::NameCollision { name } => {
+                format!("`{name}` is used both as a feed and as a product")
+            }
+            Self::UnknownUnitOp { unit, .. } => {
+                format!("`{unit}` is not a unit operation the palette declares")
+            }
+            Self::UnknownParameter { parameter, .. } => {
+                format!("`{parameter}` is not a parameter the entry declares")
+            }
+            Self::UnknownFeed { name } => format!("feed `{name}` is not declared"),
+            Self::UnknownProduct { name } => format!("product `{name}` is not declared"),
+            Self::UnknownInstance { name } => format!("instance `{name}` is not declared"),
+            Self::UnknownPort { port, .. } => format!("`{port}` is not a port of this entry"),
+            Self::ProducerNotOutlet { port, .. } => {
+                format!("`{port}` produces, and is not an outlet")
+            }
+            Self::ConsumerNotInlet { port, .. } => {
+                format!("`{port}` consumes, and is not an inlet")
+            }
+            Self::TypeMismatch { detail, .. } => detail.clone(),
+            Self::OverfedPort { port, count, .. } => {
+                format!("`{port}` takes one stream and {count} are connected")
+            }
+            Self::UnderfedPort { port, count, .. } => {
+                format!("`{port}` takes at least one stream and {count} are connected")
+            }
+            Self::UnusedFeed { name } => format!("feed `{name}` is declared and never consumed"),
+            Self::UnusedProduct { name } => {
+                format!("product `{name}` is declared and never produced")
+            }
+            Self::UnrecycledLoop { detail } => detail.clone(),
+        }
+    }
 }
 
 /// The palette's own well-formedness: unique ids and ports, and every field names
@@ -132,9 +309,12 @@ pub fn validate_palette(specs: &[UnitOpSpec]) -> Vec<Diagnostic> {
                     port: port.name.clone(),
                 });
             }
-            for field in port.fields.values() {
+            for (field_name, field) in &port.fields {
                 if dimension_exponents(&field.dimension).is_none() {
                     diags.push(Diagnostic::UnknownDimension {
+                        unit_op: spec.id.clone(),
+                        port: port.name.clone(),
+                        field: field_name.clone(),
                         dimension: field.dimension.clone(),
                     });
                 }
@@ -311,7 +491,11 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 channel_type(&instances, &specs, to_i, to_p),
             ) {
                 if let Err(detail) = compatible(from_t, to_t) {
-                    diags.push(Diagnostic::TypeMismatch { detail });
+                    diags.push(Diagnostic::TypeMismatch {
+                        from: format!("{from_i}.{from_p}"),
+                        to: format!("{to_i}.{to_p}"),
+                        detail,
+                    });
                 }
             }
         }
@@ -931,12 +1115,123 @@ mod tests {
             },
         );
         let diags = validate_palette(&[spec]);
-        assert!(has(
-            &diags,
-            Diagnostic::UnknownDimension {
-                dimension: "no_such_dimension".into()
-            }
-        ));
+        // **Matched on the field rather than on the whole variant**, because the variant now
+        // carries where it is as well as what it is - which is the point of C7.
+        let found = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::UnknownDimension { dimension, .. } if dimension == "no_such_dimension"))
+            .expect("the dimension is reported");
+        assert_eq!(found.severity(), Severity::Error);
+        assert_eq!(found.location().section, "palette");
+        assert_eq!(found.location().path, "unit_ops.pump.ports.feed.bad");
+        assert!(
+            found.message().contains("no_such_dimension"),
+            "the dimension is named in the message: {found}"
+        );
+        assert_eq!(
+            found.to_string(),
+            format!("{}: {}", found.location(), found.message())
+        );
+    }
+
+    /// **Every diagnostic says how bad it is and where, and the two levels are drawn on whether
+    /// the document can run at all.**
+    ///
+    /// The middleware's rule is that a red arrow is a structured `OverfedPort` and not a string,
+    /// so the structured half has to be reachable: this walks a flowsheet with four kinds of
+    /// defect at once and checks that each carries a section, a path and a level - and that the
+    /// one defect that leaves the document *runnable* is the one that comes back a warning.
+    #[test]
+    fn every_diagnostic_carries_a_severity_and_a_location() {
+        let palette = vec![mixer("unit_ops.mixer")];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            // Declared and never consumed, which is the warning.
+            feeds: vec!["spare".into()],
+            products: vec!["out".into()],
+            instances: vec![
+                Instance {
+                    id: "m1".into(),
+                    unit: "unit_ops.mixer".into(),
+                    parameters: BTreeMap::new(),
+                },
+                // A unit the palette does not carry.
+                Instance {
+                    id: "m2".into(),
+                    unit: "unit_ops.nosuch".into(),
+                    parameters: BTreeMap::new(),
+                },
+            ],
+            connections: vec![
+                // A port that is not an inlet, fed by a stream nothing produces.
+                Connection {
+                    from: "nowhere".into(),
+                    to: "m2.product".into(),
+                },
+            ],
+            recycles: Vec::new(),
+        };
+
+        let diags = validate(&flowsheet, &palette);
+        assert!(
+            !diags.is_empty(),
+            "the flowsheet is broken and nothing was reported"
+        );
+        for diag in &diags {
+            let location = diag.location();
+            assert!(!location.section.is_empty(), "`{diag:?}` names no section");
+            // The two levels, and no third.
+            assert!(matches!(
+                diag.severity(),
+                Severity::Error | Severity::Warning
+            ));
+        }
+
+        let warnings: Vec<&Diagnostic> = diags
+            .iter()
+            .filter(|diag| diag.severity() == Severity::Warning)
+            .collect();
+        // Two, and both are the same statement: `spare` is declared and nothing consumes it,
+        // `out` is declared and nothing produces it. Every other defect here makes the document
+        // unrunnable, which is where the line between the two levels is.
+        assert_eq!(warnings.len(), 2, "the unused declarations: {warnings:?}");
+        assert!(warnings.iter().all(|diag| matches!(
+            diag,
+            Diagnostic::UnusedFeed { .. } | Diagnostic::UnusedProduct { .. }
+        )));
+        assert_eq!(warnings[0].location().section, "feeds");
+        assert_eq!(warnings[0].location().path, "spare");
+        assert_eq!(warnings[1].location().section, "products");
+        assert_eq!(warnings[1].location().path, "out");
+
+        // **A red arrow, which is the one the middleware's rule names.** `m1`'s two ports are
+        // both unfed, and the mis-wired `m2.product` connection surfaces as the *producer* being
+        // unknown (`feeds/nowhere`) rather than as a consumer that is not an inlet - the checker
+        // reports the connection's `from` first and the port it lands on is then not reached. Worth
+        // knowing if a front-end wants to draw the arrow on the connection rather than on the port.
+        let red = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::UnderfedPort { .. }))
+            .expect("the unfed port is reported");
+        assert_eq!(red.severity(), Severity::Error);
+        assert_eq!(red.location().section, "instances");
+        assert_eq!(red.location().path, "m1.ports.feed");
+        assert!(
+            diags
+                .iter()
+                .any(|diag| matches!(diag, Diagnostic::UnknownFeed { name } if name == "nowhere")),
+            "the unknown producer is reported: {diags:?}"
+        );
+        // The display line is the location and the message together.
+        assert_eq!(
+            red.to_string(),
+            format!("{}: {}", red.location(), red.message())
+        );
+        assert_eq!(
+            red.to_string(),
+            "instances/m1.ports.feed: `feed` takes at least one stream and 0 are connected"
+        );
     }
 
     #[test]

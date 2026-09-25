@@ -28,7 +28,10 @@ pub fn load_palette(dir: &Path) -> Result<Vec<UnitOpSpec>, String> {
 
 /// A flowsheet, from its TOML text.
 pub fn parse_flowsheet(text: &str) -> Result<Flowsheet, String> {
-    toml::from_str(text).map_err(|e| e.to_string())
+    // One parse rather than two spellings of it: `Flowsheet::from_toml` is where the document's
+    // reader lives, and a second `toml::from_str` here would be a second place a schema change
+    // could be made in one of them.
+    Flowsheet::from_toml(text).map_err(|error| error.to_string())
 }
 
 fn collect_toml(dir: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
