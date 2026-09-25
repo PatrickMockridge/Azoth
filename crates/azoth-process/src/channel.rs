@@ -45,6 +45,7 @@ pub enum Shape {
 
 /// One field of a channel: a named quantity at a dimension.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FieldType {
     /// A dimension id from `specs/vocabulary/vocabulary.toml`, e.g. `pressure`.
     pub dimension: String,
@@ -54,6 +55,7 @@ pub struct FieldType {
 
 /// A port: the declared interface of one side of a unit operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Port {
     pub name: String,
     pub direction: Direction,

@@ -83,6 +83,7 @@ pub struct Input {
 /// One instance of a unit operation, with the parameter values a user typed on its
 /// form.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Instance {
     pub id: String,
     /// The id of a palette spec, e.g. `unit_ops.pump`.
@@ -97,6 +98,7 @@ pub struct Instance {
 /// or `instance.port` (an inlet). A bare name in `from` position is a feed, in
 /// `to` position a product; the dot separates an instance from its port.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Connection {
     pub from: String,
     pub to: String,
@@ -148,6 +150,7 @@ impl Flowsheet {
 /// `specs/flowsheets/demo.toml` validating unchanged — and a declaration that states one
 /// carries it rather than inventing a number. See [`crate::recycle`] for what each means.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Recycle {
     pub stream: String,
     pub from: String,
@@ -268,6 +271,7 @@ impl Recycle {
 /// no way to reopen a key after an array of tables, so `products` — a plain array — is written
 /// *before* `[[inputs]]`, and `toml::to_string` refuses the other order outright.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Flowsheet {
     pub id: String,
     pub name: String,

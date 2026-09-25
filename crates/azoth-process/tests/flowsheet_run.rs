@@ -12,7 +12,7 @@ use azoth_process::ExecutionOrder;
 use azoth_process::executor::json::to_json;
 use azoth_process::executor::{STREAM_FIELDS, Session, run};
 use azoth_process::recycle::Acceleration;
-use azoth_process::{Flowsheet, Stream, load_palette};
+use azoth_process::{Flowsheet, Stream, UnitOpSpec, load_palette};
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -456,6 +456,65 @@ fn every_shipped_flowsheet_round_trips() {
         checked > 0,
         "no flowsheet was checked, so this test decided nothing"
     );
+}
+
+/// **A key the schema does not declare is refused, not read past.**
+///
+/// Six of this layer's ten structs accepted a stray key in silence - `Flowsheet`, `Instance`,
+/// `Connection`, `Recycle`, `Port` and `FieldType` - which is the "field silently ignored" defect
+/// class this repository treats as a defect and not as a tolerance. A misspelt `prameters` in a
+/// hand-written flowsheet validated as though it were absent, and a front-end that wrote a field
+/// its reader did not know lost it without a word.
+///
+/// **The error has to name the key.** A document refused without being told where is the same
+/// information as one accepted: the reader still does not know what to change.
+#[test]
+fn a_key_the_schema_does_not_declare_is_refused_rather_than_read_past() {
+    let documents = [
+        ("the document", "id = \"f\"\nname = \"f\"\nnope = 1\n"),
+        (
+            "an instance",
+            "id = \"f\"\nname = \"f\"\n\n[[instances]]\nid = \"p1\"\nunit = \"unit_ops.pump\"\nnope = 1\n",
+        ),
+        (
+            "a connection",
+            "id = \"f\"\nname = \"f\"\n\n[[connections]]\nfrom = \"a\"\nto = \"b\"\nnope = 1\n",
+        ),
+        (
+            "a recycle",
+            "id = \"f\"\nname = \"f\"\n\n[[recycles]]\nstream = \"r\"\nfrom = \"a\"\nto = \"b\"\nnope = 1\n",
+        ),
+    ];
+    for (what, text) in documents {
+        let error = Flowsheet::from_toml(text)
+            .err()
+            .unwrap_or_else(|| panic!("{what}: the stray key was read past"));
+        assert!(
+            error.to_string().contains("nope"),
+            "{what}: the refusal does not name the key: {error}"
+        );
+    }
+
+    // The palette's own two structs, which a `load_palette` reads rather than this schema.
+    let palette_documents = [
+        (
+            "a port",
+            "id = \"unit_ops.pump\"\nname = \"Pump\"\n\n[[ports]]\nname = \"inlet\"\ndirection = \"in\"\nnope = 1\n",
+        ),
+        (
+            "a field",
+            "id = \"unit_ops.pump\"\nname = \"Pump\"\n\n[[ports]]\nname = \"inlet\"\ndirection = \"in\"\n\n[ports.fields]\nn = { dimension = \"molar_flow\", nope = 1 }\n",
+        ),
+    ];
+    for (what, text) in palette_documents {
+        let error = toml::from_str::<UnitOpSpec>(text)
+            .err()
+            .unwrap_or_else(|| panic!("{what}: the stray key was read past"));
+        assert!(
+            error.to_string().contains("nope"),
+            "{what}: the refusal does not name the key: {error}"
+        );
+    }
 }
 
 /// **A declaration that states no convergence parameter writes none of them**, and one that states
