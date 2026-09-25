@@ -301,8 +301,8 @@ still true of every id in the list above, and it is why each one has a worked ex
 reader can retrace by hand. A **unit-operation tier** and the **flowsheets** that
 compose them sit above this, and they compose for you; what that gives up in exchange,
 and what replaces the guarantee, is set out in [the specification](./architecture/specification.md) rather
-than left to be discovered. The tier is partly built - the palette, the checker and six
-kernels - and the executor that runs a flowsheet is P12.
+than left to be discovered. The tier is built - the palette, the checker, the kernels and
+the executor that runs a flowsheet, which is P12's and is landed.
 
 The `azoth pipe` command performs the composition shown here, and reports the two
 pressure drop contributions separately rather than only their sum - they come from

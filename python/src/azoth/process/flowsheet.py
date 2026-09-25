@@ -7,11 +7,11 @@ implementation here and there is no second codec: the result is read from the JS
 ``executor::json`` wrote, and :attr:`FlowsheetResult.document` hands that document back
 unchanged rather than writing a Python one.
 
-**The feeds are an argument and not a field of the flowsheet.** A flowsheet declares its
-feed *names* (``feeds = ["feed_1"]``) and states nothing about the fluid, so what flows in
-is the caller's to say. That is also why the CLI's ``azoth run`` is not written yet: a
-command line has nothing to read a fluid from, and stating one per feed is a schema
-addition rather than a detail of the command.
+**A flowsheet is self-contained.** Its ``[[inputs]]`` declare each boundary inlet's fluid
+and state — ``components``, ``n``, ``z``, ``P`` and ``T``, with ``h`` calculated from the
+other three — so ``run_flowsheet`` takes no feed argument for the ordinary case. The
+``feeds`` parameter is an *override*, for a sweep or a form that fills a boundary in
+without editing the document.
 """
 
 from __future__ import annotations
@@ -173,15 +173,20 @@ def _read(document: str) -> FlowsheetResult:
 
 def run_flowsheet(
     flowsheet: str,
-    feeds: Mapping[str, Stream],
+    feeds: Mapping[str, Stream] | None = None,
     palette_dir: str = "specs/unit_ops",
     execution_order: str = "insertion",
 ) -> FlowsheetResult:
     """Run a flowsheet's TOML text to its steady state.
 
-    ``feeds`` supplies the boundary inlets, keyed by the names the flowsheet's ``feeds``
-    declares - a missing one is refused by name rather than read as a zero flow. The
-    palette is what an instance dispatches through, so it is the same directory
+    **The document declares its own inputs**, so ``feeds`` is omitted in the ordinary case
+    and the run is the document's. When it is given, each entry replaces the value of a
+    boundary the document already declares, keyed by the input's ``name`` — which is how a
+    sweep or a front-end form varies a feed without editing the file. A name the document
+    does not declare is **refused**, because a boundary nothing consumes is a wiring error
+    rather than an extra feed.
+
+    The palette is what an instance dispatches through, so it is the same directory
     :func:`azoth.process.validate` is given.
 
     **``execution_order`` is a flag and not a decision to make lightly.**
@@ -195,17 +200,19 @@ def run_flowsheet(
     Raises:
         ValueError: where the palette cannot be read or the flowsheet does not parse -
             the same two failures :func:`azoth.process.validate` raises.
-        InvalidInputError: where a feed is missing, a connection names an instance or a
-            port the palette does not declare, an inlet of single multiplicity receives
-            more than one stream, or a unit refuses its arguments. A cycle that no
-            ``[[recycles]]`` entry declares is refused rather than hung on.
+        InvalidInputError: where an input's fluid does not resolve, a supplied feed is not
+            one the document declares, a connection names an instance or a port the palette
+            does not declare, an inlet of single multiplicity receives more than one stream,
+            or a unit refuses its arguments. A cycle that no ``[[recycles]]`` entry declares
+            is refused rather than hung on.
 
-    See :func:`azoth.process.validate` for the same document checked without running it.
+    See :func:`azoth.process.validate` for the same document checked without running it,
+    including the rule that an input's composition is one mole fraction per substance.
     """
     return _read(
         _core.run_flowsheet(
             flowsheet,
-            {name: stream._inner for name, stream in feeds.items()},
+            None if feeds is None else {name: s._inner for name, s in feeds.items()},
             palette_dir,
             execution_order,
         )

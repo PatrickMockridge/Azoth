@@ -316,8 +316,8 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     # transport type: `azoth.process.run_flowsheet` is what reads it into dataclasses, and
     # `FlowsheetResult.document` hands the same string back.
     (
-        "run_flowsheet(flowsheet: str, feeds: dict[str, Stream], palette_dir: str,"
-        " execution_order: str = ...)",
+        "run_flowsheet(flowsheet: str, feeds: dict[str, Stream] | None = ...,"
+        " palette_dir: str = ..., execution_order: str = ...)",
         "str",
     ),
 )

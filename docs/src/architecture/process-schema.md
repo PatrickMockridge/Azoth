@@ -69,12 +69,21 @@ the domain modules (renewables, reservoir) are not unit operations.
 
 ## A flowsheet spec
 
-A flowsheet names boundary streams and wires instances by named connections:
+A flowsheet is a **self-contained simulation**: it declares its inputs — what the user
+specifies — and its products, which the run calculates. Boundary streams are named and
+instances wired by named connections:
 
 ```toml
 id = "flowsheets.demo"
-feeds = ["feed_1"]
+name = "Feed, pump, heat, separate, recycle"
 products = ["vapour_product"]
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 5.0e5
+T = 300.0
 [[instances]]
 id = "p1"
 unit = "unit_ops.pump"
@@ -89,6 +98,17 @@ from = "sep1.liquid"
 to = "mix1.feed"
 ```
 
+An input's fields are the material stream's own — `n`, `z`, `P` and `T` from the record
+above — so no unit is written and the field's dimension supplies it, exactly as an
+instance parameter's bare number takes its unit from the palette entry. **`h` is the one
+field of the record a user does not write**: it is a state function of `(T, P, z)`, so the
+kernel derives it, and a written `h` is refused rather than ignored. **`products` is names
+only**, because an output is calculated and has nothing to state.
+
+`products` is written *before* `[[inputs]]`, and that order is not cosmetic: TOML has no
+way to reopen a key after an array of tables, so a value written after one belongs to the
+last element of it.
+
 `from` is a feed name or `instance.port` (an outlet); `to` is a product name or
 `instance.port` (an inlet). A recycle is a connection that closes a loop, its stream
 named as the tear.
@@ -100,9 +120,15 @@ named as the tear.
 - every instance names a palette unit op, and only its declared parameters;
 - a connection joins an outlet (or feed) to an inlet (or product);
 - a Port-to-Port connection joins dimension-compatible field records;
+- an input's record could be a stream — one mole fraction per substance, and a fluid that
+  names at least one;
 - **linearity** — a `one` port is consumed/produced exactly once, a `many` port at
   least once, and every feed/product is used exactly once;
 - every loop in the instance graph passes through a declared recycle.
+
+The last rule about an input is a *shape* rule and no more: the checker compares dimensions
+by exponent tuple and resolves no names, so whether a named substance exists is the
+databank's answer and is refused at the run.
 
 `azoth check --flowsheet <file>` runs it from the command line; a cargo test walks
 `specs/unit_ops/` and `specs/flowsheets/` and holds every shipped file to it.
@@ -120,7 +146,9 @@ that added it beside the column.
 `unit_ops.*` → kernel dispatch table, the execution order, the tear with `Recycle`'s own four
 tolerances, a session whose every value has a stable path, a JSON codec and structured
 diagnostics. It runs `specs/flowsheets/demo.toml` and converges its recycle, held to a NeqSim
-`ProcessSystem` capture. **One entry it refuses by name**: `unit_ops.packed_column` has a kernel
+`ProcessSystem` capture, and the document runs from three places — the library, `azoth run
+--flowsheet` and `azoth.process.run_flowsheet` — with no argument but the file. **One entry it
+refuses by name**: `unit_ops.packed_column` has a kernel
 and a registered id, and its declaration describes the packing rather than the column, so the
 executor says so rather than running a machine the declaration does not describe. What is still
 owed is named in `ROADMAP.md`.

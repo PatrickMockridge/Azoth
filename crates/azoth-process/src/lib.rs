@@ -5,8 +5,9 @@
 //! field record (names → dimensions) with a polarity; conservation is linearity.
 //! This crate states the schema — the palette of unit operations and the
 //! flowsheet that wires them — and checks that a flowsheet honours the calculus's
-//! rules. The executor that turns a flowsheet into something that runs is tranche
-//! P12, and is not built.
+//! rules. **The executor that turns a flowsheet into something that runs is
+//! [`executor`]**, and a flowsheet is self-contained: its `[[inputs]]` declare the
+//! fluid and the state, so it runs with no argument but the document.
 
 pub mod channel;
 pub mod check;
@@ -24,8 +25,8 @@ pub mod stream;
 pub mod unit_op;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
-pub use check::{Diagnostic, validate, validate_palette};
-pub use flowsheet::{Connection, Flowsheet, Instance, Recycle};
+pub use check::{Diagnostic, Location, Severity, validate, validate_palette};
+pub use flowsheet::{Connection, Flowsheet, Input, Instance, Recycle};
 pub use load::{load_palette, parse_flowsheet};
 pub use order::{ExecutionOrder, execution_order};
 pub use recycle::{Acceleration, RecycleSettings, Residuals};

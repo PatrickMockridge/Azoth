@@ -66,6 +66,7 @@ dependencies = [
  "azoth-hydraulics",
  "azoth-process",
  "clap",
+ "serde_json",
  "toml",
  "uom",
 ]

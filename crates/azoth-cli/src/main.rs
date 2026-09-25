@@ -15,8 +15,8 @@
 //! [`azoth_cli::report`], both of which are testable. What is left here is the
 //! wiring, which is the part an integration test against the built binary covers.
 
-use azoth_cli::cli::{CheckArgs, Cli, Command, PipeArgs};
-use azoth_cli::{check, pipe, report};
+use azoth_cli::cli::{CheckArgs, Cli, Command, PipeArgs, RunArgs};
+use azoth_cli::{check, pipe, report, run};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -28,6 +28,7 @@ fn main() -> std::process::ExitCode {
             Err(e) => fail(&e),
         },
         Command::Check(args) => run_check(args),
+        Command::Run(args) => run_flowsheet(args),
     }
 }
 
@@ -36,6 +37,23 @@ fn run_check(args: CheckArgs) -> std::process::ExitCode {
         Ok(report) => {
             println!("{}", report.text);
             if report.defects == 0 {
+                std::process::ExitCode::SUCCESS
+            } else {
+                std::process::ExitCode::from(2)
+            }
+        }
+        Err(message) => {
+            eprintln!("azoth: {message}");
+            std::process::ExitCode::from(2)
+        }
+    }
+}
+
+fn run_flowsheet(args: RunArgs) -> std::process::ExitCode {
+    match run::run(&args.flowsheet, &args.palette, args.json) {
+        Ok(report) => {
+            println!("{}", report.text);
+            if report.ran {
                 std::process::ExitCode::SUCCESS
             } else {
                 std::process::ExitCode::from(2)

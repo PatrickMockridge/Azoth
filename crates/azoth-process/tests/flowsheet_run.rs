@@ -18,20 +18,6 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-fn feed() -> Stream {
-    Stream::from_pt(
-        ["methane", "n-butane"]
-            .iter()
-            .map(|name| (*name).to_string())
-            .collect(),
-        vec![0.9, 0.1],
-        1.0,
-        pascals(5.0e5),
-        kelvins(300.0),
-    )
-    .expect("the two resolve")
-}
-
 /// **The shipped flowsheet, run.** Feed, pump, heat, separate, and the liquid recycled back to
 /// the mixer - so the second pass's mixer has two inlets and the tear closes.
 #[test]
@@ -40,7 +26,7 @@ fn the_shipped_flowsheet_converges_its_recycle() {
         .expect("the shipped flowsheet is there");
     let flowsheet: Flowsheet = toml::from_str(&text).expect("it parses");
     let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
-    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let feeds = BTreeMap::new();
 
     let report =
         run(&flowsheet, &palette, &feeds, ExecutionOrder::Insertion).expect("the flowsheet runs");
@@ -79,7 +65,7 @@ fn a_tear_that_carries_material_converges() {
     let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
         .expect("the shipped flowsheet is there");
     let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
-    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let feeds = BTreeMap::new();
 
     let condensing = || {
         let mut flowsheet: Flowsheet = toml::from_str(&text).expect("it parses");
@@ -165,7 +151,7 @@ fn the_shipped_flowsheet_is_the_one_with_an_empty_tear() {
         .expect("the shipped flowsheet is there");
     let flowsheet: Flowsheet = toml::from_str(&text).expect("it parses");
     let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
-    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let feeds = BTreeMap::new();
     let report =
         run(&flowsheet, &palette, &feeds, ExecutionOrder::Insertion).expect("the flowsheet runs");
     let liquid = report
@@ -197,7 +183,7 @@ fn the_session_addresses_every_value_by_a_stable_path() {
         .expect("the shipped flowsheet is there");
     let flowsheet: Flowsheet = toml::from_str(&text).expect("it parses");
     let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
-    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let feeds = BTreeMap::new();
 
     let session = Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
         .expect("the flowsheet runs");
@@ -282,7 +268,7 @@ fn the_executor_reproduces_the_captured_convergence() {
         .parameters
         .insert("outlet_temperature".to_string(), toml::Value::Float(250.0));
 
-    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let feeds = BTreeMap::new();
     let session = Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
         .expect("the flowsheet runs");
 
@@ -487,7 +473,7 @@ fn the_session_writes_a_json_report() {
     let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml")).expect("there");
     let flowsheet = Flowsheet::from_toml(&text).expect("it parses");
     let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
-    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+    let feeds = BTreeMap::new();
 
     let session = Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
         .expect("the flowsheet runs");
@@ -528,4 +514,150 @@ fn the_session_writes_a_json_report() {
             "`{endpoint}` is addressable in the session and absent from the JSON"
         );
     }
+}
+
+/// **The document's own input is the one the oracle ran, and this is what ties them.**
+///
+/// `demo.toml` is now a self-contained simulation: its `[[inputs]]` states the fluid and the
+/// state, so a row of the NeqSim capture and a run of this executor are answers to the *same*
+/// question only if those four numbers are the capture's. Nothing else in the repository holds
+/// them together - the probe builds its feed in Java (`ProcessProbe.java:2856-2867`) and the
+/// document states its own in TOML, two files that agree today because someone typed the same
+/// numbers twice.
+///
+/// The row is `demo`, the shipped state; `demo_condensing` is the same feed with the heater cold
+/// and is reached by overriding the heater's parameter, not the input.
+#[test]
+fn the_declared_input_is_the_one_the_capture_ran() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let flowsheet = Flowsheet::from_toml(&text).expect("it parses");
+    let [input] = flowsheet.inputs.as_slice() else {
+        panic!("the document declares exactly one input")
+    };
+
+    let capture =
+        std::fs::read_to_string(root().join("validation/neqsim/captures/process_flowsheet.tsv"))
+            .expect("the capture is there");
+    let row = capture_row(&capture, "demo");
+
+    assert_eq!(input.name, "feed_1");
+    assert!(
+        (input.n - number(&row, "feed_1_n")).abs() < 1e-12,
+        "the molar flow: {} against the capture's {}",
+        input.n,
+        number(&row, "feed_1_n")
+    );
+    // The capture prints bar and the document is in Pa, which is the palette's unit for `P`.
+    assert!(
+        (input.p - number(&row, "feed_1_P") * 1.0e5).abs() < 1e-6,
+        "the pressure: {} Pa against the capture's {} bara",
+        input.p,
+        number(&row, "feed_1_P")
+    );
+    assert!(
+        (input.t - number(&row, "feed_1_T")).abs() < 1e-12,
+        "the temperature"
+    );
+
+    // The composition, names and all - so a document that swapped two mole fractions fails here
+    // rather than converging to a different answer.
+    let captured: Vec<(&str, f64)> = row["feed_1_z"]
+        .split_whitespace()
+        .map(|pair| {
+            let (name, value) = pair.split_once(':').expect("`name:value`");
+            (name, value.parse().expect("a mole fraction"))
+        })
+        .collect();
+    let declared: Vec<(&str, f64)> = input
+        .components
+        .iter()
+        .map(String::as_str)
+        .zip(input.z.iter().copied())
+        .collect();
+    assert_eq!(declared.len(), captured.len());
+    for ((declared_name, declared_z), (captured_name, captured_z)) in declared.iter().zip(&captured)
+    {
+        assert_eq!(declared_name, captured_name, "a component's name");
+        assert!(
+            (declared_z - captured_z).abs() < 1e-12,
+            "`{declared_name}`: {declared_z} against {captured_z}"
+        );
+    }
+}
+
+/// **A supplied feed replaces the document's, and one the document does not declare is refused.**
+///
+/// The override is what makes a sweep and a front-end form possible without editing the file, and
+/// it is deliberately not an *addition*: a boundary no input declares is a stream nothing
+/// consumes, so it is a wiring error and not an extra feed.
+///
+/// **The measurement is the flow, and the temperature was tried first and did not move.** The
+/// heater pins the separator's inlet at 250 K whatever the feed arrives at, and the separator
+/// flashes at the feed's own temperature, so a hotter feed reaches the *same* state - measured,
+/// the liquid is `0.17248583689040536` either way. A quantity that carries the input is the molar
+/// flow, and doubling it doubles the liquid.
+#[test]
+fn a_supplied_feed_replaces_the_documents_and_a_stranger_is_refused() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let mut flowsheet = Flowsheet::from_toml(&text).expect("it parses");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    flowsheet
+        .instances
+        .iter_mut()
+        .find(|instance| instance.id == "hx1")
+        .expect("the heater is declared")
+        .parameters
+        .insert("outlet_temperature".to_string(), toml::Value::Float(250.0));
+
+    let as_written = run(
+        &flowsheet,
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("it runs");
+    let declared = as_written.streams["sep1.liquid"].n;
+    assert!(declared > 0.0, "the condensing row carries a liquid");
+
+    // The same fluid, twice as much of it.
+    let doubled = Stream::from_pt(
+        vec!["methane".to_string(), "n-butane".to_string()],
+        vec![0.9, 0.1],
+        2.0,
+        pascals(5.0e5),
+        kelvins(300.0),
+    )
+    .expect("the two resolve");
+    let overridden = run(
+        &flowsheet,
+        &palette,
+        &BTreeMap::from([("feed_1".to_string(), doubled)]),
+        ExecutionOrder::Insertion,
+    )
+    .expect("it runs");
+    let supplied = overridden.streams["sep1.liquid"].n;
+    assert!(
+        (supplied - 2.0 * declared).abs() < 1e-9,
+        "the override did not take: {supplied} against twice the document's {declared}"
+    );
+
+    // And a boundary the document does not declare is refused rather than added.
+    let stranger = Stream::from_pt(
+        vec!["methane".to_string()],
+        vec![1.0],
+        1.0,
+        pascals(5.0e5),
+        kelvins(300.0),
+    )
+    .expect("it resolves");
+    let error = run(
+        &flowsheet,
+        &palette,
+        &BTreeMap::from([("feed_9".to_string(), stranger)]),
+        ExecutionOrder::Insertion,
+    )
+    .expect_err("it refuses");
+    assert!(error.to_string().contains("feed_9"), "{error}");
 }

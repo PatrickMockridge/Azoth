@@ -1354,21 +1354,23 @@ pub fn validate_flowsheet(flowsheet: &str, palette_dir: &str) -> PyResult<Vec<St
 
 /// Run a flowsheet to its steady state, returning the session's result as JSON.
 ///
-/// `feeds` supplies the boundary inlets, keyed by the names the flowsheet's `feeds` declares,
-/// and it is the caller's rather than the document's: a flowsheet names its feeds and states
-/// nothing about the fluid, so what flows in is an argument to this call and not a field of the
-/// schema.
+/// **A flowsheet is self-contained**: its `[[inputs]]` declare the fluid and the state, so `feeds`
+/// is an *override* - a caller replacing the value of a boundary the document already states -
+/// and omitting it runs the document as written. A name the document does not declare is refused
+/// rather than added, because a boundary nothing consumes is a wiring error.
 ///
 /// **The document is `executor::json`'s and is not written again here.** One codec, on the
 /// session's result, is the whole point of that module - a second writer is a second chance for
 /// the two to disagree about what a quantity looks like on the wire.
 #[pyfunction]
-#[pyo3(signature = (flowsheet, feeds, palette_dir, execution_order = "insertion"))]
-#[pyo3(text_signature = "(flowsheet, feeds, palette_dir, execution_order='insertion')")]
+#[pyo3(signature = (flowsheet, feeds = None, palette_dir = "specs/unit_ops", execution_order = "insertion"))]
+#[pyo3(
+    text_signature = "(flowsheet, feeds=None, palette_dir='specs/unit_ops', execution_order='insertion')"
+)]
 pub fn run_flowsheet<'py>(
     py: Python<'py>,
     flowsheet: &str,
-    feeds: HashMap<String, PyRef<'py, PyStream>>,
+    feeds: Option<HashMap<String, PyRef<'py, PyStream>>>,
     palette_dir: &str,
     execution_order: &str,
 ) -> PyResult<String> {
@@ -1386,6 +1388,7 @@ pub fn run_flowsheet<'py>(
         }
     };
     let feeds: BTreeMap<String, Stream> = feeds
+        .unwrap_or_default()
         .iter()
         .map(|(name, stream)| (name.clone(), stream.to_stream()))
         .collect();

@@ -7,6 +7,7 @@
 //! - every instance names a palette unit op, and only its declared parameters;
 //! - a connection joins an outlet (or feed) to an inlet (or product);
 //! - a Port-to-Port connection joins dimension-compatible field records;
+//! - an input's declared record could be a stream — one mole fraction per substance;
 //! - **linearity** — a `one` port is consumed/produced exactly once, a `many` port
 //!   at least once, and every feed/product is used exactly once;
 //! - every loop in the instance graph passes through a declared recycle.
@@ -110,6 +111,17 @@ pub enum Diagnostic {
     UnusedProduct {
         name: String,
     },
+    /// An input's declared record does not describe a stream.
+    ///
+    /// **A shape rule, which is this checker's character.** It compares dimensions by exponent
+    /// tuple and never resolves the databank, so whether a named substance *exists* is not
+    /// decidable here - that refusal is the kernel's, at `Flowsheet::input_streams`. What is
+    /// decidable is whether the record could be a stream at all: a composition is one mole
+    /// fraction per substance, and a fluid names at least one.
+    InputRecord {
+        name: String,
+        detail: String,
+    },
     UnrecycledLoop {
         detail: String,
     },
@@ -141,7 +153,7 @@ impl Severity {
 /// Where in a document a diagnostic is about.
 ///
 /// **A section and a path**, which is what a widget needs to put a mark on the right row: the
-/// section is the table (`unit_ops`, `instances`, `connections`, `feeds`, `products`) and the path
+/// section is the table (`unit_ops`, `instances`, `connections`, `inputs`, `products`) and the path
 /// is the id within it, dotted the way the document spells it. **An empty path is the section
 /// whole** - a cycle nobody declared is a fact about `connections` and not about one row of it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -195,7 +207,7 @@ impl Diagnostic {
                 at("palette", format!("{unit_op}.ports.{port}"))
             }
             Self::DuplicateInstance { id } => at("instances", id.clone()),
-            Self::DuplicateFeed { name } => at("feeds", name.clone()),
+            Self::DuplicateFeed { name } => at("inputs", name.clone()),
             Self::DuplicateProduct { name } => at("products", name.clone()),
             Self::NameCollision { name } => at("flowsheet", name.clone()),
             Self::UnknownUnitOp { instance, .. } => at("instances", format!("{instance}.unit")),
@@ -203,7 +215,7 @@ impl Diagnostic {
                 instance,
                 parameter,
             } => at("instances", format!("{instance}.parameters.{parameter}")),
-            Self::UnknownFeed { name } => at("feeds", name.clone()),
+            Self::UnknownFeed { name } => at("inputs", name.clone()),
             Self::UnknownProduct { name } => at("products", name.clone()),
             Self::UnknownInstance { name } => at("connections", name.clone()),
             Self::UnknownPort { instance, port }
@@ -214,8 +226,9 @@ impl Diagnostic {
                 at("instances", format!("{instance}.ports.{port}"))
             }
             Self::TypeMismatch { from, to, .. } => at("connections", format!("{from} -> {to}")),
-            Self::UnusedFeed { name } => at("feeds", name.clone()),
+            Self::UnusedFeed { name } => at("inputs", name.clone()),
             Self::UnusedProduct { name } => at("products", name.clone()),
+            Self::InputRecord { name, .. } => at("inputs", name.clone()),
             Self::UnrecycledLoop { .. } => at("connections", String::new()),
         }
     }
@@ -282,6 +295,7 @@ impl Diagnostic {
             Self::UnusedProduct { name } => {
                 format!("product `{name}` is declared and never produced")
             }
+            Self::InputRecord { detail, .. } => detail.clone(),
             Self::UnrecycledLoop { detail } => detail.clone(),
         }
     }
@@ -359,12 +373,41 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
         }
     }
     let mut feed_names: HashSet<&str> = HashSet::new();
-    for feed in &flowsheet.feeds {
+    for feed in flowsheet.input_names() {
         if !feed_names.insert(feed) {
-            diags.push(Diagnostic::DuplicateFeed { name: feed.clone() });
+            diags.push(Diagnostic::DuplicateFeed {
+                name: feed.to_string(),
+            });
         }
-        if instance_ids.contains(feed.as_str()) {
-            diags.push(Diagnostic::NameCollision { name: feed.clone() });
+        if instance_ids.contains(feed) {
+            diags.push(Diagnostic::NameCollision {
+                name: feed.to_string(),
+            });
+        }
+    }
+    // Inputs: the record has to be able to be a stream at all. Whether the substances it names
+    // exist is the databank's answer and not this checker's - see `Diagnostic::InputRecord`.
+    for input in &flowsheet.inputs {
+        let detail = if input.components.is_empty() {
+            Some(format!(
+                "the input `{}` names no substance, so it is not a fluid",
+                input.name
+            ))
+        } else if input.z.len() != input.components.len() {
+            Some(format!(
+                "the input `{}` has {} mole fractions for {} substances",
+                input.name,
+                input.z.len(),
+                input.components.len()
+            ))
+        } else {
+            None
+        };
+        if let Some(detail) = detail {
+            diags.push(Diagnostic::InputRecord {
+                name: input.name.clone(),
+                detail,
+            });
         }
     }
     let mut product_names: HashSet<&str> = HashSet::new();
@@ -535,9 +578,11 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
     }
 
     // Boundary streams: each feed and product is used exactly once.
-    for feed in &flowsheet.feeds {
-        if feed_uses.get(feed.as_str()).copied().unwrap_or(0) != 1 {
-            diags.push(Diagnostic::UnusedFeed { name: feed.clone() });
+    for feed in flowsheet.input_names() {
+        if feed_uses.get(feed).copied().unwrap_or(0) != 1 {
+            diags.push(Diagnostic::UnusedFeed {
+                name: feed.to_string(),
+            });
         }
     }
     for product in &flowsheet.products {
@@ -722,6 +767,7 @@ mod tests {
 
     use super::*;
     use crate::channel::{Port, Shape};
+    use crate::flowsheet::named_input;
 
     fn field(dimension: &str) -> FieldType {
         FieldType {
@@ -806,7 +852,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec!["feed_1".into()],
+            inputs: vec![named_input("feed_1")],
             products: vec!["purge".into()],
             instances: vec![Instance {
                 id: "p1".into(),
@@ -828,12 +874,76 @@ mod tests {
         assert_clean(&flowsheet, &palette);
     }
 
+    /// **An input has to be able to be a stream.** This is the rule the schema gained with
+    /// `[[inputs]]`: the record the user writes is checked for shape here, and the substances it
+    /// names are checked for existence by `Flowsheet::input_streams`, which is where the databank
+    /// is. Splitting it that way is deliberate - this checker compares dimensions by exponent
+    /// tuple and resolves no names at all.
+    #[test]
+    fn an_input_whose_record_is_not_a_stream_is_reported() {
+        let palette = vec![two_port("unit_ops.pump")];
+        let mut flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("feed_1")],
+            products: vec!["purge".into()],
+            instances: vec![Instance {
+                id: "p1".into(),
+                unit: "unit_ops.pump".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "feed_1".into(),
+                    to: "p1.feed".into(),
+                },
+                Connection {
+                    from: "p1.discharge".into(),
+                    to: "purge".into(),
+                },
+            ],
+            recycles: vec![],
+        };
+        assert_clean(&flowsheet, &palette);
+
+        // Two substances and one mole fraction.
+        flowsheet.inputs[0].components = vec!["methane".into(), "n-butane".into()];
+        let diags = validate(&flowsheet, &palette);
+        assert!(
+            has_variant(&diags, |d| matches!(
+                d,
+                Diagnostic::InputRecord { name, detail }
+                    if name == "feed_1" && detail.contains("1 mole fractions for 2 substances")
+            )),
+            "{diags:?}"
+        );
+        let record = diags
+            .iter()
+            .find(|d| matches!(d, Diagnostic::InputRecord { .. }))
+            .expect("reported");
+        assert_eq!(record.severity(), Severity::Error, "it cannot run");
+        assert_eq!(record.location().section, "inputs");
+        assert_eq!(record.location().path, "feed_1");
+
+        // And a fluid that names nothing is not a fluid.
+        flowsheet.inputs[0].components = vec![];
+        flowsheet.inputs[0].z = vec![];
+        let diags = validate(&flowsheet, &palette);
+        assert!(
+            has_variant(&diags, |d| matches!(
+                d,
+                Diagnostic::InputRecord { detail, .. } if detail.contains("names no substance")
+            )),
+            "{diags:?}"
+        );
+    }
+
     #[test]
     fn an_unknown_unit_op_is_reported() {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec![],
+            inputs: vec![],
             products: vec![],
             instances: vec![Instance {
                 id: "p1".into(),
@@ -866,7 +976,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec![],
+            inputs: vec![],
             products: vec![],
             instances: vec![Instance {
                 id: "p1".into(),
@@ -892,7 +1002,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec!["feed_1".into()],
+            inputs: vec![named_input("feed_1")],
             products: vec![],
             instances: vec![Instance {
                 id: "p1".into(),
@@ -922,7 +1032,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec!["feed_1".into()],
+            inputs: vec![named_input("feed_1")],
             products: vec![],
             instances: vec![Instance {
                 id: "p1".into(),
@@ -958,7 +1068,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec![],
+            inputs: vec![],
             products: vec![],
             instances: vec![
                 Instance {
@@ -991,7 +1101,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec!["a".into(), "b".into()],
+            inputs: vec![named_input("a"), named_input("b")],
             products: vec![],
             instances: vec![Instance {
                 id: "p1".into(),
@@ -1041,7 +1151,7 @@ mod tests {
         let looped = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec![],
+            inputs: vec![],
             products: vec![],
             instances: instances.clone(),
             connections: vec![
@@ -1065,7 +1175,7 @@ mod tests {
         let torn = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec![],
+            inputs: vec![],
             products: vec![],
             instances,
             connections: vec![Connection {
@@ -1148,7 +1258,7 @@ mod tests {
             id: "f".into(),
             name: "f".into(),
             // Declared and never consumed, which is the warning.
-            feeds: vec!["spare".into()],
+            inputs: vec![named_input("spare")],
             products: vec!["out".into()],
             instances: vec![
                 Instance {
@@ -1200,14 +1310,14 @@ mod tests {
             diag,
             Diagnostic::UnusedFeed { .. } | Diagnostic::UnusedProduct { .. }
         )));
-        assert_eq!(warnings[0].location().section, "feeds");
+        assert_eq!(warnings[0].location().section, "inputs");
         assert_eq!(warnings[0].location().path, "spare");
         assert_eq!(warnings[1].location().section, "products");
         assert_eq!(warnings[1].location().path, "out");
 
         // **A red arrow, which is the one the middleware's rule names.** `m1`'s two ports are
         // both unfed, and the mis-wired `m2.product` connection surfaces as the *producer* being
-        // unknown (`feeds/nowhere`) rather than as a consumer that is not an inlet - the checker
+        // unknown (`inputs/nowhere`) rather than as a consumer that is not an inlet - the checker
         // reports the connection's `from` first and the port it lands on is then not reached. Worth
         // knowing if a front-end wants to draw the arrow on the connection rather than on the port.
         let red = diags
@@ -1240,7 +1350,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "f".into(),
             name: "f".into(),
-            feeds: vec!["a".into(), "b".into()],
+            inputs: vec![named_input("a"), named_input("b")],
             products: vec!["out".into()],
             instances: vec![Instance {
                 id: "m1".into(),

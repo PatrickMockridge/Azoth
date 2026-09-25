@@ -17,13 +17,13 @@ below is what is left of it rather than a statement about the backend.
 
 | a front-end needs | exists |
 |---|---|
-| run a flowsheet | **yes** — `azoth_process::executor`, with the dispatch table, the tear's fixed point and a NeqSim `ProcessSystem` capture behind it |
+| run a flowsheet | **yes** — `azoth_process::executor`, with the dispatch table, the tear's fixed point and a NeqSim `ProcessSystem` capture behind it; a flowsheet declares its own inputs, so it runs from the library, `azoth run --flowsheet` and `azoth.process.run_flowsheet` with no argument but the file |
 | a session holding named results | **yes** — `Session`, where every value is `<endpoint>.<field>` and `paths()` enumerates them |
 | read *and* write a flowsheet | **yes** — `Flowsheet::to_toml`, with a test over `specs/flowsheets/` that the value survives and that writing is a fixed point of itself |
 | a form per unit op (ports + parameters) | the spec exists; nothing turns it into a form |
 | structured, locatable diagnostics | **yes** — every `Diagnostic` carries a `Severity` and a `Location` |
 | dispatch an instance to its kernel | **yes** — the `DISPATCH` table, 26 entries and 3 refusals by name |
-| a result as JSON | **half** — the session's result writes JSON from Rust (`executor::json`); the Python result dataclasses still are not serialisable, because the Python surface that would wrap the executor is not written |
+| a result as JSON | **half** — a session's result writes JSON from Rust (`executor::json`) and `azoth.process.FlowsheetResult.document` hands the same string back; the twenty-seven *model* result dataclasses in `azoth.core.result` are still not serialisable, and a codec per model is the second writer `executor::json` exists to avoid |
 | a tool schema for an agent | skills and one runtime stub; no tool schema, no MCP |
 
 ## The layers

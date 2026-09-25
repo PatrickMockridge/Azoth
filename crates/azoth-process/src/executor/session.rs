@@ -76,14 +76,51 @@ pub struct RunReport {
     pub streams: BTreeMap<String, Stream>,
 }
 
-/// Run a flowsheet to its steady state.
+/// The boundary inlets: the document's own record, with the caller's overriding by name.
 ///
-/// `feeds` supplies the boundary inlets, keyed by the names the flowsheet's `feeds` declares.
+/// **A document is self-contained, and this is what that means mechanically.** Its `[[inputs]]`
+/// build their own streams, so `run` takes an empty map for the ordinary case; a caller that
+/// supplies one is stating a different value for a boundary the document already declares, which
+/// is how a sweep or a front-end fills a form without editing the file.
+///
+/// A supplied name the document does not declare is **refused rather than added**: a boundary no
+/// input declares is a stream nothing consumes, and the run-time twin of `UnknownFeed` is a
+/// refusal rather than a stream that reaches no unit.
 ///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if a feed is missing, if a connection names an instance or a
-///   port the palette does not declare, if a single-multiplicity inlet receives more than one
-///   stream, or if a unit refuses its arguments.
+/// [`AzothError::InvalidInput`] for either of those two, and whatever `input_streams` returns for
+/// an input whose fluid does not resolve.
+fn boundary(
+    flowsheet: &Flowsheet,
+    feeds: &BTreeMap<String, Stream>,
+) -> Result<BTreeMap<String, Stream>> {
+    let mut boundary = flowsheet.input_streams()?;
+    for (name, stream) in feeds {
+        if !boundary.contains_key(name) {
+            return Err(AzothError::invalid_input(
+                "inputs",
+                format!(
+                    "`{name}` is not an input this flowsheet declares, so nothing consumes it - \
+                     a boundary the document does not state is a wiring error and not an extra \
+                     feed"
+                ),
+            ));
+        }
+        boundary.insert(name.clone(), stream.clone());
+    }
+    Ok(boundary)
+}
+
+/// Run a flowsheet to its steady state.
+///
+/// `feeds` overrides the boundary inlets the document's `[[inputs]]` declare, keyed by their
+/// names; an empty map is the ordinary call and runs the document as written.
+///
+/// # Errors
+/// * [`AzothError::InvalidInput`] if an input's fluid does not resolve, if a supplied feed is not
+///   one the document declares, if a connection names an instance or a port the palette does not
+///   declare, if a single-multiplicity inlet receives more than one stream, or if a unit refuses
+///   its arguments.
 pub fn run(
     flowsheet: &Flowsheet,
     palette: &[UnitOpSpec],
@@ -91,6 +128,7 @@ pub fn run(
     order: ExecutionOrder,
 ) -> Result<RunReport> {
     let sequence = execution_order(flowsheet, order)?;
+    let boundary = boundary(flowsheet, feeds)?;
     let settings: Vec<RecycleSettings> = flowsheet
         .recycles
         .iter()
@@ -114,7 +152,7 @@ pub fn run(
 
     for pass in 1..=MAX_PASSES {
         iterations = pass;
-        streams = feeds.clone();
+        streams = boundary.clone();
 
         for &index in &sequence {
             let instance = &flowsheet.instances[index];

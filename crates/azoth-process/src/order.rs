@@ -170,7 +170,7 @@ fn instance_of(endpoint: &str) -> Option<(&str, &str)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::flowsheet::{Connection, Instance, Recycle};
+    use crate::flowsheet::{Connection, Instance, Recycle, named_input};
 
     fn instance(id: &str) -> Instance {
         Instance {
@@ -192,7 +192,7 @@ mod tests {
         Flowsheet {
             id: "chain".to_string(),
             name: "A chain".to_string(),
-            feeds: vec!["in".to_string()],
+            inputs: vec![named_input("in")],
             products: vec!["out".to_string()],
             instances: vec![instance("a"), instance("b"), instance("c")],
             connections: vec![
@@ -247,7 +247,7 @@ mod tests {
         let flowsheet = Flowsheet {
             id: "loop".to_string(),
             name: "A loop".to_string(),
-            feeds: vec!["in".to_string()],
+            inputs: vec![named_input("in")],
             products: vec!["out".to_string()],
             instances: vec![instance("a"), instance("b")],
             connections: vec![

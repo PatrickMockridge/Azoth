@@ -464,11 +464,17 @@ converges its recycle, held to a NeqSim `ProcessSystem` capture, and every insta
 cross-checked against that unit's own registered model, which is the claim "the executor calls
 the kernels" made testable.
 
+**A flowsheet is a self-contained simulation.** Its `[[inputs]]` declare each boundary inlet's
+fluid and state - `components`, `n`, `z`, `P` and `T`, with `h` derived from them - and its
+`products` are the run's calculation, so the document runs with no argument but the file: from
+the library, from `azoth run --flowsheet` and from `azoth.process.run_flowsheet`, whose `feeds`
+parameter is an override of a boundary the document already states. The checker gained the shape
+rule that holds an input's record to being one, and the shipped document's own input is held to
+the NeqSim capture's feed rather than agreeing with it by memory.
+
 **What is named as not built, with the class that would close each**: Broyden through
 `BroydenAccelerator`; `deactivateOnLowFlow`, which is how NeqSim ends an empty loop and this
 executor does not; the `many` outlet a connection cannot address one of, which is why a splitter
-cannot be wired; the Python surface (`azoth.process.run_flowsheet`) and the CLI's `azoth run
---flowsheet`, the latter blocked on a schema that states a feed's fluid rather than only its
-name; and the checker rule that would have caught `demo.toml` shipping with a required parameter
-unsupplied. The tier's own acceptance is the NeqSim capture beside it: an executor whose
-convergence is only checked against its own arithmetic is an executor nobody has measured.
+cannot be wired; and the checker rule that would have caught `demo.toml` shipping with a required
+parameter unsupplied. The tier's own acceptance is the NeqSim capture beside it: an executor
+whose convergence is only checked against its own arithmetic is an executor nobody has measured.

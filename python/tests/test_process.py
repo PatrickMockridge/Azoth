@@ -91,8 +91,21 @@ def test_validate_holds_the_demo_and_rejects_a_double_fed_inlet() -> None:
     broken = (
         'id = "broken"\n'
         'name = "broken"\n'
-        'feeds = ["f1", "f2"]\n'
         "products = []\n"
+        "[[inputs]]\n"
+        'name = "f1"\n'
+        'components = ["methane"]\n'
+        "n = 1.0\n"
+        "z = [1.0]\n"
+        "P = 1.0e5\n"
+        "T = 300.0\n"
+        "[[inputs]]\n"
+        'name = "f2"\n'
+        'components = ["methane"]\n'
+        "n = 1.0\n"
+        "z = [1.0]\n"
+        "P = 1.0e5\n"
+        "T = 300.0\n"
         "[[instances]]\n"
         'id = "p1"\n'
         'unit = "unit_ops.pump"\n'
@@ -119,7 +132,9 @@ def test_run_flowsheet_runs_the_shipped_flowsheet() -> None:
     palette = str(REPO_ROOT / "specs" / "unit_ops")
     demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
 
-    result = process.run_flowsheet(demo, {"feed_1": _binary(0.9, 1.0, 5e5, 300.0)}, palette)
+    # **No feeds: the document declares its own input**, which is what a self-contained
+    # flowsheet means. `test_a_supplied_feed_replaces_the_document_s` is the override.
+    result = process.run_flowsheet(demo, palette_dir=palette)
 
     assert result.flowsheet == "flowsheets.demo"
     assert result.converged
@@ -171,10 +186,9 @@ def test_the_document_is_the_one_the_fields_were_read_from() -> None:
 
     palette = str(REPO_ROOT / "specs" / "unit_ops")
     demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
-    feed = _binary(0.9, 1.0, 5e5, 300.0)
 
-    result = process.run_flowsheet(demo, {"feed_1": feed}, palette)
-    assert result.document == _core.run_flowsheet(demo, {"feed_1": feed._inner}, palette)
+    result = process.run_flowsheet(demo, palette_dir=palette)
+    assert result.document == _core.run_flowsheet(demo, None, palette)
 
     raw = json.loads(result.document)
     assert raw["flowsheet"] == result.flowsheet
@@ -191,22 +205,36 @@ def test_the_document_is_the_one_the_fields_were_read_from() -> None:
         result.streams["feed_1"] = result.streams["p1.outlet"]  # type: ignore[index]
 
 
-def test_run_flowsheet_refuses_what_it_cannot_run() -> None:
-    """The two refusals a caller meets first, each named rather than guessed at."""
+def test_a_supplied_feed_replaces_the_document_s() -> None:
+    """**The override, and the refusal beside it.**
+
+    A document is self-contained, so a supplied feed replaces the value of a boundary it
+    already declares rather than supplying a missing one. The measurement is the molar flow:
+    the heater pins the separator's inlet temperature, so a hotter feed reaches the same
+    state, while doubling the flow doubles what the separator hands the tear. A name the
+    document does not declare is **refused** rather than added - a boundary nothing consumes
+    is a wiring error, not an extra feed.
+    """
     palette = str(REPO_ROOT / "specs" / "unit_ops")
     demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
 
-    # A feed the document declares and the caller does not supply. The message is the
-    # executor's, and it names the *producer* rather than the absent consumer - the finding
-    # `check.rs`'s diagnostics carry.
-    with pytest.raises(azoth.InvalidInputError, match="feed_1"):
-        process.run_flowsheet(demo, {}, palette)
+    as_written = process.run_flowsheet(demo, palette_dir=palette)
+    declared = as_written.streams["sep1.liquid"].n.magnitude
+
+    doubled = process.run_flowsheet(
+        demo, {"feed_1": _binary(0.9, 2.0, 5e5, 300.0)}, palette
+    )
+    assert doubled.streams["sep1.liquid"].n.magnitude == pytest.approx(2.0 * declared)
+
+    with pytest.raises(azoth.InvalidInputError, match="feed_9"):
+        process.run_flowsheet(demo, {"feed_9": _binary(0.9, 1.0, 5e5, 300.0)}, palette)
+
+
+def test_run_flowsheet_refuses_a_flowsheet_it_cannot_read() -> None:
+    """The two refusals the parser and the order check make, each named rather than guessed."""
+    palette = str(REPO_ROOT / "specs" / "unit_ops")
+    demo = (REPO_ROOT / "specs" / "flowsheets" / "demo.toml").read_text()
 
     # `useGraphBasedExecution` is a flag, so there are two orders and not a menu.
     with pytest.raises(ValueError, match="insertion"):
-        process.run_flowsheet(
-            demo,
-            {"feed_1": _binary(0.9, 1.0, 5e5, 300.0)},
-            palette,
-            execution_order="kahn",
-        )
+        process.run_flowsheet(demo, palette_dir=palette, execution_order="kahn")

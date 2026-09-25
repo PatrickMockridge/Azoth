@@ -1,8 +1,15 @@
 id = "flowsheets.demo"
 name = "Feed, pump, heat, separate, recycle"
 
-feeds = ["feed_1"]
 products = ["vapour_product"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 5.0e5
+T = 300.0
 
 [[instances]]
 id = "mix1"

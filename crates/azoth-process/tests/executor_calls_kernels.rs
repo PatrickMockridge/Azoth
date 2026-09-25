@@ -25,8 +25,9 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use azoth_core::units::{kelvins, pascals};
-use azoth_process::executor::{Session, run};
+use azoth_core::units::pascals;
+
+use azoth_process::executor::Session;
 use azoth_process::{ExecutionOrder, Flowsheet, Stream, load_palette};
 
 fn root() -> PathBuf {
@@ -45,22 +46,15 @@ fn session() -> Session {
         .expect("the heater is declared")
         .parameters
         .insert("outlet_temperature".to_string(), toml::Value::Float(250.0));
-    let feeds = BTreeMap::from([(
-        "feed_1".to_string(),
-        Stream::from_pt(
-            ["methane", "n-butane"]
-                .iter()
-                .map(|n| (*n).to_string())
-                .collect(),
-            vec![0.9, 0.1],
-            1.0,
-            pascals(5.0e5),
-            kelvins(300.0),
-        )
-        .expect("the two resolve"),
-    )]);
-    Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
-        .expect("the flowsheet runs")
+    // **No override: the document declares its own input**, which is what a self-contained
+    // flowsheet means. The next test is what holds the override route to the same answer.
+    Session::run(
+        flowsheet,
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs")
 }
 
 /// One instance's parameter, as the document states it.
@@ -204,13 +198,24 @@ fn every_outlet_is_a_stream_named_by_its_producer() {
     }
     // A product is a stream too, under the name the document gives it.
     assert!(session.stream("vapour_product").is_ok());
-    let run = run(
-        session.flowsheet(),
-        &load_palette(&root().join("specs/unit_ops")).expect("the palette loads"),
-        &BTreeMap::new(),
+    // **The two routes into `run` reach the same state.** One is the document's `[[inputs]]`, the
+    // other a caller's map, and `boundary` is the only place they meet - so this is where an
+    // override that quietly did nothing, or one that quietly became a second boundary, shows up.
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let declared = session
+        .flowsheet()
+        .input_streams()
+        .expect("the document's own input resolves");
+    let supplied = Session::run(
+        session.flowsheet().clone(),
+        &palette,
+        &declared,
         ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+    assert_eq!(
+        supplied.stream("sep1.liquid").expect("a liquid").n,
+        session.stream("sep1.liquid").expect("a liquid").n,
+        "the two routes disagree about the same input"
     );
-    // Without the feed the run refuses rather than answering - a flowsheet with no inlet is a
-    // wiring error and not an empty state.
-    assert!(run.is_err(), "a run with no feeds produced something");
 }

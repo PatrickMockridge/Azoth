@@ -7,7 +7,41 @@
 
 use std::collections::BTreeMap;
 
+use azoth_core::units::{kelvins, pascals};
 use serde::{Deserialize, Serialize};
+
+use crate::stream::Stream;
+
+/// One boundary inlet: the stream the environment produces, and the record its user specifies.
+///
+/// **This is the input half of a self-contained simulation.** The fields are the port record's
+/// own names — `n`, `z`, `P`, `T` out of the five every palette port declares — so the unit is
+/// the field's rather than written here, exactly as an instance parameter's bare number takes
+/// its unit from the palette entry that declares it.
+///
+/// **`h` is the one field of the record a user does not write, and that is the whole point of
+/// the split.** It is a state function of `(T, P, z)`, so [`Stream::from_pt`] calculates it -
+/// which is why `process.pump`'s own spec has an inlet take four fields and an outlet five.
+/// `deny_unknown_fields` is what makes a written `h` an error rather than a key serde reads
+/// past, because a silently ignored field is the one failure a reader cannot see.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Input {
+    /// The stream's name — what a connection's `from`, and a recycle's `from`, address.
+    pub name: String,
+    /// The fluid's substances, by name, resolved against the component databank.
+    pub components: Vec<String>,
+    /// Molar flow, `mol/s`.
+    pub n: f64,
+    /// Composition, one entry per component.
+    pub z: Vec<f64>,
+    /// Pressure, `Pa`, under the declaration's own name.
+    #[serde(rename = "P")]
+    pub p: f64,
+    /// Temperature, `K`, under the declaration's own name.
+    #[serde(rename = "T")]
+    pub t: f64,
+}
 
 /// One instance of a unit operation, with the parameter values a user typed on its
 /// form.
@@ -155,21 +189,88 @@ impl Recycle {
     }
 }
 
-/// A flowsheet.
+/// A flowsheet: a self-contained simulation.
+///
+/// **The document declares both halves of the run.** Its `inputs` are what the user specifies and
+/// its `products` are what the run calculates, and the field order below is not cosmetic: TOML has
+/// no way to reopen a key after an array of tables, so `products` — a plain array — is written
+/// *before* `[[inputs]]`, and `toml::to_string` refuses the other order outright.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Flowsheet {
     pub id: String,
     pub name: String,
-    /// Boundary inlets — stream names the environment produces.
-    #[serde(default)]
-    pub feeds: Vec<String>,
-    /// Boundary outlets — stream names the environment consumes.
+    /// Boundary outlets — streams the environment consumes. **Names only**: an output is
+    /// calculated, so it has nothing to state.
     #[serde(default)]
     pub products: Vec<String>,
+    /// Boundary inlets — the streams the environment produces, with the record that makes them.
+    #[serde(default)]
+    pub inputs: Vec<Input>,
     #[serde(default)]
     pub instances: Vec<Instance>,
     #[serde(default)]
     pub connections: Vec<Connection>,
     #[serde(default)]
     pub recycles: Vec<Recycle>,
+}
+
+impl Flowsheet {
+    /// The input names, in declaration order — what a bare `from` addresses.
+    pub fn input_names(&self) -> impl Iterator<Item = &str> {
+        self.inputs.iter().map(|input| input.name.as_str())
+    }
+
+    /// The boundary inlets as streams, each built from the record the document declares.
+    ///
+    /// **The fluid is resolved here**, so an input naming a substance the databank does not carry
+    /// is refused by name at this call and not silently dropped. A composition whose length does
+    /// not match its component list is refused too - the checker states the same rule as a
+    /// diagnostic, and this is what a caller who skipped `validate` meets.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] for either case above, or wherever the flash that
+    /// fixes the inlet enthalpy refuses its state.
+    pub fn input_streams(&self) -> azoth_core::Result<BTreeMap<String, Stream>> {
+        let mut streams = BTreeMap::new();
+        for input in &self.inputs {
+            if input.z.len() != input.components.len() {
+                return Err(azoth_core::AzothError::invalid_input(
+                    format!("inputs.{}", input.name),
+                    format!(
+                        "`z` has {} entries and `components` names {} substances; a composition \
+                         is one mole fraction per substance",
+                        input.z.len(),
+                        input.components.len()
+                    ),
+                ));
+            }
+            let stream = Stream::from_pt(
+                input.components.clone(),
+                input.z.clone(),
+                input.n,
+                pascals(input.p),
+                kelvins(input.t),
+            )?;
+            streams.insert(input.name.clone(), stream);
+        }
+        Ok(streams)
+    }
+}
+
+/// An input of one substance, for the tests that build a `Flowsheet` in code.
+///
+/// **Not a public constructor, deliberately.** The checker's and the order's own tests build a
+/// graph where the input's record is not the thing under test, and a caller-visible shorthand
+/// would be a second way to state a boundary. The record it does carry is a *valid* one, so a
+/// test that ignores it does not fail the checker's own rule about it.
+#[cfg(test)]
+pub fn named_input(name: &str) -> Input {
+    Input {
+        name: name.to_string(),
+        components: vec!["methane".to_string()],
+        n: 1.0,
+        z: vec![1.0],
+        p: 1.0e5,
+        t: 300.0,
+    }
 }

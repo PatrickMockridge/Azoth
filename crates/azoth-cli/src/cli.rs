@@ -27,6 +27,24 @@ pub enum Command {
 
     /// Validate a flowsheet against the unit-operation palette.
     Check(CheckArgs),
+
+    /// Run a flowsheet to its steady state.
+    Run(RunArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct RunArgs {
+    /// The flowsheet to run. It declares its own inputs.
+    #[arg(long)]
+    pub flowsheet: std::path::PathBuf,
+
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// Print the result as JSON rather than as a report.
+    #[arg(long)]
+    pub json: bool,
 }
 
 #[derive(Debug, clap::Args)]

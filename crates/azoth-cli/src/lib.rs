@@ -10,3 +10,4 @@ pub mod check;
 pub mod cli;
 pub mod pipe;
 pub mod report;
+pub mod run;
