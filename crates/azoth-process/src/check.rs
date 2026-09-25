@@ -60,8 +60,19 @@ pub enum Diagnostic {
     DuplicateProduct {
         name: String,
     },
+    /// One name is used for two things a reader has to tell apart.
+    ///
+    /// **The sentence was right about a case the check did not cover.** Every site raised this for
+    /// feed-versus-instance or product-versus-instance, while the line it printed said "used both
+    /// as a feed and as a product" - and that collision went unnoticed, because the two boundary
+    /// sets are built separately and were never intersected. A name alone does not say which role
+    /// it is, so `Target` carries it as an `Endpoint` and the two kinds are named here.
     NameCollision {
         name: String,
+        /// A noun phrase, such as `an instance`.
+        first: &'static str,
+        /// The other, such as `a feed`.
+        second: &'static str,
     },
     UnknownUnitOp {
         instance: String,
@@ -421,7 +432,7 @@ impl Diagnostic {
             Self::DuplicateProduct { name } => node(NodeRole::Product, name),
             // Which of the two roles it collides with is not decidable from the name alone, so the
             // target is the name as written rather than a guess between an input and a product.
-            Self::NameCollision { name } => Target::Endpoint {
+            Self::NameCollision { name, .. } => Target::Endpoint {
                 endpoint: name.clone(),
             },
             Self::UnknownUnitOp { instance, .. } => node(NodeRole::Instance, instance),
@@ -494,7 +505,7 @@ impl Diagnostic {
             Self::DuplicateInstance { id } => at("instances", id.clone()),
             Self::DuplicateFeed { name } => at("inputs", name.clone()),
             Self::DuplicateProduct { name } => at("products", name.clone()),
-            Self::NameCollision { name } => at("flowsheet", name.clone()),
+            Self::NameCollision { name, .. } => at("flowsheet", name.clone()),
             Self::UnknownUnitOp { instance, .. } => at("instances", format!("{instance}.unit")),
             Self::UnknownParameter {
                 instance,
@@ -560,9 +571,11 @@ impl Diagnostic {
             Self::DuplicateInstance { id } => format!("instance `{id}` is declared twice"),
             Self::DuplicateFeed { name } => format!("feed `{name}` is declared twice"),
             Self::DuplicateProduct { name } => format!("product `{name}` is declared twice"),
-            Self::NameCollision { name } => {
-                format!("`{name}` is used both as a feed and as a product")
-            }
+            Self::NameCollision {
+                name,
+                first,
+                second,
+            } => format!("`{name}` names both {first} and {second}"),
             Self::UnknownUnitOp { unit, .. } => {
                 format!("`{unit}` is not a unit operation the palette declares")
             }
@@ -682,6 +695,8 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
         if instance_ids.contains(feed) {
             diags.push(Diagnostic::NameCollision {
                 name: feed.to_string(),
+                first: "an instance",
+                second: "a feed",
             });
         }
     }
@@ -720,8 +735,22 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
         if instance_ids.contains(product.as_str()) {
             diags.push(Diagnostic::NameCollision {
                 name: product.clone(),
+                first: "an instance",
+                second: "a product",
             });
         }
+    }
+    // **Boundary to boundary, which the two loops above cannot see**: `feed_names` and
+    // `product_names` are separate sets, so a name carrying both roles was accepted - and that is
+    // the collision `NameCollision`'s own sentence described. A feed and a product share no
+    // endpoint of the grammar: `from = "x"` addresses a feed and `to = "x"` a product, so one name
+    // in both places is a connection nothing can resolve.
+    for name in feed_names.intersection(&product_names) {
+        diags.push(Diagnostic::NameCollision {
+            name: (*name).to_string(),
+            first: "a feed",
+            second: "a product",
+        });
     }
 
     // Instances: the unit op exists, and the parameters are the ones it declares.
@@ -1965,6 +1994,71 @@ mod tests {
         assert_eq!(
             crate::flowsheet::stream_path("s1", "products", Some(2)),
             "s1.products[2]"
+        );
+    }
+
+    /// **The collision the sentence described and the check did not.** `NameCollision`'s line has
+    /// always read "used both as a feed and as a product", and that is the one pair it could not
+    /// see: `feed_names` and `product_names` are separate sets built by separate loops, and nothing
+    /// intersected them. A name in both roles is not resolvable - `from = "purge"` addresses a feed
+    /// and `to = "purge"` a product, so the same string means two different things in one grammar.
+    #[test]
+    fn a_name_that_is_both_a_feed_and_a_product_is_reported() {
+        let palette = vec![two_port("unit_ops.pump")];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("purge")],
+            products: vec!["purge".into()],
+            instances: vec![Instance {
+                id: "p1".into(),
+                unit: "unit_ops.pump".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "purge".into(),
+                    to: "p1.feed".into(),
+                },
+                Connection {
+                    from: "p1.discharge".into(),
+                    to: "purge".into(),
+                },
+            ],
+            recycles: vec![],
+        };
+
+        let diags = validate(&flowsheet, &palette);
+        let collision = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::NameCollision { .. }))
+            .unwrap_or_else(|| panic!("the collision is not reported: {diags:?}"));
+        assert_eq!(collision.severity(), Severity::Error);
+        assert_eq!(
+            collision.message(),
+            "`purge` names both a feed and a product"
+        );
+        assert_eq!(collision.location().section, "flowsheet");
+        // A name alone does not say which role it is, so the target is the name as written.
+        assert_eq!(
+            collision.target(),
+            Target::Endpoint {
+                endpoint: "purge".into()
+            }
+        );
+
+        // The other two pairs, which this rule always covered, now say which two things they mean
+        // rather than describing the pair it did not.
+        let mut mixed = flowsheet.clone();
+        mixed.inputs = vec![named_input("p1")];
+        let diags = validate(&mixed, &palette);
+        let collision = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::NameCollision { .. }))
+            .unwrap_or_else(|| panic!("a feed named after an instance: {diags:?}"));
+        assert_eq!(
+            collision.message(),
+            "`p1` names both an instance and a feed"
         );
     }
 }

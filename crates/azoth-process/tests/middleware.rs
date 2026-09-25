@@ -43,6 +43,8 @@ fn every_variant() -> Vec<Diagnostic> {
         },
         Diagnostic::NameCollision {
             name: "sep1".into(),
+            first: "an instance",
+            second: "a feed",
         },
         Diagnostic::UnknownUnitOp {
             instance: "p1".into(),
