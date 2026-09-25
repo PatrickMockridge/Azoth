@@ -15,10 +15,12 @@
 
 pub mod catalyst_bed;
 pub mod gibbs_database;
+pub mod gibbs_solver;
 pub mod kinetic_reaction;
 pub mod stepper;
 
 pub use catalyst_bed::CatalystBed;
 pub use gibbs_database::{GibbsDatabase, GibbsSpecies};
+pub use gibbs_solver::{GibbsSettings, GibbsState, solve};
 pub use kinetic_reaction::{KineticReaction, RateBasis, RateType};
 pub use stepper::{Scheme, march};
