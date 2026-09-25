@@ -2490,6 +2490,17 @@ public class ProcessProbe {
     // feed-excluded sets are both non-trivial and the argon row is exercised - `argon` is
     // the species whose atom count sits in the column the class calls `Ar` and the file
     // calls `Na`.
+    // **A feed whose every species stays significant**, which is what a case needs: the
+    // comparison between the two implementations is relative, so a species that settles at
+    // `1e-15` in one and `1e-7` in the other cannot be asserted at all. The reverse water-gas
+    // shift carries four species against three active elements - so nothing is over-determined -
+    // and at these temperatures all four are tens of per cent.
+    gibbsReactorRow("rwgs_1200k",
+        new String[] { "CO2", "hydrogen", "CO", "water" },
+        new double[] { 1.0, 1.0, 0.0, 0.0 }, 1200.0, 1.0, false, 0.05, 5000, 1e-3);
+    gibbsReactorRow("rwgs_1000k",
+        new String[] { "CO2", "hydrogen", "CO", "water" },
+        new double[] { 1.0, 1.0, 0.0, 0.0 }, 1000.0, 1.0, false, 0.05, 5000, 1e-3);
     gibbsReactorRow("argon_in_feed", new String[] { "hydrogen", "oxygen", "water", "argon" },
         new double[] { 0.1, 1.0, 0.0, 0.05 }, 298.15, 50.0, true, 0.05, 5000, 1e-3);
   }
@@ -2512,6 +2523,21 @@ public class ProcessProbe {
 
     System.out.println(label);
     print("feed", inlet);
+    // **What the class actually took as its input.** `feed_n` above is the *stream's* flow
+    // rate; `inlet_mole` is the list the solve reads, and the two are not the same number:
+    // `GibbsReactor.run` fills it from `getComponent(i).getNumberOfMolesInPhase()`, which is
+    // per phase and not the total. Printing it is the only way to know what the row was given.
+    System.out.println("feed_fluid_total_moles=" + inlet.getThermoSystem().getTotalNumberOfMoles()
+        + "\tfeed_phases=" + inlet.getThermoSystem().getNumberOfPhases());
+    StringBuilder classInlet = new StringBuilder("class_inlet_mole=");
+    for (int i = 0; i < reactor.getInletMole().size(); i++) {
+      classInlet.append(inlet.getThermoSystem().getComponent(i).getComponentName()).append(":")
+          .append(reactor.getInletMole().get(i));
+      if (i + 1 < reactor.getInletMole().size()) {
+        classInlet.append(" ");
+      }
+    }
+    System.out.println(classInlet);
     // **The inlet's phase structure, which is the one the solve inherits.** `run` ends with
     // `getOutletStream().run(id)`, which flashes, so `outlet_phases` below describes the state
     // *after* the reactor - not the state the iterations saw. The solve's fluid is a clone of

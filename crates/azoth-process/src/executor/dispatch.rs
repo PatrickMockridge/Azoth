@@ -240,6 +240,7 @@ pub const DISPATCH: &[(&str, Kernel)] = &[
     ("unit_ops.expander", expander),
     ("unit_ops.filter", filter),
     ("unit_ops.flare", flare),
+    ("unit_ops.gibbs_reactor", gibbs_reactor),
     ("unit_ops.gas_scrubber", gas_scrubber),
     ("unit_ops.heat_exchanger", heat_exchanger),
     ("unit_ops.heater", heater),
@@ -268,11 +269,6 @@ pub const UNRUNNABLE: &[(&str, &str)] = &[
         "unit_ops.simple_absorber",
         "refused on measured evidence: `SimpleAbsorber` is a fixed-point loop over MDEA/CO2 \
          loading and a faithful port needs the amine electrolyte chemistry P8 declined",
-    ),
-    (
-        "unit_ops.gibbs_reactor",
-        "deferred with a measurement: the class carries its own Lagrange-multiplier Newton solve \
-         and its own species database, so a port composed from P10 would answer differently",
     ),
     (
         "unit_ops.packed_column",
@@ -361,6 +357,23 @@ fn filter(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stream>> {
 
 fn flare(inlets: &[Stream], _p: &Parameters<'_>) -> Result<Vec<Stream>> {
     Ok(vec![kernels::flare::flare(&inlets[0])?.0])
+}
+
+/// `unit_ops.gibbs_reactor`: the equilibrium composition, on the class's own controls.
+///
+/// **The pressure is the feed's and the equilibrium temperature is the feed's**, so nothing here
+/// converts a unit: the solver takes the numeric bar value the class's own residual writes
+/// `ln(P/1 bara)` with, and that is `feed.p` over `1e5`.
+fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stream>> {
+    let setup = kernels::gibbs_reactor::ReactorSetup {
+        energy_mode: kernels::gibbs_reactor::EnergyMode::named(&p.text("energy_mode")?),
+        damping_composition: p.number("damping_composition")?,
+        max_iterations: p.number("max_iterations")? as u32,
+        convergence_tolerance: p.number("convergence_tolerance")?,
+        min_iterations: p.number("min_iterations")? as u32,
+    };
+    let (outlet, _) = kernels::gibbs_reactor::gibbs_reactor(&inlets[0], &setup)?;
+    Ok(vec![outlet])
 }
 
 fn heater(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stream>> {
@@ -651,6 +664,7 @@ fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stre
 /// The column a distillation, packed or stripping entry configures.
 fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::ColumnSetup> {
     Ok(kernels::ColumnSetup {
+        reactive: kernels::ReactiveSection::None,
         feed: inlets[0].clone(),
         feed_stage: p.number("feed_stage")? as usize,
         number_of_stages: p.number("number_of_stages")? as usize,

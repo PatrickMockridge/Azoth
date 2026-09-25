@@ -75,6 +75,7 @@ from azoth.core.result import (
     GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
+    GibbsReactorResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
     HeaterResult,
@@ -4463,6 +4464,59 @@ def stirred_tank_reactor(
     )
 
 
+def gibbs_reactor(
+    *,
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    energy_mode: str,
+    damping_composition: float,
+    max_iterations: float,
+    convergence_tolerance: float,
+    min_iterations: float,
+) -> GibbsReactorResult:
+    """``process.gibbs_reactor``, computed in Rust.
+
+    **The equilibrium temperature is the feed's.** The class has no temperature setter - it reads
+    ``system.getTemperature()`` from the fluid it is handed - so ``feed_t`` carries it and there
+    is no second parameter.
+
+    **Two of the class's quantities cross in units its arithmetic does not use.** The multipliers
+    are kJ/mol in the class and J/mol in the result; the Gibbs energy history is a sum of ``mol/s``
+    against ``kJ/mol``, a rate of energy, and crosses as watts. The conversion is in the extension
+    rather than here, because it is the class's own arithmetic and not a unit declaration.
+    """
+    spec = _models_gen.model("process.gibbs_reactor")
+    result = _core.gibbs_reactor(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", value) for value in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        energy_mode,
+        damping_composition,
+        max_iterations,
+        convergence_tolerance,
+        min_iterations,
+    )
+    return GibbsReactorResult(
+        product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
+        product_z=tuple(result.product_z),
+        product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
+        product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
+        converged=result.converged,
+        iterations=result.iterations,
+        final_error=result.final_error,
+        lagrange_multipliers=tuple(result.lagrange_multipliers),
+        element_balance_difference=tuple(result.element_balance_difference),
+        gibbs_energy_history=tuple(result.gibbs_energy_history),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def plug_flow_reactor(
     components: Sequence[str],
     feed_n: Q,
@@ -5178,6 +5232,7 @@ def reactive_tp_flash(
     P: Q,
     moles: Sequence[Q],
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactiveTpFlashResult:
     """The reactive flash, computed in Rust.
 
@@ -5193,6 +5248,7 @@ def reactive_tp_flash(
         input_to_si(spec, "P", P),
         [_si(spec, "moles", value) for value in moles],
         float(max_phases),
+        "srk" if cubic is None else cubic,
     )
     return ReactiveTpFlashResult(
         phase_count=result.phase_count,
@@ -5222,6 +5278,7 @@ def reactive_ph_flash(
     moles: Sequence[Q],
     enthalpy: Q,
     max_phases: float,
+    cubic: str | None = None,
 ) -> ReactivePhFlashResult:
     """The reactive PH flash, computed in Rust.
 
@@ -5236,6 +5293,7 @@ def reactive_ph_flash(
         [_si(spec, "moles", value) for value in moles],
         input_to_si(spec, "enthalpy", enthalpy),
         float(max_phases),
+        "srk" if cubic is None else cubic,
     )
     return ReactivePhFlashResult(
         temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),

@@ -60,8 +60,8 @@ use azoth_eos::results::{
 use azoth_process::{
     AbsorptionColumnResult, ComponentSplitterResult, CompressorResult, CoolerResult,
     DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult, FlareResult,
-    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult,
-    PackedColumnResult, PlugFlowReactorResult, PumpResult, SeparatorResult,
+    GasScrubberResult, GibbsReactorResult, HeatExchangerResult, HeaterResult, ManifoldResult,
+    MixerResult, PackedColumnResult, PlugFlowReactorResult, PumpResult, SeparatorResult,
     ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
     pipe::PipeResult,
@@ -1841,6 +1841,84 @@ impl From<&PlugFlowReactorResult> for PyPlugFlowReactorResult {
             temperature_profile: r.temperature_profile.clone(),
             pressure_profile: r.pressure_profile.clone(),
             conversion_profile: r.conversion_profile.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.gibbs_reactor`, transported.
+///
+/// **The trace crosses with the answer.** A Gibbs solve has a fixed point instead of a formula, so
+/// the convergence history is the only thing that says whether two implementations took the same
+/// route - and the case checks it entry by entry against the capture.
+///
+/// **Two of the class's quantities cross in units its arithmetic does not use.** The multipliers
+/// are kJ/mol in the class and J/mol here; the Gibbs energy history is a sum of `mol/s` against
+/// `kJ/mol`, which is a rate of energy and crosses as watts.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "GibbsReactorResult",
+    get_all,
+    eq
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyGibbsReactorResult {
+    /// Product molar flow, mol/s.
+    pub product_n: PyQty,
+    /// Product composition, over the feed's own species order.
+    pub product_z: Vec<f64>,
+    /// Product pressure.
+    pub product_p: PyQty,
+    /// Product temperature.
+    pub product_t: PyQty,
+    /// Product molar enthalpy.
+    pub product_h: PyQty,
+    /// Whether the tolerance test was met, which a run that hit the cap reports as false.
+    pub converged: bool,
+    /// The pass the loop stopped on.
+    pub iterations: f64,
+    /// The last undamped step norm.
+    pub final_error: f64,
+    /// The element Lagrange multipliers, J/mol, on the class's own seven element names.
+    pub lagrange_multipliers: Vec<f64>,
+    /// The outlet element balance less the inlet's, mol/s.
+    pub element_balance_difference: Vec<f64>,
+    /// The total Gibbs energy at the top of every iteration, W.
+    pub gibbs_energy_history: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyGibbsReactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "GibbsReactorResult(converged={}, iterations={}, final_error={:e})",
+            self.converged, self.iterations, self.final_error
+        )
+    }
+}
+
+impl From<&GibbsReactorResult> for PyGibbsReactorResult {
+    fn from(r: &GibbsReactorResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            product_n: quantity(r.product_n, "mol/s"),
+            product_z: r.product_z.clone(),
+            product_p: quantity(r.product_p.value, "Pa"),
+            product_t: quantity(r.product_t.value, "K"),
+            product_h: quantity(r.product_h.value, "J/mol"),
+            converged: r.converged,
+            iterations: r.iterations,
+            final_error: r.final_error,
+            lagrange_multipliers: r.lagrange_multipliers.clone(),
+            element_balance_difference: r.element_balance_difference.clone(),
+            gibbs_energy_history: r.gibbs_energy_history.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -9230,6 +9308,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         Iso6976Result::CALC_ID => Iso6976Result::FIELDS.to_vec(),
         FlareResult::CALC_ID => FlareResult::FIELDS.to_vec(),
         PlugFlowReactorResult::CALC_ID => PlugFlowReactorResult::FIELDS.to_vec(),
+        GibbsReactorResult::CALC_ID => GibbsReactorResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

@@ -1486,6 +1486,21 @@ class GasScrubberResult:
     warnings: list[Warning]
 
 @final
+class GibbsReactorResult:
+    product_n: Qty
+    product_z: list[float]
+    product_p: Qty
+    product_t: Qty
+    product_h: Qty
+    converged: bool
+    iterations: float
+    final_error: float
+    lagrange_multipliers: list[float]
+    element_balance_difference: list[float]
+    gibbs_energy_history: list[float]
+    warnings: list[Warning]
+
+@final
 class HeatExchangerResult:
     hot_out_n: Qty
     hot_out_z: list[float]
@@ -3014,6 +3029,18 @@ def gas_scrubber(
     gas_in_liquid: float,
     heat_input: float | None = None,
 ) -> GasScrubberResult: ...
+def gibbs_reactor(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    energy_mode: str,
+    damping_composition: float,
+    max_iterations: float,
+    convergence_tolerance: float,
+    min_iterations: float,
+) -> GibbsReactorResult: ...
 def heat_exchanger(
     hot_components: list[str],
     cold_components: list[str],

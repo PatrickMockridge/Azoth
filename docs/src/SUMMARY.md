@@ -176,6 +176,7 @@
   - [Filter](./process/filter.md)
   - [Flare](./process/flare.md)
   - [Gas scrubber](./process/gas_scrubber.md)
+  - [Gibbs reactor](./process/gibbs_reactor.md)
   - [Heat exchanger](./process/heat_exchanger.md)
   - [Heater](./process/heater.md)
   - [Manifold](./process/manifold.md)

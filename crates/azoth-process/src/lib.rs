@@ -33,14 +33,15 @@ pub use load::{load_palette, parse_flowsheet};
 pub use models::{
     AbsorptionColumnResult, ComponentSplitterResult, CompressorResult, CoolerResult,
     DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult, FlareResult,
-    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult,
-    PackedColumnResult, PipeResult, PlugFlowReactorResult, PumpResult, SeparatorResult,
-    ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
+    GasScrubberResult, GibbsReactorResult, HeatExchangerResult, HeaterResult, ManifoldResult,
+    MixerResult, PackedColumnResult, PipeResult, PlugFlowReactorResult, PumpResult,
+    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
     absorption_column, component_splitter, compressor, cooler, distillation_column, ejector,
-    expander, filter, flare, gas_scrubber, heat_exchanger, heater, manifold, mixer, packed_column,
-    pipe, plug_flow_reactor, pump, separator, shortcut_distillation_column, splitter,
-    stirred_tank_reactor, stripping_column, tank, three_phase_separator, throttling_valve,
+    expander, filter, flare, gas_scrubber, gibbs_reactor, heat_exchanger, heater, manifold, mixer,
+    packed_column, pipe, plug_flow_reactor, pump, separator, shortcut_distillation_column,
+    splitter, stirred_tank_reactor, stripping_column, tank, three_phase_separator,
+    throttling_valve,
 };
 pub use stream::Stream;
 pub use unit_op::{Param, Source, UnitOpSpec};

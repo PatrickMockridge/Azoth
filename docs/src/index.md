@@ -245,6 +245,7 @@ Five sections, and the difference between them is the point:
 - [`process.filter`](./process/filter.md) — Filter
 - [`process.flare`](./process/flare.md) — Flare
 - [`process.gas_scrubber`](./process/gas_scrubber.md) — Gas scrubber
+- [`process.gibbs_reactor`](./process/gibbs_reactor.md) — Gibbs reactor
 - [`process.heat_exchanger`](./process/heat_exchanger.md) — Heat exchanger
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.manifold`](./process/manifold.md) — Manifold

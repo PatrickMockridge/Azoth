@@ -711,6 +711,43 @@ class PlugFlowReactorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class GibbsReactorResult(_HasWarnings):
+    """Result of ``process.gibbs_reactor``.
+
+    **The trace is part of the answer.** A Gibbs solve has a fixed point instead of a formula, so
+    the outlet composition alone cannot say whether an implementation reproduced the class: two
+    solvers can land in the same place by different routes. The iteration count, the final
+    undamped step norm and the whole Gibbs energy history are what separate them, and the history
+    is checked entry by entry against the capture.
+    """
+
+    #: Product molar flow.
+    product_n: Q
+    #: Product composition, over the feed's own species order.
+    product_z: tuple[float, ...]
+    #: Product pressure.
+    product_p: Q
+    #: Product temperature.
+    product_t: Q
+    #: Product molar enthalpy.
+    product_h: Q
+    #: Whether the tolerance test was met, which a run that hit the cap reports as false.
+    converged: bool
+    #: The pass the loop stopped on.
+    iterations: float
+    #: The last undamped step norm.
+    final_error: float
+    #: The element Lagrange multipliers, on the class's own seven element names.
+    lagrange_multipliers: tuple[float, ...]
+    #: The outlet element balance less the inlet's.
+    element_balance_difference: tuple[float, ...]
+    #: The total Gibbs energy at the top of each iteration, before the update.
+    gibbs_energy_history: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlareResult(_HasWarnings):
     """Result of ``process.flare``.
 

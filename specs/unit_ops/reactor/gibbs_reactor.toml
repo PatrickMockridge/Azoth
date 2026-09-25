@@ -1,11 +1,23 @@
 id = "unit_ops.gibbs_reactor"
 name = "Gibbs reactor"
-notes = "**Deferred with the measurement that says why, and it is not what the plan expected.** `GibbsReactor.run` does not call `ChemicalEquilibrium` - P10's Gibbs minimiser over the element balances - and it is not a composition of it. The class is **3,163 lines** carrying *its own* solver and *its own* thermodynamic data: a Lagrange-multiplier Newton iteration with an Armijo line search and Tikhonov regularisation, and a species database (`GibbsReactDatabase.csv` plus `DatabaseGibbsFreeEnergyCoeff.csv`, both already vendored under `databank/sources/neqsim/`) whose rows carry the element vector *and* per-species Gibbs, enthalpy and entropy correlations that are not the databank's formation properties. A port composed from `reactions.chemical_equilibrium` and the formation-property table would therefore answer with different numbers than the class it is porting, which is the one thing this port may not do. Its default species set is the feed's own components (`useAllDatabaseSpecies` is false), so the *shape* is tractable; what is not is the data and the solve. **What would close it**: compiling the Gibbs database and porting the solver as a tier of its own, exactly as the distillation column was unparked into one."
+notes = "**Landed, and the deferral note's measurement is what the tier cost.** `GibbsReactor.run` does not call `ChemicalEquilibrium`, and the port is not a composition of it: the class carries a Lagrange-multiplier Newton iteration over the element balances and its own species database, whose formation properties are **not** the databank's - `GIBBSENERGYOFFORMATION` is already `used` from P10 and its values are not these. So the tier is its own database (`data/reactors/`, compiled by `gen_databank.py`), its own solver, and this entry.\n\n**The entry declared `temperature` and the class has no such setter.** The equilibrium temperature is the fluid's own, read as `system.getTemperature()`; the parameter is gone and the six the run path reads are here instead. Three of the class's behaviours are load-bearing and are named rather than tidied: the convergence test is on the **undamped** step while the update takes `damping_composition` of it; `min_iterations` is a floor that bites, and three of the capture's six rows stop on it; and the element names have **seven entries for an eight-column table**, so the element the class calls `Ar` is the file's `Na` column and the element it calls `Z` is the file's `Ar` column - zero on every row, hence never active. The eighth column is a charge and no loop reaches it, so **the solve does not balance charge**.\n\n**The iteration is ill-conditioned and that bounds what a port can claim.** `cond(J)` is `6.12e6` on the ammonia row - the `RT/n` of a species on the class's `1e-6` floor against entries near `1` - and the residual is a cancelling sum, so one iteration agrees to `1e-13` and a hundred separate two runs. The methane/oxygen row closes to a part in a million and ammonia settles five per cent away; `specs/models/process/gibbs_reactor.toml` carries the numbers.\n\n**Not ported**: `SimpleMatrix.pseudoInverse`, the class's fallback for a singular Newton system, which is the one capture row (`steam_methane_hot`, two species against three active balances) this entry therefore refuses by name; the Armijo line search and the Tikhonov regularisation, both `false` by default; and `ReactorMechanicalDesign` and `runTransient`."
 [source]
 standard = "NeqSim process/equipment/reactor/GibbsReactor.java"
-[parameters.temperature]
-unit = "K"
-description = "the equilibrium temperature"
+[parameters.energy_mode]
+description = "isothermal, the class's own default, or adiabatic, where the energy balance moves the temperature inside the loop"
+[parameters.damping_composition]
+unit = "dimensionless"
+description = "the fraction of each Newton step the compositions take, the class's default 0.05; the multipliers take the whole step"
+[parameters.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap, the class's default 5000; reaching it returns success with `converged` false"
+[parameters.convergence_tolerance]
+unit = "dimensionless"
+description = "the bound on the undamped step's norm, the class's default 1e-3"
+[parameters.min_iterations]
+unit = "dimensionless"
+description = "the floor below which the tolerance is not consulted, the class's default 100"
+
 [[ports]]
 name = "feed"
 direction = "in"

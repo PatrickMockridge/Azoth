@@ -181,12 +181,23 @@ const DEFAULT: GibbsSettings = GibbsSettings {
 /// stream to `1` mol/s, which scales them - so the mole fractions it prints are these amounts
 /// over their total, and the inlet moles the solve takes are the same.
 fn stream(names: &[&str], amounts: &[f64], temperature: f64, pressure_bara: f64) -> Stream {
+    stream_with_flow(names, amounts, temperature, pressure_bara, 1.0)
+}
+
+/// The same, at a stated molar flow, for the rows whose class input is not one mole per second.
+fn stream_with_flow(
+    names: &[&str],
+    amounts: &[f64],
+    temperature: f64,
+    pressure_bara: f64,
+    flow: f64,
+) -> Stream {
     let total: f64 = amounts.iter().sum();
     let z: Vec<f64> = amounts.iter().map(|a| a / total).collect();
     Stream::from_pt(
         names.iter().map(|n| (*n).to_string()).collect(),
         z,
-        1.0,
+        flow,
         pascals(pressure_bara * 1.0e5),
         kelvins(temperature),
     )
@@ -382,4 +393,77 @@ fn one_iteration_reproduces_the_class() {
     assert_eq!(state.jacobian[4], vec![2.0, 0.0, 3.0, 0.0, 0.0]);
     assert!((state.jacobian[0][0] - 1.2429978542288722).abs() < 1e-9);
     assert!((state.jacobian[2][2] - 1920447.587603618).abs() / 1920447.587603618 < 1e-7);
+}
+
+/// The capture's `rwgs_1000k` row, which is the shape a case needs: four species that all stay
+/// significant, so a relative comparison can hold every one of them.
+///
+/// **The expected values are `outlet_moles` normalised, and not the capture's `product_z`.**
+/// `product_z` on this row reports the *feed* composition - `CO:0.0 water:0.0` - while the
+/// `outlet_moles` beside it gives CO and water at `0.2311` each and the element balance closes
+/// to `1e-9`. `product_z` is the fluid's composition after the outlet stream's own flash, which
+/// on this row lands somewhere the solve did not; `outlet_moles` is the list the class solved in.
+#[test]
+fn the_reverse_water_gas_shift_row_is_reproduced() {
+    let feed = stream(
+        &["CO2", "hydrogen", "CO", "water"],
+        &[1.0, 1.0, 0.0, 0.0],
+        1000.0,
+        1.0,
+    );
+    let state = run(&feed, DEFAULT);
+    report("rwgs_1000k", &feed, &state);
+}
+
+/// The capture's `rwgs_1200k` row.
+///
+/// **Its feed is stated at `0.5` mol/s, and that is a measurement rather than a choice.** The
+/// class's feed fluid here is **two-phase**, and `inlet_mole` is filled from
+/// `getComponent(i).getNumberOfMolesInPhase()`, which is *per phase* - so the solve was handed
+/// `[0.25, 0.25, 0, 0]`, half the fluid's one mole. Declaring `feed_n = 0.5` gives this port the
+/// same input. **The class has no such guard**: a two-phase feed silently solves on phase 0
+/// alone, and its element balance is then half the feed's. It is why `feed_fluid_total_moles`
+/// and `class_inlet_mole` are both printed in the capture.
+#[test]
+fn the_hot_reverse_water_gas_shift_row_is_reproduced() {
+    let feed = stream_with_flow(
+        &["CO2", "hydrogen", "CO", "water"],
+        &[1.0, 1.0, 0.0, 0.0],
+        1200.0,
+        1.0,
+        0.5,
+    );
+    let state = run(&feed, DEFAULT);
+    report("rwgs_1200k", &feed, &state);
+    let total: f64 = state.moles.iter().sum();
+    for (i, want) in [(0usize, 0.11411602622275471), (2, 0.13588397425677684)]
+        .iter()
+        .copied()
+    {
+        let expected = want / 0.500000000959063;
+        assert!(
+            (state.moles[i] / total - expected).abs() / expected < 1e-4,
+            "component {i}: {} against {expected}",
+            state.moles[i] / total
+        );
+    }
+}
+
+/// The capture's `ammonia_adiabatic` row, which is the adiabatic branch at the class's own
+/// defaults - and the one row where the class converges to `8.1e-7` rather than to the `1e-3`
+/// neighbourhood, so the energy balance is checked on a tight solve rather than a loose one.
+#[test]
+fn the_adiabatic_ammonia_row_is_reproduced() {
+    let feed = stream(
+        &["hydrogen", "nitrogen", "ammonia"],
+        &[1.5, 0.5, 0.0],
+        450.0,
+        300.0,
+    );
+    let settings = GibbsSettings {
+        adiabatic: true,
+        ..DEFAULT
+    };
+    let state = run(&feed, settings);
+    report("ammonia_adiabatic", &feed, &state);
 }

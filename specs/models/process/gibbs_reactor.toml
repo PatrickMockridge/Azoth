@@ -1,0 +1,136 @@
+id = "process.gibbs_reactor"
+name = "Gibbs reactor"
+kind = "direct"
+assumptions = [
+    "**the class carries its own solver and its own data.** `GibbsReactor.run` never calls `ChemicalEquilibrium`, and its formation properties are not the databank's - `GIBBSENERGYOFFORMATION` is `used` from P10 and its values are not these.",
+    "**the equilibrium temperature is the feed's, and there is no setter.** The class reads `system.getTemperature()` from the fluid it is handed.",
+    "**the species set is the feed's.** `useAllDatabaseSpecies` is false, so no species is added and the variables are the feed's components less the inert and the feed-excluded.",
+    "**a species that needs an element the feed has none of is frozen at its feed amount**, with no minimum floor - the 'no sulfur in the feed, no sulfuric acid' rule.",
+    "**a component the database does not carry is still a variable**: a composition row, no element entry, an objective reading as zero, and a skipped update. That is `testComponentNotInDatabaseMolesUnchanged`.",
+    "**`elementNames` has seven entries for an eight-column table and the shift is reproduced.** The class's `Ar` balance is the file's `Na` column; its `Z` balance is the file's `Ar` column.",
+    "**the eighth column is a charge and no loop reaches it: the solve does not balance charge.** `OH-` is -1 and `SO4--` is -2 in the file, and `elements[7]` is read by nothing.",
+    "**the class's `Z` balance is zero on every row**, so `findActiveElements` never activates it and its Lagrange multiplier is never solved for.",
+    "**the convergence test is on the undamped step.** `deltaXNorm` is the norm of `-J^-1 F` before `damping_composition` is applied, so the test and the step disagree about scale.",
+    "**`min_iterations` is a floor and it bites.** Three of the capture's six rows stop at exactly 100, the first pass where `iteration >= min_iterations` holds.",
+    "**reaching `max_iterations` returns success.** `converged` is set from the tolerance, so a capped run reports false while the method returns true; both are carried.",
+    "**the iteration is ill-conditioned, which bounds how close a port can come.** `cond(J)` is `6.12e6` on the ammonia row and the residual is a cancelling sum; one iteration agrees, a hundred separate.",
+    "**the data is compiled from the class's own two files** by `gen_databank.py`, joined on the lowercased molecule name as the class joins them; a species the coefficient file omits takes the fallback branch.",
+    "**`calculateJ`'s javadoc and its code disagree on three signs.** The comment subtracts every term; the code subtracts the first and adds the other three. The code is ported.",
+    "**a singular Newton system is refused**, which costs the one capture row where two species meet three active balances. The class answers that through `SimpleMatrix.pseudoInverse`.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` has no other route. The class carries no cubic of its own, so the oracle is built on PR too.",
+    "**not ported**: the pseudo-inverse, the Armijo line search and the Tikhonov regularisation - both `false` by default - plus `ReactorMechanicalDesign` and `runTransient`.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/GibbsReactor.java` is the port source, through `run`, `solveGibbsEquilibrium`, `calculateJacobian` and `performIterationUpdate`.\n",
+    "`databank/sources/neqsim/GibbsReactDatabase/` - the class's own species table and coefficient file, compiled to `data/reactors/` and dispositioned column by column in `databank/manifest.toml`.\n",
+    "`validation/neqsim/captures/process_gibbs_reactor.tsv` - six rows, each printing the convergence trace and not only the answer.\n",
+    "`validation/neqsim/captures/process_gibbs_reactor_steps.tsv` - the class stopped after one and after two updates, which separates the map from the trajectory.\n",
+    "**The class names no single paper.** Its `method` defaults to `DirectGibbsMinimization`; it cites Nocedal & Wright for the Newton step, Tikhonov (1963) and Gordon & McBride (1994).\n",
+]
+[source]
+standard = "NeqSim process/equipment/reactor/GibbsReactor.java"
+edition = "Its steady-state `run`: clone the inlet, take the element balance, freeze the species that need an element the feed lacks, floor every database species at `1e-6` mol, then a damped Newton iteration on `[n_i, lambda_j]`."
+[inputs]
+[inputs.components]
+type = "components"
+description = "the feed's substances, by name, resolved against the component databank and, for the species data, against the class's own table.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the feed's molar flow. A Gibbs solve conserves every element but not the mole count.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed's composition, which decides which elements are available and so which species may form.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the feed's pressure. The residual carries `RT * ln(P/1 bara)`, so the bar value enters it and the pascals are converted at the boundary.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the feed's temperature, which is also the equilibrium temperature.\n"
+[inputs.energy_mode]
+type = "enum"
+values = ["isothermal", "adiabatic"]
+description = "how the temperature moves while the composition is solved, where isothermal is the class's own default.\n"
+[inputs.damping_composition]
+unit = "dimensionless"
+description = "the fraction of the Newton step the compositions take, the class's default 0.05; the multipliers take the whole step.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap, the class's default 5000. Reaching it returns success with `converged` false.\n"
+[inputs.convergence_tolerance]
+unit = "dimensionless"
+description = "the bound on the **undamped** step's norm, the class's default 1e-3.\n"
+[inputs.min_iterations]
+unit = "dimensionless"
+description = "the floor below which the tolerance is not consulted, the class's default 100.\n"
+[outputs.product_n]
+unit = "mol/s"
+description = "the outlet's molar flow, which the element balances do not fix.\n"
+[outputs.product_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component, the feed's order"
+description = "the outlet's composition.\n"
+[outputs.product_p]
+unit = "Pa"
+description = "the outlet's pressure, which the solve does not move.\n"
+[outputs.product_t]
+unit = "K"
+description = "the outlet's temperature: the feed's when isothermal, and otherwise where the adiabatic loop landed.\n"
+[outputs.product_h]
+unit = "J/mol"
+description = "the outlet's molar enthalpy at its own state.\n"
+[outputs.converged]
+type = "boolean"
+description = "`hasConverged()`, the tolerance test and not the return value: a run that hits the cap reports false having succeeded.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "`getActualIterations()`, the pass the loop stopped on.\n"
+[outputs.final_error]
+unit = "dimensionless"
+description = "`getFinalConvergenceError()`, the last undamped step norm.\n"
+[outputs.lagrange_multipliers]
+type = "vector"
+unit = "J/mol"
+length = "one per element, in the class's own seven names"
+description = "the multipliers the solve found, where an exactly zero one is an element `findActiveElements` dropped. The class's arithmetic is kJ/mol; this reports joules.\n"
+[outputs.element_balance_difference]
+type = "vector"
+unit = "mol/s"
+length = "one per element, in the class's own seven names"
+description = "the outlet element balance less the inlet's, which the class carries and tests for convergence.\n"
+[outputs.gibbs_energy_history]
+type = "vector"
+unit = "W"
+length = "one per iteration taken"
+description = "the total Gibbs energy at the top of each iteration, before the update. **This is what makes the solve checkable**: a fixed point has no formula, so the path is the answer.\n"
+[[valid_range]]
+quantity = "feed_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the residual takes the logarithm of a mole fraction, so a feed with no moles has none\n"
+[[valid_range]]
+quantity = "damping_composition"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "the composition takes a fraction of the Newton step, and a fraction is in (0, 1]\n"
+[[valid_range]]
+quantity = "max_iterations"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a loop with no passes is not a loop\n"
+[[valid_range]]
+quantity = "convergence_tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a tolerance of zero is never satisfied, so the cap is the only stop\n"
+[implementations]
+python = "azoth.process.gibbs_reactor"
+rust = "azoth_process::gibbs_reactor"

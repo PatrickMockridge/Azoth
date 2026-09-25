@@ -16,6 +16,7 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    GibbsReactorResult,
     AbsorptionColumnResult,
     ComponentSplitterResult,
     CompressorResult,
@@ -58,6 +59,7 @@ __all__ = [
     "filter",
     "flare",
     "gas_scrubber",
+    "gibbs_reactor",
     "heat_exchanger",
     "heater",
     "load_flowsheet",
@@ -98,6 +100,7 @@ _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
+_GIBBS_REACTOR = "process.gibbs_reactor"
 _PLUG_FLOW_REACTOR = "process.plug_flow_reactor"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
@@ -1305,4 +1308,46 @@ def heat_exchanger(
         flow_arrangement=flow_arrangement,
         hot_outlet_temperature=hot_outlet_temperature,
         cold_outlet_temperature=cold_outlet_temperature,
+    )
+
+
+def gibbs_reactor(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    energy_mode: str,
+    damping_composition: float,
+    max_iterations: float,
+    convergence_tolerance: float,
+    min_iterations: float,
+) -> GibbsReactorResult:
+    """Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
+
+    ``GibbsReactor.run`` carries its **own** Lagrange-multiplier Newton iteration over the
+    element balances and its **own** species database, and neither is ``ChemicalEquilibrium``'s -
+    so this is not a composition of P10's minimiser and the two would answer differently.
+
+    **The equilibrium temperature is the feed's, and there is no setter.** The class reads
+    ``system.getTemperature()`` from the fluid it is handed.
+
+    **The convergence test is on the undamped step and the floor bites.** ``min_iterations`` is
+    the pass below which the tolerance is not consulted, and three of the class's own capture
+    rows stop there rather than on the tolerance. A run that reaches ``max_iterations`` still
+    succeeds, with ``converged`` false.
+
+    See :func:`azoth.process.reference.gibbs_reactor`.
+    """
+    return resolve(_GIBBS_REACTOR)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        energy_mode=energy_mode,
+        damping_composition=damping_composition,
+        max_iterations=max_iterations,
+        convergence_tolerance=convergence_tolerance,
+        min_iterations=min_iterations,
     )

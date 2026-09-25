@@ -1001,6 +1001,46 @@ pub fn plug_flow_reactor(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// `process.gibbs_reactor` - the equilibrium composition as a registered id.
+///
+/// **The equilibrium temperature is the feed's.** `GibbsReactor` has no temperature setter: it
+/// reads `system.getTemperature()` from the fluid it is handed, so `feed_t` is the only one, and
+/// the palette entry that used to declare a separate `temperature` parameter was wrong.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input
+pub fn gibbs_reactor(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    energy_mode: &str,
+    damping_composition: f64,
+    max_iterations: f64,
+    convergence_tolerance: f64,
+    min_iterations: f64,
+) -> PyResult<crate::results::PyGibbsReactorResult> {
+    azoth_process::gibbs_reactor(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        energy_mode,
+        damping_composition,
+        max_iterations,
+        convergence_tolerance,
+        min_iterations,
+    )
+    .map(|r| crate::results::PyGibbsReactorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// `process.flare` - the flare's kernel as a registered id.
 ///
 /// **The record through and two numbers beside it.** `Flare.run` clones the inlet into the
