@@ -90,6 +90,7 @@ from azoth.core.result import (
     EffectiveDiffusionResult,
     EosCgPhaseResult,
     FreezingPointResult,
+    FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
     GeFlashResult,
@@ -257,6 +258,7 @@ __all__ = [
     "eos_cg_phase",
     "from_model",
     "from_names",
+    "fuller_schettler_giddings_diffusivity",
     "furst_electrolyte_mod2004_phase",
     "furst_electrolyte_phase",
     "ge_flash",
@@ -384,6 +386,7 @@ _HYDRATE_INHIBITOR_WT = "eos.hydrate_inhibitor_wt"
 _HYDRATE_FRACTION = "eos.hydrate_fraction"
 _HYDRATE_FORMATION_PRESSURE = "eos.hydrate_formation_pressure"
 _FREEZING_POINT = "eos.freezing_point"
+_FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusivity"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _IAPWS_HENRY_LAW = "eos.iapws_henry_law"
 _HYBRID_EOS_GE_FLASH = "eos.hybrid_eos_ge_flash"
@@ -1084,6 +1087,25 @@ def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResu
     """
     return resolve(_TYN_CALUS_DIFFUSIVITY)(  # type: ignore[no-any-return]
         VA=VA, VB=VB, T=T, eta=eta
+    )
+
+
+def fuller_schettler_giddings_diffusivity(
+    MA: Q, MB: Q, VA: Q, VB: Q, T: Q, P: Q
+) -> FullerSchettlerGiddingsDiffusivityResult:
+    """The gas binary diffusivity, from the Fuller-Schettler-Giddings correlation.
+
+    ``VA`` and ``VB`` are *diffusion volumes*: resolve each from the component's name
+    with :func:`azoth.eos.components.fuller_diffusion_volume`, which is the class's own
+    ladder. The pressure the correlation takes is in bar.
+
+    Raises:
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.fuller_schettler_giddings_diffusivity`.
+    """
+    return resolve(_FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY)(  # type: ignore[no-any-return]
+        MA=MA, MB=MB, VA=VA, VB=VB, T=T, P=P
     )
 
 

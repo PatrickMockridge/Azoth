@@ -1,0 +1,157 @@
+id = "eos.fuller_schettler_giddings_diffusivity"
+name = "Gas binary diffusivity from the Fuller-Schettler-Giddings correlation"
+equation = "D = 1.013e-3 * T**1.75 * sqrt(1/MA + 1/MB) / (P * (VA**(1/3) + VB**(1/3))**2)   [cm**2/s], with MA and MB in g/mol, P in bar, T in K and VA, VB in cm**3/mol; D*1e-4 recovers m**2/s."
+latex = '''D_{AB} = 1.013\times10^{-3}\,\frac{T^{1.75}\sqrt{\frac{1}{M_A}+\frac{1}{M_B}}}{P\left(V_A^{1/3}+V_B^{1/3}\right)^{2}}'''
+assumptions = ["`VA` and `VB` are *diffusion volumes*, not molar volumes, and the caller resolves each with `azoth_eos::fuller_diffusion_volume`: the special-molecule table, then `0.285*Vc`, then `max(10, 0.95*M)` - the class's own three rungs.\n", "**the pressure is in bar, and the class says so twice over**: `calcBinaryDiffusionCoefficient` divides by the bara pressure with the constant `1.013e-3` - Poling's Table 11-1 pair - while its javadoc writes `1.013e-2` with `P` in atm. The port follows the code.\n", "the temperature is the gas phase's own, and a state outside the class's validated `[200, 2000]` K is *warned* about rather than refused, which is `Diffusivity.enableTemperatureWarnings` over `T_MIN`/`T_MAX`.\n", "the correlation is for a *binary* pair in the gas phase; the class answers a matrix over the phase's components, and this id is one entry of it.\n"]
+references = ["Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966). \\\"A new method for prediction of binary gas-phase diffusion coefficients.\\\" Ind. Eng. Chem. 58(5), 18-27. DOI 10.1021/ie50677a007.", "Fuller, E. N.; Ensley, K.; Giddings, J. C. (1969). \\\"Diffusion of halogenated hydrocarbons in helium.\\\" J. Phys. Chem. 73(11), 3679-3685. DOI 10.1021/j100845a020.", "Poling, B. E.; Prausnitz, J. M.; O'Connell, J. P. (2001). \\\"The Properties of Gases and Liquids\\\", 5th ed., McGraw-Hill, Table 11-1 - the diffusion-volume increments and the pair `1.00e-3` with `P` in bar.", "`validation/neqsim/captures/fuller_probe.tsv` - two pairs whose diffusivity is measured (methane/nitrogen and CO2/nitrogen at 298.15 K and one atmosphere, Marrero & Mason 1972), the class's two scaling rows, and two pairs that exercise the diffusion-volume ladder's second rung.\n"]
+[source]
+standard = "Fuller, E. N.; Schettler, P. D.; Giddings, J. C. (1966)"
+edition = "A new method for prediction of binary gas-phase diffusion coefficients. Ind. Eng. Chem. 58(5), 18-27"
+doi = "10.1021/ie50677a007"
+[inputs]
+[inputs.MA]
+unit = "kg/mol"
+description = "Molar mass of the first component of the pair.\n"
+[inputs.MB]
+unit = "kg/mol"
+description = "Molar mass of the second.\n"
+[inputs.VA]
+unit = "m**3/mol"
+description = "Diffusion volume of the first component, in NeqSim's cm**3/mol times 1e-6; see the resolution ladder in the assumptions.\n"
+[inputs.VB]
+unit = "m**3/mol"
+description = "Diffusion volume of the second.\n"
+[inputs.T]
+unit = "K"
+description = "Absolute temperature.\n"
+[inputs.P]
+unit = "Pa"
+description = "Absolute pressure, which the correlation takes in bar - the port converts.\n"
+[outputs]
+[outputs.d]
+unit = "m**2/s"
+description = "The binary diffusion coefficient of the pair, the published equation's D.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "T"
+min = 200.0
+max = 2000.0
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "`Diffusivity.T_MIN` and `T_MAX`: outside that band the class's own `enableTemperatureWarnings` says the correlation is not validated, and the port says the same thing in its own vocabulary rather than log-only.\n"
+[worked_example]
+source = "the capture's `methane_nitrogen_298K_1atm` row, which is Marrero & Mason (1972)'s measured pair at `2.2e-5` m**2/s\n"
+derivation = "methane and nitrogen at 298.15 K and 1.01325 bar, each at 0.5 mole fraction:\n\n  MA = 0.016043 kg/mol -> 16.043 g/mol\n  MB = 0.0280135 kg/mol -> 28.0135 g/mol\n  VA = 2.514e-5 m**3/mol -> 25.14 cm**3/mol, the special-molecule table's entry for methane\n  VB = 1.85e-5 m**3/mol -> 18.5 cm**3/mol, its entry for nitrogen\n  P = 101325 Pa -> 1.01325 bar\n\n  VA**(1/3) + VB**(1/3) = 2.9298337 + 2.6444183 = 5.5742520\n  sqrt(1/16.043 + 1/28.0135) = 0.3130967200096821\n\n  D = 1.013e-3 * 298.15**1.75 * 0.3130967200096821 / (1.01325 * 5.5742520**2) = 0.2155058583907974 cm**2/s\n  D = 2.155058583907974e-5 m**2/s\n\nand that is NeqSim's own answer for the row, to the last digit.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+MA = 0.016043
+MB = 0.0280135
+VA = 2.514e-5
+VB = 1.85e-5
+T = 298.15
+P = 101325.0
+[worked_example.expected]
+d = 2.155058583907974e-5
+[implementations]
+python = "azoth.eos.fuller_schettler_giddings_diffusivity"
+rust = "azoth_eos::fuller_schettler_giddings_diffusivity"
+[[tests]]
+id = "methane_nitrogen_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "methane_nitrogen_is_the_measured_pair"
+type = "reference"
+status = "active"
+source = "The capture's `methane_nitrogen_298K_1atm` row, whose measured value is Marrero & Mason (1972)'s `2.2e-5` m**2/s - the class is 2 per cent under it, which is why the pair is an oracle for the *arithmetic* rather than for the physics:\n\n  d = 2.155058583907974e-5 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+MA = 0.016043
+MB = 0.0280135
+VA = 2.514e-5
+VB = 1.85e-5
+T = 298.15
+P = 101325.0
+[tests.expected]
+d = 2.155058583907974e-5
+[[tests]]
+id = "co2_nitrogen_second_measured_pair"
+type = "reference"
+status = "active"
+source = "The capture's `co2_nitrogen_298K_1atm` row, against Poling's Table 11-4 value of `1.67e-5` m**2/s for CO2/nitrogen:\n\n  d = 1.6244535413221675e-5 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+MA = 0.04401
+MB = 0.0280135
+VA = 2.69e-5
+VB = 1.85e-5
+T = 298.15
+P = 101325.0
+[tests.expected]
+d = 1.6244535413221675e-5
+[[tests]]
+id = "the_pressure_scale_is_bar"
+type = "reference"
+status = "active"
+source = "The same methane/nitrogen pair at 5 bar instead of 1.01325, from the capture's `methane_nitrogen_298K_5bar` row. **D scales as 1/P and the ratio is the trap**: `4.367226220289509e-6 / 2.155058583907974e-5` is `4.93444`, which is `5/1.01325` and not `5` - the pressure the correlation takes is in bar, so a port reading Pa would be out by `1e5`.\n"
+tolerance = 1e-12
+[tests.inputs]
+MA = 0.016043
+MB = 0.0280135
+VA = 2.514e-5
+VB = 1.85e-5
+T = 298.15
+P = 500000.0
+[tests.expected]
+d = 4.367226220289509e-6
+[[tests]]
+id = "four_hundred_kelvin_scales_as_t_to_the_one_point_seven_five"
+type = "reference"
+status = "active"
+source = "The capture's `methane_nitrogen_400K_1atm` row: `3.604152357783764e-5 / 2.1785139862792628e-5` for 400 K and 300 K is `1.65441`, against `(400/300)**1.75 = 1.65382` - the exponent is the correlation's own, to the last digit the two ratios can be read to.\n"
+tolerance = 1e-12
+[tests.inputs]
+MA = 0.016043
+MB = 0.0280135
+VA = 2.514e-5
+VB = 1.85e-5
+T = 400.0
+P = 101325.0
+[tests.expected]
+d = 3.604152357783764e-5
+[[tests]]
+id = "a_name_outside_the_special_table_takes_the_critical_volume_rung"
+type = "reference"
+status = "active"
+source = "The capture's `methane_ammonia_298K_1atm` row. The special table's key for ammonia is the formula `NH3`, so the name `ammonia` misses it and the class resolves `0.285*Vc = 0.285*99.0 = 28.215` cm**3/mol instead - the second rung of the ladder, measurably:\n\n  d = 2.0851238582061954e-5 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+MA = 0.016043
+MB = 0.017031
+VA = 2.514e-5
+VB = 2.8215e-5
+T = 298.15
+P = 101325.0
+[tests.expected]
+d = 2.0851238582061954e-5
+[[tests]]
+id = "the_rate_based_column_s_own_state"
+type = "reference"
+status = "active"
+source = "The capture's `methane_co2_313K_50bar` row, which is the state `RateBasedPackedColumnTest` runs its absorber at (313.15 K, 50 bara): the gas film coefficient the Onda correlation builds is a function of this number, so the row is captured here rather than only in the model.\n\n  d = 3.922539294026516e-7 m**2/s.\n"
+tolerance = 1e-12
+[tests.inputs]
+MA = 0.016043
+MB = 0.04401
+VA = 2.514e-5
+VB = 2.69e-5
+T = 313.15
+P = 5000000.0
+[tests.expected]
+d = 3.922539294026516e-7

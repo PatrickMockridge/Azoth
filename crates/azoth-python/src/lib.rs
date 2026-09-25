@@ -246,6 +246,10 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::co2_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::helium_phase, m)?)?;
     m.add_function(wrap_pyfunction!(eos::freezing_point, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        eos::fuller_schettler_giddings_diffusivity,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_formation_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(eos::hydrate_formation_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(eos::tbp_fraction_properties, m)?)?;

@@ -64,6 +64,7 @@ from azoth.core.result import (
     FlareResult,
     FlowRegime,
     FreezingPointResult,
+    FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult,
     FurstElectrolytePhaseResult,
     GasScrubberResult,
@@ -1257,6 +1258,25 @@ def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResu
         input_to_si(spec, "eta", eta),
     )
     return TynCalusDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def fuller_schettler_giddings_diffusivity(
+    MA: Q, MB: Q, VA: Q, VB: Q, T: Q, P: Q
+) -> FullerSchettlerGiddingsDiffusivityResult:
+    """The gas binary diffusivity, computed in Rust."""
+    spec = _spec_for("eos.fuller_schettler_giddings_diffusivity")
+    result = _core.fuller_schettler_giddings_diffusivity(
+        input_to_si(spec, "MA", MA),
+        input_to_si(spec, "MB", MB),
+        input_to_si(spec, "VA", VA),
+        input_to_si(spec, "VB", VB),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return FullerSchettlerGiddingsDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )

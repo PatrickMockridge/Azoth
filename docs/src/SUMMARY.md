@@ -24,6 +24,7 @@
   - [Gas viscosity from the Chung correlation](./eos/chung_viscosity.md)
   - [CO2-in-water binary diffusivity from the Tammi correlation](./eos/co2_water_diffusivity.md)
   - [Saturated liquid molar volume from the COSTALD equation](./eos/costald_molar_volume.md)
+  - [Gas binary diffusivity from the Fuller-Schettler-Giddings correlation](./eos/fuller_schettler_giddings_diffusivity.md)
   - [Liquid binary diffusivity from the Hayduk-Minhas correlation](./eos/hayduk_minhas_diffusivity.md)
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
   - [Henry constant of a gas in water, from the IAPWS guideline](./eos/iapws_henry_law.md)

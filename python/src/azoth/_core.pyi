@@ -361,6 +361,11 @@ class FreezingPointResult:
     warnings: list[Warning]
 
 @final
+class FullerSchettlerGiddingsDiffusivityResult:
+    d: Qty
+    warnings: list[Warning]
+
+@final
 class FurstElectrolyteMod2004PhaseResult:
     z_factor: float
     ln_phi: list[float]
@@ -2018,6 +2023,14 @@ def freezing_point(
     solid: str,
     P: float,
 ) -> FreezingPointResult: ...
+def fuller_schettler_giddings_diffusivity(
+    MA: float,
+    MB: float,
+    VA: float,
+    VB: float,
+    T: float,
+    P: float,
+) -> FullerSchettlerGiddingsDiffusivityResult: ...
 def furst_electrolyte_mod2004_phase(
     components: list[str],
     T: float,

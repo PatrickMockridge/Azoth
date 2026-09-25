@@ -23,17 +23,18 @@ use azoth_eos::results::{
     BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
     ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
     CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
-    EosCgPhaseResult, FreezingPointResult, FurstElectrolyteMod2004PhaseResult,
-    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
-    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
-    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
-    HeliumPhaseResult, HybridEosGeFlashResult, HydrateEquilibriumLineResult,
-    HydrateFormationPressureResult, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrateInhibitorConcentrationResult, HydrateInhibitorWtResult, HydrogenPhaseResult,
-    IapwsHenryLawResult, IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
-    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
-    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
-    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    EosCgPhaseResult, FreezingPointResult, FullerSchettlerGiddingsDiffusivityResult,
+    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
+    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
+    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
+    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
+    HybridEosGeFlashResult, HydrateEquilibriumLineResult, HydrateFormationPressureResult,
+    HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
+    HydrateInhibitorWtResult, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
+    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
+    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
+    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
+    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
     PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
     PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
@@ -4045,6 +4046,47 @@ impl PyWilkeChangDiffusivityResult {
 
 impl From<&WilkeChangDiffusivityResult> for PyWilkeChangDiffusivityResult {
     fn from(r: &WilkeChangDiffusivityResult) -> Self {
+        Self {
+            d: PyQty {
+                magnitude_si: r.d.value,
+                unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.fuller_schettler_giddings_diffusivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "FullerSchettlerGiddingsDiffusivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyFullerSchettlerGiddingsDiffusivityResult {
+    /// The pair's binary diffusion coefficient, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub d: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyFullerSchettlerGiddingsDiffusivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FullerSchettlerGiddingsDiffusivityResult(d={} {})",
+            self.d.magnitude_si, self.d.unit
+        )
+    }
+}
+
+impl From<&FullerSchettlerGiddingsDiffusivityResult>
+    for PyFullerSchettlerGiddingsDiffusivityResult
+{
+    fn from(r: &FullerSchettlerGiddingsDiffusivityResult) -> Self {
         Self {
             d: PyQty {
                 magnitude_si: r.d.value,
@@ -9557,6 +9599,7 @@ pub fn calc_ids() -> Vec<String> {
         ChungViscosityResult::CALC_ID.to_string(),
         ChungConductivityResult::CALC_ID.to_string(),
         TynCalusDiffusivityResult::CALC_ID.to_string(),
+        FullerSchettlerGiddingsDiffusivityResult::CALC_ID.to_string(),
         UmrprAlphaResult::CALC_ID.to_string(),
         WilkeChangDiffusivityResult::CALC_ID.to_string(),
         HaydukMinhasDiffusivityResult::CALC_ID.to_string(),

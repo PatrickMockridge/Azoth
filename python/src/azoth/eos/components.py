@@ -1340,6 +1340,96 @@ def wilke_chang_phi(name: str) -> float:
     return _WILKE_CHANG_PHI.get(name.strip().lower(), 1.0)
 
 
+#: The Fuller-Schettler-Giddings special-molecule diffusion volumes, in cm**3/mol.
+#: NeqSim's own table, key for key; unlike `_WILKE_CHANG_PHI` the lookup is
+#: case-**insensitive**, so `MEG` and `TEG` are found here.
+_FULLER_DIFFUSION_VOLUMES = {
+    "helium": 2.67,
+    "he": 2.67,
+    "neon": 5.98,
+    "ne": 5.98,
+    "argon": 16.2,
+    "ar": 16.2,
+    "krypton": 24.5,
+    "kr": 24.5,
+    "xenon": 32.7,
+    "xe": 32.7,
+    "hydrogen": 6.12,
+    "h2": 6.12,
+    "nitrogen": 18.5,
+    "n2": 18.5,
+    "oxygen": 16.3,
+    "o2": 16.3,
+    "water": 13.1,
+    "h2o": 13.1,
+    "co2": 26.9,
+    "co": 18.0,
+    "n2o": 35.9,
+    "nh3": 20.7,
+    "so2": 41.8,
+    "h2s": 27.0,
+    "cos": 41.8,
+    "cl2": 38.4,
+    "br2": 69.0,
+    "sf6": 71.3,
+    "ccl2f2": 114.8,
+    "methane": 25.14,
+    "ethane": 43.35,
+    "propane": 61.56,
+    "i-butane": 79.77,
+    "n-butane": 79.77,
+    "i-pentane": 97.98,
+    "n-pentane": 97.98,
+    "n-hexane": 116.19,
+    "n-heptane": 134.40,
+    "n-octane": 152.61,
+    "n-nonane": 170.82,
+    "n-decane": 189.03,
+    "cyclohexane": 98.67,
+    "benzene": 77.46,
+    "toluene": 95.67,
+    "methanol": 30.42,
+    "ethanol": 48.63,
+    "acetone": 67.68,
+    "meg": 54.74,
+    "deg": 91.96,
+    "teg": 129.18,
+}
+
+
+def fuller_diffusion_volume(
+    name: str, critical_volume: Q | None = None, molar_mass: Q | None = None
+) -> float:
+    """The Fuller-Schettler-Giddings diffusion volume of a component, in ``cm**3/mol``.
+
+    ``FullerSchettlerGiddingsDiffusivity.getDiffusionVolume``'s own ladder: the
+    special-molecule table by name (case-insensitively), then ``0.285 * Vc`` where a
+    critical volume is known, then ``max(10, 0.95 * M)`` with the molar mass in g/mol.
+
+    Args:
+        name: the component's name.
+        critical_volume: its critical volume, for the ladder's second rung.
+        molar_mass: its molar mass, for the third.
+
+    Returns:
+        The diffusion volume in ``cm**3/mol`` - the unit the correlation is written in.
+
+    Example:
+        >>> fuller_diffusion_volume("methane")
+        25.14
+        >>> round(fuller_diffusion_volume("ammonia", ureg.Quantity(9.9e-5, "m**3/mol")), 6)
+        28.215
+    """
+    listed = _FULLER_DIFFUSION_VOLUMES.get(name.strip().lower())
+    if listed is not None:
+        return listed
+    if critical_volume is not None and critical_volume.magnitude > 0.0:
+        return 0.285 * float(critical_volume.to("m**3/mol").magnitude) * 1.0e6
+    if molar_mass is None:
+        return 10.0
+    return max(10.0, 0.95 * float(molar_mass.to("kg/mol").magnitude) * 1000.0)
+
+
 def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     """One substance's full record, with any keycard override already applied.
 

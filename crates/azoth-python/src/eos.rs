@@ -3626,6 +3626,32 @@ pub fn solid_fugacity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The gas binary diffusivity, from the Fuller-Schettler-Giddings correlation.
+#[pyfunction]
+#[pyo3(signature = (MA, MB, VA, VB, T, P))]
+#[pyo3(text_signature = "(MA, MB, VA, VB, T, P)")]
+#[allow(non_snake_case)] // `MA`, `MB`, `VA`, `VB`, `T` and `P` are the equation's symbols
+pub fn fuller_schettler_giddings_diffusivity(
+    py: Python<'_>,
+    MA: f64,
+    MB: f64,
+    VA: f64,
+    VB: f64,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::results::PyFullerSchettlerGiddingsDiffusivityResult> {
+    azoth_eos::fuller_schettler_giddings_diffusivity(
+        kilograms_per_mole(MA),
+        kilograms_per_mole(MB),
+        cubic_meters_per_mole(VA),
+        cubic_meters_per_mole(VB),
+        kelvins(T),
+        pascals(P),
+    )
+    .map(|r| crate::results::PyFullerSchettlerGiddingsDiffusivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A fluid's freezing-point temperature, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the tabulated solid

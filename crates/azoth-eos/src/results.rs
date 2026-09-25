@@ -3357,6 +3357,24 @@ impl CalcResult for WilkeChangDiffusivityResult {
     }
 }
 
+/// Result of `eos.fuller_schettler_giddings_diffusivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FullerSchettlerGiddingsDiffusivityResult {
+    /// The binary diffusion coefficient of the pair.
+    pub d: DiffusionCoefficient,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for FullerSchettlerGiddingsDiffusivityResult {
+    const CALC_ID: &'static str = "eos.fuller_schettler_giddings_diffusivity";
+    const FIELDS: &'static [&'static str] = &["d", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.hayduk_minhas_diffusivity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct HaydukMinhasDiffusivityResult {

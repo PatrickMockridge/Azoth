@@ -1654,6 +1654,16 @@ class WilkeChangDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class FullerSchettlerGiddingsDiffusivityResult(_HasWarnings):
+    """Result of ``eos.fuller_schettler_giddings_diffusivity``."""
+
+    #: The pair's binary diffusion coefficient.
+    d: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HaydukMinhasDiffusivityResult(_HasWarnings):
     """Result of ``eos.hayduk_minhas_diffusivity``."""
 

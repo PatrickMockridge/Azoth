@@ -1850,6 +1850,108 @@ pub fn kij(first: &str, second: &str, cubic: Cubic, overlay: Option<&Overlay>) -
         })
 }
 
+/// Where a component's Fuller-Schettler-Giddings diffusion volume came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FullerVolumeSource {
+    /// The special-molecule table, which is the experimental value and is preferred.
+    SpecialTable,
+    /// `0.285 * Vc`, the class's estimate from the critical volume.
+    CriticalVolume,
+    /// `max(10, 0.95 * M)`, the class's last rung: a molar-mass estimate, reached only by a
+    /// component with no table entry and no critical volume.
+    MolarMass,
+}
+
+/// The Fuller-Schettler-Giddings diffusion volume of a component, in cm**3/mol, with the rung
+/// that answered.
+///
+/// `FullerSchettlerGiddingsDiffusivity.getDiffusionVolume`, in its own order: the
+/// special-molecule table by name (case-**insensitively**, unlike [`wilke_chang_phi`]'s
+/// lowercased lookup, so `MEG` and `TEG` are found here), then `0.285 * Vc` where a critical
+/// volume is known, then `max(10, 0.95 * M)` with the molar mass in g/mol.
+///
+/// **The first rung is preferred because the table is the measured one** and the class's own
+/// comment says so: its light-hydrocarbon entries are the summed atomic increments
+/// (`methane = 15.9 + 4 * 2.31`) and its noble-gas and simple-molecule entries are experimental
+/// values used in preference to any estimate.
+///
+/// The class's fourth table - the atomic increments, `C`, `H`, `O`, `N`, `F`, `Cl`, `Br`, `I`,
+/// `S` and a ring correction - is **never read by this ladder**, and its javadoc's claim to
+/// "attempt estimation from molecular formula" is that dead table. The port carries neither the
+/// table nor the claim.
+#[must_use]
+pub fn fuller_diffusion_volume(
+    name: &str,
+    critical_volume_m3_per_mol: Option<f64>,
+    molar_mass_kg_per_mol: f64,
+) -> (f64, FullerVolumeSource) {
+    if let Some(volume) = fuller_special_volume(name) {
+        return (volume, FullerVolumeSource::SpecialTable);
+    }
+    if let Some(vc) = critical_volume_m3_per_mol.filter(|vc| *vc > 0.0) {
+        return (0.285 * vc * 1.0e6, FullerVolumeSource::CriticalVolume);
+    }
+    (
+        (0.95 * molar_mass_kg_per_mol * 1000.0).max(10.0),
+        FullerVolumeSource::MolarMass,
+    )
+}
+
+/// The special-molecule diffusion volumes, in cm**3/mol.
+///
+/// NeqSim's own table, key for key. The lookup is case-insensitive, which is why the entries
+/// exist under both spellings: `helium` and `He`, `water` and `H2O`, `MEG` and `TEG`.
+fn fuller_special_volume(name: &str) -> Option<f64> {
+    let key = name.trim().to_lowercase();
+    Some(match key.as_str() {
+        // Noble gases and diatomics.
+        "helium" | "he" => 2.67,
+        "neon" | "ne" => 5.98,
+        "argon" | "ar" => 16.2,
+        "krypton" | "kr" => 24.5,
+        "xenon" | "xe" => 32.7,
+        "hydrogen" | "h2" => 6.12,
+        "nitrogen" | "n2" => 18.5,
+        "oxygen" | "o2" => 16.3,
+        // Common molecules.
+        "water" | "h2o" => 13.1,
+        "co2" => 26.9,
+        "co" => 18.0,
+        "n2o" => 35.9,
+        "nh3" => 20.7,
+        "so2" => 41.8,
+        "h2s" => 27.0,
+        "cos" => 41.8,
+        "cl2" => 38.4,
+        "br2" => 69.0,
+        "sf6" => 71.3,
+        "ccl2f2" => 114.8,
+        // Light hydrocarbons, which are the summed atomic increments.
+        "methane" => 25.14,
+        "ethane" => 43.35,
+        "propane" => 61.56,
+        "i-butane" | "n-butane" => 79.77,
+        "i-pentane" | "n-pentane" => 97.98,
+        "n-hexane" => 116.19,
+        "n-heptane" => 134.40,
+        "n-octane" => 152.61,
+        "n-nonane" => 170.82,
+        "n-decane" => 189.03,
+        // Cyclic and aromatic, which carry the ring correction.
+        "cyclohexane" => 98.67,
+        "benzene" => 77.46,
+        "toluene" => 95.67,
+        // Oxygenated.
+        "methanol" => 30.42,
+        "ethanol" => 48.63,
+        "acetone" => 67.68,
+        "meg" => 54.74,
+        "deg" => 91.96,
+        "teg" => 129.18,
+        _ => return None,
+    })
+}
+
 /// The Wilke-Chang association parameter for a solvent, by name.
 ///
 /// A name resolves through a lowercased lookup against NeqSim's table; a solvent

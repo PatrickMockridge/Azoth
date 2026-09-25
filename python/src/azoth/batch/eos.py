@@ -27,6 +27,7 @@ __all__ = [
     "ChungViscosityBatch",
     "Co2WaterDiffusivityBatch",
     "CostaldMolarVolumeBatch",
+    "FullerSchettlerGiddingsDiffusivityBatch",
     "HeatOfVaporizationBatch",
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
@@ -75,6 +76,7 @@ __all__ = [
     "chung_viscosity",
     "co2_water_diffusivity",
     "costald_molar_volume",
+    "fuller_schettler_giddings_diffusivity",
     "heat_of_vaporization",
     "ideal_gas_cp",
     "liquid_heat_capacity",
@@ -169,6 +171,7 @@ _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _NITRIC_SULFURIC_ACID_VAPOR_PRESSURE = "eos.nitric_sulfuric_acid_vapor_pressure"
 _UMRPR_ALPHA = "eos.umrpr_alpha"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
+_FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusivity"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -2003,6 +2006,51 @@ def umrpr_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> UmrprAlphaBat
         _UMRPR_ALPHA,
         {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
         _build_umrpr,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class FullerSchettlerGiddingsDiffusivityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.fuller_schettler_giddings_diffusivity`."""
+
+    #: Binary diffusion coefficient per element, in m**2/s.
+    d: array[float]
+
+
+def _build_fuller_schettler_giddings_diffusivity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> FullerSchettlerGiddingsDiffusivityBatch:
+    return FullerSchettlerGiddingsDiffusivityBatch(
+        warnings=warnings,
+        units=units,
+        d=columns["d"],  # type: ignore[arg-type]
+    )
+
+
+def fuller_schettler_giddings_diffusivity(
+    *,
+    MA: Sequence[float],
+    MB: Sequence[float],
+    VA: Sequence[float],
+    VB: Sequence[float],
+    T: Sequence[float],
+    P: Sequence[float],
+) -> FullerSchettlerGiddingsDiffusivityBatch:
+    """The gas binary diffusivity, over arrays."""
+    result: FullerSchettlerGiddingsDiffusivityBatch = run(
+        _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY,
+        {
+            "MA": sequence(MA, "MA"),
+            "MB": sequence(MB, "MB"),
+            "VA": sequence(VA, "VA"),
+            "VB": sequence(VB, "VB"),
+            "T": sequence(T, "T"),
+            "P": sequence(P, "P"),
+        },
+        _build_fuller_schettler_giddings_diffusivity,
     )
     return result
 
