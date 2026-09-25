@@ -62,7 +62,7 @@ Each is a consequence of the calculus, named here because a front-end has to add
 
 ## The bindings
 
-One surface, four doors. None of them holds a second implementation, and a test on the host
+One surface, five doors. None of them holds a second implementation, and a test on the host
 covers each: the wire layer's tests are the behaviour, and a binding is exercised for the boundary
 only.
 
@@ -72,9 +72,16 @@ only.
 | a notebook | `azoth.process.Session`, which is the same `Workspace` as a Python object, with `forms()` and `tools()` beside it | `python/tests/test_process.py` |
 | a shell | `azoth forms` and `azoth edit --flowsheet F --command JSON [--run] [--json]` | `crates/azoth-cli/tests/wire.rs` |
 | an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field |
+| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope | `crates/azoth-cli/tests/serve.rs` |
 
 `--json` prints the envelope, which is byte for byte the object a browser is handed — so the CLI
 is a way to look at the wire without a front-end, and a way to capture a fixture for one.
+
+**The two network transports call the same code.** `azoth mcp` and `azoth serve` both hold a
+`crate::session::Session` and hand it a tool name and its arguments; neither knows what an edit is,
+and the only thing that differs between them is how a refusal is *expressed* — a JSON-RPC error
+code, or an HTTP status. A second dispatch table, a second place to read a command, is what that
+shared session exists to make impossible.
 
 ## The GUI
 
@@ -132,9 +139,11 @@ that reads as finished.
   `add_instance`'s `unit` enum. An HTTP transport, and a vendored `schema.json` for the protocol
   revision plus a validator — which is what would turn a revision's drift into a failing test
   rather than a client failure — are the same kind of not-built.
-- **A hosted session.** Every binding is local, which is what the backend decision bought: there
-  is nothing to run beside the editor. A hosted or multi-user editor needs a process holding a
-  `Workspace` and a protocol over the same commands, and that process does not exist.
+- **Authentication, and who edited what.** `azoth serve` hosts one document over HTTP, and what it
+  does not have is named in its own module: no identity, no conflict resolution beyond the order
+  requests arrive in, no TLS. It binds `127.0.0.1` and refuses every origin it was not told to
+  allow, which is the posture a single-user local tool can defend — anything past that is a
+  deployment, and a deployment is not built.
 - **The twenty-seven model result dataclasses as JSON**, so a notebook reads a `PumpResult` field
   by field rather than through the envelope's streams. The codec exists to avoid a second writer
   per model; until then the envelope is the JSON.

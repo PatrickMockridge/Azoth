@@ -15,8 +15,10 @@
 //! [`azoth_cli::report`], both of which are testable. What is left here is the
 //! wiring, which is the part an integration test against the built binary covers.
 
-use azoth_cli::cli::{CheckArgs, Cli, Command, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs};
-use azoth_cli::{check, edit, forms, mcp, pipe, report, run};
+use azoth_cli::cli::{
+    CheckArgs, Cli, Command, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs, ServeArgs,
+};
+use azoth_cli::{check, edit, forms, mcp, pipe, report, run, serve};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -32,6 +34,25 @@ fn main() -> std::process::ExitCode {
         Command::Forms(args) => run_forms(args),
         Command::Edit(args) => run_edit(args),
         Command::Mcp(args) => run_mcp(args),
+        Command::Serve(args) => run_serve(args),
+    }
+}
+
+fn run_serve(args: ServeArgs) -> std::process::ExitCode {
+    match serve::serve(
+        &args.flowsheet,
+        &args.palette,
+        args.port,
+        &args.allow_origins,
+    ) {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("azoth: {error}");
+            if let Some(field) = error.field() {
+                eprintln!("  offending input: {field}");
+            }
+            std::process::ExitCode::from(2)
+        }
     }
 }
 

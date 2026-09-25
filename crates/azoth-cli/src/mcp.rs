@@ -31,11 +31,10 @@ use std::io::{BufRead, Write};
 use std::path::Path;
 
 use azoth_core::{AzothError, Result};
-use azoth_process::middleware::command::Command;
-use azoth_process::middleware::session::Workspace;
-use azoth_process::middleware::{envelope, tools};
-use azoth_process::{UnitOpSpec, load_palette};
+use azoth_process::middleware::tools;
 use serde_json::{Value, json};
+
+use crate::session::Session;
 
 /// The protocol revisions this server speaks, newest first.
 ///
@@ -73,18 +72,10 @@ pub fn serve(
     input: impl BufRead,
     mut output: impl Write,
 ) -> Result<()> {
-    let palette =
-        load_palette(palette_dir).map_err(|error| AzothError::invalid_input("palette", error))?;
-    let text = std::fs::read_to_string(flowsheet).map_err(|error| {
-        AzothError::invalid_input("flowsheet", format!("{}: {error}", flowsheet.display()))
-    })?;
-    let workspace = Workspace::open(&text, palette.clone())
-        .map_err(|error| AzothError::invalid_input("flowsheet", error.to_string()))?;
-
+    // **One session, and this transport does not know what an edit is.** Everything above the
+    // framing is `Session`'s; what is left here is JSON-RPC.
     let mut server = Server {
-        workspace,
-        palette,
-        run: run_after_each_call,
+        session: Session::open(flowsheet, palette_dir, run_after_each_call)?,
     };
 
     for line in input.lines() {
@@ -115,11 +106,9 @@ pub fn serve(
     Ok(())
 }
 
-/// The session, and what this process was asked to do with it.
+/// The JSON-RPC framing, over the one session every transport shares.
 struct Server {
-    workspace: Workspace,
-    palette: Vec<UnitOpSpec>,
-    run: bool,
+    session: Session,
 }
 
 impl Server {
@@ -195,7 +184,7 @@ impl Server {
             )),
             "ping" => Some(self.result(&id, json!({}))),
             "tools/list" => {
-                let list: Vec<Value> = self.tools().iter().map(tool_json).collect();
+                let list: Vec<Value> = self.session.tools().iter().map(tool_json).collect();
                 Some(self.result(
                     &id,
                     json!({
@@ -219,68 +208,47 @@ impl Server {
         }
     }
 
-    /// The tools, which are `middleware::tools`'s own list and nothing else.
-    fn tools(&self) -> Vec<tools::Tool> {
-        tools::tools(&self.palette)
-    }
-
-    /// One tool call: read the arguments as a command, apply it, answer with the envelope.
+    /// One tool call, in the MCP result shape.
     ///
-    /// **Three refusal states, kept apart because the middleware keeps them apart.** A call whose
-    /// arguments are not a command is `isError`, because the model can correct it. A call that
-    /// *landed* and left the document refused by the checker is **not** an error: a broken document
-    /// is a state a caller shows, and `ok: false` is how it says so. A run that failed is not an
-    /// error either — whether a substance exists is the databank's answer, and the envelope's
-    /// `run_error` is where that arrives.
+    /// **The call itself is [`Session::call`]'s**, and this only wraps the answer: the envelope
+    /// as text for a model to read and as structured content for a client to address, or the
+    /// library's own sentence when the call is what was wrong. The three refusal states the
+    /// session keeps apart arrive here as they are - an `isError` result for a call that could not
+    /// take effect, and `ok: false` inside the envelope for a document the checker refuses.
     fn call(&mut self, id: &Value, request: &Value) -> Value {
         let Some(name) = request.pointer("/params/name").and_then(Value::as_str) else {
             return error_response(id, UNKNOWN_TOOL, "a tool call must name a tool", None);
         };
-        if !self.tools().iter().any(|tool| tool.name == name) {
+        // **The spec's own shape for this is a protocol error, not a result**, which is why the
+        // name is checked here as well as in the session: a name that is not a tool is `-32602` to
+        // an MCP client and a `400` to an HTTP one, and the *list* is one list
+        // (`Session::tools`) while the expression differs by transport.
+        if !self.session.tools().iter().any(|tool| tool.name == name) {
             return error_response(id, UNKNOWN_TOOL, &format!("Unknown tool: {name}"), None);
         }
-
-        // **The tool's name is the command's tag.** `tools.rs` writes it as the schema's `const`,
-        // MCP carries the tool in `params.name`, and the command enum reads it from the object —
-        // so this is the single point where the three spellings meet, and it is a copy of one
-        // string rather than a fourth place it is written down.
-        let mut arguments = request
+        let arguments = request
             .pointer("/params/arguments")
             .cloned()
             .unwrap_or_else(|| json!({}));
-        if let Some(object) = arguments.as_object_mut() {
-            object.insert("command".to_string(), json!(name));
-        }
-        let command: Command = match serde_json::from_value(arguments) {
-            Ok(command) => command,
-            Err(error) => return self.refused(id, &error.to_string()),
-        };
-        if let Err(error) = self.workspace.apply(&command) {
-            return self.refused(id, &error.to_string());
-        }
 
-        if self.run {
-            // A run the edit made impossible is reported in the envelope rather than here, so the
-            // error is deliberately dropped: it is the same fact, said in its own field.
-            let _ = self.workspace.run();
-        }
-
-        match envelope::to_json(&self.workspace) {
-            Ok(document) => {
-                let structured: Value =
-                    serde_json::from_str(&document).unwrap_or_else(|_| json!({}));
+        match self.session.call(name, &arguments, None) {
+            Ok(envelope) => {
+                let text = self
+                    .session
+                    .envelope_json()
+                    .unwrap_or_else(|_| envelope.to_string());
                 self.result(
                     id,
                     json!({
-                        "content": [ { "type": "text", "text": document } ],
+                        "content": [ { "type": "text", "text": text } ],
                         // The same document twice: once for a model to read as text and once for a
                         // client to address field by field. One encoder wrote both.
-                        "structuredContent": structured,
+                        "structuredContent": envelope,
                         "isError": false,
                     }),
                 )
             }
-            Err(error) => self.refused(id, &error.to_string()),
+            Err(sentence) => self.refused(id, &sentence),
         }
     }
 

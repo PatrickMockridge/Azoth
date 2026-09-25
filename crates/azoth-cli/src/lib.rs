@@ -17,3 +17,5 @@ pub mod mcp;
 pub mod pipe;
 pub mod report;
 pub mod run;
+pub mod serve;
+pub mod session;

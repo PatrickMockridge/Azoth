@@ -39,6 +39,34 @@ pub enum Command {
 
     /// Serve the flowsheet as MCP tools over stdio, for an agent.
     Mcp(McpArgs),
+
+    /// Serve one flowsheet over HTTP, for clients that cannot run the kernels themselves.
+    Serve(ServeArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct ServeArgs {
+    /// The flowsheet to serve. It is read once and edited in place for the life of the process;
+    /// the file itself is never written.
+    #[arg(long)]
+    pub flowsheet: std::path::PathBuf,
+
+    /// The palette directory. Defaults to the shipped `specs/unit_ops`.
+    #[arg(long, default_value = "specs/unit_ops")]
+    pub palette: std::path::PathBuf,
+
+    /// The port to listen on, on 127.0.0.1. `0` asks the operating system for a free one, which is
+    /// printed either way.
+    #[arg(long, default_value_t = 7373)]
+    pub port: u16,
+
+    /// An origin a browser page may call this from, e.g. `http://localhost:5173`. Repeatable.
+    ///
+    /// **None by default, and that is the safe default**: a response without this header is one a
+    /// page cannot read, so a server started without it is reachable by `curl` and by nothing in a
+    /// tab. Without it, any page a user happened to have open could edit the document.
+    #[arg(long = "allow-origin")]
+    pub allow_origins: Vec<String>,
 }
 
 #[derive(Debug, clap::Args)]
