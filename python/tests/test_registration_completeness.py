@@ -199,13 +199,19 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
     which is a test that fails for a reason the reader cannot see.
     """
     source_dir = REPO_ROOT / "crates" / "azoth-python" / "src"
-    attribute = re.compile(r'#\[pyclass\([^)]*?name\s*=\s*"(?P<name>\w+)"', re.DOTALL)
+    # The whole attribute rather than the part up to the name: `get_all` is written after
+    # it, and which of the two forms a struct uses is what decides where its fields are.
+    attribute = re.compile(r"#\[pyclass\((?P<attributes>(?:[^()]|\([^()]*\))*?)\)\]", re.DOTALL)
+    name = re.compile(r'name\s*=\s*"(?P<name>\w+)"')
     struct = re.compile(r"pub struct \w+ \{")
 
     found: dict[str, tuple[str, ...]] = {}
     for path in sorted(source_dir.glob("*.rs")):
         text = path.read_text(encoding="utf-8")
         for match in attribute.finditer(text):
+            declared = name.search(match.group("attributes"))
+            if declared is None:
+                continue
             opening = struct.search(text, match.end())
             if opening is None:  # pragma: no cover - a pyclass with no struct
                 continue
@@ -220,7 +226,14 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
                         end = index
                         break
             body = text[opening.end() : end]
-            found[match.group("name")] = tuple(re.findall(r"#\[pyo3\(get\)\]\s*pub (\w+):", body))
+            if re.search(r"\bget_all\b", match.group("attributes")):
+                # `get_all` gives every field a getter, so every field is one - private
+                # fields included, which is the one place this reads further than the
+                # `#[pyo3(get)]` form does.
+                fields = re.findall(r"^\s*(?:pub )?(\w+):", body, re.MULTILINE)
+            else:
+                fields = re.findall(r"#\[pyo3\(get\)\]\s*pub (\w+):", body)
+            found[declared.group("name")] = tuple(fields)
     return found
 
 
