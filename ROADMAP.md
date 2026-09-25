@@ -388,15 +388,24 @@ faithful port needs the amine electrolyte chemistry P8 declined — `AmineSystem
 `AmineKentEisenberg` are the classes that would close it, and P8's tier is where it belongs.
 That names what would close it, which is the point: it is not "out of scope".
 
-**The distillation column is no longer parked.** `unit_ops.distillation_column` is the one
-entry that is a solver rather than a composition of kernels this library already has — 40,058
-lines across 46 files in NeqSim's `process/equipment/distillation/`, `NaphtaliSandholmSolver`
-alone 5,153 — and its declaration now carries the feed stage, the two ends and the two product
-specifications a rigorous column takes. It runs as a workstream of its own, with five entries
-beside it for the classes the rigorous base is the source of, so its numbers are neither owed
-nor refused. Both solves are in scope, the sequential-substitution core and
-Naphtali-Sandholm, and the oracle is differential because NeqSim carries no absolute reference
-numbers for a column.
+**The distillation column is no longer parked, and the family it founded is ported.**
+`unit_ops.distillation_column` is the one entry that is a solver rather than a composition of
+kernels this library already has — 40,058 lines across 46 files in NeqSim's
+`process/equipment/distillation/`, `NaphtaliSandholmSolver` alone 5,153 — and its declaration now
+carries the feed stage, the two ends and the two product specifications a rigorous column takes.
+**Both solves are in**, the sequential-substitution core and Naphtali-Sandholm, and the oracle is
+differential because NeqSim carries no absolute reference numbers for a column. Four of the five
+entries beside it are in as well: the FUG shortcut column, the absorber and the stripper, which
+are one class under two sets of names, and `unit_ops.packed_column`, whose packing turned out to
+be a report read after the solve — measured, NeqSim's packed column at a 2.0 m bed and its base
+column at four stages are bit-identical on all twenty-two captured quantities. **The fifth is a
+measured non-port and a tranche of its own**, as its own bullet below says, and so are the
+reactive trays the base class reaches for: their flash exists here but fixes SRK where this
+library's column is PR, so no oracle state could be reproduced until `reactions.reactive_tp_flash`
+and `reactions.reactive_ph_flash` take a cubic parameter. That is the same discipline the rest of
+this record follows — each class beside the column is either ported or recorded as a non-port with
+the class and the blocker named — and it replaces an earlier sentence here which claimed the five
+were "neither owed nor refused", which the fifth entry's own measurement contradicted.
 
 **P11's palette is closed except for one entry, and it is deferred with a measurement.** The
 nine kernels the column's unparking deferred have nearly all landed - `component_splitter`,
