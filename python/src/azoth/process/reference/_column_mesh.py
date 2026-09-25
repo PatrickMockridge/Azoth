@@ -860,4 +860,8 @@ def _outcome(mesh: Mesh, iterations: int, residual: float) -> _States:
         temperature_residual=residual,
         mass_residual=mass_residual,
         energy_residual=energy_residual,
+        # **The mesh solve has no reactive route, and the model refuses the pair** - see
+        # `distillation_column`'s own refusal: this solve takes its fugacities from the
+        # MESH equations, so the flag could only be ignored.
+        warnings=(),
     )

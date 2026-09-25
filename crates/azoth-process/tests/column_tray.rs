@@ -109,7 +109,8 @@ fn absolute(actual: f64, expected: f64, tolerance: f64, what: &str) {
 /// `14` digits of the temperature.
 #[test]
 fn a_tray_splits_one_two_phase_feed() {
-    let out = tray(&[feed(300.0, 20.0, 1.0)], None, None, watts(0.0)).expect("the tray solves");
+    let out =
+        tray(&[feed(300.0, 20.0, 1.0)], None, None, watts(0.0), false).expect("the tray solves");
 
     absolute(
         out.temperature.value,
@@ -158,6 +159,7 @@ fn a_tray_mixes_two_inlets_before_it_flashes() {
         None,
         None,
         watts(0.0),
+        false,
     )
     .expect("the tray solves");
 
@@ -186,6 +188,7 @@ fn a_stated_outlet_temperature_replaces_the_enthalpy_flash() {
         None,
         Some(kelvins(320.0)),
         watts(0.0),
+        false,
     )
     .expect("the tray solves");
 
@@ -214,8 +217,8 @@ fn a_stated_outlet_temperature_replaces_the_enthalpy_flash() {
 fn a_trays_duty_is_a_total_enthalpy_and_the_flow_divides_it() {
     let one_in = [feed(300.0, 20.0, 1.0)];
     let two_in = [feed(300.0, 20.0, 2.0)];
-    let one = tray(&one_in, None, None, watts(5000.0)).expect("the tray solves");
-    let two = tray(&two_in, None, None, watts(5000.0)).expect("the tray solves");
+    let one = tray(&one_in, None, None, watts(5000.0), false).expect("the tray solves");
+    let two = tray(&two_in, None, None, watts(5000.0), false).expect("the tray solves");
 
     // The two-mol row's vapour fraction is the oracle for the division: a molar reading of
     // the duty would have left it at the one-mol row's 0.6018.
@@ -256,6 +259,7 @@ fn a_tray_pressure_overrides_the_inlets() {
         Some(pascals(15.0e5)),
         None,
         watts(0.0),
+        false,
     )
     .expect("the tray solves");
 
@@ -285,14 +289,16 @@ fn a_tray_pressure_overrides_the_inlets() {
 /// phase, so reading the split off it would give a subcooled feed all of its flow as vapour.
 #[test]
 fn an_absent_phase_is_none_and_beta_does_not_say_so() {
-    let subcooled = tray(&[feed(220.0, 20.0, 1.0)], None, None, watts(0.0)).expect("the tray");
+    let subcooled =
+        tray(&[feed(220.0, 20.0, 1.0)], None, None, watts(0.0), false).expect("the tray");
     assert!(subcooled.gas.is_none(), "a subcooled feed has no vapour");
     let liquid = subcooled.liquid.expect("a subcooled feed is all liquid");
     relative(liquid.n, 1.0, 1e-12, "the liquid carries the whole flow");
     assert_eq!(liquid.z, feed(220.0, 20.0, 1.0).z, "the tray's composition");
     absolute(liquid.h.value, -20429.951874378614, 0.1, "liquid h");
 
-    let superheated = tray(&[feed(400.0, 20.0, 1.0)], None, None, watts(0.0)).expect("the tray");
+    let superheated =
+        tray(&[feed(400.0, 20.0, 1.0)], None, None, watts(0.0), false).expect("the tray");
     assert!(
         superheated.liquid.is_none(),
         "a superheated feed has no liquid"
@@ -308,5 +314,5 @@ fn an_absent_phase_is_none_and_beta_does_not_say_so() {
 /// No inlets is not a tray.
 #[test]
 fn a_tray_with_no_inlets_is_refused() {
-    assert!(tray(&[], None, None, watts(0.0)).is_err());
+    assert!(tray(&[], None, None, watts(0.0), false).is_err());
 }

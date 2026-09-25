@@ -45,7 +45,7 @@ from azoth.core.result import DistillationColumnResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.process.reference import _column_stage as _stage
-from azoth.process.reference._column_stage import StreamRecord, stage
+from azoth.process.reference._column_stage import StreamRecord, reactive_stage, stage
 
 #: The class's own adaptive-relaxation constants, from `DistillationColumn`'s initialisers.
 MIN_SEQUENTIAL_RELAXATION = 0.5
@@ -142,6 +142,9 @@ def _component_index(product: StreamRecord, name: str | None) -> int:
 class _States(NamedTuple):
     """The solved column, in SI magnitudes - the profile and both products."""
 
+    #: **What the stages had to fall back on**, one entry per kind, which the model merges with
+    #: its own checks' caveats.
+    warnings: tuple[Warning, ...]
     #: Each tray's temperature, K, from the reboiler at stage 0 to the condenser.
     tray_temperature: tuple[float, ...]
     #: Each tray's pressure, Pa.
@@ -212,6 +215,9 @@ def distillation_column(
     bottom_specification_type: str | None = None,
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -280,6 +286,35 @@ def distillation_column(
         3.7915
     """
     _refuse_unported(murphree_efficiency, solver_type)
+
+    # **`setReactive`'s two forms, and neither states half a section** - the mirror of the Rust
+    # model's own resolution.
+    if (reactive_start_tray is None) != (reactive_end_tray is None):
+        raise InvalidInputError(
+            "reactive_start_tray",
+            "a reactive section is stated by both bounds or by neither: `setReactive(true)` "
+            "covers every middle tray and `setReactive(true, start, end)` a run of them, and the "
+            "class has no form that states one end alone",
+        )
+    section: tuple[int, int] | None = None
+    if reactive:
+        start, end = reactive_start_tray, reactive_end_tray
+        section = (-1, -1) if start is None or end is None else (int(start), int(end))
+    elif reactive_start_tray is not None:
+        raise InvalidInputError(
+            "reactive",
+            "a reactive section was stated without `reactive = true`, which is a declaration "
+            "that says nothing",
+        )
+    else:
+        section = None
+    if section is not None and solver_type == "naphtali_sandholm":
+        raise InvalidInputError(
+            "reactive",
+            "a reactive section under `naphtali_sandholm` is not ported: `NaphtaliSandholmSolver` "
+            "reads its fugacities from the MESH equations, and this port's mesh does not route a "
+            "tray's flash at all, so the flag would be ignored rather than honoured",
+        )
 
     top_specification = _build_specification(
         top_specification_type, top_specification_target, top_specification_component, "top"
@@ -352,7 +387,9 @@ def distillation_column(
         top_specification,
         bottom_specification,
         solver_type,
+        reactive=section,
     )
+    warnings.extend(states.warnings)
 
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
@@ -400,6 +437,7 @@ def _states(
     solver_type: str | None = None,
     top_feed: StreamRecord | None = None,
     tray_temperatures: tuple[float, ...] | None = None,
+    reactive: tuple[int, int] | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
 
@@ -410,6 +448,9 @@ def _states(
     after its first sweep, because the base's gate is the tray-temperature change it made zero.
     """
     tray_count = number_of_stages + int(has_reboiler) + int(has_condenser)
+    # **What the stages had to fall back on**, one entry per kind: a reactive tray's own
+    # fallback, deduplicated the way the Rust kernel deduplicates it.
+    collected_warnings: list[Warning] = []
     if number_of_stages == 0:
         raise InvalidInputError(
             "number_of_stages", "a column with no stages between its ends is not a column"
@@ -534,18 +575,43 @@ def _states(
             raise InvalidInputError("column", what)
         return stream
 
+    def is_reactive(i: int) -> bool:
+        """**The section is stated over middle trays and the ends are never in it**:
+        `replaceMiddleTrays` walks from the reboiler's edge to the condenser's."""
+        if reactive is None:
+            return False
+        if (i == 0 and has_reboiler) or (i + 1 == tray_count and has_condenser):
+            return False
+        middle = i - int(has_reboiler)
+        start, end = reactive
+        if start < 0 and end < 0:
+            return True
+        return start <= middle <= end
+
     def run_with(i: int, inlets: list[StreamRecord]) -> None:
         kind, value = modes[i]
         if kind == "temperature":
             # A middle tray carries a NaN here and no pin, so its flash is at its own enthalpy.
-            out = stage(inlets, pressures[i], value if value == value else None, 0.0)
+            pin = value if value == value else None
+            out = (
+                reactive_stage(inlets, pressures[i], pin, 0.0)
+                if is_reactive(i)
+                else stage(inlets, pressures[i], pin, 0.0)
+            )
         elif kind == "duty":
-            out = stage(inlets, pressures[i], None, value)
+            out = (
+                reactive_stage(inlets, pressures[i], None, value)
+                if is_reactive(i)
+                else stage(inlets, pressures[i], None, value)
+            )
         else:
             out = _stage.reflux_end(
                 inlets, pressures[i], value, "vapour" if i == tray_count - 1 else "liquid"
             )
         gas[i], liquid[i] = out["gas"], out["liquid"]
+        for warning in out["warnings"]:
+            if all(held.code != warning.code for held in collected_warnings):
+                collected_warnings.append(warning)
 
     def at_temperature(stream: StreamRecord, temperature: float) -> StreamRecord:
         if temperature != temperature:  # NaN
@@ -805,6 +871,7 @@ def _states(
         )
 
     return _States(
+        warnings=tuple(collected_warnings),
         tray_temperature=tuple(temperature(i) for i in range(tray_count)),
         tray_pressure=tuple(pressures),
         tray_gas_n=tuple(

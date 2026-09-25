@@ -129,6 +129,9 @@ pub fn distillation_column(
     bottom_specification_type: Option<&str>,
     bottom_specification_target: Option<f64>,
     bottom_specification_component: Option<&str>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
 ) -> Result<DistillationColumnResult> {
     refuse_unported(murphree_efficiency)?;
 
@@ -186,6 +189,47 @@ pub fn distillation_column(
         }
     };
 
+    // **`setReactive`'s two forms, and neither states half a section.** The class clears both
+    // bounds for `setReactive(true)` and sets both for `setReactive(true, start, end)`; a
+    // single bound is a declaration the class cannot make, so it is refused rather than guessed.
+    let reactive = match (
+        reactive.unwrap_or(false),
+        reactive_start_tray,
+        reactive_end_tray,
+    ) {
+        (false, None, None) => kernel::ReactiveSection::None,
+        (true, None, None) => kernel::ReactiveSection::All,
+        (true, Some(start), Some(end)) => kernel::ReactiveSection::Section { start, end },
+        (_, Some(_), None) | (_, None, Some(_)) => {
+            return Err(AzothError::invalid_input(
+                "reactive_start_tray",
+                "a reactive section is stated by both bounds or by neither: `setReactive(true)` \
+                 covers every middle tray and `setReactive(true, start, end)` a run of them, and \
+                 the class has no form that states one end alone",
+            ));
+        }
+        (false, Some(_), Some(_)) => {
+            return Err(AzothError::invalid_input(
+                "reactive",
+                "a reactive section was stated without `reactive = true`, which is a declaration \
+                 that says nothing",
+            ));
+        }
+    };
+
+    // **A reactive section under the simultaneous solve is refused rather than ignored.** This
+    // port's mesh takes its fugacities from the mesh's own mixture, where NeqSim's trays take
+    // theirs from the tray's own flash - so here the flag could only be silently non-reactive,
+    // which is the failure mode this port refuses everywhere else.
+    if reactive != kernel::ReactiveSection::None && solver == kernel::SolverType::NaphtaliSandholm {
+        return Err(AzothError::invalid_input(
+            "reactive",
+            "a reactive section under `naphtali_sandholm` is not ported: `NaphtaliSandholmSolver` \
+             reads its fugacities from the MESH equations, and this port's mesh does not route a \
+             tray's flash at all, so the flag would be ignored rather than honoured",
+        ));
+    }
+
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let out = kernel(&kernel::ColumnSetup {
         feed,
@@ -204,7 +248,13 @@ pub fn distillation_column(
         top_feed: None,
         tray_temperatures: None,
         solver_type: solver,
+        reactive,
     })?;
+
+    // **What the stages had to fall back on joins what the checks found.** A reactive tray's
+    // fallback is the kernel's own caveat, and a caller that asked for reactive trays learns
+    // from the result whether they ran reactively.
+    warnings.extend(out.warnings.iter().cloned());
 
     Ok(DistillationColumnResult {
         tray_temperature: out.trays.iter().map(|t| t.temperature).collect(),

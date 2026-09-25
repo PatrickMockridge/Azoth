@@ -148,6 +148,9 @@ public class ProcessProbe {
       case "column":
         columnRows();
         break;
+      case "reactive_column":
+        reactiveColumnRows();
+        break;
       case "column_solvers":
         columnSolverRows(args);
         break;
@@ -641,6 +644,10 @@ public class ProcessProbe {
     solverRow("binary_methane_butane_mesh_solve", new String[] { "methane", "n-butane" },
         new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6,
         200, true, false, "NAPHTALI_SANDHOLM");
+  
+    // The reactive section's rows, which belong with the state they are compared
+    // against - see the helper's own note on why they live in this capture.
+    reactiveColumnRowsInColumnCapture();
   }
 
   static void specificationRow(String label, String component, double target, Boolean recovery,
@@ -1076,6 +1083,113 @@ public class ProcessProbe {
       System.out.println("htu_l_m=" + hydraulics.getHtuL());
       System.out.println("htu_og_m=" + hydraulics.getHtuOG());
     }
+  }
+
+  /// **The reactive tray, which the class carries and its own tests never run.** `setReactive`
+  /// sets `useReactiveFlash` on the *middle* trays - the ends never - and the tray's flash then
+  /// routes to `ThermodynamicOperations.reactiveTPflash`/`reactivePHflash` instead of the
+  /// equilibrium one.
+  ///
+  /// **Both of NeqSim's reactive-column tests assert nothing numeric**: one checks the flags and
+  /// never calls `run()`, and the other asserts only that a reactive column on a fluid with no
+  /// reaction matches a standard one. So each row here is paired with its standard twin, which
+  /// is the measurement the class does make, and the class's own water-gas-shift state - which
+  /// its test never runs - is run here to see what it does.
+  ///
+  /// **On PR**, the cubic the process layer's streams carry: the oracle has to be the fluid the
+  /// port flashes.
+  static void reactiveColumnRows() {
+    String[] wgs = new String[] { "CO", "water", "CO2", "hydrogen" };
+    double[] wgsZ = new double[] { 0.25, 0.25, 0.25, 0.25 };
+    // The class's own state: three middle trays, both ends, the feed on stage 2, and its own
+    // two end temperatures.
+    reactiveColumnRow("wgs_standard_column_pr", wgs, wgsZ, 473.15, 10.0, 1000.0, 3, 2, 100.0,
+        250.0, 10.0, 10.0, 1.0e-2, 80, false);
+    reactiveColumnRow("wgs_reactive_column_pr", wgs, wgsZ, 473.15, 10.0, 1000.0, 3, 2, 100.0,
+        250.0, 10.0, 10.0, 1.0e-2, 80, true);
+    // The class's own `NR = 0` pair: methane/ethane at -50 C and 15 bara, where its own test
+    // asserts the two columns agree. **That state sits at the mixture's pseudocritical
+    // temperature** - `0.7 * 190 + 0.3 * 305` is 224 K and the feed is 223.15 - which is the
+    // delicacy its own test never exercises numerically.
+    String[] light = new String[] { "methane", "ethane" };
+    double[] lightZ = new double[] { 0.7, 0.3 };
+    reactiveColumnRow("methane_ethane_standard_column_pr", light, lightZ, 223.15, 15.0, 1000.0, 3,
+        2, -80.0, -20.0, 15.0, 15.0, 1.0e-2, 100, false);
+    reactiveColumnRow("methane_ethane_reactive_column_pr", light, lightZ, 223.15, 15.0, 1000.0, 3,
+        2, -80.0, -20.0, 15.0, 15.0, 1.0e-2, 100, true);
+  }
+
+  /// **The reactive section on the fluid the column capture's own case is held to.** Methane and
+  /// n-butane have no independent reaction either, so the reactive route is the class's `NR = 0`
+  /// delegation and the two rows must agree - which its own test asserts to `0.01` kg/hr and
+  /// which is measured here to the last digit. They live in that capture because the layer diff
+  /// pairs one capture with one model, and this model's case is the binary column there.
+  static void reactiveColumnRowsInColumnCapture() {
+    String[] binary = new String[] { "methane", "n-butane" };
+    double[] binaryZ = new double[] { 0.5, 0.5 };
+    reactiveColumnRow("binary_standard_column_pr", binary, binaryZ, 300.0, 20.0, 1000.0, 4, 2,
+        -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, false);
+    reactiveColumnRow("binary_reactive_column_pr", binary, binaryZ, 300.0, 20.0, 1000.0, 4, 2,
+        -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, true);
+  }
+
+  static void reactiveColumnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
+      double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
+      boolean reactive) {
+    SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(kgPerHour, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", stages, true, true);
+    // **The flag is set before the feed is attached**, which is the order both of the class's
+    // own reactive tests use.
+    column.setReactive(reactive);
+    column.addFeedStream(inlet, feedTray);
+    column.setCondenserTemperature(condenserC, "C");
+    column.setReboilerTemperature(reboilerC, "C");
+    column.setTopPressure(topBara);
+    column.setBottomPressure(bottomBara);
+    column.setTemperatureTolerance(tolerance);
+    column.setMaxNumberOfIterations(maxIterations, true);
+    column.run();
+
+    System.out.println(label);
+    System.out.println("reactive=" + reactive);
+    System.out.println("cubic=pr");
+    System.out.println("stages=" + stages);
+    System.out.println("feed_tray=" + feedTray);
+    System.out.println("temperature_tolerance=" + tolerance);
+    System.out.println("tray_count=" + column.getNumberOfTrays());
+    System.out.println("reports_reactive=" + column.isReactive());
+    StringBuilder flags = new StringBuilder("reactive_tray_flags=");
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      flags.append(column.getTray(i).isUseReactiveFlash() ? "1" : "0");
+    }
+    System.out.println(flags);
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("mass_residual=" + column.getLastMassResidual());
+    System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    System.out.println("condenser_duty_W=" + column.getCondenser().getDuty());
+    System.out.println("reboiler_duty_W=" + column.getReboiler().getDuty());
+    System.out.println();
   }
 
   static void columnRow(String label, String[] names, double[] z, double feedTemperatureK,

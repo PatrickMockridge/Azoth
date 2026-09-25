@@ -74,7 +74,7 @@ pub fn reboiler(
 
     match mode {
         ReboilerMode::Equilibrium => {
-            let out = tray::tray(inlets, tray_pressure, out_temperature, heat_input)?;
+            let out = tray::tray(inlets, tray_pressure, out_temperature, heat_input, false)?;
             let duty = outlet_enthalpy(&out) - inlets_enthalpy;
             Ok(ReboilerOutcome {
                 temperature: out.temperature,

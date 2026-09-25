@@ -84,7 +84,7 @@ pub fn condenser(
 
     match mode {
         CondenserMode::Equilibrium => {
-            let out = tray::tray(inlets, tray_pressure, None, watts(0.0))?;
+            let out = tray::tray(inlets, tray_pressure, None, watts(0.0), false)?;
             let duty =
                 enthalpy_of(out.gas.as_ref()) + enthalpy_of(out.liquid.as_ref()) - inlets_enthalpy;
             Ok(CondenserOutcome {
@@ -163,7 +163,7 @@ pub fn condenser(
                     ),
                 ));
             }
-            let out = tray::tray(inlets, tray_pressure, None, watts(0.0))?;
+            let out = tray::tray(inlets, tray_pressure, None, watts(0.0), false)?;
             let available = out.liquid.as_ref().map_or(0.0, |l| l.n);
             // `Splitter.setFlowRates({reflux, REMAINDER})`: the reflux is what was asked for
             // and the product is the remainder, which is why the class keeps a *shortfall*

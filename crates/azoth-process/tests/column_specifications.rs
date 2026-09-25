@@ -39,6 +39,7 @@ fn column(top: Option<Specification>, bottom: Option<Specification>, pin: bool) 
         max_iterations: 200,
         top_specification: top,
         bottom_specification: bottom,
+        reactive: azoth_process::kernels::ReactiveSection::None,
         top_feed: None,
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,

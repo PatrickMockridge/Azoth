@@ -2977,6 +2977,9 @@ def distillation_column(
     bottom_specification_type: str | None = None,
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: float | None = None,
+    reactive_end_tray: float | None = None,
 ) -> DistillationColumnResult: ...
 def ejector(
     motive_components: list[str],

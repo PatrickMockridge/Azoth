@@ -269,3 +269,38 @@ bottoms_t = 373.15
 bottoms_h = -6818.722955040299
 condenser_duty = -21323.042177706004
 reboiler_duty = 47786.58295288164
+
+[[cases]]
+id = "reactive_section_is_the_delegations_own"
+tolerance = 0.0002
+source = "**The same binary column with `setReactive(true)`**, from `validation/neqsim/captures/process_reactive_column.tsv`: the capture's `binary_reactive_column_pr` row, whose two products are bit-identical to its standard twin's (`3.7914997294607584` and `3.6992043068302056`). **That is the class's own claim and the only numeric one its reactive tests make** - `testReactiveColumnMassBalanceNR0` asserts a reactive column matching a standard one to `0.01` kg/hr, because a fluid with no independent reaction sends the reactive route to a conventional VLE flash. Methane and n-butane have none, so the expected values below are the base case's own and **the equality is the assertion**: a port that ignored the section would pass it too, which is why the *route* is held by the two tests in `crates/azoth-process/tests/reactive_tray.rs` - one refusing a two-phase reactive answer, one matching the plain stage on a fluid with no reaction. The capture's own `reactive_tray_flags=011110` is the section's placement, middle trays only.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+reactive = true
+[cases.expected]
+tray_temperature = [373.15, 336.15382381733946, 303.0710539116486, 302.1225394582587, 296.84208939635556, 253.14999999999998]
+tray_pressure = [2000000.0, 1980000.0, 1960000.0000000002, 1939999.9999999998, 1920000.0, 1900000.0]
+tray_gas_n = [1.373278181743518, 0.5259031551756898, 4.5761815164886315, 4.558039582740156, 4.451759798394696, 3.7914997294607584]
+tray_liquid_n = [3.6992043068302056, 5.072482507910388, 4.225107543947319, 0.784681868969297, 0.7665399361896209, 0.6602601517057779]
+distillate_n = 3.7914997294607584
+distillate_z = [0.9659099052324753, 0.03409009476752466]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+bottoms_n = 3.6992043068302056
+bottoms_z = [0.02246562977682579, 0.9775343702231742]
+bottoms_p = 2000000.0
+bottoms_t = 373.15

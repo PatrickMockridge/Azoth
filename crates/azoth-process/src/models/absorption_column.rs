@@ -187,6 +187,8 @@ pub fn absorption_column(
         solver_type: solver,
     })?;
 
+    warnings.extend(out.warnings.iter().cloned());
+
     Ok(AbsorptionColumnResult {
         tray_temperature: out.trays.iter().map(|tray| tray.temperature).collect(),
         tray_pressure: out.trays.iter().map(|tray| tray.pressure).collect(),

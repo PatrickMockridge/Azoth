@@ -3981,6 +3981,9 @@ def distillation_column(
     bottom_specification_type: str | None = None,
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
 ) -> DistillationColumnResult:
     """`process.distillation_column`, computed in Rust.
 
@@ -4021,6 +4024,9 @@ def distillation_column(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        reactive,
+        None if reactive_start_tray is None else int(reactive_start_tray),
+        None if reactive_end_tray is None else int(reactive_end_tray),
     )
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),

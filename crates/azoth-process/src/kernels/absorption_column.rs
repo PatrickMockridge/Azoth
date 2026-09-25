@@ -34,6 +34,8 @@ pub struct AbsorberOutcome {
     pub temperature_residual: f64,
     /// The products' worst component imbalance against both feeds, relative.
     pub mass_residual: f64,
+    /// What the stages had to fall back on, one entry per kind - see `ColumnOutcome`'s own.
+    pub warnings: Vec<azoth_core::warning::Warning>,
     /// The enthalpy closure, which is open here - see the spec's assumptions.
     pub energy_residual: f64,
 }
@@ -91,10 +93,14 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         top_feed: Some(setup.solvent.clone()),
         tray_temperatures: setup.tray_temperatures.clone(),
         solver_type: setup.solver_type,
+        // **The absorber's own section is the class's**: `AbsorptionColumn` inherits
+        // `setReactive`, and its model does not declare the input yet, so it is `None` here.
+        reactive: super::distillation_column::ReactiveSection::None,
     })?;
 
     Ok(AbsorberOutcome {
         trays: out.trays,
+        warnings: out.warnings,
         gas_out: out.distillate,
         liquid_out: out.bottoms,
         iterations: out.iterations,

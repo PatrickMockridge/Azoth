@@ -1069,6 +1069,11 @@ impl Mesh {
         }
         Ok(ColumnOutcome {
             trays,
+            // **This solve has no reactive route, and the model refuses the pair rather than
+            // ignoring the flag**: its MESH equations take their fugacities from the mesh's own
+            // mixture, where the class's trays take them from the tray's own flash - so a
+            // reactive section here could only be silently non-reactive.
+            warnings: Vec::new(),
             distillate,
             bottoms,
             condenser_duty,

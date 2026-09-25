@@ -60,6 +60,7 @@ fn binary(solver_type: SolverType) -> ColumnSetup {
         top_feed: None,
         tray_temperatures: None,
         solver_type,
+        reactive: azoth_process::kernels::ReactiveSection::None,
     }
 }
 
@@ -98,6 +99,7 @@ fn deethanizer(solver_type: SolverType) -> ColumnSetup {
         top_feed: None,
         tray_temperatures: None,
         solver_type,
+        reactive: azoth_process::kernels::ReactiveSection::None,
     }
 }
 
@@ -425,6 +427,10 @@ fn model(
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        // The model's reactive section, which this test does not state.
         None,
         None,
         None,

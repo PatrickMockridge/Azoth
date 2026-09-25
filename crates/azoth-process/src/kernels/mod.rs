@@ -37,7 +37,9 @@ pub mod throttling_valve;
 pub use component_splitter::component_splitter;
 pub use compressor::compressor;
 pub use cooler::cooler;
-pub use distillation_column::{ColumnOutcome, ColumnSetup, TrayProfile, distillation_column};
+pub use distillation_column::{
+    ColumnOutcome, ColumnSetup, ReactiveSection, TrayProfile, distillation_column,
+};
 pub use ejector::{EjectorSetup, ejector};
 pub use expander::expander;
 pub use filter::filter;

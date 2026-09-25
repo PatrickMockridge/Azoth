@@ -42,6 +42,7 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         top_feed: None,
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
+        reactive: azoth_process::kernels::ReactiveSection::None,
     }
 }
 
@@ -273,6 +274,7 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         top_feed: None,
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
+        reactive: azoth_process::kernels::ReactiveSection::None,
     });
 
     let out = out.expect(

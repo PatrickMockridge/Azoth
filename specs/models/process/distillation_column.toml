@@ -132,6 +132,18 @@ description = "the target value, in the unit its type implies, as the top specif
 type = "string"
 optional = true
 description = "the component a purity or a recovery constrains; unread by the other three types.\n"
+[inputs.reactive]
+type = "boolean"
+optional = true
+description = "**whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`. The two ends never do, which `replaceMiddleTrays` decides by walking only the range between them. Omitted means every tray is an equilibrium stage.\\n"
+[inputs.reactive_start_tray]
+unit = "dimensionless"
+optional = true
+description = "the first reactive middle tray, 0-based among the middle trays - `setReactive(true, start, end)`. **Both bounds or neither**: the class has no form that states one end alone. Omitted with `reactive = true` covers every middle tray.\\n"
+[inputs.reactive_end_tray]
+unit = "dimensionless"
+optional = true
+description = "the last reactive middle tray, inclusive.\\n"
 [outputs]
 [outputs.tray_temperature]
 type = "vector"

@@ -1190,6 +1190,17 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         identified_by=("split_factors", "3.0 7.0"),
         divergence=_SPLITTER_DIVERGENCE,
     ),
+    # **The reactive section's block**, on the binary state the model's own case is held to:
+    # NeqSim's reactive column there is bit-identical to its standard twin, which is the class's
+    # own `NR = 0` claim. It sits in this capture because the layer diff pairs one capture with
+    # one model, and this model's case is two blocks above.
+    LayerCase(
+        model="process.distillation_column",
+        case="reactive_section_is_the_delegations_own",
+        capture="process_column.tsv",
+        block=13,
+        identified_by=("#label", "binary_reactive_column_pr"),
+    ),
     # The packed column's two cases sit on blocks 12 and 13. **Its first block is the base
     # column's own `binary_rigorous` state**, because the packing does not change the separation:
     # NeqSim's `PackedColumn` at `2.0` m and its `DistillationColumn` at four stages report
@@ -1274,7 +1285,10 @@ UNCASED_ROWS: dict[str, int] = {
     # its state is not NeqSim's and the rows are evidence rather than oracles: what the port's
     # own test asserts about them is self-consistency, and this is why they are declared here
     # rather than paired with a case.
-    "process_column.tsv": 5,
+    # The column's own, one more: the reactive block's *standard* twin, which is the same state
+    # at the same gate as the case two blocks above and is kept as the measurement the reactive
+    # row is identical to.
+    "process_column.tsv": 6,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

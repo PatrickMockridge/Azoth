@@ -214,6 +214,12 @@ pub fn packed_column(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        // **A packed column's stages are equilibrium stages**: `PackedColumn` inherits
+        // `setReactive`, and this id does not declare the section yet - the packing is a report
+        // on the far side of the solve, and the reactive section is the base column's own.
+        None,
+        None,
+        None,
     )?;
 
     Ok(out.into())

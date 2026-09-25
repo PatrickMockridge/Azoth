@@ -183,6 +183,9 @@ def distillation_column(
     bottom_specification_type: str | None = None,
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -232,6 +235,9 @@ def distillation_column(
         bottom_specification_type=bottom_specification_type,
         bottom_specification_target=bottom_specification_target,
         bottom_specification_component=bottom_specification_component,
+        reactive=reactive,
+        reactive_start_tray=reactive_start_tray,
+        reactive_end_tray=reactive_end_tray,
     )
 
 

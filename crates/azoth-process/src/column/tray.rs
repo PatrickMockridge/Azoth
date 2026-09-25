@@ -1,8 +1,12 @@
 //! The stage: `SimpleTray`, which is a mixer, a duty and a flash.
 
-use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, joules_per_mole};
+use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, joules_per_mole, kelvins};
+use azoth_core::warning::Warning;
 use azoth_core::{AzothError, Result};
-use azoth_eos::{Phase, ph_flash, pt_flash};
+use azoth_eos::{Cubic, Phase, ph_flash, pt_flash};
+use azoth_reactions::databank::formation_properties;
+use azoth_reactions::reactive_ph_flash::reactive_ph_flash;
+use azoth_reactions::reactive_tp_flash::{ReactiveTpFlashResult, reactive_tp_flash};
 
 use crate::kernels::mixer;
 use crate::stream::Stream;
@@ -26,6 +30,10 @@ pub struct TrayOutcome {
     pub gas: Option<Stream>,
     /// The liquid leaving the stage, or `None` where the flash found no liquid.
     pub liquid: Option<Stream>,
+    /// **What the stage had to fall back on.** NeqSim's reactive route falls back from a
+    /// reactive PH flash to a reactive TP one and then to a plain TP flash, logging each step;
+    /// a stage says which it took rather than doing it silently.
+    pub warnings: Vec<Warning>,
 }
 
 /// One equilibrium stage: mix the inlets, add the duty, flash.
@@ -63,8 +71,12 @@ pub fn tray(
     tray_pressure: Option<Pressure>,
     out_temperature: Option<ThermodynamicTemperature>,
     heat_input: Power,
+    reactive: bool,
 ) -> Result<TrayOutcome> {
     let mixed = mixer(inlets, tray_pressure)?;
+    if reactive {
+        return reactive_stage(&mixed, out_temperature, heat_input);
+    }
     let (mixture, ideal_gas) = mixed.mixture()?;
 
     let (temperature, phase, x, y, gas_fraction, liquid_fraction) = match out_temperature {
@@ -133,6 +145,7 @@ pub fn tray(
         pressure: mixed.p,
         gas,
         liquid,
+        warnings: Vec::new(),
     })
 }
 
@@ -164,5 +177,217 @@ fn phase_fractions(phase: Phase, beta: Option<f64>) -> Result<(f64, f64)> {
             "the tray's flash is a trivial solution - every K-value straddled one, so nothing \
              here proves which single phase the tray holds",
         )),
+    }
+}
+
+/// **A reactive stage: `SimpleTray.run` with `useReactiveFlash` set.**
+///
+/// The class's own route, in its own order. A tray whose outlet temperature is stated takes a
+/// **reactive TP flash** there; a tray that flashes at its own enthalpy takes a **reactive PH
+/// flash**, and - because that answer is a temperature and not a phase list - a reactive TP
+/// flash at it, which is what NeqSim's own system holds afterwards. A reactive PH flash that
+/// fails falls back the way the class falls back: a reactive TP flash, then a plain one, and
+/// the stage says which it took.
+///
+/// **The fluid is the process layer's cubic**, which is the whole reason
+/// `reactions.reactive_tp_flash` takes one: this column is PR, so a reactive tray that flashed
+/// it with SRK would be a different machine from the trays beside it.
+fn reactive_stage(
+    mixed: &Stream,
+    out_temperature: Option<ThermodynamicTemperature>,
+    heat_input: Power,
+) -> Result<TrayOutcome> {
+    let names = mixed.components.clone();
+    let moles: Vec<f64> = mixed.z.iter().map(|z| z * mixed.n).collect();
+    let pressure = mixed.p.value;
+    let mut warnings = Vec::new();
+
+    let (temperature, tp) = match out_temperature {
+        Some(pin) => {
+            let t = pin.value;
+            (t, reactive_tp(&names, t, pressure, &moles)?)
+        }
+        None => {
+            // `calcMixStreamEnthalpy`: the inlets' total enthalpy plus the duty, and then the
+            // *formation inventory* the reactive specification is stated against - the class's
+            // constructor forms that sum and a sensible enthalpy without it is a different
+            // number, which finds a different temperature.
+            let target =
+                mixed.h.value * mixed.n + heat_input.value + formation_inventory(&names, &moles)?;
+            match reactive_ph_flash(
+                &names,
+                Cubic::Pr,
+                mixed.t.value,
+                pressure,
+                &moles,
+                target,
+                2,
+            ) {
+                Ok(out) => {
+                    let t = out.temperature;
+                    // The PH answer is a temperature; the split is the TP flash at it, which is
+                    // the state NeqSim's system is left holding.
+                    (t, reactive_tp(&names, t, pressure, &moles)?)
+                }
+                Err(error) => {
+                    let t = out_temperature.map_or(mixed.t.value, |pin| pin.value);
+                    warnings.push(reactive_fallback(format!(
+                        "the reactive PH flash did not answer ({error}), so the tray flashed \
+                         reactively at {t} K instead"
+                    )));
+                    (t, reactive_tp(&names, t, pressure, &moles)?)
+                }
+            }
+        }
+    };
+
+    let (gas, liquid) = reactive_outlets(&names, mixed.p, temperature, &tp, &mut warnings)?;
+    Ok(TrayOutcome {
+        temperature: kelvins(temperature),
+        pressure: mixed.p,
+        gas,
+        liquid,
+        warnings,
+    })
+}
+
+/// `testOps.reactiveTPflash()`: the reactive split at a stated state.
+fn reactive_tp(
+    names: &[String],
+    temperature: f64,
+    pressure: f64,
+    moles: &[f64],
+) -> Result<ReactiveTpFlashResult> {
+    reactive_tp_flash(names, Cubic::Pr, temperature, pressure, moles, 2)
+}
+
+/// `sum_i n_i dHf_i`: the formation inventory the reactive enthalpy specification carries.
+fn formation_inventory(names: &[String], moles: &[f64]) -> Result<f64> {
+    let mut total = 0.0;
+    for (name, amount) in names.iter().zip(moles) {
+        let properties = formation_properties(name)?.ok_or_else(|| {
+            AzothError::invalid_input(
+                "components",
+                format!("the component databank carries no formation row for `{name}`"),
+            )
+        })?;
+        total += amount * properties.enthalpy_of_formation;
+    }
+    Ok(total)
+}
+
+/// The two outlets a reactive answer holds, or a refusal where it holds no way to tell them
+/// apart.
+///
+/// **The label decides where there is one**, and the flash emits it exactly where it built a
+/// vapour/liquid pair. Where it did not - a reacting solve's two phases converge to the *same*
+/// composition on every captured state - a tray has no basis for sending one row up and the
+/// other down, so it refuses rather than picking a row.
+///
+/// **A single phase needs no pair and is still typed**: the port's own flash at the answer's
+/// state says whether that one phase is a vapour or a liquid, which is what NeqSim's
+/// `getGasOutStream` reads off its system.
+fn reactive_outlets(
+    names: &[String],
+    pressure: Pressure,
+    temperature: f64,
+    tp: &ReactiveTpFlashResult,
+    warnings: &mut Vec<Warning>,
+) -> Result<(Option<Stream>, Option<Stream>)> {
+    // **A phase the class calls negligible is no outlet.** `removeNegligiblePhases` drops one
+    // below `MIN_PHASE_FRACTION`, and the delegation's answer on a fluid that turns out to be
+    // single-phase carries exactly such a row: measured on methane/ethane at 300 K and 15 bar,
+    // the pairs come back `1e-15` and `1.0` mol with the *feed's* composition in both, because
+    // the class's constructor leaves two phase objects each holding the whole feed. Reporting a
+    // stage that hands 1e-15 mol/s down a column would be reporting a stream the port refuses to
+    // fabricate anyway.
+    let total: f64 = tp
+        .phase_moles
+        .iter()
+        .map(|row| row.iter().sum::<f64>())
+        .sum();
+    let held: Vec<(usize, f64)> = tp
+        .phase_moles
+        .iter()
+        .enumerate()
+        .map(|(index, row)| (index, row.iter().sum::<f64>()))
+        .filter(|(_, moles)| {
+            total > 0.0 && moles / total >= azoth_reactions::reactive_flash::MIN_PHASE_FRACTION
+        })
+        .collect();
+
+    let stream_of = |index: usize, amount: f64| -> Result<Stream> {
+        let row = &tp.phase_moles[index];
+        let z: Vec<f64> = row.iter().map(|n| n / amount).collect();
+        Stream::from_pt(names.to_vec(), z, amount, pressure, kelvins(temperature))
+    };
+
+    match held.as_slice() {
+        // **One phase, and the port's own flash says which it is.** The delegation's indices are
+        // its bookkeeping rather than a type - a single-phase fluid comes back as a full second
+        // row whatever it is - so the character is measured at the answer's own state instead,
+        // which is what `getGasOutStream` reads off NeqSim's system.
+        [(index, amount)] => {
+            let row = &tp.phase_moles[*index];
+            let z: Vec<f64> = row.iter().map(|n| n / amount).collect();
+            let names_ref: Vec<&str> = names.iter().map(String::as_str).collect();
+            let (mixture, _) = azoth_eos::databank::mixture_of(&names_ref, Cubic::Pr, None)?;
+            let flash = pt_flash(&mixture, kelvins(temperature), pressure, &z)?;
+            let stream = stream_of(*index, *amount)?;
+            match flash.phase {
+                Phase::AllVapour => Ok((Some(stream), None)),
+                Phase::AllLiquid => Ok((None, Some(stream))),
+                _ => Err(AzothError::invalid_input(
+                    "flash",
+                    "a reactive answer of one phase that this flash does not hold as one, so \
+                     nothing here says which outlet it leaves by",
+                )),
+            }
+        }
+        // **Two phases, and the label decides** - which is only asked for where both are real.
+        [(first, a), (second, b)] => {
+            let (gas_index, liquid_index, gas_moles, liquid_moles) =
+                match (tp.phase_type.get(*first), tp.phase_type.get(*second)) {
+                    (Some(f), Some(s)) if f == "vapour" && s == "liquid" => {
+                        (*first, *second, *a, *b)
+                    }
+                    (Some(f), Some(s)) if f == "liquid" && s == "vapour" => {
+                        (*second, *first, *b, *a)
+                    }
+                    _ => {
+                        warnings.push(reactive_fallback(
+                            "the reactive answer's two phases carry no vapour/liquid label, so \
+                             this stage cannot form two outlets from it"
+                                .to_string(),
+                        ));
+                        return Err(AzothError::invalid_input(
+                            "flash",
+                            "the reactive flash returned two phases without a vapour/liquid \
+                             label: where its two phases converge to the same composition, naming \
+                             one of them the vapour would be picking a row rather than measuring \
+                             one",
+                        ));
+                    }
+                };
+            Ok((
+                Some(stream_of(gas_index, gas_moles)?),
+                Some(stream_of(liquid_index, liquid_moles)?),
+            ))
+        }
+        _ => Err(AzothError::invalid_input(
+            "flash",
+            "the reactive answer holds no phase above the class's own negligible fraction",
+        )),
+    }
+}
+
+/// A stage's caveat. **The code is `SolverNotConverged`**, which is what happened: the flash
+/// the class asked for did not answer, and the stage took the class's own next step. There is no
+/// separate code for a fallback, and the vocabulary is a cross-language contract.
+fn reactive_fallback(note: String) -> Warning {
+    Warning {
+        code: azoth_core::warning::WarningCode::SolverNotConverged,
+        message: note,
+        field: None,
     }
 }

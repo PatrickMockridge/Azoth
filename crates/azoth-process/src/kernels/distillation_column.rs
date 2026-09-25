@@ -63,6 +63,11 @@ pub struct ColumnOutcome {
     pub mass_residual: f64,
     /// `|H_feed + duties - H_products| / |H_feed|`.
     pub energy_residual: f64,
+    /// **What the stages had to fall back on, once per kind.** A reactive tray falls back the way
+    /// the class does - a reactive PH flash to a reactive TP one to a plain flash - and each kind
+    /// is reported here rather than taken silently. Deduplicated by code, because a column runs
+    /// its trays hundreds of times and a caller needs the kind rather than the count.
+    pub warnings: Vec<azoth_core::warning::Warning>,
 }
 
 /// Which of the class's ten solving strategies the column runs.
@@ -146,6 +151,41 @@ pub struct ColumnSetup {
     pub tray_temperatures: Option<Vec<f64>>,
     /// Which solving strategy to run.
     pub solver_type: SolverType,
+    /// **Which trays flash reactively**, over middle-tray indices, as the class states it.
+    pub reactive: ReactiveSection,
+}
+
+/// Which trays run their flash reactively: `DistillationColumn.setReactive`.
+///
+/// **The section is stated over *middle*-tray indices, which is the class's own convention**:
+/// `setReactive(true, 3, 7)` makes trays 4-8 of the middle section reactive, and a bound the
+/// class leaves at minus one means every middle tray. The two ends are **never** reactive -
+/// `replaceMiddleTrays` walks only the range between them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReactiveSection {
+    /// Every tray is an equilibrium stage, which is the class's default.
+    None,
+    /// Every middle tray.
+    All,
+    /// A run of middle-tray indices, inclusive, 0-based among the middle trays.
+    Section {
+        /// The first reactive middle tray.
+        start: usize,
+        /// The last reactive middle tray.
+        end: usize,
+    },
+}
+
+impl ReactiveSection {
+    /// Whether the middle tray at `index` is reactive.
+    #[must_use]
+    pub fn covers(self, index: usize) -> bool {
+        match self {
+            Self::None => false,
+            Self::All => true,
+            Self::Section { start, end } => index >= start && index <= end,
+        }
+    }
 }
 
 /// Which of `ColumnSpecification`'s five types a specification is.
@@ -276,6 +316,11 @@ struct Network {
     top_feed: Option<Stream>,
     /// How each end is run.
     modes: Vec<EndMode>,
+    /// **Which trays flash reactively, one flag per tray and resolved to absolute indices** -
+    /// the class states the section over middle trays, and the ends are never in it.
+    reactive: Vec<bool>,
+    /// What the stages have had to fall back on, one entry per kind.
+    warnings: Vec<azoth_core::warning::Warning>,
 }
 
 impl Network {
@@ -351,10 +396,12 @@ impl Network {
                 } else {
                     None
                 };
-                stage::tray(inlets, pressure, pin, watts(0.0))?
+                stage::tray(inlets, pressure, pin, watts(0.0), self.reactive[i])?
             }
             // A heat input and no pin, which is what a DUTY specification writes.
-            EndMode::Duty(duty) => stage::tray(inlets, pressure, None, watts(duty))?,
+            EndMode::Duty(duty) => {
+                stage::tray(inlets, pressure, None, watts(duty), self.reactive[i])?
+            }
             // The end's own reflux flash, which is what a REFLUX_RATIO specification writes -
             // `unit_ops.distillation_column`'s ends rather than its stage.
             EndMode::RefluxRatio(ratio) => {
@@ -371,6 +418,7 @@ impl Network {
                         pressure: out.pressure,
                         gas: out.vapour,
                         liquid: out.liquid,
+                        warnings: Vec::new(),
                     }
                 } else {
                     let out = crate::column::condenser(
@@ -383,10 +431,16 @@ impl Network {
                         pressure: out.pressure,
                         gas: out.distillate,
                         liquid: out.reflux,
+                        warnings: Vec::new(),
                     }
                 }
             }
         };
+        for warning in &out.warnings {
+            if !self.warnings.iter().any(|held| held.code == warning.code) {
+                self.warnings.push(warning.clone());
+            }
+        }
         self.gas[i] = out.gas.clone();
         self.liquid[i] = out.liquid.clone();
         Ok(out)
@@ -540,7 +594,24 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         })
         .collect();
 
+    // **The section is stated over middle trays and the ends are never in it.** `replaceMiddleTrays`
+    // walks from `hasReboiler ? 1 : 0` to `hasCondenser ? size - 1 : size`, so a middle index is
+    // an absolute index less the reboiler's one - which is the whole of the conversion.
+    let middle_offset = usize::from(setup.has_reboiler);
+    let reactive: Vec<bool> = (0..tray_count)
+        .map(|i| {
+            let is_end =
+                (i == 0 && setup.has_reboiler) || (i + 1 == tray_count && setup.has_condenser);
+            if is_end {
+                return false;
+            }
+            setup.reactive.covers(i - middle_offset)
+        })
+        .collect();
+
     let mut net = Network {
+        reactive,
+        warnings: Vec::new(),
         gas: vec![None; tray_count],
         liquid: vec![None; tray_count],
         pressures,
@@ -638,6 +709,7 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         temperature_residual,
         mass_residual,
         energy_residual,
+        warnings: net.warnings.clone(),
     })
 }
 
