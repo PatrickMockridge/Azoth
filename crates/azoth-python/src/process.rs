@@ -7,8 +7,8 @@
 use std::path::Path;
 
 use azoth_core::units::{
-    joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals,
-    square_meters_per_second, watts, watts_per_kelvin, watts_per_square_meter_kelvin,
+    joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals, square_meters_per_second,
+    watts, watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::{self, Stream};
 use pyo3::exceptions::PyValueError;
@@ -558,6 +558,85 @@ pub fn absorption_column(
         solver_type,
     )
     .map(|r| crate::results::PyAbsorptionColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.packed_column` - the packed column as a registered id.
+///
+/// **The base column's own machine at a derived stage count**: `PackedColumn extends
+/// DistillationColumn`, its `run` is `super.run(id)` and the packing is read by a hydraulics
+/// report afterwards, so `packed_height` reaches the separation only through `estimateStages`.
+#[pyfunction]
+#[pyo3(
+    signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature = None, condenser_temperature = None, packing_type = None, structured_packing = None, design_flood_fraction = None, packing_hydraulic_capacity_factor = None, column_diameter = None, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
+)]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, packing_type=None, structured_packing=None, design_flood_fraction=None, packing_hydraulic_capacity_factor=None, column_diameter=None, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None)"
+)]
+#[allow(non_snake_case)] // the record's own field names
+#[allow(clippy::too_many_arguments)] // one parameter per declared input
+pub fn packed_column(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    packed_height: f64,
+    feed_stage: usize,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: f64,
+    bottom_pressure: f64,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    reboiler_temperature: Option<f64>,
+    condenser_temperature: Option<f64>,
+    packing_type: Option<&str>,
+    structured_packing: Option<bool>,
+    design_flood_fraction: Option<f64>,
+    packing_hydraulic_capacity_factor: Option<f64>,
+    column_diameter: Option<f64>,
+    murphree_efficiency: Option<f64>,
+    solver_type: Option<&str>,
+    top_specification_type: Option<&str>,
+    top_specification_target: Option<f64>,
+    top_specification_component: Option<&str>,
+    bottom_specification_type: Option<&str>,
+    bottom_specification_target: Option<f64>,
+    bottom_specification_component: Option<&str>,
+) -> PyResult<crate::results::PyPackedColumnResult> {
+    azoth_process::packed_column(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        packed_height,
+        feed_stage,
+        has_reboiler,
+        has_condenser,
+        pascals(top_pressure),
+        pascals(bottom_pressure),
+        reboiler_temperature.map(kelvins),
+        condenser_temperature.map(kelvins),
+        temperature_tolerance,
+        max_iterations,
+        packing_type,
+        structured_packing,
+        design_flood_fraction,
+        packing_hydraulic_capacity_factor,
+        column_diameter,
+        murphree_efficiency,
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+    )
+    .map(|r| crate::results::PyPackedColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

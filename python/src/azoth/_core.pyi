@@ -3123,9 +3123,9 @@ def stirred_tank_reactor(
     limiting_reactant: str,
     conversion: float,
     isothermal: bool,
+    pressure_drop: float,
     reactor_temperature: float | None = None,
     reactor_pressure: float | None = None,
-    pressure_drop: float | None = None,
 ) -> StirredTankReactorResult: ...
 def stripping_column(
     stripping_gas_components: list[str],

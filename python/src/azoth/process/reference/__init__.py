@@ -26,6 +26,7 @@ from azoth.process.reference.heat_exchanger import heat_exchanger
 from azoth.process.reference.heater import heater
 from azoth.process.reference.manifold import manifold
 from azoth.process.reference.mixer import mixer
+from azoth.process.reference.packed_column import packed_column
 from azoth.process.reference.pipe import pipe
 from azoth.process.reference.pump import pump
 from azoth.process.reference.separator import separator
@@ -52,6 +53,7 @@ __all__ = [
     "heater",
     "manifold",
     "mixer",
+    "packed_column",
     "pipe",
     "pump",
     "separator",

@@ -579,8 +579,49 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     return layers
 
 
+def _packed_column(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.packed_column`'s layers: the base column's profile at the derived stage count.
+
+    The same layer as the distillation column's, because the class's arithmetic is: the packing
+    reaches the solve only through the stage count a constructor derives from the packed height,
+    and the rest of the packing is a hydraulics report on the far side of the converged column.
+    """
+    from azoth.process.reference.distillation_column import _states
+    from azoth.process.reference.packed_column import stage_count
+
+    packed_height = float(inputs["packed_height"])
+    states = _states(
+        [str(name) for name in inputs["components"]],
+        float(inputs["feed_n"]),
+        [float(v) for v in inputs["feed_z"]],
+        float(inputs["feed_t"]),
+        float(inputs["feed_p"]),
+        stage_count(packed_height),
+        int(inputs["feed_stage"]),
+        bool(inputs["has_reboiler"]),
+        bool(inputs["has_condenser"]),
+        float(inputs["top_pressure"]),
+        float(inputs["bottom_pressure"]),
+        float(inputs["reboiler_temperature"]) if "reboiler_temperature" in inputs else None,
+        float(inputs["condenser_temperature"]) if "condenser_temperature" in inputs else None,
+        float(inputs["temperature_tolerance"]),
+        int(inputs["max_iterations"]),
+        _spec_of(inputs, "top"),
+        _spec_of(inputs, "bottom"),
+        str(inputs["solver_type"]) if "solver_type" in inputs else None,
+    )
+    layers: dict[str, float] = {}
+    for i in range(len(states.tray_temperature)):
+        layers[f"tray{i}_temperature_K"] = states.tray_temperature[i]
+        layers[f"tray{i}_pressure_bara"] = states.tray_pressure[i] / 1.0e5
+        layers[f"tray{i}_gas_n"] = states.tray_gas_n[i]
+        layers[f"tray{i}_liquid_n"] = states.tray_liquid_n[i]
+    return layers
+
+
 DUMPERS: dict[str, Dumper] = {
     "process.absorption_column": _absorption_column,
+    "process.packed_column": _packed_column,
     "process.stripping_column": _stripping_column,
     "process.component_splitter": _component_splitter,
     "process.distillation_column": _distillation_column,
@@ -1149,6 +1190,26 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         identified_by=("split_factors", "3.0 7.0"),
         divergence=_SPLITTER_DIVERGENCE,
     ),
+    # The packed column's two cases sit on blocks 12 and 13. **Its first block is the base
+    # column's own `binary_rigorous` state**, because the packing does not change the separation:
+    # NeqSim's `PackedColumn` at `2.0` m and its `DistillationColumn` at four stages report
+    # bit-identical answers on all twenty-two captured quantities. The second is the same feed at
+    # `2.3` m, where `ceil(4.6)` makes it a five-stage column instead - so it is the row that
+    # fails if the height stops moving the stage count. See `UNCASED_ROWS` for the other thirteen.
+    LayerCase(
+        model="process.packed_column",
+        case="packed_binary_2m",
+        capture="process_packed_column.tsv",
+        block=12,
+        identified_by=(LABEL_KEY, "packed_distillation_binary_2m"),
+    ),
+    LayerCase(
+        model="process.packed_column",
+        case="packed_binary_2m3_is_one_stage_more",
+        capture="process_packed_column.tsv",
+        block=13,
+        identified_by=(LABEL_KEY, "packed_distillation_binary_2m3"),
+    ),
     # The exchanger's five cases sit on blocks 0, 1, 2, 5 and 6. Blocks 3 and 4 are
     # NeqSim's own `runSpecifiedStream` rows, which the port deliberately does not
     # reproduce - see `UNCASED_ROWS`.
@@ -1223,6 +1284,16 @@ UNCASED_ROWS: dict[str, int] = {
     # `5e-2`, a settable this port has not carried. The two loose-gate rows are the same
     # measurement one step out, and the stripper's pinned row states `MESH_RESIDUAL` besides.
     "process_absorber.tsv": 5,
+    # The packed column's thirteen: eleven stage-count rows and two solved rows. **The eleven are
+    # the constructor's own arithmetic** - `PackedColumn(name, height, packing, true, true)` with
+    # no feed and no solve, printing the trays it made - so there is no model state for them to be
+    # a case of; the port's own test asserts the rule against all eleven. The two solved rows are
+    # evidence rather than oracles: **the class's own test case converges to a state that is not a
+    # column**, reporting `RIGOROUS_CONVERGED` with residuals of exactly zero while the trays
+    # below the feed carry no traffic at all, and the contactor row reports
+    # `FALLBACK_PRODUCTS`, which the class's own warning says means the products are a single
+    # flash of the mixed feeds rather than the tray solution.
+    "process_packed_column.tsv": 13,
 }
 
 

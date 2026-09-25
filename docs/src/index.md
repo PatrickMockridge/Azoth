@@ -249,6 +249,7 @@ Five sections, and the difference between them is the point:
 - [`process.heater`](./process/heater.md) — Heater
 - [`process.manifold`](./process/manifold.md) — Manifold
 - [`process.mixer`](./process/mixer.md) — Mixer
+- [`process.packed_column`](./process/packed_column.md) — Packed column
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.plug_flow_reactor`](./process/plug_flow_reactor.md) — Plug-flow reactor
 - [`process.pump`](./process/pump.md) — Pump

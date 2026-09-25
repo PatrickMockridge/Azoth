@@ -1,0 +1,233 @@
+id = "process.packed_column"
+name = "Packed column"
+kind = "procedure"
+assumptions = [
+    "**the packing does not change the separation.** `PackedColumn extends DistillationColumn` and its `run` is `super.run(id)` then `calcPackingHydraulics()`, so the equations are `process.distillation_column`'s, unchanged.",
+    "**what the packing changes is the stage count, at construction**: `estimateStages(packed_height, 0.5)` is `ceil(packed_height / 0.5)` floored at two, so `packed_height` replaces `number_of_stages` here.",
+    "**the floor is reached rather than refused.** The capture's stage-count rows report two middle trays for `0.2` m, `0.0` m and `-1.0` m alike, because `estimateStages` and `setPackedHeight` have no domain check.",
+    "**the five packing parameters are the excluded report's.** `ColumnInternalsDesigner` and `PackingHydraulicsCalculator` read them after the column has converged, and no part of the solve reads them.",
+    "**the class's report describes a different column from the one it solved.** The constructor fixes the stage count on a `0.5` m HETP guess and the hydraulics computes the real one afterwards: the capture's own case solves ten middle trays and reports `1.597` theoretical stages.",
+    "**`packing_hydraulic_capacity_factor` is refused where the class refuses it**: `setPackingHydraulicCapacityFactor` throws for a value that is not positive and finite, so the port holds to that rather than carrying it inertly.",
+    "**the contactor constructor is not this id.** `PackedColumn(name, gasInStream)` fixes ten middle trays with no ends and never reads the height, so that machine is `process.absorption_column` at `number_of_stages = 10`.",
+    "**`has_condenser` and `has_reboiler` are the base's**, because two of the class's three constructors take them and the class adds no end of its own.",
+    "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
+    "**the class's own test state is captured and is not an oracle.** Run as its test runs it, the column has no internal traffic, the feed passes through the empty trays below it, and the class still reports `RIGOROUS_CONVERGED` with residuals of exactly zero.",
+]
+references = [
+    "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and is not ported.",
+    "`validation/neqsim/captures/process_packed_column.tsv` - fifteen rows: eleven stage-count rows that build the class at a stated height and print the trays it made, and four solved rows.",
+]
+[source]
+standard = "NeqSim process/equipment/distillation/PackedColumn.java"
+edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`. Everything the packing adds is read by `ColumnInternalsDesigner` after the solve and is not ported."
+[algorithm]
+scheme = "sequential_substitution_sweeps"
+initialisation = "linear_temperature_profile"
+convergence = "absolute"
+tolerance = 1.0e-06
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+description = "the feed's substances, by name, resolved against the component databank. The order is the order of `feed_z`.\n"
+[inputs.feed_n]
+unit = "mol/s"
+description = "the feed's molar flow.\n"
+[inputs.feed_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the feed composition.\n"
+[inputs.feed_p]
+unit = "Pa"
+description = "the feed's pressure, which is its own - the tray pressures come from `bottom_pressure` and `top_pressure`.\n"
+[inputs.feed_t]
+unit = "K"
+description = "the feed's temperature, which with its pressure and composition fixes its enthalpy.\n"
+[inputs.packed_height]
+unit = "m"
+description = "the packed bed height, which the constructor divides by a `0.5` m HETP guess to fix the stage count: `ceil(packed_height / 0.5)` floored at two. **The floor is reached rather than refused**, so a height of zero or less is a two-stage column.\n"
+[inputs.feed_stage]
+unit = "dimensionless"
+description = "the stage the feed enters, 0-based over the trays including the ends - so stage 0 is the reboiler where there is one, and the last stage is the condenser.\n"
+[inputs.has_reboiler]
+type = "boolean"
+description = "whether the column has a reboiler at stage 0.\n"
+[inputs.has_condenser]
+type = "boolean"
+description = "whether the column has a condenser at the top stage.\n"
+[inputs.top_pressure]
+unit = "Pa"
+description = "the pressure at the top stage.\n"
+[inputs.bottom_pressure]
+unit = "Pa"
+description = "the pressure at stage 0. The two fix the profile the tray pressures interpolate.\n"
+[inputs.temperature_tolerance]
+unit = "K"
+description = "the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+description = "the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named.\n"
+[inputs.reboiler_temperature]
+unit = "K"
+optional = true
+description = "the reboiler's temperature, which pins the bottom tray's flash. **Absent means no pin**, and the end's flash is then at its own enthalpy.\n"
+[inputs.condenser_temperature]
+unit = "K"
+optional = true
+description = "the condenser's temperature, which pins the top tray's flash. Absent as the reboiler's is. **A pin wins over a directly-applied duty.**\n"
+[inputs.packing_type]
+type = "string"
+optional = true
+description = "the packing's name, which `PackingSpecificationLibrary` resolves and the hydraulics reads. **It does not enter the solve.** The class defaults it to Pall-Ring-50.\n"
+[inputs.structured_packing]
+type = "boolean"
+optional = true
+description = "whether the packing is structured or random, which selects the hydraulic correlation. **It does not enter the solve.**\n"
+[inputs.design_flood_fraction]
+unit = "dimensionless"
+optional = true
+description = "the fraction of flood the packing is sized to. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does. The class defaults it to 0.70.\n"
+[inputs.packing_hydraulic_capacity_factor]
+unit = "dimensionless"
+optional = true
+description = "the selected packing's relative hydraulic capacity factor, which the hydraulics reads. **Refused where it is not positive and finite**, which is `setPackingHydraulicCapacityFactor`'s own check. The class defaults it to 1.0.\n"
+[inputs.column_diameter]
+unit = "m"
+optional = true
+description = "the column's internal diameter. **It does not enter the solve**: a value at or below zero auto-sizes it from the hydraulics through `setInternalDiameter`. The class defaults it to -1.0.\n"
+[inputs.murphree_efficiency]
+unit = "dimensionless"
+optional = true
+description = "**not ported**: the column-wide Murphree tray efficiency, which `SimpleTray.setMurphreeEfficiency` applies and this model refuses. Omitted means the ideal stage, which is the class's own default of one.\n"
+[inputs.solver_type]
+type = "enum"
+values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]
+optional = true
+description = "**`direct_substitution` and `naphtali_sandholm` are ported**; the other eight are refused by name, each with the `ColumnSolverFactory` solver behind it.\n"
+[inputs.top_specification_type]
+type = "enum"
+values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
+optional = true
+description = "the top product's degree of freedom, which `ColumnSpecification` carries. Omitted, the top is pinned by temperature - the class's other route. **The end is the parameter's name and not a value**, because the class holds exactly two specifications.\n"
+[inputs.top_specification_target]
+unit = "dimensionless"
+optional = true
+description = "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a ratio, **mol/hr** for a flow rate, W for a duty.\n"
+[inputs.top_specification_component]
+type = "string"
+optional = true
+description = "the component a purity or a recovery constrains; the class's own `validate` refuses such a specification without one, and the other three types do not read it.\n"
+[inputs.bottom_specification_type]
+type = "enum"
+values = ["product_purity", "reflux_ratio", "component_recovery", "product_flow_rate", "duty"]
+optional = true
+description = "the bottom product's degree of freedom, which `ColumnSpecification` carries. Omitted, the bottom is pinned by temperature - the class's other route.\n"
+[inputs.bottom_specification_target]
+unit = "dimensionless"
+optional = true
+description = "the target value, in the unit its type implies, as the top specification's is.\n"
+[inputs.bottom_specification_component]
+type = "string"
+optional = true
+description = "the component a purity or a recovery constrains; unread by the other three types.\n"
+[outputs]
+[outputs.tray_temperature]
+type = "vector"
+unit = "K"
+length = "one per tray, the reboiler at stage 0 to the condenser at the top"
+description = "the solved temperature profile, which is what a column's answer is rather than a scalar.\n"
+[outputs.tray_pressure]
+type = "vector"
+unit = "Pa"
+length = "one per tray"
+description = "each tray's pressure, which is the linear profile between `bottom_pressure` and `top_pressure`.\n"
+[outputs.tray_gas_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the vapour leaving each tray, which is its upward traffic.\n"
+[outputs.tray_liquid_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the liquid leaving each tray, which is its downward traffic.\n"
+[outputs.distillate_n]
+unit = "mol/s"
+description = "the overhead product, which is the condenser's own outlet.\n"
+[outputs.distillate_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the distillate's composition.\n"
+[outputs.distillate_p]
+unit = "Pa"
+description = "the distillate's pressure, which is `top_pressure` where there is a condenser.\n"
+[outputs.distillate_t]
+unit = "K"
+description = "the distillate's temperature, which is the condenser's own.\n"
+[outputs.distillate_h]
+unit = "J/mol"
+description = "the distillate's molar enthalpy at its own state.\n"
+[outputs.bottoms_n]
+unit = "mol/s"
+description = "the bottom product, which is the reboiler's liquid.\n"
+[outputs.bottoms_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the bottoms' composition.\n"
+[outputs.bottoms_p]
+unit = "Pa"
+description = "the bottoms' pressure, which is `bottom_pressure` where there is a reboiler.\n"
+[outputs.bottoms_t]
+unit = "K"
+description = "the bottoms' temperature, which is the reboiler's own.\n"
+[outputs.bottoms_h]
+unit = "J/mol"
+description = "the bottoms' molar enthalpy at its own state.\n"
+[outputs.condenser_duty]
+unit = "W"
+description = "the condenser's duty: its products' enthalpy less the vapour's that came in, which is negative for a condenser.\n"
+[outputs.reboiler_duty]
+unit = "W"
+description = "the reboiler's duty: its boilup and its bottoms less the downcomer's enthalpy.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "the iterations taken. **Where a solve stops is where its answer is**, so this is the base's count on the same state.\n"
+[outputs.temperature_residual]
+unit = "dimensionless"
+description = "the mean tray-temperature change at the last iteration, in K - the gate the solve was held to.\n"
+[outputs.mass_residual]
+unit = "dimensionless"
+description = "the products' worst component imbalance against the feed, relative. **The closure and not the class's MESH norm.**\n"
+[outputs.energy_residual]
+unit = "dimensionless"
+description = "`|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.\n"
+[[valid_range]]
+quantity = "top_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "bottom_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure\n"
+[[valid_range]]
+quantity = "temperature_tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a convergence tolerance is positive, and zero is a solve that never stops\n"
+[[valid_range]]
+quantity = "feed_t"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature\n"
+[implementations]
+python = "azoth.process.packed_column"
+rust = "azoth_process::packed_column"

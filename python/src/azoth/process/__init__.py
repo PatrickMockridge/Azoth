@@ -30,6 +30,7 @@ from azoth.core.result import (
     HeatExchangerResult,
     ManifoldResult,
     MixerResult,
+    PackedColumnResult,
     PipeResult,
     PlugFlowReactorResult,
     PumpResult,
@@ -62,6 +63,7 @@ __all__ = [
     "load_flowsheet",
     "manifold",
     "mixer",
+    "packed_column",
     "pipe",
     "plug_flow_reactor",
     "pump",
@@ -78,6 +80,7 @@ __all__ = [
 
 _MANIFOLD = "process.manifold"
 _MIXER = "process.mixer"
+_PACKED_COLUMN = "process.packed_column"
 _PIPE = "process.pipe"
 _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
@@ -296,6 +299,83 @@ def absorption_column(
         component_murphree_efficiency=component_murphree_efficiency,
         max_allowable_gas_load_factor=max_allowable_gas_load_factor,
         solver_type=solver_type,
+    )
+
+
+def packed_column(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    packed_height: Q,
+    feed_stage: int,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    temperature_tolerance: float = 1.0e-6,
+    max_iterations: int = 200,
+    reboiler_temperature: Q | None = None,
+    condenser_temperature: Q | None = None,
+    packing_type: str | None = None,
+    structured_packing: bool | None = None,
+    design_flood_fraction: float | None = None,
+    packing_hydraulic_capacity_factor: float | None = None,
+    column_diameter: Q | None = None,
+    murphree_efficiency: float | None = None,
+    solver_type: str | None = None,
+    top_specification_type: str | None = None,
+    top_specification_target: float | None = None,
+    top_specification_component: str | None = None,
+    bottom_specification_type: str | None = None,
+    bottom_specification_target: float | None = None,
+    bottom_specification_component: str | None = None,
+) -> PackedColumnResult:
+    """Solve a packed column.
+
+    ``PackedColumn extends DistillationColumn`` and its ``run`` is ``super.run(id)`` followed by
+    ``calcPackingHydraulics()``, so **the separation is the base column's and the packing does
+    not change it**. What the packing does change is the stage count, at construction:
+    ``estimateStages(packed_height, 0.5)`` is ``ceil(packed_height / 0.5)`` floored at two, so
+    ``packed_height`` replaces the base's ``number_of_stages`` here.
+
+    The five packing parameters are read only by the hydraulics report on the far side of the
+    solve, and that report is mechanical design and is not ported, so they are declarations this
+    solve is indifferent to - except ``packing_hydraulic_capacity_factor``, which the class's own
+    setter refuses where it is not positive and finite.
+
+    See :func:`azoth.process.reference.packed_column`.
+    """
+    return resolve(_PACKED_COLUMN)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        packed_height=packed_height,
+        feed_stage=feed_stage,
+        has_reboiler=has_reboiler,
+        has_condenser=has_condenser,
+        top_pressure=top_pressure,
+        bottom_pressure=bottom_pressure,
+        temperature_tolerance=temperature_tolerance,
+        max_iterations=max_iterations,
+        reboiler_temperature=reboiler_temperature,
+        condenser_temperature=condenser_temperature,
+        packing_type=packing_type,
+        structured_packing=structured_packing,
+        design_flood_fraction=design_flood_fraction,
+        packing_hydraulic_capacity_factor=packing_hydraulic_capacity_factor,
+        column_diameter=column_diameter,
+        murphree_efficiency=murphree_efficiency,
+        solver_type=solver_type,
+        top_specification_type=top_specification_type,
+        top_specification_target=top_specification_target,
+        top_specification_component=top_specification_component,
+        bottom_specification_type=bottom_specification_type,
+        bottom_specification_target=bottom_specification_target,
+        bottom_specification_component=bottom_specification_component,
     )
 
 

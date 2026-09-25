@@ -180,6 +180,7 @@
   - [Heater](./process/heater.md)
   - [Manifold](./process/manifold.md)
   - [Mixer](./process/mixer.md)
+  - [Packed column](./process/packed_column.md)
   - [Pipe](./process/pipe.md)
   - [Plug-flow reactor](./process/plug_flow_reactor.md)
   - [Pump](./process/pump.md)

@@ -20,6 +20,7 @@ pub mod heat_exchanger;
 pub mod heater;
 pub mod manifold;
 pub mod mixer;
+pub mod packed_column;
 pub mod pipe;
 pub mod plug_flow_reactor;
 pub mod pump;

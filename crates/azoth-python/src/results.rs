@@ -58,11 +58,11 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
-    PlugFlowReactorResult,
     AbsorptionColumnResult, ComponentSplitterResult, CompressorResult, CoolerResult,
     DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult, FlareResult,
-    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult,
-    SeparatorResult, ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
+    GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult,
+    PackedColumnResult, PlugFlowReactorResult, PumpResult, SeparatorResult,
+    ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
     StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
     pipe::PipeResult,
 };
@@ -1771,7 +1771,6 @@ impl From<&StirredTankReactorResult> for PyStirredTankReactorResult {
 /// vectors are every station of it.
 #[pyclass(
     frozen,
-    skip_from_py_object,
     module = "azoth._core",
     name = "PlugFlowReactorResult",
     get_all,
@@ -9215,6 +9214,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
             ShortcutDistillationColumnResult::FIELDS.to_vec()
         }
         DistillationColumnResult::CALC_ID => DistillationColumnResult::FIELDS.to_vec(),
+        PackedColumnResult::CALC_ID => PackedColumnResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         TankResult::CALC_ID => TankResult::FIELDS.to_vec(),
@@ -10575,6 +10575,122 @@ pub struct PyAbsorptionColumnResult {
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
+}
+
+/// Result of `process.packed_column`, transported.
+///
+/// **The base column's own record under this id**, because the packing does not change the
+/// separation: the class's `run` is `super.run(id)`, and what the packing adds is a hydraulics
+/// report on the far side of the solve, which is not ported.
+#[pyclass(module = "azoth._core")]
+pub struct PyPackedColumnResult {
+    /// Each tray's temperature.
+    #[pyo3(get)]
+    pub tray_temperature: Vec<PyQty>,
+    /// Each tray's pressure.
+    #[pyo3(get)]
+    pub tray_pressure: Vec<PyQty>,
+    /// Each tray's vapour traffic.
+    #[pyo3(get)]
+    pub tray_gas_n: Vec<PyQty>,
+    /// Each tray's liquid traffic.
+    #[pyo3(get)]
+    pub tray_liquid_n: Vec<PyQty>,
+    /// The distillate's molar flow.
+    #[pyo3(get)]
+    pub distillate_n: PyQty,
+    /// The distillate's composition.
+    #[pyo3(get)]
+    pub distillate_z: Vec<f64>,
+    /// The distillate's pressure.
+    #[pyo3(get)]
+    pub distillate_p: PyQty,
+    /// The distillate's temperature.
+    #[pyo3(get)]
+    pub distillate_t: PyQty,
+    /// The distillate's molar enthalpy.
+    #[pyo3(get)]
+    pub distillate_h: PyQty,
+    /// The bottoms' molar flow.
+    #[pyo3(get)]
+    pub bottoms_n: PyQty,
+    /// The bottoms' composition.
+    #[pyo3(get)]
+    pub bottoms_z: Vec<f64>,
+    /// The bottoms' pressure.
+    #[pyo3(get)]
+    pub bottoms_p: PyQty,
+    /// The bottoms' temperature.
+    #[pyo3(get)]
+    pub bottoms_t: PyQty,
+    /// The bottoms' molar enthalpy.
+    #[pyo3(get)]
+    pub bottoms_h: PyQty,
+    /// The condenser's duty.
+    #[pyo3(get)]
+    pub condenser_duty: PyQty,
+    /// The reboiler's duty.
+    #[pyo3(get)]
+    pub reboiler_duty: PyQty,
+    /// Iterations taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The mean tray-temperature change at the last iteration.
+    #[pyo3(get)]
+    pub temperature_residual: f64,
+    /// The products' worst component imbalance against the feed.
+    #[pyo3(get)]
+    pub mass_residual: f64,
+    /// The enthalpy closure.
+    #[pyo3(get)]
+    pub energy_residual: f64,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+impl From<&PackedColumnResult> for PyPackedColumnResult {
+    fn from(r: &PackedColumnResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            tray_temperature: r
+                .tray_temperature
+                .iter()
+                .map(|t| quantity(t.value, "K"))
+                .collect(),
+            tray_pressure: r
+                .tray_pressure
+                .iter()
+                .map(|p| quantity(p.value, "Pa"))
+                .collect(),
+            tray_gas_n: r.tray_gas_n.iter().map(|n| quantity(*n, "mol/s")).collect(),
+            tray_liquid_n: r
+                .tray_liquid_n
+                .iter()
+                .map(|n| quantity(*n, "mol/s"))
+                .collect(),
+            distillate_n: quantity(r.distillate_n, "mol/s"),
+            distillate_z: r.distillate_z.clone(),
+            distillate_p: quantity(r.distillate_p.value, "Pa"),
+            distillate_t: quantity(r.distillate_t.value, "K"),
+            distillate_h: quantity(r.distillate_h.value, "J/mol"),
+            bottoms_n: quantity(r.bottoms_n, "mol/s"),
+            bottoms_z: r.bottoms_z.clone(),
+            bottoms_p: quantity(r.bottoms_p.value, "Pa"),
+            bottoms_t: quantity(r.bottoms_t.value, "K"),
+            bottoms_h: quantity(r.bottoms_h.value, "J/mol"),
+            condenser_duty: quantity(r.condenser_duty.value, "W"),
+            reboiler_duty: quantity(r.reboiler_duty.value, "W"),
+            iterations: r.iterations,
+            temperature_residual: r.temperature_residual,
+            mass_residual: r.mass_residual,
+            energy_residual: r.energy_residual,
+            warnings: r.warnings.iter().map(PyWarning::from).collect(),
+        }
+    }
 }
 
 /// Result of `process.stripping_column`, transported.

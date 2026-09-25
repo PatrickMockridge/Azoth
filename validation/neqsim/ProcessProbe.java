@@ -139,6 +139,9 @@ public class ProcessProbe {
       case "absorber":
         absorberRows();
         break;
+      case "packed_column":
+        packedColumnRows();
+        break;
       case "condenser":
         condenserRows();
         break;
@@ -850,6 +853,214 @@ public class ProcessProbe {
     print("gas_out", column.getGasOutStream());
     print("liquid_out", column.getLiquidOutStream());
     System.out.println();
+  }
+
+  /// **The packed column, whose packing is a report.** `PackedColumn extends DistillationColumn`
+  /// and its `run` is `super.run(id)` followed by `calcPackingHydraulics()`, so the separation is
+  /// the base's, unchanged, and everything the packing adds is read *after* the column has
+  /// converged - into `PackingHydraulicsCalculator` through `ColumnInternalsDesigner`.
+  ///
+  /// **Two of its claims are measurements rather than readings of the source.**
+  ///
+  /// **The stage count is a constructor's arithmetic**: `estimateStages(packedHeight, 0.5)` is
+  /// `ceil(packedHeight / 0.5)` floored at two, so the stage-count rows build the class at a
+  /// stated height and print the trays it made, with no solve at all.
+  ///
+  /// **And the contactor constructor never reads the height**: `PackedColumn(name, gasInStream)`
+  /// fixes ten middle trays with no ends - `AbsorptionColumn(name, 10)`'s own shape -
+  /// so `setPackedHeight` afterwards reaches the hydraulics report alone.
+  static void packedColumnRows() {
+    // **The rule, from the constructor alone.** `middle` is `getNumberOfTrays()` less the two
+    // ends, because the base increments its own count once for each end it adds.
+    double[] heights = new double[] { -1.0, 0.0, 0.2, 0.4, 0.75, 1.0, 1.2, 2.5, 5.0, 5.3, 10.0 };
+    for (double height : heights) {
+      neqsim.process.equipment.distillation.PackedColumn column =
+          new neqsim.process.equipment.distillation.PackedColumn("stages probe", height,
+              "Pall-Ring-50", true, true);
+      System.out.println("stage_count_" + height + "m");
+      System.out.println("packed_height_m=" + height);
+      System.out.println("stage_count_middle=" + (column.getNumberOfTrays() - 2));
+      System.out.println("stage_count_trays_with_ends=" + column.getNumberOfTrays());
+      System.out.println();
+    }
+
+    // **The class's own test state, run exactly as its test runs it**: no condenser or reboiler
+    // temperature, so both ends flash at their own enthalpy. Kept as evidence, because what it
+    // converges to is not a physical profile - its own test asserts only that the two product
+    // streams exist.
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane" };
+    double[] z = new double[] { 0.40, 0.30, 0.20, 0.10 };
+    packedColumnRow("packed_distillation_class_case_unpinned", names, z, 333.15, 10.0, 10000.0, 5.0,
+        "Pall-Ring-25", 5, null, null, 10.0, 10.0, 2.0e-2, 50);
+
+    // **The port's oracle, and it is the base column's own state.** `binary_methane_butane_
+    // 4_stages` above is the row this port is held to, so a packed column at the height whose
+    // constructor makes four middle trays - 2.0 m - with the same feed, the same feed tray and
+    // the same two end pins must land on that row's answer. That is the claim an id for this
+    // class makes, and this is the pair of rows that measures it.
+    String[] binary = new String[] { "methane", "n-butane" };
+    double[] binaryZ = new double[] { 0.5, 0.5 };
+    packedColumnRow("packed_distillation_binary_2m", binary, binaryZ, 300.0, 20.0, 1000.0, 2.0,
+        "Pall-Ring-50", 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200);
+    // **The same height rule, one tray more**: 2.3 m is `ceil(4.6)` = five middle trays, so this
+    // row is a different column's answer on the same feed - which is all the packing does.
+    packedColumnRow("packed_distillation_binary_2m3", binary, binaryZ, 300.0, 20.0, 1000.0, 2.3,
+        "Pall-Ring-50", 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200);
+
+    // The contactor form, `testBasicAbsorber`'s own state re-cased on PR: a twelve-carbon
+    // solvent against a light gas, ten middle trays, no ends, the solvent at the top stage.
+    packedContactorRow("packed_contactor_6m");
+  }
+
+  /// The contactor constructor, which fixes ten middle trays and reads its packed height only in
+  /// the hydraulics report.
+  static void packedContactorRow(String label) {
+    String[] gasNames = new String[] { "methane", "ethane", "propane" };
+    double[] gasZ = new double[] { 0.90, 0.07, 0.03 };
+    String[] solventNames = new String[] { "nC10", "propane" };
+    double[] solventZ = new double[] { 0.99, 0.01 };
+    Stream gas = feedMass("gas", gasNames, gasZ, 303.15, 50.0, 50000.0);
+    Stream solvent = feedMass("solvent", solventNames, solventZ, 298.15, 50.0, 10000.0);
+
+    neqsim.process.equipment.distillation.PackedColumn column =
+        new neqsim.process.equipment.distillation.PackedColumn(label, gas);
+    column.setPackedHeight(6.0);
+    column.setPackingType("Pall-Ring-50");
+    column.setStructuredPacking(false);
+    column.setDesignFloodFraction(0.70);
+    column.addSolventStream(solvent);
+    column.setTopPressure(50.0);
+    column.setBottomPressure(50.0);
+    // **Through a `ProcessSystem`**, which is how the class's own test drives it.
+    neqsim.process.processmodel.ProcessSystem process =
+        new neqsim.process.processmodel.ProcessSystem();
+    process.add(gas);
+    process.add(solvent);
+    process.add(column);
+    process.run();
+
+    System.out.println(label);
+    System.out.println("stage_count_middle=" + (column.getNumberOfTrays() - 0));
+    System.out.println("packed_height_m=" + column.getPackedHeight());
+    System.out.println("tray_count=" + column.getNumberOfTrays());
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("solver=" + column.getLastSolverTypeUsed());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("mass_residual=" + column.getLastMassResidual());
+    System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println(
+          "tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n="
+          + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n="
+          + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("gas_out", column.getGasOutStream());
+    print("liquid_out", column.getLiquidOutStream());
+    printHydraulics(column);
+    System.out.println();
+  }
+
+  static void packedColumnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, double packedHeight, String packingType,
+      int feedTray, Double condenserC, Double reboilerC, double topBara, double bottomBara,
+      double tolerance, int maxIterations) {
+    SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("feed", fluid);
+    inlet.setFlowRate(kgPerHour, "kg/hr");
+    inlet.run();
+
+    // **The class's own constructor**, so the stage count is the class's arithmetic and not a
+    // number this probe chose. A null end temperature leaves that end unpinned, which is what
+    // the class's own test does.
+    neqsim.process.equipment.distillation.PackedColumn column =
+        new neqsim.process.equipment.distillation.PackedColumn(label, packedHeight, packingType,
+            true, true);
+    column.addFeedStream(inlet, feedTray);
+    if (condenserC != null) {
+      column.setCondenserTemperature(condenserC, "C");
+    }
+    if (reboilerC != null) {
+      column.setReboilerTemperature(reboilerC, "C");
+    }
+    column.setTopPressure(topBara);
+    column.setBottomPressure(bottomBara);
+    column.setTemperatureTolerance(tolerance);
+    column.setMaxNumberOfIterations(maxIterations, true);
+    // **Through a `ProcessSystem`**, which is how the class's own test drives it: the feed is a
+    // unit in the flowsheet and the column runs after it, where a direct `column.run()` leaves
+    // the tray inlets in a state the tests never see.
+    neqsim.process.processmodel.ProcessSystem process =
+        new neqsim.process.processmodel.ProcessSystem();
+    process.add(inlet);
+    process.add(column);
+    process.run();
+
+    System.out.println(label);
+    System.out.println("packed_height_m=" + packedHeight);
+    System.out.println("packing_type=" + packingType);
+    System.out.println("stage_count_middle=" + (column.getNumberOfTrays() - 2));
+    System.out.println("tray_count=" + column.getNumberOfTrays());
+    System.out.println("feed_tray=" + feedTray);
+    System.out.println("condenser_pin_C=" + (condenserC == null ? "none" : condenserC));
+    System.out.println("reboiler_pin_C=" + (reboilerC == null ? "none" : reboilerC));
+    System.out.println("temperature_tolerance=" + tolerance);
+    System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("solver=" + column.getLastSolverTypeUsed());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("mass_residual=" + column.getLastMassResidual());
+    System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println(
+          "tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n="
+          + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n="
+          + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    System.out.println("condenser_duty_W=" + column.getCondenser().getDuty());
+    System.out.println("reboiler_duty_W=" + column.getReboiler().getDuty());
+    printHydraulics(column);
+    System.out.println();
+  }
+
+  /// **The packing's own report, which this port does not carry.** Printed so the capture holds
+  /// what the class reads the packing for, and so a row with `hydraulics_ok=false` or a zero HETP
+  /// is visible as the design failure it is rather than as a missing number.
+  static void printHydraulics(neqsim.process.equipment.distillation.PackedColumn column) {
+    System.out.println("hetp_m=" + column.getHETP());
+    System.out.println("theoretical_stages=" + column.getTheoreticalStages());
+    System.out.println("percent_flood=" + column.getPercentFlood());
+    System.out.println("flooding_velocity_m_per_s=" + column.getFloodingVelocity());
+    System.out.println("packing_pressure_drop_Pa=" + column.getPackingPressureDrop());
+    System.out.println("hydraulics_ok=" + column.isHydraulicsOk());
+    System.out.println("internal_diameter_m=" + column.getInternalDiameter());
+    neqsim.process.equipment.distillation.internals.PackingHydraulicsCalculator hydraulics =
+        column.getHydraulics();
+    if (hydraulics != null) {
+      System.out.println("fs_factor=" + hydraulics.getFsFactor());
+      System.out.println("kga=" + hydraulics.getKGa());
+      System.out.println("kla=" + hydraulics.getKLa());
+      System.out.println("wetted_area_m2_per_m3=" + hydraulics.getWettedArea());
+      System.out.println("htu_g_m=" + hydraulics.getHtuG());
+      System.out.println("htu_l_m=" + hydraulics.getHtuL());
+      System.out.println("htu_og_m=" + hydraulics.getHtuOG());
+    }
   }
 
   static void columnRow(String label, String[] names, double[] z, double feedTemperatureK,
