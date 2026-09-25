@@ -15,6 +15,14 @@ import type { Form } from "../wire/types";
 export interface PaletteProps {
   forms: Form[];
   onAdd: (unit: string) => void;
+  /**
+   * What else belongs in this column.
+   *
+   * **The boundary sits under the palette** rather than in a column of its own: feeds and products
+   * are what a flowsheet is *between*, and a fourth panel would be a fourth place to look for
+   * something a user adds once. The palette owns the `<aside>`, so this is how it is handed one.
+   */
+  children?: React.ReactNode;
 }
 
 /** The family a palette id names, e.g. `unit_ops.two_port.pump` → `two_port`. */
@@ -23,7 +31,7 @@ function family(id: string): string {
   return parts.length > 2 ? (parts[1] ?? "other") : "other";
 }
 
-export function Palette({ forms, onAdd }: PaletteProps) {
+export function Palette({ forms, onAdd, children }: PaletteProps) {
   const families = new Map<string, Form[]>();
   for (const form of forms) {
     const key = family(form.id);
@@ -51,6 +59,7 @@ export function Palette({ forms, onAdd }: PaletteProps) {
           ))}
         </div>
       ))}
+      {children}
     </aside>
   );
 }

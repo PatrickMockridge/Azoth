@@ -8,13 +8,14 @@
  */
 
 import { ParameterField } from "./ParameterField";
+import type { EditorCommand } from "../wire/commands";
 import type { Catalogue, Envelope, Form, GraphNode } from "../wire/types";
 
 export interface UnitOpPanelProps {
   catalogue: Catalogue | null;
   envelope: Envelope;
   node: GraphNode;
-  onCommand: (command: { command: string } & Record<string, unknown>) => void;
+  onCommand: (command: EditorCommand) => void;
 }
 
 export function UnitOpPanel({ catalogue, envelope, node, onCommand }: UnitOpPanelProps) {

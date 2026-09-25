@@ -6,7 +6,7 @@
  * answer; the only work here is turning it into the single node a canvas can select.
  */
 
-import type { Envelope, GraphNode, Target } from "../wire/types";
+import type { Envelope, GraphEdge, GraphNode, Target } from "../wire/types";
 
 /** The node a selection names, or none. */
 export function selectedNode(envelope: Envelope, id: string | null): GraphNode | null {
@@ -14,6 +14,14 @@ export function selectedNode(envelope: Envelope, id: string | null): GraphNode |
     return null;
   }
   return envelope.flowsheet.graph.nodes.find((node) => node.id === id) ?? null;
+}
+
+/** The edge a selection names, or none. An edge id is `e{index}`, so it cannot be a node id. */
+export function selectedEdge(envelope: Envelope, id: string | null): GraphEdge | null {
+  if (id === null) {
+    return null;
+  }
+  return envelope.flowsheet.graph.edges.find((edge) => edge.id === id) ?? null;
 }
 
 /**

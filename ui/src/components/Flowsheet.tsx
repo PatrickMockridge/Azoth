@@ -23,8 +23,10 @@ import {
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo } from "react";
 
+import type { EditorCommand } from "../wire/commands";
 import { formatQuantity } from "../wire/field";
-import type { Catalogue, Envelope, GraphNode } from "../wire/types";
+import { removeCommandFor } from "../wire/nodes";
+import type { Catalogue, Envelope, GraphEdge, GraphNode } from "../wire/types";
 import { STREAM_NODE, UNIT_NODE, nodeTypes, type NodePayload } from "./UnitOpNode";
 
 export interface FlowsheetProps {
@@ -32,20 +34,20 @@ export interface FlowsheetProps {
   envelope: Envelope;
   selected: string | null;
   onSelect: (id: string | null) => void;
-  onCommand: (command: { command: string } & Record<string, unknown>) => void;
+  onCommand: (command: EditorCommand) => void;
 }
 
 export function Flowsheet({ catalogue, envelope, selected, onSelect, onCommand }: FlowsheetProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  // The document is the change token: it changes on every edit and on nothing else, so a
-  // re-derivation per envelope costs one string comparison.
-  const document = envelope.flowsheet.document;
+  // **The envelope is the token, and the document is not enough of one.** A node's readout is
+  // what the *run* reached, and a run changes no document — so a derivation keyed on the document
+  // would keep the values it computed before Solve was pressed, and the canvas would never show a
+  // number. The envelope's identity changes on every call, which is exactly the right cadence.
   const derived = useMemo(
     () => derive(envelope, catalogue, selected),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `document` is the token for `envelope`.
-    [document, catalogue, selected],
+    [envelope, catalogue, selected],
   );
 
   useEffect(() => {
@@ -85,7 +87,38 @@ export function Flowsheet({ catalogue, envelope, selected, onSelect, onCommand }
         })
       }
       onNodeClick={(_event, node) => onSelect(node.id)}
+      onEdgeClick={(_event, edge) => onSelect(edge.id)}
       onPaneClick={() => onSelect(null)}
+      onNodesDelete={(deleted) => {
+        // **The defect this is here for.** xyflow's default Backspace goes through
+        // `onNodesChange`, which updates this component's local state and sends no command - and
+        // the next envelope re-derives the nodes, so the node reappears. A gesture that looks like
+        // a delete and is silently undone is the "silently ignored" class, in the front end.
+        for (const node of deleted) {
+          const command = removeCommandFor(node.id);
+          if (command !== null) {
+            onCommand(command);
+          }
+        }
+      }}
+      onEdgesDelete={(deleted) => {
+        for (const edge of deleted) {
+          // A tear goes by its **name**: `disconnect` removes the first connection or recycle that
+          // joins a pair, and a tear that shares its endpoints with a connection would take the
+          // wrong one. The projection puts a tear's name in `data.path`.
+          if (edge.data === undefined) {
+            continue;
+          }
+          // xyflow types `data` as `Record<string, unknown>`; this is the projection's own shape,
+          // which `GraphEdge` mirrors and `fixtures.test.ts` holds to the emitted document.
+          const data = edge.data as unknown as GraphEdge["data"];
+          onCommand(
+            data.kind === "recycle"
+              ? { command: "remove_recycle", stream: data.path }
+              : { command: "disconnect", from: data.from, to: data.to },
+          );
+        }
+      }}
       fitView
       proOptions={{ hideAttribution: true }}
     >

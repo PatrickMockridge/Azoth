@@ -6,13 +6,14 @@
  * form has four fields and the product's readout has five.
  */
 
+import type { EditorCommand } from "../wire/commands";
 import { formatQuantity } from "../wire/field";
 import type { Envelope, GraphNode } from "../wire/types";
 
 export interface InputsPanelProps {
   envelope: Envelope;
   node: GraphNode;
-  onCommand: (command: { command: string } & Record<string, unknown>) => void;
+  onCommand: (command: EditorCommand) => void;
 }
 
 export function InputsPanel({ envelope, node, onCommand }: InputsPanelProps) {

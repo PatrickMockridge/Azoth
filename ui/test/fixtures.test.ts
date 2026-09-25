@@ -85,6 +85,23 @@ describe("the envelope", () => {
     expect(loop?.sourceHandle).toBe("sep1.liquid");
     expect(loop?.data.path).toBe("recycle_1");
 
+    // **A tear carries its own seven settings, and a silence is not a default.** The shipped
+    // document states none, so every one is `null` - a panel that showed the class's defaults and
+    // wrote them back would turn a silence into a pinned number.
+    expect(loop?.data.settings).toEqual({
+      flow_tolerance: null,
+      composition_tolerance: null,
+      temperature_tolerance: null,
+      pressure_tolerance: null,
+      max_iterations: null,
+      minimum_flow: null,
+      acceleration_method: null,
+    });
+    // And a connection has none, which is what makes the field a fact about a tear.
+    expect(
+      graph.edges.find((edge) => edge.data.kind === "connection")?.data.settings,
+    ).toBeUndefined();
+
     // The feed's record is inline, in the units the schema declares.
     const feed = graph.nodes.find((node) => node.id === "input:feed_1");
     expect(feed?.data.input?.components).toEqual(["methane", "n-butane"]);
@@ -98,6 +115,9 @@ describe("the envelope", () => {
     expect(solved.diagnostics).toEqual([]);
     expect(solved.session?.converged).toBe(true);
     expect(solved.session?.iterations).toBe(2);
+    // The order the next run takes is the class's default, and it is in the envelope so a top bar
+    // reads it from the session rather than holding a copy.
+    expect(solved.execution_order).toBe("insertion");
     expect(solved.paths).toContain("p1.outlet.P");
     // The position the edit set is in the document *and* in the graph, one value read twice.
     expect(solved.flowsheet.document).toContain("[layout.instances]");

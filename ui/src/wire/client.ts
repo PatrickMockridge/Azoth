@@ -11,7 +11,7 @@
  */
 
 import init, { Editor, palette_json } from "../wasm/pkg/azoth_wasm.js";
-import type { Catalogue, Command, Envelope, Graph } from "./types";
+import type { Catalogue, Command, Envelope, ExecutionOrder, Graph } from "./types";
 
 /** A live document, as the editor holds it. */
 export interface Session {
@@ -19,6 +19,14 @@ export interface Session {
   apply(command: Command): Envelope;
   /** Run the document, and answer with the envelope it left. */
   run(): Envelope;
+  /**
+   * Set which of the class's two orders the next run takes, and answer with the envelope.
+   *
+   * In the *envelope* rather than behind a getter on this interface: a control should read the
+   * order from the same object as the diagnostics and the values, or the two can disagree after a
+   * call that was refused.
+   */
+  setOrder(order: ExecutionOrder): Envelope;
   /** Everything as it stands, without running anything. */
   envelope(): Envelope;
   /** The document as TOML, which is what a save writes. */
@@ -54,6 +62,10 @@ class WasmSession implements Session {
 
   run(): Envelope {
     return envelope(this.#editor.run());
+  }
+
+  setOrder(order: ExecutionOrder): Envelope {
+    return envelope(this.#editor.set_order(order));
   }
 
   envelope(): Envelope {

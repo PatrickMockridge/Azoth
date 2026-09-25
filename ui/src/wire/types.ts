@@ -33,6 +33,9 @@ export type Target =
     }
   | { kind: "document" };
 
+/** Which of the class's two orders the next run takes. */
+export type ExecutionOrder = "insertion" | "topological";
+
 /** One diagnostic, as the checker wrote it. */
 export interface Diagnostic {
   /** The variant's own name, snake-cased and stable — switch on this, not on `message`. */
@@ -101,7 +104,26 @@ export interface GraphEdge {
     to: string;
     /** The session path of the stream this edge carries. */
     path: string;
+    /** A tear's seven convergence settings; absent on a connection, which has none. */
+    settings?: RecycleSettings;
   };
+}
+
+/**
+ * A tear's seven settings, as the document states them.
+ *
+ * **`null` is a silence, not the class's default.** A document that states none of them — the
+ * shipped `demo.toml` states none — answers `null` for all seven, and a panel that showed the
+ * defaults and wrote them back would turn a silence into a pinned number.
+ */
+export interface RecycleSettings {
+  flow_tolerance: number | null;
+  composition_tolerance: number | null;
+  temperature_tolerance: number | null;
+  pressure_tolerance: number | null;
+  max_iterations: number | null;
+  minimum_flow: number | null;
+  acceleration_method: string | null;
 }
 
 export interface Graph {
@@ -153,6 +175,8 @@ export interface SessionReport {
 export interface Envelope {
   ok: boolean;
   dirty: boolean;
+  /** Which of the class's two orders the next run takes. */
+  execution_order: ExecutionOrder;
   flowsheet: {
     id: string;
     name: string;
@@ -237,5 +261,11 @@ export interface Catalogue {
   tools?: Tool[];
 }
 
-/** One edit, as the command model reads it. */
-export type Command = { command: string } & Record<string, unknown>;
+/**
+ * One edit, as the command model reads it.
+ *
+ * Re-exported from `commands.ts` rather than declared twice: that file is where the fourteen are
+ * written out, and a second `{ command: string } & Record<string, unknown>` here would let a
+ * widget send anything at all and still typecheck.
+ */
+export type { EditorCommand as Command } from "./commands";
