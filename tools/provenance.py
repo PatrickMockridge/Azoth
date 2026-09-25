@@ -273,7 +273,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "library": {"name": "azoth", "version": version()},
+        "library": {"name": project_field("name"), "version": version()},
         "git": {
             "commit": git("rev-parse", "HEAD"),
             "tag": resolved_tag,
@@ -303,13 +303,24 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
     }
 
 
-def version() -> str:
-    """The library version, read from pyproject so it cannot drift."""
+def project_field(key: str) -> str:
+    """One `[project]` field, read from pyproject so it cannot drift.
+
+    **The name as well as the version.** The distribution is `azoth-engine` and the import is
+    `azoth`, so the two are different strings and a record that wrote one by hand would be a
+    second place the distribution name is stated - which is the drift this reader exists to
+    prevent, one field over from where it started.
+    """
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     for line in text.splitlines():
-        if line.startswith("version = "):
+        if line.startswith(f"{key} = "):
             return line.split("=", 1)[1].strip().strip('"')
     return "unknown"
+
+
+def version() -> str:
+    """The library version, read from pyproject so it cannot drift."""
+    return project_field("version")
 
 
 def render(record: dict[str, Any]) -> str:

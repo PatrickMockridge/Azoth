@@ -21,7 +21,7 @@ is [Orchestration](./orchestration.md).
 ## Run it
 
 ```bash
-pip install 'azoth[agent]'          # DeepSeek Harness SDK + runtime
+pip install 'azoth-engine[agent]'  # DeepSeek Harness SDK + runtime
 python tools/export_skills.py       # write the skills into each tool's directory
 ```
 

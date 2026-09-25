@@ -12,7 +12,7 @@ azoth is a chemical-engineering calculation library with an agentic layer on top
 Setup:
 
 ```bash
-pip install 'azoth[agent]'          # DeepSeek Harness SDK + runtime binary (team runtime)
+pip install 'azoth-engine[agent]'  # DeepSeek Harness SDK + runtime binary (team runtime)
 python tools/export_skills.py       # write the skills into each tool's directory
 ```
 

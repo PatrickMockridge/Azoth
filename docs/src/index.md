@@ -5,7 +5,7 @@ read its page, and call it. The **agentic entry point** is
 [the agentic section](./agentic/index.md) and, at the repository root, `CLAUDE.md` and
 `AGENTS.md`.
 
-Start here: `pip install azoth`, pick a calculation from
+Start here: `pip install azoth-engine`, pick a calculation from
 [What is implemented](#what-is-implemented), read its page for the equation, range and
 worked example, then call it as the page shows or over arrays with
 [the batch API](#the-batch-api).

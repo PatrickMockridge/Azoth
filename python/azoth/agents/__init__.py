@@ -28,6 +28,6 @@ def runtime() -> Any:
         import deepseek_harness_sdk as dsh
     except ImportError as exc:
         raise ImportError(
-            "azoth orchestration needs `deepseek-harness-sdk`; install `azoth[agent]`"
+            "azoth orchestration needs `deepseek-harness-sdk`; install `azoth-engine[agent]`"
         ) from exc
     return dsh

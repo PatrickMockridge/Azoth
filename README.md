@@ -96,7 +96,7 @@ yet](docs/src/index.md#not-for-design-work-yet) about the placeholder fitting co
 ## Install
 
 ```bash
-pip install azoth          # the Python package, with the compiled Rust core
+pip install azoth-engine   # the distribution; `import azoth` is unchanged
 ```
 
 ## Quick start

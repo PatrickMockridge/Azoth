@@ -171,6 +171,35 @@ jobs:
       - name: Confirm provenance matches the published tree
         run: python3 tools/provenance.py --verify provenance.json
 
+  pypi:
+    name: Publish to PyPI
+    needs: [verify]
+    # **Before `publish`, because PyPI refuses a re-upload of a version.** The index step is the
+    # one that cannot be retried for a tag, so it goes first and `gh release create` - which is
+    # cheap and reversible - follows it.
+    #
+    # **After `verify`, because what is published must be what was verified**: the artifact is the
+    # one whose signature was checked against the tree the provenance record describes.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    # **No secret, and no `environment`.** PyPI's Trusted Publishing exchanges this job's OIDC
+    # token - the same `id-token: write` cosign's keyless signing already uses - for a short-lived
+    # upload token, so there is nothing here to leak. A named environment would have to match the
+    # publisher's own string exactly, which is a second place for one name to be spelled wrong.
+    permissions:
+      id-token: write
+    steps:
+      # The `sign` job's artifact: `dist/**`, `provenance.json` and the signature bundles.
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed
+          path: .
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # **`dist/`, not `.`**: the `.sigstore.json` bundles and `provenance.json` sit beside
+          # `dist/`, and the action would try to upload them.
+          packages-dir: dist/
+
   publish:
     name: Publish the release
     needs: [verify]

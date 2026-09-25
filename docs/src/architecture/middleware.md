@@ -138,9 +138,17 @@ that reads as finished.
 - **The twenty-seven model result dataclasses as JSON**, so a notebook reads a `PumpResult` field
   by field rather than through the envelope's streams. The codec exists to avoid a second writer
   per model; until then the envelope is the JSON.
-- **A packaged distribution.** `pip install` reaches a GitHub Release and not an index, and the
-  name `azoth` is taken on PyPI. The wheel is built, signed and verified; the hop to an index is a
-  publish job and a distribution name.
+- **A published distribution, and the two things only a person can do.** The wheel and the sdist
+  are built, signed, verified and — by the `pypi` job, on a `v*` tag — uploaded to the index under
+  the name **`azoth-engine`**, which Trusted Publishing exchanges this workflow's OIDC token for.
+  `import azoth` does not change: the distribution's name and the module's are allowed to differ,
+  which is what makes the taken name `azoth` a non-problem rather than a rebranding. What is not
+  done is the two things no CI job can do for you: a PyPI account with 2FA, and a *pending
+  publisher* for `azoth-engine` naming this repository, `release.yml` and no environment. Until
+  that exists, the job fails at the exchange — with PyPI's own message about the claim, not a
+  silent no-op. The `sdist` and the wheel are also walked by `check_wheel_data.py` for what they
+  must not carry (`ui/`, `specs/`, the built browser module), so "a distribution is not a copy of
+  the repository" is a measurement rather than an assumption about maturin's defaults.
 
 ## What it gates on
 

@@ -7,7 +7,7 @@ requires = ["maturin>=1.15,<2"]
 build-backend = "maturin"
 
 [project]
-name = "azoth"
+name = "azoth-engine"
 version = "0.1.0"
 description = "Open, validated, citable chemical engineering calculations"
 readme = "README.md"
@@ -189,6 +189,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # The orchestration runtime publishes no type information and is an optional extra,
-# absent from an environment that has not installed `azoth[agent]`.
+# absent from an environment that has not installed `azoth-engine[agent]`.
 module = ["deepseek_harness_sdk"]
 ignore_missing_imports = true
