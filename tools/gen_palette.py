@@ -25,6 +25,33 @@ PALETTE_DIR = ROOT / "specs" / "unit_ops"
 OUT = ROOT / "crates" / "azoth-process" / "src" / "palette_gen.rs"
 
 
+def format_rust(text: str, generator: str) -> str:
+    """Run the emitted Rust through rustfmt, which every generated file is compared against.
+
+    **A missing rustfmt is a refusal rather than a fallback**, where `gen_vocabulary.py` emits
+    unformatted source and lets `cargo fmt --check` catch it. That fallback cannot work here: these
+    generators are checked by comparing their output to the *committed* file, so emitting
+    unformatted text would report the file as stale and send a reader looking for a drift that is
+    not there. The toolchain is the prerequisite, and the message says so.
+    """
+    try:
+        proc = subprocess.run(
+            ["rustfmt", "--edition", "2024"],
+            input=text,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        sys.exit(
+            f"{generator}: rustfmt is not on PATH, and the generated file is compared against "
+            f"rustfmt's own output - install the Rust toolchain"
+        )
+    if proc.returncode != 0:
+        sys.exit(f"{generator}: rustfmt refused the output:\n{proc.stderr}")
+    return proc.stdout
+
+
 def main() -> None:
     check = "--check" in sys.argv
     entries = sorted(PALETTE_DIR.rglob("*.toml"))
@@ -57,18 +84,7 @@ def main() -> None:
         "];\n"
     )
 
-    rendered = text
-    if text:
-        proc = subprocess.run(
-            ["rustfmt", "--edition", "2024"],
-            input=text,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
-            sys.exit(f"gen_palette: rustfmt refused the output:\n{proc.stderr}")
-        rendered = proc.stdout
+    rendered = format_rust(text, "gen_palette")
 
     existing = OUT.read_text(encoding="utf-8") if OUT.exists() else None
     if existing != rendered:

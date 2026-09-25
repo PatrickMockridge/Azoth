@@ -71,6 +71,12 @@ jobs:
       # copies are current rather than merely agreeing with each other. It needs only
       # jsonschema, installed above.
       - run: python tools/gen_vocabulary.py --check
+      # The palette bundle a browser carries, and the model-input table a unit-op form's widget is
+      # chosen from. Both are stdlib-only in what they import, and both shell out to `rustfmt` -
+      # which is why they sit beside the vocabulary's check rather than in a job of their own: that
+      # line already relies on the runner image carrying the toolchain.
+      - run: python tools/gen_palette.py --check
+      - run: python tools/gen_model_inputs.py --check
 
   rust-test:
     name: rust-test
@@ -181,6 +187,41 @@ jobs:
       - run: .venv/bin/ruff format --check
       # Strict, over both the library and its tests.
       - run: .venv/bin/mypy
+
+  ui:
+    name: ui
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # `wasm-pack build` compiles the crate for this target. The workspace's
+          # `panic = "unwind"` is inert on it - the crate's own module doc records that.
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      # Pinned rather than `latest`, for the reason `docs-build` installs mdbook with
+      # `--locked`: a build tool that can change under CI is a failure nobody can reproduce.
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "v0.13.1"
+      - run: npm ci
+        working-directory: ui
+      # **Before `npm test`.** `ui/src/wasm/pkg/` is gitignored, so the browser test has no module
+      # to load until this has run - `npm run build` runs it again, which is accepted rather than
+      # worked around, because the script is what a developer runs.
+      - run: npm run wasm
+        working-directory: ui
+      - run: npm run typecheck
+        working-directory: ui
+      - run: npm test
+        working-directory: ui
+      - run: npm run build
+        working-directory: ui
 
   docs-build:
     name: docs-build
