@@ -109,12 +109,18 @@ named as the tear.
 
 ## The kernels
 
-A kernel is a unit operation's arithmetic, a pure function of its inlets. **Twenty-six of the
+A kernel is a unit operation's arithmetic, a pure function of its inlets. **Twenty-seven of the
 29 palette entries carry a registered `process.*` id** — a spec, a kernel, a Python reference, a
 case set and a NeqSim capture — composing the calculations in `azoth-eos` rather than adding new
-physics. Three do not, and each says why: `unit_ops.simple_absorber` is refused on measured
-evidence, `unit_ops.gibbs_reactor` is deferred with the measurement that says what it would
-cost, and `unit_ops.rate_based_packed_column` runs as its own tranche. The flowsheet
-**executor** — turning a flowsheet into something that runs — is tranche P12, and is not built:
-this page's subject is the schema the
-executor and a GUI will both read and write.
+physics. Two do not: `unit_ops.simple_absorber` is refused on measured evidence, and
+`unit_ops.rate_based_packed_column` is a second physics carried by the distillation workstream
+that added it beside the column.
+
+**The flowsheet executor is built**, and it is `crates/azoth-process`'s `executor` module: the
+`unit_ops.*` → kernel dispatch table, the execution order, the tear with `Recycle`'s own four
+tolerances, a session whose every value has a stable path, a JSON codec and structured
+diagnostics. It runs `specs/flowsheets/demo.toml` and converges its recycle, held to a NeqSim
+`ProcessSystem` capture. **One entry it refuses by name**: `unit_ops.packed_column` has a kernel
+and a registered id, and its declaration describes the packing rather than the column, so the
+executor says so rather than running a machine the declaration does not describe. What is still
+owed is named in `ROADMAP.md`.

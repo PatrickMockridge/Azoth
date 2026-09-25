@@ -20,8 +20,9 @@ back its physics:
 - **Unit operations and the flowsheet** — 39 skills wait on P11: 30 under
   `process/` and 9 under `safety/`. The specification places the tier after the
   physics, and the kernels are nearly closed: `specs/unit_ops/` declares 29 palette
-  entries and 26 carry a kernel, so the skills are waiting on the P12 executor rather than
-  on the tier's existence.
+  entries and 27 carry a kernel. **The P12 executor they were waiting on is built**, so what
+  gates them now is the middleware rather than the backend: the form schema and the agent tool
+  schema are the two rows of that gap table still open.
 - **Reference equations of state, and the PVT chain** — 7 skills wait on P4: six
   under `pvt/` and `azoth-near-well-and-injectivity` under `subsurface/`.
 - **Cooldown** — `azoth-surf-cooldown-screening` is the one skill waiting on P9,

@@ -126,6 +126,11 @@ design, safety, cost, electrical, automation, `standards/`, `statistics/`,
 because they are engineering deliverables rather than thermodynamics — a statement about
 **order**, not about whether they belong.
 
+**`ROADMAP.md` is where the order is normative.** This table and
+[The middleware](./middleware.md) use it rather than restating it, so a tranche that moves is
+moved in one place — the same rule the palette, the manifest and the specs follow for their own
+counts.
+
 **`pvtsimulation/` is two things and the P9 row above names the half that is physics.** Its
 `flowassurance/` holds the hydrate, wax, asphaltene, scale, corrosion and cooldown
 calculations, which belong to the tranche that backs each — P9 for the first four, and **no
@@ -174,9 +179,10 @@ run - `ChemEq`, `ChemicalReactionFactory`, `ChemicalReactionModelAudit`, `Ploadi
 `DiffusivityModelSelector` - have no `src/main` caller in the checkout at all, so they are
 carried rather than owed. [The port roadmap](../../../ROADMAP.md) names each.
 
-The middleware's shape is [The middleware](./middleware.md), and it is deferred until P12
-closes — an interoperation surface sits on top of the kernels and the executor, not beside
-them.
+The middleware's shape is [The middleware](./middleware.md). **The backend it was deferred on
+has closed** — the kernels and the executor are both in — so what is open is the surface itself:
+an interoperation layer sits on top of them, not beside them, and that page's gap table is the
+list.
 
 ---
 
@@ -316,7 +322,9 @@ page:
   builds the tier against. **It is no longer a bare specification**: `specs/unit_ops/`
   declares 29 unit operations with typed channels, `crates/azoth-process` carries the
   loader and `azoth_process::validate`, and a cargo test holds every shipped palette entry
-  and flowsheet to the calculus's rules. What is still absent is the *interpreter* — the
-  executor is P12 — and the Lean statement of the two claims, which
-  `lean/Azoth/` does not carry. A page describing a port was a specification; it is now a
-  declaration with a checker behind it.
+  and flowsheet to the calculus's rules. **The interpreter is built too** — tranche P12's
+  `executor` module runs a flowsheet to its steady state, and what it reaches is named in
+  `ROADMAP.md` — and `lean/Azoth/Process.lean` carries the calculus's claims: one proved
+  (`unit_op_is_extensional`), the other two characterised rather than dressed as theorems,
+  each saying why. A page describing a port was a specification; it is now a
+  declaration with a checker and an executor behind it.

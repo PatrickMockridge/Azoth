@@ -379,9 +379,9 @@ complete rather than silent about them:
 **`process/` is not in this list.** It is not physics, but it *is* a port target: the
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
-types, the stream record, the palette loader and the checker, and `specs/unit_ops/` declares 29
-unit operations of which **26 carry kernels**. The three that do not each say why, and none of
-them is "out of scope". **`unit_ops.simple_absorber` is refused on measured
+types, the stream record, the palette loader, the checker and the executor, and `specs/unit_ops/`
+declares 29 unit operations of which **27 carry kernels**. Two do not, and each says why; a third
+has one and is refused by the executor, which is a different statement again. **`unit_ops.simple_absorber` is refused on measured
 evidence**: `SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point
 loop over MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a
 faithful port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and
@@ -407,27 +407,36 @@ this record follows — each class beside the column is either ported or recorde
 the class and the blocker named — and it replaces an earlier sentence here which claimed the five
 were "neither owed nor refused", which the fifth entry's own measurement contradicted.
 
-**P11's palette is closed except for one entry, and it is deferred with a measurement.** The
-nine kernels the column's unparking deferred have nearly all landed - `component_splitter`,
-`ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`, `stirred_tank_reactor`, `tank` and
-`three_phase_separator` - each a registered `process.*` id with a spec, two implementations, a
-NeqSim capture and a case set; so have the classes the column is the source of, beside the
-column itself. What is left is `gibbs_reactor`, and its palette entry carries why:
+**P11's palette is closed.** The nine kernels the column's unparking deferred have all landed -
+`component_splitter`, `ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`,
+`stirred_tank_reactor`, `tank` and `three_phase_separator` - each a registered `process.*` id
+with a spec, two implementations, a NeqSim capture and a case set; so have the classes the column
+is the source of, beside the column itself, and so has `gibbs_reactor`:
 
-- **`gibbs_reactor` is not the composition the P11 plan expected.** `GibbsReactor.run` does not
-  call `ChemicalEquilibrium`, and the class is 3,163 lines carrying its own Lagrange-multiplier
-  Newton solve (with an Armijo line search and Tikhonov regularisation) and its own species
-  database - `GibbsReactDatabase.csv`, vendored, whose rows carry element vectors *and*
-  per-species Gibbs, enthalpy and entropy correlations that are not the databank's formation
-  properties. A port composed from P10 would answer with different numbers than the class, so it
-  waits for a tier of its own. The measurement is recorded in the entry, and the solve's own
-  units are kJ/mol throughout, which is the first thing a port has to carry.
+- **`gibbs_reactor` was not the composition the P11 plan expected, and it cost a tier of its
+  own.** `GibbsReactor.run` never calls `ChemicalEquilibrium`: the class is 3,163 lines carrying
+  its own Lagrange-multiplier Newton solve and its own species database, whose formation
+  properties are not the databank's. The tier compiled that database from the class's two CSVs,
+  read the solver, and built it - `data/reactors/`, `reactor::gibbs_solver`, and the id. **The
+  port reproduces the class to the accuracy the class's conditioning permits**: one iteration
+  from the same state agrees to `8e-14` on the major species, and the hundred damped steps the
+  class takes separate two runs by the class's own `cond(J) = 6.12e6`. What is owed is the
+  pseudo-inverse its singular-Jacobian row needs.
 
 **And one entry belongs to a tranche of its own rather than to this one.**
 `unit_ops.rate_based_packed_column` is a second physics - 4,081 lines of segment model with gas
 and liquid film coefficients and an interphase heat balance, no `src/main` caller - so it is
 carried by the distillation workstream that added it beside the column, and not by P11.
 `unit_ops.simple_absorber` stays refused, as above.
+
+**The third is refused for a defect in its own declaration, and it is the sharper case.**
+`unit_ops.packed_column` has a kernel and a registered `process.*` id, and its palette entry
+declares the *packing* rather than the column: `feed_stage`, `number_of_stages`, the two
+pressures and the two ends are what `PackedColumn.run` reads through `super.run`, and the entry's
+own notes say it takes `unit_ops.distillation_column`'s whole declaration. So the executor refuses
+it **by name** rather than running a machine the declaration does not describe - which is the
+palette failing its own test, caught by the dispatch table's first run, and it is the entry's to
+fix rather than the executor's to work around.
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.
@@ -448,6 +457,18 @@ All three landed - `pipe` with the two-density formula its own capture pins, and
 isentropic machines on `Stream::entropy` - so what the paragraph recorded as a blocker is now
 three registered ids with oracles.
 
-The executor is the one thing left in the tier, and it needs no calculation this one owes:
-P12's work is ordering, a tear's fixed point, a session and a codec, each of them a use of
-machinery `crates/azoth-process` already carries.
+**P12 is landed.** The executor is `crates/azoth-process`'s `executor` module, and it needed no
+calculation this tier owes - its work was ordering, a tear's fixed point, a session and a codec,
+each a use of machinery the crate already carried. It runs `specs/flowsheets/demo.toml` and
+converges its recycle, held to a NeqSim `ProcessSystem` capture, and every instance's answer is
+cross-checked against that unit's own registered model, which is the claim "the executor calls
+the kernels" made testable.
+
+**What is named as not built, with the class that would close each**: Broyden through
+`BroydenAccelerator`; `deactivateOnLowFlow`, which is how NeqSim ends an empty loop and this
+executor does not; the `many` outlet a connection cannot address one of, which is why a splitter
+cannot be wired; the Python surface (`azoth.process.run_flowsheet`) and the CLI's `azoth run
+--flowsheet`, the latter blocked on a schema that states a feed's fluid rather than only its
+name; and the checker rule that would have caught `demo.toml` shipping with a required parameter
+unsupplied. The tier's own acceptance is the NeqSim capture beside it: an executor whose
+convergence is only checked against its own arithmetic is an executor nobody has measured.

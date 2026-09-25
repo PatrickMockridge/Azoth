@@ -8,20 +8,22 @@ flowsheet is a process; quoting it and dropping it back is the identity (`*@P �
 as structural congruence), and that round trip is what an editor, a file and a notebook
 all do to the same data. The middleware is that operator made concrete.
 
-It is **not built**. It is a requirement, deferred until the backend below it closes
-through P12, and written here so it is gated on the roadmap rather than lost.
+**The backend it was gated on now closes.** It was written here deferred until P12 landed,
+and P12 has: a flowsheet runs, its recycle converges and its values have names. What is not
+built is the middleware itself — the front-end layer this page specifies — and the gap table
+below is what is left of it rather than a statement about the backend.
 
 ## The gap
 
 | a front-end needs | exists |
 |---|---|
-| run a flowsheet | no executor — schema, checker and 26 kernels (26 of the 29 palette entries) |
-| a session holding named results | no solve state; the runtime `Stream` has no name and is not serialisable |
-| read *and* write a flowsheet | TOML read only; no `toml::to_string` |
+| run a flowsheet | **yes** — `azoth_process::executor`, with the dispatch table, the tear's fixed point and a NeqSim `ProcessSystem` capture behind it |
+| a session holding named results | **yes** — `Session`, where every value is `<endpoint>.<field>` and `paths()` enumerates them |
+| read *and* write a flowsheet | **yes** — `Flowsheet::to_toml`, with a test over `specs/flowsheets/` that the value survives and that writing is a fixed point of itself |
 | a form per unit op (ports + parameters) | the spec exists; nothing turns it into a form |
-| structured, locatable diagnostics | `Debug` strings |
-| dispatch an instance to its kernel | no `unit_ops.*` → kernel table |
-| a result as JSON | result dataclasses are not JSON-serialisable |
+| structured, locatable diagnostics | **yes** — every `Diagnostic` carries a `Severity` and a `Location` |
+| dispatch an instance to its kernel | **yes** — the `DISPATCH` table, 26 entries and 3 refusals by name |
+| a result as JSON | **half** — the session's result writes JSON from Rust (`executor::json`); the Python result dataclasses still are not serialisable, because the Python surface that would wrap the executor is not written |
 | a tool schema for an agent | skills and one runtime stub; no tool schema, no MCP |
 
 ## The layers

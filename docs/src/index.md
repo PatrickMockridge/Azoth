@@ -67,8 +67,9 @@ Five sections, and the difference between them is the point:
 - **Hydraulics** — a kernel of correlations over a geometry, through Darcy-Weisbach
   pressure drop.
 - **Unit operations** — the palette and the flowsheet: 29 unit operations declared on
-  typed channels, 26 of them with kernels, and the checker that holds a flowsheet to the
-  calculus's rules. The executor that runs one is P12 and is not built.
+  typed channels, 27 of them with kernels, and the checker that holds a flowsheet to the
+  calculus's rules. **The executor that runs one is built** — it converges the shipped
+  flowsheet's recycle, against a NeqSim `ProcessSystem` capture.
 - **Reactions** — chemical equilibrium, the reactive flashes, and the kinetics rate law
   behind them.
 - **Heat transfer** — steady conduction through a plane wall: a domain with no pipe in
