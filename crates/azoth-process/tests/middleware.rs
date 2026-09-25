@@ -5,11 +5,14 @@
 //! things that can quietly go wrong with that are a code that stops matching its variant and a
 //! target that points at nothing. Both are held here rather than by review.
 
+use std::collections::BTreeMap;
+
 use azoth_process::middleware::diagnostic::{DiagnosticRecord, records};
 use azoth_process::middleware::form::{FormSpec, dimension_id, forms};
+use azoth_process::middleware::graph::{Graph, Node, graph};
 use azoth_process::{
-    Diagnostic, Flowsheet, NodeRole, Severity, Target, UnitOpSpec, load_palette, split_node_id,
-    validate,
+    Connection, Diagnostic, Direction, Flowsheet, Instance, Layout, NodeRole, Severity, Target,
+    UnitOpSpec, load_palette, split_node_id, validate,
 };
 
 /// One of every variant.
@@ -634,4 +637,405 @@ to = "out"
     let sound = Flowsheet::from_toml(&document("2.0e6")).expect("it parses");
     let diagnostics = validate(&sound, &palette);
     assert!(diagnostics.is_empty(), "{diagnostics:?}");
+}
+
+/// **The shipped flowsheet, projected.** Six nodes - four instances, a feed and a product - and
+/// six edges: five connections and the one recycle that tears the loop.
+#[test]
+fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let flowsheet = Flowsheet::from_toml(&text).expect("it parses");
+    let document = graph(&flowsheet, &palette()).expect("it projects");
+
+    let ids: Vec<&str> = document.nodes.iter().map(|node| node.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "instance:mix1",
+            "instance:p1",
+            "instance:hx1",
+            "instance:sep1",
+            "input:feed_1",
+            "product:vapour_product",
+        ]
+    );
+
+    let edges: Vec<(String, String, String, String, &str, &str)> = document
+        .edges
+        .iter()
+        .map(|edge| {
+            (
+                edge.id.clone(),
+                format!("{}#{}", edge.source, edge.source_handle),
+                format!("{}#{}", edge.target, edge.target_handle),
+                edge.data.path.clone(),
+                edge.data.kind,
+                edge.data.from.as_str(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        edges,
+        [
+            // A feed's handle is the feed's own name, which is also the session's key for it.
+            (
+                "e0".into(),
+                "input:feed_1#feed_1".into(),
+                "instance:mix1#mix1.feed".into(),
+                "feed_1".into(),
+                "connection",
+                "feed_1"
+            ),
+            (
+                "e1".into(),
+                "instance:mix1#mix1.product".into(),
+                "instance:p1#p1.inlet".into(),
+                "mix1.product".into(),
+                "connection",
+                "mix1.product"
+            ),
+            (
+                "e2".into(),
+                "instance:p1#p1.outlet".into(),
+                "instance:hx1#hx1.inlet".into(),
+                "p1.outlet".into(),
+                "connection",
+                "p1.outlet"
+            ),
+            (
+                "e3".into(),
+                "instance:hx1#hx1.outlet".into(),
+                "instance:sep1#sep1.feed".into(),
+                "hx1.outlet".into(),
+                "connection",
+                "hx1.outlet"
+            ),
+            (
+                "e4".into(),
+                "instance:sep1#sep1.vapour".into(),
+                "product:vapour_product#vapour_product".into(),
+                "sep1.vapour".into(),
+                "connection",
+                "sep1.vapour"
+            ),
+            // The tear: its path is the recycle's name, which is the key its stream is bound to.
+            (
+                "e5".into(),
+                "instance:sep1#sep1.liquid".into(),
+                "instance:mix1#mix1.feed".into(),
+                "recycle_1".into(),
+                "recycle",
+                "sep1.liquid"
+            ),
+        ]
+    );
+
+    // A mixer's inlet is one handle however many streams reach it, which is what makes the loop
+    // wireable at all.
+    let mixer = document
+        .nodes
+        .iter()
+        .find(|node| node.id == "instance:mix1")
+        .expect("declared");
+    let ports = mixer.data.ports.as_ref().expect("a mixer has ports");
+    assert_eq!(ports.inlets.len(), 1);
+    assert_eq!(ports.inlets[0].name, "feed");
+    assert_eq!(ports.inlets[0].multiplicity, "many");
+    assert_eq!(ports.inlets[0].handles, ["mix1.feed"]);
+    assert_eq!(ports.outlets[0].handles, ["mix1.product"]);
+
+    // A separator's two outlets are two handles on two ports.
+    let separator = document
+        .nodes
+        .iter()
+        .find(|node| node.id == "instance:sep1")
+        .expect("declared");
+    let ports = separator.data.ports.as_ref().expect("ports");
+    assert_eq!(
+        ports
+            .outlets
+            .iter()
+            .map(|handle| handle.handles.clone())
+            .collect::<Vec<_>>(),
+        [
+            vec!["sep1.vapour".to_string()],
+            vec!["sep1.liquid".to_string()]
+        ]
+    );
+
+    // The feed's record is inline, because that is what an inputs panel edits and writes back.
+    let feed = document
+        .nodes
+        .iter()
+        .find(|node| node.id == "input:feed_1")
+        .expect("declared");
+    let record = feed.data.input.as_ref().expect("a feed has a record");
+    assert_eq!(record.components, ["methane", "n-butane"]);
+    assert_eq!(record.z, [0.9, 0.1]);
+    assert_eq!((record.n, record.p, record.t), (1.0, 5.0e5, 300.0));
+}
+
+/// **xyflow's precondition, asserted here rather than discovered in a browser**: a
+/// `sourceHandle` with no matching handle on the source node is an edge that does not render.
+#[test]
+fn every_edge_references_a_handle_that_exists() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let document =
+        graph(&Flowsheet::from_toml(&text).expect("parses"), &palette()).expect("it projects");
+
+    for edge in &document.edges {
+        let source = document
+            .nodes
+            .iter()
+            .find(|node| node.id == edge.source)
+            .unwrap_or_else(|| panic!("{} sources a node that is not drawn", edge.id));
+        let target = document
+            .nodes
+            .iter()
+            .find(|node| node.id == edge.target)
+            .unwrap_or_else(|| panic!("{} targets a node that is not drawn", edge.id));
+        assert!(
+            handles_of(source, Direction::Out).contains(&edge.source_handle),
+            "{}: `{}` is not an outlet handle of {}",
+            edge.id,
+            edge.source_handle,
+            edge.source
+        );
+        assert!(
+            handles_of(target, Direction::In).contains(&edge.target_handle),
+            "{}: `{}` is not an inlet handle of {}",
+            edge.id,
+            edge.target_handle,
+            edge.target
+        );
+    }
+}
+
+/// Every handle id a node offers on one side.
+fn handles_of(node: &Node, direction: Direction) -> Vec<String> {
+    let Some(ports) = node.data.ports.as_ref() else {
+        // A boundary stream has one handle on the side the stream leaves or arrives at.
+        return match (node.role, direction) {
+            ("input", Direction::Out) | ("product", Direction::In) => vec![node.data.name.clone()],
+            _ => Vec::new(),
+        };
+    };
+    let side = match direction {
+        Direction::In => &ports.inlets,
+        Direction::Out => &ports.outlets,
+    };
+    side.iter()
+        .flat_map(|handle| handle.handles.clone())
+        .collect()
+}
+
+/// **How many handles a `many` outlet has is a value, so both the value and the wiring count.**
+#[test]
+fn a_many_outlet_has_one_handle_per_position() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml")).expect("there");
+    let mut flowsheet = Flowsheet::from_toml(&text).expect("parses");
+
+    // A splitter with three outlets declared in its parameters and one of them wired: the canvas
+    // has to show all three or the other two cannot be wired, and it has to show the wired one
+    // even if the parameter has not caught up.
+    flowsheet.instances.push(Instance {
+        id: "s1".into(),
+        unit: "unit_ops.splitter".into(),
+        parameters: BTreeMap::from([(
+            "split_factors".to_string(),
+            toml::Value::Array(vec![
+                toml::Value::Float(0.5),
+                toml::Value::Float(0.3),
+                toml::Value::Float(0.2),
+            ]),
+        )]),
+    });
+    flowsheet.connections.push(Connection {
+        from: "sep1.vapour".into(),
+        to: "s1.feed".into(),
+    });
+    flowsheet.connections.push(Connection {
+        from: "s1.products[0]".into(),
+        to: "vapour_product".into(),
+    });
+
+    let document = graph(&flowsheet, &palette()).expect("it projects");
+    let splitter = document
+        .nodes
+        .iter()
+        .find(|node| node.id == "instance:s1")
+        .expect("declared");
+    let ports = splitter.data.ports.as_ref().expect("ports");
+    assert_eq!(
+        ports.outlets[0].handles,
+        ["s1.products[0]", "s1.products[1]", "s1.products[2]"],
+        "three factors, three positions"
+    );
+
+    // The edge keeps the position too, or it would attach to no handle at all - the position is
+    // what tells the first stream of a `many` outlet from the second.
+    let wired = document
+        .edges
+        .iter()
+        .find(|edge| edge.data.from == "s1.products[0]")
+        .expect("the first product is wired");
+    assert_eq!(wired.source, "instance:s1");
+    assert_eq!(wired.source_handle, "s1.products[0]");
+
+    // And a wiring that names a position the vector does not have still gets a handle, because a
+    // document mid-edit is a document the canvas has to draw.
+    let mut flowsheet = flowsheet.clone();
+    flowsheet
+        .instances
+        .last_mut()
+        .expect("s1")
+        .parameters
+        .insert(
+            "split_factors".to_string(),
+            toml::Value::Array(vec![toml::Value::Float(1.0)]),
+        );
+    flowsheet.connections.last_mut().expect("wired").from = "s1.products[4]".into();
+    let document = graph(&flowsheet, &palette()).expect("it projects");
+    let splitter = document
+        .nodes
+        .iter()
+        .find(|node| node.id == "instance:s1")
+        .expect("declared");
+    assert_eq!(
+        splitter.data.ports.as_ref().expect("ports").outlets[0]
+            .handles
+            .len(),
+        5,
+        "the wired position is drawn even though the vector has one entry"
+    );
+}
+
+/// A document with nothing placed gets a deterministic layout, and one that has been arranged
+/// keeps what it was given.
+#[test]
+fn a_layout_is_derived_until_the_document_places_a_node() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml")).expect("there");
+    let mut flowsheet = Flowsheet::from_toml(&text).expect("parses");
+    // The shipped document is arranged, so the derivation is measured on it unarranged.
+    flowsheet.layout = None;
+
+    let first = graph(&flowsheet, &palette()).expect("it projects");
+    let again = graph(&flowsheet, &palette()).expect("it projects");
+    let positions = |document: &Graph| -> Vec<(String, f64, f64)> {
+        document
+            .nodes
+            .iter()
+            .map(|node| (node.id.clone(), node.position.x, node.position.y))
+            .collect()
+    };
+    assert_eq!(positions(&first), positions(&again), "a reload is stable");
+
+    let at = |document: &Graph, id: &str| {
+        let node = document
+            .nodes
+            .iter()
+            .find(|node| node.id == id)
+            .unwrap_or_else(|| panic!("{id} is not drawn"));
+        (node.position.x, node.position.y)
+    };
+    // Feeds left, products right, and an instance to the right of whatever feeds it.
+    assert_eq!(at(&first, "input:feed_1").0, 0.0);
+    assert!(at(&first, "instance:mix1").0 > 0.0);
+    assert!(at(&first, "instance:sep1").0 > at(&first, "instance:mix1").0);
+    assert!(at(&first, "product:vapour_product").0 > at(&first, "instance:sep1").0);
+
+    // The document's own placement wins, for the one node it names.
+    flowsheet.layout = Some(Layout {
+        instances: BTreeMap::from([("sep1".to_string(), [1234.0, 56.0])]),
+        ..Layout::default()
+    });
+    let placed = graph(&flowsheet, &palette()).expect("it projects");
+    assert_eq!(at(&placed, "instance:sep1"), (1234.0, 56.0));
+    assert_eq!(
+        at(&placed, "instance:mix1"),
+        at(&first, "instance:mix1"),
+        "the nodes it does not name keep the derived position"
+    );
+
+    // **And it survives the document, which is what makes the editor's round trip lossless.** A
+    // `[layout]` is a table and the document is arrays of tables up to here, so where the writer
+    // puts it is a fact about TOML and not a preference - the assertion is on the text, because
+    // the reader would accept either order.
+    let written = flowsheet.to_toml().expect("it writes");
+    let layout = written.find("[layout").expect("[layout] is written");
+    for array in [
+        "[[inputs]]",
+        "[[instances]]",
+        "[[connections]]",
+        "[[recycles]]",
+    ] {
+        let table = written.find(array).expect("the document has one");
+        assert!(
+            layout > table,
+            "[layout] is written before {array}:\n{written}"
+        );
+    }
+    assert_eq!(
+        Flowsheet::from_toml(&written).expect("it reads back"),
+        flowsheet,
+        "the figure is part of the document"
+    );
+}
+
+/// **A document the checker refuses is still drawn**, because drawing it is how a user fixes it.
+#[test]
+fn a_broken_document_is_drawn_rather_than_refused() {
+    let text = r#"id = "f"
+name = "f"
+products = ["out"]
+
+[[inputs]]
+name = "in"
+components = ["methane"]
+n = 1.0
+z = [1.0]
+P = 5.0e5
+T = 300.0
+
+[[instances]]
+id = "p1"
+unit = "unit_ops.nosuch"
+
+[[instances]]
+id = "p2"
+unit = "unit_ops.pump"
+
+[[connections]]
+from = "in"
+to = "p1.inlet"
+
+[[connections]]
+from = "p1.outlet"
+to = "p2.inlet"
+
+[[connections]]
+from = "p2.outlet"
+to = "out"
+"#;
+    let flowsheet = Flowsheet::from_toml(text).expect("it parses");
+    let document = graph(&flowsheet, &palette()).expect("it projects");
+
+    // The unknown unit op gets a node with no ports, and keeps the id it named.
+    let unknown = document
+        .nodes
+        .iter()
+        .find(|node| node.id == "instance:p1")
+        .expect("declared");
+    assert!(unknown.data.ports.is_none());
+    assert_eq!(unknown.data.unit.as_deref(), Some("unit_ops.nosuch"));
+
+    // Its outlet handle is still named, so the edge that leaves it says what it referred to.
+    let leaving = document
+        .edges
+        .iter()
+        .find(|edge| edge.data.from == "p1.outlet")
+        .expect("declared");
+    assert_eq!(leaving.source_handle, "p1.outlet");
 }

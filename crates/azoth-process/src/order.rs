@@ -205,6 +205,7 @@ mod tests {
                 connection("c.outlet", "out"),
             ],
             recycles: Vec::new(),
+            layout: None,
         }
     }
 
@@ -260,6 +261,7 @@ mod tests {
                 connection("b.outlet", "out"),
             ],
             recycles: vec![Recycle::new("recycle_1", "b.outlet", "a.inlet")],
+            layout: None,
         };
         assert_eq!(
             execution_order(&flowsheet, ExecutionOrder::Topological).expect("it orders"),

@@ -1365,6 +1365,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
         assert_clean(&flowsheet, &palette);
     }
@@ -1398,6 +1399,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
         assert_clean(&flowsheet, &palette);
 
@@ -1447,6 +1449,7 @@ mod tests {
             }],
             connections: vec![],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &[]);
         assert!(has(
@@ -1481,6 +1484,7 @@ mod tests {
             }],
             connections: vec![],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &[pump]);
         assert!(has(
@@ -1511,6 +1515,7 @@ mod tests {
                 to: "p1.discharge".into(),
             }],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has(
@@ -1541,6 +1546,7 @@ mod tests {
                 to: "p1.discharge".into(),
             }],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has(
@@ -1583,6 +1589,7 @@ mod tests {
                 to: "w1.feed".into(),
             }],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has_variant(&diags, |d| matches!(
@@ -1615,6 +1622,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &palette);
         assert!(has(
@@ -1661,6 +1669,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
         assert!(has_variant(&validate(&looped, &palette), |d| matches!(
             d,
@@ -1679,6 +1688,7 @@ mod tests {
                 to: "p2.feed".into(),
             }],
             recycles: vec![Recycle::new("r1", "p2.discharge", "p1.feed")],
+            layout: None,
         };
         assert!(!has_variant(&validate(&torn, &palette), |d| matches!(
             d,
@@ -1778,6 +1788,7 @@ mod tests {
                 },
             ],
             recycles: Vec::new(),
+            layout: None,
         };
 
         let diags = validate(&flowsheet, &palette);
@@ -1869,6 +1880,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
         assert_clean(&flowsheet, &palette);
     }
@@ -1896,6 +1908,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         }
     }
 
@@ -1940,6 +1953,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
 
         // The heater declares three parameters and requires none of them, which is why the rule
@@ -2010,6 +2024,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
         let diags = validate(&flowsheet, &two_port_palette);
         assert!(
@@ -2090,6 +2105,7 @@ mod tests {
                 },
             ],
             recycles: vec![],
+            layout: None,
         };
 
         let diags = validate(&flowsheet, &palette);

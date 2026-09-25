@@ -30,7 +30,7 @@ pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{
     Diagnostic, Location, NodeRole, Severity, Target, split_node_id, validate, validate_palette,
 };
-pub use flowsheet::{Connection, Flowsheet, Input, Instance, Recycle};
+pub use flowsheet::{Connection, Flowsheet, Input, Instance, Layout, Recycle};
 pub use load::{load_palette, parse_flowsheet};
 pub use order::{ExecutionOrder, execution_order};
 pub use recycle::{Acceleration, RecycleSettings, Residuals};

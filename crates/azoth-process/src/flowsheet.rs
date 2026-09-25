@@ -288,6 +288,46 @@ pub struct Flowsheet {
     pub connections: Vec<Connection>,
     #[serde(default)]
     pub recycles: Vec<Recycle>,
+    /// Where an editor draws each node, where one has been placed.
+    ///
+    /// **Last, and a table rather than a field on `Instance`.** `products` is names only — an
+    /// output is calculated and has nothing to state — so a per-instance position could not cover
+    /// the boundary, and one table covers all three kinds uniformly. Written last because TOML has
+    /// no way to reopen a key after an array of tables, so a table declared after them is the only
+    /// order the writer can emit; `specs/flowsheets/` holds it to that.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub layout: Option<Layout>,
+}
+
+/// Where the editor draws each node, by name.
+///
+/// **A view and not physics.** Nothing in the run reads it: the checker ignores it, the executor
+/// never sees it, and a flowsheet written by hand carries none — the projection derives a
+/// deterministic layout from the connection graph and uses these only where they exist. It lives
+/// in the document so that one artifact is the whole editor state, which is what makes the round
+/// trip lossless for a figure drawn rather than only for a document typed.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Layout {
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub instances: BTreeMap<String, [f64; 2]>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub inputs: BTreeMap<String, [f64; 2]>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub products: BTreeMap<String, [f64; 2]>,
+}
+
+impl Layout {
+    /// The position stored for one node, by role.
+    #[must_use]
+    pub fn position(&self, role: crate::check::NodeRole, name: &str) -> Option<[f64; 2]> {
+        let placed = match role {
+            crate::check::NodeRole::Instance => &self.instances,
+            crate::check::NodeRole::Input => &self.inputs,
+            crate::check::NodeRole::Product => &self.products,
+        };
+        placed.get(name).copied()
+    }
 }
 
 impl Flowsheet {

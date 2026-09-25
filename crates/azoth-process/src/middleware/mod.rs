@@ -12,3 +12,4 @@
 
 pub mod diagnostic;
 pub mod form;
+pub mod graph;

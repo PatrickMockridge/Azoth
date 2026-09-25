@@ -59,3 +59,18 @@ to = "vapour_product"
 stream = "recycle_1"
 from = "sep1.liquid"
 to = "mix1.feed"
+
+# Where an editor draws each node. Nothing in the run reads it - the checker ignores it and the
+# executor never sees it - and its position here, after the arrays of tables, is the only order
+# TOML lets a writer emit. A flowsheet without a `[layout]` derives a deterministic one instead.
+[layout.inputs]
+feed_1 = [0.0, 60.0]
+
+[layout.instances]
+mix1 = [240.0, 60.0]
+p1 = [480.0, 60.0]
+hx1 = [720.0, 60.0]
+sep1 = [960.0, 60.0]
+
+[layout.products]
+vapour_product = [1200.0, 0.0]
