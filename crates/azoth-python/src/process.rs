@@ -1454,8 +1454,8 @@ impl PySession {
 
     /// Apply one command, and return the envelope it left.
     fn apply(&mut self, command: &str) -> PyResult<String> {
-        let command: azoth_process::middleware::command::Command =
-            serde_json::from_str(command).map_err(|error| PyValueError::new_err(error.to_string()))?;
+        let command: azoth_process::middleware::command::Command = serde_json::from_str(command)
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
         self.workspace
             .apply(&command)
             .map_err(|error| PyValueError::new_err(error.to_string()))?;
