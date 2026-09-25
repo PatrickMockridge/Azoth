@@ -127,6 +127,10 @@ not an equation, and both implementations read it from here.
 - **`AUTO` is a ladder and not one method** - the parking note's finding - so it is refused with them rather than silently resolved.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **NeqSim's own deethanizer state is written on SRK**, and on PR it does not converge in NeqSim at all - the capture keeps that as evidence.
+- **a side draw is a split of the tray's own outlet phase**: `getGasOutStream` is the vapour scaled by `1 - gas` and `getLiquidOutStream` the liquid by `1 - liquid - pumparound`, so a draw carries the tray's own composition, temperature and pressure. **A fraction on an end is refused.**
+- **the two closures count the draws**, which is what `columnReportsSideDrawAsOutletStream` asserts: a closure that ignored them reads `0.248` on the captured state rather than `4.1e-8`.
+- **what is owed is a recycle rather than a split**: the draw's flow-rate specification, `ColumnSideDrawSpecification` and `addSideDrawFlowSpecification`, whose tear loop this port does not carry, and the pumparound's return, `ColumnPumparound` - both of them P12's.
+- **the class's own liquid-and-pumparound row is where its balance does not close**: `RECONCILED_PRODUCTS`, a `2.449` kg/hr imbalance, and products `0.0200` mol/s above this port's, which closes to `9.7e-9`.
 
 ## Cases
 
@@ -147,3 +151,4 @@ not an equation, and both implementations read it from here.
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/DistillationColumn.java` is the port source, through `init` and `solveSequential`; the stage is `SimpleTray.java`, ported as `crates/azoth-process/src/column/tray.rs`.
 - `validation/neqsim/captures/process_column.tsv` - eleven rows: NeqSim's own deethanizer taken to 80 and to 200 iterations, the binary column at a `1e-6` and at a `1e-2` gate, one row per specification type, and the bottom location on the same purity its top case asks for.
 - `validation/neqsim/captures/process_column_solvers.tsv` - the binary column under each of `ColumnSolverFactory`'s ten strategies and the deethanizer under `naphtali_sandholm`, which is the only one of the ten that converges it.
+- `validation/neqsim/captures/process_side_draw.tsv` - the side draws, from `SimpleTraySideDrawTest`: two standalone pure-component trays and a pumparound row, the class's own three one-tray columns with no ends, and the binary column drawing vapour and then liquid with a pumparound.
