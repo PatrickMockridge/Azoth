@@ -16,7 +16,6 @@ import pathlib
 from azoth import _core
 from azoth._dispatch import resolve
 from azoth.core.result import (
-    GibbsReactorResult,
     AbsorptionColumnResult,
     ComponentSplitterResult,
     CompressorResult,
@@ -27,6 +26,7 @@ from azoth.core.result import (
     FilterResult,
     FlareResult,
     GasScrubberResult,
+    GibbsReactorResult,
     HeaterResult,
     HeatExchangerResult,
     ManifoldResult,
