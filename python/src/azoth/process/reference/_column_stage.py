@@ -13,7 +13,7 @@ whose enthalpy is ``-Infinity``, which is not a state a stream can hold.
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.result import Phase, PhFlashResult, PtFlashResult, ReactiveTpFlashResult
@@ -45,6 +45,10 @@ class StageOutcome(TypedDict):
     #: **What the stage had to fall back on, one entry per kind.** A reactive tray's route falls
     #: back the way the class does and says so; every other stage has nothing to report.
     warnings: list[Warning]
+    #: The three draws a stage's fractions produce, set only where a tray states one.
+    gas_side_draw: NotRequired[StreamRecord | None]
+    liquid_side_draw: NotRequired[StreamRecord | None]
+    pumparound: NotRequired[StreamRecord | None]
     t: float
     p: float
     gas: StreamRecord | None
@@ -217,6 +221,64 @@ def reflux_end(
         ),
         "warnings": [],
     }
+
+
+def split_draws(
+    gas: StreamRecord | None,
+    liquid: StreamRecord | None,
+    draws: tuple[float, float, float],
+) -> tuple[
+    StreamRecord | None,
+    StreamRecord | None,
+    StreamRecord | None,
+    StreamRecord | None,
+    StreamRecord | None,
+]:
+    """**The stage's three draw fractions applied to its own phases** - the mirror of
+    ``crates/azoth-process/src/column/tray.rs``'s split.
+
+    ``getGasOutStream`` is the vapour scaled by ``1 - gas``, ``getLiquidOutStream`` the liquid by
+    ``1 - liquid - pumparound``, and each draw the same phase scaled by its own fraction, so a
+    draw carries the tray's composition, temperature and pressure and a different flow.
+
+    **An absent phase is ``None`` and not a zero-flow stream**, which is this port's own rule
+    where the class returns ``createZeroOutStream``.
+    """
+    gas_draw, liquid_draw, pumparound = draws
+
+    def scaled(phase: StreamRecord | None, fraction: float) -> StreamRecord | None:
+        if phase is None or fraction <= 0.0:
+            return None
+        return {**phase, "n": phase["n"] * fraction}
+
+    return (
+        scaled(gas, 1.0 - gas_draw),
+        scaled(liquid, 1.0 - liquid_draw - pumparound),
+        scaled(gas, gas_draw),
+        scaled(liquid, liquid_draw),
+        scaled(liquid, pumparound),
+    )
+
+
+def validate_draws(draws: tuple[float, float, float]) -> None:
+    """``validateSideDrawFraction`` and ``validateLiquidSplitFractions``, the class's own checks."""
+    for name, fraction in zip(
+        ("gas_side_draw_fractions", "liquid_side_draw_fractions", "pumparound_fractions"),
+        draws,
+        strict=True,
+    ):
+        if not (fraction == fraction) or fraction < 0.0 or fraction > 1.0:
+            raise InvalidInputError(
+                name,
+                f"a side-draw fraction of {fraction} is outside [0, 1], which "
+                f"`SimpleTray.validateSideDrawFraction` refuses",
+            )
+    if draws[1] + draws[2] > 1.0 + 1.0e-12:
+        raise InvalidInputError(
+            "liquid_side_draw_fractions",
+            f"a liquid side draw of {draws[1]} and a pumparound of {draws[2]} withdraw more than "
+            f"the tray's liquid, which `validateLiquidSplitFractions` refuses",
+        )
 
 
 def reactive_stage(

@@ -43,6 +43,9 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
         reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     }
 }
 
@@ -275,6 +278,9 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
         reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     });
 
     let out = out.expect(

@@ -864,4 +864,9 @@ def _outcome(mesh: Mesh, iterations: int, residual: float) -> _States:
         # `distillation_column`'s own refusal: this solve takes its fugacities from the
         # MESH equations, so the flag could only be ignored.
         warnings=(),
+        # **The mesh solve carries no side draws**, and the model refuses the pair rather than
+        # ignoring the fractions - these equations never form a tray's own outlet streams.
+        gas_side_draw_n=(0.0,) * len(mesh.t),
+        liquid_side_draw_n=(0.0,) * len(mesh.t),
+        pumparound_n=(0.0,) * len(mesh.t),
     )

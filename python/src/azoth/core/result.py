@@ -4112,6 +4112,14 @@ class PackedColumnResult(_HasWarnings):
     bottoms_t: Q
     #: The bottoms' molar enthalpy at its own state.
     bottoms_h: Q
+    #: **The vapour each tray withdrew**, one entry per tray and zero where it drew none. Its
+    #: composition is the tray's own vapour, and a draw taken from the wrong phase shows up in
+    #: ``mass_residual``, which counts the draws.
+    gas_side_draw_n: tuple[Q, ...]
+    #: The liquid each tray withdrew as a liquid side draw.
+    liquid_side_draw_n: tuple[Q, ...]
+    #: The liquid each tray withdrew as a pumparound.
+    pumparound_n: tuple[Q, ...]
     #: The condenser's duty, negative for a condenser.
     condenser_duty: Q
     #: The reboiler's duty.
@@ -4216,6 +4224,14 @@ class DistillationColumnResult(_HasWarnings):
     bottoms_t: Q
     #: The bottoms' molar enthalpy at its own state.
     bottoms_h: Q
+    #: **The vapour each tray withdrew**, one entry per tray and zero where it drew none. Its
+    #: composition is the tray's own vapour, and a draw taken from the wrong phase shows up in
+    #: ``mass_residual``, which counts the draws.
+    gas_side_draw_n: tuple[Q, ...]
+    #: The liquid each tray withdrew as a liquid side draw.
+    liquid_side_draw_n: tuple[Q, ...]
+    #: The liquid each tray withdrew as a pumparound.
+    pumparound_n: tuple[Q, ...]
     #: The condenser's duty, negative for a condenser.
     condenser_duty: Q
     #: The reboiler's duty.

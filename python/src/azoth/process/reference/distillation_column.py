@@ -45,7 +45,13 @@ from azoth.core.result import DistillationColumnResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.process.reference import _column_stage as _stage
-from azoth.process.reference._column_stage import StreamRecord, reactive_stage, stage
+from azoth.process.reference._column_stage import (
+    StreamRecord,
+    reactive_stage,
+    split_draws,
+    stage,
+    validate_draws,
+)
 
 #: The class's own adaptive-relaxation constants, from `DistillationColumn`'s initialisers.
 MIN_SEQUENTIAL_RELAXATION = 0.5
@@ -145,6 +151,12 @@ class _States(NamedTuple):
     #: **What the stages had to fall back on**, one entry per kind, which the model merges with
     #: its own checks' caveats.
     warnings: tuple[Warning, ...]
+    #: The vapour each tray withdrew, one entry per tray and zero where it drew none.
+    gas_side_draw_n: tuple[float, ...]
+    #: The liquid each tray withdrew as a liquid side draw.
+    liquid_side_draw_n: tuple[float, ...]
+    #: The liquid each tray withdrew as a pumparound.
+    pumparound_n: tuple[float, ...]
     #: Each tray's temperature, K, from the reboiler at stage 0 to the condenser.
     tray_temperature: tuple[float, ...]
     #: Each tray's pressure, Pa.
@@ -218,6 +230,9 @@ def distillation_column(
     reactive: bool | None = None,
     reactive_start_tray: int | None = None,
     reactive_end_tray: int | None = None,
+    gas_side_draw_fractions: list[float] | None = None,
+    liquid_side_draw_fractions: list[float] | None = None,
+    pumparound_fractions: list[float] | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -326,6 +341,26 @@ def distillation_column(
         "bottom",
     )
 
+    draws_stated = (
+        gas_side_draw_fractions is not None
+        or liquid_side_draw_fractions is not None
+        or pumparound_fractions is not None
+    )
+    draws = None
+    if draws_stated:
+        draws = (
+            tuple(float(v) for v in (gas_side_draw_fractions or ())),
+            tuple(float(v) for v in (liquid_side_draw_fractions or ())),
+            tuple(float(v) for v in (pumparound_fractions or ())),
+        )
+
+    if draws_stated and solver_type == "naphtali_sandholm":
+        raise InvalidInputError(
+            "gas_side_draw_fractions",
+            "side draws under `naphtali_sandholm` are not ported: this port's mesh solves the "
+            "MESH equations together and never forms a tray's own outlet streams",
+        )
+
     spec = _spec()
     checks = checks_for(spec)
     warnings: list[Warning] = []
@@ -388,6 +423,7 @@ def distillation_column(
         bottom_specification,
         solver_type,
         reactive=section,
+        draws=draws,
     )
     warnings.extend(states.warnings)
 
@@ -406,6 +442,9 @@ def distillation_column(
         bottoms_p=from_si(states.bottoms_p, "Pa"),
         bottoms_t=from_si(states.bottoms_t, "K"),
         bottoms_h=from_si(states.bottoms_h, "J/mol"),
+        gas_side_draw_n=tuple(from_si(value, "mol/s") for value in states.gas_side_draw_n),
+        liquid_side_draw_n=tuple(from_si(value, "mol/s") for value in states.liquid_side_draw_n),
+        pumparound_n=tuple(from_si(value, "mol/s") for value in states.pumparound_n),
         condenser_duty=from_si(states.condenser_duty, "W"),
         reboiler_duty=from_si(states.reboiler_duty, "W"),
         iterations=states.iterations,
@@ -438,6 +477,7 @@ def _states(
     top_feed: StreamRecord | None = None,
     tray_temperatures: tuple[float, ...] | None = None,
     reactive: tuple[int, int] | None = None,
+    draws: tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]] | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
 
@@ -451,6 +491,12 @@ def _states(
     # **What the stages had to fall back on**, one entry per kind: a reactive tray's own
     # fallback, deduplicated the way the Rust kernel deduplicates it.
     collected_warnings: list[Warning] = []
+    # What each tray withdrew, one vector per kind, in `DRAW_FIELDS`' order.
+    drawn: list[list[StreamRecord | None]] = [
+        [None] * tray_count,
+        [None] * tray_count,
+        [None] * tray_count,
+    ]
     if number_of_stages == 0:
         raise InvalidInputError(
             "number_of_stages", "a column with no stages between its ends is not a column"
@@ -588,6 +634,12 @@ def _states(
             return True
         return start <= middle <= end
 
+    def draws_at(i: int) -> tuple[float, float, float]:
+        """The three fractions a tray states, a zero where a vector is absent."""
+        if draws is None:
+            return (0.0, 0.0, 0.0)
+        return tuple(vector[i] if i < len(vector) else 0.0 for vector in draws)  # type: ignore[return-value]
+
     def run_with(i: int, inlets: list[StreamRecord]) -> None:
         kind, value = modes[i]
         if kind == "temperature":
@@ -608,7 +660,21 @@ def _states(
             out = _stage.reflux_end(
                 inlets, pressures[i], value, "vapour" if i == tray_count - 1 else "liquid"
             )
+        stated = draws_at(i)
+        if stated != (0.0, 0.0, 0.0):
+            # **The draws come off the phase the tray has just formed**, exactly as the Rust
+            # stage's own split does.
+            (
+                out["gas"],
+                out["liquid"],
+                out["gas_side_draw"],
+                out["liquid_side_draw"],
+                out["pumparound"],
+            ) = split_draws(out["gas"], out["liquid"], stated)
         gas[i], liquid[i] = out["gas"], out["liquid"]
+        drawn[0][i] = out.get("gas_side_draw")
+        drawn[1][i] = out.get("liquid_side_draw")
+        drawn[2][i] = out.get("pumparound")
         for warning in out["warnings"]:
             if all(held.code != warning.code for held in collected_warnings):
                 collected_warnings.append(warning)
@@ -617,6 +683,33 @@ def _states(
         if temperature != temperature:  # NaN
             return stream
         return _restate(components, stream, temperature)
+
+    # The three validators, and the ends' refusal: a fraction on a reboiler or a condenser names
+    # a stage this port does not have.
+    if draws is not None:
+        for vector, name in zip(
+            draws,
+            ("gas_side_draw_fractions", "liquid_side_draw_fractions", "pumparound_fractions"),
+            strict=True,
+        ):
+            if len(vector) != tray_count:
+                raise InvalidInputError(
+                    name,
+                    f"{len(vector)} fraction(s) against {tray_count} tray(s): the vector is one "
+                    f"entry per tray, a zero where a tray draws nothing",
+                )
+            for index, exists, where in (
+                (0, has_reboiler, "the reboiler"),
+                (tray_count - 1, has_condenser, "the condenser"),
+            ):
+                if exists and vector[index] != 0.0:
+                    raise InvalidInputError(
+                        name,
+                        f"a draw is stated on {where}, which is not ported: the ends here are "
+                        f"`column::reboiler` and `column::condenser` rather than stages",
+                    )
+        for i in range(tray_count):
+            validate_draws(draws_at(i))
 
     def inlets_of(i: int, seed: list[float] | None) -> list[StreamRecord]:
         inlets: list[StreamRecord] = []
@@ -872,6 +965,9 @@ def _states(
 
     return _States(
         warnings=tuple(collected_warnings),
+        gas_side_draw_n=tuple(draw["n"] if draw is not None else 0.0 for draw in drawn[0]),
+        liquid_side_draw_n=tuple(draw["n"] if draw is not None else 0.0 for draw in drawn[1]),
+        pumparound_n=tuple(draw["n"] if draw is not None else 0.0 for draw in drawn[2]),
         tray_temperature=tuple(temperature(i) for i in range(tray_count)),
         tray_pressure=tuple(pressures),
         tray_gas_n=tuple(

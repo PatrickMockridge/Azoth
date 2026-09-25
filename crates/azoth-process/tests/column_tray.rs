@@ -7,7 +7,7 @@
 
 use azoth_core::units::{kelvins, pascals, watts};
 use azoth_process::Stream;
-use azoth_process::column::{TrayOutcome, tray};
+use azoth_process::column::{SideDraws, TrayOutcome, tray};
 
 /// The capture's fluid: a four-component mixture whose split exercises both ends of the
 /// relative-volatility range.
@@ -109,8 +109,15 @@ fn absolute(actual: f64, expected: f64, tolerance: f64, what: &str) {
 /// `14` digits of the temperature.
 #[test]
 fn a_tray_splits_one_two_phase_feed() {
-    let out =
-        tray(&[feed(300.0, 20.0, 1.0)], None, None, watts(0.0), false).expect("the tray solves");
+    let out = tray(
+        &[feed(300.0, 20.0, 1.0)],
+        None,
+        None,
+        watts(0.0),
+        SideDraws::NONE,
+        false,
+    )
+    .expect("the tray solves");
 
     absolute(
         out.temperature.value,
@@ -159,6 +166,7 @@ fn a_tray_mixes_two_inlets_before_it_flashes() {
         None,
         None,
         watts(0.0),
+        SideDraws::NONE,
         false,
     )
     .expect("the tray solves");
@@ -188,6 +196,7 @@ fn a_stated_outlet_temperature_replaces_the_enthalpy_flash() {
         None,
         Some(kelvins(320.0)),
         watts(0.0),
+        SideDraws::NONE,
         false,
     )
     .expect("the tray solves");
@@ -217,8 +226,10 @@ fn a_stated_outlet_temperature_replaces_the_enthalpy_flash() {
 fn a_trays_duty_is_a_total_enthalpy_and_the_flow_divides_it() {
     let one_in = [feed(300.0, 20.0, 1.0)];
     let two_in = [feed(300.0, 20.0, 2.0)];
-    let one = tray(&one_in, None, None, watts(5000.0), false).expect("the tray solves");
-    let two = tray(&two_in, None, None, watts(5000.0), false).expect("the tray solves");
+    let one =
+        tray(&one_in, None, None, watts(5000.0), SideDraws::NONE, false).expect("the tray solves");
+    let two =
+        tray(&two_in, None, None, watts(5000.0), SideDraws::NONE, false).expect("the tray solves");
 
     // The two-mol row's vapour fraction is the oracle for the division: a molar reading of
     // the duty would have left it at the one-mol row's 0.6018.
@@ -259,6 +270,7 @@ fn a_tray_pressure_overrides_the_inlets() {
         Some(pascals(15.0e5)),
         None,
         watts(0.0),
+        SideDraws::NONE,
         false,
     )
     .expect("the tray solves");
@@ -289,16 +301,30 @@ fn a_tray_pressure_overrides_the_inlets() {
 /// phase, so reading the split off it would give a subcooled feed all of its flow as vapour.
 #[test]
 fn an_absent_phase_is_none_and_beta_does_not_say_so() {
-    let subcooled =
-        tray(&[feed(220.0, 20.0, 1.0)], None, None, watts(0.0), false).expect("the tray");
+    let subcooled = tray(
+        &[feed(220.0, 20.0, 1.0)],
+        None,
+        None,
+        watts(0.0),
+        SideDraws::NONE,
+        false,
+    )
+    .expect("the tray");
     assert!(subcooled.gas.is_none(), "a subcooled feed has no vapour");
     let liquid = subcooled.liquid.expect("a subcooled feed is all liquid");
     relative(liquid.n, 1.0, 1e-12, "the liquid carries the whole flow");
     assert_eq!(liquid.z, feed(220.0, 20.0, 1.0).z, "the tray's composition");
     absolute(liquid.h.value, -20429.951874378614, 0.1, "liquid h");
 
-    let superheated =
-        tray(&[feed(400.0, 20.0, 1.0)], None, None, watts(0.0), false).expect("the tray");
+    let superheated = tray(
+        &[feed(400.0, 20.0, 1.0)],
+        None,
+        None,
+        watts(0.0),
+        SideDraws::NONE,
+        false,
+    )
+    .expect("the tray");
     assert!(
         superheated.liquid.is_none(),
         "a superheated feed has no liquid"
@@ -314,5 +340,99 @@ fn an_absent_phase_is_none_and_beta_does_not_say_so() {
 /// No inlets is not a tray.
 #[test]
 fn a_tray_with_no_inlets_is_refused() {
-    assert!(tray(&[], None, None, watts(0.0), false).is_err());
+    assert!(tray(&[], None, None, watts(0.0), SideDraws::NONE, false).is_err());
+}
+
+/// **A side draw is a split of the tray's own outlet phase, and the split is an identity.**
+///
+/// `SimpleTraySideDrawTest.gasSideDrawSplitsTrayOutletFlow` runs two trays on one feed - a
+/// reference and one drawing a quarter of its vapour - and asserts that the reference's gas flow
+/// equals the drawing tray's own gas plus its draw, and that the draw is the fraction of the
+/// reference. Both are identities rather than numbers, so they hold whatever the flash answers,
+/// and asserting them here is what makes the *routing* right rather than the arithmetic lucky.
+#[test]
+fn a_gas_side_draw_is_a_split_of_the_trays_own_vapour() {
+    let inlets = [feed(300.0, 20.0, 1.0)];
+    let plain = tray(&inlets, None, None, watts(0.0), SideDraws::NONE, false).expect("it solves");
+    let drawn = tray(
+        &inlets,
+        None,
+        None,
+        watts(0.0),
+        SideDraws {
+            gas: 0.25,
+            ..SideDraws::NONE
+        },
+        false,
+    )
+    .expect("it solves");
+
+    let reference = plain.gas.as_ref().expect("the plain tray holds vapour").n;
+    let kept = drawn.gas.as_ref().expect("the drawing tray keeps vapour").n;
+    let side = drawn
+        .gas_side_draw
+        .as_ref()
+        .expect("a quarter is withdrawn")
+        .n;
+
+    relative(
+        kept + side,
+        reference,
+        1.0e-12,
+        "the draw and the outlet against the whole",
+    );
+    relative(
+        side,
+        0.25 * reference,
+        1.0e-12,
+        "the draw against a quarter of it",
+    );
+    relative(
+        plain.liquid.as_ref().expect("liquid").n,
+        drawn.liquid.as_ref().expect("liquid").n,
+        1.0e-12,
+        "the liquid, which the gas draw does not touch",
+    );
+    // **A draw carries the tray's own state**: the same composition, temperature and pressure.
+    let phase = drawn.gas.as_ref().expect("vapour");
+    assert_eq!(drawn.gas_side_draw.as_ref().expect("the draw").z, phase.z);
+    assert_eq!(
+        drawn.gas_side_draw.as_ref().expect("the draw").t.value,
+        drawn.temperature.value
+    );
+}
+
+/// **The two liquid fractions are bounded together**, which is the class's own
+/// `validateLiquidSplitFractions`: a side draw of 0.6 and a pumparound of 0.5 withdraw more than
+/// the tray's liquid, and `SimpleTraySideDrawTest` asserts the refusal at the setter.
+#[test]
+fn a_liquid_draw_and_a_pumparound_may_not_withdraw_more_than_the_liquid() {
+    let inlets = [feed(300.0, 20.0, 1.0)];
+    let refused = tray(
+        &inlets,
+        None,
+        None,
+        watts(0.0),
+        SideDraws {
+            liquid: 0.6,
+            pumparound: 0.5,
+            ..SideDraws::NONE
+        },
+        false,
+    );
+    assert!(refused.is_err(), "the pair sums above one");
+
+    // And a fraction outside [0, 1] is refused too, as `validateSideDrawFraction` refuses it.
+    let out_of_range = tray(
+        &inlets,
+        None,
+        None,
+        watts(0.0),
+        SideDraws {
+            gas: 1.1,
+            ..SideDraws::NONE
+        },
+        false,
+    );
+    assert!(out_of_range.is_err(), "a fraction above one");
 }

@@ -10577,6 +10577,15 @@ pub struct PyDistillationColumnResult {
     /// Bottoms molar enthalpy.
     #[pyo3(get)]
     pub bottoms_h: PyQty,
+    /// The vapour each tray withdrew as a gas side draw.
+    #[pyo3(get)]
+    pub gas_side_draw_n: Vec<PyQty>,
+    /// The liquid each tray withdrew as a liquid side draw.
+    #[pyo3(get)]
+    pub liquid_side_draw_n: Vec<PyQty>,
+    /// The liquid each tray withdrew as a pumparound.
+    #[pyo3(get)]
+    pub pumparound_n: Vec<PyQty>,
     /// The condenser's duty, W.
     #[pyo3(get)]
     pub condenser_duty: PyQty,
@@ -10726,6 +10735,15 @@ pub struct PyPackedColumnResult {
     /// The bottoms' molar enthalpy.
     #[pyo3(get)]
     pub bottoms_h: PyQty,
+    /// The vapour each tray withdrew as a gas side draw.
+    #[pyo3(get)]
+    pub gas_side_draw_n: Vec<PyQty>,
+    /// The liquid each tray withdrew as a liquid side draw.
+    #[pyo3(get)]
+    pub liquid_side_draw_n: Vec<PyQty>,
+    /// The liquid each tray withdrew as a pumparound.
+    #[pyo3(get)]
+    pub pumparound_n: Vec<PyQty>,
     /// The condenser's duty.
     #[pyo3(get)]
     pub condenser_duty: PyQty,
@@ -10782,6 +10800,30 @@ impl From<&PackedColumnResult> for PyPackedColumnResult {
             bottoms_p: quantity(r.bottoms_p.value, "Pa"),
             bottoms_t: quantity(r.bottoms_t.value, "K"),
             bottoms_h: quantity(r.bottoms_h.value, "J/mol"),
+            gas_side_draw_n: r
+                .gas_side_draw_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
+            liquid_side_draw_n: r
+                .liquid_side_draw_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
+            pumparound_n: r
+                .pumparound_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
             condenser_duty: quantity(r.condenser_duty.value, "W"),
             reboiler_duty: quantity(r.reboiler_duty.value, "W"),
             iterations: r.iterations,
@@ -10974,6 +11016,30 @@ impl From<&DistillationColumnResult> for PyDistillationColumnResult {
             bottoms_p: quantity(r.bottoms_p.value, "Pa"),
             bottoms_t: quantity(r.bottoms_t.value, "K"),
             bottoms_h: quantity(r.bottoms_h.value, "J/mol"),
+            gas_side_draw_n: r
+                .gas_side_draw_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
+            liquid_side_draw_n: r
+                .liquid_side_draw_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
+            pumparound_n: r
+                .pumparound_n
+                .iter()
+                .map(|n| PyQty {
+                    magnitude_si: *n,
+                    unit: "mol/s".to_string(),
+                })
+                .collect(),
             condenser_duty: quantity(r.condenser_duty.value, "W"),
             reboiler_duty: quantity(r.reboiler_duty.value, "W"),
             iterations: r.iterations,

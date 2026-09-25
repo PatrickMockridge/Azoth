@@ -144,6 +144,24 @@ description = "the first reactive middle tray, 0-based among the middle trays - 
 unit = "dimensionless"
 optional = true
 description = "the last reactive middle tray, inclusive.\\n"
+[inputs.gas_side_draw_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray, a zero where a tray draws nothing"
+optional = true
+description = "**the vapour each tray withdraws from its own outlet**, which `setGasSideDrawFraction` states as a fraction of the phase: a draw has the tray's composition, temperature and pressure and a different flow. **A fraction on an end is refused.**\n"
+[inputs.liquid_side_draw_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray"
+optional = true
+description = "the liquid each tray withdraws as a side draw, from the same liquid a pumparound takes from: **the two are bounded together** by `validateLiquidSplitFractions` and may not sum above one.\n"
+[inputs.pumparound_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray"
+optional = true
+description = "the liquid each tray withdraws as a pumparound. **The return is not ported**: `ColumnPumparound` carries a return tray and a temperature drop, which is a recycle the column's own solver iterates.\n"
 [outputs]
 [outputs.tray_temperature]
 type = "vector"
@@ -199,6 +217,21 @@ description = "the bottoms' temperature, which is the reboiler's own.\n"
 [outputs.bottoms_h]
 unit = "J/mol"
 description = "the bottoms' molar enthalpy at its own state.\n"
+[outputs.gas_side_draw_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray, a zero where a tray draws none"
+description = "the vapour each tray withdrew. **Its composition is the tray's own vapour**, and a draw taken from the wrong phase shows up in `mass_residual`, which counts the draws.\n"
+[outputs.liquid_side_draw_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the liquid each tray withdrew as a side draw.\n"
+[outputs.pumparound_n]
+type = "vector"
+unit = "mol/s"
+length = "one per tray"
+description = "the liquid each tray withdrew as a pumparound.\n"
 [outputs.condenser_duty]
 unit = "W"
 description = "the condenser's duty: its products' enthalpy less the vapour's that came in, which is negative for a condenser.\n"

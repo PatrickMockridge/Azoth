@@ -199,6 +199,9 @@ def distillation_column(
     reactive: bool | None = None,
     reactive_start_tray: int | None = None,
     reactive_end_tray: int | None = None,
+    gas_side_draw_fractions: list[float] | None = None,
+    liquid_side_draw_fractions: list[float] | None = None,
+    pumparound_fractions: list[float] | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -251,6 +254,9 @@ def distillation_column(
         reactive=reactive,
         reactive_start_tray=reactive_start_tray,
         reactive_end_tray=reactive_end_tray,
+        gas_side_draw_fractions=gas_side_draw_fractions,
+        liquid_side_draw_fractions=liquid_side_draw_fractions,
+        pumparound_fractions=pumparound_fractions,
     )
 
 

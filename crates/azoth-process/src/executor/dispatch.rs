@@ -665,6 +665,9 @@ fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stre
 fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::ColumnSetup> {
     Ok(kernels::ColumnSetup {
         reactive: kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
         feed: inlets[0].clone(),
         feed_stage: p.number("feed_stage")? as usize,
         number_of_stages: p.number("number_of_stages")? as usize,

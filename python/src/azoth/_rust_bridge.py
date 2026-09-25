@@ -3984,6 +3984,9 @@ def distillation_column(
     reactive: bool | None = None,
     reactive_start_tray: int | None = None,
     reactive_end_tray: int | None = None,
+    gas_side_draw_fractions: Sequence[float] | None = None,
+    liquid_side_draw_fractions: Sequence[float] | None = None,
+    pumparound_fractions: Sequence[float] | None = None,
 ) -> DistillationColumnResult:
     """`process.distillation_column`, computed in Rust.
 
@@ -4027,6 +4030,13 @@ def distillation_column(
         reactive,
         None if reactive_start_tray is None else int(reactive_start_tray),
         None if reactive_end_tray is None else int(reactive_end_tray),
+        None
+        if gas_side_draw_fractions is None
+        else [float(v) for v in gas_side_draw_fractions],
+        None
+        if liquid_side_draw_fractions is None
+        else [float(v) for v in liquid_side_draw_fractions],
+        None if pumparound_fractions is None else [float(v) for v in pumparound_fractions],
     )
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -4043,6 +4053,15 @@ def distillation_column(
         bottoms_p=from_si(result.bottoms_p.magnitude_si, result.bottoms_p.unit),
         bottoms_t=from_si(result.bottoms_t.magnitude_si, result.bottoms_t.unit),
         bottoms_h=from_si(result.bottoms_h.magnitude_si, result.bottoms_h.unit),
+        gas_side_draw_n=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.gas_side_draw_n
+        ),
+        liquid_side_draw_n=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.liquid_side_draw_n
+        ),
+        pumparound_n=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.pumparound_n
+        ),
         condenser_duty=from_si(result.condenser_duty.magnitude_si, result.condenser_duty.unit),
         reboiler_duty=from_si(result.reboiler_duty.magnitude_si, result.reboiler_duty.unit),
         iterations=int(result.iterations),
@@ -4322,6 +4341,15 @@ def packed_column(
         bottom_specification_component,
     )
     return PackedColumnResult(
+        gas_side_draw_n=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.gas_side_draw_n
+        ),
+        liquid_side_draw_n=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.liquid_side_draw_n
+        ),
+        pumparound_n=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.pumparound_n
+        ),
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
         tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
         tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),

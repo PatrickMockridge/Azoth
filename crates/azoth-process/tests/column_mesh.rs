@@ -61,6 +61,9 @@ fn binary(solver_type: SolverType) -> ColumnSetup {
         tray_temperatures: None,
         solver_type,
         reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     }
 }
 
@@ -100,6 +103,9 @@ fn deethanizer(solver_type: SolverType) -> ColumnSetup {
         tray_temperatures: None,
         solver_type,
         reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     }
 }
 
@@ -431,6 +437,10 @@ fn model(
         None,
         None,
         // The model's reactive section, which this test does not state.
+        None,
+        None,
+        None,
+        // Nor its side draws.
         None,
         None,
         None,

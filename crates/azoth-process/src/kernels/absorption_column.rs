@@ -96,6 +96,10 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         // **The absorber's own section is the class's**: `AbsorptionColumn` inherits
         // `setReactive`, and its model does not declare the input yet, so it is `None` here.
         reactive: super::distillation_column::ReactiveSection::None,
+        // The absorber's own fractions are the class's too, and its model does not declare them.
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     })?;
 
     Ok(AbsorberOutcome {

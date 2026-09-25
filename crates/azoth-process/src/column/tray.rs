@@ -30,10 +30,81 @@ pub struct TrayOutcome {
     pub gas: Option<Stream>,
     /// The liquid leaving the stage, or `None` where the flash found no liquid.
     pub liquid: Option<Stream>,
+    /// The vapour withdrawn as a gas side draw, or `None` where the stage draws none.
+    pub gas_side_draw: Option<Stream>,
+    /// The liquid withdrawn as a liquid side draw, or `None`.
+    pub liquid_side_draw: Option<Stream>,
+    /// The liquid withdrawn as a pumparound, or `None`.
+    pub pumparound: Option<Stream>,
     /// **What the stage had to fall back on.** NeqSim's reactive route falls back from a
     /// reactive PH flash to a reactive TP one and then to a plain TP flash, logging each step;
     /// a stage says which it took rather than doing it silently.
     pub warnings: Vec<Warning>,
+}
+
+/// **What a stage withdraws from its own outlets**: `SimpleTray`'s three draw fractions.
+///
+/// Each is a fraction of the phase the tray has just formed, so a draw has the tray's own
+/// composition, temperature and pressure and a different flow. `getGasOutStream` is the gas
+/// scaled by `1 - gas`, `getLiquidOutStream` the liquid by `1 - liquid - pumparound`, and each
+/// draw the same phase scaled by its own.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct SideDraws {
+    /// The fraction of the tray's vapour withdrawn as a gas side draw.
+    pub gas: f64,
+    /// The fraction of the tray's liquid withdrawn as a liquid side draw.
+    pub liquid: f64,
+    /// The fraction of the tray's liquid withdrawn as a pumparound.
+    pub pumparound: f64,
+}
+
+impl SideDraws {
+    /// No draw at all, which is what a stage without a stated fraction is.
+    pub const NONE: Self = Self {
+        gas: 0.0,
+        liquid: 0.0,
+        pumparound: 0.0,
+    };
+
+    /// Whether the stage withdraws nothing.
+    #[must_use]
+    pub fn is_none(self) -> bool {
+        self.gas == 0.0 && self.liquid == 0.0 && self.pumparound == 0.0
+    }
+
+    /// **`validateSideDrawFraction` and `validateLiquidSplitFractions`**, which are the class's
+    /// own checks and the two it makes at the setter rather than at the flash: a fraction
+    /// outside `[0, 1]`, or two liquid fractions whose sum exceeds one, is refused.
+    fn validate(self) -> Result<()> {
+        for (name, fraction) in [
+            ("gas_side_draw_fractions", self.gas),
+            ("liquid_side_draw_fractions", self.liquid),
+            ("pumparound_fractions", self.pumparound),
+        ] {
+            if !fraction.is_finite() || !(0.0..=1.0).contains(&fraction) {
+                return Err(AzothError::invalid_input(
+                    name,
+                    format!(
+                        "a side-draw fraction of {fraction} is outside [0, 1], which \
+                         `SimpleTray.validateSideDrawFraction` refuses"
+                    ),
+                ));
+            }
+        }
+        // The class's own slack on the pair, `1.0 + 1e-12`, carried because it is the tolerance
+        // its own test states its bound with.
+        if self.liquid + self.pumparound > 1.0 + 1.0e-12 {
+            return Err(AzothError::invalid_input(
+                "liquid_side_draw_fractions",
+                format!(
+                    "a liquid side draw of {} and a pumparound of {} withdraw more than the \
+                     tray's liquid, which `validateLiquidSplitFractions` refuses",
+                    self.liquid, self.pumparound
+                ),
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// One equilibrium stage: mix the inlets, add the duty, flash.
@@ -71,11 +142,13 @@ pub fn tray(
     tray_pressure: Option<Pressure>,
     out_temperature: Option<ThermodynamicTemperature>,
     heat_input: Power,
+    draws: SideDraws,
     reactive: bool,
 ) -> Result<TrayOutcome> {
+    draws.validate()?;
     let mixed = mixer(inlets, tray_pressure)?;
     if reactive {
-        return reactive_stage(&mixed, out_temperature, heat_input);
+        return reactive_stage(&mixed, out_temperature, heat_input, draws);
     }
     let (mixture, ideal_gas) = mixed.mixture()?;
 
@@ -140,13 +213,49 @@ pub fn tray(
         None
     };
 
+    // **The draws come off the phase the tray has just formed**, so each has the tray's own
+    // composition, temperature and pressure: `getGasOutStream` is the vapour scaled by
+    // `1 - gas`, `getLiquidOutStream` the liquid by `1 - liquid - pumparound`, and each draw
+    // the same phase scaled by its own fraction.
+    let gas_side_draw = scaled(gas.as_ref(), draws.gas)?;
+    let liquid_side_draw = scaled(liquid.as_ref(), draws.liquid)?;
+    let pumparound = scaled(liquid.as_ref(), draws.pumparound)?;
+    let gas = scaled(gas.as_ref(), 1.0 - draws.gas)?;
+    let liquid = scaled(liquid.as_ref(), 1.0 - draws.liquid - draws.pumparound)?;
+
     Ok(TrayOutcome {
         temperature,
         pressure: mixed.p,
         gas,
         liquid,
+        gas_side_draw,
+        liquid_side_draw,
+        pumparound,
         warnings: Vec::new(),
     })
+}
+
+/// One of the stage's phases scaled by a split fraction - `scalePhaseSystemByFraction`, whose
+/// arithmetic is a multiplication and whose branch the port states differently.
+///
+/// **An absent phase is `None` and not a zero-flow stream.** The class returns
+/// `createZeroOutStream` for a phase that is not there, and this port's own rule - written into
+/// `TrayOutcome`'s doc - is that the absence of a phase is a fact to spell rather than a number
+/// to fabricate.
+fn scaled(phase: Option<&Stream>, fraction: f64) -> Result<Option<Stream>> {
+    let Some(phase) = phase else {
+        return Ok(None);
+    };
+    if fraction <= 0.0 {
+        return Ok(None);
+    }
+    Ok(Some(Stream::from_pt(
+        phase.components.clone(),
+        phase.z.clone(),
+        phase.n * fraction,
+        phase.p,
+        phase.t,
+    )?))
 }
 
 /// What share of the tray's flow leaves as vapour and as liquid.
@@ -196,6 +305,7 @@ fn reactive_stage(
     mixed: &Stream,
     out_temperature: Option<ThermodynamicTemperature>,
     heat_input: Power,
+    draws: SideDraws,
 ) -> Result<TrayOutcome> {
     let names = mixed.components.clone();
     let moles: Vec<f64> = mixed.z.iter().map(|z| z * mixed.n).collect();
@@ -242,11 +352,21 @@ fn reactive_stage(
     };
 
     let (gas, liquid) = reactive_outlets(&names, mixed.p, temperature, &tp, &mut warnings)?;
+    // `ReactiveTray extends SimpleTray`, so a reactive stage draws exactly as an equilibrium one
+    // does.
+    let gas_side_draw = scaled(gas.as_ref(), draws.gas)?;
+    let liquid_side_draw = scaled(liquid.as_ref(), draws.liquid)?;
+    let pumparound = scaled(liquid.as_ref(), draws.pumparound)?;
+    let gas = scaled(gas.as_ref(), 1.0 - draws.gas)?;
+    let liquid = scaled(liquid.as_ref(), 1.0 - draws.liquid - draws.pumparound)?;
     Ok(TrayOutcome {
         temperature: kelvins(temperature),
         pressure: mixed.p,
         gas,
         liquid,
+        gas_side_draw,
+        liquid_side_draw,
+        pumparound,
         warnings,
     })
 }

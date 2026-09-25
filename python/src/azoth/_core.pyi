@@ -1424,6 +1424,9 @@ class DistillationColumnResult:
     bottoms_p: Qty
     bottoms_t: Qty
     bottoms_h: Qty
+    gas_side_draw_n: list[Qty]
+    liquid_side_draw_n: list[Qty]
+    pumparound_n: list[Qty]
     condenser_duty: Qty
     reboiler_duty: Qty
     iterations: int
@@ -1558,6 +1561,9 @@ class PackedColumnResult:
     bottoms_p: Qty
     bottoms_t: Qty
     bottoms_h: Qty
+    gas_side_draw_n: list[Qty]
+    liquid_side_draw_n: list[Qty]
+    pumparound_n: list[Qty]
     condenser_duty: Qty
     reboiler_duty: Qty
     iterations: int

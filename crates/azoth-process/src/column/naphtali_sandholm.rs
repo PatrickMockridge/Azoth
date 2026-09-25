@@ -1067,6 +1067,7 @@ impl Mesh {
                 mass_residual = mass_residual.max((supplied - delivered).abs() / supplied.abs());
             }
         }
+        let tray_count = trays.len();
         Ok(ColumnOutcome {
             trays,
             // **This solve has no reactive route, and the model refuses the pair rather than
@@ -1074,6 +1075,12 @@ impl Mesh {
             // mixture, where the class's trays take them from the tray's own flash - so a
             // reactive section here could only be silently non-reactive.
             warnings: Vec::new(),
+            // **The mesh solve carries no side draws**, and the model refuses the pair rather
+            // than ignoring the fractions: these equations take their fugacities from the mesh's
+            // own mixture, so a draw has no tray outlet here to split.
+            gas_side_draws: vec![None; tray_count],
+            liquid_side_draws: vec![None; tray_count],
+            pumparounds: vec![None; tray_count],
             distillate,
             bottoms,
             condenser_duty,

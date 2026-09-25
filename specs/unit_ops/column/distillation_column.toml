@@ -7,6 +7,12 @@ description = "whether the middle trays flash reactively, which `setReactive(tru
 description = "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last - `setReactive(true, start, end)`. Both bounds are stated or neither"
 [parameters.reactive_end_tray]
 description = "the last reactive middle tray"
+[parameters.gas_side_draw_fractions]
+description = "one fraction per tray of the vapour withdrawn from that tray's own outlet, as `setGasSideDrawFraction` states it; a zero where a tray draws nothing"
+[parameters.liquid_side_draw_fractions]
+description = "the same for the liquid, which a pumparound draws from too - the two are bounded together and may not sum above one"
+[parameters.pumparound_fractions]
+description = "the same for a pumparound; its **return** to another tray is a recycle the class iterates and this port does not carry"
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
 [parameters.number_of_stages]

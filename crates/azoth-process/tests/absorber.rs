@@ -190,6 +190,9 @@ fn lean_oil() -> ColumnSetup {
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
         reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     }
 }
 
@@ -241,6 +244,9 @@ fn hydrocarbon_stripper() -> ColumnSetup {
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
         reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
     }
 }
 

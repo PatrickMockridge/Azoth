@@ -49,6 +49,13 @@ pub struct PackedColumnResult {
     pub bottoms_t: ThermodynamicTemperature,
     /// Bottoms molar enthalpy.
     pub bottoms_h: MolarEnergy,
+    /// **The vapour each tray withdrew**, which is the base column's and empty for this id: the
+    /// packing does not change a draw, and its fractions are not declared here.
+    pub gas_side_draw_n: Vec<f64>,
+    /// The liquid each tray withdrew as a liquid side draw.
+    pub liquid_side_draw_n: Vec<f64>,
+    /// The liquid each tray withdrew as a pumparound.
+    pub pumparound_n: Vec<f64>,
     /// The condenser's duty, W.
     pub condenser_duty: Power,
     /// The reboiler's duty, W.
@@ -82,6 +89,9 @@ impl From<DistillationColumnResult> for PackedColumnResult {
             bottoms_p: out.bottoms_p,
             bottoms_t: out.bottoms_t,
             bottoms_h: out.bottoms_h,
+            gas_side_draw_n: out.gas_side_draw_n,
+            liquid_side_draw_n: out.liquid_side_draw_n,
+            pumparound_n: out.pumparound_n,
             condenser_duty: out.condenser_duty,
             reboiler_duty: out.reboiler_duty,
             iterations: out.iterations,
@@ -110,6 +120,9 @@ impl CalcResult for PackedColumnResult {
         "bottoms_p",
         "bottoms_t",
         "bottoms_h",
+        "gas_side_draw_n",
+        "liquid_side_draw_n",
+        "pumparound_n",
         "condenser_duty",
         "reboiler_duty",
         "iterations",
@@ -217,6 +230,10 @@ pub fn packed_column(
         // **A packed column's stages are equilibrium stages**: `PackedColumn` inherits
         // `setReactive`, and this id does not declare the section yet - the packing is a report
         // on the far side of the solve, and the reactive section is the base column's own.
+        None,
+        None,
+        None,
+        // **A packed column's draws are the base column's, and this id does not declare them.**
         None,
         None,
         None,

@@ -2,7 +2,7 @@
 
 use azoth_core::units::{kelvins, pascals, watts};
 use azoth_process::Stream;
-use azoth_process::column::tray;
+use azoth_process::column::{SideDraws, tray};
 
 fn relative(actual: f64, expected: f64, tolerance: f64, what: &str) {
     let scale = 1.0 + actual.abs().max(expected.abs());
@@ -49,8 +49,10 @@ fn wgs(t: f64, p_bar: f64) -> Stream {
 #[test]
 fn a_stage_with_no_reaction_to_run_is_the_plain_stage() {
     let inlets = [unreactive(300.0, 15.0)];
-    let plain = tray(&inlets, None, None, watts(0.0), false).expect("the plain tray solves");
-    let reactive = tray(&inlets, None, None, watts(0.0), true).expect("the reactive tray solves");
+    let plain = tray(&inlets, None, None, watts(0.0), SideDraws::NONE, false)
+        .expect("the plain tray solves");
+    let reactive = tray(&inlets, None, None, watts(0.0), SideDraws::NONE, true)
+        .expect("the reactive tray solves");
 
     relative(
         reactive.temperature.value,
@@ -84,7 +86,7 @@ fn a_stage_with_no_reaction_to_run_is_the_plain_stage() {
 #[test]
 fn a_two_phase_reactive_answer_without_a_label_is_refused() {
     let inlets = [wgs(600.0, 1.0)];
-    let error = tray(&inlets, None, None, watts(0.0), true)
+    let error = tray(&inlets, None, None, watts(0.0), SideDraws::NONE, true)
         .expect_err("the two phases are the same state, so no outlet pair is determined");
     let message = format!("{error}");
     assert!(
@@ -92,6 +94,7 @@ fn a_two_phase_reactive_answer_without_a_label_is_refused() {
         "{message}"
     );
     // The plain stage on the same fluid is an ordinary tray and is not refused.
-    let plain = tray(&inlets, None, None, watts(0.0), false).expect("the plain tray solves");
+    let plain = tray(&inlets, None, None, watts(0.0), SideDraws::NONE, false)
+        .expect("the plain tray solves");
     assert!(plain.gas.is_some() || plain.liquid.is_some());
 }

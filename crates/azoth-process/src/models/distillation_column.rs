@@ -48,6 +48,12 @@ pub struct DistillationColumnResult {
     pub bottoms_t: ThermodynamicTemperature,
     /// Bottoms molar enthalpy.
     pub bottoms_h: MolarEnergy,
+    /// **The vapour each tray withdrew**, one entry per tray and zero where it drew none.
+    pub gas_side_draw_n: Vec<f64>,
+    /// The liquid each tray withdrew as a liquid side draw.
+    pub liquid_side_draw_n: Vec<f64>,
+    /// The liquid each tray withdrew as a pumparound.
+    pub pumparound_n: Vec<f64>,
     /// The condenser's duty, W.
     pub condenser_duty: Power,
     /// The reboiler's duty, W.
@@ -81,6 +87,9 @@ impl CalcResult for DistillationColumnResult {
         "bottoms_p",
         "bottoms_t",
         "bottoms_h",
+        "gas_side_draw_n",
+        "liquid_side_draw_n",
+        "pumparound_n",
         "condenser_duty",
         "reboiler_duty",
         "iterations",
@@ -132,6 +141,9 @@ pub fn distillation_column(
     reactive: Option<bool>,
     reactive_start_tray: Option<usize>,
     reactive_end_tray: Option<usize>,
+    gas_side_draw_fractions: Option<&[f64]>,
+    liquid_side_draw_fractions: Option<&[f64]>,
+    pumparound_fractions: Option<&[f64]>,
 ) -> Result<DistillationColumnResult> {
     refuse_unported(murphree_efficiency)?;
 
@@ -230,6 +242,21 @@ pub fn distillation_column(
         ));
     }
 
+    // **Side draws under the simultaneous solve are refused for the same reason the reactive
+    // section is**: this port's mesh takes its fugacities from its own mixture rather than from a
+    // tray's flash, so a draw has no tray outlet there to split.
+    let draws_stated = gas_side_draw_fractions.is_some()
+        || liquid_side_draw_fractions.is_some()
+        || pumparound_fractions.is_some();
+    if draws_stated && solver == kernel::SolverType::NaphtaliSandholm {
+        return Err(AzothError::invalid_input(
+            "gas_side_draw_fractions",
+            "side draws under `naphtali_sandholm` are not ported: this port's mesh solves the \
+             MESH equations together and never forms a tray's own outlet streams, so there is \
+             nothing for a fraction to split",
+        ));
+    }
+
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let out = kernel(&kernel::ColumnSetup {
         feed,
@@ -248,6 +275,9 @@ pub fn distillation_column(
         top_feed: None,
         tray_temperatures: None,
         solver_type: solver,
+        gas_side_draw_fractions: gas_side_draw_fractions.map(|v| v.to_vec()),
+        liquid_side_draw_fractions: liquid_side_draw_fractions.map(|v| v.to_vec()),
+        pumparound_fractions: pumparound_fractions.map(|v| v.to_vec()),
         reactive,
     })?;
 
@@ -271,6 +301,21 @@ pub fn distillation_column(
         bottoms_p: out.bottoms.p,
         bottoms_t: out.bottoms.t,
         bottoms_h: joules_per_mole(out.bottoms.h.value),
+        gas_side_draw_n: out
+            .gas_side_draws
+            .iter()
+            .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+            .collect(),
+        liquid_side_draw_n: out
+            .liquid_side_draws
+            .iter()
+            .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+            .collect(),
+        pumparound_n: out
+            .pumparounds
+            .iter()
+            .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+            .collect(),
         condenser_duty: out.condenser_duty,
         reboiler_duty: out.reboiler_duty,
         iterations: out.iterations,

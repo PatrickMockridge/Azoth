@@ -8,7 +8,7 @@ use crate::kernels::mixer;
 use crate::stream::Stream;
 
 use super::phase_fractions;
-use super::tray::{self, TrayOutcome};
+use super::tray::{self, SideDraws, TrayOutcome};
 
 /// How the reboiler is specified.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -74,7 +74,14 @@ pub fn reboiler(
 
     match mode {
         ReboilerMode::Equilibrium => {
-            let out = tray::tray(inlets, tray_pressure, out_temperature, heat_input, false)?;
+            let out = tray::tray(
+                inlets,
+                tray_pressure,
+                out_temperature,
+                heat_input,
+                SideDraws::NONE,
+                false,
+            )?;
             let duty = outlet_enthalpy(&out) - inlets_enthalpy;
             Ok(ReboilerOutcome {
                 temperature: out.temperature,

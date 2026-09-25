@@ -25,7 +25,7 @@ pub mod tray;
 
 pub use condenser::{CondenserMode, CondenserOutcome, condenser};
 pub use reboiler::{ReboilerMode, ReboilerOutcome, reboiler};
-pub use tray::{TrayOutcome, tray};
+pub use tray::{SideDraws, TrayOutcome, tray};
 
 /// The vapour and liquid shares of a flash.
 ///

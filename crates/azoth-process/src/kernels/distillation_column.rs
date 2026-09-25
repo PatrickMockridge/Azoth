@@ -3,7 +3,7 @@
 use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, kelvins, pascals, watts};
 use azoth_core::{AzothError, Result};
 
-use crate::column::tray::{self as stage, TrayOutcome};
+use crate::column::tray::{self as stage, SideDraws, TrayOutcome};
 use crate::stream::Stream;
 
 /// The class's own adaptive-relaxation constants, from `DistillationColumn`'s field
@@ -12,6 +12,57 @@ const MIN_SEQUENTIAL_RELAXATION: f64 = 0.5;
 const MAX_ADAPTIVE_RELAXATION: f64 = 1.2;
 const RELAXATION_INCREASE_FACTOR: f64 = 1.2;
 const RELAXATION_DECREASE_FACTOR: f64 = 0.5;
+
+/// The three draw-fraction vectors' names, in the order a setup carries them.
+const DRAW_FIELDS: [&str; 3] = [
+    "gas_side_draw_fractions",
+    "liquid_side_draw_fractions",
+    "pumparound_fractions",
+];
+
+/// **A fraction on an end is refused by name.** `Condenser` and `Reboiler` extend `SimpleTray`
+/// and so inherit the three setters, but this port's ends are [`crate::column::condenser`] and
+/// [`crate::column::reboiler`] rather than stages, so a fraction naming one would be silently
+/// ignored - the failure this port refuses everywhere else.
+fn refuse_end_draws(setup: &ColumnSetup, tray_count: usize) -> Result<()> {
+    let vectors = [
+        setup.gas_side_draw_fractions.as_ref(),
+        setup.liquid_side_draw_fractions.as_ref(),
+        setup.pumparound_fractions.as_ref(),
+    ];
+    for (which, fractions) in vectors.iter().enumerate() {
+        let Some(fractions) = fractions else {
+            continue;
+        };
+        if fractions.len() != tray_count {
+            return Err(AzothError::invalid_input(
+                DRAW_FIELDS[which],
+                format!(
+                    "{} fraction(s) against {tray_count} tray(s): the vector is one entry per \
+                     tray, a zero where a tray draws nothing",
+                    fractions.len()
+                ),
+            ));
+        }
+        let ends = [
+            (0, setup.has_reboiler, "the reboiler"),
+            (tray_count - 1, setup.has_condenser, "the condenser"),
+        ];
+        for (index, exists, name) in ends {
+            if exists && fractions.get(index).copied().unwrap_or(0.0) != 0.0 {
+                return Err(AzothError::invalid_input(
+                    DRAW_FIELDS[which],
+                    format!(
+                        "a draw is stated on {name}, which is not ported: the ends here are \
+                         `column::reboiler` and `column::condenser` rather than stages, so there \
+                         is no tray outlet for a fraction to split"
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
 /// The floor on the *temperature* update's step, which is a different clamp from the streams'.
 const MIN_TEMPERATURE_RELAXATION: f64 = 0.2;
 /// `DEFAULT_MASS_BALANCE_TOLERANCE`, the class's own.
@@ -63,6 +114,13 @@ pub struct ColumnOutcome {
     pub mass_residual: f64,
     /// `|H_feed + duties - H_products| / |H_feed|`.
     pub energy_residual: f64,
+    /// The vapour each tray withdrew as a gas side draw, one entry per tray and `None` where it
+    /// drew none.
+    pub gas_side_draws: Vec<Option<Stream>>,
+    /// The liquid each tray withdrew as a liquid side draw.
+    pub liquid_side_draws: Vec<Option<Stream>>,
+    /// The liquid each tray withdrew as a pumparound.
+    pub pumparounds: Vec<Option<Stream>>,
     /// **What the stages had to fall back on, once per kind.** A reactive tray falls back the way
     /// the class does - a reactive PH flash to a reactive TP one to a plain flash - and each kind
     /// is reported here rather than taken silently. Deduplicated by code, because a column runs
@@ -149,6 +207,15 @@ pub struct ColumnSetup {
     /// over the two ends' own fields, which are the same mechanism reached by the setters the
     /// base class carries.
     pub tray_temperatures: Option<Vec<f64>>,
+    /// **One side-draw fraction per tray**, a zero where a tray draws nothing: the vapour
+    /// withdrawn from the tray's own outlet phase, as `SimpleTray.setGasSideDrawFraction` sets
+    /// it. `None` means no tray draws.
+    pub gas_side_draw_fractions: Option<Vec<f64>>,
+    /// One **liquid** side-draw fraction per tray.
+    pub liquid_side_draw_fractions: Option<Vec<f64>>,
+    /// One **pumparound** fraction per tray, which draws from the same liquid the liquid side
+    /// draw does and is bounded with it.
+    pub pumparound_fractions: Option<Vec<f64>>,
     /// Which solving strategy to run.
     pub solver_type: SolverType,
     /// **Which trays flash reactively**, over middle-tray indices, as the class states it.
@@ -321,6 +388,10 @@ struct Network {
     reactive: Vec<bool>,
     /// What the stages have had to fall back on, one entry per kind.
     warnings: Vec<azoth_core::warning::Warning>,
+    /// The three draw-fraction vectors, in `DRAW_FIELDS`' order.
+    draws: [Option<Vec<f64>>; 3],
+    /// What each tray withdrew, in the same order.
+    drawn: [Vec<Option<Stream>>; 3],
 }
 
 impl Network {
@@ -383,8 +454,25 @@ impl Network {
     /// on a specific neighbour - the reboiler against the *feed stage's* liquid, and not the
     /// first tray's, which is what the sweeps use - so the inlet list is the class's sequence
     /// of calls rather than a rule about the geometry.
+    /// The draws a tray states, from the three vectors - a zero where a vector is absent or the
+    /// tray states nothing.
+    fn draws_at(&self, i: usize) -> SideDraws {
+        let at = |which: usize| {
+            self.draws[which]
+                .as_ref()
+                .and_then(|fractions| fractions.get(i).copied())
+                .unwrap_or(0.0)
+        };
+        SideDraws {
+            gas: at(0),
+            liquid: at(1),
+            pumparound: at(2),
+        }
+    }
+
     fn run_with(&mut self, i: usize, inlets: &[Stream]) -> Result<TrayOutcome> {
         let pressure = Some(self.pressures[i]);
+        let draws = self.draws_at(i);
         let out = match self.modes[i] {
             // The default: the tray's flash at the end's temperature, which the outer loop
             // moves while it searches. **A middle tray carries a NaN here and no pin**, so its
@@ -396,11 +484,11 @@ impl Network {
                 } else {
                     None
                 };
-                stage::tray(inlets, pressure, pin, watts(0.0), self.reactive[i])?
+                stage::tray(inlets, pressure, pin, watts(0.0), draws, self.reactive[i])?
             }
             // A heat input and no pin, which is what a DUTY specification writes.
             EndMode::Duty(duty) => {
-                stage::tray(inlets, pressure, None, watts(duty), self.reactive[i])?
+                stage::tray(inlets, pressure, None, watts(duty), draws, self.reactive[i])?
             }
             // The end's own reflux flash, which is what a REFLUX_RATIO specification writes -
             // `unit_ops.distillation_column`'s ends rather than its stage.
@@ -418,6 +506,9 @@ impl Network {
                         pressure: out.pressure,
                         gas: out.vapour,
                         liquid: out.liquid,
+                        gas_side_draw: None,
+                        liquid_side_draw: None,
+                        pumparound: None,
                         warnings: Vec::new(),
                     }
                 } else {
@@ -431,11 +522,17 @@ impl Network {
                         pressure: out.pressure,
                         gas: out.distillate,
                         liquid: out.reflux,
+                        gas_side_draw: None,
+                        liquid_side_draw: None,
+                        pumparound: None,
                         warnings: Vec::new(),
                     }
                 }
             }
         };
+        self.drawn[0][i] = out.gas_side_draw.clone();
+        self.drawn[1][i] = out.liquid_side_draw.clone();
+        self.drawn[2][i] = out.pumparound.clone();
         for warning in &out.warnings {
             if !self.warnings.iter().any(|held| held.code == warning.code) {
                 self.warnings.push(warning.clone());
@@ -609,9 +706,20 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         })
         .collect();
 
+    refuse_end_draws(setup, tray_count)?;
     let mut net = Network {
         reactive,
         warnings: Vec::new(),
+        draws: [
+            setup.gas_side_draw_fractions.clone(),
+            setup.liquid_side_draw_fractions.clone(),
+            setup.pumparound_fractions.clone(),
+        ],
+        drawn: [
+            vec![None; tray_count],
+            vec![None; tray_count],
+            vec![None; tray_count],
+        ],
         gas: vec![None; tray_count],
         liquid: vec![None; tray_count],
         pressures,
@@ -647,7 +755,16 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         .chain(setup.top_feed.iter())
         .collect();
     let feed_enthalpy: f64 = feeds.iter().map(|feed| feed.n * feed.h.value).sum();
-    let products_enthalpy = distillate.n * distillate.h.value + bottoms.n * bottoms.h.value;
+    // **The draws are a third route out of the column**, so both closures count them: a feed
+    // leaves as the two products *and* whatever the trays withdrew, and a residual that ignored
+    // the draws would report an imbalance that is not there.
+    let drawn_enthalpy: f64 = (0..3)
+        .flat_map(|which| net.drawn[which].iter())
+        .flatten()
+        .map(|draw| draw.n * draw.h.value)
+        .sum();
+    let products_enthalpy =
+        distillate.n * distillate.h.value + bottoms.n * bottoms.h.value + drawn_enthalpy;
     let energy_residual = if feed_enthalpy.abs() > 0.0 {
         (feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy).abs()
             / feed_enthalpy.abs()
@@ -662,8 +779,14 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             .iter()
             .map(|feed| feed.n * feed.z.get(c).copied().unwrap_or(*ci))
             .sum();
-        let delivered =
-            distillate.n * fraction_of(&distillate, c) + bottoms.n * fraction_of(&bottoms, c);
+        let drawn: f64 = (0..3)
+            .flat_map(|which| net.drawn[which].iter())
+            .flatten()
+            .map(|draw| draw.n * fraction_of(draw, c))
+            .sum();
+        let delivered = distillate.n * fraction_of(&distillate, c)
+            + bottoms.n * fraction_of(&bottoms, c)
+            + drawn;
         if supplied.abs() > 1.0e-12 {
             mass_residual = mass_residual.max((supplied - delivered).abs() / supplied.abs());
         }
@@ -710,6 +833,9 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         mass_residual,
         energy_residual,
         warnings: net.warnings.clone(),
+        gas_side_draws: net.drawn[0].clone(),
+        liquid_side_draws: net.drawn[1].clone(),
+        pumparounds: net.drawn[2].clone(),
     })
 }
 
