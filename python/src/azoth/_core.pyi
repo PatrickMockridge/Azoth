@@ -1528,6 +1528,30 @@ class MixerResult:
     warnings: list[Warning]
 
 @final
+class PackedColumnResult:
+    tray_temperature: list[Qty]
+    tray_pressure: list[Qty]
+    tray_gas_n: list[Qty]
+    tray_liquid_n: list[Qty]
+    distillate_n: Qty
+    distillate_z: list[float]
+    distillate_p: Qty
+    distillate_t: Qty
+    distillate_h: Qty
+    bottoms_n: Qty
+    bottoms_z: list[float]
+    bottoms_p: Qty
+    bottoms_t: Qty
+    bottoms_h: Qty
+    condenser_duty: Qty
+    reboiler_duty: Qty
+    iterations: int
+    temperature_residual: float
+    mass_residual: float
+    energy_residual: float
+    warnings: list[Warning]
+
+@final
 class PipeResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -3031,6 +3055,36 @@ def mixer(
     feed_t: list[float],
     outlet_pressure: float | None = None,
 ) -> MixerResult: ...
+def packed_column(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    packed_height: float,
+    feed_stage: float,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: float,
+    bottom_pressure: float,
+    temperature_tolerance: float,
+    max_iterations: float,
+    reboiler_temperature: float | None = None,
+    condenser_temperature: float | None = None,
+    packing_type: str | None = None,
+    structured_packing: bool | None = None,
+    design_flood_fraction: float | None = None,
+    packing_hydraulic_capacity_factor: float | None = None,
+    column_diameter: float | None = None,
+    murphree_efficiency: float | None = None,
+    solver_type: str | None = None,
+    top_specification_type: str | None = None,
+    top_specification_target: float | None = None,
+    top_specification_component: str | None = None,
+    bottom_specification_type: str | None = None,
+    bottom_specification_target: float | None = None,
+    bottom_specification_component: str | None = None,
+) -> PackedColumnResult: ...
 def pipe(
     components: list[str],
     inlet_n: float,
@@ -3123,9 +3177,9 @@ def stirred_tank_reactor(
     limiting_reactant: str,
     conversion: float,
     isothermal: bool,
-    pressure_drop: float,
     reactor_temperature: float | None = None,
     reactor_pressure: float | None = None,
+    pressure_drop: float | None = None,
 ) -> StirredTankReactorResult: ...
 def stripping_column(
     stripping_gas_components: list[str],
