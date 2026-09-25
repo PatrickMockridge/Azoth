@@ -9214,7 +9214,10 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
             ShortcutDistillationColumnResult::FIELDS.to_vec()
         }
         DistillationColumnResult::CALC_ID => DistillationColumnResult::FIELDS.to_vec(),
+        AbsorptionColumnResult::CALC_ID => AbsorptionColumnResult::FIELDS.to_vec(),
+        StrippingColumnResult::CALC_ID => StrippingColumnResult::FIELDS.to_vec(),
         PackedColumnResult::CALC_ID => PackedColumnResult::FIELDS.to_vec(),
+        StirredTankReactorResult::CALC_ID => StirredTankReactorResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
         TankResult::CALC_ID => TankResult::FIELDS.to_vec(),
