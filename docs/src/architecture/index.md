@@ -54,16 +54,23 @@ build.
 `tools/check_lean_axioms.py` reads `lean/Azoth/Axioms.lean` and refuses any axiom the
 development was not allowed to use, so the Lean half is checked rather than trusted.
 
-## Two languages, two jobs
+## Two implementations, mirrored
 
-Python is the ecosystem-facing surface: basic calculations, notebooks, and the
-data-science and AI-SDK tooling around them. Rust is the engine: safe at compile time, it
-expresses the process calculus natively in its type system, and it composes into very
-large - or many concurrent - simulations that run in minutes where Python would take
-days. PyO3 binds the two into one library, and units cross the public API as `pint`
-quantities on one side and `uom` quantities on the other, both extracting the SI base
-magnitude before doing arithmetic - so the two run the same operations on the same
-numbers.
+Every calculation is written twice by hand, from one spec: a Rust kernel and a Python
+kernel, implementing the same declared arithmetic and never generated from each other.
+Neither is a wrapper over the other and neither is authoritative — they are **mirrors**, and
+the library is the pair. The spec names both, in its `implementations` block, and every
+calculation in `specs/` names both.
+
+**What differs between them is what each is good for, not which one computes.** Rust is safe
+at compile time, expresses the process calculus natively in its type system, and composes
+into very large — or many concurrent — simulations that run in minutes where Python would
+take days; it is also the half that runs without Python at all. Python is the
+ecosystem-facing half: basic calculations, notebooks, the data-science and AI-SDK tooling
+around them, and the agentic layer. PyO3 binds the two into one library, and units cross the
+public API as `pint` quantities on one side and `uom` quantities on the other, both
+extracting the SI base magnitude before doing arithmetic — so the two run the same operations
+on the same numbers.
 
 Because both exist, every case in every spec runs through both, and the comparison is
 **by tolerance and not bit-equality**: `log10` and `sqrt` are not correctly-rounded in
@@ -73,7 +80,16 @@ platform and build. The data files are embedded on both sides with `include_str!
 test compares the embedded bytes against the file on disk rather than comparing parsed
 values, because two files can parse into the same numbers.
 
-That comparison is a test, not the reason there are two languages.
+**That comparison is a test, not the reason there are two.** Each half is wanted for what it
+is good at — Python for the ecosystem the library has to live in, Rust for compile-time
+safety and for composing large or concurrent work — so writing the arithmetic twice is what
+that costs, and the comparison is what the cost buys.
+
+What the comparison proves is bounded, and the bound is worth stating because it is easy to
+read past. Two kernels written independently against one declaration can drift apart, which
+is what the test catches. They were still both written from the same declaration, so their
+agreement says nothing about whether the declaration is right. Whether the spec was right is
+what the validation cases ask, and `validation/README.md` says so in its own words.
 
 ## The port
 

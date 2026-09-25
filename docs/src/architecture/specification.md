@@ -1,7 +1,7 @@
 # The specification
 
-**An opinionated port of [NeqSim](https://github.com/equinor/neqsim), in Python for the
-ecosystem and Rust for the engine.**
+**An opinionated port of [NeqSim](https://github.com/equinor/neqsim), written twice — once
+in Rust, once in Python, from one declaration.**
 
 This page is normative: where a docstring, a comment or a habit disagrees with it, this
 page wins and the other thing is a bug. It has three parts — the port, the keycard, and
@@ -62,12 +62,14 @@ python tools/check_manifest.py
 format is specified in [Spec files](./spec-files.md). It names the inputs and outputs with
 their units, the valid range, the assumptions that are *not* checked, and the cases.
 
-**Two kernels are hand-written, and only two.** One Rust file and one Python file. Rust
-is the engine - compile-time safety, the process calculus expressed natively, and fast
-composition into large or concurrent simulations. Python is the surface - basic
-calculations and the data-science and AI-SDK ecosystem. They implement the same declared
-arithmetic, hand-written and never generated; that there are two means they are compared
-case by case, and that comparison is a test, not the reason there are two.
+**Two kernels are hand-written, and only two.** One Rust file and one Python file, and the
+spec names both in its `implementations` block; every calculation in `specs/` names both.
+They are **mirrors**: both implement the same declared arithmetic, hand-written and never
+generated, and neither is a wrapper over the other. What differs between them is what each
+is good for - Rust for compile-time safety, the process calculus expressed natively, and fast
+composition into large or concurrent simulations; Python for the ecosystem, basic
+calculations and the data-science and AI-SDK tooling. That there are two means they are
+compared case by case, and that comparison is a test, not the reason there are two.
 
 **Everything that names them is generated.** A new calculation used to cost eleven hand
 edits across Rust and Python on top of its two kernels — result structs, transport

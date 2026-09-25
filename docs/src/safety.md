@@ -33,7 +33,7 @@ two answers is not an answer.
 | A partial function is total, clamped, or deliberately `NaN` | the rule, and a gate that reads the source for it | [`numerics.md`](./calculus/numerics.md), `tools/check_numerics.py` |
 | A value nothing reads is refused, not skipped | the card reader's load-time refusal | `crates/azoth-eos/src/card.rs` |
 | A name the data cannot answer is an error, not a default | one choke point for every substance lookup | `crates/azoth-eos/src/databank.rs` |
-| The Python path cannot stand in for the engine | `AZOTH_REQUIRE_RUST=1` makes a missing core fatal | `python/src/azoth/_dispatch.py` |
+| The Python path cannot quietly stand in for the Rust one | `AZOTH_REQUIRE_RUST=1` makes a missing core fatal | `python/src/azoth/_dispatch.py` |
 | A proof with a gap fails the build | one `#print axioms` line per claimed theorem, against an allow-list of three | `lean/Azoth/Axioms.lean`, `tools/check_lean_axioms.py` |
 
 ## What the checks caught
@@ -128,18 +128,20 @@ carry would be a different claim, and dressing one as a theorem would be a vacui
 gap; it does not prove the theorem is the one a reader expects. `lean/Azoth/Axioms.lean`
 says so about itself, which is the only way that sentence can be trusted.
 
-## Two engines
+## Two implementations, mirrored
 
-Rust is the engine and Python is the surface. The two are compared case by case, and that
-comparison is a test rather than the reason there are two — the reason is in
-[the architecture](./architecture/index.md).
+Every calculation is written twice by hand, one Rust kernel and one Python kernel, from the
+same spec — and the two are **mirrors, not a core and a front end**. Neither is a wrapper
+over the other, so the two can disagree with each other, and a disagreement is a finding.
+See [the architecture](./architecture/index.md).
 
-A comparison that cannot run is worse than no comparison, because it reports agreement. If
-the extension is missing, every cross-language test passes on the Python path while the
-guarantee the project promises is exercised by nothing: the suite stays green and the
-guarantee evaporates. `AZOTH_REQUIRE_RUST=1` closes that, turning "the extension is
-missing" from a quiet fallback into a failure, and CI runs the cross-implementation job
-with it set.
+It is also why a comparison that cannot run is worse than no comparison, because it reports
+agreement. If the extension is missing, every cross-language test passes on the Python path
+while the guarantee the project promises is exercised by nothing: the suite stays green and
+the guarantee evaporates. `AZOTH_REQUIRE_RUST=1` closes that, turning "the extension is
+missing" from a quiet fallback into a failure, and CI runs the cross-implementation job with
+it set. Were Python a surface over the Rust engine, a silent fallback would cost nothing;
+because the two are mirrors, it would hide the whole comparison.
 
 The same asymmetry shows up in the keycard. A card is read by
 `python/src/azoth/keycard.py` and by `azoth_eos::card` independently, so a Rust-native
@@ -152,8 +154,8 @@ and pair by pair. See [the keycard as a capability](./calculus/capability.md).
 **The aim is a standalone simulator, and the aim is not the status.** Being honest about
 which half is which is the same discipline as everywhere else on this page, so:
 
-What is already true. The Rust engine has no Python dependency — it compiles to a library
-and a CLI. The keycard is a value a caller passes rather than a global in force, so a
+What is already true. The Rust implementation has no Python dependency — it compiles to a
+library and a CLI. The keycard is a value a caller passes rather than a global in force, so a
 Rust-native caller supplies their own authority rather than inheriting a Python session's.
 The unit-operation and executor layers compose, and the engine is built for large or many
 concurrent simulations.

@@ -8,10 +8,13 @@ engine**, with an agentic layer on top. The algorithms are ported from
 
 ## Why azoth
 
-- **Two languages, two jobs.** Python is the surface: basic calculations, notebooks,
-  data science, AI SDKs. Rust is the engine: compile-time safe, it expresses the process
-  calculus natively and composes into large or many concurrent simulations that run in
-  minutes where Python takes days.
+- **Two implementations, mirrored.** Every calculation is written twice by hand — one Rust
+  kernel, one Python kernel — from the same declaration, and neither is a wrapper over the
+  other. What differs between them is what each is good for, not which one computes: Rust is
+  compile-time safe, expresses the process calculus natively and composes into large or many
+  concurrent simulations that run in minutes where Python takes days, while Python is where
+  the ecosystem is — notebooks, data science, AI SDKs. Both are complete, so the two are
+  compared case by case, and a disagreement is a finding.
 - **A spec file is the source.** One TOML per calculation declares its inputs, outputs,
   ranges, assumptions and tests; generators compile it into Rust, Python, the type stubs,
   the docs and the tests, and CI fails on any drift.
@@ -51,10 +54,11 @@ chemistry that cannot run away over a relief valve that catches it.
   *loaded* rather than when it is finally used, because a value nothing reads is data that
   looks in use and is not. The type is sealed — its parse state is private, with no default
   constructor — so a card cannot exist without having passed every refusal.
-- **Two engines, compared.** Rust is the engine, Python is the surface, and the
-  cross-implementation tests run with `AZOTH_REQUIRE_RUST=1`: a missing Rust core is a hard
-  failure rather than a quiet fallback, because a suite that stays green on the Python path
-  while the engine is absent is a guarantee that has evaporated.
+- **Two implementations, mirrored, and compared.** Because both are complete, neither can
+  cover for the other, so the cross-implementation tests run with `AZOTH_REQUIRE_RUST=1`:
+  a missing Rust core is a hard failure rather than a quiet fallback, because a suite that
+  stays green on the Python path while the Rust one is absent is a guarantee that has
+  evaporated.
 - **A formal layer underneath, and a gate on it.** A quantity's dimension and the
   arithmetic over it are meant to be a proved construction, so a dimension that does not
   compose fails rather than converting. What reaches Lean today is the dimension group, the
@@ -81,10 +85,10 @@ to reproduce in situ, with the correction on the issue.
 
 ## Standalone
 
-The Rust engine has no Python dependency. The keycard is a value a caller passes rather than
-a global in force, so a Rust-native caller supplies their own authority instead of
-inheriting a Python session's, and the unit-operation and executor layers compose into large
-or many concurrent simulations. There is a CLI. Being a standalone simulator is the aim
+The Rust implementation has no Python dependency. The keycard is a value a caller passes
+rather than a global in force, so a Rust-native caller supplies their own authority instead
+of inheriting a Python session's, and the unit-operation and executor layers compose into
+large or many concurrent simulations. There is a CLI. Being a standalone simulator is the aim
 rather than the status: port coverage is incomplete, everything ported ships `unverified`,
 and the book's front door says [not for design work
 yet](docs/src/index.md#not-for-design-work-yet) about the placeholder fitting coefficients.
