@@ -43,7 +43,10 @@ pub use expander::expander;
 pub use filter::filter;
 pub use flare::{FlareNumbers, flare};
 pub use gas_scrubber::gas_scrubber;
-pub use gibbs_reactor::{EnergyMode as GibbsEnergyMode, ReactorNumbers as GibbsNumbers, ReactorSetup as GibbsSetup, gibbs_reactor};
+pub use gibbs_reactor::{
+    EnergyMode as GibbsEnergyMode, ReactorNumbers as GibbsNumbers, ReactorSetup as GibbsSetup,
+    gibbs_reactor,
+};
 pub use heat_exchanger::heat_exchanger;
 pub use heater::heater;
 pub use mixer::mixer;

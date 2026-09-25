@@ -10,8 +10,6 @@
 
 pub mod channel;
 pub mod check;
-pub mod order;
-pub mod recycle;
 pub mod column;
 pub mod executor;
 pub mod flowsheet;
@@ -19,16 +17,18 @@ pub mod kernels;
 pub mod load;
 pub mod model_gen;
 pub mod models;
+pub mod order;
 pub mod reactor;
+pub mod recycle;
 pub mod stream;
 pub mod unit_op;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{Diagnostic, validate, validate_palette};
-pub use order::{ExecutionOrder, execution_order};
-pub use recycle::{Acceleration, RecycleSettings, Residuals};
 pub use flowsheet::{Connection, Flowsheet, Instance, Recycle};
 pub use load::{load_palette, parse_flowsheet};
+pub use order::{ExecutionOrder, execution_order};
+pub use recycle::{Acceleration, RecycleSettings, Residuals};
 // **The kernels stay under `kernels` and the ids take the flat names**, which is the split
 // the Python package makes too. Two call shapes under one name is not a naming problem to
 // work around: a kernel takes and returns a `Stream`, which is what a flowsheet's
