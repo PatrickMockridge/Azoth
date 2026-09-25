@@ -774,11 +774,25 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                         });
                     }
                 }
-                for parameter in instance.parameters.keys() {
+                for (parameter, value) in &instance.parameters {
                     if !spec.parameters.contains_key(parameter) {
                         diags.push(Diagnostic::UnknownParameter {
                             instance: instance.id.clone(),
                             parameter: parameter.clone(),
+                        });
+                        continue;
+                    }
+                    // **And the value's kind, which is the other half of the same promise.**
+                    // `outlet_pressure = "high"` named a declared parameter and validated clean,
+                    // and then `Parameters::si` refused it at the run. The kind is not in the
+                    // palette, so it is read from the model's input declaration - the same table a
+                    // form chooses a widget from - and the shapes below are the ones
+                    // `executor::dispatch`'s readers accept, not a second opinion about them.
+                    if let Some(detail) = kind_mismatch(spec.id.as_str(), parameter, value) {
+                        diags.push(Diagnostic::ParameterKind {
+                            instance: instance.id.clone(),
+                            parameter: parameter.clone(),
+                            detail,
                         });
                     }
                 }
@@ -1176,6 +1190,56 @@ fn undeclared_loop(connections: &[Connection], recycles: &[Recycle]) -> Option<S
 fn split_port(s: &str) -> Option<(String, String)> {
     s.split_once('.')
         .map(|(a, b)| (a.to_string(), b.to_string()))
+}
+
+/// A parameter value that is not the kind its model declares, as a sentence.
+///
+/// **The accepted shapes are the ones `executor::dispatch`'s readers accept**, and the kind is
+/// read from `model_inputs_gen` - the same table a form chooses a widget from - so the checker
+/// and the run cannot disagree about what a value may be. A kind neither reads (`components`,
+/// `matrix`) answers `None` rather than guessing: no palette parameter has one, and a refusal
+/// invented for a kind nothing reads would refuse documents that run.
+fn kind_mismatch(unit: &str, name: &str, value: &toml::Value) -> Option<String> {
+    let kind = crate::model_inputs_gen::inputs_for(unit)?
+        .inputs
+        .iter()
+        .find(|input| input.name == name)?
+        .kind;
+    let number =
+        |value: &toml::Value| matches!(value, toml::Value::Integer(_) | toml::Value::Float(_));
+    let (expected, accepted) = match kind {
+        "quantity" => ("a number", number(value)),
+        "boolean" => ("a boolean", matches!(value, toml::Value::Boolean(_))),
+        "enum" | "string" => ("a string", matches!(value, toml::Value::String(_))),
+        "vector" => (
+            "an array of numbers",
+            matches!(value, toml::Value::Array(items) if items.iter().all(number)),
+        ),
+        _ => return None,
+    };
+    if accepted {
+        return None;
+    }
+    Some(format!(
+        "`{name}` is {}, and its declaration says {expected}",
+        kind_phrase(value)
+    ))
+}
+
+/// A TOML value's kind, with its article, for a sentence.
+///
+/// `toml::Value::type_str` answers `string`, `array` and so on, which reads as "is string" in a
+/// sentence - and the article differs, so it cannot be prepended once.
+fn kind_phrase(value: &toml::Value) -> &'static str {
+    match value {
+        toml::Value::String(_) => "a string",
+        toml::Value::Integer(_) => "an integer",
+        toml::Value::Float(_) => "a float",
+        toml::Value::Boolean(_) => "a boolean",
+        toml::Value::Array(_) => "an array",
+        toml::Value::Table(_) => "a table",
+        toml::Value::Datetime(_) => "a datetime",
+    }
 }
 
 #[cfg(test)]
@@ -2059,6 +2123,86 @@ mod tests {
         assert_eq!(
             collision.message(),
             "`p1` names both an instance and a feed"
+        );
+    }
+
+    /// **The kind rule, over the five kinds a palette parameter has.**
+    ///
+    /// `outlet_pressure = "high"` names a declared parameter, so the name rules are satisfied and
+    /// it validated clean - and then `Parameters::si` refused it at the run. The shapes below are
+    /// the ones that function accepts, held here so the checker refuses exactly what the run
+    /// would refuse and nothing it would accept.
+    #[test]
+    fn a_value_of_the_wrong_kind_is_named_by_what_the_declaration_says() {
+        let number = toml::Value::Float(1.0);
+        let text = toml::Value::String("high".into());
+
+        // quantity: a number, and a string is not one.
+        assert_eq!(
+            kind_mismatch("unit_ops.pump", "outlet_pressure", &number),
+            None
+        );
+        assert_eq!(
+            kind_mismatch("unit_ops.pump", "outlet_pressure", &text).as_deref(),
+            Some("`outlet_pressure` is a string, and its declaration says a number")
+        );
+
+        // vector: an array, every entry a number.
+        let factors = toml::Value::Array(vec![toml::Value::Float(0.5), toml::Value::Float(0.5)]);
+        assert_eq!(
+            kind_mismatch("unit_ops.splitter", "split_factors", &factors),
+            None
+        );
+        assert!(kind_mismatch("unit_ops.splitter", "split_factors", &number).is_some());
+        let mixed = toml::Value::Array(vec![
+            toml::Value::Float(0.5),
+            toml::Value::String("a".into()),
+        ]);
+        assert!(
+            kind_mismatch("unit_ops.splitter", "split_factors", &mixed).is_some(),
+            "an array with a word in it is not a vector of fractions"
+        );
+
+        // boolean, and an enum, which is a string by another name.
+        assert_eq!(
+            kind_mismatch(
+                "unit_ops.distillation_column",
+                "has_reboiler",
+                &toml::Value::Boolean(true)
+            ),
+            None
+        );
+        assert!(
+            kind_mismatch("unit_ops.distillation_column", "has_reboiler", &number).is_some(),
+            "a number is not a switch"
+        );
+        assert_eq!(
+            kind_mismatch(
+                "unit_ops.distillation_column",
+                "top_specification_type",
+                &toml::Value::String("duty".into())
+            ),
+            None
+        );
+        assert!(
+            kind_mismatch(
+                "unit_ops.distillation_column",
+                "top_specification_type",
+                &number
+            )
+            .is_some(),
+            "a number is not one of five names"
+        );
+
+        // A name no model declares and an entry with no model are not this rule's business: it
+        // can only refuse a value whose declaration it can read.
+        assert_eq!(
+            kind_mismatch("unit_ops.pump", "not_a_parameter", &number),
+            None
+        );
+        assert_eq!(
+            kind_mismatch("unit_ops.simple_absorber", "anything", &number),
+            None
         );
     }
 }

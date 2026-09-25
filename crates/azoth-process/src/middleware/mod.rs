@@ -11,3 +11,4 @@
 //! projects those and adds no verdict of its own.
 
 pub mod diagnostic;
+pub mod form;
