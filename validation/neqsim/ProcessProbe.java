@@ -59,6 +59,8 @@
 //       > captures/process_stream_properties.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_reactor \
 //       > captures/process_gibbs_reactor.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_steps \
+//       > captures/process_gibbs_reactor_steps.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.stream.StreamInterface;
@@ -134,6 +136,9 @@ public class ProcessProbe {
         break;
       case "gibbs_reactor":
         gibbsReactorRows();
+        break;
+      case "gibbs_steps":
+        gibbsReactorSteps();
         break;
       case "column":
         columnRows();
@@ -2591,6 +2596,91 @@ public class ProcessProbe {
       }
     }
     System.out.println(gibbs);
+    System.out.println();
+  }
+
+  /// **One iteration of the Gibbs solve, so the map can be compared rather than the trajectory.**
+  ///
+  /// The six rows above show that the port tracks NeqSim to `1e-14` kJ/mol absolute and then
+  /// separates, which says the disagreement is in the iteration rather than in the equations -
+  /// and says nothing about *where*. `maxIterations = n` is the instrument: the loop's
+  /// convergence branch is `(deltaXNorm < tol && iteration >= minIterations) || iteration ==
+  /// maxIterations`, so at `n = 2` exactly one update is applied and the second pass stops. The
+  /// state, the multipliers, the objective and the Jacobian that come out are one step from the
+  /// same place the port is one step from.
+  static void gibbsReactorSteps() {
+    for (int iterations : new int[] { 2, 3 }) {
+      gibbsReactorStepRow("ammonia_steps_" + iterations, iterations);
+    }
+  }
+
+  static void gibbsReactorStepRow(String label, int maxIterations) {
+    String[] names = new String[] { "hydrogen", "nitrogen", "ammonia" };
+    Stream inlet = feed(names, new double[] { 1.5, 0.5, 0.0 }, 450.0, 300.0, 1.0);
+
+    neqsim.process.equipment.reactor.GibbsReactor reactor =
+        new neqsim.process.equipment.reactor.GibbsReactor("gibbs", inlet);
+    reactor.setUseAllDatabaseSpecies(false);
+    reactor.setMaxIterations(maxIterations);
+    reactor.setConvergenceTolerance(1e-3);
+    reactor.setEnergyMode(
+        neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ISOTHERMAL);
+    reactor.run();
+
+    System.out.println(label);
+    System.out.println("iterations=" + reactor.getActualIterations() + "\tconverged="
+        + reactor.hasConverged() + "\tfinal_error=" + reactor.getFinalConvergenceError());
+
+    SystemInterface fluid = reactor.getOutletStream().getThermoSystem();
+    StringBuilder moles = new StringBuilder("outlet_moles=");
+    for (int i = 0; i < reactor.getOutletMole().size(); i++) {
+      moles.append(fluid.getComponent(i).getComponentName()).append(":")
+          .append(reactor.getOutletMole().get(i));
+      if (i + 1 < reactor.getOutletMole().size()) {
+        moles.append(" ");
+      }
+    }
+    System.out.println(moles);
+
+    StringBuilder objective = new StringBuilder("objective=");
+    for (int i = 0; i < fluid.getNumberOfComponents(); i++) {
+      String name = fluid.getComponent(i).getComponentName();
+      objective.append(name).append(":").append(reactor.getObjectiveFunctionValues().get(name));
+      if (i + 1 < fluid.getNumberOfComponents()) {
+        objective.append(" ");
+      }
+    }
+    System.out.println(objective);
+
+    String[] elements = reactor.getElementNames();
+    double[] lambda = reactor.getLagrangianMultipliers();
+    StringBuilder multipliers = new StringBuilder("lambda=");
+    for (int i = 0; i < lambda.length; i++) {
+      multipliers.append(elements[i]).append(":").append(lambda[i]);
+      if (i + 1 < lambda.length) {
+        multipliers.append(" ");
+      }
+    }
+    System.out.println(multipliers);
+
+    // **The Jacobian as it stands, which after `maxIterations` passes is the one the *last*
+    // pass computed.** Its rows are the species variables then the active element balances, and
+    // its column labels say which, so a reader can line it up without guessing.
+    double[][] jacobian = reactor.getJacobianMatrix();
+    java.util.List<String> rows = reactor.getJacobianRowLabels();
+    java.util.List<String> cols = reactor.getJacobianColLabels();
+    System.out.println("jacobian_rows=" + rows);
+    System.out.println("jacobian_cols=" + cols);
+    for (int i = 0; i < jacobian.length; i++) {
+      StringBuilder row = new StringBuilder("jacobian_" + i + "=");
+      for (int j = 0; j < jacobian[i].length; j++) {
+        row.append(jacobian[i][j]);
+        if (j + 1 < jacobian[i].length) {
+          row.append(" ");
+        }
+      }
+      System.out.println(row);
+    }
     System.out.println();
   }
 

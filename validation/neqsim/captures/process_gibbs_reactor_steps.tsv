@@ -1,0 +1,26 @@
+ammonia_steps_2
+iterations=2	converged=true	final_error=8.318812406662414E-5
+outlet_moles=hydrogen:0.749998502638252 nitrogen:0.24999950087941733 ammonia:1.9482411654375895E-6
+objective=hydrogen:6.53956872476158E-5 nitrogen:7.344997245084528E-5 ammonia:-68.46174632945389
+lambda=O:0.0 N:8.279629959002207 C:0.0 H:10.304788358090262 S:0.0 Ar:0.0 Z:0.0
+jacobian_rows=[F_hydrogen, F_nitrogen, F_ammonia, Balance_N, Balance_H]
+jacobian_cols=[n_hydrogen, n_nitrogen, n_ammonia, lambda_N, lambda_H]
+jacobian_0=1.2429978542288722 -3.728965232641506 -3.635328758157038 -0.0 -2.0
+jacobian_1=-3.728965232641506 11.18692733760961 -4.060023789842259 -2.0 -0.0
+jacobian_2=-3.635328758157038 -4.060023789842259 1920447.587603618 -1.0 -3.0
+jacobian_3=0.0 2.0 1.0 0.0 0.0
+jacobian_4=2.0 0.0 3.0 0.0 0.0
+
+ammonia_steps_3
+iterations=3	converged=true	final_error=1.517755411247482E-4
+outlet_moles=hydrogen:0.7499957577404148 nitrogen:0.2499985859134716 ammonia:3.730673056877523E-6
+objective=hydrogen:1.229262220654448E-4 nitrogen:1.3806605783983628E-4 ammonia:-66.03089294001093
+lambda=O:0.0 N:8.279594316445031 C:0.0 H:10.304756258308371 S:0.0 Ar:0.0 Z:0.0
+jacobian_rows=[F_hydrogen, F_nitrogen, F_ammonia, Balance_N, Balance_H]
+jacobian_cols=[n_hydrogen, n_nitrogen, n_ammonia, lambda_N, lambda_H]
+jacobian_0=1.2430087067631084 -3.728971871064711 -3.63533047147058 -0.0 -2.0
+jacobian_1=-3.7289718710647106 11.186976200045805 -4.060025366440696 -2.0 -0.0
+jacobian_2=-3.63533047147058 -4.060025366440696 1002897.5937928793 -1.0 -3.0
+jacobian_3=0.0 2.0 1.0 0.0 0.0
+jacobian_4=2.0 0.0 3.0 0.0 0.0
+

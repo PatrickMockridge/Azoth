@@ -41,6 +41,16 @@
 //! *called* every iteration while `iteration <= 5` even with the flag off - it computes a
 //! 2-norm condition number and stores it in a diagnostic history - and that is refused too,
 //! since it consumes no state and modifies the Jacobian only when the flag is set.
+//!
+//! **This iteration is ill-conditioned, and that bounds how closely a port can match it.** Two
+//! things compound, both the class's own: the `MIN_MOLES = 1e-6` floor puts an `RT/n` entry of
+//! about `1e6` in the Jacobian against entries near `1`, so its 2-norm condition number is
+//! `6.1e6` on the ammonia case; and the residual is a cancelling sum, where hydrogen's `F` of
+//! `6.5e-5` is built from terms summing to `-0.345`, so a relative disagreement of `e` between
+//! two implementations in the terms is `5300e` in `F`. One iteration from the same state agrees
+//! to `1e-13` on the major species and `1.6e-10` on the Jacobian; over the hundred damped steps
+//! the class takes, that is enough to separate two runs. The tests say which rows close and
+//! which do not, and why.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result};
@@ -118,6 +128,11 @@ pub struct GibbsState {
     pub variables: Vec<usize>,
     /// Which element indices are active, in the class's own order.
     pub active_elements: Vec<usize>,
+    /// The Jacobian as the last pass computed it: species rows and columns first, then the
+    /// active element balances. Carried because it is the only way to compare one iteration of
+    /// this port against one of the class's - `getJacobianMatrix()` is public there, and a
+    /// trajectory that separates says nothing about which of the two maps moved.
+    pub jacobian: Vec<Vec<f64>>,
 }
 
 /// Minimise the Gibbs energy of a fluid at a temperature and pressure.
@@ -234,6 +249,7 @@ pub fn solve(
     let mut iterations = 0u32;
     let mut final_error = f64::MAX;
     let mut enthalpy_old = 0.0;
+    let mut last_jacobian: Vec<Vec<f64>> = Vec::new();
 
     for iteration in 1..=settings.max_iterations {
         iterations = iteration;
@@ -267,6 +283,7 @@ pub fn solve(
             &ln_phi,
             &d_ln_phi_dn,
         );
+        last_jacobian.clone_from(&jacobian);
         let vector = objective_vector(
             &objective,
             &variables,
@@ -377,6 +394,7 @@ pub fn solve(
         objective,
         variables,
         active_elements,
+        jacobian: last_jacobian,
     })
 }
 

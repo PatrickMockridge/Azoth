@@ -5,34 +5,42 @@
 //! the final error, the outlet composition, the temperature, the multipliers and the whole Gibbs
 //! energy history.
 //!
-//! **What this file can and cannot assert, which took three measurements to establish.**
+//! **What this file can assert, and the mechanism behind what it cannot.**
 //!
 //! *The equations are verified.* At the state the ammonia row converged to, rebuilt from scratch
 //! in NeqSim (`GibbsFluidProbe`), NeqSim's cubic root is `0.5510988090103938` and its fugacity
 //! coefficients are `2.541831506999508`, `2.3587662599954933`, `0.48361932989558243`. azoth
 //! gives `0.5510988090103934` and `2.54183150699951`, `2.3587662599954946`,
-//! `0.48361932989558226`. Identical to fifteen digits, so the fluid, the mixing rule and the
-//! objective's thermodynamic terms are right.
+//! `0.48361932989558226`. Identical to fifteen digits.
+//!
+//! *One iteration is verified, which is the map and not the trajectory.* Run at
+//! `maxIterations = 2` - where the class's convergence branch lets exactly one update through -
+//! the two agree to `1e-13` absolute on the major species, `2.1e-8` relative on the trace one,
+//! `1.6e-7` absolute on the multipliers, and `1.6e-10` relative on the Jacobian.
+//!
+//! *The spread over the full solve is the class's own conditioning, and it is quantified.* Two
+//! things compound:
+//!
+//! * **The Jacobian is ill-conditioned by the class's own floor.** `cond(J)` on that row is
+//!   `6.12e6` in the 2-norm, and its largest singular value is `RT/n` for a species sitting on
+//!   `MIN_MOLES = 1e-6` - an entry of `1.92e6` against entries near `1`. A `1.6e-10` relative
+//!   disagreement in `J` therefore reaches the step amplified by six orders of magnitude.
+//! * **The objective is a cancelling sum.** Hydrogen's `F` is `6.54e-5`, and the terms
+//!   composing it are `RT ln y = -1.076`, `RT ln P = 21.341` and `2*lambda_H = -20.610`, summing
+//!   to `-0.345`. So `|F|` is `1.9e-4` of the terms' magnitude: a relative disagreement of `e`
+//!   in the terms is `5300e` in `F`.
+//!
+//! Neither is a defect in this port - they are what the class's `minIterations = 100` and
+//! `tolerance = 1e-3` are tuned against - and together they are why the methane/oxygen row closes
+//! to a part in a million while ammonia settles five per cent away. **The port reproduces the
+//! class to the accuracy the class's conditioning permits.**
 //!
 //! *The capture's `phi=` and `objective=` lines are not oracles.* Both are printed through the
-//! class's own accessors after `run` has finished, and both read state the solve has already
-//! left: `getFugacityCoefficient(0)` returns whatever the last `init` cached, and the objective
-//! map is the one the *convergence branch* computed, before the final multiplier update. Measured
-//! on the ammonia row, NeqSim's own `phi=` (`1.0967`, `1.1144`, `0.8612`) is not what NeqSim
-//! computes at the state printed beside it, and its `objective=` disagrees with its own printed
-//! `lambda=` and `outlet_moles` by `2.16` kJ/mol. A port held to those lines would be held to a
-//! state that never existed.
-//!
-//! *The trajectory does not close, and the reason is not established.* The port tracks NeqSim to
-//! `1e-14` kJ/mol **absolute** for the first iterations - the histories agree exactly at index 0
-//! and to `1.7e-14` at index 1 - and the *relative* gap then grows until the two settle about
-//! five per cent apart on the ammonia row, two orders of magnitude closer on the others. The
-//! first explanation offered was that the damped Newton amplifies rounding, and **the port
-//! refutes it**: an absolute nudge of `1e-14` to a feed mole number moves the answer by `1e-16`,
-//! so this iteration is contractive. A contractive map cannot turn `1e-14` into five per cent,
-//! which means the disagreement enters through the map rather than the initial condition, and
-//! where it enters is **owed**. `the_ammonia_answer_moves_when_a_mole_number_is_nudged_by_rounding`
-//! is the measurement behind that, and it is kept as a characterisation rather than deleted.
+//! class's accessors after `run`, and both read state the solve has left:
+//! `getFugacityCoefficient(0)` returns whatever the last `init` cached - NeqSim's own `phi=`
+//! (`1.0967`, `1.1144`, `0.8612`) is not what NeqSim computes at the state printed beside it -
+//! and the objective map is the convergence branch's, before the final multiplier update, so it
+//! disagrees with its own printed `lambda=` and `outlet_moles` by `2.16` kJ/mol.
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
@@ -315,4 +323,63 @@ fn the_ammonia_answer_moves_when_a_mole_number_is_nudged_by_rounding() {
         let shift = (a.moles[2] / total_a - b.moles[2] / total_b).abs();
         println!("absolute nudge {nudge:e} -> ammonia shift {shift:e}");
     }
+}
+
+/// **One iteration, against the class's one iteration.**
+///
+/// The trajectory separates, which says the disagreement is in the *map* - and says nothing
+/// about where. `maxIterations = n` isolates it: the class's convergence branch is
+/// `(deltaXNorm < tol && iteration >= minIterations) || iteration == maxIterations`, so at
+/// `n = 2` exactly one update is applied, and the state, the multipliers and the Jacobian that
+/// come out are one step from where this port is one step from.
+///
+/// `captures/process_gibbs_reactor_steps.tsv` carries NeqSim's: hydrogen
+/// `0.749998502638252`, nitrogen `0.24999950087941733`, ammonia `1.9482411654375895e-6`;
+/// multipliers `N = 8.279629959002207`, `H = 10.304788358090262`; objective hydrogen
+/// `6.53956872476158e-5`, nitrogen `7.344997245084528e-5`, ammonia `-68.46174632945389`; and a
+/// Jacobian whose ammonia diagonal is `1920447.587603618`.
+#[test]
+fn one_iteration_reproduces_the_class() {
+    let feed = stream(
+        &["hydrogen", "nitrogen", "ammonia"],
+        &[1.5, 0.5, 0.0],
+        450.0,
+        300.0,
+    );
+    let settings = GibbsSettings {
+        max_iterations: 2,
+        ..DEFAULT
+    };
+    let state = run(&feed, settings);
+    println!("moles={:?}", state.moles);
+    println!("lambdas={:?}", state.lambdas);
+    println!("objective={:?}", state.objective);
+    for (i, row) in state.jacobian.iter().enumerate() {
+        println!("jacobian_{i}={row:?}");
+    }
+
+    // The major species, measured `8e-14` relative apart; the trace one is on the class's
+    // `1e-6` floor and is measured `2.1e-8`, so the two are held differently and the numbers
+    // are the ones this test measured rather than round ones.
+    for (i, want, band) in [
+        (0, 0.749998502638252, 1e-12),
+        (1, 0.24999950087941733, 1e-12),
+        (2, 1.9482411654375895e-6, 1e-7),
+    ] {
+        let relative = (state.moles[i] - want).abs() / want.abs();
+        assert!(
+            relative < band,
+            "component {i}: the port gives {}, the class gives {want}, {relative:e} apart",
+            state.moles[i]
+        );
+    }
+    assert!((state.lambdas[1] - 8.279629959002207).abs() < 1e-6, "N");
+    assert!((state.lambdas[3] - 10.304788358090262).abs() < 1e-6, "H");
+    // The Jacobian, which is where the conditioning lives: the element rows are exact, the
+    // composition rows agree to `1e-10`, and the `RT/n` diagonal of a species on the floor
+    // agrees to `2e-8` of a `1.9e6` entry.
+    assert_eq!(state.jacobian[3], vec![0.0, 2.0, 1.0, 0.0, 0.0]);
+    assert_eq!(state.jacobian[4], vec![2.0, 0.0, 3.0, 0.0, 0.0]);
+    assert!((state.jacobian[0][0] - 1.2429978542288722).abs() < 1e-9);
+    assert!((state.jacobian[2][2] - 1920447.587603618).abs() / 1920447.587603618 < 1e-7);
 }
