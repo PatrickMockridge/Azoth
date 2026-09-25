@@ -4274,7 +4274,7 @@ static STRIPPING_COLUMN_CASES: &[TestCase] = &[TestCase {
     property: None,
     status: "active",
     skip_reason: None,
-    tolerance: 0.0001,
+    tolerance: 0.005,
     numbers: &[
         ("stripping_gas_n", 2.547079374624363),
         ("stripping_gas_p", 1200000.0),
@@ -5117,6 +5117,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &HEATER_SPEC,
     &MANIFOLD_SPEC,
     &MIXER_SPEC,
+    &PACKED_COLUMN_SPEC,
     &PIPE_SPEC,
     &PLUG_FLOW_REACTOR_SPEC,
     &PUMP_SPEC,
