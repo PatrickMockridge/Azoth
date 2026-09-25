@@ -10,6 +10,7 @@
 //! executor decides what it computes, and `executor::json` writes the values; this layer
 //! projects those and adds no verdict of its own.
 
+pub mod command;
 pub mod diagnostic;
 pub mod form;
 pub mod graph;

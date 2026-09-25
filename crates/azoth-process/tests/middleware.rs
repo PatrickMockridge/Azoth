@@ -118,6 +118,10 @@ fn every_variant() -> Vec<Diagnostic> {
             parameter: "outlet_pressure".into(),
             detail: "`outlet_pressure` is a quantity and `\"high\"` is text".into(),
         },
+        Diagnostic::Acceleration {
+            stream: "recycle_1".into(),
+            detail: "`broyden` is refused: measured, the class's step has the wrong sign".into(),
+        },
         Diagnostic::UnrecycledLoop {
             detail: "the loop `p1.outlet -> ... -> p1.inlet` declares no recycle".into(),
         },
@@ -159,7 +163,7 @@ fn every_variant_is_in_this_list() {
     // The count is written down so that a variant added to the enum and forgotten here fails
     // rather than passing a shorter list.
     let diagnostics = every_variant();
-    assert_eq!(diagnostics.len(), 26, "the enum and this list have drifted");
+    assert_eq!(diagnostics.len(), 27, "the enum and this list have drifted");
     let mut codes: Vec<&str> = diagnostics.iter().map(Diagnostic::code).collect();
     codes.sort_unstable();
     let before = codes.len();

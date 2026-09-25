@@ -1,0 +1,445 @@
+//! The command model: one typed edit at a time, and the checker is the only rule set.
+//!
+//! `docs/src/architecture/middleware.md` states it: every edit is a command that re-runs the
+//! checker, which is what makes a red arrow a structured `OverfedPort` rather than a string. What
+//! that costs is that a command must be exactly as strict as the document it edits - a typo'd
+//! field read past in silence would be the same defect as a flowsheet key read past in silence,
+//! one layer up.
+
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+
+use azoth_process::middleware::command::{Command, apply};
+use azoth_process::{Flowsheet, UnitOpSpec, load_palette, validate};
+
+fn root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+fn palette() -> Vec<UnitOpSpec> {
+    load_palette(&root().join("specs/unit_ops")).expect("the shipped palette loads")
+}
+
+fn demo() -> Flowsheet {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    Flowsheet::from_toml(&text).expect("it parses")
+}
+
+/// One of every variant, so a new one cannot arrive without being carried here.
+fn every_command() -> Vec<Command> {
+    vec![
+        Command::AddInstance {
+            id: "p2".into(),
+            unit: "unit_ops.pump".into(),
+            parameters: BTreeMap::new(),
+        },
+        Command::RemoveInstance { id: "hx1".into() },
+        Command::Connect {
+            from: "p1.outlet".into(),
+            to: "sep1.feed".into(),
+        },
+        Command::Disconnect {
+            from: "p1.outlet".into(),
+            to: "hx1.inlet".into(),
+        },
+        Command::SetParameter {
+            instance: "p1".into(),
+            name: "outlet_pressure".into(),
+            value: serde_json::json!(3.0e6),
+        },
+        Command::UnsetParameter {
+            instance: "p1".into(),
+            name: "outlet_pressure".into(),
+        },
+        Command::AddInput {
+            name: "feed_2".into(),
+            components: vec!["methane".into()],
+            n: 1.0,
+            z: vec![1.0],
+            p: 5.0e5,
+            t: 300.0,
+        },
+        Command::RemoveInput {
+            name: "feed_1".into(),
+        },
+        Command::AddProduct {
+            name: "purge".into(),
+        },
+        Command::RemoveProduct {
+            name: "vapour_product".into(),
+        },
+        Command::AddRecycle {
+            stream: "r2".into(),
+            from: "sep1.liquid".into(),
+            to: "mix1.feed".into(),
+        },
+        Command::RemoveRecycle {
+            stream: "recycle_1".into(),
+        },
+        Command::SetRecycle {
+            stream: "recycle_1".into(),
+            field: "flow_tolerance".into(),
+            value: serde_json::json!(1e-6),
+        },
+        Command::SetPosition {
+            node: "instance:sep1".into(),
+            x: 1234.0,
+            y: 56.0,
+        },
+    ]
+}
+
+/// **The measurement this module's strictness rests on.** `deny_unknown_fields` on an internally
+/// tagged enum's variants: the tag is consumed by the enum's content deserializer, and the
+/// variant must still refuse a key it does not declare. Serde does not promise this combination,
+/// so it is measured rather than assumed - and if it were to stop holding, the fallback is an
+/// adjacently tagged `{"command": …, "data": {…}}` with the same deny on `data`.
+#[test]
+fn a_command_carrying_an_unknown_field_is_refused() {
+    let refused = [
+        r#"{"command": "remove_instance", "id": "hx1", "nope": 1}"#,
+        r#"{"command": "connect", "from": "a", "to": "b", "nope": 1}"#,
+        r#"{"command": "set_parameter", "instance": "p1", "name": "x", "value": 1, "nope": 1}"#,
+        r#"{"command": "set_position", "node": "instance:p1", "x": 0, "y": 0, "nope": 1}"#,
+    ];
+    for text in refused {
+        let error = serde_json::from_str::<Command>(text)
+            .err()
+            .unwrap_or_else(|| {
+                panic!("{text} was accepted with a key the command does not declare")
+            });
+        assert!(
+            error.to_string().contains("nope"),
+            "the refusal does not name the key: {error}"
+        );
+    }
+    // And the tag itself is not an unknown field.
+    assert!(
+        serde_json::from_str::<Command>(r#"{"command": "remove_instance", "id": "hx1"}"#).is_ok()
+    );
+}
+
+#[test]
+fn every_command_round_trips_through_json() {
+    let commands = every_command();
+    assert_eq!(commands.len(), 14, "the enum and this list have drifted");
+    for command in commands {
+        let text = serde_json::to_string(&command).expect("a command writes");
+        let read: Command = serde_json::from_str(&text).expect("and reads back");
+        assert_eq!(read, command, "{text}");
+    }
+}
+
+/// **A command naming something that does not exist is a no-op plus the checker's own word for
+/// it.** A refusal here would be a second rule set: `UnknownInstance` is already the answer.
+#[test]
+fn a_command_that_names_nothing_is_a_no_op_and_the_checker_says_so() {
+    let palette = palette();
+    let before = demo();
+    for command in [
+        Command::RemoveInstance { id: "nope".into() },
+        Command::UnsetParameter {
+            instance: "nope".into(),
+            name: "outlet_pressure".into(),
+        },
+        Command::RemoveRecycle {
+            stream: "nope".into(),
+        },
+    ] {
+        let mut flowsheet = before.clone();
+        apply(&mut flowsheet, &palette, &command).expect("the command takes effect");
+        assert_eq!(
+            flowsheet, before,
+            "{command:?} changed a document it named nothing in"
+        );
+    }
+
+    // The diagnostic is the checker's, and it is already there for the same document.
+    let mut flowsheet = before.clone();
+    apply(
+        &mut flowsheet,
+        &palette,
+        &Command::Connect {
+            from: "nowhere".into(),
+            to: "mix1.feed".into(),
+        },
+    )
+    .expect("the connection is written");
+    let diagnostics = validate(&flowsheet, &palette);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code() == "unknown_feed"),
+        "the checker names what the command could not: {diagnostics:?}"
+    );
+}
+
+/// **Every edit lands, and what it produced reads back as itself.** This is the editor's round
+/// trip executed rather than claimed: the document a command produced is written and reparsed on
+/// every command, so a change that lost something cannot reach a caller.
+#[test]
+fn each_edit_lands_and_the_document_round_trips() {
+    let palette = palette();
+    for command in every_command() {
+        let mut flowsheet = demo();
+        apply(&mut flowsheet, &palette, &command).expect("the command takes effect");
+        assert_ne!(flowsheet, demo(), "{command:?} changed nothing");
+
+        let written = flowsheet.to_toml().expect("it writes");
+        let read = Flowsheet::from_toml(&written).expect("it reads back");
+        assert_eq!(read, flowsheet, "{command:?} lost something:\n{written}");
+        assert_eq!(
+            read.to_toml().expect("it writes again"),
+            written,
+            "{command:?}: writing is not a fixed point"
+        );
+    }
+}
+
+#[test]
+fn a_removed_instance_takes_its_edges_with_it() {
+    let palette = palette();
+    let mut flowsheet = demo();
+    apply(
+        &mut flowsheet,
+        &palette,
+        &Command::RemoveInstance { id: "hx1".into() },
+    )
+    .expect("the command takes effect");
+
+    // `hx1` had two connections, and neither is left to name an instance that is gone.
+    assert!(
+        !flowsheet
+            .connections
+            .iter()
+            .any(|connection| connection.from.starts_with("hx1.")
+                || connection.to.starts_with("hx1.")),
+        "{:?}",
+        flowsheet.connections
+    );
+    assert_eq!(flowsheet.connections.len(), 3);
+    let diagnostics = validate(&flowsheet, &palette);
+    assert!(
+        !diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code() == "unknown_instance"),
+        "removing an instance left dangling endpoints: {diagnostics:?}"
+    );
+}
+
+/// The kind a parameter's value is written as, which is the one thing the document does not know.
+#[test]
+fn a_parameter_is_written_as_the_kind_its_declaration_states() {
+    let palette = palette();
+    let mut flowsheet = demo();
+
+    // A vector parameter takes a list, and a front-end sending a number is refused rather than
+    // writing a document the checker would refuse a moment later.
+    let vector = Command::SetParameter {
+        instance: "sep1".into(),
+        name: "gas_in_liquid".into(),
+        value: serde_json::json!(0.0),
+    };
+    apply(&mut flowsheet, &palette, &vector).expect("a quantity takes a number");
+    assert_eq!(
+        flowsheet.instances[3].parameters.get("gas_in_liquid"),
+        Some(&toml::Value::Float(0.0))
+    );
+
+    let mut flowsheet = demo();
+    flowsheet.instances.push(azoth_process::Instance {
+        id: "s1".into(),
+        unit: "unit_ops.splitter".into(),
+        parameters: BTreeMap::new(),
+    });
+    let as_list = Command::SetParameter {
+        instance: "s1".into(),
+        name: "split_factors".into(),
+        value: serde_json::json!([0.5, 0.5]),
+    };
+    apply(&mut flowsheet, &palette, &as_list).expect("a vector takes a list");
+    assert_eq!(
+        flowsheet.instances[4].parameters.get("split_factors"),
+        Some(&toml::Value::Array(vec![
+            toml::Value::Float(0.5),
+            toml::Value::Float(0.5)
+        ]))
+    );
+
+    let mut flowsheet = demo();
+    flowsheet.instances.push(azoth_process::Instance {
+        id: "s1".into(),
+        unit: "unit_ops.splitter".into(),
+        parameters: BTreeMap::new(),
+    });
+    let as_number = Command::SetParameter {
+        instance: "s1".into(),
+        name: "split_factors".into(),
+        value: serde_json::json!(0.5),
+    };
+    let error = apply(&mut flowsheet, &palette, &as_number)
+        .expect_err("a vector parameter does not take a number");
+    assert!(error.to_string().contains("list"), "{error}");
+}
+
+/// TOML has no null, so a parameter cannot be set to one - and the refusal says that rather than
+/// writing a zero.
+#[test]
+fn a_null_parameter_is_refused() {
+    let palette = palette();
+    let mut flowsheet = demo();
+    let error = apply(
+        &mut flowsheet,
+        &palette,
+        &Command::SetParameter {
+            instance: "p1".into(),
+            name: "outlet_pressure".into(),
+            value: serde_json::Value::Null,
+        },
+    )
+    .expect_err("a null is refused");
+    assert!(error.to_string().contains("null"), "{error}");
+    assert_eq!(flowsheet, demo(), "the document is untouched");
+}
+
+#[test]
+fn a_position_is_only_placed_on_a_node_the_document_declares() {
+    let palette = palette();
+    let mut flowsheet = demo();
+    apply(
+        &mut flowsheet,
+        &palette,
+        &Command::SetPosition {
+            node: "instance:sep1".into(),
+            x: 1234.0,
+            y: 56.0,
+        },
+    )
+    .expect("a declared node is placed");
+    assert_eq!(
+        flowsheet
+            .layout
+            .as_ref()
+            .and_then(|layout| layout.position(azoth_process::NodeRole::Instance, "sep1")),
+        Some([1234.0, 56.0])
+    );
+
+    // A node the document does not declare cannot be placed: a remove of something absent is
+    // already what was asked for, and a placement of something absent cannot take effect.
+    let error = apply(
+        &mut flowsheet,
+        &palette,
+        &Command::SetPosition {
+            node: "instance:nope".into(),
+            x: 0.0,
+            y: 0.0,
+        },
+    )
+    .expect_err("an undeclared node is refused");
+    assert!(error.to_string().contains("nope"), "{error}");
+
+    // And a node id whose role is not one of the three is a malformed command rather than a
+    // missing node.
+    let error = apply(
+        &mut flowsheet,
+        &palette,
+        &Command::SetPosition {
+            node: "widget:sep1".into(),
+            x: 0.0,
+            y: 0.0,
+        },
+    )
+    .expect_err("an unknown role is refused");
+    assert!(error.to_string().contains("node id"), "{error}");
+}
+
+#[test]
+fn a_recycle_parameter_is_five_numbers_a_count_and_a_name() {
+    let palette = palette();
+    let mut flowsheet = demo();
+    let field = |name: &str, value: serde_json::Value| Command::SetRecycle {
+        stream: "recycle_1".into(),
+        field: name.into(),
+        value,
+    };
+
+    apply(
+        &mut flowsheet,
+        &palette,
+        &field("flow_tolerance", serde_json::json!(1e-6)),
+    )
+    .expect("a tolerance is a number");
+    apply(
+        &mut flowsheet,
+        &palette,
+        &field("max_iterations", serde_json::json!(25)),
+    )
+    .expect("a count is a whole number");
+    apply(
+        &mut flowsheet,
+        &palette,
+        &field("acceleration_method", serde_json::json!("wegstein")),
+    )
+    .expect("the method is a name");
+
+    let recycle = &flowsheet.recycles[0];
+    assert_eq!(recycle.flow_tolerance, Some(1e-6));
+    assert_eq!(recycle.max_iterations, Some(25));
+    assert_eq!(recycle.acceleration_method.as_deref(), Some("wegstein"));
+
+    // Measured: the class's own reason, not a second one.
+    apply(
+        &mut flowsheet,
+        &palette,
+        &field("acceleration_method", serde_json::json!("broyden")),
+    )
+    .expect("the name is written; the checker is what refuses it");
+    let diagnostics = validate(&flowsheet, &palette);
+    let refusal = diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.code() == "acceleration")
+        .unwrap_or_else(|| panic!("a broyden tear is not reported: {diagnostics:?}"));
+    assert_eq!(refusal.severity(), azoth_process::Severity::Error);
+    assert_eq!(refusal.location().section, "recycles");
+    assert_eq!(refusal.location().path, "recycle_1");
+    assert!(
+        refusal.message().contains("broyden") && refusal.message().contains("Measured"),
+        "the class's own measured reason, verbatim: {}",
+        refusal.message()
+    );
+
+    // And a name that is none of the three is the same refusal, not a silent default.
+    let mut flowsheet = demo();
+    apply(
+        &mut flowsheet,
+        &palette,
+        &field("acceleration_method", serde_json::json!("wegstien")),
+    )
+    .expect("the name is written");
+    let diagnostics = validate(&flowsheet, &palette);
+    assert!(
+        diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code() == "acceleration"
+                && diagnostic.message().contains("wegstien")),
+        "{diagnostics:?}"
+    );
+
+    // A field the schema has no word for is a malformed command, not a document fact.
+    let error = apply(
+        &mut flowsheet,
+        &palette,
+        &field("nope", serde_json::json!(1)),
+    )
+    .expect_err("an unknown field is refused");
+    assert!(error.to_string().contains("nope"), "{error}");
+    // And a number where a name belongs.
+    let error = apply(
+        &mut flowsheet,
+        &palette,
+        &field("max_iterations", serde_json::json!("many")),
+    )
+    .expect_err("a name where a count belongs is refused");
+    assert!(error.to_string().contains("number"), "{error}");
+}

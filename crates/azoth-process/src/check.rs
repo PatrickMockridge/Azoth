@@ -170,6 +170,18 @@ pub enum Diagnostic {
         parameter: String,
         detail: String,
     },
+    /// A torn loop's acceleration is one this port cannot apply.
+    ///
+    /// **The third of the same shape.** `MissingParameter` closed the hole where a document could
+    /// omit a value its kernel reads; `ParameterKind` closed the one where it could give a value
+    /// of the wrong type; this closes the one where it could *name* something the run cannot do.
+    /// `acceleration_method` reached `executor::session` and nothing else, so a misspelt name -
+    /// or `broyden`, whose refusal carries the measurement that closes it - validated clean and
+    /// then failed the run.
+    Acceleration {
+        stream: String,
+        detail: String,
+    },
     UnrecycledLoop {
         detail: String,
     },
@@ -374,6 +386,7 @@ impl Diagnostic {
             Self::InputRecord { .. } => "input_record",
             Self::EndpointIndex { .. } => "endpoint_index",
             Self::ParameterKind { .. } => "parameter_kind",
+            Self::Acceleration { .. } => "acceleration",
             Self::UnrecycledLoop { .. } => "unrecycled_loop",
         }
     }
@@ -480,6 +493,11 @@ impl Diagnostic {
                     endpoint: endpoint.clone(),
                 },
             },
+            // The tear is drawn as the edge whose `data.path` is its name, so the name is the
+            // target a canvas can find it by.
+            Self::Acceleration { stream, .. } => Target::Endpoint {
+                endpoint: stream.clone(),
+            },
             Self::UnrecycledLoop { .. } => Target::Document,
         }
     }
@@ -535,6 +553,7 @@ impl Diagnostic {
             Self::UnusedProduct { name } => at("products", name.clone()),
             Self::InputRecord { name, .. } => at("inputs", name.clone()),
             Self::EndpointIndex { endpoint, .. } => at("connections", endpoint.clone()),
+            Self::Acceleration { stream, .. } => at("recycles", stream.clone()),
             Self::UnrecycledLoop { .. } => at("connections", String::new()),
         }
     }
@@ -609,6 +628,7 @@ impl Diagnostic {
             Self::InputRecord { detail, .. } => detail.clone(),
             Self::EndpointIndex { detail, .. } => detail.clone(),
             Self::ParameterKind { detail, .. } => detail.clone(),
+            Self::Acceleration { detail, .. } => detail.clone(),
             Self::UnrecycledLoop { detail } => detail.clone(),
         }
     }
@@ -970,6 +990,30 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
     // be acyclic, or a loop goes undeclared.
     if let Some(detail) = undeclared_loop(&flowsheet.connections, &flowsheet.recycles) {
         diags.push(Diagnostic::UnrecycledLoop { detail });
+    }
+
+    // **A tear's acceleration, which is a name the run reads and nothing else checked.** The
+    // rules above hold units, names, ports, connections and a parameter's kind; a declared
+    // `acceleration_method` reached `executor::session` alone, so a misspelt one - or `broyden`,
+    // whose refusal carries the measurement that closes it - validated clean and then failed the
+    // run. The class's own two refusals are what this reads, so there is not a second list of
+    // names here.
+    for recycle in &flowsheet.recycles {
+        let refusal = recycle
+            .unsupported_acceleration()
+            .or_else(|| recycle.settings().err());
+        if let Some(refusal) = refusal {
+            // The reason, not the whole error: `AzothError`'s own line is "invalid input `x`: …",
+            // and the diagnostic already says what the input is.
+            let detail = match &refusal {
+                azoth_core::AzothError::InvalidInput { reason, .. } => reason.clone(),
+                other => other.to_string(),
+            };
+            diags.push(Diagnostic::Acceleration {
+                stream: recycle.stream.clone(),
+                detail,
+            });
+        }
     }
 
     diags
