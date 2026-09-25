@@ -36,6 +36,7 @@ from azoth.core.result import (
     BubbleTemperatureResult,
     BwrsPhaseResult,
     CapillaryDewPointResult,
+    ChapmanEnskogDiffusivityResult,
     ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
@@ -1259,6 +1260,28 @@ def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResu
         input_to_si(spec, "eta", eta),
     )
     return TynCalusDiffusivityResult(
+        d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def chapman_enskog_diffusivity(
+    MA: Q, MB: Q, sigma: Q, eps: Q, T: Q, P: Q
+) -> ChapmanEnskogDiffusivityResult:
+    """The gas binary diffusivity, computed in Rust.
+
+    ``sigma`` is the pair's collision diameter, so it crosses as its SI magnitude in metres.
+    """
+    spec = _spec_for("eos.chapman_enskog_diffusivity")
+    result = _core.chapman_enskog_diffusivity(
+        input_to_si(spec, "MA", MA),
+        input_to_si(spec, "MB", MB),
+        input_to_si(spec, "sigma", sigma),
+        input_to_si(spec, "eps", eps),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return ChapmanEnskogDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
         warnings=_warnings(result.warnings),
     )

@@ -262,6 +262,11 @@ class CapillaryDewPointResult:
     warnings: list[Warning]
 
 @final
+class ChapmanEnskogDiffusivityResult:
+    d: Qty
+    warnings: list[Warning]
+
+@final
 class ChungConductivityResult:
     k: Qty
     warnings: list[Warning]
@@ -1946,6 +1951,14 @@ def capillary_dew_point(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> CapillaryDewPointResult: ...
+def chapman_enskog_diffusivity(
+    MA: float,
+    MB: float,
+    sigma: float,
+    eps: float,
+    T: float,
+    P: float,
+) -> ChapmanEnskogDiffusivityResult: ...
 def chung_conductivity(
     Cv0: float,
     M: float,

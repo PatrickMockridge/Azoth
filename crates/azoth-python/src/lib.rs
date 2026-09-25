@@ -201,6 +201,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::rackett_molar_volume, m)?)?;
     m.add_function(wrap_pyfunction!(eos::costald_molar_volume, m)?)?;
     m.add_function(wrap_pyfunction!(eos::chung_viscosity, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::chapman_enskog_diffusivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::chung_conductivity, m)?)?;
 
     // Models: the same shape, a different spec tree and generator.

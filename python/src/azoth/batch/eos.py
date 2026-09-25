@@ -23,6 +23,7 @@ from azoth.core.result import RootStructure
 from azoth.core.warnings import Warning
 
 __all__ = [
+    "ChapmanEnskogDiffusivityBatch",
     "ChungConductivityBatch",
     "ChungViscosityBatch",
     "Co2WaterDiffusivityBatch",
@@ -72,6 +73,7 @@ __all__ = [
     "UmrprAlphaBatch",
     "Vdw1fMixBinaryBatch",
     "WilkeChangDiffusivityBatch",
+    "chapman_enskog_diffusivity",
     "chung_conductivity",
     "chung_viscosity",
     "co2_water_diffusivity",
@@ -171,6 +173,7 @@ _TYN_CALUS_DIFFUSIVITY = "eos.tyn_calus_diffusivity"
 _NITRIC_SULFURIC_ACID_VAPOR_PRESSURE = "eos.nitric_sulfuric_acid_vapor_pressure"
 _UMRPR_ALPHA = "eos.umrpr_alpha"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
+_CHAPMAN_ENSKOG_DIFFUSIVITY = "eos.chapman_enskog_diffusivity"
 _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusivity"
 
 
@@ -2006,6 +2009,51 @@ def umrpr_alpha(*, omega: Sequence[float], Tr: Sequence[float]) -> UmrprAlphaBat
         _UMRPR_ALPHA,
         {"omega": sequence(omega, "omega"), "Tr": sequence(Tr, "Tr")},
         _build_umrpr,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class ChapmanEnskogDiffusivityBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.chapman_enskog_diffusivity`."""
+
+    #: Binary diffusion coefficient per element, in m**2/s.
+    d: array[float]
+
+
+def _build_chapman_enskog_diffusivity(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> ChapmanEnskogDiffusivityBatch:
+    return ChapmanEnskogDiffusivityBatch(
+        warnings=warnings,
+        units=units,
+        d=columns["d"],  # type: ignore[arg-type]
+    )
+
+
+def chapman_enskog_diffusivity(
+    *,
+    MA: Sequence[float],
+    MB: Sequence[float],
+    sigma: Sequence[float],
+    eps: Sequence[float],
+    T: Sequence[float],
+    P: Sequence[float],
+) -> ChapmanEnskogDiffusivityBatch:
+    """The gas binary diffusivity, over arrays."""
+    result: ChapmanEnskogDiffusivityBatch = run(
+        _CHAPMAN_ENSKOG_DIFFUSIVITY,
+        {
+            "MA": sequence(MA, "MA"),
+            "MB": sequence(MB, "MB"),
+            "sigma": sequence(sigma, "sigma"),
+            "eps": sequence(eps, "eps"),
+            "T": sequence(T, "T"),
+            "P": sequence(P, "P"),
+        },
+        _build_chapman_enskog_diffusivity,
     )
     return result
 

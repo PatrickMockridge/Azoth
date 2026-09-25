@@ -14,8 +14,7 @@ const MODEL_ID: &str = "eos.parachor_mixture_surface_tension";
 
 fn call(case: &azoth_core::spec::TestCase) -> azoth_eos::ParachorMixtureSurfaceTensionResult {
     parachor_mixture_surface_tension(
-        case
-            .vector("parachors")
+        case.vector("parachors")
             .expect("the case states the parachors"),
         kilograms_per_cubic_meter(case.input("rho_gas").expect("the case states rho_gas")),
         kilograms_per_mole(case.input("M_gas").expect("the case states M_gas")),

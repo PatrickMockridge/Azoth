@@ -78,6 +78,7 @@ from azoth.core.result import (
     BubbleTemperatureResult,
     BwrsPhaseResult,
     CapillaryDewPointResult,
+    ChapmanEnskogDiffusivityResult,
     ChungConductivityResult,
     ChungViscosityResult,
     Co2PhaseResult,
@@ -246,6 +247,7 @@ __all__ = [
     "bwrs_coefficients",
     "bwrs_phase",
     "capillary_dew_point",
+    "chapman_enskog_diffusivity",
     "chung_conductivity",
     "chung_viscosity",
     "co2_phase",
@@ -420,6 +422,7 @@ _NITRIC_SULFURIC_ACID_VAPOR_PRESSURE = "eos.nitric_sulfuric_acid_vapor_pressure"
 _NRTL_ACTIVITY_COEFFICIENTS = "eos.nrtl_activity_coefficients"
 _BUBBLE_PRESSURE = "eos.bubble_pressure"
 _BUBBLE_TEMPERATURE = "eos.bubble_temperature"
+_CHAPMAN_ENSKOG_DIFFUSIVITY = "eos.chapman_enskog_diffusivity"
 _CHUNG_CONDUCTIVITY = "eos.chung_conductivity"
 _CHUNG_VISCOSITY = "eos.chung_viscosity"
 _COSTALD_MOLAR_VOLUME = "eos.costald_molar_volume"
@@ -1052,6 +1055,27 @@ def chung_viscosity(
     """
     return resolve(_CHUNG_VISCOSITY)(  # type: ignore[no-any-return]
         omega=omega, Tc=Tc, Vc=Vc, M=M, dipole=dipole, kappa=kappa, T=T, V=V
+    )
+
+
+def chapman_enskog_diffusivity(
+    MA: Q, MB: Q, sigma: Q, eps: Q, T: Q, P: Q
+) -> ChapmanEnskogDiffusivityResult:
+    """The gas binary diffusivity, from the Chapman-Enskog theory.
+
+    **The pair's Lennard-Jones parameters, not the components'**: combine them with
+    :func:`azoth.eos.components.lennard_jones_pair`. This is a gas phase's *default*
+    diffusivity - the Fuller correlation is reached only by selecting a model - and NeqSim
+    answers two different numbers from the same arithmetic depending on where the
+    parameters come from: the database's values or Poling's textbook ones.
+
+    Raises:
+        OutOfRangeError: if ``T``, ``sigma`` or ``eps`` is not positive.
+
+    See :func:`azoth.eos.reference.chapman_enskog_diffusivity`.
+    """
+    return resolve(_CHAPMAN_ENSKOG_DIFFUSIVITY)(  # type: ignore[no-any-return]
+        MA=MA, MB=MB, sigma=sigma, eps=eps, T=T, P=P
     )
 
 

@@ -3658,6 +3658,32 @@ pub fn solid_fugacity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The gas binary diffusivity, from the Chapman-Enskog theory.
+#[pyfunction]
+#[pyo3(signature = (MA, MB, sigma, eps, T, P))]
+#[pyo3(text_signature = "(MA, MB, sigma, eps, T, P)")]
+#[allow(non_snake_case)] // `MA`, `MB` and `T` are the symbols in the published equation
+pub fn chapman_enskog_diffusivity(
+    py: Python<'_>,
+    MA: f64,
+    MB: f64,
+    sigma: f64,
+    eps: f64,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::results::PyChapmanEnskogDiffusivityResult> {
+    azoth_eos::chapman_enskog_diffusivity(
+        kilograms_per_mole(MA),
+        kilograms_per_mole(MB),
+        sigma,
+        kelvins(eps),
+        kelvins(T),
+        pascals(P),
+    )
+    .map(|r| crate::results::PyChapmanEnskogDiffusivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The gas binary diffusivity, from the Fuller-Schettler-Giddings correlation.
 #[pyfunction]
 #[pyo3(signature = (MA, MB, VA, VB, T, P))]

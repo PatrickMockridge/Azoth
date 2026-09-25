@@ -20,6 +20,7 @@
 <!-- BEGIN GENERATED: calcs -->
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
+  - [Gas binary diffusivity from the Chapman-Enskog theory](./eos/chapman_enskog_diffusivity.md)
   - [Gas thermal conductivity from the Chung correlation](./eos/chung_conductivity.md)
   - [Gas viscosity from the Chung correlation](./eos/chung_viscosity.md)
   - [CO2-in-water binary diffusivity from the Tammi correlation](./eos/co2_water_diffusivity.md)

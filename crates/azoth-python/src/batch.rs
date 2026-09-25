@@ -1273,6 +1273,34 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "d", "m**2/s", d);
         }
 
+        "eos.chapman_enskog_diffusivity" => {
+            let (ma, mb, sigma, eps, temperature, p) = (
+                take(&inputs, "MA")?,
+                take(&inputs, "MB")?,
+                take(&inputs, "sigma")?,
+                take(&inputs, "eps")?,
+                take(&inputs, "T")?,
+                take(&inputs, "P")?,
+            );
+            let mut d = Vec::with_capacity(n);
+            for i in 0..n {
+                let r = element(
+                    py,
+                    eos::chapman_enskog_diffusivity(
+                        kilograms_per_mole(ma[i]),
+                        kilograms_per_mole(mb[i]),
+                        sigma[i],
+                        kelvins(eps[i]),
+                        kelvins(temperature[i]),
+                        pascals(p[i]),
+                    ),
+                    &mut warnings,
+                )?;
+                d.push(r.d.value);
+            }
+            push_values(&mut columns, "d", "m**2/s", d);
+        }
+
         "eos.fuller_schettler_giddings_diffusivity" => {
             let (ma, mb, va, vb, t, p) = (
                 take(&inputs, "MA")?,

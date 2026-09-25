@@ -47,6 +47,7 @@ pub mod bwrs_mixture;
 pub mod bwrs_phase;
 pub mod capillary_dew_point;
 pub mod card;
+pub mod chapman_enskog_diffusivity;
 pub mod chung_conductivity;
 pub mod chung_viscosity;
 pub mod co2_phase;
@@ -228,6 +229,7 @@ pub use bubble_pressure::bubble_pressure;
 pub use bubble_temperature::bubble_temperature;
 pub use bwrs_phase::bwrs_phase;
 pub use capillary_dew_point::capillary_dew_point;
+pub use chapman_enskog_diffusivity::chapman_enskog_diffusivity;
 pub use chung_conductivity::chung_conductivity;
 pub use chung_viscosity::chung_viscosity;
 pub use co2_phase::co2_phase;
@@ -309,20 +311,20 @@ pub use rachford_rice_binary::rachford_rice_binary;
 pub use rackett_molar_volume::rackett_molar_volume;
 pub use results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
-    BubbleTemperatureResult, BwrsPhaseResult, ChungConductivityResult, ChungViscosityResult,
-    Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
-    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EffectiveDiffusionResult,
-    EosCgPhaseResult, FreezingPointResult, FullerSchettlerGiddingsDiffusivityResult,
-    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult, HenryStatus,
-    HybridEosGeFlashResult, HydrateFormationTemperatureResult, HydrateFractionResult,
-    HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
-    KentEisenbergPhaseResult, LiquidHeatCapacityResult, MasonSaxenaConductivityResult,
-    Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
-    MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
-    NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
+    BubbleTemperatureResult, BwrsPhaseResult, ChapmanEnskogDiffusivityResult,
+    ChungConductivityResult, ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult,
+    CostaldMolarVolumeResult, CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult,
+    DewTemperatureResult, EffectiveDiffusionResult, EosCgPhaseResult, FreezingPointResult,
+    FullerSchettlerGiddingsDiffusivityResult, FurstElectrolyteMod2004PhaseResult,
+    FurstElectrolytePhaseResult, GeFlashResult, GeNrtlFlashResult, GeNrtlPhaseResult,
+    GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult, GeWilsonPhaseResult,
+    Gerg2008PhaseResult, HaydukMinhasDiffusivityResult, HeatOfVaporizationResult,
+    HeliumPhaseResult, HenryStatus, HybridEosGeFlashResult, HydrateFormationTemperatureResult,
+    HydrateFractionResult, HydrateStructure, HydrogenPhaseResult, IapwsHenryLawResult,
+    IdealGasCpResult, KentEisenbergPhaseResult, LiquidHeatCapacityResult,
+    MasonSaxenaConductivityResult, Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult,
+    MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult,
+    MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult, Phase, PitzerDataset, PitzerPhaseResult, Pr78KappaResult,
     PrAlphaAbResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,

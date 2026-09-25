@@ -1850,6 +1850,33 @@ pub fn kij(first: &str, second: &str, cubic: Cubic, overlay: Option<&Overlay>) -
         })
 }
 
+/// Two components' Lennard-Jones parameters combined into a pair's, and the pair's reduced
+/// molar mass in g/mol.
+///
+/// `GasPhysicalPropertyMethod`'s constructor, verbatim: `sigma = (sigma_i + sigma_j)/2` in the
+/// unit the caller gives, `eps = sqrt(eps_i eps_j)`, and `M = 2/(1/M_i + 1/M_j)` with the masses
+/// in **g/mol** - which is what the class's own `1.0/M/1000.0` computes, left to right, and not
+/// `1/(M/1000)`. These are the combining rules the Chapman-Enskog and Fuller correlations are
+/// written for.
+///
+/// The parameters themselves are the databank's `ljdiameter` and `ljeps` columns, in angstrom and
+/// kelvin. NeqSim's `Diffusivity.useDiffusionLJOverride` swaps them for Poling's textbook values,
+/// and that switch is a model selection rather than a combining rule: this takes what it is given.
+#[must_use]
+pub fn lennard_jones_pair(
+    sigma_i_angstrom: f64,
+    eps_i: f64,
+    sigma_j_angstrom: f64,
+    eps_j: f64,
+    m_i_kg_per_mol: f64,
+    m_j_kg_per_mol: f64,
+) -> (f64, f64, f64) {
+    let sigma = (sigma_i_angstrom + sigma_j_angstrom) / 2.0;
+    let eps = (eps_i * eps_j).sqrt();
+    let pair_mass = 2.0 / (1.0 / (m_i_kg_per_mol * 1000.0) + 1.0 / (m_j_kg_per_mol * 1000.0));
+    (sigma, eps, pair_mass)
+}
+
 /// Where a component's Fuller-Schettler-Giddings diffusion volume came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FullerVolumeSource {

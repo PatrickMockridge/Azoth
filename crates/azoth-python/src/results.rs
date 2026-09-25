@@ -20,10 +20,11 @@ use azoth_eos::EffectiveDiffusionResult as KernelEffectiveDiffusionResult;
 use azoth_eos::results::AqueousViscosityResult as KernelAqueousViscosityResult;
 use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
-    BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult, ChungConductivityResult,
-    ChungViscosityResult, Co2PhaseResult, Co2WaterDiffusivityResult, CostaldMolarVolumeResult,
-    CriticalPointResult, DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult,
-    EosCgPhaseResult, FreezingPointResult, FullerSchettlerGiddingsDiffusivityResult,
+    BubbleTemperatureResult, BwrsPhaseResult, CapillaryDewPointResult,
+    ChapmanEnskogDiffusivityResult, ChungConductivityResult, ChungViscosityResult, Co2PhaseResult,
+    Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
+    DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
+    FreezingPointResult, FullerSchettlerGiddingsDiffusivityResult,
     FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
     GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
@@ -4047,6 +4048,45 @@ impl PyWilkeChangDiffusivityResult {
 
 impl From<&WilkeChangDiffusivityResult> for PyWilkeChangDiffusivityResult {
     fn from(r: &WilkeChangDiffusivityResult) -> Self {
+        Self {
+            d: PyQty {
+                magnitude_si: r.d.value,
+                unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.chapman_enskog_diffusivity`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ChapmanEnskogDiffusivityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyChapmanEnskogDiffusivityResult {
+    /// The pair's binary diffusion coefficient, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub d: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyChapmanEnskogDiffusivityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ChapmanEnskogDiffusivityResult(d={} {})",
+            self.d.magnitude_si, self.d.unit
+        )
+    }
+}
+
+impl From<&ChapmanEnskogDiffusivityResult> for PyChapmanEnskogDiffusivityResult {
+    fn from(r: &ChapmanEnskogDiffusivityResult) -> Self {
         Self {
             d: PyQty {
                 magnitude_si: r.d.value,
@@ -9534,6 +9574,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
         ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
         FreezingPointResult::CALC_ID => FreezingPointResult::FIELDS.to_vec(),
+        ChapmanEnskogDiffusivityResult::CALC_ID => ChapmanEnskogDiffusivityResult::FIELDS.to_vec(),
         FullerSchettlerGiddingsDiffusivityResult::CALC_ID => {
             FullerSchettlerGiddingsDiffusivityResult::FIELDS.to_vec()
         }
@@ -9645,6 +9686,7 @@ pub fn calc_ids() -> Vec<String> {
         ChungViscosityResult::CALC_ID.to_string(),
         ChungConductivityResult::CALC_ID.to_string(),
         TynCalusDiffusivityResult::CALC_ID.to_string(),
+        ChapmanEnskogDiffusivityResult::CALC_ID.to_string(),
         FullerSchettlerGiddingsDiffusivityResult::CALC_ID.to_string(),
         UmrprAlphaResult::CALC_ID.to_string(),
         WilkeChangDiffusivityResult::CALC_ID.to_string(),

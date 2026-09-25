@@ -3357,6 +3357,24 @@ impl CalcResult for WilkeChangDiffusivityResult {
     }
 }
 
+/// Result of `eos.chapman_enskog_diffusivity`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChapmanEnskogDiffusivityResult {
+    /// The pair's binary diffusion coefficient.
+    pub d: DiffusionCoefficient,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ChapmanEnskogDiffusivityResult {
+    const CALC_ID: &'static str = "eos.chapman_enskog_diffusivity";
+    const FIELDS: &'static [&'static str] = &["d", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.fuller_schettler_giddings_diffusivity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FullerSchettlerGiddingsDiffusivityResult {
