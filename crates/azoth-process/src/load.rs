@@ -26,6 +26,24 @@ pub fn load_palette(dir: &Path) -> Result<Vec<UnitOpSpec>, String> {
     Ok(specs)
 }
 
+/// Every palette entry in an embedded bundle, in the bundle's own order.
+///
+/// **The other source of the same loader.** `load_palette` walks a directory, which a browser
+/// cannot do; a wasm module carries `palette_gen::PALETTE` and parses it through here, so there is
+/// one place that knows what a palette entry is. The bundle names its entries by their path
+/// relative to `specs/unit_ops`, which is what makes the two orders the same order.
+///
+/// # Errors
+/// A bundle entry that is not a palette entry, named with the file it came from.
+pub fn load_palette_text(entries: &[(&str, &str)]) -> Result<Vec<UnitOpSpec>, String> {
+    entries
+        .iter()
+        .map(|(name, text)| {
+            toml::from_str(text).map_err(|error| format!("specs/unit_ops/{name}: {error}"))
+        })
+        .collect()
+}
+
 /// A flowsheet, from its TOML text.
 pub fn parse_flowsheet(text: &str) -> Result<Flowsheet, String> {
     // One parse rather than two spellings of it: `Flowsheet::from_toml` is where the document's

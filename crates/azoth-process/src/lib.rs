@@ -21,6 +21,7 @@ pub mod model_gen;
 pub mod model_inputs_gen;
 pub mod models;
 pub mod order;
+pub mod palette_gen;
 pub mod reactor;
 pub mod recycle;
 pub mod stream;
@@ -31,7 +32,7 @@ pub use check::{
     Diagnostic, Location, NodeRole, Severity, Target, split_node_id, validate, validate_palette,
 };
 pub use flowsheet::{Connection, Flowsheet, Input, Instance, Layout, Recycle};
-pub use load::{load_palette, parse_flowsheet};
+pub use load::{load_palette, load_palette_text, parse_flowsheet};
 pub use order::{ExecutionOrder, execution_order};
 pub use recycle::{Acceleration, RecycleSettings, Residuals};
 // **The kernels stay under `kernels` and the ids take the flat names**, which is the split

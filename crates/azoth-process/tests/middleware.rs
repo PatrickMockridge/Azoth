@@ -1043,3 +1043,62 @@ to = "out"
         .expect("declared");
     assert_eq!(leaving.source_handle, "p1.outlet");
 }
+
+/// **The bundle a browser carries is the tree, byte for byte.**
+///
+/// A wasm module has no filesystem, so the palette is embedded as text and parsed through the one
+/// loader. Two sources of one declaration is the drift this repository is organised against, so
+/// the two are held to each other here: every bundled entry against its file, and the bundle's
+/// list against the directory's.
+#[test]
+fn the_embedded_palette_is_the_directory() {
+    use azoth_process::palette_gen::PALETTE;
+
+    fn toml_files(dir: &std::path::Path, prefix: &str, out: &mut Vec<String>) {
+        for entry in std::fs::read_dir(dir).expect("the palette directory is there") {
+            let path = entry.expect("readable").path();
+            let name = format!(
+                "{prefix}{}",
+                path.file_name().expect("a name").to_string_lossy()
+            );
+            if path.is_dir() {
+                toml_files(&path, &format!("{name}/"), out);
+            } else if path.extension().and_then(|e| e.to_str()) == Some("toml") {
+                out.push(name);
+            }
+        }
+    }
+
+    let mut files = Vec::new();
+    toml_files(&root().join("specs/unit_ops"), "", &mut files);
+    files.sort();
+
+    let mut bundled: Vec<String> = Vec::new();
+    for (name, text) in PALETTE {
+        let path = root().join("specs/unit_ops").join(name);
+        let on_disk =
+            std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{name}: {error}"));
+        assert_eq!(
+            *text, on_disk,
+            "{name} differs from the file it is generated from"
+        );
+        bundled.push((*name).to_string());
+    }
+    assert_eq!(
+        bundled, files,
+        "the bundle and the directory list the same files"
+    );
+    assert_eq!(bundled.len(), 29);
+}
+
+/// And the two sources parse to one palette, which is what makes the loader shared rather than
+/// merely similar.
+#[test]
+fn the_two_palette_loaders_agree() {
+    use azoth_process::palette_gen::PALETTE;
+
+    let from_disk = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let from_text = azoth_process::load_palette_text(PALETTE).expect("the bundle parses");
+    assert_eq!(from_disk, from_text);
+    assert_eq!(from_text.len(), 29);
+}

@@ -82,3 +82,6 @@ validation/neqsim/*.jar
 # --- local scratch ---
 /tmp/
 *.local.*
+
+# The wasm package wasm-pack writes; it is built, never committed.
+crates/azoth-wasm/pkg/

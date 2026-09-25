@@ -10,6 +10,7 @@ members = [
   "crates/azoth-standards",
   "crates/azoth-process",
   "crates/azoth-python",
+  "crates/azoth-wasm",
   "crates/azoth-cli",
 ]
 

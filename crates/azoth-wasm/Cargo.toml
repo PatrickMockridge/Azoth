@@ -1,0 +1,17 @@
+[package]
+name = "azoth-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "The azoth middleware, compiled for a browser"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+azoth-core.workspace = true
+azoth-process.workspace = true
+serde_json.workspace = true
+wasm-bindgen = "0.2"
