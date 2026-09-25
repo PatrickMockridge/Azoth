@@ -162,6 +162,16 @@ rather than measured, and its loop stops at one pass.
   names at least one;
 - **linearity** — a `one` port is consumed/produced exactly once, a `many` port at
   least once, and every feed/product is used exactly once;
+- no name is used for two things a reader has to tell apart — an instance and a feed, an instance
+  and a product, or a feed and a product;
+- **a connection and a tear may each be declared once**: a connection is identified by its two
+  endpoints and a tear by its name, because those are what the executor resolves them by, so a
+  second entry under the same identity feeds one port the same stream twice. Measured — a
+  duplicated connection takes a mixer's outlet from 1 mol/s to 2 and a duplicated tear from 1.5 to
+  2, and neither `OverfedPort` nor the feed rule fires on a `many` inlet, so both documents used to
+  pass and compute something nobody asked for;
+- a tear's `acceleration_method` is one this port can apply, read from the class's own two refusals
+  rather than from a second list of names;
 - every loop in the instance graph passes through a declared recycle.
 
 The last rule about an input is a *shape* rule and no more: the checker compares dimensions

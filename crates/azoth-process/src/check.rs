@@ -182,6 +182,17 @@ pub enum Diagnostic {
         from: String,
         to: String,
     },
+    /// Two `[[recycles]]` entries tear a loop under the same name.
+    ///
+    /// **A tear is identified by its name**, because that is what the executor's tear map is keyed
+    /// by: `executor::session` gathers a `many` inlet's streams from the recycles whose `to` matches
+    /// and looks each one's stream up by name, so two entries sharing a name hand the same tear to
+    /// the inlet twice and the unit mixes the loop twice. `OverfedPort` does not fire on a `many`
+    /// inlet, so the document passed and computed something nobody asked for - the same wrong number
+    /// `DuplicateConnection` closes, by the other route.
+    DuplicateRecycle {
+        stream: String,
+    },
     /// A torn loop's acceleration is one this port cannot apply.
     ///
     /// **The third of the same shape.** `MissingParameter` closed the hole where a document could
@@ -398,6 +409,7 @@ impl Diagnostic {
             Self::ParameterKind { .. } => "parameter_kind",
             Self::Acceleration { .. } => "acceleration",
             Self::DuplicateConnection { .. } => "duplicate_connection",
+            Self::DuplicateRecycle { .. } => "duplicate_recycle",
             Self::UnrecycledLoop { .. } => "unrecycled_loop",
         }
     }
@@ -513,6 +525,11 @@ impl Diagnostic {
                 from: from.clone(),
                 to: to.clone(),
             },
+            // A tear is drawn as the edge whose `data.path` is its name, which is how a canvas
+            // finds it - the same target `Acceleration` uses, for the same reason.
+            Self::DuplicateRecycle { stream } => Target::Endpoint {
+                endpoint: stream.clone(),
+            },
             Self::UnrecycledLoop { .. } => Target::Document,
         }
     }
@@ -570,6 +587,7 @@ impl Diagnostic {
             Self::EndpointIndex { endpoint, .. } => at("connections", endpoint.clone()),
             Self::Acceleration { stream, .. } => at("recycles", stream.clone()),
             Self::DuplicateConnection { from, to } => at("connections", format!("{from} -> {to}")),
+            Self::DuplicateRecycle { stream } => at("recycles", stream.clone()),
             Self::UnrecycledLoop { .. } => at("connections", String::new()),
         }
     }
@@ -647,6 +665,9 @@ impl Diagnostic {
             Self::Acceleration { detail, .. } => detail.clone(),
             Self::DuplicateConnection { from, to } => {
                 format!("the connection `{from} -> {to}` is declared twice")
+            }
+            Self::DuplicateRecycle { stream } => {
+                format!("the tear `{stream}` is declared twice")
             }
             Self::UnrecycledLoop { detail } => detail.clone(),
         }
@@ -800,6 +821,17 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
             diags.push(Diagnostic::DuplicateConnection {
                 from: connection.from.clone(),
                 to: connection.to.clone(),
+            });
+        }
+    }
+
+    // **A tear is identified by its name as well**, and for the same reason: the executor's tear
+    // map is keyed by it, so two entries sharing one name feed the loop's inlet twice.
+    let mut tears: HashSet<&str> = HashSet::new();
+    for recycle in &flowsheet.recycles {
+        if !tears.insert(recycle.stream.as_str()) {
+            diags.push(Diagnostic::DuplicateRecycle {
+                stream: recycle.stream.clone(),
             });
         }
     }
@@ -2309,6 +2341,147 @@ mod tests {
             run_mixer(&flowsheet),
             2.0,
             "the duplicate feeds the mixer twice"
+        );
+    }
+
+    /// A loop with a tear: a mixer, a splitter, and the splitter's first product fed back.
+    ///
+    /// The smallest thing a recycle can be *about* - the tear's stream is carried, so the loop
+    /// runs a second pass - which is what the duplicate below needs to have anything to double.
+    fn looped_flowsheet() -> Flowsheet {
+        let mut splitter_spec = splitter("unit_ops.splitter");
+        splitter_spec.parameters.insert(
+            "split_factors".to_string(),
+            crate::unit_op::Param {
+                required: false,
+                unit: Some("dimensionless".to_string()),
+                description: "the fraction to each outlet".to_string(),
+            },
+        );
+        let mut mixer_spec = mixer("unit_ops.mixer");
+        mixer_spec.parameters.insert(
+            "outlet_pressure".to_string(),
+            crate::unit_op::Param {
+                required: false,
+                unit: Some("Pa".to_string()),
+                description: "the pressure the mixer's outlet is at".to_string(),
+            },
+        );
+        let _ = (splitter_spec, mixer_spec);
+        Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("a")],
+            products: vec!["out".into()],
+            instances: vec![
+                Instance {
+                    id: "m1".into(),
+                    unit: "unit_ops.mixer".into(),
+                    parameters: BTreeMap::from([(
+                        "outlet_pressure".to_string(),
+                        toml::Value::Float(5.0e5),
+                    )]),
+                },
+                Instance {
+                    id: "s1".into(),
+                    unit: "unit_ops.splitter".into(),
+                    parameters: BTreeMap::from([(
+                        "split_factors".to_string(),
+                        toml::Value::Array(vec![toml::Value::Float(0.5), toml::Value::Float(0.5)]),
+                    )]),
+                },
+            ],
+            connections: vec![
+                Connection {
+                    from: "a".into(),
+                    to: "m1.feed".into(),
+                },
+                Connection {
+                    from: "m1.product".into(),
+                    to: "s1.feed".into(),
+                },
+                Connection {
+                    from: "s1.products[1]".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![Recycle::new("r1", "s1.products[0]", "m1.feed")],
+            layout: None,
+        }
+    }
+
+    /// **One tear declared twice, and it is a wrong number rather than untidiness.**
+    ///
+    /// The executor's tear map is keyed by the stream's *name*, and `inlets_of` pushes every
+    /// recycle whose `to` matches - so two entries under one name hand the same tear to the inlet
+    /// twice and the loop's own stream is mixed twice.
+    #[test]
+    fn a_recycle_declared_twice_is_refused() {
+        let palette = {
+            let mut mixer_spec = mixer("unit_ops.mixer");
+            mixer_spec.parameters.insert(
+                "outlet_pressure".to_string(),
+                crate::unit_op::Param {
+                    required: false,
+                    unit: Some("Pa".to_string()),
+                    description: "the pressure the mixer's outlet is at".to_string(),
+                },
+            );
+            let mut splitter_spec = splitter("unit_ops.splitter");
+            splitter_spec.parameters.insert(
+                "split_factors".to_string(),
+                crate::unit_op::Param {
+                    required: false,
+                    unit: Some("dimensionless".to_string()),
+                    description: "the fraction to each outlet".to_string(),
+                },
+            );
+            vec![mixer_spec, splitter_spec]
+        };
+        let looped = looped_flowsheet();
+        assert_clean(&looped, &palette);
+
+        // The measurement: one tear carries the loop, two mix it twice.
+        let run = |sheet: &Flowsheet| {
+            crate::executor::run(
+                sheet,
+                &palette,
+                &BTreeMap::new(),
+                crate::ExecutionOrder::Insertion,
+            )
+            .map(|report| (report.streams["m1.product"].n, report.iterations))
+        };
+        let (one_flow, one_passes) = run(&looped).expect("the loop runs");
+
+        let mut doubled = looped.clone();
+        doubled
+            .recycles
+            .push(Recycle::new("r1", "s1.products[0]", "m1.feed"));
+        let (two_flow, two_passes) = run(&doubled).expect("it still runs");
+        assert_ne!(
+            (one_flow, one_passes),
+            (two_flow, two_passes),
+            "the duplicate changes what is computed, which is why it is refused"
+        );
+
+        let diags = validate(&doubled, &palette);
+        let duplicate = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::DuplicateRecycle { .. }))
+            .unwrap_or_else(|| panic!("the duplicate is not reported: {diags:?}"));
+        assert_eq!(duplicate.severity(), Severity::Error);
+        assert_eq!(duplicate.code(), "duplicate_recycle");
+        assert_eq!(duplicate.location().section, "recycles");
+        assert_eq!(duplicate.location().path, "r1");
+        assert_eq!(
+            duplicate.target(),
+            Target::Endpoint {
+                endpoint: "r1".into()
+            }
+        );
+        assert_eq!(duplicate.message(), "the tear `r1` is declared twice");
+        println!(
+            "one tear: {one_flow} mol/s in {one_passes} passes; two: {two_flow}, {two_passes}"
         );
     }
 
