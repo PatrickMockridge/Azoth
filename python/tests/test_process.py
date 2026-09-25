@@ -149,15 +149,21 @@ def test_run_flowsheet_runs_the_shipped_flowsheet() -> None:
         "vapour_product",
     }
 
-    # **The shipped document's recycle is empty**, which is measured rather than incidental: at
-    # 20 bar and 320 K that feed is all vapour, so the tear carries nothing, `solved()`'s
-    # zero-flow floor is what ends the loop, and the four residuals are exactly zero because
-    # there was nothing to compare. `a_tear_that_carries_material_converges` in the executor's
-    # own Rust tests is the same graph with the heater cold enough to condense.
+    # **The shipped document's recycle is switched off rather than closed**, which is measured
+    # rather than incidental: at 20 bar and 320 K that feed is all vapour, so the tear carries
+    # nothing, `Recycle.run` takes its low-flow branch, and the four residuals are *declared* zero
+    # rather than measured. `active=False` beside `solved=True` is that state, and a reader who saw
+    # only `solved` would take a loop carrying nothing for one that closed.
+    #
+    # `iterations` is the tear's own count and not the loop's: the class skips an inactive unit
+    # rather than running it, so the second pass `report` still takes does not advance it. The
+    # capture's `demo` row reads `recycle_iterations=1`, and `result.iterations` is 2.
     (tear,) = result.tears
     assert tear.stream == "recycle_1"
-    assert tear.iterations == 2
+    assert tear.iterations == 1, "the tear's own count, not the loop's"
+    assert result.iterations == 2, "the outer loop ran two passes"
     assert tear.solved
+    assert not tear.active, "solved by being switched off"
     assert tear.residuals is not None
     assert (tear.residuals.flow, tear.residuals.composition) == (0.0, 0.0)
     assert (tear.residuals.temperature, tear.residuals.pressure) == (0.0, 0.0)

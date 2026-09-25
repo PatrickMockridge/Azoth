@@ -87,9 +87,14 @@ pub fn run(flowsheet_path: &Path, palette_dir: &Path, as_json: bool) -> Result<R
         ));
     }
     for tear in &session.report().tears {
+        // **`active` is printed beside `solved` rather than folded into it.** A tear the low-flow
+        // cutoff switched off reports `solved` by being absent - its residuals are declared zero,
+        // not measured - and a reader who saw only `solved=true` would take a loop that carries
+        // nothing for one that closed.
+        let state = if tear.active { "active" } else { "deactivated" };
         match tear.residuals {
             Some(residuals) => lines.push(format!(
-                "  {}: iterations={} solved={} flow={} composition={} temperature={} \
+                "  {}: iterations={} solved={} {state} flow={} composition={} temperature={} \
                  pressure={}",
                 tear.stream,
                 tear.iterations,
@@ -100,7 +105,7 @@ pub fn run(flowsheet_path: &Path, palette_dir: &Path, as_json: bool) -> Result<R
                 residuals.pressure,
             )),
             None => lines.push(format!(
-                "  {}: iterations={} solved={} residuals=unmeasured",
+                "  {}: iterations={} solved={} {state} residuals=unmeasured",
                 tear.stream, tear.iterations, tear.solved
             )),
         }

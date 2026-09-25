@@ -16,6 +16,13 @@
 //! `specs/flowsheets/`'s `[[recycles]]` entries carry them so a flowsheet's tear and a case's tear
 //! are the same machine.
 //!
+//! **The low-flow cutoff is `deactivateOnLowFlow`, and it is a switch rather than a tolerance.** A
+//! tear whose inlet carries less than `minimumFlow` kg/hr is marked **inactive**, its four
+//! residuals are reported as exactly zero, and `solved()` returns true - so a loop that carries
+//! nothing ends after one pass rather than running until the zero-flow floor closes it. That is
+//! what the shipped `demo.toml` does, and it is why the NeqSim capture beside it records
+//! `recycle_iterations=1`.
+//!
 //! **What is not ported**: `runTransient`, the adaptive-acceleration ladder, and the
 //! `RecycleController`'s priority levels. The first is a transient role a steady-state flowsheet
 //! never takes; the second's auto-upgrade path is reached by `applyAutoAdaptiveAcceleration`, which
@@ -123,6 +130,27 @@ pub struct Residuals {
     pub pressure: f64,
 }
 
+impl Residuals {
+    /// The residuals of a tear the low-flow cutoff has switched off - all five zero.
+    ///
+    /// **`deactivateOnLowFlow` sets them, and it sets them to zero rather than measuring
+    /// them.** A loop below `minimumFlow` carries no physically meaningful inventory, so the class
+    /// reports nothing to converge rather than reporting a residual on a negligible stream. That
+    /// is why the numbers here are exactly zero and not merely small: an empty tear's true
+    /// residuals are zero too, and the two are different statements - one is measured, this one is
+    /// declared.
+    #[must_use]
+    pub fn deactivated() -> Self {
+        Self {
+            flow: 0.0,
+            absolute_flow_change_kg_per_hr: 0.0,
+            composition: 0.0,
+            temperature: 0.0,
+            pressure: 0.0,
+        }
+    }
+}
+
 /// The four residuals between this pass's mixed stream and the previous pass's.
 ///
 /// **The port carries one phase where the class sums over `getNumberOfPhases()`.** A `Stream` here
@@ -205,6 +233,12 @@ pub fn mass_flow_kg_per_hr(stream: &Stream) -> Result<f64> {
 /// `max(minimum_flow, 1e-20)` kg/hr has nothing to converge; the class requires *both* the outlet
 /// and the previous state below the floor, so a loop collapsing from a real flow is not mistaken
 /// for an empty one.
+///
+/// **An inactive tear is solved whatever its residuals say**, and the test is
+/// `!active && iterations > 0` rather than `!active` - a recycle that has been switched off
+/// *before it ever ran* has nothing to report and is not solved. `RecycleController.solvedAll()`
+/// skips a deactivated recycle for the same reason, so the loop's exit condition and the tear's
+/// own answer agree about a loop that carries nothing.
 #[must_use]
 pub fn solved(
     residuals: &Residuals,

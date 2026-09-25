@@ -75,9 +75,19 @@ pub struct TearReport {
     /// The recycle's own name.
     pub stream: String,
     /// Passes the tear was evaluated on.
+    ///
+    /// **A tear switched off by the low-flow cutoff stops counting**, because the class skips an
+    /// inactive unit rather than running it - so a loop the outer loop ran twice can report one
+    /// pass here, and the shipped `demo.toml` does exactly that.
     pub iterations: u32,
     /// Whether `solved()` held at the last pass.
     pub solved: bool,
+    /// Whether the tear was evaluated at all; `false` is `deactivateOnLowFlow`.
+    ///
+    /// **`solved` and `active` together are what a reader needs**, because a tear that is not
+    /// active is solved by being *absent* rather than by closing - its residuals are declared zero
+    /// rather than measured.
+    pub active: bool,
     /// The four residuals, when a pass measured them.
     pub residuals: Option<ResidualReport>,
 }
@@ -138,6 +148,7 @@ pub fn to_json(session: &Session) -> Result<String> {
             stream: tear.stream.clone(),
             iterations: tear.iterations,
             solved: tear.solved,
+            active: tear.active,
             residuals: tear.residuals.map(|residuals| ResidualReport {
                 flow: residuals.flow,
                 composition: residuals.composition,

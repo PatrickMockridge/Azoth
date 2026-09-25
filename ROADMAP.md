@@ -472,9 +472,17 @@ parameter is an override of a boundary the document already states. The checker 
 rule that holds an input's record to being one, and the shipped document's own input is held to
 the NeqSim capture's feed rather than agreeing with it by memory.
 
+**The low-flow cutoff is ported, and it closed a divergence rather than adding a feature.**
+`Recycle.deactivateOnLowFlow` switches a tear off when its inlet carries less than `minimumFlow`
+kg/hr: the four residuals are *declared* zero rather than measured, the tear is marked inactive,
+and `solved()` answers true for it - so an empty loop stops at one pass instead of running until
+the zero-flow floor closes it a pass later. The class's `runUnitProfiled` then skips an inactive
+unit, so the extra pass the outer loop still insists on does not advance the tear's own counter.
+That is why the capture beside this reads `recycle_iterations=1` for the shipped document while
+the loop around it runs twice, and the port now reproduces both numbers.
+
 **What is named as not built, with the class that would close each**: Broyden through
-`BroydenAccelerator`; `deactivateOnLowFlow`, which is how NeqSim ends an empty loop and this
-executor does not; the `many` outlet a connection cannot address one of, which is why a splitter
+`BroydenAccelerator`; the `many` outlet a connection cannot address one of, which is why a splitter
 cannot be wired; and the checker rule that would have caught `demo.toml` shipping with a required
 parameter unsupplied. The tier's own acceptance is the NeqSim capture beside it: an executor
 whose convergence is only checked against its own arithmetic is an executor nobody has measured.

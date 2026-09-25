@@ -2922,7 +2922,13 @@ public class ProcessProbe {
     print("hx1_outlet", hx1.getOutletStream());
     print("sep1_liquid", sep1.getLiquidOutStream());
     printOrEmpty("sep1_vapour", sep1.getGasOutStream());
+    // **`isActive` is what makes the low-flow cutoff measurable rather than inferred.** A tear
+    // whose inlet carries less than `minimumFlow` kg/hr is switched off by `deactivateOnLowFlow`,
+    // and `runUnitProfiled` then skips it - so the outer loop runs a second pass that does not
+    // advance `getIterations()`. Without this line the `demo` row's `recycle_iterations=1` reads
+    // as a loop that stopped early rather than one that was switched off.
     System.out.println("recycle_iterations=" + recycle1.getIterations());
+    System.out.println("recycle_active=" + recycle1.isActive());
     System.out.println("recycle_solved=" + recycle1.solved());
     System.out.println("recycle_error_flow=" + recycle1.getErrorFlow());
     System.out.println("recycle_error_composition=" + recycle1.getErrorComposition());

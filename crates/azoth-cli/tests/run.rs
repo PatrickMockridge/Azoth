@@ -53,9 +53,13 @@ fn the_shipped_flowsheet_runs_from_the_command_line() {
     ] {
         assert!(text.contains(endpoint), "`{endpoint}` is missing:\n{text}");
     }
-    // And the tear, with its convergence rather than only its destination.
+    // **The tear, with its convergence rather than only its destination** - and with the
+    // deactivation visible, which is the whole reason `active` is printed. This document's tear
+    // carries nothing at 320 K, so the low-flow cutoff switches it off on the first pass: its
+    // residuals are declared zero, its own count stops at one, and the outer loop still runs the
+    // second pass. `captures/process_flowsheet.tsv`'s `demo` row reads `recycle_iterations=1`.
     assert!(
-        text.contains("recycle_1: iterations=2 solved=true"),
+        text.contains("recycle_1: iterations=1 solved=true deactivated"),
         "{text}"
     );
     assert!(text.contains("converged=true iterations=2"), "{text}");
@@ -104,6 +108,7 @@ fn the_json_rendering_is_the_codec_s_document() {
     assert_eq!(document["iterations"], 2);
     assert_eq!(document["tears"][0]["stream"], "recycle_1");
     assert_eq!(document["tears"][0]["solved"], true);
+    assert_eq!(document["tears"][0]["active"], false);
 
     // The record's own field names, and a magnitude carrying the unit it is in - the shape the
     // Python bridge transports, which is why the document is the rendering a front-end wants.

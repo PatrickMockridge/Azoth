@@ -95,10 +95,19 @@ class TearResult:
 
     #: The recycle's own name.
     stream: str
-    #: Passes the tear was evaluated on.
+    #: Passes the tear was evaluated on. **Its own count and not the loop's**: a tear switched
+    #: off by the low-flow cutoff stops counting, because the class skips an inactive unit
+    #: rather than running it - so a loop the outer loop ran twice can report one pass here.
     iterations: int
     #: Whether the last pass's ``solved()`` held.
     solved: bool
+    #: Whether the tear was evaluated at all; ``False`` is ``deactivateOnLowFlow``.
+    #:
+    #: **Read beside ``solved``**, because a tear that is not active is solved by being
+    #: *absent* rather than by closing - its four residuals are declared zero rather than
+    #: measured. The shipped ``demo.toml`` is that case: its only product is the vapour, so the
+    #: recycled liquid is nil and the cutoff switches the loop off on the first pass.
+    active: bool
     #: Its four residuals at the last pass, or ``None`` when no pass measured them.
     residuals: Residuals | None
 
@@ -150,6 +159,7 @@ def _read(document: str) -> FlowsheetResult:
             stream=tear["stream"],
             iterations=int(tear["iterations"]),
             solved=bool(tear["solved"]),
+            active=bool(tear["active"]),
             residuals=None
             if tear["residuals"] is None
             else Residuals(

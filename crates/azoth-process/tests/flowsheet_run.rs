@@ -46,14 +46,49 @@ fn the_shipped_flowsheet_converges_its_recycle() {
     assert!(report.converged, "the recycle did not converge");
     assert!(report.iterations > 1, "a recycle takes at least two passes");
     assert!(report.tears[0].solved);
+
+    // **The tear was switched off rather than closed, and the capture says so.**
+    // `sep1.liquid` is nil, so the inlet is below `minimumFlow` and `Recycle.run` takes its
+    // low-flow branch: the residuals are *declared* zero, the tear is marked inactive, and
+    // `solved()` answers true for it. The tear's own counter then stops at one, because the
+    // class's `runUnitProfiled` skips an inactive unit - while the outer loop still runs the
+    // second pass its `iter < 2` clause insists on, so `report.iterations` is 2 and
+    // `report.tears[0].iterations` is 1. That pair is the whole divergence this port used to
+    // carry, and `captures/process_flowsheet.tsv`'s `demo` row is the measurement of it.
+    let capture =
+        std::fs::read_to_string(root().join("validation/neqsim/captures/process_flowsheet.tsv"))
+            .expect("the capture is there");
+    let row = capture_row(&capture, "demo");
+    let tear = &report.tears[0];
+    assert_eq!(
+        tear.active,
+        row["recycle_active"] == "true",
+        "whether the low-flow cutoff switched the tear off"
+    );
+    assert!(
+        !tear.active,
+        "the tear carries nothing, so it is deactivated"
+    );
+    assert_eq!(
+        tear.iterations,
+        number(&row, "recycle_iterations") as u32,
+        "the tear's own pass count against the capture's"
+    );
+    assert_eq!(tear.solved, row["recycle_solved"] == "true");
+    assert_eq!(
+        tear.residuals.expect("measured"),
+        azoth_process::recycle::Residuals::deactivated(),
+        "a deactivated tear's residuals are declared zero, not measured"
+    );
 }
 
 /// **A tear that carries something, at two tolerances.**
 ///
 /// The shipped flowsheet's recycle is **empty**: at 20 bar and 320 K that feed is all vapour, so
-/// `sep1.liquid` is nil on both passes and `solved()`'s zero-flow floor is what ends the loop.
-/// The residuals are exactly zero there because there is nothing to compare, not because a loop
-/// closed - so this runs the same graph with the heater cold enough to condense.
+/// `sep1.liquid` is nil and `Recycle.run`'s low-flow cutoff switches the tear off before it
+/// compares anything - the residuals are *declared* zero there rather than measured, which is a
+/// different statement from a loop that closed. So this runs the same graph with the heater cold
+/// enough to condense, where the tear carries material and has something to compare.
 ///
 /// **And the class's default tolerance is loose enough that the loop exits on its second pass
 /// anyway.** The tear's flow residual is `4.5e-3` - the difference between a loop with no recycle
@@ -161,14 +196,8 @@ fn the_shipped_flowsheet_is_the_one_with_an_empty_tear() {
     assert_eq!(liquid.n, 0.0, "the shipped state has no liquid");
     assert_eq!(
         report.tears[0].residuals.expect("measured"),
-        azoth_process::recycle::Residuals {
-            flow: 0.0,
-            absolute_flow_change_kg_per_hr: 0.0,
-            composition: 0.0,
-            temperature: 0.0,
-            pressure: 0.0,
-        },
-        "an empty tear has nothing to compare, which is the zero-flow floor"
+        azoth_process::recycle::Residuals::deactivated(),
+        "an empty tear is switched off, and its residuals are declared zero rather than measured"
     );
 }
 
@@ -252,8 +281,9 @@ fn the_session_addresses_every_value_by_a_stable_path() {
 ///
 /// The row is `demo_condensing`: the shipped graph with the heater at 250 K, which is the one
 /// whose tear carries material. At 320 K the separator's liquid is nil and NeqSim **deactivates**
-/// the recycle outright (see `a_tear_that_carries_material_converges`), so the empty row measures
-/// a path this port does not carry.
+/// the recycle outright - the `demo` row, which
+/// `the_shipped_flowsheet_converges_its_recycle` holds the port to, so the two rows measure the
+/// two sides of `Recycle.run`'s low-flow cutoff.
 #[test]
 fn the_executor_reproduces_the_captured_convergence() {
     let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
@@ -300,6 +330,15 @@ fn the_executor_reproduces_the_captured_convergence() {
     // kernel's.** A tear that lands in the same place by a different number of passes is a
     // different machine.
     let tear = session.tear("recycle_1").expect("the recycle is named");
+    assert_eq!(
+        tear.active,
+        row["recycle_active"] == "true",
+        "whether the low-flow cutoff switched the tear off"
+    );
+    assert!(
+        tear.active,
+        "this row's tear carries material, so the low-flow cutoff must not touch it"
+    );
     assert_eq!(
         tear.iterations,
         number(&row, "recycle_iterations") as u32,
@@ -500,11 +539,25 @@ fn the_session_writes_a_json_report() {
     );
 
     // The tear, with its convergence rather than only its destination.
+    //
+    // **`iterations` is the tear's own count and not the loop's, and the shipped document is where
+    // the two differ**: the outer loop runs twice, but `sep1.liquid` is nil, so the low-flow cutoff
+    // switches the recycle off on the first pass - and the class skips an inactive unit rather
+    // than running it, so the second pass does not advance `getIterations()`. The capture reads
+    // `recycle_iterations=1` and this is the same number.
     let tear = &document["tears"][0];
     assert_eq!(tear["stream"], "recycle_1");
-    assert_eq!(tear["iterations"], 2);
+    assert_eq!(
+        tear["iterations"], 1,
+        "the tear's own count, not the loop's"
+    );
     assert_eq!(tear["solved"], true);
+    assert_eq!(
+        tear["active"], false,
+        "solved by being switched off rather than by closing"
+    );
     assert!(tear["residuals"]["flow"].is_number());
+    assert_eq!(document["iterations"], 2, "the outer loop ran two passes");
 
     // Every path the session enumerates is a stream the document carries, so the two agree about
     // what a front-end may point at.

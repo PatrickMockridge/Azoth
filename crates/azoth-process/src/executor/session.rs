@@ -9,15 +9,20 @@
 //!   for each unit in execution order: run it
 //!   for each Recycle: run it, take its four residuals
 //!   isConverged = every Recycle solved
-//! } while ((!isConverged || (iter < 2 && hasRecycle && ...)) && iter < 100)
+//! } while ((!isConverged || (iter < 2 && hasRecycle && (requireRecycleConfirmation()
+//!                                        || hasAutoDeactivatedRecycle()))) && iter < 100)
 //! ```
 //!
-//! with two things from it worth naming. **`iter < 100` is a hard cap and there is no
+//! with three things from it worth naming. **`iter < 100` is a hard cap and there is no
 //! failure.** A flowsheet that has not converged after a hundred passes returns what it has and
 //! says so - the class's own loop simply falls out and publishes a `WARNING` severity event, and
-//! the caller reads `isConverged`. And **`iter < 2 && hasRecycle`** is the class's insistence
-//! that a flowsheet with a recycle run at least twice, which `Recycle.solved()`'s own
-//! `iterations > 1` restates from the other side.
+//! the caller reads `isConverged`. **`iter < 2 && hasRecycle`** is the class's insistence that a
+//! flowsheet with a recycle run at least twice, which `Recycle.solved()`'s own `iterations > 1`
+//! restates from the other side; both disjuncts of its guard are true on an ordinary run, because
+//! `RecycleController.init()` resets every recycle to zero iterations before the loop starts.
+//! And **a unit that is not active is skipped rather than run** (`runUnitProfiled`), which is what
+//! makes a tear the low-flow cutoff switched off keep its own counter while the loop around it
+//! runs on.
 //!
 //! **A stream is named by the endpoint that produces it.** A connection is `from -> to`, and
 //! `from` is a feed name or `instance.port`; the map is keyed by that, which is what makes a
@@ -58,6 +63,13 @@ pub struct TearRecord {
     pub residuals: Option<Residuals>,
     /// Whether the last pass's `solved()` held.
     pub solved: bool,
+    /// Whether the tear was evaluated at all.
+    ///
+    /// **False means `deactivateOnLowFlow` switched it off**, its residuals are declared zero
+    /// rather than measured, and `solved()` answered true for it — so a tear reading `solved` and
+    /// `!active` converged by being *absent* rather than by closing. A front-end has to tell those
+    /// apart, which is why this is not folded into `solved`.
+    pub active: bool,
 }
 
 /// What a run reached.
@@ -143,6 +155,7 @@ pub fn run(
             iterations: 0,
             residuals: None,
             solved: false,
+            active: true,
         })
         .collect();
 
@@ -178,6 +191,20 @@ pub fn run(
         // pass the one the *next* pass reads.
         let mut all_solved = true;
         for (slot, recycle) in flowsheet.recycles.iter().enumerate() {
+            let record = &mut records[slot];
+
+            // **A tear the low-flow cutoff switched off is not evaluated again, so its own counter
+            // stops where the cutoff left it.** The class's `runUnitProfiled` returns early for
+            // equipment that is not active, so `Recycle.run` is never entered a second time - and
+            // the extra pass the outer loop still insists on does not advance `getIterations()`.
+            // That is why the capture beside this reads `recycle_iterations=1` for a loop the
+            // class ran twice. The tear's published value is left as it was, which is what the
+            // skipped unit's outlet stream is.
+            if !record.active {
+                all_solved &= record.solved;
+                continue;
+            }
+
             let current = streams.get(&recycle.from).ok_or_else(|| {
                 AzothError::invalid_input(
                     "recycles",
@@ -188,8 +215,34 @@ pub fn run(
                 )
             })?;
             let previous = tears.get(&recycle.stream);
-            let record = &mut records[slot];
+            let current_kg = mass_flow_kg_per_hr(current)?;
             record.iterations = pass;
+
+            // **`Recycle.run`'s low-flow cutoff, and it comes before any comparison.** A tear
+            // whose inlet carries less than `minimumFlow` kg/hr is deactivated: its residuals are
+            // *declared* zero rather than measured, it is marked inactive, and `solved()` answers
+            // true for it - so a loop carrying nothing stops here rather than running until the
+            // zero-flow floor closes it a pass later. The write below is the class's
+            // `lastIterationStream = mixedStream.clone()`, which is what stops a deactivated tear
+            // comparing itself against a stale pre-collapse snapshot forever.
+            if current_kg < settings[slot].minimum_flow_kg_per_hr {
+                let deactivated = Residuals::deactivated();
+                let is_solved = solved(
+                    &deactivated,
+                    &settings[slot],
+                    current_kg,
+                    current_kg,
+                    pass,
+                    false,
+                );
+                record.residuals = Some(deactivated);
+                record.active = false;
+                record.solved = is_solved;
+                all_solved &= is_solved;
+                tears.insert(recycle.stream.clone(), current.clone());
+                continue;
+            }
+
             match previous {
                 None => {
                     // The first pass has nothing to compare against, which is the class's own
@@ -198,7 +251,6 @@ pub fn run(
                 }
                 Some(previous) => {
                     let measured = residuals(current, previous)?;
-                    let current_kg = mass_flow_kg_per_hr(current)?;
                     let previous_kg = mass_flow_kg_per_hr(previous)?;
                     let is_solved = solved(
                         &measured,
@@ -217,8 +269,13 @@ pub fn run(
         }
 
         // **The class's own exit condition.** Every tear solved, and a flowsheet with a recycle
-        // has run at least twice - which the tear's own `iterations > 1` already enforces, and
-        // which is restated here because a second pass is what the class's clause is for.
+        // has run at least twice - which the tear's own `iterations > 1` enforces from the
+        // residual side and which is restated here because it is the class's *other* clause:
+        // `iter < 2 && hasRecycle && (requireRecycleConfirmation() || hasAutoDeactivatedRecycle())`.
+        // The first of those two disjuncts is true whenever a recycle starts at zero iterations,
+        // which `RecycleController.init()` has just reset it to, and the second is true exactly
+        // when a tear was switched off above - so the clause holds in either case and the loop
+        // runs a second pass even for a loop that has nothing to converge.
         converged = all_solved && (flowsheet.recycles.is_empty() || pass > 1);
         if converged || pass == MAX_PASSES {
             break;
@@ -271,8 +328,9 @@ fn inlets_of(
         // **A `[[recycles]]` entry is an edge, and it is the *only* edge a tear has.** The
         // shipped flowsheet declares `sep1.liquid -> mix1.feed` as a recycle and writes no
         // `[[connections]]` line for it, so a walk that read only the connections would never
-        // feed the mixer from the loop at all - the tear would close on the zero-flow floor and
-        // never on a comparison. Its stream is the tear, which the *first* pass has not produced,
+        // feed the mixer from the loop at all - the tear would be switched off by the low-flow
+        // cutoff and converge by carrying nothing. Its stream is the tear, which the *first* pass
+        // has not produced,
         // so it contributes nothing then and the loop closes on the second.
         for recycle in &flowsheet.recycles {
             if recycle.to != endpoint {
