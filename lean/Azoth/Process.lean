@@ -30,9 +30,26 @@ not equal as terms, which is what rules that out.
 
 **What is not proved here** is the pi/rho reading of the same claim. `Rho.md` and
 `docs/src/calculus/rho.md` state that a reflected loop has the same fixed point, and
-`Azoth.Process.recycle_is_a_fixed_point` - the other claim `process.md` states - needs a
-notion of a loop's transfer function being a contraction, which this development has no
-metric for. It stays stated and unproved rather than being weakened into something provable.
+`Azoth.Process.recycle_is_a_fixed_point` - the other claim `process.md` states - is
+**characterised and not specified**, which is a change from when this note was first written and
+the reason is worth recording.
+
+**The first reason given was the wrong one.** It said the claim "needs a notion of a loop's
+transfer function being a contraction, which this development has no metric for". A metric is
+not the binding gap. `BarbedBisim` is `IsBisim`, and `IsBisim` is barb-set equality together
+with the two reduction-closure clauses - so a statement whose conclusion is `BarbedBisim` is a
+statement about **which channels a process communicates on and how it steps**, and the five
+constructors of `Process` carry no value at all. No two processes in this development differ in
+what they compute, so a loop and a process emitting its fixed point barb the same channel
+whatever the loop converges to: the claim's conclusion holds for **every** solution and not only
+the unique one, and uniqueness is the half `process.md` says matters.
+
+A metric would let the contraction hypothesis be *stated*. It would not give the conclusion
+anything to fail against, which is what separates a claim this repository can guard from one it
+can only describe - the division `docs/src/calculus/index.md` draws between Specified and
+Characterised. So the claim is characterised, and per that page's own rule it is **not dressed
+as a theorem**: a lemma restating that congruence sees only barbs and steps would be the
+vacuity the rule exists to prevent.
 -/
 
 import Azoth.Barb

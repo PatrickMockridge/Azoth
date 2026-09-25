@@ -125,9 +125,16 @@ than a feature added to it.
 contraction on the states its channel admits, the recycle process is
 barbed-congruent to the unique solution of its loop equations.
 
-*Status: **specified**. A recycle needs restriction and a fixed point, and the
-process layer has neither a way to write one nor anything to run one with.
-`Azoth.Process.recycle_is_a_fixed_point` is for the tranche that gives it both.*
+*Status: **characterised**. A recycle needed restriction and a fixed point, and the tranche
+that built the executor gave it both - `[[recycles]]` declares the tear and
+`azoth_process::recycle` runs the fixed point against `Recycle`'s own four tolerances. But the
+claim's *conclusion* is `BarbedBisim`, and that relation is barb-set equality plus the two
+reduction-closure clauses (`Azoth/Barb.lean`), while the five constructors of `Process` carry
+no value. So a loop and a process emitting its fixed point barb the same channel whatever the
+loop converges to: the conclusion holds for every solution and not only the unique one, and
+uniqueness is the half this section says matters. **Nothing this repository can do would
+violate it** - which is the index's own test for this status - so it is described and
+deliberately not proved, and no lemma hedges it.*
 
 Uniqueness is the part that matters and the part that is easy to leave out. A
 converged loop is only *the* answer when the fixed point is unique; where it is

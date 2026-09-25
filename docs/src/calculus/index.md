@@ -61,10 +61,14 @@ something to be about, which is a later tranche — so they stay specifications.
 [Processes and channels](./process.md) states three claims and **one of them is proved**:
 `Azoth.Process.unit_op_is_extensional` is the adequacy claim, and it is proved at the level the
 layer supports. The other two — one about conservation following from linearity, one about a
-recycle having a fixed point — need something this development does not have, and the page
-says which: the first is a lemma about values crossing channels and a barb records a channel,
-and the second needs a metric to say what a contraction is. Naming what is missing is the
-point; a claim weakened into something provable would be a different claim.
+recycle having a fixed point — are **characterised**, and for one reason: a barb records a
+**channel** and not a magnitude. The first is a lemma about values crossing channels. The second
+is a statement whose conclusion is `BarbedBisim`, which is barb-set equality plus reduction
+closure, and the five constructors of `Process` carry no value — so a loop and a process emitting
+its fixed point barb the same channel whatever the loop converges to, and uniqueness, the half
+the page says matters, is invisible to the layer. Naming that is the point; a claim weakened into
+something provable would be a different claim, and a claim dressed as a theorem would be a
+vacuity.
 
 So each claim names its theorem and says which of three things it is:
 
