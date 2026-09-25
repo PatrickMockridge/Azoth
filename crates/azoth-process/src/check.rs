@@ -8,6 +8,7 @@
 //! - a connection joins an outlet (or feed) to an inlet (or product);
 //! - a Port-to-Port connection joins dimension-compatible field records;
 //! - an input's declared record could be a stream — one mole fraction per substance;
+//! - an endpoint's position, where it wrote one, is a position the port has;
 //! - **linearity** — a `one` port is consumed/produced exactly once, a `many` port
 //!   at least once, and every feed/product is used exactly once;
 //! - every loop in the instance graph passes through a declared recycle.
@@ -18,7 +19,7 @@ use azoth_core::unit_vocab_gen::dimension_exponents;
 use azoth_core::units::UNIT_NAMES;
 
 use crate::channel::{ChannelType, Direction, FieldType, Multiplicity};
-use crate::flowsheet::{Connection, Flowsheet, Instance, Recycle};
+use crate::flowsheet::{Connection, Flowsheet, Instance, Recycle, split_endpoint};
 use crate::unit_op::UnitOpSpec;
 
 /// What a `validate` run found wrong.
@@ -120,6 +121,17 @@ pub enum Diagnostic {
     /// fraction per substance, and a fluid names at least one.
     InputRecord {
         name: String,
+        detail: String,
+    },
+    /// An endpoint names a stream of a port by a position the port does not have.
+    ///
+    /// **`split1.products[0]` is the only thing this can be about**, and the three ways to get it
+    /// wrong are all one mistake: an index on a `one` outlet, an index on an *inlet*, and an index
+    /// past the end of a `many` one. The range is not decidable here - how many streams a splitter
+    /// returns is its `split_factors`' length, which is a value and not a declaration - so an
+    /// index one past the end is refused by the run rather than by this.
+    EndpointIndex {
+        endpoint: String,
         detail: String,
     },
     UnrecycledLoop {
@@ -229,6 +241,7 @@ impl Diagnostic {
             Self::UnusedFeed { name } => at("inputs", name.clone()),
             Self::UnusedProduct { name } => at("products", name.clone()),
             Self::InputRecord { name, .. } => at("inputs", name.clone()),
+            Self::EndpointIndex { endpoint, .. } => at("connections", endpoint.clone()),
             Self::UnrecycledLoop { .. } => at("connections", String::new()),
         }
     }
@@ -296,6 +309,7 @@ impl Diagnostic {
                 format!("product `{name}` is declared and never produced")
             }
             Self::InputRecord { detail, .. } => detail.clone(),
+            Self::EndpointIndex { detail, .. } => detail.clone(),
             Self::UnrecycledLoop { detail } => detail.clone(),
         }
     }
@@ -477,7 +491,15 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 }
                 *feed_uses.entry(name).or_insert(0) += 1;
             }
-            Endpoint::Port { instance, port } => {
+            Endpoint::Port {
+                instance,
+                port,
+                index,
+            } => {
+                // **The index is checked where the producer is**, because that is the only side a
+                // `many` outlet has: a connection addresses one of `split1.products`' streams by
+                // position, while a `many` inlet takes several connections to the same port name.
+                check_index(&mut diags, &instances, &specs, instance, port, index);
                 check_port(
                     &mut diags,
                     &instances,
@@ -501,7 +523,14 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 }
                 *product_uses.entry(name).or_insert(0) += 1;
             }
-            Endpoint::Port { instance, port } => {
+            Endpoint::Port {
+                instance,
+                port,
+                index,
+            } => {
+                // A consumer endpoint is one port name however many connections reach it, so an
+                // index here is not a position - the resolver drops it, and this reports it.
+                check_index(&mut diags, &instances, &specs, instance, port, index);
                 check_port(
                     &mut diags,
                     &instances,
@@ -522,10 +551,12 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
             Endpoint::Port {
                 instance: from_i,
                 port: from_p,
+                ..
             },
             Endpoint::Port {
                 instance: to_i,
                 port: to_p,
+                ..
             },
         ) = (producer, consumer)
         {
@@ -607,21 +638,79 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
 enum Endpoint<'a> {
     Feed(&'a str),
     Product(&'a str),
-    Port { instance: &'a str, port: &'a str },
+    Port {
+        instance: &'a str,
+        port: &'a str,
+        /// The stream of a `many` outlet, where the endpoint named one.
+        index: Option<usize>,
+    },
 }
 
 fn resolve_producer(s: &str) -> Endpoint<'_> {
-    match s.split_once('.') {
-        Some((instance, port)) => Endpoint::Port { instance, port },
+    match split_endpoint(s) {
+        Some((instance, port, index)) => Endpoint::Port {
+            instance,
+            port,
+            index,
+        },
         None => Endpoint::Feed(s),
     }
 }
 
 fn resolve_consumer(s: &str) -> Endpoint<'_> {
-    match s.split_once('.') {
-        Some((instance, port)) => Endpoint::Port { instance, port },
+    match split_endpoint(s) {
+        // **The index is carried rather than dropped, because it is not a position on this side.**
+        // A `many` *inlet* takes several connections to the same port name, so an index written
+        // here is a mistake - and one this resolver cannot silently discard, or `check_index`
+        // would never see it. The rest of the pass reads the port name either way.
+        Some((instance, port, index)) => Endpoint::Port {
+            instance,
+            port,
+            index,
+        },
         None => Endpoint::Product(s),
     }
+}
+
+/// Check that an endpoint's index, where it wrote one, is a position the port has.
+///
+/// **Three ways to be wrong, one mistake**: an index on a `one` outlet says "the second of one
+/// stream", an index on an inlet says it about a port that takes several connections to one name,
+/// and an index on a port the entry does not declare duplicates `UnknownPort`. All three are
+/// refused rather than dropped, because a dropped index binds the *wrong* stream silently - which
+/// is the failure the `many` outlet existed to avoid.
+fn check_index(
+    diags: &mut Vec<Diagnostic>,
+    instances: &HashMap<&str, &Instance>,
+    specs: &HashMap<&str, &UnitOpSpec>,
+    instance: &str,
+    port: &str,
+    index: Option<usize>,
+) {
+    let Some(index) = index else {
+        return;
+    };
+    let endpoint = crate::flowsheet::stream_path(instance, port, Some(index));
+    let detail = match instances
+        .get(instance)
+        .and_then(|inst| specs.get(inst.unit.as_str()))
+        .and_then(|spec| spec.ports.iter().find(|p| p.name == port))
+    {
+        // `UnknownPort` and `UnknownInstance` are already reported by `check_port`.
+        None => return,
+        Some(p) if p.direction == Direction::In => {
+            "an inlet is one port name however many streams reach it, so it has no positions - \
+             connect it once per stream instead"
+        }
+        Some(p) if p.multiplicity != Multiplicity::Many => {
+            "the port declares one stream, so it has no second"
+        }
+        Some(_) => return,
+    };
+    diags.push(Diagnostic::EndpointIndex {
+        endpoint: endpoint.clone(),
+        detail: format!("`{endpoint}` names a position: {detail}"),
+    });
 }
 
 /// Check that `instance.port` exists with the expected direction, and record the
@@ -828,6 +917,20 @@ mod tests {
             ports: vec![
                 port("feed", Direction::In, Multiplicity::Many),
                 port("product", Direction::Out, Multiplicity::One),
+            ],
+            notes: None,
+        }
+    }
+
+    fn splitter(id: &str) -> UnitOpSpec {
+        UnitOpSpec {
+            id: id.to_string(),
+            name: id.to_string(),
+            source: None,
+            parameters: BTreeMap::new(),
+            ports: vec![
+                port("feed", Direction::In, Multiplicity::One),
+                port("products", Direction::Out, Multiplicity::Many),
             ],
             notes: None,
         }
@@ -1374,5 +1477,116 @@ mod tests {
             recycles: vec![],
         };
         assert_clean(&flowsheet, &palette);
+    }
+
+    /// A feed into a splitter and its first product out, so an index has somewhere to be written.
+    fn split_flowsheet() -> Flowsheet {
+        Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("in")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "s1".into(),
+                unit: "unit_ops.splitter".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "in".into(),
+                    to: "s1.feed".into(),
+                },
+                Connection {
+                    from: "s1.products[0]".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+        }
+    }
+
+    /// **The three ways to write a position a port does not have**, and they are one mistake made
+    /// against three different declarations. A dropped index would bind the *wrong* stream
+    /// silently, which is the failure the `many` outlet existed to avoid - so all three are
+    /// refused rather than ignored.
+    #[test]
+    fn an_index_is_checked_against_the_port_it_names() {
+        let palette = vec![splitter("unit_ops.splitter")];
+
+        // A position on a `many` outlet is what the grammar is *for*, so this is clean.
+        assert_clean(&split_flowsheet(), &palette);
+
+        // A `one` outlet has no second stream.
+        let two_port_palette = vec![two_port("unit_ops.pump")];
+        let mut flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("in")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "p1".into(),
+                unit: "unit_ops.pump".into(),
+                parameters: BTreeMap::new(),
+            }],
+            connections: vec![
+                Connection {
+                    from: "in".into(),
+                    to: "p1.feed".into(),
+                },
+                Connection {
+                    from: "p1.discharge[0]".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+        };
+        let diags = validate(&flowsheet, &two_port_palette);
+        assert!(
+            diags.iter().any(|d| matches!(
+                d,
+                Diagnostic::EndpointIndex { endpoint, detail }
+                    if endpoint == "p1.discharge[0]" && detail.contains("declares one stream")
+            )),
+            "{diags:?}"
+        );
+
+        // An inlet is one name however many connections reach it, so it has no positions. The
+        // resolver drops the index, so the port check still passes and this is the only report.
+        flowsheet.instances[0].unit = "unit_ops.splitter".into();
+        flowsheet.connections[0].to = "p1.feed[0]".into();
+        flowsheet.connections[1].from = "p1.products".into();
+        let diags = validate(&flowsheet, &palette);
+        assert!(
+            diags.iter().any(|d| matches!(
+                d,
+                Diagnostic::EndpointIndex { endpoint, detail }
+                    if endpoint == "p1.feed[0]" && detail.contains("no positions")
+            )),
+            "{diags:?}"
+        );
+    }
+
+    /// The grammar itself, which three modules used to spell for themselves.
+    #[test]
+    fn the_endpoint_grammar_is_one_place() {
+        assert_eq!(split_endpoint("feed_1"), None);
+        assert_eq!(split_endpoint("p1.outlet"), Some(("p1", "outlet", None)));
+        assert_eq!(
+            split_endpoint("s1.products[3]"),
+            Some(("s1", "products", Some(3)))
+        );
+        // A malformed index is not an endpoint with an index - it is a name the resolver reads as
+        // a boundary, which is how `UnknownFeed` reaches it rather than a parse error nobody sees.
+        assert_eq!(split_endpoint("s1.products[three]"), None);
+        assert_eq!(split_endpoint("s1.products[1"), None);
+
+        assert_eq!(
+            crate::flowsheet::stream_path("p1", "outlet", None),
+            "p1.outlet"
+        );
+        assert_eq!(
+            crate::flowsheet::stream_path("s1", "products", Some(2)),
+            "s1.products[2]"
+        );
     }
 }

@@ -824,3 +824,143 @@ fn a_declared_acceleration_is_either_carried_or_refused() {
         liquid.n
     );
 }
+
+/// **A `many` outlet, wired.** `unit_ops.splitter` declares its outlets as one port named
+/// `products`, so a two-way split returns two streams under one name - and until the endpoint
+/// grammar had a place for a position, the executor refused it outright ("a connection cannot
+/// name one stream of it") and a splitter could not be wired at all.
+///
+/// The graph is the smallest one that needs it, and it is the shape `demo.toml` is missing: a
+/// **purge**. Half the splitter's product leaves as a boundary stream and half returns to the
+/// mixer, so every component has an exit and the loop has a real steady state - which the shipped
+/// document, whose only product is the vapour, does not.
+#[test]
+fn a_splitter_is_wired_by_position_and_the_loop_reaches_a_steady_state() {
+    let text = r#"
+id = "flowsheets.purge"
+name = "Feed, split, half recycled"
+
+products = ["purge"]
+
+[[inputs]]
+name = "feed_1"
+components = ["methane", "n-butane"]
+n = 1.0
+z = [0.9, 0.1]
+P = 5.0e5
+T = 300.0
+
+[[instances]]
+id = "mix1"
+unit = "unit_ops.mixer"
+
+[[instances]]
+id = "split1"
+unit = "unit_ops.splitter"
+[instances.parameters]
+split_factors = [0.5, 0.5]
+
+[[connections]]
+from = "feed_1"
+to = "mix1.feed"
+
+[[connections]]
+from = "mix1.product"
+to = "split1.feed"
+
+[[connections]]
+from = "split1.products[0]"
+to = "purge"
+
+[[recycles]]
+stream = "recycle_1"
+from = "split1.products[1]"
+to = "mix1.feed"
+"#;
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let flowsheet = Flowsheet::from_toml(text).expect("the document parses");
+
+    // Clean on the first pass, which is what makes the indexed endpoints a grammar the checker
+    // reads rather than one the executor accepts behind its back.
+    let diagnostics = azoth_process::validate(&flowsheet, &palette);
+    assert!(diagnostics.is_empty(), "{diagnostics:?}");
+
+    let session = Session::run(
+        flowsheet,
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+
+    // **Both streams of the one port are addressable, by position.** The path a run binds is the
+    // path a connection could have written, which is what `split_endpoint` is shared for.
+    for endpoint in ["split1.products[0]", "split1.products[1]", "purge"] {
+        assert!(
+            session.stream(endpoint).is_ok(),
+            "`{endpoint}` is not in the run's streams"
+        );
+    }
+    let purge = session.stream("purge").expect("addressable");
+    let recycled = session.stream("split1.products[1]").expect("addressable");
+    assert!(
+        (purge.n - recycled.n).abs() < 1e-12,
+        "a half-and-half split: {} against {}",
+        purge.n,
+        recycled.n
+    );
+
+    // **The loop has a real steady state, and the class's default tolerance stops short of it.**
+    // The mixer takes the fresh mol/s plus what comes back, and half of that total returns:
+    // `r = 0.5 (1 + r)` gives `r = 1`, so the mixer carries two and the purge leaves with one -
+    // every component has an exit, which is what `demo.toml` lacks and why its liquid grows
+    // without bound.
+    //
+    // At the defaults the loop leaves at pass 2 with the purge at `0.75`, and that is the *same
+    // finding* the condensing case records: `flowBalanceCheck` is an absolute `kg/s` difference
+    // below `1 kg/s`, the two passes differ by `0.0071`, and `flowTolerance` is `1e-2`. So the
+    // convergence is the tolerance's and not the loop's.
+    assert!(session.converged());
+    assert_eq!(
+        session.iterations(),
+        2,
+        "the tolerance accepts the second pass"
+    );
+    assert!(
+        (purge.n - 0.75).abs() < 1e-12,
+        "half of one feed plus half a feed: {}",
+        purge.n
+    );
+
+    // **And at a tolerance that means it, the loop reaches the fixed point.** This is the half
+    // `demo.toml` cannot do at any tolerance: its liquid has no exit, so a tight tolerance runs to
+    // the cap; here it closes.
+    let mut tight = Flowsheet::from_toml(text).expect("the document parses");
+    tight.recycles[0].flow_tolerance = Some(1e-9);
+    let session = Session::run(tight, &palette, &BTreeMap::new(), ExecutionOrder::Insertion)
+        .expect("the flowsheet runs");
+    let purge = session.stream("purge").expect("addressable");
+    assert!(session.converged(), "a purge gives the loop a fixed point");
+    assert!(
+        session.iterations() > 2,
+        "a splitter loop takes more than the two passes a tear needs"
+    );
+    assert!(
+        (purge.n - 1.0).abs() < 1e-6,
+        "the purge settles at the feed's own flow, and it is {}",
+        purge.n
+    );
+
+    // And the session addresses a value inside the indexed stream, which is what a front-end
+    // points at.
+    assert!(
+        session.paths().contains(&"split1.products[0]".to_string()),
+        "{:?}",
+        session.paths()
+    );
+    let pressure = session.value("split1.products[0].P").expect("readable");
+    assert!(
+        (pressure - 5.0e5).abs() < 1e-6,
+        "a splitter changes no state"
+    );
+}

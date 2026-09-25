@@ -40,7 +40,7 @@ use azoth_core::{AzothError, Result};
 
 use crate::channel::{Direction, Multiplicity};
 use crate::executor::dispatch::{Parameters, dispatch};
-use crate::flowsheet::Flowsheet;
+use crate::flowsheet::{Flowsheet, stream_path};
 use crate::order::{ExecutionOrder, execution_order};
 use crate::recycle::{
     Acceleration, BroydenAccelerator, RecycleSettings, Residuals, WEGSTEIN_DELAY_ITERATIONS,
@@ -472,41 +472,61 @@ fn bind_products(
     outlets: Vec<Stream>,
     streams: &mut BTreeMap<String, Stream>,
 ) -> Result<()> {
-    let names: Vec<&str> = spec
+    let ports: Vec<&crate::channel::Port> = spec
         .ports
         .iter()
         .filter(|port| port.direction == Direction::Out)
-        .map(|port| port.name.as_str())
         .collect();
-    if outlets.len() != names.len() {
-        // **A splitter is the case, and it is a gap rather than a mismatch.** `unit_ops.splitter`
-        // declares its outlets as one `many` port named `products`, so a two-way split returns
-        // two streams for one port name and there is no way to say which is which: a connection
-        // writes `split1.products`, and both outlets would answer to it. Refusing here is the
-        // honest disposition - the alternative is to bind the last one and lose the first - and
-        // the class that would close it is the port declaration, which needs a way to name an
-        // outlet by index.
-        let many = spec.ports.iter().any(|port| {
-            port.direction == Direction::Out && port.multiplicity == Multiplicity::Many
-        });
-        let detail = if many && outlets.len() > names.len() {
-            " - the entry declares a `many` outlet port, and a connection cannot name one stream \
-             of it"
+
+    // **The ports are walked in declaration order, and a `many` one takes the remainder.** A
+    // kernel returns the streams flat, in that same order, so the question is only where one
+    // port's streams end - and the answer is the ports after it, each of which takes exactly one.
+    // Refusing a count that does not fit is what the count check always did; what is new is that
+    // a `many` port's count is not one, so the check is now against what the walk consumes.
+    let mut distribution: Vec<(String, Option<usize>, Stream)> = Vec::with_capacity(outlets.len());
+    let mut cursor = 0usize;
+    for (position, port) in ports.iter().enumerate() {
+        let after = ports.len() - position - 1;
+        let take = if port.multiplicity == Multiplicity::Many {
+            // Whatever is left once every later port has taken its one.
+            outlets.len().saturating_sub(cursor).saturating_sub(after)
         } else {
-            ""
+            1
         };
+        for index in 0..take {
+            let Some(stream) = outlets.get(cursor).cloned() else {
+                return Err(AzothError::invalid_input(
+                    "ports",
+                    format!(
+                        "`{}` returned {} outlets for {} declared outlet ports, the last of which \
+                         takes {}",
+                        instance.id,
+                        outlets.len(),
+                        ports.len(),
+                        take
+                    ),
+                ));
+            };
+            cursor += 1;
+            let position = (port.multiplicity == Multiplicity::Many).then_some(index);
+            distribution.push((port.name.clone(), position, stream));
+        }
+    }
+    if cursor != outlets.len() {
         return Err(AzothError::invalid_input(
             "ports",
             format!(
-                "`{}` returned {} outlets for {} declared outlet ports{detail}",
+                "`{}` returned {} outlets for {} declared outlet ports, which take {}",
                 instance.id,
                 outlets.len(),
-                names.len()
+                ports.len(),
+                cursor
             ),
         ));
     }
-    for (name, stream) in names.into_iter().zip(outlets) {
-        streams.insert(format!("{}.{}", instance.id, name), stream);
+
+    for (port, index, stream) in distribution {
+        streams.insert(stream_path(&instance.id, &port, index), stream);
     }
     // **A boundary product is a stream too.** A connection whose `to` is a bare name is what the
     // environment consumes, and the run reports it under that name.

@@ -113,6 +113,13 @@ last element of it.
 `instance.port` (an inlet). A recycle is a connection that closes a loop, its stream
 named as the tear.
 
+**An outlet declared `multiplicity = "many"` is addressed by position**: `from =
+"split1.products[0]"` is the first of the streams that port returns, and each one is bound
+under that same path, so a connection writes what the run produced. A `one` outlet has no
+position and an inlet has none either — a `many` *inlet* takes several connections to the
+same port name, which is how a mixer is wired — and the checker refuses an index written
+where it does not belong rather than dropping it.
+
 A `[[recycles]]` entry also carries the tear's convergence, all of it optional and every
 default `Recycle`'s own: `flow_tolerance`, `composition_tolerance`, `temperature_tolerance`
 and `pressure_tolerance` (each `1e-2`), `max_iterations` (`10`), `minimum_flow` (`1e-20`

@@ -24,6 +24,43 @@ use crate::stream::Stream;
 /// which is why `process.pump`'s own spec has an inlet take four fields and an outlet five.
 /// `deny_unknown_fields` is what makes a written `h` an error rather than a key serde reads
 /// past, because a silently ignored field is the one failure a reader cannot see.
+/// A connection endpoint, split into the three things it can say.
+///
+/// **The grammar is `name` or `instance.port` or `instance.port[i]`**, and it lives here rather
+/// than in the three modules that read it - the checker, the execution order and the session each
+/// had their own `split_once('.')`, which is three places for a grammar to disagree with itself.
+///
+/// **The index is what a `many` outlet needs and nothing else does.** `unit_ops.splitter` declares
+/// its outlets as one port named `products`, so a two-way split returns two streams under one
+/// name; `split1.products[0]` is the first of them. An index on an inlet is not a thing a
+/// connection has - a `many` *inlet* takes several connections to the same port name, which is
+/// how a mixer is wired - so a consumer endpoint never carries one, and the checker refuses one
+/// that does.
+///
+/// A bare name - no dot - is a boundary stream, and returns `None` for the instance.
+#[must_use]
+pub fn split_endpoint(endpoint: &str) -> Option<(&str, &str, Option<usize>)> {
+    let (instance, rest) = endpoint.split_once('.')?;
+    let Some((port, index)) = rest.split_once('[') else {
+        return Some((instance, rest, None));
+    };
+    let index = index.strip_suffix(']')?.parse().ok()?;
+    Some((instance, port, Some(index)))
+}
+
+/// The path a stream is bound to, and the one a session's `value` answers to.
+///
+/// `instance.port` for a `one` outlet, `instance.port[i]` for the i-th stream of a `many` one -
+/// the same grammar [`split_endpoint`] reads, so a path a run produced is a path a connection
+/// could have written.
+#[must_use]
+pub fn stream_path(instance: &str, port: &str, index: Option<usize>) -> String {
+    match index {
+        Some(index) => format!("{instance}.{port}[{index}]"),
+        None => format!("{instance}.{port}"),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Input {

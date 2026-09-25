@@ -30,7 +30,7 @@ use std::collections::HashMap;
 
 use azoth_core::{AzothError, Result};
 
-use crate::flowsheet::Flowsheet;
+use crate::flowsheet::{Flowsheet, split_endpoint};
 
 /// Which of the class's two orders to run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -164,7 +164,10 @@ fn visit(
 /// name is a boundary on both sides, and the dot is what tells them apart - `check`'s own
 /// reading.
 fn instance_of(endpoint: &str) -> Option<(&str, &str)> {
-    endpoint.split_once('.')
+    // **The index is dropped rather than matched on**: the order is a fact about which *instance*
+    // produces a stream, and two streams of one `many` outlet come from the same unit, so which
+    // of them an edge names cannot change when that unit runs.
+    split_endpoint(endpoint).map(|(instance, port, _)| (instance, port))
 }
 
 #[cfg(test)]

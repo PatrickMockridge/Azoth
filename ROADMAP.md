@@ -495,9 +495,19 @@ transcribed step reports convergence after eighteen at `0.0833`. That capture al
 class's Broyden step taking the wrong sign against its own comment - `dx = -B^{-1} f` written,
 `+B^{-1} f` computed - which walks away from a fixed point one Newton step would reach.
 
+**A `many` outlet is addressable by position, so a splitter can be wired.** `unit_ops.splitter`
+declares its outlets as one port named `products`, so a two-way split returns two streams under one
+name - and the executor used to refuse it outright. An endpoint's grammar is now `name`,
+`instance.port` or `instance.port[i]`, spelled once in `flowsheet::split_endpoint` and read by the
+checker, the order and the session, and a run binds each stream of a `many` port under the path a
+connection would have written. That is what a **purge** needs, and a purge is what gives a loop a
+steady state: the test over it wires half a split back to the mixer and half to a boundary, and at
+a tolerance that means it, the loop closes at the feed's own flow where `demo.toml` at any
+tolerance cannot.
+
 **What is named as not built, with the class that would close each**: Broyden through
-`BroydenAccelerator`, for the measured reason above; the `many` outlet a connection cannot address
-one of, which is why a splitter cannot be wired; and the checker rule that would have caught
-`demo.toml` shipping with a required parameter unsupplied. The tier's own acceptance is the NeqSim
-capture beside it: an executor whose convergence is only checked against its own arithmetic is an
-executor nobody has measured.
+`BroydenAccelerator`, for the measured reason above; and the checker rule that would have caught
+`demo.toml` shipping with a required parameter unsupplied - which needs the palette to say which
+of its parameters a kernel cannot run without, and it does not. The tier's own acceptance is the
+NeqSim capture beside it: an executor whose convergence is only checked against its own arithmetic
+is an executor nobody has measured.
