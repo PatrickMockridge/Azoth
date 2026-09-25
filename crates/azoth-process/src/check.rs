@@ -170,6 +170,18 @@ pub enum Diagnostic {
         parameter: String,
         detail: String,
     },
+    /// Two `[[connections]]` entries join the same two endpoints.
+    ///
+    /// **Not a tidiness rule: a wrong number.** `executor::session` gathers a `many` inlet's
+    /// streams by taking *every* connection whose `to` matches, so a duplicated entry feeds the
+    /// same producer's stream into the unit twice and the unit mixes it twice. `OverfedPort` does
+    /// not fire on a `many` inlet and the feed rule counts feeds, so the document validated clean
+    /// and computed something nobody asked for. It is also what lets the pair be a connection's
+    /// identity: after this, a pair a document holds once is a pair a command can name.
+    DuplicateConnection {
+        from: String,
+        to: String,
+    },
     /// A torn loop's acceleration is one this port cannot apply.
     ///
     /// **The third of the same shape.** `MissingParameter` closed the hole where a document could
@@ -302,10 +314,8 @@ impl serde::Serialize for NodeRole {
 /// so neither can be a table that goes stale beside the enum.
 ///
 /// **A `[[connections]]` entry has no id in the schema**, so a pair of endpoints is its identity
-/// and `Edge` carries that pair rather than an id. Two identical connections - which the checker
-/// permits, since neither `OverfedPort` nor the feed rule fires on a `many` inlet - therefore
-/// resolve to the same target, and that is right: the diagnostic is about the endpoints, not about
-/// one row.
+/// and `Edge` carries that pair rather than an id — which is what `DuplicateConnection` makes
+/// sound: a pair is unique in a document that passes, so the pair *is* the row.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Target {
@@ -387,6 +397,7 @@ impl Diagnostic {
             Self::EndpointIndex { .. } => "endpoint_index",
             Self::ParameterKind { .. } => "parameter_kind",
             Self::Acceleration { .. } => "acceleration",
+            Self::DuplicateConnection { .. } => "duplicate_connection",
             Self::UnrecycledLoop { .. } => "unrecycled_loop",
         }
     }
@@ -498,6 +509,10 @@ impl Diagnostic {
             Self::Acceleration { stream, .. } => Target::Endpoint {
                 endpoint: stream.clone(),
             },
+            Self::DuplicateConnection { from, to } => Target::Edge {
+                from: from.clone(),
+                to: to.clone(),
+            },
             Self::UnrecycledLoop { .. } => Target::Document,
         }
     }
@@ -554,6 +569,7 @@ impl Diagnostic {
             Self::InputRecord { name, .. } => at("inputs", name.clone()),
             Self::EndpointIndex { endpoint, .. } => at("connections", endpoint.clone()),
             Self::Acceleration { stream, .. } => at("recycles", stream.clone()),
+            Self::DuplicateConnection { from, to } => at("connections", format!("{from} -> {to}")),
             Self::UnrecycledLoop { .. } => at("connections", String::new()),
         }
     }
@@ -629,6 +645,9 @@ impl Diagnostic {
             Self::EndpointIndex { detail, .. } => detail.clone(),
             Self::ParameterKind { detail, .. } => detail.clone(),
             Self::Acceleration { detail, .. } => detail.clone(),
+            Self::DuplicateConnection { from, to } => {
+                format!("the connection `{from} -> {to}` is declared twice")
+            }
             Self::UnrecycledLoop { detail } => detail.clone(),
         }
     }
@@ -771,6 +790,18 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
             first: "a feed",
             second: "a product",
         });
+    }
+
+    // **A connection is identified by its endpoints, because the schema gives it no id.** Two
+    // entries that join the same pair are one stream asked for twice, and the run takes both.
+    let mut wired: HashSet<(&str, &str)> = HashSet::new();
+    for connection in &flowsheet.connections {
+        if !wired.insert((connection.from.as_str(), connection.to.as_str())) {
+            diags.push(Diagnostic::DuplicateConnection {
+                from: connection.from.clone(),
+                to: connection.to.clone(),
+            });
+        }
     }
 
     // Instances: the unit op exists, and the parameters are the ones it declares.
@@ -2183,6 +2214,101 @@ mod tests {
         assert_eq!(
             collision.message(),
             "`p1` names both an instance and a feed"
+        );
+    }
+
+    /// **One stream asked for twice.** Two identical `[[connections]]` entries are not a
+    /// tidiness problem: `executor::session` gathers a `many` inlet by taking every connection
+    /// whose `to` matches, so the unit is fed the same stream twice and mixes it twice.
+    #[test]
+    fn a_connection_declared_twice_is_refused() {
+        // The mixer needs a pressure to run, so the entry declares one — the checker's own helper
+        // declares none, which is enough to validate a document and not to run one.
+        let mut mixer_spec = mixer("unit_ops.mixer");
+        mixer_spec.parameters.insert(
+            "outlet_pressure".to_string(),
+            crate::unit_op::Param {
+                required: false,
+                unit: Some("Pa".to_string()),
+                description: "the pressure the mixer's outlet is at".to_string(),
+            },
+        );
+        let palette = vec![mixer_spec];
+        let flowsheet = Flowsheet {
+            id: "f".into(),
+            name: "f".into(),
+            inputs: vec![named_input("a")],
+            products: vec!["out".into()],
+            instances: vec![Instance {
+                id: "m1".into(),
+                unit: "unit_ops.mixer".into(),
+                parameters: BTreeMap::from([(
+                    "outlet_pressure".to_string(),
+                    toml::Value::Float(5.0e5),
+                )]),
+            }],
+            connections: vec![
+                Connection {
+                    from: "a".into(),
+                    to: "m1.feed".into(),
+                },
+                // The same pair a second time, which `OverfedPort` does not catch on a `many`
+                // inlet and the feed rule does not catch at all.
+                Connection {
+                    from: "a".into(),
+                    to: "m1.feed".into(),
+                },
+                Connection {
+                    from: "m1.product".into(),
+                    to: "out".into(),
+                },
+            ],
+            recycles: vec![],
+            layout: None,
+        };
+
+        let diags = validate(&flowsheet, &palette);
+        let duplicate = diags
+            .iter()
+            .find(|diag| matches!(diag, Diagnostic::DuplicateConnection { .. }))
+            .unwrap_or_else(|| panic!("the duplicate is not reported: {diags:?}"));
+        assert_eq!(duplicate.severity(), Severity::Error);
+        assert_eq!(duplicate.code(), "duplicate_connection");
+        assert_eq!(duplicate.location().section, "connections");
+        assert_eq!(duplicate.location().path, "a -> m1.feed");
+        assert_eq!(
+            duplicate.target(),
+            Target::Edge {
+                from: "a".into(),
+                to: "m1.feed".into()
+            }
+        );
+        assert_eq!(
+            duplicate.message(),
+            "the connection `a -> m1.feed` is declared twice"
+        );
+
+        // **The measurement the rule exists for.** The same document without the duplicate runs
+        // to a mixer outlet of 1 mol/s; with it, 2 — the same stream asked for twice and mixed
+        // twice, from a document this checker used to pass.
+        let mut without = flowsheet.clone();
+        without.connections.remove(1);
+        let run_mixer = |sheet: &Flowsheet| {
+            crate::executor::run(
+                sheet,
+                &palette,
+                &BTreeMap::new(),
+                crate::ExecutionOrder::Insertion,
+            )
+            .expect("it runs")
+            .streams["m1.product"]
+                .n
+        };
+        assert_eq!(run_mixer(&without), 1.0);
+        assert_eq!(
+            run_mixer(&flowsheet),
+            2.0,
+            "the duplicate feeds the mixer twice"
         );
     }
 

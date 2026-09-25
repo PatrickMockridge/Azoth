@@ -118,6 +118,10 @@ fn every_variant() -> Vec<Diagnostic> {
             parameter: "outlet_pressure".into(),
             detail: "`outlet_pressure` is a quantity and `\"high\"` is text".into(),
         },
+        Diagnostic::DuplicateConnection {
+            from: "p1.outlet".into(),
+            to: "hx1.inlet".into(),
+        },
         Diagnostic::Acceleration {
             stream: "recycle_1".into(),
             detail: "`broyden` is refused: measured, the class's step has the wrong sign".into(),
@@ -163,7 +167,7 @@ fn every_variant_is_in_this_list() {
     // The count is written down so that a variant added to the enum and forgotten here fails
     // rather than passing a shorter list.
     let diagnostics = every_variant();
-    assert_eq!(diagnostics.len(), 27, "the enum and this list have drifted");
+    assert_eq!(diagnostics.len(), 28, "the enum and this list have drifted");
     let mut codes: Vec<&str> = diagnostics.iter().map(Diagnostic::code).collect();
     codes.sort_unstable();
     let before = codes.len();
@@ -767,6 +771,32 @@ fn the_shipped_flowsheet_projects_to_six_nodes_and_six_edges() {
             vec!["sep1.liquid".to_string()]
         ]
     );
+
+    // **The tear carries its own seven settings, and a silence is not a default.** `demo.toml`
+    // states none of them, so every one is `null` rather than the class's value - a panel that
+    // wrote the default back would turn a silence into a number.
+    let tear = document
+        .edges
+        .iter()
+        .find(|edge| edge.data.kind == "recycle")
+        .expect("the shipped flowsheet declares one");
+    let settings = serde_json::to_value(tear.data.settings.as_ref().expect("a tear has settings"))
+        .expect("they serialise");
+    assert_eq!(
+        settings,
+        serde_json::json!({
+            "flow_tolerance": null, "composition_tolerance": null, "temperature_tolerance": null,
+            "pressure_tolerance": null, "max_iterations": null, "minimum_flow": null,
+            "acceleration_method": null,
+        })
+    );
+    // And a connection has none of them, which is what makes the field a fact about a tear.
+    let connection = document
+        .edges
+        .iter()
+        .find(|edge| edge.data.kind == "connection")
+        .expect("there are connections");
+    assert!(connection.data.settings.is_none());
 
     // The feed's record is inline, because that is what an inputs panel edits and writes back.
     let feed = document

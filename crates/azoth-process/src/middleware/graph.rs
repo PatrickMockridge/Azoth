@@ -23,7 +23,7 @@ use serde::Serialize;
 
 use crate::NodeRole;
 use crate::channel::{Direction, Multiplicity, Port};
-use crate::flowsheet::{Flowsheet, Instance, split_endpoint, stream_path};
+use crate::flowsheet::{Flowsheet, Instance, Recycle, split_endpoint, stream_path};
 use crate::model_inputs_gen;
 use crate::unit_op::UnitOpSpec;
 
@@ -114,14 +114,44 @@ pub struct InputRecord {
     pub t: f64,
 }
 
+/// One `[[recycles]]` entry's seven settings, as the document states them.
+///
+/// **`null` is a setting the declaration leaves to the class's own default**, which is not the
+/// same fact as the default: `demo.toml` states none of the seven, and a widget that showed the
+/// defaults and wrote them back would turn a silence into a pinned number.
+#[derive(Debug, Clone, Serialize)]
+pub struct Settings {
+    pub flow_tolerance: Option<f64>,
+    pub composition_tolerance: Option<f64>,
+    pub temperature_tolerance: Option<f64>,
+    pub pressure_tolerance: Option<f64>,
+    pub max_iterations: Option<u32>,
+    pub minimum_flow: Option<f64>,
+    pub acceleration_method: Option<String>,
+}
+
+impl From<&Recycle> for Settings {
+    fn from(recycle: &Recycle) -> Self {
+        Self {
+            flow_tolerance: recycle.flow_tolerance,
+            composition_tolerance: recycle.composition_tolerance,
+            temperature_tolerance: recycle.temperature_tolerance,
+            pressure_tolerance: recycle.pressure_tolerance,
+            max_iterations: recycle.max_iterations,
+            minimum_flow: recycle.minimum_flow,
+            acceleration_method: recycle.acceleration_method.clone(),
+        }
+    }
+}
+
 /// One edge: a connection, or a recycle that tears a loop.
 #[derive(Debug, Clone, Serialize)]
 pub struct Edge {
     /// `e{index}`, over the connections then the recycles in document order.
     ///
-    /// **A `[[connections]]` entry has no id in the schema**, so its position is its identity,
-    /// and `from`-then-`to` would merge two entries - which a document may hold, since neither
-    /// the overfed rule nor the feed rule fires on a `many` inlet.
+    /// **A `[[connections]]` entry has no id in the schema**, so its position is its identity.
+    /// The checker refuses two entries that join the same pair (`DuplicateConnection`), so a
+    /// document that passes has one edge per pair and the pair is also a name a command can use.
     pub id: String,
     pub source: String,
     /// The stream's path at the producing end, which is also a session key.
@@ -145,6 +175,13 @@ pub struct EdgeData {
     /// The session path of the stream this edge carries: the producer's path for a connection,
     /// and the tear's name for a recycle.
     pub path: String,
+    /// A tear's seven convergence settings; absent on a connection, which has none.
+    ///
+    /// **On the edge because a tear *is* a connection with a name.** A panel for the selected edge
+    /// needs the document's own values, and reading them a second time in a front-end would be a
+    /// second reader of the format.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub settings: Option<Settings>,
 }
 
 /// Project a flowsheet onto the graph a canvas draws.
@@ -239,7 +276,7 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
         edges.push(edge(
             format!("e{}", flowsheet.connections.len() + index),
             "recycle",
-            Some(&recycle.stream),
+            Some(recycle),
             &recycle.from,
             &recycle.to,
         ));
@@ -258,7 +295,7 @@ pub fn graph(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Result<Graph> {
 /// The handle ids are the stream paths the endpoints name: the producer's path at the source, and
 /// the port's path at the target - an index belongs to the producing side only, because a `many`
 /// inlet is one name however many streams reach it.
-fn edge(id: String, kind: &'static str, tear: Option<&str>, from: &str, to: &str) -> Edge {
+fn edge(id: String, kind: &'static str, tear: Option<&Recycle>, from: &str, to: &str) -> Edge {
     // A bare name is a boundary: a feed where the stream is produced, a product where it is
     // consumed. An endpoint with a dot is an instance's port, whatever the role of the side.
     let source_handle = match split_endpoint(from) {
@@ -287,7 +324,8 @@ fn edge(id: String, kind: &'static str, tear: Option<&str>, from: &str, to: &str
             kind,
             from: from.to_string(),
             to: to.to_string(),
-            path: tear.map_or(source_handle, str::to_string),
+            path: tear.map_or(source_handle, |recycle| recycle.stream.clone()),
+            settings: tear.map(Settings::from),
         },
     }
 }

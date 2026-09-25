@@ -43,6 +43,40 @@ pub enum ExecutionOrder {
     Topological,
 }
 
+impl ExecutionOrder {
+    /// The name a front-end switches on, which is also what a document or a request writes.
+    ///
+    /// **One spelling, because it is read in four places**: the Python binding's `execution_order`
+    /// argument, the envelope's own field, the wasm editor and the command line. A second
+    /// `match` over strings would be a second place the vocabulary could disagree with itself.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Insertion => "insertion",
+            Self::Topological => "topological",
+        }
+    }
+
+    /// The order a name names.
+    ///
+    /// # Errors
+    /// [`AzothError::InvalidInput`] for a name that is neither, naming both — the flag is the
+    /// class's, so there are two and not a family of them.
+    pub fn parse(name: &str) -> Result<Self> {
+        match name {
+            "insertion" => Ok(Self::Insertion),
+            "topological" => Ok(Self::Topological),
+            other => Err(AzothError::invalid_input(
+                "execution_order",
+                format!(
+                    "`{other}` is not an execution order: `ProcessSystem.useGraphBasedExecution` \
+                     is a flag, so the two are `insertion` (the class's default) and `topological`"
+                ),
+            )),
+        }
+    }
+}
+
 /// The instance indices, in the order they run.
 ///
 /// # Errors
@@ -207,6 +241,22 @@ mod tests {
             recycles: Vec::new(),
             layout: None,
         }
+    }
+
+    /// **The name round-trips**, so a front end that sends what it read gets what it sent — and a
+    /// name that is neither is refused with the two that exist rather than silently defaulted.
+    #[test]
+    fn the_two_orders_are_a_name_and_its_inverse() {
+        for order in [ExecutionOrder::Insertion, ExecutionOrder::Topological] {
+            assert_eq!(ExecutionOrder::parse(order.name()), Ok(order));
+        }
+        assert_eq!(ExecutionOrder::default(), ExecutionOrder::Insertion);
+        assert_eq!(ExecutionOrder::default().name(), "insertion");
+
+        let error = ExecutionOrder::parse("kahn").expect_err("a third name is refused");
+        assert!(error.to_string().contains("kahn"), "{error}");
+        assert!(error.to_string().contains("insertion"), "{error}");
+        assert!(error.to_string().contains("topological"), "{error}");
     }
 
     /// **The default is insertion order**, which is the measurement `useGraphBasedExecution`'s

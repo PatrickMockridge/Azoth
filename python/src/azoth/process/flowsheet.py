@@ -324,6 +324,16 @@ class Session:
         text = command if isinstance(command, str) else json.dumps(command)
         return _document(self._inner.apply(text))
 
+    def set_order(self, order: str) -> dict[str, Any]:
+        """Set which of the class's two orders the next run takes.
+
+        ``insertion`` is the class's default — ``ProcessSystem.useGraphBasedExecution`` is
+        ``false`` — and ``topological`` is the depth-first walk that flag reaches. Setting it does
+        not re-run: an order is a property of the next run, and the envelope that comes back
+        carries the name, so a caller reads the order from the same object as everything else.
+        """
+        return _document(self._inner.set_order(order))
+
     def run(self) -> dict[str, Any]:
         """Run the document, and return the envelope it left.
 

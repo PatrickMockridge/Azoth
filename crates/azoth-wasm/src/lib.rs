@@ -29,12 +29,12 @@
 
 use wasm_bindgen::prelude::*;
 
-use azoth_process::UnitOpSpec;
 use azoth_process::load_palette_text;
 use azoth_process::middleware::command::Command;
 use azoth_process::middleware::session::Workspace;
 use azoth_process::middleware::{catalogue, envelope};
 use azoth_process::palette_gen::PALETTE;
+use azoth_process::{ExecutionOrder, UnitOpSpec};
 
 /// The palette the module carries.
 fn palette() -> Vec<UnitOpSpec> {
@@ -100,6 +100,21 @@ impl Editor {
     /// canvas draws rather than an exception it cannot read.
     pub fn run(&mut self) -> Result<String, JsValue> {
         let _ = self.workspace.run();
+        self.envelope()
+    }
+
+    /// Set the order the next run takes: `insertion` or `topological`, which are the two names
+    /// `ProcessSystem.useGraphBasedExecution` has.
+    ///
+    /// **Setting it does not re-run**: an order is a property of the next run, and a document
+    /// whose values are current stays current. The envelope that comes back carries it, so a top
+    /// bar reads the order from the same object as everything else rather than holding a copy.
+    ///
+    /// # Errors
+    /// A JS exception for a name that is neither of the two.
+    pub fn set_order(&mut self, order: &str) -> Result<String, JsValue> {
+        self.workspace
+            .set_order(ExecutionOrder::parse(order).map_err(failed)?);
         self.envelope()
     }
 

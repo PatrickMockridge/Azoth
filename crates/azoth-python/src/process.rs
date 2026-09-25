@@ -1383,16 +1383,8 @@ pub fn run_flowsheet<'py>(
     let palette =
         azoth_process::load_palette(Path::new(palette_dir)).map_err(PyValueError::new_err)?;
     let sheet = azoth_process::parse_flowsheet(flowsheet).map_err(PyValueError::new_err)?;
-    let order = match execution_order {
-        "insertion" => ExecutionOrder::Insertion,
-        "topological" => ExecutionOrder::Topological,
-        other => {
-            return Err(PyValueError::new_err(format!(
-                "`{other}` is not an execution order: `ProcessSystem.useGraphBasedExecution` is a \
-                 flag, so the two are `insertion` (the class's default) and `topological`"
-            )));
-        }
-    };
+    let order = ExecutionOrder::parse(execution_order)
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
     let feeds: BTreeMap<String, Stream> = feeds
         .unwrap_or_default()
         .iter()
@@ -1459,6 +1451,15 @@ impl PySession {
         self.workspace
             .apply(&command)
             .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        self.envelope()
+    }
+
+    /// Set the order the next run takes: `insertion` or `topological`.
+    fn set_order(&mut self, order: &str) -> PyResult<String> {
+        self.workspace.set_order(
+            ExecutionOrder::parse(order)
+                .map_err(|error| PyValueError::new_err(error.to_string()))?,
+        );
         self.envelope()
     }
 

@@ -85,7 +85,21 @@ try {
 }
 check("a document that does not read raises", refused);
 
-// 6. And the module is still alive after both - a trap would have taken it with them.
+// 6. The execution order, which is a property of the session and not of a widget.
+const reordered = JSON.parse(editor.set_order("topological"));
+check("the order is in the envelope", reordered.execution_order === "topological");
+check("and setting it is not a document change", reordered.dirty === false);
+check("the document is untouched", reordered.flowsheet.document.includes("flowsheets.demo"));
+
+let refusedOrder = false;
+try {
+  editor.set_order("kahn");
+} catch (error) {
+  refusedOrder = String(error).includes("kahn") && String(error).includes("insertion");
+}
+check("a name that is neither order raises with both in it", refusedOrder);
+
+// 7. And the module is still alive after every refusal - a trap would have taken it with them.
 check("the module survives its refusals", editor.value("p1.outlet.T") > 300.0);
 
 if (failures.length > 0) {

@@ -658,6 +658,7 @@ def render_vocabulary() -> str:
                     "    def __init__(self, document: str, palette_dir: str | None = ...)"
                     " -> None: ...",
                     "    def apply(self, command: str) -> str: ...",
+                    "    def set_order(self, order: str) -> str: ...",
                     "    def run(self) -> str: ...",
                     "    def envelope(self) -> str: ...",
                     "    def document(self) -> str: ...",

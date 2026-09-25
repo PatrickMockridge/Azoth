@@ -170,6 +170,17 @@ fn an_envelope_is_one_document_of_the_layers_below_it() {
     );
     assert_eq!(read["diagnostics"], serde_json::json!([]));
     assert_eq!(read["run_error"], serde_json::Value::Null);
+    // The order the next run takes is the class's default, and it is in the envelope so a control
+    // reads it from the session rather than holding a copy of it.
+    assert_eq!(read["execution_order"], "insertion");
+    workspace.set_order(ExecutionOrder::Topological);
+    let reordered: serde_json::Value =
+        serde_json::from_str(&envelope::to_json(&workspace).expect("it writes")).expect("parses");
+    assert_eq!(reordered["execution_order"], "topological");
+    assert_eq!(
+        reordered["dirty"], false,
+        "an order is not a change to the document"
+    );
     // The document is the text, which is what a save writes.
     let document = read["flowsheet"]["document"].as_str().expect("a string");
     assert!(

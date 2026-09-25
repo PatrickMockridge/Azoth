@@ -22,6 +22,12 @@ pub struct Envelope {
     pub ok: bool,
     /// Whether the values are older than the document.
     pub dirty: bool,
+    /// Which of the class's two orders the next run takes: `insertion` or `topological`.
+    ///
+    /// **Here because it is a property of the session and not of a widget.** A top bar's control
+    /// reads it from the same object as everything else rather than holding a copy, so a control
+    /// and the session cannot disagree after an edit that was refused.
+    pub execution_order: &'static str,
     pub flowsheet: FlowsheetView,
     pub diagnostics: Vec<DiagnosticRecord>,
     /// Every value's path, empty until the document has run.
@@ -56,6 +62,7 @@ pub fn envelope(workspace: &Workspace) -> Result<Envelope> {
     Ok(Envelope {
         ok: workspace.ok(),
         dirty: workspace.dirty(),
+        execution_order: workspace.order().name(),
         flowsheet: FlowsheetView {
             id: workspace.flowsheet().id.clone(),
             name: workspace.flowsheet().name.clone(),
