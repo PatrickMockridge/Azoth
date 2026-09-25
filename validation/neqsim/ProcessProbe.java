@@ -57,6 +57,8 @@
 //       > captures/process_ejector.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe stream \
 //       > captures/process_stream_properties.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe gibbs_reactor \
+//       > captures/process_gibbs_reactor.tsv
 
 import neqsim.process.equipment.stream.Stream;
 import neqsim.process.equipment.stream.StreamInterface;
@@ -129,6 +131,9 @@ public class ProcessProbe {
         break;
       case "plug_flow_reactor":
         plugFlowReactorRows();
+        break;
+      case "gibbs_reactor":
+        gibbsReactorRows();
         break;
       case "column":
         columnRows();
@@ -2443,6 +2448,143 @@ public class ProcessProbe {
   /// The two agree on a single-phase fluid, which is why the pump's and splitter's
   /// captures cannot tell them apart - but a separator's whole subject is a fluid that is
   /// *not* single-phase, and reading phase 0 there reports the vapour twice.
+  /// The Gibbs reactor, and the reason this one prints a *trace* rather than an answer.
+  ///
+  /// **A Gibbs solve has a fixed point instead of a formula**, so the outlet composition
+  /// alone cannot say whether a port reproduced the machine: two different solvers can agree
+  /// to three figures on the answer and differ on every step that reached it. So each row
+  /// prints the convergence trace - the iteration count, the final error, the element
+  /// balance on the class's own seven element names, the Lagrange multipliers, the Gibbs
+  /// energy history and the objective vector - and the outlet beside it.
+  ///
+  /// **Driven on PR, not SRK.** The class carries no cubic: it works on whatever fluid it is
+  /// handed, and azoth's `Stream::mixture()` resolves PR with the databank's kij, so the
+  /// oracle has to be the same fluid the port runs. This is the call the column probe makes
+  /// for the same reason. The class's own JUnit fluids are SRK, which is their fluid and not
+  /// this port's - `GibbsReactorTest.testComponentNotInDatabaseMolesUnchanged` is the
+  /// methane/oxygen case below at `damping 0.01`, carried here on PR.
+  ///
+  /// **The phase and its root are printed because the port has to choose one.** The class
+  /// reads `getPhase(0).getComponent(i).getFugacityCoefficient()` and never states which root
+  /// that is, so the probe records the phase type, the compressibility and the fugacity
+  /// coefficients it actually used instead of leaving a reader to infer it.
+  static void gibbsReactorRows() {
+    gibbsReactorRow("methane_oxygen_adiabatic",
+        new String[] { "methane", "oxygen", "CO2", "CO", "water" },
+        new double[] { 0.05, 0.5, 0.0, 0.0, 0.0 }, 298.15, 100.0, true, 0.01, 10000, 1e-3);
+    gibbsReactorRow("methane_oxygen_isothermal",
+        new String[] { "methane", "oxygen", "CO2", "CO", "water" },
+        new double[] { 0.05, 0.5, 0.0, 0.0, 0.0 }, 298.15, 100.0, false, 0.05, 5000, 1e-3);
+    gibbsReactorRow("ammonia_isothermal", new String[] { "hydrogen", "nitrogen", "ammonia" },
+        new double[] { 1.5, 0.5, 0.0 }, 450.0, 300.0, false, 0.05, 5000, 1e-3);
+    gibbsReactorRow("ammonia_adiabatic", new String[] { "hydrogen", "nitrogen", "ammonia" },
+        new double[] { 1.5, 0.5, 0.0 }, 450.0, 300.0, true, 0.05, 5000, 1e-3);
+    gibbsReactorRow("steam_methane_hot", new String[] { "methane", "water" },
+        new double[] { 1.0, 1.0 }, 1000.0, 1.0, false, 0.05, 5000, 1e-3);
+    // A feed whose species set is larger than the ones that react, so the variable and the
+    // feed-excluded sets are both non-trivial and the argon row is exercised - `argon` is
+    // the species whose atom count sits in the column the class calls `Ar` and the file
+    // calls `Na`.
+    gibbsReactorRow("argon_in_feed", new String[] { "hydrogen", "oxygen", "water", "argon" },
+        new double[] { 0.1, 1.0, 0.0, 0.05 }, 298.15, 50.0, true, 0.05, 5000, 1e-3);
+  }
+
+  static void gibbsReactorRow(String label, String[] names, double[] z, double temperatureK,
+      double pressureBara, boolean adiabatic, double damping, int maxIterations, double tolerance) {
+    Stream inlet = feed(names, z, temperatureK, pressureBara, 1.0);
+
+    neqsim.process.equipment.reactor.GibbsReactor reactor =
+        new neqsim.process.equipment.reactor.GibbsReactor("gibbs", inlet);
+    reactor.setUseAllDatabaseSpecies(false);
+    reactor.setDampingComposition(damping);
+    reactor.setMaxIterations(maxIterations);
+    reactor.setConvergenceTolerance(tolerance);
+    reactor.setEnergyMode(adiabatic ? neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ADIABATIC
+        : neqsim.process.equipment.reactor.GibbsReactor.EnergyMode.ISOTHERMAL);
+
+    reactor.run();
+    StreamInterface outlet = reactor.getOutletStream();
+
+    System.out.println(label);
+    print("feed", inlet);
+    printOrEmpty("product", outlet);
+    System.out.println("energy_mode=" + reactor.getEnergyMode() + "\tdamping=" + damping
+        + "\tmax_iterations=" + maxIterations + "\ttolerance=" + tolerance);
+    System.out.println("converged=" + reactor.hasConverged() + "\titerations="
+        + reactor.getActualIterations() + "\tfinal_error=" + reactor.getFinalConvergenceError()
+        + "\tmass_balance_converged=" + reactor.getMassBalanceConverged());
+
+    SystemInterface fluid = outlet.getThermoSystem();
+    System.out.println("outlet_phases=" + fluid.getNumberOfPhases() + "\tphase0_type="
+        + fluid.getPhase(0).getPhaseTypeName() + "\tphase0_z=" + fluid.getPhase(0).getZ()
+        + "\tphase0_moles=" + fluid.getPhase(0).getNumberOfMolesInPhase());
+
+    String[] elements = reactor.getElementNames();
+    double[] balanceIn = reactor.getElementMoleBalanceIn();
+    double[] balanceOut = reactor.getElementMoleBalanceOut();
+    double[] balanceDiff = reactor.getElementMoleBalanceDiff();
+    for (int i = 0; i < elements.length; i++) {
+      System.out.println("element_" + elements[i] + "=" + balanceIn[i] + "\t" + balanceOut[i] + "\t"
+          + balanceDiff[i]);
+    }
+
+    double[] lambda = reactor.getLagrangianMultipliers();
+    StringBuilder multipliers = new StringBuilder("lambda=");
+    for (int i = 0; i < lambda.length; i++) {
+      multipliers.append(elements[i]).append(":").append(lambda[i]);
+      if (i + 1 < lambda.length) {
+        multipliers.append(" ");
+      }
+    }
+    System.out.println(multipliers);
+
+    // **The fugacity coefficients the objective actually read.** `getFugacityCoefficient(0)`
+    // returns phase 0's array, and the class calls it once per objective evaluation without
+    // ever stating which root or which state - so it is recorded rather than inferred.
+    double[] phi = reactor.getFugacityCoefficient(0);
+    StringBuilder fugacities = new StringBuilder("phi=");
+    for (int i = 0; i < phi.length; i++) {
+      fugacities.append(fluid.getPhase(0).getComponent(i).getName()).append(":").append(phi[i]);
+      if (i + 1 < phi.length) {
+        fugacities.append(" ");
+      }
+    }
+    System.out.println(fugacities);
+
+    StringBuilder outletMoles = new StringBuilder("outlet_moles=");
+    for (int i = 0; i < reactor.getOutletMole().size(); i++) {
+      outletMoles.append(fluid.getComponent(i).getComponentName()).append(":")
+          .append(reactor.getOutletMole().get(i));
+      if (i + 1 < reactor.getOutletMole().size()) {
+        outletMoles.append(" ");
+      }
+    }
+    System.out.println(outletMoles);
+
+    StringBuilder objective = new StringBuilder("objective=");
+    for (int i = 0; i < fluid.getNumberOfComponents(); i++) {
+      String name = fluid.getComponent(i).getComponentName();
+      objective.append(name).append(":").append(reactor.getObjectiveFunctionValues().get(name));
+      if (i + 1 < fluid.getNumberOfComponents()) {
+        objective.append(" ");
+      }
+    }
+    System.out.println(objective);
+
+    // The history is per iteration and is the only record of the path, so it is printed
+    // whole rather than summarised - a hundred and one values is what a port has to match.
+    java.util.List<Double> history = reactor.getGibbsEnergyHistory();
+    StringBuilder gibbs = new StringBuilder("gibbs_history=");
+    for (int i = 0; i < history.size(); i++) {
+      gibbs.append(history.get(i));
+      if (i + 1 < history.size()) {
+        gibbs.append(" ");
+      }
+    }
+    System.out.println(gibbs);
+    System.out.println();
+  }
+
   static void print(String port, StreamInterface stream) {
     SystemInterface fluid = stream.getThermoSystem();
     System.out.println(port + "_n=" + stream.getFlowRate("mol/sec"));
