@@ -5,6 +5,7 @@ feed_T=298.15
 feed_h=-188.04134452391497
 feed_s=-35.43548644116642
 feed_z=methane:0.09090909090909091 oxygen:0.9090909090909091 CO2:0.0 CO:0.0 water:0.0
+feed_phases=1	feed_phase0_type=gas	feed_phase0_z=0.9272654970938999	feed_phase0_moles=1.0
 product_n=1.0000142719543588
 product_P=100.0
 product_T=1930.4893040901968
@@ -34,6 +35,7 @@ feed_T=298.15
 feed_h=-188.04134452391497
 feed_s=-35.43548644116642
 feed_z=methane:0.09090909090909091 oxygen:0.9090909090909091 CO2:0.0 CO:0.0 water:0.0
+feed_phases=1	feed_phase0_type=gas	feed_phase0_z=0.9272654970938999	feed_phase0_moles=1.0
 product_n=1.0006318047995646
 product_P=100.0
 product_T=298.15
@@ -63,6 +65,7 @@ feed_T=450.0
 feed_h=5242.598895797701
 feed_s=-28.71471797269836
 feed_z=hydrogen:0.75 nitrogen:0.25 ammonia:0.0
+feed_phases=1	feed_phase0_type=gas	feed_phase0_z=1.1070067161426635	feed_phase0_moles=1.0
 product_n=0.5195264730361169
 product_P=300.0
 product_T=450.0
@@ -92,6 +95,7 @@ feed_T=450.0
 feed_h=5242.598895797701
 feed_s=-28.71471797269836
 feed_z=hydrogen:0.75 nitrogen:0.25 ammonia:0.0
+feed_phases=1	feed_phase0_type=gas	feed_phase0_z=1.1070067161426635	feed_phase0_moles=1.0
 product_n=0.8197097514388143
 product_P=300.0
 product_T=788.1552922495005
@@ -121,6 +125,7 @@ feed_T=1000.0
 feed_h=33114.70368665448
 feed_s=61.72694528228024
 feed_z=methane:0.5 water:0.5
+feed_phases=1	feed_phase0_type=gas	feed_phase0_z=1.0000808099225698	feed_phase0_moles=1.0
 product_n=0.9999999999999984
 product_P=1.0
 product_T=1000.0
@@ -150,6 +155,7 @@ feed_T=298.15
 feed_h=322.93827846627505
 feed_s=-27.016399107482446
 feed_z=hydrogen:0.08695652173913043 oxygen:0.8695652173913042 water:0.0 argon:0.043478260869565216
+feed_phases=1	feed_phase0_type=gas	feed_phase0_z=0.9671555880112009	feed_phase0_moles=1.0
 product_n=0.9565783722000182
 product_P=50.0
 product_T=984.7676376457915

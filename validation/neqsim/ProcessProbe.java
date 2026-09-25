@@ -2507,6 +2507,15 @@ public class ProcessProbe {
 
     System.out.println(label);
     print("feed", inlet);
+    // **The inlet's phase structure, which is the one the solve inherits.** `run` ends with
+    // `getOutletStream().run(id)`, which flashes, so `outlet_phases` below describes the state
+    // *after* the reactor - not the state the iterations saw. The solve's fluid is a clone of
+    // the inlet's, and `init(3)` refreshes a phase's derivatives without ever adding one, so
+    // the phase count that matters is this one.
+    SystemInterface feedFluid = inlet.getThermoSystem();
+    System.out.println("feed_phases=" + feedFluid.getNumberOfPhases() + "\tfeed_phase0_type="
+        + feedFluid.getPhase(0).getPhaseTypeName() + "\tfeed_phase0_z=" + feedFluid.getPhase(0).getZ()
+        + "\tfeed_phase0_moles=" + feedFluid.getPhase(0).getNumberOfMolesInPhase());
     printOrEmpty("product", outlet);
     System.out.println("energy_mode=" + reactor.getEnergyMode() + "\tdamping=" + damping
         + "\tmax_iterations=" + maxIterations + "\ttolerance=" + tolerance);
