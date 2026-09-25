@@ -29,7 +29,7 @@ describe("the catalogue", () => {
     expect(catalogue.unit_ops).toHaveLength(29);
     expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(27);
     expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(26);
-    expect(catalogue.tools).toHaveLength(14);
+    expect(catalogue.tools).toHaveLength(15);
   });
 
   it("carries the kind a field needs, which is nowhere in the palette", () => {

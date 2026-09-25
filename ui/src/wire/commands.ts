@@ -45,6 +45,7 @@ export type EditorCommand =
   | { command: "add_recycle"; stream: string; from: string; to: string }
   | { command: "remove_recycle"; stream: string }
   | { command: "set_recycle"; stream: string; field: RecycleField; value: number | string }
+  | { command: "unset_recycle_field"; stream: string; field: RecycleField }
   | { command: "set_position"; node: string; x: number; y: number };
 
 /** The names, which is what a test can compare against a document. */
@@ -65,5 +66,6 @@ export const COMMAND_NAMES: readonly CommandName[] = [
   "add_recycle",
   "remove_recycle",
   "set_recycle",
+  "unset_recycle_field",
   "set_position",
 ];

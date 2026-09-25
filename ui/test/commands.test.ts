@@ -20,7 +20,7 @@ const catalogue = catalogueJson as unknown as Catalogue;
 describe("the command model", () => {
   it("is the same fourteen the agent's tool schema publishes", () => {
     const tools = (catalogue.tools ?? []).map((tool) => tool.name);
-    expect(tools).toHaveLength(14);
+    expect(tools).toHaveLength(15);
     expect([...COMMAND_NAMES].sort()).toEqual([...tools].sort());
   });
 

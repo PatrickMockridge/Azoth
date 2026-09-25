@@ -38,7 +38,7 @@ check(
   catalogue.unit_ops.filter((entry) => entry.runnable).length === 26,
 );
 const withTools = JSON.parse(azoth.palette_json(true));
-check("14 tools", withTools.tools.length === 14, `${withTools.tools.length}`);
+check("15 tools", withTools.tools.length === 15, `${withTools.tools.length}`);
 
 // 2. Opening the shipped document.
 const document = readFileSync("specs/flowsheets/demo.toml", "utf8");
@@ -107,4 +107,4 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`  ${failure}`);
   process.exit(1);
 }
-console.log("wasm smoke: OK (29 palette entries, 14 tools, 6 nodes, 43 values)");
+console.log("wasm smoke: OK (29 palette entries, 15 tools, 6 nodes, 43 values)");

@@ -273,7 +273,7 @@ def test_the_palette_comes_back_as_a_form_per_entry() -> None:
 
 def test_the_agent_tools_are_the_command_model() -> None:
     names = [tool["name"] for tool in process.tools()]
-    assert len(names) == 14
+    assert len(names) == 15
     assert names[:4] == ["add_instance", "remove_instance", "connect", "disconnect"]
 
     add = process.tools()[0]["input_schema"]

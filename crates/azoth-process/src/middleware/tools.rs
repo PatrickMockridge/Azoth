@@ -157,14 +157,7 @@ pub fn tools(palette: &[UnitOpSpec]) -> Vec<Tool> {
              not raised.",
             vec![
                 req("stream", string("The tear's name.")),
-                req(
-                    "field",
-                    json!({ "type": "string",
-                            "enum": ["flow_tolerance", "composition_tolerance",
-                                     "temperature_tolerance", "pressure_tolerance",
-                                     "max_iterations", "minimum_flow", "acceleration_method"],
-                            "description": "Which of the tear's seven settings." }),
-                ),
+                req("field", recycle_field()),
                 req(
                     "value",
                     json!({
@@ -180,6 +173,16 @@ pub fn tools(palette: &[UnitOpSpec]) -> Vec<Tool> {
                         ],
                     }),
                 ),
+            ],
+        ),
+        tool(
+            "unset_recycle_field",
+            "Return one of a tear's settings to the class's own default. An unstated setting and a \
+             stated one that happens to equal the default are different documents, which is why \
+             this exists rather than a `set` back to the default.",
+            vec![
+                req("stream", string("The tear's name.")),
+                req("field", recycle_field()),
             ],
         ),
         tool(
@@ -219,6 +222,16 @@ fn opt(name: &'static str, schema: Value) -> Property {
         schema,
         required: false,
     }
+}
+
+/// The `field` property both recycle tools take: the seven settings, from the command model.
+///
+/// **Read from `command::RECYCLE_FIELDS` rather than typed again.** These seven names were written
+/// in two schemas, a parser and a widget; a schema that spelled them itself would be one more copy,
+/// and the copy nobody parses is the one that drifts out of a refusal.
+fn recycle_field() -> Value {
+    json!({ "type": "string", "enum": crate::middleware::command::RECYCLE_FIELDS,
+            "description": "Which of the tear's seven settings." })
 }
 
 /// One tool, from its own properties.

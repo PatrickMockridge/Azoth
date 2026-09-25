@@ -104,6 +104,17 @@ pub enum Command {
         field: String,
         value: serde_json::Value,
     },
+    /// Return one of the tear's settings to silence, which is the class's own default.
+    ///
+    /// **The inverse `set_recycle` needed**, and it needed it because the difference between an
+    /// unstated setting and a stated one is real: `[[recycles]]` writes only what it states, and a
+    /// form that showed the class's defaults could not tell a declaration that *meant* this number
+    /// from one that never mentioned it. A field cleared to empty had nowhere to go, so the
+    /// control that looked like it could clear one could not.
+    UnsetRecycleField {
+        stream: String,
+        field: String,
+    },
     /// Place a node on the canvas.
     ///
     /// **Addressed by node id**, `instance:sep1`, which is what the projection gives a canvas and
@@ -118,8 +129,9 @@ pub enum Command {
     },
 }
 
-/// The seven fields a `[[recycles]]` entry carries.
-const RECYCLE_FIELDS: [&str; 7] = [
+/// The seven fields a `[[recycles]]` entry carries: **the one list**, which `set_recycle` and
+/// `unset_recycle_field` both check against and both tool schemas publish.
+pub const RECYCLE_FIELDS: [&str; 7] = [
     "flow_tolerance",
     "composition_tolerance",
     "temperature_tolerance",
@@ -279,15 +291,7 @@ pub fn apply(flowsheet: &mut Flowsheet, palette: &[UnitOpSpec], command: &Comman
             field,
             value,
         } => {
-            if !RECYCLE_FIELDS.contains(&field.as_str()) {
-                return Err(AzothError::invalid_input(
-                    "field",
-                    format!(
-                        "`{field}` is not a recycle parameter; the seven are {}",
-                        RECYCLE_FIELDS.join(", ")
-                    ),
-                ));
-            }
+            check_recycle_field(field)?;
             let Some(recycle) = flowsheet
                 .recycles
                 .iter_mut()
@@ -296,6 +300,25 @@ pub fn apply(flowsheet: &mut Flowsheet, palette: &[UnitOpSpec], command: &Comman
                 return Ok(());
             };
             set_recycle(recycle, field, value)?;
+        }
+        Command::UnsetRecycleField { stream, field } => {
+            check_recycle_field(field)?;
+            let Some(recycle) = flowsheet
+                .recycles
+                .iter_mut()
+                .find(|recycle| recycle.stream == *stream)
+            else {
+                return Ok(());
+            };
+            match field.as_str() {
+                "flow_tolerance" => recycle.flow_tolerance = None,
+                "composition_tolerance" => recycle.composition_tolerance = None,
+                "temperature_tolerance" => recycle.temperature_tolerance = None,
+                "pressure_tolerance" => recycle.pressure_tolerance = None,
+                "max_iterations" => recycle.max_iterations = None,
+                "minimum_flow" => recycle.minimum_flow = None,
+                _ => recycle.acceleration_method = None,
+            }
         }
         Command::SetPosition { node, x, y } => {
             let Some((role, name)) = crate::split_node_id(node) else {
@@ -322,6 +345,23 @@ pub fn apply(flowsheet: &mut Flowsheet, palette: &[UnitOpSpec], command: &Comman
         }
     }
     Ok(())
+}
+
+/// The field name a recycle command names, refused by name when it is not one of the seven.
+///
+/// **One check for `set` and `unset`**, so the two cannot come to different conclusions about what
+/// a recycle has - which is the failure a second copy of a seven-name list produces.
+fn check_recycle_field(field: &str) -> Result<()> {
+    if RECYCLE_FIELDS.contains(&field) {
+        return Ok(());
+    }
+    Err(AzothError::invalid_input(
+        "field",
+        format!(
+            "`{field}` is not a recycle parameter; the seven are {}",
+            RECYCLE_FIELDS.join(", ")
+        ),
+    ))
 }
 
 /// Whether a document declares the node a role and a name name.

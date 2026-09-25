@@ -423,6 +423,42 @@
       "name": "set_recycle"
     },
     {
+      "description": "Return one of a tear's settings to the class's own default. An unstated setting and a stated one that happens to equal the default are different documents, which is why this exists rather than a `set` back to the default.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "unset_recycle_field",
+            "description": "The command's name."
+          },
+          "field": {
+            "description": "Which of the tear's seven settings.",
+            "enum": [
+              "flow_tolerance",
+              "composition_tolerance",
+              "temperature_tolerance",
+              "pressure_tolerance",
+              "max_iterations",
+              "minimum_flow",
+              "acceleration_method"
+            ],
+            "type": "string"
+          },
+          "stream": {
+            "description": "The tear's name.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "stream",
+          "field"
+        ],
+        "type": "object"
+      },
+      "name": "unset_recycle_field"
+    },
+    {
       "description": "Place a node on the canvas, by node id: `instance:sep1`, `input:feed_1`, `product:out`.",
       "input_schema": {
         "additionalProperties": false,

@@ -101,8 +101,8 @@ export function EdgePanel({ catalogue, envelope, edge, onCommand }: EdgePanelPro
         <>
           <h2>Convergence</h2>
           <p className="note">
-            an unstated setting is the class&apos;s own default — the field is empty, and writing a
-            number in would pin it
+            an unstated setting is the class&apos;s own default: the field is empty, writing a
+            number in pins it, and clearing the field returns it to silence
           </p>
           {SETTINGS.map(({ field, kind, hint }) => {
             const value = settings[field];
@@ -119,6 +119,16 @@ export function EdgePanel({ catalogue, envelope, edge, onCommand }: EdgePanelPro
                     onChange={(event) => {
                       const raw = event.target.value;
                       if (raw === "") {
+                        // **"The class's default" is a command, not a no-op.** The difference
+                        // between a stated setting and an unstated one is what `[[recycles]]`
+                        // writes, and `unset_recycle_field` is the inverse - without it this
+                        // option was a control that looked like it could clear a setting and
+                        // could not.
+                        onCommand({
+                          command: "unset_recycle_field",
+                          stream: edge.data.path,
+                          field,
+                        });
                         return;
                       }
                       onCommand({
@@ -144,8 +154,12 @@ export function EdgePanel({ catalogue, envelope, edge, onCommand }: EdgePanelPro
                     onChange={(event) => {
                       const raw = event.target.value;
                       if (raw === "") {
-                        // The command model has `set_recycle` and no inverse, so a stated setting
-                        // cannot be returned to silence. The field says so by sending nothing.
+                        // An emptied field is an unset, which the command model now has.
+                        onCommand({
+                          command: "unset_recycle_field",
+                          stream: edge.data.path,
+                          field,
+                        });
                         return;
                       }
                       onCommand({

@@ -82,6 +82,10 @@ fn every_command() -> Vec<Command> {
             field: "flow_tolerance".into(),
             value: serde_json::json!(1e-6),
         },
+        Command::UnsetRecycleField {
+            stream: "recycle_1".into(),
+            field: "max_iterations".into(),
+        },
         Command::SetPosition {
             node: "instance:sep1".into(),
             x: 1234.0,
@@ -123,7 +127,7 @@ fn a_command_carrying_an_unknown_field_is_refused() {
 #[test]
 fn every_command_round_trips_through_json() {
     let commands = every_command();
-    assert_eq!(commands.len(), 14, "the enum and this list have drifted");
+    assert_eq!(commands.len(), 15, "the enum and this list have drifted");
     for command in commands {
         let text = serde_json::to_string(&command).expect("a command writes");
         let read: Command = serde_json::from_str(&text).expect("and reads back");
@@ -182,6 +186,12 @@ fn a_command_that_names_nothing_is_a_no_op_and_the_checker_says_so() {
 fn each_edit_lands_and_the_document_round_trips() {
     let palette = palette();
     for command in every_command() {
+        // **`unset_recycle_field` is the one command the shipped document cannot show**: it states
+        // none of the tear's seven settings - that is what a silence *is* - so there is nothing for
+        // an unset to remove. The test below does it on a document that states one.
+        if matches!(command, Command::UnsetRecycleField { .. }) {
+            continue;
+        }
         let mut flowsheet = demo();
         apply(&mut flowsheet, &palette, &command).expect("the command takes effect");
         assert_ne!(flowsheet, demo(), "{command:?} changed nothing");
@@ -195,6 +205,45 @@ fn each_edit_lands_and_the_document_round_trips() {
             "{command:?}: writing is not a fixed point"
         );
     }
+}
+
+/// **`set` and `unset` are each other's inverse**, and the difference between an unstated setting
+/// and a stated one is the reason both exist: `[[recycles]]` writes only what it states, so a form
+/// that showed the class's defaults could not tell a declaration that *meant* this number from one
+/// that never mentioned it.
+#[test]
+fn a_recycle_field_can_be_returned_to_silence() {
+    let palette = palette();
+    let mut flowsheet = demo();
+    let field = |name: &str| Command::UnsetRecycleField {
+        stream: "recycle_1".into(),
+        field: name.into(),
+    };
+
+    // Unsetting what is already unstated changes nothing, which is the shell of the same fact.
+    let untouched = flowsheet.clone();
+    apply(&mut flowsheet, &palette, &field("max_iterations")).expect("it is a no-op");
+    assert_eq!(flowsheet, untouched);
+
+    // Stated, written, then unset - and it leaves the document rather than becoming a default.
+    flowsheet.recycles[0].max_iterations = Some(25);
+    let written = flowsheet.to_toml().expect("it writes");
+    assert!(written.contains("max_iterations = 25"), "{written}");
+    apply(&mut flowsheet, &palette, &field("max_iterations")).expect("it unsets");
+    assert_eq!(flowsheet.recycles[0].max_iterations, None);
+    let written = flowsheet.to_toml().expect("it writes");
+    assert!(
+        !written.contains("max_iterations"),
+        "an unset setting is absent from the document, not written as the default: {written}"
+    );
+
+    // Every one of the seven can be returned, and the name is checked as `set` checks it.
+    for name in azoth_process::middleware::command::RECYCLE_FIELDS {
+        apply(&mut flowsheet, &palette, &field(name)).expect("every setting unsets");
+    }
+    let error = apply(&mut flowsheet, &palette, &field("nope"))
+        .expect_err("a field the schema has no word for is refused");
+    assert!(error.to_string().contains("nope"), "{error}");
 }
 
 #[test]
@@ -464,6 +513,27 @@ fn the_acceleration_names_a_tool_offers_are_the_recycle_class_s_own() {
         set_recycle.input_schema["properties"]["value"]["oneOf"][0]["type"],
         "number"
     );
+}
+
+/// **The seven settings a tool offers are the command model's own list.** The same gate the
+/// acceleration names have, for the same reason: an `enum` in a schema is a copy of a list the
+/// moment nothing holds it to the list.
+#[test]
+fn the_recycle_fields_a_tool_offers_are_the_command_model_s_own() {
+    let tools = azoth_process::middleware::tools::tools(&palette());
+    for name in ["set_recycle", "unset_recycle_field"] {
+        let tool = tools
+            .iter()
+            .find(|tool| tool.name == name)
+            .unwrap_or_else(|| panic!("{name} is a tool"));
+        assert_eq!(
+            tool.input_schema["properties"]["field"]["enum"],
+            serde_json::json!(azoth_process::middleware::command::RECYCLE_FIELDS),
+            "{name}'s field enum"
+        );
+    }
+    // And the inverse exists, which is what a control that offers "the default" needs.
+    assert!(tools.iter().any(|tool| tool.name == "unset_recycle_field"));
 }
 
 /// **The agent's tools are the command model, not a surface beside it.** The names are read off
