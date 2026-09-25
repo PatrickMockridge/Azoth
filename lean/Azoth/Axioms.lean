@@ -23,6 +23,7 @@ import Azoth.Dim
 import Azoth.Vocabulary
 import Azoth.Rho
 import Azoth.Barb
+import Azoth.Process
 import Azoth.Capability
 import Azoth.Implicit
 import Azoth.Normalisation
@@ -82,3 +83,12 @@ import Azoth.Pow
 -- is stated on the page and not proved here; a page that said otherwise would be the
 -- failure this gate exists to catch.
 #print axioms Azoth.Implicit.hasFDerivAt_of_solution
+
+-- The process layer's adequacy claim, `docs/src/calculus/process.md`'s second claim. Its
+-- statement is settled by the design pass recorded in `Azoth/Process.lean`: with a barb that
+-- records a channel and not a magnitude, the claim's provable half is that the *declaration*
+-- determines the observable behaviour, and the witness below is what keeps that from being
+-- reflexivity in disguise.
+#print axioms Azoth.Process.barb_declaration
+#print axioms Azoth.Process.unit_op_is_extensional
+#print axioms Azoth.Process.swapped_declarations_are_congruent_not_equal

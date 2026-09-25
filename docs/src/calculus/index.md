@@ -30,12 +30,11 @@ Nine layers, each a page here and the Lean module it is stated against:
 | Reflection and feedback | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` ✅ | [Reflection and feedback](./rho.md) |
 | The keycard as a capability | authority a process holds rather than a global it reads | `Azoth/Capability.lean` ✅ | [The keycard as a capability](./capability.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (general barbs) | [Barbs](./barbs.md) |
-| Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (not written) | [Processes and channels](./process.md) |
+| Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (the extensionality claim) | [Processes and channels](./process.md) |
 
 Two further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
 `#print axioms` line for each general theorem, and the generated `Azoth/Gate.lean` the
-one per canonical unit. Ten modules in all, and `Azoth/Process.lean` is the only one a
-layer is waiting on.
+one per canonical unit. Eleven modules in all, and every layer the calculus states has one.
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
 Python, JSON Schema and Lean. It is specified separately, in
@@ -56,15 +55,16 @@ feedback](./rho.md) are complete, and [The keycard as a capability](./capability
 proved against the grant a caller holds and passes (`crates/azoth-eos/src/card.rs`).
 [The sensitivity of a solution](./implicit.md) is proved to first order.
 
-Two are not. [Barbs](./barbs.md) proves a barbed bisimulation to be an equivalence —
+Not all of them are. [Barbs](./barbs.md) proves a barbed bisimulation to be an equivalence —
 the general machinery, before the *dimensional* barb that would give those two claims
 something to be about, which is a later tranche — so they stay specifications.
-[Processes and channels](./process.md) is where the layer half-exists and
-nothing proves it: `azoth_process::channel` is the channel type, 29 unit operations
-declare ports against it, and `azoth_process::validate` holds a flowsheet to the
-calculus's rules — all of it in Rust, with no `Azoth/Process.lean` behind it, which is
-why that page's two claims stay specifications. A proof about a layer that does not
-exist is a proof about nothing.
+[Processes and channels](./process.md) states three claims and **one of them is proved**:
+`Azoth.Process.unit_op_is_extensional` is the adequacy claim, and it is proved at the level the
+layer supports. The other two — one about conservation following from linearity, one about a
+recycle having a fixed point — need something this development does not have, and the page
+says which: the first is a lemma about values crossing channels and a barb records a channel,
+and the second needs a metric to say what a contraction is. Naming what is missing is the
+point; a claim weakened into something provable would be a different claim.
 
 So each claim names its theorem and says which of three things it is:
 

@@ -59,9 +59,11 @@ outlets `c'₁ … c'ₙ`, with `n(c)` the molar-flow field of a channel:
 operations, each with typed channels carrying a polarity and a multiplicity, and
 `azoth_process::validate` holds a flowsheet to the discipline above in Rust — a `one` port
 consumed exactly once, a `many` port at least once, every feed and product used once, and
-every loop passing through a declared recycle. What does not exist is the theorem:
-`lean/Azoth/` has no `Process.lean`, so the balance is *checked* and not *proved*, and
-`Azoth.Process.balances_close_under_linearity` is for the tranche that states it.*
+every loop passing through a declared recycle. What is absent is the theorem, and
+`Azoth/Process.lean` states why: the balance is a lemma about *values* crossing channels, and
+this development's barbs record a channel rather than a magnitude. So the balance is *checked*
+and not *proved*, and `Azoth.Process.balances_close_under_linearity` stays for the layer that
+would carry values.
 
 The reason this belongs here rather than in a runtime check is that a balance
 asserted at runtime is a check that can be skipped, and a balance that follows from
@@ -80,13 +82,17 @@ the pure evaluation of `f`:
 U  ≅  f(x₁, …, xₘ)
 ```
 
-*Status: **specified**. The tier this claim is about half-exists: `crates/azoth-process`
-carries the channel types, the stream record, the palette loader and the checker,
-`specs/unit_ops/` declares 29 unit operations, and fourteen of them carry kernels. So the claim
-is no longer that there is nothing to check. It is that **nothing checks it**:
-`lean/Azoth/` has no `Process.lean`, and an implementation agreeing with a port declaration
-is exactly what this claim asserts and nothing tests.
-`Azoth.Process.unit_op_is_extensional` is for the tranche that proves it.*
+*Status: **proved**, as `Azoth.Process.unit_op_is_extensional` in
+[`Azoth/Process.lean`](https://github.com/PatrickMockridge/Azoth/blob/main/lean/Azoth/Process.lean).
+A port declaration encodes to a process, so the claim relates two such processes rather than a
+process and a value, and the three hypotheses land as three predicates: **`Declares P C`** is
+"only its declared channels", **`Inert P`** is "total, and no other interaction", and the
+theorem says two inert processes declaring the same channels are barbed-congruent. Two
+declarations of the same channels that are the *other way round* are congruent and **not
+equal**, which is what keeps the result from being `barbed_bisim_refl` in disguise — a proof
+whose two sides were definitionally equal would be true for free and would say nothing. The
+design pass that settled this is recorded at the head of that file, and what it could not
+state is set out below.*
 
 Three hypotheses, and each is doing work: *only its declared channels*, so `U`
 cannot read anything the caller did not supply; *total*, so it cannot fail on a
