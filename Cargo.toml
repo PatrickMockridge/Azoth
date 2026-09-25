@@ -54,6 +54,11 @@ csv = "1"
 # makes a card a typed document - a section the reader does not know is a field it
 # does not have, rather than a key it walked past.
 serde = { version = "1", features = ["derive"] }
+# A session's result as JSON, which is what a front-end and an agent both read. A real
+# encoder rather than `format!` for the reason the CSV comment above gives: escaping a
+# quote, a backslash or a control character by hand is a silent failure the day a component
+# name carries one, and JSON has no representation for a non-finite number at all.
+serde_json = "1"
 toml = "1"
 
 # The Python extension. abi3-py312 gives one wheel tag covering CPython

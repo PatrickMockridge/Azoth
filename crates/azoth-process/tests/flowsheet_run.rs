@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::ExecutionOrder;
+use azoth_process::executor::json::to_json;
 use azoth_process::executor::{STREAM_FIELDS, Session, run};
 use azoth_process::recycle::Acceleration;
 use azoth_process::{Flowsheet, Stream, load_palette};
@@ -473,4 +474,58 @@ fn an_unstated_recycle_parameter_is_not_written() {
     assert_eq!(settings.flow_tolerance, 1e-6);
     assert_eq!(settings.max_iterations, 42);
     assert_eq!(settings.acceleration, Acceleration::Wegstein);
+}
+
+/// **A session's result as JSON, which is the other half of the round trip.**
+///
+/// The gap table names it beside `toml::to_string`: the value goes out as a document a front-end
+/// or an agent reads. The shape is the port declaration's - `n`, `z`, `P`, `T`, `h`, each scalar as
+/// a magnitude and a unit - so a reader parses one field the same way whichever unit operation
+/// produced it.
+#[test]
+fn the_session_writes_a_json_report() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml")).expect("there");
+    let flowsheet = Flowsheet::from_toml(&text).expect("it parses");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+
+    let session = Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
+        .expect("the flowsheet runs");
+    let json = to_json(&session).expect("it writes");
+
+    let document: serde_json::Value = serde_json::from_str(&json).expect("it is valid JSON");
+    assert_eq!(document["flowsheet"], "flowsheets.demo");
+    assert_eq!(document["converged"], true);
+    assert_eq!(document["iterations"], 2);
+
+    // The record's own field names, and a magnitude carrying the unit it is in.
+    let outlet = &document["streams"]["p1.outlet"];
+    assert_eq!(outlet["n"]["unit"], "mol/s");
+    assert_eq!(outlet["P"]["unit"], "Pa");
+    assert_eq!(outlet["T"]["unit"], "K");
+    assert_eq!(outlet["h"]["unit"], "J/mol");
+    let stream = session.stream("p1.outlet").expect("addressable");
+    assert_eq!(outlet["n"]["magnitude_si"].as_f64(), Some(stream.n));
+    assert_eq!(outlet["T"]["magnitude_si"].as_f64(), Some(stream.t.value));
+    assert_eq!(
+        outlet["z"].as_array().map(Vec::len),
+        Some(stream.z.len()),
+        "the composition is an array, one entry per component"
+    );
+
+    // The tear, with its convergence rather than only its destination.
+    let tear = &document["tears"][0];
+    assert_eq!(tear["stream"], "recycle_1");
+    assert_eq!(tear["iterations"], 2);
+    assert_eq!(tear["solved"], true);
+    assert!(tear["residuals"]["flow"].is_number());
+
+    // Every path the session enumerates is a stream the document carries, so the two agree about
+    // what a front-end may point at.
+    for endpoint in session.report().streams.keys() {
+        assert!(
+            document["streams"].get(endpoint).is_some(),
+            "`{endpoint}` is addressable in the session and absent from the JSON"
+        );
+    }
 }
