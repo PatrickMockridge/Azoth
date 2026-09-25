@@ -15,7 +15,7 @@ through P12, and written here so it is gated on the roadmap rather than lost.
 
 | a front-end needs | exists |
 |---|---|
-| run a flowsheet | no executor — schema, checker and fourteen kernels (fourteen of the 29 palette entries) |
+| run a flowsheet | no executor — schema, checker and 26 kernels (26 of the 29 palette entries) |
 | a session holding named results | no solve state; the runtime `Stream` has no name and is not serialisable |
 | read *and* write a flowsheet | TOML read only; no `toml::to_string` |
 | a form per unit op (ports + parameters) | the spec exists; nothing turns it into a form |

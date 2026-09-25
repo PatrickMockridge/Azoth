@@ -380,8 +380,8 @@ complete rather than silent about them:
 unit-operation tier, which the specification puts at tranche P11, and the flowsheet executor
 at P12. It is founded on the process calculus — `crates/azoth-process` carries the channel
 types, the stream record, the palette loader and the checker, and `specs/unit_ops/` declares 29
-unit operations of which **fourteen carry kernels**. The rest are owed, with one exception that
-is stated rather than outstanding. **`unit_ops.simple_absorber` is refused on measured
+unit operations of which **26 carry kernels**. The three that do not each say why, and none of
+them is "out of scope". **`unit_ops.simple_absorber` is refused on measured
 evidence**: `SimpleAbsorber` is not the stage-wise absorber its ports describe but a fixed-point
 loop over MDEA/CO₂ loading whose `setNumberOfStages` writes a field its `run` never reads, and a
 faithful port needs the amine electrolyte chemistry P8 declined — `AmineSystem` and
@@ -398,12 +398,12 @@ nor refused. Both solves are in scope, the sequential-substitution core and
 Naphtali-Sandholm, and the oracle is differential because NeqSim carries no absolute reference
 numbers for a column.
 
-**P11's palette is closed except for two entries, and both are deferred with a measurement.**
-Seven of the nine kernels the column's unparking deferred have landed - `component_splitter`,
-`ejector`, `flare`, `gas_scrubber`, `stirred_tank_reactor`, `tank` and
+**P11's palette is closed except for one entry, and it is deferred with a measurement.** The
+nine kernels the column's unparking deferred have nearly all landed - `component_splitter`,
+`ejector`, `flare`, `gas_scrubber`, `plug_flow_reactor`, `stirred_tank_reactor`, `tank` and
 `three_phase_separator` - each a registered `process.*` id with a spec, two implementations, a
-NeqSim capture and a case set. What is left is `gibbs_reactor` and `plug_flow_reactor`, and
-their palette entries now carry why:
+NeqSim capture and a case set; so have the classes the column is the source of, beside the
+column itself. What is left is `gibbs_reactor`, and its palette entry carries why:
 
 - **`gibbs_reactor` is not the composition the P11 plan expected.** `GibbsReactor.run` does not
   call `ChemicalEquilibrium`, and the class is 3,163 lines carrying its own Lagrange-multiplier
@@ -411,12 +411,14 @@ their palette entries now carry why:
   database - `GibbsReactDatabase.csv`, vendored, whose rows carry element vectors *and*
   per-species Gibbs, enthalpy and entropy correlations that are not the databank's formation
   properties. A port composed from P10 would answer with different numbers than the class, so it
-  waits for a tier of its own.
-- **`plug_flow_reactor` needs an integrator, and the tree has none.** Its `run` is 1,261 lines
-  marching the molar flows with a catalyst bed's activity and bulk density, and it *adds* species
-  the feed does not carry. The stepper would be new numerical code, and the plan leaves the
-  choice open - a spec'd stepper of its own, or the kinetics path declared out and the isothermal
-  plug limit ported.
+  waits for a tier of its own. The measurement is recorded in the entry, and the solve's own
+  units are kJ/mol throughout, which is the first thing a port has to carry.
+
+**And one entry belongs to a tranche of its own rather than to this one.**
+`unit_ops.rate_based_packed_column` is a second physics - 4,081 lines of segment model with gas
+and liquid film coefficients and an interphase heat balance, no `src/main` caller - so it is
+carried by the distillation workstream that added it beside the column, and not by P11.
+`unit_ops.simple_absorber` stays refused, as above.
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.
@@ -430,11 +432,13 @@ all drive — is built after the port, not beside it. Its shape is
 [The middleware](docs/src/architecture/middleware.md), and the order it gates on is
 [the specification](docs/src/architecture/specification.md)'s, which states it once.
 
-What the P11/P12 kernels are waiting on is measured, and it is:
+**Nothing in this tier is waiting on a prerequisite, and the three that were are now cases.**
+The paragraph here used to name them: `pipe` waited on a density and a viscosity assembled from
+a `Mixture`, and `compressor`/`expander` waited on a molar-entropy field on the stream record.
+All three landed - `pipe` with the two-density formula its own capture pins, and the two
+isentropic machines on `Stream::entropy` - so what the paragraph recorded as a blocker is now
+three registered ids with oracles.
 
-- `pipe` waits on density and viscosity assembled from a `Mixture` — the P1 transport
-  models that read the collision and liquid-viscosity columns the manifest marks
-  `not-yet`. The databank fields it also needs (molar mass, critical volume, dipole)
-  are carried.
-- `compressor`/`expander` wait on the **molar-entropy field `s`** on the stream record;
-  the `entropy_at` helper already exists (`ps_flash`).
+The executor is the one thing left in the tier, and it needs no calculation this one owes:
+P12's work is ordering, a tear's fixed point, a session and a codec, each of them a use of
+machinery `crates/azoth-process` already carries.
