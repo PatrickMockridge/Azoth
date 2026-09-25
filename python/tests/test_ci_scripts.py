@@ -111,6 +111,79 @@ def test_a_link_with_an_anchor_resolves_on_its_file(tmp_path: Path) -> None:
     assert errors == []
 
 
+def version_checker() -> ModuleType:
+    """`tools/check_versions.py`, imported by name, for the reason `link_checker` is."""
+    sys.path.insert(0, str(TOOLS))
+    try:
+        return importlib.import_module("check_versions")
+    finally:
+        sys.path.pop(0)
+
+
+def _version_tree(tmp_path: Path, cargo: str, pyproject: str, crates: dict[str, str]) -> Path:
+    """A repository just large enough for the check to read: two manifests and some crates."""
+    (tmp_path / "Cargo.toml").write_text(cargo, encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+    for name, text in crates.items():
+        crate = tmp_path / "crates" / name
+        crate.mkdir(parents=True)
+        (crate / "Cargo.toml").write_text(text, encoding="utf-8")
+    return tmp_path
+
+
+CARGO = '[workspace]\n[workspace.package]\nversion = "0.1.0"\n'
+PYPROJECT = '[project]\nname = "azoth-engine"\nversion = "0.1.0"\n'
+TAKES_IT = '[package]\nname = "azoth-core"\nversion.workspace = true\n'
+
+
+def test_two_versions_that_agree_are_no_problems(tmp_path: Path) -> None:
+    root = _version_tree(tmp_path, CARGO, PYPROJECT, {"azoth-core": TAKES_IT})
+    assert version_checker().problems(root) == []
+
+
+def test_a_bumped_wheel_and_an_unbumped_binary_are_reported(tmp_path: Path) -> None:
+    """**The release this exists to stop**: a wheel published as one version whose own MCP server
+    reports another, with nothing in the build able to notice."""
+    root = _version_tree(
+        tmp_path,
+        CARGO,
+        '[project]\nname = "azoth-engine"\nversion = "0.2.0"\n',
+        {"azoth-core": TAKES_IT},
+    )
+    (problems,) = version_checker().problems(root)
+    assert "0.2.0" in problems and "0.1.0" in problems
+
+
+def test_a_crate_that_pins_its_own_version_is_reported(tmp_path: Path) -> None:
+    """The pair above cannot speak for a crate that states its own number, so it must not."""
+    root = _version_tree(
+        tmp_path,
+        CARGO,
+        PYPROJECT,
+        {"azoth-core": '[package]\nname = "azoth-core"\nversion = "0.1.0"\n'},
+    )
+    (problems,) = version_checker().problems(root)
+    assert "version.workspace = true" in problems
+
+
+def test_a_manifest_with_no_version_is_reported_rather_than_assumed(tmp_path: Path) -> None:
+    root = _version_tree(tmp_path, "[workspace]\n", PYPROJECT, {})
+    (problems,) = version_checker().problems(root)
+    assert "no `[workspace.package] version`" in problems
+
+
+def test_the_version_gate_passes_on_this_tree() -> None:
+    """The gate itself, run where it runs in CI."""
+    result = subprocess.run(
+        [sys.executable, str(TOOLS / "check_versions.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "OK" in result.stdout
+
+
 def test_the_link_checker_passes_on_this_tree() -> None:
     """The gate itself, run where it runs in CI."""
     result = subprocess.run(
