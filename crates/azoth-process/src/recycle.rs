@@ -23,6 +23,18 @@
 //! what the shipped `demo.toml` does, and it is why the NeqSim capture beside it records
 //! `recycle_iterations=1`.
 //!
+//! **The two accelerations are carried to different depths, and the difference is the class's own
+//! write-back.** `apply_composition` is the port of `applyStreamValues`, and what it writes is the
+//! **composition and nothing else** - so an acceleration can only move a composition, and a loop
+//! whose slow variable is a flow is not accelerated at all. Beyond that, the class writes through
+//! `Component.setx` on **both phases**, and a two-phase system does not read back what it was
+//! written (measured in `AccelerationProbe`: `[1.0, 0.0]` written, `[1.0, 0.4]` read). Wegstein's
+//! step is bounded - `q` is clamped to `[-5, 0]` - so that gap moves it by `1.9e-11` relative, and
+//! it is wired and held to the flowsheet capture. Broyden's step is unbounded, so the same gap
+//! moves it by two orders of magnitude, and the declaration is **refused** by
+//! `Recycle::unsupported_acceleration` rather than run. The arithmetic of both is transcribed and
+//! held to `captures/process_acceleration.tsv`, step by step.
+//!
 //! **What is not ported**: `runTransient`, the adaptive-acceleration ladder, and the
 //! `RecycleController`'s priority levels. The first is a transient role a steady-state flowsheet
 //! never takes; the second's auto-upgrade path is reached by `applyAutoAdaptiveAcceleration`, which
@@ -270,6 +282,52 @@ pub fn solved(
         && iterations > 1
 }
 
+/// `Recycle.extractStreamValues`: the tear's state as the acceleration vector sees it.
+///
+/// `[T, P, n_mol_per_s, x_0 … x_{n-1}]`. **The order is the class's and it is load-bearing**:
+/// `apply_composition` reads the fractions from index three, so a vector in another order would
+/// accelerate the temperature into the composition slot.
+#[must_use]
+pub fn extract(stream: &Stream) -> Vec<f64> {
+    let mut values = Vec::with_capacity(3 + stream.z.len());
+    values.push(stream.t.value);
+    values.push(stream.p.value);
+    values.push(stream.n);
+    values.extend_from_slice(&stream.z);
+    values
+}
+
+/// `Recycle.applyStreamValues`: write an accelerated vector back onto a stream.
+///
+/// **The composition is the only field that moves, and that is the class's own choice** - its
+/// comment beside the method says "T, P, and flow are handled elsewhere". So the acceleration can
+/// only accelerate a *composition*: a loop whose slow variable is a flow, a temperature or a
+/// pressure is not affected by it at all. That is a real limit rather than a tidying, and it is
+/// the reason this port can apply the class's acceleration faithfully and still show no
+/// difference on a flowsheet whose tear accumulates in its flow.
+///
+/// Fractions below zero are **clamped rather than refused**, and a vector whose fractions sum to
+/// at most `1e-15` is **skipped rather than normalised** - both the class's own guards, and both
+/// reachable from an accelerated step that overshoots past a physical composition.
+#[must_use]
+pub fn apply_composition(stream: &Stream, values: &[f64]) -> Stream {
+    let mut stream = stream.clone();
+    let components = stream.z.len();
+    if values.len() < 3 + components {
+        return stream;
+    }
+
+    let fractions: Vec<f64> = values[3..3 + components]
+        .iter()
+        .map(|fraction| fraction.max(0.0))
+        .collect();
+    let sum: f64 = fractions.iter().sum();
+    if sum > 1e-15 {
+        stream.z = fractions.iter().map(|fraction| fraction / sum).collect();
+    }
+    stream
+}
+
 /// **Wegstein's acceleration**, per variable.
 ///
 /// `x_{n+1} = q g(x_n) + (1 - q) x_n` with `q = s / (s - 1)` from the secant slope
@@ -295,32 +353,237 @@ pub fn wegstein(
     previous_output: Option<&[f64]>,
     q_min: f64,
     q_max: f64,
-) -> Vec<f64> {
+) -> WegsteinStep {
+    let identity = |output: &[f64]| WegsteinStep {
+        values: output.to_vec(),
+        q_factors: vec![0.0; output.len()],
+    };
+
     let (Some(previous_input), Some(previous_output)) = (previous_input, previous_output) else {
-        return output.to_vec();
+        return identity(output);
     };
     if previous_input.len() != input.len() || previous_output.len() != output.len() {
-        return output.to_vec();
+        return identity(output);
     }
 
-    (0..input.len())
-        .map(|i| {
-            let delta_input = input[i] - previous_input[i];
-            let delta_output = output[i] - previous_output[i];
-            let slope = if delta_input.abs() > 1e-15 {
-                delta_output / delta_input
-            } else {
-                0.0
-            };
-            let q = if (slope - 1.0).abs() > 1e-10 {
-                slope / (slope - 1.0)
-            } else {
-                q_min
-            };
-            let q = q.clamp(q_min, q_max);
-            q * output[i] + (1.0 - q) * input[i]
-        })
-        .collect()
+    let mut values = Vec::with_capacity(input.len());
+    let mut q_factors = Vec::with_capacity(input.len());
+    for i in 0..input.len() {
+        let delta_input = input[i] - previous_input[i];
+        let delta_output = output[i] - previous_output[i];
+        let slope = if delta_input.abs() > 1e-15 {
+            delta_output / delta_input
+        } else {
+            0.0
+        };
+        let q = if (slope - 1.0).abs() > 1e-10 {
+            slope / (slope - 1.0)
+        } else {
+            q_min
+        };
+        let q = q.clamp(q_min, q_max);
+        q_factors.push(q);
+        values.push(q * output[i] + (1.0 - q) * input[i]);
+    }
+    WegsteinStep { values, q_factors }
+}
+
+/// What one Wegstein call answers: the step, and the `q` it took.
+///
+/// **The `q` factors are published because the class publishes them** (`getWegsteinQFactors`),
+/// and because they are the only thing that makes the method checkable step by step: the step
+/// itself is one arithmetic expression, while the `q` it used records *which* slope produced it -
+/// so a port that took the branch one call early, or clamped at the wrong place, shows up in the
+/// factors rather than in a value that merely looks reasonable.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WegsteinStep {
+    /// `q * g + (1 - q) * x`, per variable.
+    pub values: Vec<f64>,
+    /// `wegsteinQFactors` after the call: all zeros on the identity path.
+    pub q_factors: Vec<f64>,
+}
+
+/// `BroydenAccelerator`: Broyden's "good" method on the fixed-point residual.
+///
+/// **The inverse Jacobian is the state, and it is carried across passes.** Broyden's method
+/// approximates the Jacobian of the fixed-point map and applies rank-one corrections from the
+/// secant condition, which avoids recomputing derivatives while still giving Newton-like steps -
+/// and because the correction is applied to the *inverse*, each step is a matrix-vector product
+/// rather than a solve.
+///
+/// **The delay is inside the accelerator and not at the call site**, unlike Wegstein's. The first
+/// two calls return the map's own output and store the pair, which is what seeds the secant; the
+/// first real step is the third call. The class's comment says the initial `-I` "corresponds to
+/// assuming J ≈ -I initially (typical for convergent iterations)", which is exactly what makes
+/// the first step a direct substitution.
+///
+/// **The three guards are the class's and none is tidied**: a `delta_x` whose norm is at or below
+/// `1e-15` skips the update rather than dividing by it; a Sherman-Morrison denominator below it
+/// skips it too; and a step longer than `max_step_size` is scaled down rather than refused.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BroydenAccelerator {
+    /// The inverse-Jacobian approximation, `-I` until the first update.
+    inverse_jacobian: Vec<Vec<f64>>,
+    /// The input vector of the previous call, and its residual `g(x) - x`.
+    previous: Option<(Vec<f64>, Vec<f64>)>,
+    /// Calls made, which is what the delay counts.
+    iteration_count: u32,
+    /// `delayIterations`: calls that substitute directly before the first step.
+    pub delay_iterations: u32,
+    /// `relaxationFactor`, applied to the Newton step.
+    pub relaxation_factor: f64,
+    /// `maxStepSize`, the ceiling on the step's length.
+    pub max_step_size: f64,
+}
+
+impl Default for BroydenAccelerator {
+    fn default() -> Self {
+        Self {
+            inverse_jacobian: Vec::new(),
+            previous: None,
+            iteration_count: 0,
+            delay_iterations: 2,
+            relaxation_factor: 1.0,
+            max_step_size: f64::MAX,
+        }
+    }
+}
+
+/// The smallest `delta_x` norm and Sherman-Morrison denominator the update survives.
+const BROYDEN_EPSILON: f64 = 1e-15;
+
+impl BroydenAccelerator {
+    /// A fresh accelerator, its dimension unknown until the first call.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// How many calls have been made, which the delay is measured in.
+    #[must_use]
+    pub fn iteration_count(&self) -> u32 {
+        self.iteration_count
+    }
+
+    /// The fixed-point function's output, or an accelerated next iterate.
+    ///
+    /// `current_x` is the previous pass's published vector and `function_output` is `g(x)` for
+    /// it. The returned vector is what the class then writes onto the tear's composition.
+    pub fn accelerate(&mut self, current_x: &[f64], function_output: &[f64]) -> Vec<f64> {
+        let n = current_x.len();
+
+        // `initialize(n)` when the dimension changes, which the class reaches on the first call
+        // because it creates the accelerator with dimension zero.
+        if self.inverse_jacobian.len() != n {
+            self.inverse_jacobian = vec![vec![0.0; n]; n];
+            for (i, row) in self.inverse_jacobian.iter_mut().enumerate() {
+                row[i] = -1.0;
+            }
+            self.previous = None;
+            self.iteration_count = 0;
+        }
+
+        self.iteration_count += 1;
+
+        // `f(x) = g(x) - x`, the residual the secant condition is written on.
+        let current_f: Vec<f64> = function_output
+            .iter()
+            .zip(current_x)
+            .map(|(output, x)| output - x)
+            .collect();
+
+        // The delay: substitute directly and keep the pair for the next call's slope.
+        if self.iteration_count <= self.delay_iterations || self.previous.is_none() {
+            self.previous = Some((current_x.to_vec(), current_f));
+            return function_output.to_vec();
+        }
+
+        let (previous_x, previous_f) = self.previous.as_ref().expect("the delay period set it");
+        let delta_x: Vec<f64> = current_x
+            .iter()
+            .zip(previous_x)
+            .map(|(now, before)| now - before)
+            .collect();
+        let delta_f: Vec<f64> = current_f
+            .iter()
+            .zip(previous_f)
+            .map(|(now, before)| now - before)
+            .collect();
+
+        if norm(&delta_x) > BROYDEN_EPSILON {
+            self.update_inverse_jacobian(&delta_x, &delta_f);
+        }
+
+        // The Newton step, `-B^-1 f`. **The sign is in the matrix**: the matrix-vector product is
+        // taken as-is and added, because the inverse starts at `-I` and the update preserves the
+        // negation.
+        let mut step: Vec<f64> = multiply(&self.inverse_jacobian, &current_f)
+            .iter()
+            .map(|entry| entry * self.relaxation_factor)
+            .collect();
+
+        let step_norm = norm(&step);
+        if step_norm > self.max_step_size {
+            let scale = self.max_step_size / step_norm;
+            for entry in &mut step {
+                *entry *= scale;
+            }
+        }
+
+        self.previous = Some((current_x.to_vec(), current_f));
+        current_x
+            .iter()
+            .zip(&step)
+            .map(|(x, step)| x + step)
+            .collect()
+    }
+
+    /// Broyden's "good" method, through Sherman-Morrison.
+    fn update_inverse_jacobian(&mut self, delta_x: &[f64], delta_f: &[f64]) {
+        let n = self.inverse_jacobian.len();
+        let binv_delta_f = multiply(&self.inverse_jacobian, delta_f);
+        let denominator = dot(delta_x, &binv_delta_f);
+        if denominator.abs() < BROYDEN_EPSILON {
+            return;
+        }
+
+        let numerator: Vec<f64> = delta_x
+            .iter()
+            .zip(&binv_delta_f)
+            .map(|(x, binv)| x - binv)
+            .collect();
+
+        let mut delta_x_transpose_binv = vec![0.0; n];
+        for (j, entry) in delta_x_transpose_binv.iter_mut().enumerate() {
+            for (i, x) in delta_x.iter().enumerate() {
+                *entry += x * self.inverse_jacobian[i][j];
+            }
+        }
+
+        for (i, row) in self.inverse_jacobian.iter_mut().enumerate() {
+            for (j, entry) in row.iter_mut().enumerate() {
+                *entry += numerator[i] * delta_x_transpose_binv[j] / denominator;
+            }
+        }
+    }
+}
+
+/// A matrix times a vector.
+fn multiply(matrix: &[Vec<f64>], vector: &[f64]) -> Vec<f64> {
+    matrix
+        .iter()
+        .map(|row| dot(row, vector))
+        .collect::<Vec<f64>>()
+}
+
+/// A dot product.
+fn dot(a: &[f64], b: &[f64]) -> f64 {
+    a.iter().zip(b).map(|(a, b)| a * b).sum()
+}
+
+/// The Euclidean norm.
+fn norm(v: &[f64]) -> f64 {
+    dot(v, v).sqrt()
 }
 
 #[cfg(test)]
@@ -380,26 +643,37 @@ mod tests {
     fn wegstein_clamps_the_q_factor_and_survives_its_own_edges() {
         // A slope of one is the diverging case: q takes the floor, not infinity.
         let one = wegstein(&[0.0], &[1.0], Some(&[-1.0]), Some(&[0.0]), -5.0, 0.0);
-        assert_eq!(one, vec![-5.0 * 1.0 + 6.0 * 0.0]);
+        assert_eq!(one.q_factors, vec![-5.0]);
+        assert_eq!(one.values, vec![-5.0 * 1.0 + 6.0 * 0.0]);
 
-        // No previous values is the identity, which is direct substitution.
-        assert_eq!(
-            wegstein(&[1.0, 2.0], &[3.0, 4.0], None, None, -5.0, 0.0),
-            vec![3.0, 4.0]
-        );
+        // No previous values is the identity, which is direct substitution - and the q factors
+        // are all zeros, which is the array the class's own comment calls "direct substitution".
+        let first = wegstein(&[1.0, 2.0], &[3.0, 4.0], None, None, -5.0, 0.0);
+        assert_eq!(first.values, vec![3.0, 4.0]);
+        assert_eq!(first.q_factors, vec![0.0, 0.0]);
 
         // **A slope of zero gives q = 0, and at q = 0 the formula returns the *input*.**
         // `x = q*g + (1-q)*x` is `x` there, so a flat secant stalls rather than substituting - it
         // is not the "all zeros = direct substitution" the class's own comment beside
         // `wegsteinQFactors` claims, and that comment is about the arrays and not the formula.
         let flat = wegstein(&[1.0], &[2.0], Some(&[0.0]), Some(&[2.0]), -5.0, 0.0);
-        assert_eq!(flat, vec![1.0], "q = 0 does not move");
+        assert_eq!(flat.values, vec![1.0], "q = 0 does not move");
+        assert_eq!(flat.q_factors, vec![0.0]);
 
         // And the clamp: a slope of 0.5 gives q = 0.5/(0.5 - 1) = -1, which is inside the
         // bounds, so the step is `q*g + (1-q)*x` = `-1.5 + 2.0` = `0.5` - a point the original
         // never visited, which is what acceleration is for.
         let half = wegstein(&[1.0], &[1.5], Some(&[0.0]), Some(&[1.0]), -5.0, 0.0);
-        assert!((half[0] - 0.5).abs() < 1e-12, "got {}", half[0]);
+        assert!(
+            (half.values[0] - 0.5).abs() < 1e-12,
+            "got {}",
+            half.values[0]
+        );
+        assert!(
+            (half.q_factors[0] + 1.0).abs() < 1e-12,
+            "got {}",
+            half.q_factors[0]
+        );
     }
 
     /// The percentage form of the temperature and pressure residuals, and the mixed unit of the

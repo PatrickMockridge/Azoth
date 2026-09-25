@@ -714,3 +714,113 @@ fn a_supplied_feed_replaces_the_documents_and_a_stranger_is_refused() {
     .expect_err("it refuses");
     assert!(error.to_string().contains("feed_9"), "{error}");
 }
+
+/// **A declared acceleration means something now, in both directions.**
+///
+/// `demo.toml`'s tear carries nothing at 320 K, so the low-flow cutoff switches it off on the
+/// first pass - and a tear that is not evaluated cannot be accelerated, whatever is named. So the
+/// shipped document is unchanged by `wegstein`, and `broyden` is **refused** rather than accepted
+/// and ignored, which is what it used to be.
+///
+/// The two halves are measured in `captures/process_flowsheet_accelerated.tsv`, where the same
+/// graph with the heater at 250 K is run at a tolerance the loop does not close at: direct
+/// substitution and Wegstein both run the full hundred passes and do not converge, and NeqSim's
+/// Broyden does too. azoth's Wegstein lands `1.9e-11` relative from NeqSim's on that row, which is
+/// the band this holds; Broyden is refused because the same write-back gap moves *it* by two
+/// orders of magnitude, which is the finding its refusal names.
+#[test]
+fn a_declared_acceleration_is_either_carried_or_refused() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+
+    let condensing = |method: Option<&str>, tolerance: Option<f64>| {
+        let mut flowsheet = Flowsheet::from_toml(&text).expect("it parses");
+        flowsheet.recycles[0].acceleration_method = method.map(str::to_string);
+        flowsheet.recycles[0].flow_tolerance = tolerance;
+        // A tolerance only reaches a tear that is evaluated, and the shipped state's is not: the
+        // cutoff switches it off at any tolerance - measured, the shipped document at `1e-8` still
+        // stops at two passes. So the tight half needs the condensing graph.
+        if tolerance.is_some() {
+            flowsheet
+                .instances
+                .iter_mut()
+                .find(|instance| instance.id == "hx1")
+                .expect("the heater is declared")
+                .parameters
+                .insert("outlet_temperature".to_string(), toml::Value::Float(250.0));
+        }
+        flowsheet
+    };
+
+    // The shipped document: unchanged by Wegstein, because its tear is never evaluated.
+    let direct = run(
+        &condensing(None, None),
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+    let wegstein = run(
+        &condensing(Some("wegstein"), None),
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+    assert_eq!(wegstein.iterations, direct.iterations);
+    for (endpoint, stream) in &direct.streams {
+        assert_eq!(wegstein.streams[endpoint].z, stream.z, "`{endpoint}`");
+    }
+
+    // And Broyden is refused where it is declared, with the measurement in the message.
+    let error = run(
+        &condensing(Some("broyden"), None),
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect_err("a declared `broyden` is refused");
+    let message = error.to_string();
+    assert!(message.contains("broyden"), "{message}");
+    assert!(
+        message.contains("setx"),
+        "the reason names the write-back: {message}"
+    );
+
+    // **Wegstein at a tolerance the loop never closes at, against NeqSim's own row.** This is the
+    // one place the acceleration is observable at all: the tear is live for all hundred passes,
+    // so the step is applied ninety-eight times and the state it ends on is the class's to
+    // `1.9e-11` relative.
+    let capture = std::fs::read_to_string(
+        root().join("validation/neqsim/captures/process_flowsheet_accelerated.tsv"),
+    )
+    .expect("the accelerated capture is there");
+    let row = capture_row(&capture, "demo_condensing_wegstein");
+    let session = run(
+        &condensing(Some("wegstein"), Some(1e-8)),
+        &palette,
+        &BTreeMap::new(),
+        ExecutionOrder::Insertion,
+    )
+    .expect("the flowsheet runs");
+    assert_eq!(
+        session.iterations,
+        number(&row, "recycle_iterations") as u32,
+        "both run the full hundred passes and neither converges"
+    );
+    assert!(
+        !session.converged,
+        "NeqSim's own row reads `recycle_solved=false`"
+    );
+    let liquid = session
+        .streams
+        .get("sep1.liquid")
+        .expect("the separator produced one");
+    let expected = number(&row, "sep1_liquid_n");
+    assert!(
+        (liquid.n - expected).abs() / expected < 1e-10,
+        "the recycled liquid is {} against NeqSim's {expected}",
+        liquid.n
+    );
+}

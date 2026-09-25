@@ -481,8 +481,23 @@ unit, so the extra pass the outer loop still insists on does not advance the tea
 That is why the capture beside this reads `recycle_iterations=1` for the shipped document while
 the loop around it runs twice, and the port now reproduces both numbers.
 
+**The tear's acceleration is carried, and it used to be a silent no-op.**
+`[[recycles]]`'s `acceleration_method` was accepted, validated and then ignored - and the port
+already had Wegstein's arithmetic in `azoth_process::recycle`, ported and tested with no caller.
+Wegstein is now wired where `Recycle.run` applies it, held to `captures/process_flowsheet_accelerated.tsv`
+at `1.9e-11` relative, and both methods' arithmetic is held step by step to
+`captures/process_acceleration.tsv` - which is where each one's delay boundary and Wegstein's `q`
+factors are visible. **Broyden is refused by name**, and the reason is measured rather than
+conservative: the class writes its accelerated composition through `Component.setx` on both
+phases, a two-phase system does not read back what it was written, and on the condensing graph at
+a tolerance the loop never closes at, NeqSim runs all hundred passes at `8.6243` mol/s where the
+transcribed step reports convergence after eighteen at `0.0833`. That capture also records the
+class's Broyden step taking the wrong sign against its own comment - `dx = -B^{-1} f` written,
+`+B^{-1} f` computed - which walks away from a fixed point one Newton step would reach.
+
 **What is named as not built, with the class that would close each**: Broyden through
-`BroydenAccelerator`; the `many` outlet a connection cannot address one of, which is why a splitter
-cannot be wired; and the checker rule that would have caught `demo.toml` shipping with a required
-parameter unsupplied. The tier's own acceptance is the NeqSim capture beside it: an executor
-whose convergence is only checked against its own arithmetic is an executor nobody has measured.
+`BroydenAccelerator`, for the measured reason above; the `many` outlet a connection cannot address
+one of, which is why a splitter cannot be wired; and the checker rule that would have caught
+`demo.toml` shipping with a required parameter unsupplied. The tier's own acceptance is the NeqSim
+capture beside it: an executor whose convergence is only checked against its own arithmetic is an
+executor nobody has measured.

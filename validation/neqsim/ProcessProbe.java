@@ -63,8 +63,11 @@
 //       > captures/process_gibbs_reactor_steps.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe flowsheet \
 //       > captures/process_flowsheet.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe flowsheet_accelerated \
+//       > captures/process_flowsheet_accelerated.tsv
 
 import neqsim.process.equipment.stream.Stream;
+import neqsim.process.equipment.util.AccelerationMethod;
 import neqsim.process.equipment.stream.StreamInterface;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemPrEos;
@@ -144,6 +147,9 @@ public class ProcessProbe {
         break;
       case "flowsheet":
         flowsheetRows();
+        break;
+      case "flowsheet_accelerated":
+        flowsheetAcceleratedRows();
         break;
       case "column":
         columnRows();
@@ -2853,7 +2859,27 @@ public class ProcessProbe {
     flowsheetRow("demo_condensing", 250.0);
   }
 
+  /**
+   * The same graph with each acceleration method, at a tolerance the loop does not close at.
+   *
+   * **This row exists because the acceleration changes the answer, and that had to be measured
+   * rather than assumed.** At 250 K the heated feed condenses and the tear carries material, and
+   * with `flowTolerance` at `1e-8` direct substitution never closes - the recycled liquid has no
+   * exit and grows by a fixed amount every pass. Broyden *does* close it, at a state with a
+   * hundredfold smaller liquid, which is either the class's answer or a defect in it.
+   */
+  static void flowsheetAcceleratedRows() {
+    flowsheetRow("demo_condensing_direct", 250.0, null, 0.0);
+    flowsheetRow("demo_condensing_wegstein", 250.0, AccelerationMethod.WEGSTEIN, 1e-8);
+    flowsheetRow("demo_condensing_broyden", 250.0, AccelerationMethod.BROYDEN, 1e-8);
+  }
+
   static void flowsheetRow(String label, double heaterK) {
+    flowsheetRow(label, heaterK, null, 0.0);
+  }
+
+  static void flowsheetRow(String label, double heaterK, AccelerationMethod acceleration,
+      double flowTolerance) {
     String[] names = new String[] { "methane", "n-butane" };
     double[] z = new double[] { 0.9, 0.1 };
 
@@ -2910,6 +2936,12 @@ public class ProcessProbe {
     // (`ProcessSystem.java:273`), so `run(id)` takes `runOptimized` and the legacy sequential path
     // is reached only with this flag off - which is the path azoth's executor is a port of, and so
     // the one an oracle for it has to drive.
+    if (acceleration != null) {
+      recycle1.setAccelerationMethod(acceleration);
+    }
+    if (flowTolerance > 0.0) {
+      recycle1.setFlowTolerance(flowTolerance);
+    }
     operations.setUseOptimizedExecution(false);
     operations.run();
 
@@ -2928,6 +2960,7 @@ public class ProcessProbe {
     // advance `getIterations()`. Without this line the `demo` row's `recycle_iterations=1` reads
     // as a loop that stopped early rather than one that was switched off.
     System.out.println("recycle_iterations=" + recycle1.getIterations());
+    System.out.println("recycle_active=" + recycle1.isActive());
     System.out.println("recycle_active=" + recycle1.isActive());
     System.out.println("recycle_solved=" + recycle1.solved());
     System.out.println("recycle_error_flow=" + recycle1.getErrorFlow());

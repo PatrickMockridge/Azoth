@@ -13,7 +13,9 @@
 //! * `order` - the execution order, which is `getTopologicalOrder()` when
 //!   `useGraphBasedExecution` and insertion order otherwise.
 //! * `recycle` - the tear's fixed point: `Recycle`'s four tolerances, its `solved()` and its
-//!   three acceleration methods, driven by the outer loop's hundred iterations.
+//!   acceleration methods, driven by the outer loop's hundred iterations. **Two of the three are
+//!   carried** - direct substitution and Wegstein - and Broyden is refused by name, for a reason
+//!   [`crate::flowsheet::Recycle::unsupported_acceleration`] states and a capture measures.
 //! * `session` - the named results a widget and an agent both point at.
 //!
 //! **A recycle stays a declared tear** (`[[recycles]]` in the flowsheet), which is the calculus's

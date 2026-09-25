@@ -42,7 +42,11 @@ use crate::channel::{Direction, Multiplicity};
 use crate::executor::dispatch::{Parameters, dispatch};
 use crate::flowsheet::Flowsheet;
 use crate::order::{ExecutionOrder, execution_order};
-use crate::recycle::{RecycleSettings, Residuals, mass_flow_kg_per_hr, residuals, solved};
+use crate::recycle::{
+    Acceleration, BroydenAccelerator, RecycleSettings, Residuals, WEGSTEIN_DELAY_ITERATIONS,
+    WEGSTEIN_Q_MAX, WEGSTEIN_Q_MIN, apply_composition, extract, mass_flow_kg_per_hr, residuals,
+    solved, wegstein,
+};
 use crate::stream::Stream;
 use crate::unit_op::UnitOpSpec;
 
@@ -86,6 +90,66 @@ pub struct RunReport {
     pub tears: Vec<TearRecord>,
     /// Every stream the run produced, keyed by the endpoint that produced it.
     pub streams: BTreeMap<String, Stream>,
+}
+
+/// The acceleration's own state, carried across a run's passes.
+///
+/// **Wegstein stores a pair and Broyden stores a matrix**, and both are per tear: two tears in one
+/// flowsheet accelerate independently, which is what the class gives each `Recycle` object of its
+/// own. Which of the three methods runs is the declaration's, and `DirectSubstitution` uses
+/// neither field.
+#[derive(Debug, Clone)]
+struct AccelerationState {
+    broyden: BroydenAccelerator,
+    previous_input: Option<Vec<f64>>,
+    previous_output: Option<Vec<f64>>,
+}
+
+/// `Recycle.run`'s acceleration branch: the class's own methods, order and delays.
+///
+/// **It runs after the flash and before the residuals, and it writes onto the stream being
+/// published** - so the residuals are measured against the accelerated state and not the flashed
+/// one. That is the class's order, and it is why the step is visible at all.
+///
+/// **The two delays are in different places, and both are the class's.** Wegstein's is its own
+/// field (`wegsteinDelayIterations = 2`), so the branch is taken from the third pass - and
+/// `applyWegsteinAcceleration`'s `previousInputValues == null` then makes that third pass the
+/// *identity* that seeds the secant, which puts the first real step on the fourth. Broyden has no
+/// delay here at all; its delay is inside the accelerator, where the same two calls substitute
+/// directly. Same first step, reached by a different route.
+fn accelerate(
+    state: &mut AccelerationState,
+    settings: &RecycleSettings,
+    iterations: u32,
+    previous: &Stream,
+    current: &Stream,
+) -> Stream {
+    match settings.acceleration {
+        Acceleration::DirectSubstitution => current.clone(),
+        Acceleration::Wegstein if iterations > WEGSTEIN_DELAY_ITERATIONS => {
+            let input = extract(previous);
+            let output = extract(current);
+            let step = wegstein(
+                &input,
+                &output,
+                state.previous_input.as_deref(),
+                state.previous_output.as_deref(),
+                WEGSTEIN_Q_MIN,
+                WEGSTEIN_Q_MAX,
+            );
+            state.previous_input = Some(input);
+            state.previous_output = Some(output);
+            apply_composition(current, &step.values)
+        }
+        // A pass inside Wegstein's delay.
+        Acceleration::Wegstein => current.clone(),
+        Acceleration::Broyden => {
+            let accelerated = state
+                .broyden
+                .accelerate(&extract(previous), &extract(current));
+            apply_composition(current, &accelerated)
+        }
+    }
 }
 
 /// The boundary inlets: the document's own record, with the caller's overriding by name.
@@ -141,6 +205,14 @@ pub fn run(
 ) -> Result<RunReport> {
     let sequence = execution_order(flowsheet, order)?;
     let boundary = boundary(flowsheet, feeds)?;
+    // **A declaration the port does not carry stops the run rather than being ignored.** That is
+    // the whole of this branch's history: `acceleration_method` was accepted and did nothing, and
+    // the refusal below is what makes the accepted names mean something.
+    for recycle in &flowsheet.recycles {
+        if let Some(error) = recycle.unsupported_acceleration() {
+            return Err(error);
+        }
+    }
     let settings: Vec<RecycleSettings> = flowsheet
         .recycles
         .iter()
@@ -156,6 +228,18 @@ pub fn run(
             residuals: None,
             solved: false,
             active: true,
+        })
+        .collect();
+
+    // One state per declared tear, in declaration order - the class gives each `Recycle` object
+    // its own, so two loops in one flowsheet do not share an accelerator.
+    let mut acceleration: Vec<AccelerationState> = flowsheet
+        .recycles
+        .iter()
+        .map(|_| AccelerationState {
+            broyden: BroydenAccelerator::new(),
+            previous_input: None,
+            previous_output: None,
         })
         .collect();
 
@@ -243,6 +327,9 @@ pub fn run(
                 continue;
             }
 
+            // What this pass publishes: the flashed stream, or the accelerated one where the
+            // declaration asks for it. `None` means the first pass, which publishes the flash.
+            let mut published = None;
             match previous {
                 None => {
                     // The first pass has nothing to compare against, which is the class's own
@@ -250,7 +337,17 @@ pub fn run(
                     record.solved = false;
                 }
                 Some(previous) => {
-                    let measured = residuals(current, previous)?;
+                    // **The class accelerates the stream it is about to publish**, between the
+                    // flash and the residuals - so both the answer and the convergence test see
+                    // the accelerated state rather than the flashed one.
+                    let accelerated = accelerate(
+                        &mut acceleration[slot],
+                        &settings[slot],
+                        pass,
+                        previous,
+                        current,
+                    );
+                    let measured = residuals(&accelerated, previous)?;
                     let previous_kg = mass_flow_kg_per_hr(previous)?;
                     let is_solved = solved(
                         &measured,
@@ -263,9 +360,13 @@ pub fn run(
                     record.residuals = Some(measured);
                     record.solved = is_solved;
                     all_solved &= is_solved;
+                    published = Some(accelerated);
                 }
             }
-            tears.insert(recycle.stream.clone(), current.clone());
+            tears.insert(
+                recycle.stream.clone(),
+                published.unwrap_or_else(|| current.clone()),
+            );
         }
 
         // **The class's own exit condition.** Every tear solved, and a flowsheet with a recycle
@@ -572,3 +673,120 @@ impl Session {
 /// **The declaration's own names, not a spelling of this module's**: a palette port writes `n`,
 /// `z`, `P`, `T`, `h`, so a path is `p1.outlet.P` and not `p1.outlet.pressure`.
 pub const STREAM_FIELDS: [&str; 5] = ["n", "z", "P", "T", "h"];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use azoth_core::units::{kelvins, pascals};
+
+    fn stream(methane: f64) -> Stream {
+        Stream::from_pt(
+            vec!["methane".to_string(), "n-butane".to_string()],
+            vec![methane, 1.0 - methane],
+            1.0,
+            pascals(5.0e5),
+            kelvins(300.0),
+        )
+        .expect("the two resolve")
+    }
+
+    fn settings(acceleration: Acceleration) -> RecycleSettings {
+        RecycleSettings {
+            acceleration,
+            ..RecycleSettings::default()
+        }
+    }
+
+    /// **The delays are the class's, and they are in two different places.**
+    ///
+    /// Wegstein's is a `Recycle` field, so its branch is not taken until the third pass - and the
+    /// method's own missing previous pair then makes that third pass the identity that seeds the
+    /// secant. Broyden's is inside the accelerator, so its branch is taken from the *second* pass
+    /// but the accelerator substitutes directly for its first two calls. **Both put the first real
+    /// step on the fourth pass**, which is the number this asserts.
+    ///
+    /// The loop starts at the second pass because that is where the session's does: a first pass
+    /// has no published tear to compare against, so `accelerate` is not reached at all - and a
+    /// test that called it there would be measuring a call the run never makes.
+    #[test]
+    fn both_accelerations_step_for_the_first_time_on_the_fourth_pass() {
+        for acceleration in [Acceleration::Wegstein, Acceleration::Broyden] {
+            let mut state = AccelerationState {
+                broyden: BroydenAccelerator::new(),
+                previous_input: None,
+                previous_output: None,
+            };
+            let settings = settings(acceleration);
+            let mut published = stream(0.9);
+            for pass in 2..=5 {
+                let current = stream(0.9 - 0.1 * f64::from(pass));
+                let accelerated = accelerate(&mut state, &settings, pass, &published, &current);
+                if pass < 4 {
+                    assert_eq!(
+                        accelerated.z, current.z,
+                        "{acceleration:?} stepped on pass {pass}, which its delay forbids"
+                    );
+                } else {
+                    assert_ne!(
+                        accelerated.z, current.z,
+                        "{acceleration:?} did not step on pass {pass}"
+                    );
+                }
+                published = accelerated;
+            }
+        }
+    }
+
+    /// **The composition is the only field that moves**, which is `applyStreamValues`' own choice
+    /// and the reason an acceleration is invisible on a loop that accumulates in its flow.
+    #[test]
+    fn an_accelerated_step_leaves_everything_but_the_composition_alone() {
+        let mut state = AccelerationState {
+            broyden: BroydenAccelerator::new(),
+            previous_input: None,
+            previous_output: None,
+        };
+        let settings = settings(Acceleration::Broyden);
+        let mut published = stream(0.9);
+        let mut current = stream(0.9);
+        for pass in 2..=4 {
+            current = stream(0.9 - 0.1 * f64::from(pass));
+            published = accelerate(&mut state, &settings, pass, &published, &current);
+        }
+        let accelerated = accelerate(&mut state, &settings, 5, &published, &current);
+
+        assert_eq!(accelerated.n, current.n, "the flow is the flash's");
+        assert_eq!(
+            accelerated.p.value, current.p.value,
+            "the pressure is the flash's"
+        );
+        assert_eq!(
+            accelerated.t.value, current.t.value,
+            "the temperature is the flash's"
+        );
+        assert_eq!(
+            accelerated.h.value, current.h.value,
+            "the enthalpy is the flash's"
+        );
+        assert_ne!(accelerated.z, current.z, "and the composition is not");
+    }
+
+    /// Direct substitution does nothing at all, on any pass - which is the class's default and
+    /// what every shipped flowsheet declares by saying nothing.
+    #[test]
+    fn direct_substitution_leaves_the_stream_exactly_as_the_flash_left_it() {
+        let mut state = AccelerationState {
+            broyden: BroydenAccelerator::new(),
+            previous_input: None,
+            previous_output: None,
+        };
+        let settings = settings(Acceleration::DirectSubstitution);
+        let mut published = stream(0.9);
+        for pass in 2..=6 {
+            let current = stream(0.9 - 0.1 * f64::from(pass));
+            let accelerated = accelerate(&mut state, &settings, pass, &published, &current);
+            assert_eq!(accelerated.z, current.z);
+            published = accelerated;
+        }
+    }
+}

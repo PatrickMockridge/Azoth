@@ -113,6 +113,14 @@ last element of it.
 `instance.port` (an inlet). A recycle is a connection that closes a loop, its stream
 named as the tear.
 
+A `[[recycles]]` entry also carries the tear's convergence, all of it optional and every
+default `Recycle`'s own: `flow_tolerance`, `composition_tolerance`, `temperature_tolerance`
+and `pressure_tolerance` (each `1e-2`), `max_iterations` (`10`), `minimum_flow` (`1e-20`
+kg/hr) and `acceleration_method` (`direct_substitution`; `wegstein` is carried, `broyden`
+is refused by name with the measurement that closes it). **`minimum_flow` is a switch and
+not a tolerance**: a tear below it is deactivated outright, its residuals *declared* zero
+rather than measured, and its loop stops at one pass.
+
 ## The checker
 
 `azoth_process::validate` runs the calculus's rules:

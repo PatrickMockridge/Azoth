@@ -187,6 +187,41 @@ impl Recycle {
             },
         })
     }
+
+    /// Whether this declaration's acceleration is one the port carries, and why not if it is not.
+    ///
+    /// **`broyden` is declared and refused, and the reason is measured.** Its arithmetic *is*
+    /// transcribed - `BroydenAccelerator` is held to `captures/process_acceleration.tsv` call by
+    /// call - but what a `Recycle` does with the answer is not reproducible: `applyStreamValues`
+    /// writes the accelerated fractions through `Component.setx` on **both** phases, and a
+    /// two-phase system does not read back what it was written (the capture records `[1.0, 0.0]`
+    /// written and `[1.0, 0.4]` read). A port whose stream carries one composition has nothing to
+    /// model that with, and the difference is not small: on the condensing graph at
+    /// `flowTolerance = 1e-8`, NeqSim runs the full hundred passes and does **not** converge, with
+    /// `sep1.liquid` at `8.6243` mol/s (`captures/process_flowsheet_accelerated.tsv`), where
+    /// applying the transcribed step to the composition gives a loop that reports converged after
+    /// eighteen passes at `0.0833`. A wrong answer that reads as converged is the one outcome this
+    /// port may not produce, so the declaration is refused rather than run.
+    ///
+    /// **Wegstein is carried**, and its step is bounded (`q` is clamped to `[-5, 0]`) where
+    /// Broyden's is not - so the same write-back gap moves it by `1.9e-11` relative on that same
+    /// loop, which the test over the capture holds.
+    #[must_use]
+    pub fn unsupported_acceleration(&self) -> Option<azoth_core::AzothError> {
+        if self.acceleration_method.as_deref() == Some("broyden") {
+            return Some(azoth_core::AzothError::invalid_input(
+                "acceleration_method",
+                "`broyden` is declared and refused: `BroydenAccelerator` is transcribed and held \
+                 to the acceleration capture, but `Recycle.applyStreamValues` writes the \
+                 accelerated composition through `Component.setx` on both phases, and a two-phase \
+                 system does not read back what it was written - so the class's *effect* is not \
+                 reproducible from a single-composition stream. Measured on the condensing graph, \
+                 NeqSim does not converge in a hundred passes at 8.6243 mol/s where the \
+                 transcribed step converges in eighteen at 0.0833",
+            ));
+        }
+        None
+    }
 }
 
 /// A flowsheet: a self-contained simulation.
