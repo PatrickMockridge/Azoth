@@ -248,6 +248,7 @@ pub fn reactive_hybrid_eos_ge_flash(
 #[pyfunction]
 #[pyo3(signature = (components, T, P, moles, enthalpy, max_phases, cubic = "srk"))]
 #[pyo3(text_signature = "(components, T, P, moles, enthalpy, max_phases, cubic = \"srk\")")]
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
 #[allow(non_snake_case)] // `T` and `P` are the symbols in the flash's own name
 pub fn reactive_ph_flash(
     py: Python<'_>,
