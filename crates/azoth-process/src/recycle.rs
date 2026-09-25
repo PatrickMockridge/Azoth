@@ -75,6 +75,13 @@ pub enum Acceleration {
     Broyden,
 }
 
+/// The names a `[[recycles]]` declaration may carry: **the class's own vocabulary, in one list**.
+///
+/// `named` reads them back, the tool schema publishes them and a form offers them - and a second
+/// copy of these three strings anywhere is a copy that can drift from the enum, which is what the
+/// parser cannot forgive and no test can see. The list is here because the enum is.
+pub const ACCELERATION_NAMES: [&str; 3] = ["direct_substitution", "wegstein", "broyden"];
+
 impl Acceleration {
     /// The acceleration a declaration's name selects.
     ///
@@ -687,19 +694,19 @@ mod tests {
 
     #[test]
     fn the_acceleration_names_are_the_class_s_own() {
-        assert_eq!(
-            Acceleration::named("direct_substitution").expect("known"),
-            Acceleration::DirectSubstitution
-        );
-        assert_eq!(
-            Acceleration::named("wegstein").expect("known"),
-            Acceleration::Wegstein
-        );
-        assert_eq!(
-            Acceleration::named("broyden").expect("known"),
-            Acceleration::Broyden
-        );
+        // **The list and the parser, held to each other, with the names written once.** Each
+        // spelling lives in `ACCELERATION_NAMES`; a string typed here as well would be a third
+        // copy of it, and the one that drifts is always the copy nobody parses.
+        let variants = [
+            Acceleration::DirectSubstitution,
+            Acceleration::Wegstein,
+            Acceleration::Broyden,
+        ];
+        for (name, variant) in ACCELERATION_NAMES.iter().zip(variants) {
+            assert_eq!(Acceleration::named(name).expect("known"), variant, "{name}");
+        }
         assert!(Acceleration::named("newton").is_err());
+        assert!(Acceleration::named("kahn").is_err());
         assert_eq!(Acceleration::default(), Acceleration::DirectSubstitution);
     }
 }

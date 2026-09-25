@@ -167,8 +167,18 @@ pub fn tools(palette: &[UnitOpSpec]) -> Vec<Tool> {
                 ),
                 req(
                     "value",
-                    json!({ "description":
-                            "A number, except for `acceleration_method`, which is a name." }),
+                    json!({
+                        "description":
+                            "A number for the six settings that are numbers. For                              `acceleration_method`, one of `recycle::ACCELERATION_NAMES` - and                              note that `broyden` is **refused by this port**, for the reason the                              class's own capture measures, so the checker reports it rather than                              the run.",
+                        // **`oneOf` rather than an `enum`**, because `value` is a number for six
+                        // of the seven fields and a name for the seventh - and the coupling to
+                        // `field` is left to the library, which refuses every other combination
+                        // with a sentence. A form reads the second arm for its options.
+                        "oneOf": [
+                            { "type": "number" },
+                            { "type": "string", "enum": crate::recycle::ACCELERATION_NAMES },
+                        ],
+                    }),
                 ),
             ],
         ),

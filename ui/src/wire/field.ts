@@ -8,7 +8,7 @@
  * cannot choose a widget says so rather than guessing at a number box.
  */
 
-import type { FormParameter, FormRange, Kind } from "./types";
+import type { Catalogue, FormParameter, FormRange, Kind } from "./types";
 
 /** What a field renders as. */
 export type Control = "number" | "list" | "switch" | "select" | "text" | "unknown";
@@ -102,6 +102,23 @@ export function commandValue(kind: Kind, raw: string): unknown {
     default:
       return raw;
   }
+}
+
+/**
+ * The acceleration names the tool schema publishes, which is the class's own list.
+ *
+ * **Read rather than spelled.** The three names live in one place — `recycle::ACCELERATION_NAMES`
+ * — and the schema carries them; a widget that typed them again would be the copy that drifts,
+ * and the one nobody parses. The schema says `value` is a number *or* one of these, so this reads
+ * the second arm; an absent schema is an empty list and the caller says nothing.
+ */
+export function accelerationNames(catalogue: Catalogue | null): string[] {
+  const tool = catalogue?.tools?.find((entry) => entry.name === "set_recycle");
+  const schema = tool?.input_schema as
+    | { properties?: { value?: { oneOf?: { enum?: unknown }[] } } }
+    | undefined;
+  const values = schema?.properties?.value?.oneOf?.[1]?.enum;
+  return Array.isArray(values) ? values.filter((value): value is string => typeof value === "string") : [];
 }
 
 /** What a field shows for a value the document already holds. */

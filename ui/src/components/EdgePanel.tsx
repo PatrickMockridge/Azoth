@@ -5,24 +5,28 @@
  * (`graph::EdgeData::settings`), project from the document, and are sent back one at a time as
  * `set_recycle`, so the panel holds no copy: it reads the envelope and writes a command.
  *
- * **`acceleration_method` is a text field and not a select.** The three names live only inside
- * `recycle.rs`, on no wire document; a select here would be a second declaration of a Rust enum
- * in a widget, and the second one would be the one that drifts. A name that is not one of the
- * three is caught where the library catches it: the checker raises `acceleration` on the tear with
- * the class's own measurement, and the diagnostics panel shows it.
+ * **`acceleration_method` is a select, and its options come from the wire.** The names live once,
+ * in `recycle::ACCELERATION_NAMES`, and the tool schema publishes them; this reads them
+ * (`accelerationNames`) rather than typing them again, so the widget cannot offer a name the parser
+ * would refuse. One of the names is refused by *this port* — with the measurement its own capture
+ * makes — so it is offered, and the checker reports it as `acceleration` on the tear rather than the
+ * widget hiding it. A schema that published nothing leaves the field a text box, which is the
+ * honest fallback rather than an empty dropdown.
  */
 
 import type { EditorCommand, RecycleField } from "../wire/commands";
-import type { Envelope, GraphEdge } from "../wire/types";
+import { accelerationNames } from "../wire/field";
+import type { Catalogue, Envelope, GraphEdge } from "../wire/types";
 
 export interface EdgePanelProps {
+  catalogue: Catalogue | null;
   envelope: Envelope;
   edge: GraphEdge;
   onCommand: (command: EditorCommand) => void;
 }
 
 /** The seven settings, in the order `Recycle` declares them, with what each one says. */
-const SETTINGS: readonly { field: RecycleField; kind: "number" | "text"; hint: string }[] = [
+const SETTINGS: readonly { field: RecycleField; kind: "number" | "text" | "names"; hint: string }[] = [
   { field: "flow_tolerance", kind: "number", hint: "the flow residual the tear solves to" },
   { field: "composition_tolerance", kind: "number", hint: "the composition residual" },
   { field: "temperature_tolerance", kind: "number", hint: "the temperature residual" },
@@ -31,12 +35,16 @@ const SETTINGS: readonly { field: RecycleField; kind: "number" | "text"; hint: s
   { field: "minimum_flow", kind: "number", hint: "below it the tear is switched off outright" },
   {
     field: "acceleration_method",
-    kind: "text",
-    hint: "direct_substitution, wegstein, or broyden — which the class refuses",
+    kind: "names",
+    // The names are not written here: the schema publishes them and this reads them. One of them
+    // is refused by this port, and which one - and why - is the checker's `acceleration`
+    // diagnostic, carrying the class's own measurement.
+    hint: "the checker reports the one this port refuses, with the class's own measurement",
   },
 ];
 
-export function EdgePanel({ envelope, edge, onCommand }: EdgePanelProps) {
+export function EdgePanel({ catalogue, envelope, edge, onCommand }: EdgePanelProps) {
+  const names = accelerationNames(catalogue);
   const isTear = edge.data.kind === "recycle";
   const settings = edge.data.settings;
 
@@ -103,25 +111,52 @@ export function EdgePanel({ envelope, edge, onCommand }: EdgePanelProps) {
                 <div className="head">
                   <span className="name">{field}</span>
                 </div>
-                <input
-                  value={value === null ? "" : String(value)}
-                  inputMode={kind === "number" ? "decimal" : "text"}
-                  placeholder="the class's default"
-                  onChange={(event) => {
-                    const raw = event.target.value;
-                    if (raw === "") {
-                      // The command model has `set_recycle` and no inverse, so a stated setting
-                      // cannot be returned to silence. The field says so by sending nothing.
-                      return;
-                    }
-                    onCommand({
-                      command: "set_recycle",
-                      stream: edge.data.path,
-                      field,
-                      value: kind === "number" ? Number(raw) : raw,
-                    });
-                  }}
-                />
+                {kind === "names" && names.length > 0 ? (
+                  // **The options are the schema's**, so this cannot offer a name the parser would
+                  // refuse. The empty option is the state the document already has: unstated.
+                  <select
+                    value={value === null ? "" : String(value)}
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      if (raw === "") {
+                        return;
+                      }
+                      onCommand({
+                        command: "set_recycle",
+                        stream: edge.data.path,
+                        field,
+                        value: raw,
+                      });
+                    }}
+                  >
+                    <option value="">the class&apos;s default</option>
+                    {names.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={value === null ? "" : String(value)}
+                    inputMode={kind === "number" ? "decimal" : "text"}
+                    placeholder="the class's default"
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      if (raw === "") {
+                        // The command model has `set_recycle` and no inverse, so a stated setting
+                        // cannot be returned to silence. The field says so by sending nothing.
+                        return;
+                      }
+                      onCommand({
+                        command: "set_recycle",
+                        stream: edge.data.path,
+                        field,
+                        value: kind === "number" ? Number(raw) : raw,
+                      });
+                    }}
+                  />
+                )}
                 <div className="hint">{hint}</div>
               </div>
             );

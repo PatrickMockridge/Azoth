@@ -226,7 +226,12 @@ export function App() {
             <InputsPanel envelope={envelope} node={node} onCommand={send} />
           ) : null}
           {envelope !== null && edge !== null ? (
-            <EdgePanel envelope={envelope} edge={edge} onCommand={send} />
+            <EdgePanel
+              catalogue={catalogue}
+              envelope={envelope}
+              edge={edge}
+              onCommand={send}
+            />
           ) : null}
           {envelope !== null ? (
             <DiagnosticsPanel

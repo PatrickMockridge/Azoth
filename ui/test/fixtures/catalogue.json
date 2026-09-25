@@ -396,7 +396,20 @@
             "type": "string"
           },
           "value": {
-            "description": "A number, except for `acceleration_method`, which is a name."
+            "description": "A number for the six settings that are numbers. For                              `acceleration_method`, one of `recycle::ACCELERATION_NAMES` - and                              note that `broyden` is **refused by this port**, for the reason the                              class's own capture measures, so the checker reports it rather than                              the run.",
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "enum": [
+                  "direct_substitution",
+                  "wegstein",
+                  "broyden"
+                ],
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [

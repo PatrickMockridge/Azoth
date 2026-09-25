@@ -444,6 +444,28 @@ fn a_recycle_parameter_is_five_numbers_a_count_and_a_name() {
     assert!(error.to_string().contains("number"), "{error}");
 }
 
+/// **The names a tool offers are the class's own**, which is the half of "not a second surface"
+/// that a schema can quietly break: an `enum` in a schema is a list of strings, and a list of
+/// strings is a copy the moment nobody holds it to the thing it names.
+#[test]
+fn the_acceleration_names_a_tool_offers_are_the_recycle_class_s_own() {
+    let tools = azoth_process::middleware::tools::tools(&palette());
+    let set_recycle = tools
+        .iter()
+        .find(|tool| tool.name == "set_recycle")
+        .expect("set_recycle is a tool");
+    assert_eq!(
+        set_recycle.input_schema["properties"]["value"]["oneOf"][1]["enum"],
+        serde_json::json!(azoth_process::recycle::ACCELERATION_NAMES),
+    );
+    // And the numeric arm is still there, so a form can tell the two apart rather than treating
+    // every setting as a name.
+    assert_eq!(
+        set_recycle.input_schema["properties"]["value"]["oneOf"][0]["type"],
+        "number"
+    );
+}
+
 /// **The agent's tools are the command model, not a surface beside it.** The names are read off
 /// each variant's `Debug` form, so a command cannot arrive without a tool and a tool cannot
 /// arrive without a command - and the schema's `command` tag is held to the tool's own name,

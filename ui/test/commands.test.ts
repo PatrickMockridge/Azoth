@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 
 import catalogueJson from "./fixtures/catalogue.json";
 import { COMMAND_NAMES, type EditorCommand } from "../src/wire/commands";
+import { accelerationNames } from "../src/wire/field";
 import { removeCommandFor } from "../src/wire/nodes";
 import type { Catalogue } from "../src/wire/types";
 
@@ -27,6 +28,24 @@ describe("the command model", () => {
     expect(COMMAND_NAMES[0]).toBe("add_instance");
     expect(COMMAND_NAMES.at(-1)).toBe("set_position");
     expect(new Set(COMMAND_NAMES).size).toBe(COMMAND_NAMES.length);
+  });
+});
+
+describe("the acceleration names", () => {
+  it("are read from the schema rather than spelled in a widget", () => {
+    // **One list, read.** The names live in `recycle::ACCELERATION_NAMES` and the schema carries
+    // them; the panel offers what this returns, so a name the parser would refuse cannot be
+    // offered - and the Rust test `the_acceleration_names_a_tool_offers_are_the_recycle_class_s_own`
+    // is what holds the schema to the class.
+    expect(accelerationNames(catalogue)).toEqual([
+      "direct_substitution",
+      "wegstein",
+      "broyden",
+    ]);
+    // A catalogue without the tool is an empty list, and the panel falls back to a text field
+    // rather than rendering an empty dropdown.
+    expect(accelerationNames(null)).toEqual([]);
+    expect(accelerationNames({ unit_ops: [] })).toEqual([]);
   });
 });
 
