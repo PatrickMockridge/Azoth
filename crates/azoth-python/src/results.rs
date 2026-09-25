@@ -58,6 +58,7 @@ use azoth_eos::results::{
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
+    PlugFlowReactorResult,
     AbsorptionColumnResult, ComponentSplitterResult, CompressorResult, CoolerResult,
     DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult, FlareResult,
     GasScrubberResult, HeatExchangerResult, HeaterResult, ManifoldResult, MixerResult, PumpResult,
@@ -1758,6 +1759,89 @@ impl From<&StirredTankReactorResult> for PyStirredTankReactorResult {
             product_t: quantity(r.product_t.value, "K"),
             product_h: quantity(r.product_h.value, "J/mol"),
             heat_duty: quantity(r.heat_duty.value, "W"),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.plug_flow_reactor`, transported.
+///
+/// **The profile crosses as four vectors**, whose length is `number_of_steps + 1`, which is what
+/// makes this result unlike the other unit operations': the answer is a curve and the four
+/// vectors are every station of it.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PlugFlowReactorResult",
+    get_all,
+    eq
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPlugFlowReactorResult {
+    /// Product molar flow, mol/s.
+    pub product_n: PyQty,
+    /// Product composition, over the feed's species then the reaction's added ones.
+    pub product_z: Vec<f64>,
+    /// Product pressure.
+    pub product_p: PyQty,
+    /// Product temperature.
+    pub product_t: PyQty,
+    /// Product molar enthalpy.
+    pub product_h: PyQty,
+    /// The key component's conversion over the whole reactor.
+    pub conversion: f64,
+    /// The inlet pressure less the outlet's.
+    pub pressure_drop: PyQty,
+    /// The outlet temperature the march reports.
+    pub outlet_temperature: PyQty,
+    /// The duty an isothermal reactor supplies.
+    pub heat_duty: PyQty,
+    /// Every station's axial position, m.
+    pub positions: Vec<f64>,
+    /// Every station's temperature, K.
+    pub temperature_profile: Vec<f64>,
+    /// Every station's pressure, Pa.
+    pub pressure_profile: Vec<f64>,
+    /// Every station's conversion.
+    pub conversion_profile: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPlugFlowReactorResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PlugFlowReactorResult(conversion={}, product_t={} {}, stations={})",
+            self.conversion,
+            self.product_t.magnitude_si,
+            self.product_t.unit,
+            self.positions.len()
+        )
+    }
+}
+
+impl From<&PlugFlowReactorResult> for PyPlugFlowReactorResult {
+    fn from(r: &PlugFlowReactorResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            product_n: quantity(r.product_n, "mol/s"),
+            product_z: r.product_z.clone(),
+            product_p: quantity(r.product_p.value, "Pa"),
+            product_t: quantity(r.product_t.value, "K"),
+            product_h: quantity(r.product_h.value, "J/mol"),
+            conversion: r.conversion,
+            pressure_drop: quantity(r.pressure_drop.value, "Pa"),
+            outlet_temperature: quantity(r.outlet_temperature.value, "K"),
+            heat_duty: quantity(r.heat_duty.value, "W"),
+            positions: r.positions.clone(),
+            temperature_profile: r.temperature_profile.clone(),
+            pressure_profile: r.pressure_profile.clone(),
+            conversion_profile: r.conversion_profile.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -9138,6 +9222,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         EjectorResult::CALC_ID => EjectorResult::FIELDS.to_vec(),
         Iso6976Result::CALC_ID => Iso6976Result::FIELDS.to_vec(),
         FlareResult::CALC_ID => FlareResult::FIELDS.to_vec(),
+        PlugFlowReactorResult::CALC_ID => PlugFlowReactorResult::FIELDS.to_vec(),
         EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
         ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
         ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),

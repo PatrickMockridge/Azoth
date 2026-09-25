@@ -181,6 +181,7 @@
   - [Manifold](./process/manifold.md)
   - [Mixer](./process/mixer.md)
   - [Pipe](./process/pipe.md)
+  - [Plug-flow reactor](./process/plug_flow_reactor.md)
   - [Pump](./process/pump.md)
   - [Separator](./process/separator.md)
   - [Shortcut distillation column](./process/shortcut_distillation_column.md)

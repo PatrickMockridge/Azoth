@@ -1538,6 +1538,23 @@ class PipeResult:
     warnings: list[Warning]
 
 @final
+class PlugFlowReactorResult:
+    product_n: Qty
+    product_z: list[float]
+    product_p: Qty
+    product_t: Qty
+    product_h: Qty
+    conversion: float
+    pressure_drop: Qty
+    outlet_temperature: Qty
+    heat_duty: Qty
+    positions: list[float]
+    temperature_profile: list[float]
+    pressure_profile: list[float]
+    conversion_profile: list[float]
+    warnings: list[Warning]
+
+@final
 class PumpResult:
     outlet_n: Qty
     outlet_z: list[float]
@@ -3024,6 +3041,37 @@ def pipe(
     diameter: float,
     roughness: float,
 ) -> PipeResult: ...
+def plug_flow_reactor(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    length: float,
+    diameter: float,
+    number_of_tubes: float,
+    energy_mode: str,
+    coolant_temperature: float,
+    overall_heat_transfer_coefficient: float,
+    number_of_steps: float,
+    integration_method: str,
+    property_update_frequency: float,
+    thermodynamic_coupling: str,
+    reaction: str,
+    reaction_orders: list[float],
+    rate_type: str,
+    pre_exponential_factor: float,
+    activation_energy: float,
+    temperature_exponent: float,
+    heat_of_reaction: float,
+    catalyst_bulk_density: float | None = None,
+    catalyst_activity_factor: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    catalyst_void_fraction: float | None = None,
+    catalyst_molecular_diffusivity: float | None = None,
+    catalyst_effectiveness_enabled: bool | None = None,
+    key_component: str | None = None,
+) -> PlugFlowReactorResult: ...
 def pump(
     components: list[str],
     inlet_n: float,

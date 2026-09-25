@@ -1999,6 +1999,13 @@ public class ProcessProbe {
     plugFlowReactorRow("isothermal_rk4", "RK4", 100, 10, false, 1.0);
     plugFlowReactorRow("bed_rk4", "RK4", 100, 10, true, 1.0);
     plugFlowReactorRow("bed_half_activity", "RK4", 100, 10, true, 0.5);
+    // **The ten-step rows are the case's, and they are the setter's own floor.**
+    // `setNumberOfSteps` clamps to `max(10, n)`, and at ten steps with the default frequency
+    // of ten the refresh never fires inside the loop - `s % 10 == 0 && s < 10` is false for
+    // every `s` - so these rows are a *purely frozen* march, and the eleven stations are short
+    // enough for a case file to carry.
+    plugFlowReactorRow("rk4_ten_steps", "RK4", 10, 10, false, 1.0);
+    plugFlowReactorRow("euler_ten_steps", "EULER", 10, 10, false, 1.0);
     concentrationProbe();
   }
 

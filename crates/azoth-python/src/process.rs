@@ -6,7 +6,10 @@
 
 use std::path::Path;
 
-use azoth_core::units::{joules_per_mole, kelvins, meters, pascals, watts, watts_per_kelvin};
+use azoth_core::units::{
+    joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals,
+    square_meters_per_second, watts, watts_per_kelvin, watts_per_square_meter_kelvin,
+};
 use azoth_process::{self, Stream};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -835,6 +838,87 @@ pub fn stirred_tank_reactor(
         pascals(pressure_drop.unwrap_or(0.0)),
     )
     .map(|r| crate::results::PyStirredTankReactorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// `process.plug_flow_reactor` - the reactor's kernel as a registered id.
+///
+/// **Twenty-eight arguments where the palette entry declared two.** The entry declared `length`
+/// and `diameter`, and `run` reads the geometry, the energy mode and its coolant, the march's
+/// controls, the catalyst bed and the whole rate law; each is here.
+///
+/// The optional ones are last, which is `gen_stub`'s rule: a `.pyi` with a defaulted parameter
+/// before a non-defaulted one does not parse.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, length, diameter, number_of_tubes, energy_mode, coolant_temperature, overall_heat_transfer_coefficient, number_of_steps, integration_method, property_update_frequency, thermodynamic_coupling, reaction, reaction_orders, rate_type, pre_exponential_factor, activation_energy, temperature_exponent, heat_of_reaction, catalyst_bulk_density = None, catalyst_activity_factor = None, catalyst_particle_diameter = None, catalyst_void_fraction = None, catalyst_molecular_diffusivity = None, catalyst_effectiveness_enabled = None, key_component = None))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, length, diameter, number_of_tubes, energy_mode, coolant_temperature, overall_heat_transfer_coefficient, number_of_steps, integration_method, property_update_frequency, thermodynamic_coupling, reaction, reaction_orders, rate_type, pre_exponential_factor, activation_energy, temperature_exponent, heat_of_reaction, catalyst_bulk_density=None, catalyst_activity_factor=None, catalyst_particle_diameter=None, catalyst_void_fraction=None, catalyst_molecular_diffusivity=None, catalyst_effectiveness_enabled=None, key_component=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are twenty-nine
+pub fn plug_flow_reactor(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    length: f64,
+    diameter: f64,
+    number_of_tubes: f64,
+    energy_mode: &str,
+    coolant_temperature: f64,
+    overall_heat_transfer_coefficient: f64,
+    number_of_steps: f64,
+    integration_method: &str,
+    property_update_frequency: f64,
+    thermodynamic_coupling: &str,
+    reaction: &str,
+    reaction_orders: Vec<f64>,
+    rate_type: &str,
+    pre_exponential_factor: f64,
+    activation_energy: f64,
+    temperature_exponent: f64,
+    heat_of_reaction: f64,
+    catalyst_bulk_density: Option<f64>,
+    catalyst_activity_factor: Option<f64>,
+    catalyst_particle_diameter: Option<f64>,
+    catalyst_void_fraction: Option<f64>,
+    catalyst_molecular_diffusivity: Option<f64>,
+    catalyst_effectiveness_enabled: Option<bool>,
+    key_component: Option<String>,
+) -> PyResult<crate::results::PyPlugFlowReactorResult> {
+    azoth_process::plug_flow_reactor(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        length,
+        diameter,
+        number_of_tubes,
+        energy_mode,
+        kelvins(coolant_temperature),
+        watts_per_square_meter_kelvin(overall_heat_transfer_coefficient),
+        number_of_steps,
+        integration_method,
+        property_update_frequency,
+        thermodynamic_coupling,
+        reaction,
+        &reaction_orders,
+        rate_type,
+        pre_exponential_factor,
+        activation_energy,
+        temperature_exponent,
+        heat_of_reaction,
+        catalyst_bulk_density.map(kilograms_per_cubic_meter),
+        catalyst_activity_factor,
+        catalyst_particle_diameter,
+        catalyst_void_fraction,
+        catalyst_molecular_diffusivity.map(square_meters_per_second),
+        catalyst_effectiveness_enabled,
+        key_component,
+    )
+    .map(|r| crate::results::PyPlugFlowReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

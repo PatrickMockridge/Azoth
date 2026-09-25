@@ -45,6 +45,7 @@ pub mod heater;
 pub mod manifold;
 pub mod mixer;
 pub mod pipe;
+pub mod plug_flow_reactor;
 pub mod pump;
 pub mod separator;
 pub mod shortcut_distillation_column;
@@ -70,6 +71,7 @@ pub use heater::{HeaterResult, heater};
 pub use manifold::{ManifoldResult, manifold};
 pub use mixer::{MixerResult, mixer};
 pub use pipe::{PipeResult, pipe};
+pub use plug_flow_reactor::{PlugFlowReactorResult, plug_flow_reactor};
 pub use pump::{PumpResult, pump};
 pub use separator::{SeparatorResult, separator};
 pub use shortcut_distillation_column::{

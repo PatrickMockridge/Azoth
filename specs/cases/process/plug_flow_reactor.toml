@@ -1,0 +1,181 @@
+model = "process.plug_flow_reactor"
+
+[[cases]]
+id = "frozen_ten_steps"
+tolerance = 0.005
+source = "NeqSim master, `PlugFlowReactor.run` on 0.05/0.10/0.85 methane/oxygen/nitrogen at 600 K, 5 bara and 1 mol/s, through `methanecombustion` as a power law with `A = 1e4`, `Ea = 80000` J/mol and `dH = -802000` J/mol, over five metres of 0.10 m tube in ten RK4 steps, from `validation/neqsim/captures/process_plug_flow_reactor.tsv`. **Ten steps is the setter's own floor and the reason this row is the case**: `numberOfSteps` is clamped to `max(10, n)`, and at ten steps with the default `propertyUpdateFrequency` of ten the refresh never fires inside the loop - `s % 10 == 0 && s < 10` is false for every `s` - so this is a purely frozen march and the class's own rate stays at `5.428858e-2` at every station. The tolerance is the libraries' heat-capacity divergence, `6.85e-4`, which integrates into the temperature and then into the conversion."
+[cases.inputs]
+components = ["methane", "oxygen", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.85]
+feed_p = 500000.0
+feed_t = 600.0
+length = 5.0
+diameter = 0.1
+number_of_tubes = 1.0
+energy_mode = "adiabatic"
+coolant_temperature = 298.15
+overall_heat_transfer_coefficient = 50.0
+number_of_steps = 10.0
+integration_method = "rk4"
+property_update_frequency = 10.0
+thermodynamic_coupling = "frozen_properties"
+reaction = "methanecombustion"
+reaction_orders = [1.0, 1.0]
+rate_type = "power_law"
+pre_exponential_factor = 10000.0
+activation_energy = 80000.0
+temperature_exponent = 0.0
+heat_of_reaction = -802000.0
+[cases.expected]
+product_n = 1.0
+product_z = [0.04786809248091879, 0.09573618496183758, 0.85, 0.00213190751908123, 0.00426381503816246]
+product_p = 499998.8740008154
+product_t = 654.2137334012193
+product_h = 11618.534781752565
+conversion = 0.04263815038162422
+pressure_drop = 1.1259991845591344
+outlet_temperature = 654.2137334012193
+heat_duty = 0.0
+positions = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+temperature_profile = [600.0, 605.4214, 610.8427, 616.2641, 621.6855, 627.1069, 632.5282, 637.9496, 643.371, 648.7924, 654.2137]
+pressure_profile = [500000.0, 499999.9, 499999.8, 499999.7, 499999.5, 499999.4, 499999.3, 499999.2, 499999.1, 499999.0, 499998.9]
+conversion_profile = [0.0, 0.00426382, 0.00852763, 0.01279145, 0.01705526, 0.02131908, 0.02558289, 0.02984671, 0.03411052, 0.03837434, 0.04263815]
+
+[[cases]]
+id = "euler_ten_steps"
+tolerance = 0.005
+source = "The capture's `euler_ten_steps` row: the same reactor with `setIntegrationMethod(\"EULER\")`. **Every value is the RK4 row's to the last digit the capture prints**, and that is the measurement rather than a coincidence: a frozen march has a constant derivative at every station - the rate is `5.428858e-2` throughout - so the two schemes integrate the same straight line and neither is more accurate than the other. The case exists so that a change which made them differ would fail, which is what a frozen-property coupling is supposed to prevent."
+[cases.inputs]
+components = ["methane", "oxygen", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.85]
+feed_p = 500000.0
+feed_t = 600.0
+length = 5.0
+diameter = 0.1
+number_of_tubes = 1.0
+energy_mode = "adiabatic"
+coolant_temperature = 298.15
+overall_heat_transfer_coefficient = 50.0
+number_of_steps = 10.0
+integration_method = "euler"
+property_update_frequency = 10.0
+thermodynamic_coupling = "frozen_properties"
+reaction = "methanecombustion"
+reaction_orders = [1.0, 1.0]
+rate_type = "power_law"
+pre_exponential_factor = 10000.0
+activation_energy = 80000.0
+temperature_exponent = 0.0
+heat_of_reaction = -802000.0
+[cases.expected]
+product_t = 654.2137334012193
+conversion = 0.04263815038162422
+outlet_temperature = 654.2137334012193
+temperature_profile = [600.0, 605.4214, 610.8427, 616.2641, 621.6855, 627.1069, 632.5282, 637.9496, 643.371, 648.7924, 654.2137]
+
+[[cases]]
+id = "hundred_steps"
+tolerance = 0.005
+source = "The capture's `rk4_default` row: the class's own defaults - a hundred steps and a refresh every ten - so this is the machine a bare `new PlugFlowReactor(name, inlet)` is. It reaches twice the conversion of the ten-step row (`0.1067` against `0.0426`) at the same length, and **every bit of that difference is the refresh schedule**: the same march at fifty steps lands at `0.0848`, so the step count moves the answer through where the properties are re-read and not through the integration order."
+[cases.inputs]
+components = ["methane", "oxygen", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.85]
+feed_p = 500000.0
+feed_t = 600.0
+length = 5.0
+diameter = 0.1
+number_of_tubes = 1.0
+energy_mode = "adiabatic"
+coolant_temperature = 298.15
+overall_heat_transfer_coefficient = 50.0
+number_of_steps = 100.0
+integration_method = "rk4"
+property_update_frequency = 10.0
+thermodynamic_coupling = "frozen_properties"
+reaction = "methanecombustion"
+reaction_orders = [1.0, 1.0]
+rate_type = "power_law"
+pre_exponential_factor = 10000.0
+activation_energy = 80000.0
+temperature_exponent = 0.0
+heat_of_reaction = -802000.0
+[cases.expected]
+product_t = 733.4597018618274
+conversion = 0.10666898902165212
+pressure_drop = 1.1979021268260226
+outlet_temperature = 733.4597018618274
+heat_duty = 0.0
+
+[[cases]]
+id = "isothermal"
+tolerance = 0.005
+source = "The capture's `isothermal_rk4` row: `setEnergyMode(ISOTHERMAL)`, so `dT/dz` is zero and the temperature is overridden back to the inlet after every step. The outlet is at the feed's own 600 K and the conversion is `0.0411` against the adiabatic row's `0.1067` - a colder reactor reacts less - and the duty the vessel had to supply is `1646.51` W, which is the enthalpy the reaction released. **This is the one branch whose output does not carry the heat-capacity divergence**, because the energy balance that divides by `Cp * sum F` is the branch it skips."
+[cases.inputs]
+components = ["methane", "oxygen", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.85]
+feed_p = 500000.0
+feed_t = 600.0
+length = 5.0
+diameter = 0.1
+number_of_tubes = 1.0
+energy_mode = "isothermal"
+coolant_temperature = 298.15
+overall_heat_transfer_coefficient = 50.0
+number_of_steps = 100.0
+integration_method = "rk4"
+property_update_frequency = 10.0
+thermodynamic_coupling = "frozen_properties"
+reaction = "methanecombustion"
+reaction_orders = [1.0, 1.0]
+rate_type = "power_law"
+pre_exponential_factor = 10000.0
+activation_energy = 80000.0
+temperature_exponent = 0.0
+heat_of_reaction = -802000.0
+[cases.expected]
+product_t = 600.0
+conversion = 0.041060028350672906
+outlet_temperature = 600.0
+heat_duty = 1646.5071368619836
+
+[[cases]]
+id = "catalyst_bed"
+tolerance = 0.005
+source = "The capture's `bed_rk4` row: the same reactor with `setCatalystBed(new CatalystBed(3.0, 0.40, 800.0))`, the class's own default pellet. **The bed is what makes the pressure row the Ergun equation**, and the difference is four orders of magnitude - `1.76` bar over the tube against the `1.2e-5` the empty-tube Darcy branch gives - so the outlet leaves at `3.24` bara rather than `5`. The lower pressure is a lower density, and the rate is second order in concentration, so the conversion falls to `0.0557` even though the bed's activity factor is one and its rate basis is volumetric."
+[cases.inputs]
+components = ["methane", "oxygen", "nitrogen"]
+feed_n = 1.0
+feed_z = [0.05, 0.1, 0.85]
+feed_p = 500000.0
+feed_t = 600.0
+length = 5.0
+diameter = 0.1
+number_of_tubes = 1.0
+energy_mode = "adiabatic"
+coolant_temperature = 298.15
+overall_heat_transfer_coefficient = 50.0
+number_of_steps = 100.0
+integration_method = "rk4"
+property_update_frequency = 10.0
+thermodynamic_coupling = "frozen_properties"
+reaction = "methanecombustion"
+reaction_orders = [1.0, 1.0]
+rate_type = "power_law"
+pre_exponential_factor = 10000.0
+activation_energy = 80000.0
+temperature_exponent = 0.0
+heat_of_reaction = -802000.0
+catalyst_bulk_density = 800.0
+catalyst_activity_factor = 1.0
+catalyst_particle_diameter = 0.003
+catalyst_void_fraction = 0.4
+[cases.expected]
+product_t = 670.2251236528832
+product_p = 323908.56136280233
+conversion = 0.055707247687328265
+pressure_drop = 176091.43863719767
+outlet_temperature = 670.2251236528832

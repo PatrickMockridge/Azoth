@@ -1,14 +1,70 @@
 id = "unit_ops.plug_flow_reactor"
 name = "Plug-flow reactor"
-notes = "**Deferred with the measurement that says why: the tree has no integrator.** `PlugFlowReactor.run` is **1,261 lines** and marches the molar flows along the reactor - `calculateRate` per reaction, a catalyst bed's activity factor and bulk density, a rate-to-volumetric conversion, and an `ensureProductComponentsExist` that *adds* species the feed does not carry. Verified again: no ODE stepper exists anywhere in the workspace, so the march would be new numerical code rather than a composition. The plan of record leaves two honest answers open - the stepper becomes a spec'd calc of its own, named in this kernel's `[algorithm]` block, or the kinetics path is declared out and only the isothermal plug limit is ported - and both are a decision rather than a wiring."
+notes = "**Landed, and the two things the deferral note said were missing are what it cost.** The note recorded that no ODE stepper existed anywhere in the workspace; there is still none in NeqSim either, because `PlugFlowReactor.run` writes its own out inline - `IntegrationMethod { EULER, RK4 }`, RK4 by default, a fixed step `length / numberOfSteps` over `numberOfSteps = 100`, **not adaptive**. So the march is `azoth_process::reactor::stepper`, a module beside the kernel and not a published calc: there is no NeqSim class for an id to be a port of, and inventing one would be azoth's calculation rather than a port. The other thing the note named is real and is reproduced: `ensureProductComponentsExist` **adds** the species a reaction names and the feed does not carry, each at `1e-20` mol.\n\n**The entry declared `length` and `diameter`; `run` reads twenty-three parameters.** They are here now: the geometry, the energy mode and its coolant, the march's own controls, the catalyst bed, and the rate law - which is `process.equipment.reactor.KineticReaction`, a **configured** object and not the `Kinetics` P10 landed. Three of the class's behaviours are load-bearing and are named rather than tidied: properties are **frozen by default** (`thermodynamicCoupling` is `FROZEN_PROPERTIES`), so the rate law reads the last flash and never an RK4 sub-state, which is why the class's two schemes agree to thirteen digits on its own default; the refresh happens at the top of step `s` when `s % propertyUpdateFrequency == 0 && s > 0`, so a hundred-step march last refreshes after **ninety** - and `calculateResidenceTime`, called before the final state update, reads that state rather than the outlet's; and the pressure row is the **empty-tube** Darcy branch unless `setCatalystBed` was called, where the Ergun equation applies, measured `1.2e-5` bar against `1.76` over the same gas.\n\n**Not ported**: `ReactorMechanicalDesign`, `runTransient`, the `getAxialProfile().toJson()` export, and the class's `setEnergyMode(\"COOLANT\")` heat-transfer coefficient's own correlations - the coolant branch is ported as the class writes it, `Q = U * perimeter * numberOfTubes * (T_coolant - T)`. A reactor with **no reaction** is refused rather than passed through, which is the one place this port declines what the class does: `run` logs a warning and returns the feed."
 [source]
 standard = "NeqSim process/equipment/reactor/PlugFlowReactor.java"
 [parameters.length]
 unit = "m"
-description = "reactor length"
+description = "tube length, the class's default 5.0"
 [parameters.diameter]
 unit = "m"
-description = "reactor internal diameter"
+description = "tube internal diameter, the class's default 0.10"
+[parameters.number_of_tubes]
+unit = "dimensionless"
+description = "how many tubes the flow is split across, the class's default 1"
+[parameters.energy_mode]
+description = "how the temperature moves - adiabatic, isothermal or coolant - where adiabatic is the class's default"
+[parameters.coolant_temperature]
+unit = "K"
+description = "the coolant's temperature on the coolant branch, the class's default 298.15"
+[parameters.overall_heat_transfer_coefficient]
+unit = "W/(m**2*K)"
+description = "the coolant branch's U, the class's default 50.0"
+[parameters.number_of_steps]
+unit = "dimensionless"
+description = "the fixed number of steps the march takes, the class's default 100, floored at 10 by the setter"
+[parameters.integration_method]
+description = "rk4 or euler, where rk4 is the class's default and any other name is it too"
+[parameters.property_update_frequency]
+unit = "dimensionless"
+description = "steps between re-flashes on the frozen coupling, the class's default 10"
+[parameters.thermodynamic_coupling]
+description = "frozen_properties, the class's default, or fully_coupled, which re-flashes for every residual evaluation"
+[parameters.catalyst_effectiveness_enabled]
+description = "whether the pellet's effectiveness factor scales the rate; off by default"
+[parameters.catalyst_molecular_diffusivity]
+unit = "m**2/s"
+description = "the diffusivity the effectiveness factor reads, the class's default 1.0e-5"
+[parameters.catalyst_bulk_density]
+unit = "kg/m**3"
+description = "the bed's bulk density, which converts a mass-basis rate to a volumetric one; default 800"
+[parameters.catalyst_activity_factor]
+unit = "dimensionless"
+description = "the bed's activity factor, in [0, 1], the class's default 1"
+[parameters.catalyst_particle_diameter]
+unit = "m"
+description = "the pellet diameter the Ergun equation and the Thiele modulus read; default 0.003"
+[parameters.catalyst_void_fraction]
+unit = "dimensionless"
+description = "the bed's void fraction, the class's default 0.40"
+[parameters.reaction]
+description = "the rate law's name, and the stoichiometry the species set is widened by"
+[parameters.rate_type]
+description = "power_law, lhhw or equilibrium - where equilibrium is evaluated as a power law, the class's own dispatch"
+[parameters.pre_exponential_factor]
+unit = "dimensionless"
+description = "A in k(T) = A * T**n * exp(-Ea/(R*T)); the class's default 1.0e10"
+[parameters.activation_energy]
+unit = "J/mol"
+description = "Ea in the same expression, the class's default 100000"
+[parameters.temperature_exponent]
+unit = "dimensionless"
+description = "n in the same expression, the class's default 0; a magnitude below 1e-10 is taken as exactly zero"
+[parameters.heat_of_reaction]
+unit = "J/mol"
+description = "the reaction's enthalpy, which the energy balance consumes; the class's default 0"
+[parameters.key_component]
+description = "which component the reported conversion is of; the class defaults to the first reactant of the first reaction"
 [[ports]]
 name = "feed"
 direction = "in"

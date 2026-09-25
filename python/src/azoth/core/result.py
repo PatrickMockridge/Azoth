@@ -672,6 +672,45 @@ class StirredTankReactorResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PlugFlowReactorResult(_HasWarnings):
+    """Result of ``process.plug_flow_reactor``.
+
+    **The answer is a curve, not an outlet row.** The four profile vectors are every station of
+    the march, including the inlet, so their length is ``number_of_steps + 1`` - which is what
+    makes this result unlike the other unit operations'.
+    """
+
+    #: Product molar flow.
+    product_n: Q
+    #: Product composition, over the feed's species then the reaction's added ones.
+    product_z: tuple[float, ...]
+    #: Product pressure.
+    product_p: Q
+    #: Product temperature.
+    product_t: Q
+    #: Product molar enthalpy.
+    product_h: Q
+    #: The key component's conversion over the whole reactor.
+    conversion: float
+    #: The inlet pressure less the outlet's.
+    pressure_drop: Q
+    #: The outlet temperature the march reports.
+    outlet_temperature: Q
+    #: The duty an isothermal reactor supplies, zero on the other branches.
+    heat_duty: Q
+    #: Every station's axial position, m.
+    positions: tuple[float, ...]
+    #: Every station's temperature, K.
+    temperature_profile: tuple[float, ...]
+    #: Every station's pressure, Pa.
+    pressure_profile: tuple[float, ...]
+    #: Every station's conversion.
+    conversion_profile: tuple[float, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class FlareResult(_HasWarnings):
     """Result of ``process.flare``.
 
@@ -3986,6 +4025,62 @@ class StrippingColumnResult(_HasWarnings):
     #: The products' worst component imbalance against both feeds, relative.
     mass_residual: float
     #: ``|H_feeds - H_products| / |H_feeds|``.
+    energy_residual: float
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PackedColumnResult(_HasWarnings):
+    """Result of ``process.packed_column``.
+
+    **`DistillationColumnResult` under this class's own id**, and that is the id's claim rather
+    than a convenience: ``PackedColumn extends DistillationColumn``, its ``run`` is
+    ``super.run(id)``, and the packing parameters reach the separation only through the stage
+    count a constructor derives from the packed height. The three quantities a caller would look
+    for here instead - HETP, the theoretical stages and the percent flood - are
+    ``ColumnInternalsDesigner``'s report on the far side of the solve and are not ported.
+    """
+
+    #: Each tray's temperature, the reboiler at stage 0 to the condenser at the top.
+    tray_temperature: tuple[Q, ...]
+    #: Each tray's pressure.
+    tray_pressure: tuple[Q, ...]
+    #: Each tray's vapour traffic, which is its upward traffic.
+    tray_gas_n: tuple[Q, ...]
+    #: Each tray's liquid traffic, which is its downward traffic.
+    tray_liquid_n: tuple[Q, ...]
+    #: The overhead product.
+    distillate_n: Q
+    #: The distillate's composition.
+    distillate_z: tuple[float, ...]
+    #: The distillate's pressure.
+    distillate_p: Q
+    #: The distillate's temperature.
+    distillate_t: Q
+    #: The distillate's molar enthalpy at its own state.
+    distillate_h: Q
+    #: The bottom product.
+    bottoms_n: Q
+    #: The bottoms' composition.
+    bottoms_z: tuple[float, ...]
+    #: The bottoms' pressure.
+    bottoms_p: Q
+    #: The bottoms' temperature.
+    bottoms_t: Q
+    #: The bottoms' molar enthalpy at its own state.
+    bottoms_h: Q
+    #: The condenser's duty, negative for a condenser.
+    condenser_duty: Q
+    #: The reboiler's duty.
+    reboiler_duty: Q
+    #: Iterations taken.
+    iterations: int
+    #: The mean tray-temperature change at the last iteration, the gate the solve was held to.
+    temperature_residual: float
+    #: The products' worst component imbalance against the feed, relative.
+    mass_residual: float
+    #: ``|H_feed + duties - H_products| / |H_feed|``.
     energy_residual: float
     #: Caveats.
     warnings: tuple[Warning, ...]

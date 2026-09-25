@@ -27,6 +27,7 @@ from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
+    PlugFlowReactorResult,
     AbsorptionColumnResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
@@ -4363,6 +4364,102 @@ def stirred_tank_reactor(
         product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
         product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
         heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def plug_flow_reactor(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    length: Q,
+    diameter: Q,
+    number_of_tubes: float,
+    energy_mode: str,
+    coolant_temperature: Q,
+    overall_heat_transfer_coefficient: Q,
+    number_of_steps: float,
+    integration_method: str,
+    property_update_frequency: float,
+    thermodynamic_coupling: str,
+    reaction: str,
+    reaction_orders: Sequence[float],
+    rate_type: str,
+    pre_exponential_factor: float,
+    activation_energy: Q,
+    temperature_exponent: float,
+    heat_of_reaction: Q,
+    catalyst_bulk_density: Q | None = None,
+    catalyst_activity_factor: float | None = None,
+    catalyst_particle_diameter: Q | None = None,
+    catalyst_void_fraction: float | None = None,
+    catalyst_molecular_diffusivity: Q | None = None,
+    catalyst_effectiveness_enabled: bool | None = None,
+    key_component: str | None = None,
+) -> PlugFlowReactorResult:
+    """`process.plug_flow_reactor`, computed in Rust.
+
+    **Both the geometry and the rate law cross as bare numbers**, because the declaration's
+    units for them are the ones `spec` states and `input_to_si` is the single conversion site:
+    a length in metres, a pressure in pascals, an energy in joules per mole. The four profile
+    vectors come back as tuples, which is what the reference returns too.
+    """
+    spec = _models_gen.model("process.plug_flow_reactor")
+    result = _core.plug_flow_reactor(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", value) for value in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "diameter", diameter),
+        number_of_tubes,
+        energy_mode,
+        input_to_si(spec, "coolant_temperature", coolant_temperature),
+        input_to_si(spec, "overall_heat_transfer_coefficient", overall_heat_transfer_coefficient),
+        number_of_steps,
+        integration_method,
+        property_update_frequency,
+        thermodynamic_coupling,
+        reaction,
+        list(reaction_orders),
+        rate_type,
+        pre_exponential_factor,
+        input_to_si(spec, "activation_energy", activation_energy),
+        temperature_exponent,
+        input_to_si(spec, "heat_of_reaction", heat_of_reaction),
+        None
+        if catalyst_bulk_density is None
+        else input_to_si(spec, "catalyst_bulk_density", catalyst_bulk_density),
+        catalyst_activity_factor,
+        None
+        if catalyst_particle_diameter is None
+        else input_to_si(spec, "catalyst_particle_diameter", catalyst_particle_diameter),
+        catalyst_void_fraction,
+        None
+        if catalyst_molecular_diffusivity is None
+        else input_to_si(spec, "catalyst_molecular_diffusivity", catalyst_molecular_diffusivity),
+        catalyst_effectiveness_enabled,
+        key_component,
+    )
+    return PlugFlowReactorResult(
+        product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
+        product_z=tuple(result.product_z),
+        product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
+        product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
+        conversion=result.conversion,
+        pressure_drop=from_si(result.pressure_drop.magnitude_si, result.pressure_drop.unit),
+        outlet_temperature=from_si(
+            result.outlet_temperature.magnitude_si, result.outlet_temperature.unit
+        ),
+        heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
+        positions=tuple(result.positions),
+        temperature_profile=tuple(result.temperature_profile),
+        pressure_profile=tuple(result.pressure_profile),
+        conversion_profile=tuple(result.conversion_profile),
         warnings=_warnings(result.warnings),
     )
 

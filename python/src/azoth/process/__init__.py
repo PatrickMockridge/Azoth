@@ -31,6 +31,7 @@ from azoth.core.result import (
     ManifoldResult,
     MixerResult,
     PipeResult,
+    PlugFlowReactorResult,
     PumpResult,
     SeparatorResult,
     ShortcutDistillationColumnResult,
@@ -62,6 +63,7 @@ __all__ = [
     "manifold",
     "mixer",
     "pipe",
+    "plug_flow_reactor",
     "pump",
     "separator",
     "shortcut_distillation_column",
@@ -93,6 +95,7 @@ _HEATER = "process.heater"
 _SEPARATOR = "process.separator"
 _SHORTCUT_DISTILLATION_COLUMN = "process.shortcut_distillation_column"
 _THROTTLING_VALVE = "process.throttling_valve"
+_PLUG_FLOW_REACTOR = "process.plug_flow_reactor"
 _PUMP = "process.pump"
 _SPLITTER = "process.splitter"
 _STIRRED_TANK_REACTOR = "process.stirred_tank_reactor"
@@ -399,6 +402,94 @@ def stirred_tank_reactor(
         reactor_temperature=reactor_temperature,
         reactor_pressure=reactor_pressure,
         pressure_drop=pressure_drop,
+    )
+
+
+def plug_flow_reactor(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    length: float,
+    diameter: float,
+    number_of_tubes: float,
+    energy_mode: str,
+    coolant_temperature: Q,
+    overall_heat_transfer_coefficient: Q,
+    number_of_steps: float,
+    integration_method: str,
+    property_update_frequency: float,
+    thermodynamic_coupling: str,
+    reaction: str,
+    reaction_orders: list[float],
+    rate_type: str,
+    pre_exponential_factor: float,
+    activation_energy: float,
+    temperature_exponent: float,
+    heat_of_reaction: float,
+    catalyst_bulk_density: Q | None = None,
+    catalyst_activity_factor: float | None = None,
+    catalyst_particle_diameter: float | None = None,
+    catalyst_void_fraction: float | None = None,
+    catalyst_molecular_diffusivity: Q | None = None,
+    catalyst_effectiveness_enabled: bool | None = None,
+    key_component: str | None = None,
+) -> PlugFlowReactorResult:
+    """March a feed along a tube, reacting as it goes.
+
+    ``PlugFlowReactor.run`` integrates ``[F1..Fn, T, P]`` in a fixed number of steps with a
+    scheme it writes out itself - RK4 by default, Euler on request, ``dz = length / steps`` and
+    no step-size control - and the answer is the whole profile rather than an outlet row.
+
+    **The properties are frozen by default.** ``thermodynamic_coupling`` is
+    ``"frozen_properties"``, so the rate law reads the last re-flash and never one of the RK4
+    sub-states; at the default frequency of ten that is why the class's two schemes agree to
+    thirteen digits on its own default, and why the step count moves the answer through *where*
+    the properties are re-read rather than through the integration order.
+
+    **The pressure row is the empty-tube branch unless a bed is declared.** Supplying
+    ``catalyst_bulk_density`` is what sets one, and it is what puts the Ergun equation in the
+    pressure row - measured, four orders of magnitude apart on the same gas.
+
+    **The stoichiometry is the reaction data's and the orders are yours.** ``KineticReaction`` is
+    a configured object in NeqSim and a declaration carries no coefficient map, so ``reaction``
+    resolves against the reaction data exactly as `azoth.process.stirred_tank_reactor`'s does,
+    and ``reaction_orders`` supplies the one argument that data does not carry - one entry per
+    reactant, in the table's order.
+
+    See :func:`azoth.process.reference.plug_flow_reactor`.
+    """
+    return resolve(_PLUG_FLOW_REACTOR)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        length=length,
+        diameter=diameter,
+        number_of_tubes=number_of_tubes,
+        energy_mode=energy_mode,
+        coolant_temperature=coolant_temperature,
+        overall_heat_transfer_coefficient=overall_heat_transfer_coefficient,
+        number_of_steps=number_of_steps,
+        integration_method=integration_method,
+        property_update_frequency=property_update_frequency,
+        thermodynamic_coupling=thermodynamic_coupling,
+        reaction=reaction,
+        reaction_orders=reaction_orders,
+        rate_type=rate_type,
+        pre_exponential_factor=pre_exponential_factor,
+        activation_energy=activation_energy,
+        temperature_exponent=temperature_exponent,
+        heat_of_reaction=heat_of_reaction,
+        catalyst_bulk_density=catalyst_bulk_density,
+        catalyst_activity_factor=catalyst_activity_factor,
+        catalyst_particle_diameter=catalyst_particle_diameter,
+        catalyst_void_fraction=catalyst_void_fraction,
+        catalyst_molecular_diffusivity=catalyst_molecular_diffusivity,
+        catalyst_effectiveness_enabled=catalyst_effectiveness_enabled,
+        key_component=key_component,
     )
 
 
