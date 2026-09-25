@@ -14,9 +14,11 @@
 //! `length / numberOfSteps`, and the same absence of step-size control.
 
 pub mod catalyst_bed;
+pub mod gibbs_database;
 pub mod kinetic_reaction;
 pub mod stepper;
 
 pub use catalyst_bed::CatalystBed;
+pub use gibbs_database::{GibbsDatabase, GibbsSpecies};
 pub use kinetic_reaction::{KineticReaction, RateBasis, RateType};
 pub use stepper::{Scheme, march};

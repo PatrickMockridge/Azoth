@@ -109,6 +109,7 @@ dependencies = [
  "azoth-eos",
  "azoth-reactions",
  "azoth-standards",
+ "csv",
  "serde",
  "toml",
 ]

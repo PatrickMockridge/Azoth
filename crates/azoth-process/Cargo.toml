@@ -12,6 +12,7 @@ azoth-core.workspace = true
 azoth-eos.workspace = true
 azoth-reactions.workspace = true
 azoth-standards.workspace = true
+csv.workspace = true
 serde.workspace = true
 toml.workspace = true
 
