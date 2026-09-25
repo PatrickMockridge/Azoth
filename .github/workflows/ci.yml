@@ -204,15 +204,24 @@ jobs:
   docs-drift:
     name: docs-drift
     runs-on: ubuntu-latest
+    env:
+      VIRTUAL_ENV: ${{ github.workspace }}/.venv
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
       # The generators import the runtime to render bounds, so the full dev set
       # is needed here - see the note in tools/gen_docs.py.
       - run: uv sync --extra dev --no-install-project
+      # `gen_docs` and `gen_registry` need only the pure-Python runtime, but
+      # `gen_stub` asks `azoth.process` for each model's signature - and that
+      # namespace reaches the Stream layer, which is `azoth._core`. Without a
+      # build here it failed at import, which is why this step exists.
+      - run: .venv/bin/maturin develop
       # The gate that makes "the docs are generated from the registry" true
       # rather than aspirational. Regenerate everything and fail on any diff:
       # a spec edited without regenerating its docs, registry, or tests is

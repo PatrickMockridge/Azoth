@@ -4317,6 +4317,56 @@ def stripping_column(
     )
 
 
+def stirred_tank_reactor(
+    components: Sequence[str],
+    feed_n: Q,
+    feed_z: Sequence[float],
+    feed_p: Q,
+    feed_t: Q,
+    reaction: str,
+    limiting_reactant: str,
+    conversion: float,
+    isothermal: bool,
+    reactor_temperature: Q | None = None,
+    reactor_pressure: Q | None = None,
+    pressure_drop: Q | None = None,
+) -> StirredTankReactorResult:
+    """`process.stirred_tank_reactor`, computed in Rust.
+
+    The reaction and its limiting reactant cross as names, as the process models' component
+    names do: the Rust side resolves the reaction against its own stoichiometry table, so
+    the two languages cannot disagree about which row moved the moles.
+    """
+    spec = _models_gen.model("process.stirred_tank_reactor")
+    result = _core.stirred_tank_reactor(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        [_si(spec, "feed_z", value) for value in feed_z],
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        reaction,
+        limiting_reactant,
+        conversion,
+        isothermal,
+        None
+        if reactor_temperature is None
+        else input_to_si(spec, "reactor_temperature", reactor_temperature),
+        None
+        if reactor_pressure is None
+        else input_to_si(spec, "reactor_pressure", reactor_pressure),
+        None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
+    )
+    return StirredTankReactorResult(
+        product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
+        product_z=tuple(result.product_z),
+        product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
+        product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
+        heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def filter(
     components: Sequence[str],
     inlet_n: Q,

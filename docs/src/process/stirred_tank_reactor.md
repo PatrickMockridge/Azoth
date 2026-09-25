@@ -30,7 +30,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `isothermal` | - | whether the vessel holds its temperature, which is the class's `isothermal` flag. |
 | `reactor_temperature` | K | *Optional.* the temperature an isothermal vessel holds. Required when `isothermal` is true, permitted and unused otherwise. |
 | `reactor_pressure` | Pa | *Optional.* the pressure the vessel holds, `setReactorPressure`. When omitted the outlet is the feed's less `pressure_drop`. |
-| `pressure_drop` | Pa | the pressure drop the outlet takes where no reactor pressure is stated, `setPressureDrop`. |
+| `pressure_drop` | Pa | *Optional.* the pressure drop the outlet takes where no reactor pressure is stated, `setPressureDrop`. When omitted the drop is zero, so the outlet keeps the feed's own pressure. |
 
 
 ## Outputs

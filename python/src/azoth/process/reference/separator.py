@@ -35,9 +35,9 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference.ph_flash import enthalpy_at
-from azoth.process.reference._phase_outlet import phase_enthalpy
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.pt_flash import pt_flash
+from azoth.process.reference._phase_outlet import phase_enthalpy
 
 
 def separator(
@@ -90,7 +90,8 @@ def separator(
     warnings: list[Warning] = []
 
     n = input_to_si(spec, "feed_n", feed_n)
-    t = input_to_si(spec, "feed_t", feed_t)
+    # Converted for the unit check alone: the route below takes the quantity itself.
+    input_to_si(spec, "feed_t", feed_t)
     p = input_to_si(spec, "feed_p", feed_p)
     drop = input_to_si(spec, "pressure_drop", pressure_drop)
 

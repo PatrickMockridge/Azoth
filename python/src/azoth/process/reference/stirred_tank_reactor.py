@@ -184,13 +184,15 @@ def _route(
     if not 0.0 <= conversion <= 1.0:
         raise InvalidInputError(
             "conversion",
-            f"a conversion is a fraction of the limiting reactant, and {conversion} is not in [0, 1]",
+            f"a conversion is a fraction of the limiting reactant, and {conversion} is "
+            "not in [0, 1]",
         )
     rows = _tables.stoichiometry(reaction)
     if not rows:
         raise InvalidInputError(
             "reaction",
-            f"`{reaction}` is not a reaction the data carries, so there is no stoichiometry to apply",
+            f"`{reaction}` is not a reaction the data carries, so there is no "
+            "stoichiometry to apply",
         )
     limiting = next(
         ((name, coeff) for name, coeff in rows if name.lower() == limiting_reactant.lower()), None
@@ -226,7 +228,8 @@ def _route(
     total = sum(amounts)
     if total <= 0.0:
         raise InvalidInputError(
-            "conversion", "the reaction leaves no moles in the reactor, so there is no state to flash"
+            "conversion",
+            "the reaction leaves no moles in the reactor, so there is no state to flash",
         )
     composition = [amount / total for amount in amounts]
 
@@ -249,13 +252,19 @@ def _route(
         temperature = from_si(reactor_temperature, "K")
     else:
         h_in, _ = enthalpy_at(mixture, ideal_gas, feed_t.to("K").magnitude, feed_p, feed_z)
-        moved = ph_flash_solve(mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_in, "J/mol"), composition)
+        moved = ph_flash_solve(
+            mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_in, "J/mol"), composition
+        )
         temperature = moved.T
 
     product_h = float(
         enthalpy_at(mixture, ideal_gas, temperature.to("K").magnitude, p_out, composition)[0]
     )
-    duty = (product_h * total - feed_n * _enthalpy_in(feed_t, feed_p, feed_z, mixture, ideal_gas)) if isothermal else 0.0
+    duty = (
+        (product_h * total - feed_n * _enthalpy_in(feed_t, feed_p, feed_z, mixture, ideal_gas))
+        if isothermal
+        else 0.0
+    )
 
     return ReactorStates(
         product_n=total,
@@ -267,7 +276,9 @@ def _route(
     )
 
 
-def _enthalpy_in(feed_t: Q, feed_p: float, feed_z: list[float], mixture: Any, ideal_gas: Any) -> float:
+def _enthalpy_in(
+    feed_t: Q, feed_p: float, feed_z: list[float], mixture: Any, ideal_gas: Any
+) -> float:
     """The feed's own molar enthalpy, on the same basis as the product's."""
     return float(enthalpy_at(mixture, ideal_gas, feed_t.to("K").magnitude, feed_p, feed_z)[0])
 

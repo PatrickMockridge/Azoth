@@ -1461,15 +1461,6 @@ class FilterResult:
     warnings: list[Warning]
 
 @final
-class StirredTankReactorResult:
-    product_n: Qty
-    product_z: list[float]
-    product_p: Qty
-    product_t: Qty
-    product_h: Qty
-    heat_duty: Qty
-    warnings: tuple[Warning, ...]
-@final
 class FlareResult:
     product_n: Qty
     product_z: list[float]
@@ -1601,6 +1592,15 @@ class SplitterResult:
     warnings: list[Warning]
 
 @final
+class StirredTankReactorResult:
+    product_n: Qty
+    product_z: list[float]
+    product_p: Qty
+    product_t: Qty
+    product_h: Qty
+    heat_duty: Qty
+    warnings: list[Warning]
+
 @final
 class StrippingColumnResult:
     tray_temperature: list[Qty]
@@ -1623,6 +1623,7 @@ class StrippingColumnResult:
     energy_residual: float
     warnings: list[Warning]
 
+@final
 class TankResult:
     gas_n: Qty
     gas_z: list[float]
@@ -3056,6 +3057,14 @@ def shortcut_distillation_column(
     condenser_pressure: float | None = None,
     reboiler_pressure: float | None = None,
 ) -> ShortcutDistillationColumnResult: ...
+def splitter(
+    components: list[str],
+    feed_n: float,
+    feed_z: list[float],
+    feed_p: float,
+    feed_t: float,
+    split_factors: list[float],
+) -> SplitterResult: ...
 def stirred_tank_reactor(
     components: list[str],
     feed_n: float,
@@ -3092,14 +3101,6 @@ def stripping_column(
     max_allowable_gas_load_factor: float | None = None,
     solver_type: str | None = None,
 ) -> StrippingColumnResult: ...
-def splitter(
-    components: list[str],
-    feed_n: float,
-    feed_z: list[float],
-    feed_p: float,
-    feed_t: float,
-    split_factors: list[float],
-) -> SplitterResult: ...
 def tank(
     components: list[str],
     feed_n: list[float],

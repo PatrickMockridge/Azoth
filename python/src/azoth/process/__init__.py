@@ -66,8 +66,8 @@ __all__ = [
     "separator",
     "shortcut_distillation_column",
     "splitter",
-    "stripping_column",
     "stirred_tank_reactor",
+    "stripping_column",
     "tank",
     "three_phase_separator",
     "throttling_valve",
@@ -351,6 +351,54 @@ def stripping_column(
         component_murphree_efficiency=component_murphree_efficiency,
         max_allowable_gas_load_factor=max_allowable_gas_load_factor,
         solver_type=solver_type,
+    )
+
+
+def stirred_tank_reactor(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    reaction: str,
+    limiting_reactant: str,
+    conversion: float,
+    isothermal: bool,
+    reactor_temperature: Q | None = None,
+    reactor_pressure: Q | None = None,
+    pressure_drop: Q | None = None,
+) -> StirredTankReactorResult:
+    """React a feed to a conversion of one reactant, then flash the result.
+
+    ``StirredTankReactor.run`` applies its reaction, sets the pressure and holds the
+    temperature when it is isothermal, then flashes: a ``TPflash`` at the held temperature
+    or a ``PHflash`` at the **feed's own enthalpy**.
+
+    **The reaction is a movement of moles**, not an energy balance: ``react`` takes the
+    limiting reactant's moles times ``conversion`` and scales every stoichiometric
+    coefficient by the limiting one's, and the heat the reaction releases shows up as the
+    temperature the adiabatic flash lands on rather than as a duty. The isothermal branch
+    reports the duty it had to supply, which is the outlet's total enthalpy less the feed's.
+
+    **A stoichiometry row naming a substance the feed does not carry is skipped**, which is
+    the class's own behaviour, so a reaction whose products are not in the feed moves less
+    material than its stoichiometry says.
+
+    See :func:`azoth.process.reference.stirred_tank_reactor`.
+    """
+    return resolve(_STIRRED_TANK_REACTOR)(  # type: ignore[no-any-return]
+        components=components,
+        feed_n=feed_n,
+        feed_z=feed_z,
+        feed_p=feed_p,
+        feed_t=feed_t,
+        reaction=reaction,
+        limiting_reactant=limiting_reactant,
+        conversion=conversion,
+        isothermal=isothermal,
+        reactor_temperature=reactor_temperature,
+        reactor_pressure=reactor_pressure,
+        pressure_drop=pressure_drop,
     )
 
 

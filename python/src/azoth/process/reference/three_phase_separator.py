@@ -335,7 +335,9 @@ def _phase_h(
     return float(state.h.to_base_units().magnitude)
 
 
-def _settled(mixture: Any, ideal_gas: Any, t_si: float, p_out: float, composition: list[float]) -> float:
+def _settled(
+    mixture: Any, ideal_gas: Any, t_si: float, p_out: float, composition: list[float]
+) -> float:
     """The state a composition settles on at ``(p, t)`` - what a stream ``run`` reports.
 
     Two phases or more is the two-phase flash's answer, which is ``enthalpy_at``. One phase
@@ -345,7 +347,9 @@ def _settled(mixture: Any, ideal_gas: Any, t_si: float, p_out: float, compositio
     if flash.phase_count > 1:
         h, _ = enthalpy_at(mixture, ideal_gas, t_si, p_out, composition)
         return float(h)
-    labelled = phase_label(mixture, reduced_parameters(mixture, t_si, p_out), composition, flash.z_factor[0])
+    labelled = phase_label(
+        mixture, reduced_parameters(mixture, t_si, p_out), composition, flash.z_factor[0]
+    )
     return _phase_h(mixture, ideal_gas, t_si, p_out, composition, labelled != GAS)
 
 

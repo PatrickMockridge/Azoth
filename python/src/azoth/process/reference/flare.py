@@ -154,11 +154,9 @@ def _route(
     if inlet_n < 0.0:
         raise ValueError(f"a molar flow cannot be negative, and this one is {inlet_n}")
 
-    quality = quality_route(
-        components, inlet_z, NORMAL_TEMPERATURE, SIXTY_FAHRENHEIT
-    )
-    moles_per_normal_cubic_metre = (
-        REFERENCE_PRESSURE / (R_STANDARD * NORMAL_TEMPERATURE * quality.compression_factor)
+    quality = quality_route(components, inlet_z, NORMAL_TEMPERATURE, SIXTY_FAHRENHEIT)
+    moles_per_normal_cubic_metre = REFERENCE_PRESSURE / (
+        R_STANDARD * NORMAL_TEMPERATURE * quality.compression_factor
     )
     volumetric_calorific_value = quality.inferior_calorific_value * moles_per_normal_cubic_metre
     standard_volumetric_flow = inlet_n * R_THERMO * STANDARD_STATE_TEMPERATURE / REFERENCE_PRESSURE

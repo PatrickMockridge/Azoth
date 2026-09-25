@@ -175,7 +175,10 @@ def render_range(spec: dict[str, Any]) -> str:
         effect = "raises" if check.severity.value == "error" else f"warns `{check.code.value}`"
         rows.append((f"`{bound}`", effect, check.rationale))
     if not rows:
-        return "No input is bounded. This model declares no range, so nothing here is\nchecked against one.\n"
+        return (
+            "No input is bounded. This model declares no range, so nothing here is\n"
+            "checked against one.\n"
+        )
     return render_table(rows, ("Bound", "On violation", "Why"))
 
 

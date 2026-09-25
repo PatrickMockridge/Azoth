@@ -48,8 +48,7 @@ from azoth.eos.reference.ph_flash import enthalpy_at
 from azoth.eos.reference.ph_flash import ph_flash as ph_flash_solve
 from azoth.eos.reference.pr_mass_density import pr_mass_density
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
-from azoth.eos.reference.ps_flash import entropy_at
-from azoth.eos.reference.ps_flash import ps_flash
+from azoth.eos.reference.ps_flash import entropy_at, ps_flash
 
 #: The bar the class's own estimates are written in - not this library's unit.
 BAR = 1.0e5
@@ -204,7 +203,8 @@ def _route(
             )
     if discharge_pressure <= 0.0:
         raise InvalidInputError(
-            "discharge_pressure", f"a discharge pressure is positive, and {discharge_pressure} Pa is not"
+            "discharge_pressure",
+            f"a discharge pressure is positive, and {discharge_pressure} Pa is not",
         )
 
     motive, motive_gas = _fluid(motive_components)
@@ -244,9 +244,7 @@ def _route(
     # The motive nozzle: isentropic to the mixing pressure, then the efficiency's drop.
     motive_h = _molar_enthalpy(motive, motive_gas, motive_t, motive_p, motive_z)
     motive_mass_h = motive_h / motive_molar_mass
-    motive_s, _ = entropy_at(
-        motive, motive_gas, motive_t.to("K").magnitude, motive_p, motive_z
-    )
+    motive_s, _ = entropy_at(motive, motive_gas, motive_t.to("K").magnitude, motive_p, motive_z)
     motive_isentropic_h = _isentropic_enthalpy(motive, motive_gas, mixing_p, motive_s, motive_z)
     motive_actual_mass_h = motive_mass_h - efficiencies["motive_nozzle_efficiency"] * (
         motive_mass_h - motive_isentropic_h / motive_molar_mass
@@ -259,7 +257,9 @@ def _route(
     suction_s, _ = entropy_at(
         suction, suction_gas, suction_t.to("K").magnitude, suction_p, suction_z
     )
-    suction_isentropic_h = _isentropic_enthalpy(suction, suction_gas, mixing_p, suction_s, suction_z)
+    suction_isentropic_h = _isentropic_enthalpy(
+        suction, suction_gas, mixing_p, suction_s, suction_z
+    )
     suction_actual_mass_h = suction_mass_h - efficiencies["suction_nozzle_efficiency"] * (
         suction_mass_h - suction_isentropic_h / suction_molar_mass
     )
@@ -346,7 +346,9 @@ def _molar_mass(mixture: Any, z: list[float]) -> float:
     return float(total)
 
 
-def _molar_enthalpy(mixture: Any, ideal_gas: Any, temperature: Q, p_si: float, z: list[float]) -> float:
+def _molar_enthalpy(
+    mixture: Any, ideal_gas: Any, temperature: Q, p_si: float, z: list[float]
+) -> float:
     """The state's molar enthalpy, J/mol."""
     h, _ = enthalpy_at(mixture, ideal_gas, temperature.to("K").magnitude, p_si, z)
     return float(h)
@@ -369,9 +371,7 @@ def _flash_at_enthalpy(
     mixture: Any, ideal_gas: Any, p_out: float, h_molar: float, z: list[float]
 ) -> Q:
     """The temperature a state takes at a molar enthalpy and pressure."""
-    moved = ph_flash_solve(
-        mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_molar, "J/mol"), z
-    )
+    moved = ph_flash_solve(mixture, ideal_gas, from_si(p_out, "Pa"), from_si(h_molar, "J/mol"), z)
     return moved.T
 
 
@@ -396,9 +396,7 @@ def _corrected_density(mixture: Any, temperature: Q, p_si: float, z: list[float]
     volume = pr_molar_volume(root, from_si(t_si, "K"), from_si(p_si, "Pa")).v
     molar_mass = _molar_mass(mixture, z)
     corrected = volume.to("m**3/mol").magnitude - mixture.volume_shift(z)
-    density = pr_mass_density(
-        from_si(molar_mass, "kg/mol"), from_si(corrected, "m**3/mol")
-    ).rho
+    density = pr_mass_density(from_si(molar_mass, "kg/mol"), from_si(corrected, "m**3/mol")).rho
     return float(density.to("kg/m**3").magnitude)
 
 
@@ -436,9 +434,7 @@ def _estimate_mixing_pressure(
     """
     if suction_pressure <= 0.0:
         return max(discharge_pressure, 0.0)
-    entrainment_ratio = (
-        max(suction_mass, 0.0) / motive_mass if motive_mass > 1.0e-9 else 1.0
-    )
+    entrainment_ratio = max(suction_mass, 0.0) / motive_mass if motive_mass > 1.0e-9 else 1.0
     clamped_ratio = _clamp(entrainment_ratio, 0.0, 5.0)
     pressure_lift = max(discharge_pressure - suction_pressure, 0.0)
     pressure_drop = pressure_lift * (0.1 + 0.03 * clamped_ratio)

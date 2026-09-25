@@ -88,7 +88,7 @@ fn air_compression_factor(celsius_value: f64) -> Result<f64> {
 /// use azoth_core::units::kelvins;
 /// use azoth_standards::iso6976;
 ///
-/// let r = iso6976(&["methane"], &[1.0], kelvins(288.15), kelvins(298.15))?;
+/// let r = iso6976(&["methane".to_string()], &[1.0], kelvins(288.15), kelvins(298.15))?;
 /// // The table's methane row, summed over one component.
 /// assert!((r.molar_mass.value - 0.016043).abs() < 1e-12);
 /// # Ok::<(), azoth_core::AzothError>(())

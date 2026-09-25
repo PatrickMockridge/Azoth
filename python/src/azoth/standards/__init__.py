@@ -18,8 +18,8 @@ __all__ = ["Iso6976Result", "iso6976"]
 def iso6976(
     components: list[str],
     z: list[float],
-    volumetric_reference_temperature: "object",
-    energy_reference_temperature: "object",
+    volumetric_reference_temperature: object,
+    energy_reference_temperature: object,
 ) -> Iso6976Result:
     """The calorific values and density of a natural gas, by ISO 6976.
 

@@ -151,7 +151,8 @@ def _route(
     """
     if len(components) != len(z):
         raise InvalidInputError(
-            "z", f"{len(components)} components and {len(z)} mole fractions, which is not a composition"
+            "z",
+            f"{len(components)} components and {len(z)} mole fractions, which is not a composition",
         )
     if not components:
         raise InvalidInputError(
