@@ -1,0 +1,189 @@
+/**
+ * The canvas.
+ *
+ * **The editor's model is the schema's, which is what makes this file short.** The graph document
+ * the library emits is already xyflow's node/edge shape — `id`, `type`, `position`, `data`,
+ * `sourceHandle` — so drawing it is a pass-through, and every gesture goes back out as one command
+ * that returns the whole document again. Nothing here holds a copy of the flowsheet.
+ *
+ * The one piece of local state is the drag: xyflow applies a position change every frame, and the
+ * library is told once, on release. A `set_position` on every frame would be a command per mouse
+ * move and a re-projection per frame for a figure that has not moved yet.
+ */
+
+import {
+  Background,
+  Controls,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  type Connection,
+  type Edge,
+  type Node,
+} from "@xyflow/react";
+import { useCallback, useEffect, useMemo } from "react";
+
+import { formatQuantity } from "../wire/field";
+import type { Catalogue, Envelope, GraphNode } from "../wire/types";
+import { STREAM_NODE, UNIT_NODE, nodeTypes, type NodePayload } from "./UnitOpNode";
+
+export interface FlowsheetProps {
+  catalogue: Catalogue | null;
+  envelope: Envelope;
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+  onCommand: (command: { command: string } & Record<string, unknown>) => void;
+}
+
+export function Flowsheet({ catalogue, envelope, selected, onSelect, onCommand }: FlowsheetProps) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // The document is the change token: it changes on every edit and on nothing else, so a
+  // re-derivation per envelope costs one string comparison.
+  const document = envelope.flowsheet.document;
+  const derived = useMemo(
+    () => derive(envelope, catalogue, selected),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `document` is the token for `envelope`.
+    [document, catalogue, selected],
+  );
+
+  useEffect(() => {
+    setNodes(derived.nodes);
+    setEdges(derived.edges);
+  }, [derived, setNodes, setEdges]);
+
+  const connect = useCallback(
+    (connection: Connection) => {
+      // A handle's id *is* the endpoint the document writes, so a gesture needs no translation.
+      if (connection.sourceHandle === null || connection.targetHandle === null) {
+        return;
+      }
+      onCommand({
+        command: "connect",
+        from: connection.sourceHandle,
+        to: connection.targetHandle,
+      });
+    },
+    [onCommand],
+  );
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={connect}
+      onNodeDragStop={(_event, node) =>
+        onCommand({
+          command: "set_position",
+          node: node.id,
+          x: Math.round(node.position.x),
+          y: Math.round(node.position.y),
+        })
+      }
+      onNodeClick={(_event, node) => onSelect(node.id)}
+      onPaneClick={() => onSelect(null)}
+      fitView
+      proOptions={{ hideAttribution: true }}
+    >
+      <Background />
+      <Controls showInteractive={false} />
+    </ReactFlow>
+  );
+}
+
+/** The canvas's nodes and edges, from the graph document and the run. */
+function derive(
+  envelope: Envelope,
+  catalogue: Catalogue | null,
+  selected: string | null,
+): { nodes: Node[]; edges: Edge[] } {
+  const streams = envelope.session?.streams ?? {};
+  const forms = new Map((catalogue?.unit_ops ?? []).map((form) => [form.id, form]));
+  const flagged = new Set(
+    envelope.diagnostics.map((diagnostic) => diagnosticNode(diagnostic.target)),
+  );
+
+  const nodes: Node[] = envelope.flowsheet.graph.nodes.map((node: GraphNode) => {
+    const form = node.data.unit === undefined ? undefined : forms.get(node.data.unit);
+    const payload: NodePayload = {
+      graph: node,
+      ...(form === undefined ? {} : { form }),
+      readout: readoutOf(node, envelope),
+      bad: flagged.has(node.id),
+    };
+    return {
+      id: node.id,
+      type: node.type === "unit_op" ? UNIT_NODE : STREAM_NODE,
+      position: node.position,
+      data: payload,
+      selected: node.id === selected,
+    };
+  });
+
+  const edges: Edge[] = envelope.flowsheet.graph.edges.map((edge) => {
+    const stream = streams[edge.data.path];
+    return {
+      id: edge.id,
+      source: edge.source,
+      sourceHandle: edge.sourceHandle,
+      target: edge.target,
+      targetHandle: edge.targetHandle,
+      // A recycle is drawn moving, which is what a loop is: the tear's value is the previous
+      // pass's, and the animation is the honest picture of that.
+      animated: edge.data.kind === "recycle",
+      ...(stream === undefined
+        ? {}
+        : {
+            label: `${formatQuantity(stream.T.magnitude_si, stream.T.unit)} · ${formatQuantity(
+              stream.P.magnitude_si,
+              stream.P.unit,
+              3,
+            )}`,
+          }),
+    };
+  });
+
+  return { nodes, edges };
+}
+
+/** The lines a node shows: one per outlet the run has a value for. */
+function readoutOf(node: GraphNode, envelope: Envelope): NodePayload["readout"] {
+  const streams = envelope.session?.streams ?? {};
+  const ports = node.data.ports?.outlets ?? [];
+  return ports
+    .flatMap((port) => port.handles)
+    .flatMap((path) => {
+      const stream = streams[path];
+      if (stream === undefined) {
+        return [];
+      }
+      return [
+        {
+          port: path,
+          text: `${path}  ${formatQuantity(stream.T.magnitude_si, stream.T.unit)}  ${formatQuantity(
+            stream.n.magnitude_si,
+            stream.n.unit,
+            3,
+          )}`,
+        },
+      ];
+    });
+}
+
+/** The node id a diagnostic is about, where it is about one. */
+function diagnosticNode(target: { kind: string; [key: string]: unknown }): string {
+  switch (target.kind) {
+    case "node":
+      return `${String(target.role)}:${String(target.id)}`;
+    case "handle":
+      return `${String(target.role)}:${String(target.node)}`;
+    case "parameter":
+      return `instance:${String(target.node)}`;
+    default:
+      return "";
+  }
+}

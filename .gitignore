@@ -85,3 +85,12 @@ validation/neqsim/*.jar
 
 # The wasm package wasm-pack writes; it is built, never committed.
 crates/azoth-wasm/pkg/
+
+# The wasm module the editor imports; `npm run wasm` builds it from the crate.
+/ui/src/wasm/pkg/
+
+# --- the editor ---
+# Rendered by `npm run dev` from `index.html`, and never committed: the wasm pkg above is the
+# only generated thing under `ui/` that another build reads.
+/ui/node_modules/
+/ui/dist/

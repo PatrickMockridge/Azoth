@@ -1,0 +1,27 @@
+{
+  "name": "azoth-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The azoth flowsheet editor: the middleware's first front-end.",
+  "scripts": {
+    "wasm": "wasm-pack build ../crates/azoth-wasm --target web --out-dir ../../ui/src/wasm/pkg --release",
+    "dev": "npm run wasm && vite",
+    "build": "npm run wasm && tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  }
+}

@@ -1,0 +1,5426 @@
+{
+  "tools": [
+    {
+      "description": "Add a unit operation. An id that already exists is replaced, so the call is retryable.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "add_instance",
+            "description": "The command's name."
+          },
+          "id": {
+            "description": "The instance's name, e.g. `p1`.",
+            "type": "string"
+          },
+          "parameters": {
+            "description": "Parameter values, keyed by the entry's own names.",
+            "type": "object"
+          },
+          "unit": {
+            "description": "The palette entry to instantiate.",
+            "enum": [
+              "unit_ops.absorption_column",
+              "unit_ops.distillation_column",
+              "unit_ops.packed_column",
+              "unit_ops.rate_based_packed_column",
+              "unit_ops.shortcut_distillation_column",
+              "unit_ops.simple_absorber",
+              "unit_ops.stripping_column",
+              "unit_ops.heat_exchanger",
+              "unit_ops.component_splitter",
+              "unit_ops.mixer",
+              "unit_ops.splitter",
+              "unit_ops.gibbs_reactor",
+              "unit_ops.plug_flow_reactor",
+              "unit_ops.stirred_tank_reactor",
+              "unit_ops.gas_scrubber",
+              "unit_ops.separator",
+              "unit_ops.three_phase_separator",
+              "unit_ops.compressor",
+              "unit_ops.cooler",
+              "unit_ops.ejector",
+              "unit_ops.expander",
+              "unit_ops.filter",
+              "unit_ops.heater",
+              "unit_ops.pipe",
+              "unit_ops.pump",
+              "unit_ops.throttling_valve",
+              "unit_ops.flare",
+              "unit_ops.manifold",
+              "unit_ops.tank"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "id",
+          "unit"
+        ],
+        "type": "object"
+      },
+      "name": "add_instance"
+    },
+    {
+      "description": "Remove a unit operation, and every connection and recycle that named it.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "remove_instance",
+            "description": "The command's name."
+          },
+          "id": {
+            "description": "The instance to remove.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "id"
+        ],
+        "type": "object"
+      },
+      "name": "remove_instance"
+    },
+    {
+      "description": "Join a feed or an outlet to an inlet or a product. An outlet is `instance.port`, and a `many` outlet takes a position: `split1.products[0]`.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "connect",
+            "description": "The command's name."
+          },
+          "from": {
+            "description": "Where the stream is produced.",
+            "type": "string"
+          },
+          "to": {
+            "description": "Where it is consumed.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "name": "connect"
+    },
+    {
+      "description": "Remove the first connection or recycle that joins these two endpoints.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "disconnect",
+            "description": "The command's name."
+          },
+          "from": {
+            "description": "The producing endpoint, as it was written.",
+            "type": "string"
+          },
+          "to": {
+            "description": "The consuming endpoint, as it was written.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "name": "disconnect"
+    },
+    {
+      "description": "Set one parameter of one instance. The value's JSON kind follows the declaration: a number for a quantity, a list for a vector, a switch for a boolean, a name for an enum.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "set_parameter",
+            "description": "The command's name."
+          },
+          "instance": {
+            "description": "The instance that owns it.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The parameter's declared name.",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value, in the declaration's kind."
+          }
+        },
+        "required": [
+          "command",
+          "instance",
+          "name",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "set_parameter"
+    },
+    {
+      "description": "Remove a parameter's value, leaving it to the declaration's own default.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "unset_parameter",
+            "description": "The command's name."
+          },
+          "instance": {
+            "description": "The instance that owns it.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The parameter's declared name.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "instance",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "unset_parameter"
+    },
+    {
+      "description": "Add a boundary feed. `h` is not settable: it is a state function of `T`, `P` and `z` and the kernel derives it.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "P": {
+            "description": "Pressure, Pa.",
+            "type": "number"
+          },
+          "T": {
+            "description": "Temperature, K.",
+            "type": "number"
+          },
+          "command": {
+            "const": "add_input",
+            "description": "The command's name."
+          },
+          "components": {
+            "description": "The fluid's substances, by name.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "n": {
+            "description": "Molar flow, mol/s.",
+            "type": "number"
+          },
+          "name": {
+            "description": "The feed's name.",
+            "type": "string"
+          },
+          "z": {
+            "description": "Mole fractions, one per substance.",
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "command",
+          "name",
+          "components",
+          "n",
+          "z",
+          "P",
+          "T"
+        ],
+        "type": "object"
+      },
+      "name": "add_input"
+    },
+    {
+      "description": "Remove a boundary feed, and every connection that drew from it.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "remove_input",
+            "description": "The command's name."
+          },
+          "name": {
+            "description": "The feed to remove.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "remove_input"
+    },
+    {
+      "description": "Declare a boundary product. An output is calculated, so a product is a name only.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "add_product",
+            "description": "The command's name."
+          },
+          "name": {
+            "description": "The product's name.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "add_product"
+    },
+    {
+      "description": "Remove a boundary product, and every connection that wrote to it.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "remove_product",
+            "description": "The command's name."
+          },
+          "name": {
+            "description": "The product to remove.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "remove_product"
+    },
+    {
+      "description": "Declare a tear: the connection that closes a loop, under a name of its own.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "add_recycle",
+            "description": "The command's name."
+          },
+          "from": {
+            "description": "The outlet the loop leaves from.",
+            "type": "string"
+          },
+          "stream": {
+            "description": "The tear's name.",
+            "type": "string"
+          },
+          "to": {
+            "description": "The inlet the loop returns to.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "stream",
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "name": "add_recycle"
+    },
+    {
+      "description": "Remove a tear, leaving its endpoints as an ordinary pair of connections.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "remove_recycle",
+            "description": "The command's name."
+          },
+          "stream": {
+            "description": "The tear to remove.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "stream"
+        ],
+        "type": "object"
+      },
+      "name": "remove_recycle"
+    },
+    {
+      "description": "Set one convergence parameter of one tear. A tear that does not converge is reported, not raised.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "set_recycle",
+            "description": "The command's name."
+          },
+          "field": {
+            "description": "Which of the tear's seven settings.",
+            "enum": [
+              "flow_tolerance",
+              "composition_tolerance",
+              "temperature_tolerance",
+              "pressure_tolerance",
+              "max_iterations",
+              "minimum_flow",
+              "acceleration_method"
+            ],
+            "type": "string"
+          },
+          "stream": {
+            "description": "The tear's name.",
+            "type": "string"
+          },
+          "value": {
+            "description": "A number, except for `acceleration_method`, which is a name."
+          }
+        },
+        "required": [
+          "command",
+          "stream",
+          "field",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "set_recycle"
+    },
+    {
+      "description": "Place a node on the canvas, by node id: `instance:sep1`, `input:feed_1`, `product:out`.",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "set_position",
+            "description": "The command's name."
+          },
+          "node": {
+            "description": "The node's id.",
+            "type": "string"
+          },
+          "x": {
+            "description": "The column, in pixels.",
+            "type": "number"
+          },
+          "y": {
+            "description": "The row, in pixels.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "command",
+          "node",
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "name": "set_position"
+    }
+  ],
+  "unit_ops": [
+    {
+      "id": "unit_ops.absorption_column",
+      "model": "process.absorption_column",
+      "name": "Absorption column",
+      "parameters": [
+        {
+          "description": "the pressure at the bottom stage, inherited from `DistillationColumn.setBottomPressure`, which takes bara",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "bottom_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone",
+          "dimension": "dimensionless",
+          "kind": "vector",
+          "name": "component_murphree_efficiency",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_allowable_gas_load_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the column-wide Murphree tray efficiency, where 1 is the ideal stage",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "murphree_efficiency",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the actual trays, which the constructor requires to be positive; a tray is numbered 0 at the bottom, where the gas enters, to `number_of_stages - 1`, where the solvent enters",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "number_of_stages",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "an absorber with no trays is not an absorber",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares",
+          "dimension": null,
+          "kind": "enum",
+          "name": "solver_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "direct_substitution",
+            "damped_substitution",
+            "inside_out",
+            "matrix_inside_out",
+            "wegstein",
+            "sum_rates",
+            "newton",
+            "naphtali_sandholm",
+            "mesh_residual",
+            "auto"
+          ]
+        },
+        {
+          "description": "the pressure at the top stage, inherited from `DistillationColumn.setTopPressure`, which takes bara",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "top_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas_in"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "solvent_in"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas_out"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid_out"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/absorber/AbsorptionColumn.java",
+      "unmodelled_ranges": [
+        "temperature_tolerance",
+        "gas_t",
+        "solvent_t"
+      ]
+    },
+    {
+      "id": "unit_ops.distillation_column",
+      "model": "process.distillation_column",
+      "name": "Distillation column",
+      "parameters": [
+        {
+          "description": "the pressure at the bottom stage; `setBottomPressure` takes bara, and the two fix the profile the stage pressures interpolate",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "bottom_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the component a purity or a recovery constrains; unread by the other three types",
+          "dimension": null,
+          "kind": "string",
+          "name": "bottom_specification_component",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the target value, in the unit its type implies, as the top specification's is",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "bottom_specification_target",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "which of `ColumnSpecification`'s five types constrains the bottom product, which is the same five as the top specification's and its own degree of freedom",
+          "dimension": null,
+          "kind": "enum",
+          "name": "bottom_specification_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "product_purity",
+            "reflux_ratio",
+            "component_recovery",
+            "product_flow_rate",
+            "duty"
+          ]
+        },
+        {
+          "description": "the condenser's temperature, which with the top specification is what pins the top of the column; the class defaults it to 270.15 K",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "condenser_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one and the last stage is the condenser; `addFeedStream` refuses an index outside `[0, number_of_stages + has_reboiler + has_condenser)`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "feed_stage",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "one fraction per tray of the vapour withdrawn from that tray's own outlet, as `setGasSideDrawFraction` states it; a zero where a tray draws nothing",
+          "dimension": null,
+          "kind": "vector",
+          "name": "gas_side_draw_fractions",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "whether the column has a condenser at the top stage, which is the constructor's `hasCondenser`",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "has_condenser",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "whether the column has a reboiler at stage 0, which is the constructor's `hasReboiler`",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "has_reboiler",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the same for the liquid, which a pumparound draws from too - the two are bounded together and may not sum above one",
+          "dimension": null,
+          "kind": "vector",
+          "name": "liquid_side_draw_fractions",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the Murphree tray efficiency applied to every equilibrium stage, where 1 is the ideal stage; the class defaults it to 1.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "murphree_efficiency",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the theoretical trays between the ends, which is the constructor's `numberOfTraysLocal`; a reboiler or a condenser adds one stage each on top of it",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "number_of_stages",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "a column with no stages between its ends is not a column",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the same for a pumparound; its **return** to another tray is a recycle the class iterates and this port does not carry",
+          "dimension": null,
+          "kind": "vector",
+          "name": "pumparound_fractions",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: the two ends never do, and a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "reactive",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the last reactive middle tray",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_end_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last - `setReactive(true, start, end)`. Both bounds are stated or neither",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_start_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the reboiler's temperature, which with the bottom specification is what pins the bottom of the column; the class defaults it to 273.15 K",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "reboiler_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "which of the class's ten solving strategies runs - direct_substitution, damped_substitution, inside_out, matrix_inside_out, wegstein, sum_rates, newton, naphtali_sandholm, mesh_residual or auto - where auto is a ladder and not one method",
+          "dimension": null,
+          "kind": "enum",
+          "name": "solver_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "direct_substitution",
+            "damped_substitution",
+            "inside_out",
+            "matrix_inside_out",
+            "wegstein",
+            "sum_rates",
+            "newton",
+            "naphtali_sandholm",
+            "mesh_residual",
+            "auto"
+          ]
+        },
+        {
+          "description": "the pressure at the top stage; `setTopPressure` takes bara, and the solver refuses a column that has neither this nor a feed to initialize from",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "top_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the component a purity or a recovery constrains; unread by the other three types",
+          "dimension": null,
+          "kind": "string",
+          "name": "top_specification_component",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "top_specification_target",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "which of `ColumnSpecification`'s five types constrains the top product - product_purity, reflux_ratio, component_recovery, product_flow_rate or duty - and product_purity and component_recovery also need `top_specification_component`",
+          "dimension": null,
+          "kind": "enum",
+          "name": "top_specification_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "product_purity",
+            "reflux_ratio",
+            "component_recovery",
+            "product_flow_rate",
+            "duty"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "distillate"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "bottoms"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/distillation/DistillationColumn.java",
+      "unmodelled_ranges": [
+        "temperature_tolerance",
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.packed_column",
+      "model": "process.packed_column",
+      "name": "Packed column",
+      "parameters": [
+        {
+          "description": "the column's internal diameter; a value at or below zero auto-sizes it from the hydraulics, and the class defaults it to -1.0",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "column_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the fraction of flood the packing is sized to, which the hydraulics reads and the solve does not; the class defaults it to 0.70",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_flood_fraction",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the packed bed height, which the constructor divides by a 0.5 m HETP guess to fix the base column's stage count and which the hydraulics later divides by the calculated HETP to report theoretical stages; the class defaults it to 5.0",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "packed_height",
+          "range": [],
+          "required": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the selected packing's relative hydraulic capacity factor, which the hydraulics reads; the class defaults it to 1.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "packing_hydraulic_capacity_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the packing's name, which `PackingSpecificationLibrary` resolves and the hydraulics reads; the class defaults it to Pall-Ring-50",
+          "dimension": null,
+          "kind": "string",
+          "name": "packing_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "whether the packing is structured or random, which selects the hydraulic correlation",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "structured_packing",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "distillate"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "bottoms"
+        }
+      ],
+      "refusal": "its palette entry declares the packing and not the column: `feed_stage`, `number_of_stages`, the two pressures and the two ends are what `PackedColumn.run` reads through `super.run`, and the entry's own notes say it takes `unit_ops.distillation_column`'s whole declaration - which the file does not carry. A form built from this entry could not configure the machine, so the executor refuses it until the declaration matches the notes",
+      "runnable": false,
+      "source": "NeqSim process/equipment/distillation/PackedColumn.java",
+      "unmodelled_ranges": [
+        "top_pressure",
+        "bottom_pressure",
+        "temperature_tolerance",
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.rate_based_packed_column",
+      "model": null,
+      "name": "Rate-based packed column",
+      "parameters": [
+        {
+          "description": "the column's internal diameter, which the hydraulics and the interfacial area are computed on; the class defaults it to 1.0",
+          "dimension": "length",
+          "kind": "unknown",
+          "name": "column_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "fixed_point_profile, the counter-current liquid profile iteration, or equation_oriented, a column-wide damped Newton with homotopy continuation; the class defaults to the first",
+          "dimension": null,
+          "kind": "unknown",
+          "name": "column_solver",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the outlet convergence tolerance the profile iterates to, which the class defaults to 1.0e-8",
+          "dimension": "molar_flow",
+          "kind": "unknown",
+          "name": "convergence_tolerance",
+          "range": [],
+          "required": false,
+          "unit": "mol/s",
+          "values": []
+        },
+        {
+          "description": "overall_two_resistance, a scalar gas and liquid film pair, or maxwell_stefan_matrix, which corrects it with NeqSim's binary diffusivities and the phase composition; the class defaults to the matrix",
+          "dimension": null,
+          "kind": "unknown",
+          "name": "film_model",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "none, which re-equilibrates the segment outlets after material transfer alone, or chilton_colburn_analogy, which takes the heat coefficients from the packed-bed film coefficients; the class defaults to the analogy",
+          "dimension": null,
+          "kind": "unknown",
+          "name": "heat_transfer_model",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "onda_1968 or billet_schultes_1999, which is the wetted-area and film-coefficient correlation; the class defaults to onda_1968",
+          "dimension": null,
+          "kind": "unknown",
+          "name": "mass_transfer_correlation",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the counter-current profile iteration cap, which the class defaults to 30",
+          "dimension": "dimensionless",
+          "kind": "unknown",
+          "name": "max_iterations",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the axial slices the packed height is divided into, which is the model's resolution and the size of its profile; the class defaults it to 10",
+          "dimension": "dimensionless",
+          "kind": "unknown",
+          "name": "number_of_segments",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the packed section's height, which is divided into `number_of_segments` slices; the class defaults it to 5.0",
+          "dimension": "length",
+          "kind": "unknown",
+          "name": "packed_height",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the packing's name, which `PackingSpecificationLibrary` resolves into the wetted area and film coefficients",
+          "dimension": null,
+          "kind": "unknown",
+          "name": "packing_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "sequential_explicit, which applies mass transfer then heat transfer then re-flashes, or simultaneous_residual, which solves the flux residuals and the interfacial heat balance together; the class defaults to the first",
+          "dimension": null,
+          "kind": "unknown",
+          "name": "segment_solver",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas_in"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid_in"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas_out"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid_out"
+        }
+      ],
+      "refusal": "a second physics - a segment model with film coefficients and an interphase heat balance - carried by the distillation workstream rather than by this one",
+      "runnable": false,
+      "source": "NeqSim process/equipment/distillation/RateBasedPackedColumn.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.shortcut_distillation_column",
+      "model": "process.shortcut_distillation_column",
+      "name": "Shortcut distillation column",
+      "parameters": [
+        {
+          "description": "the condenser pressure, which the two product streams flash at; `setCondenserPressure` takes bara, and a negative value means the feed's pressure",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "condenser_pressure",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the heavy key component's name, which the class refuses to run without",
+          "dimension": null,
+          "kind": "string",
+          "name": "heavy_key",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the fraction of the heavy key's feed that leaves in the bottoms; the class defaults it to 0.99",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "heavy_key_recovery_bottoms",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "as the light key's recovery: the class clamps a bound rather than refusing it",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the light key component's name, which the class refuses to run without",
+          "dimension": null,
+          "kind": "string",
+          "name": "light_key",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the fraction of the light key's feed that leaves in the distillate; the class defaults it to 0.99",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "light_key_recovery_distillate",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a recovery is a fraction of the feed, and the class's own clamp takes either bound to just inside it rather than refusing",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the reboiler pressure; `setReboilerPressure` takes bara, and a negative value means the feed's pressure",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "reboiler_pressure",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the actual reflux ratio as a multiple of Underwood's minimum, which is what Gilliland is entered with; the class defaults it to 1.2",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "reflux_ratio_multiplier",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": false,
+              "rationale": "at one the reflux equals the minimum, Gilliland's X is zero and the class returns an infinite stage count; below one it silently takes its Y = 0.5 fallback",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "distillate"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "bottoms"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/distillation/ShortcutDistillationColumn.java",
+      "unmodelled_ranges": [
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.simple_absorber",
+      "model": null,
+      "name": "Simple absorber",
+      "parameters": [],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "solvent"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid"
+        }
+      ],
+      "refusal": "refused on measured evidence: `SimpleAbsorber` is a fixed-point loop over MDEA/CO2 loading and a faithful port needs the amine electrolyte chemistry P8 declined",
+      "runnable": false,
+      "source": "NeqSim process/equipment/absorber/SimpleAbsorber.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.stripping_column",
+      "model": "process.stripping_column",
+      "name": "Stripping column",
+      "parameters": [
+        {
+          "description": "the pressure at the bottom stage, inherited from `DistillationColumn.setBottomPressure`, which takes bara",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "bottom_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone",
+          "dimension": "dimensionless",
+          "kind": "vector",
+          "name": "component_murphree_efficiency",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_allowable_gas_load_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the column-wide Murphree tray efficiency, where 1 is the ideal stage",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "murphree_efficiency",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the actual trays; a tray is numbered 0 at the bottom, where the stripping gas enters, to `number_of_stages - 1`, where the rich liquid enters",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "number_of_stages",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "a stripper with no trays is not a stripper",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares",
+          "dimension": null,
+          "kind": "enum",
+          "name": "solver_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "direct_substitution",
+            "damped_substitution",
+            "inside_out",
+            "matrix_inside_out",
+            "wegstein",
+            "sum_rates",
+            "newton",
+            "naphtali_sandholm",
+            "mesh_residual",
+            "auto"
+          ]
+        },
+        {
+          "description": "the pressure at the top stage, inherited from `DistillationColumn.setTopPressure`, which takes bara",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "top_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "stripping_gas"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "rich_liquid"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "overhead_gas"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "lean_liquid"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/absorber/StrippingColumn.java",
+      "unmodelled_ranges": [
+        "temperature_tolerance",
+        "stripping_gas_t",
+        "rich_liquid_t"
+      ]
+    },
+    {
+      "id": "unit_ops.heat_exchanger",
+      "model": "process.heat_exchanger",
+      "name": "Heat exchanger",
+      "parameters": [
+        {
+          "description": "pin the cold outlet at this temperature and energy-balance the hot side against it",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "cold_outlet_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "counterflow, parallelflow or shell_and_tube, which picks the effectiveness relation; NeqSim spells these \"concentric tube counterflow\", \"concentric tube paralellflow\" and \"shell and tube\" and defaults to the first",
+          "dimension": null,
+          "kind": "enum",
+          "name": "flow_arrangement",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": [
+            "counterflow",
+            "parallelflow",
+            "shell_and_tube"
+          ]
+        },
+        {
+          "description": "pin the hot outlet at this temperature and energy-balance the cold side against it; at most one of the two outlet temperatures may be given",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "hot_outlet_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the overall heat transfer coefficient times the area, which is what the rating is sized against; used when no outlet temperature is pinned",
+          "dimension": "thermal_conductance",
+          "kind": "quantity",
+          "name": "ua",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a conductance is positive, and zero moves nothing",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "W/K",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "hot_in"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "hot_out"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "cold_in"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "cold_out"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/heatexchanger/HeatExchanger.java",
+      "unmodelled_ranges": [
+        "hot_in_t",
+        "cold_in_t"
+      ]
+    },
+    {
+      "id": "unit_ops.component_splitter",
+      "model": "process.component_splitter",
+      "name": "Component splitter",
+      "parameters": [
+        {
+          "description": "the fraction of each component routed to the first outlet, one entry per component; the second outlet takes the remainder",
+          "dimension": "dimensionless",
+          "kind": "vector",
+          "name": "split_factors",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a negative fraction would route negative moles; the kernel refuses one rather than letting it through",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "products"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/splitter/ComponentSplitter.java",
+      "unmodelled_ranges": [
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.mixer",
+      "model": "process.mixer",
+      "name": "Mixer",
+      "parameters": [
+        {
+          "description": "a specified outlet pressure; when omitted, the mixer joins at its feeds' pressure",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "outlet_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "product"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/mixer/Mixer.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.splitter",
+      "model": "process.splitter",
+      "name": "Splitter",
+      "parameters": [
+        {
+          "description": "the fraction of the feed to each outlet, one entry per outlet, summing to 1",
+          "dimension": "dimensionless",
+          "kind": "vector",
+          "name": "split_factors",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "products"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/splitter/Splitter.java",
+      "unmodelled_ranges": [
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.gibbs_reactor",
+      "model": "process.gibbs_reactor",
+      "name": "Gibbs reactor",
+      "parameters": [
+        {
+          "description": "the bound on the undamped step's norm, the class's default 1e-3",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "convergence_tolerance",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a tolerance of zero is never satisfied, so the cap is the only stop",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of each Newton step the compositions take, the class's default 0.05; the multipliers take the whole step",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "damping_composition",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the composition takes a fraction of the Newton step, and a fraction is in (0, 1]",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "isothermal, the class's own default, or adiabatic, where the energy balance moves the temperature inside the loop",
+          "dimension": null,
+          "kind": "enum",
+          "name": "energy_mode",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": [
+            "isothermal",
+            "adiabatic"
+          ]
+        },
+        {
+          "description": "the iteration cap, the class's default 5000; reaching it returns success with `converged` false",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_iterations",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "a loop with no passes is not a loop",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the floor below which the tolerance is not consulted, the class's default 100",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "min_iterations",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "product"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/reactor/GibbsReactor.java",
+      "unmodelled_ranges": [
+        "feed_n"
+      ]
+    },
+    {
+      "id": "unit_ops.plug_flow_reactor",
+      "model": "process.plug_flow_reactor",
+      "name": "Plug-flow reactor",
+      "parameters": [
+        {
+          "description": "Ea in the same expression, the class's default 100000",
+          "dimension": "molar_energy",
+          "kind": "quantity",
+          "name": "activation_energy",
+          "range": [],
+          "required": true,
+          "unit": "J/mol",
+          "values": []
+        },
+        {
+          "description": "the bed's activity factor, in [0, 1], the class's default 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "catalyst_activity_factor",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "an activity factor scales a rate by a fraction of it",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the bed's bulk density, which converts a mass-basis rate to a volumetric one; default 800",
+          "dimension": "mass_density",
+          "kind": "quantity",
+          "name": "catalyst_bulk_density",
+          "range": [],
+          "required": false,
+          "unit": "kg/m**3",
+          "values": []
+        },
+        {
+          "description": "whether the pellet's effectiveness factor scales the rate; off by default",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "catalyst_effectiveness_enabled",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the diffusivity the effectiveness factor reads, the class's default 1.0e-5",
+          "dimension": "diffusion_coefficient",
+          "kind": "quantity",
+          "name": "catalyst_molecular_diffusivity",
+          "range": [],
+          "required": false,
+          "unit": "m**2/s",
+          "values": []
+        },
+        {
+          "description": "the pellet diameter the Ergun equation and the Thiele modulus read; default 0.003",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "catalyst_particle_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the bed's void fraction, the class's default 0.40",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "catalyst_void_fraction",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the coolant's temperature on the coolant branch, the class's default 298.15",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "coolant_temperature",
+          "range": [],
+          "required": true,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "tube internal diameter, the class's default 0.10",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "diameter",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a tube has a positive diameter",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "how the temperature moves - adiabatic, isothermal or coolant - where adiabatic is the class's default",
+          "dimension": null,
+          "kind": "enum",
+          "name": "energy_mode",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": [
+            "adiabatic",
+            "isothermal",
+            "coolant"
+          ]
+        },
+        {
+          "description": "the reaction's enthalpy, which the energy balance consumes; the class's default 0",
+          "dimension": "molar_energy",
+          "kind": "quantity",
+          "name": "heat_of_reaction",
+          "range": [],
+          "required": true,
+          "unit": "J/mol",
+          "values": []
+        },
+        {
+          "description": "rk4 or euler, where rk4 is the class's default and any other name is it too",
+          "dimension": null,
+          "kind": "enum",
+          "name": "integration_method",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": [
+            "rk4",
+            "euler"
+          ]
+        },
+        {
+          "description": "which component the reported conversion is of; the class defaults to the first reactant of the first reaction",
+          "dimension": null,
+          "kind": "string",
+          "name": "key_component",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "tube length, the class's default 5.0",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "length",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a tube has a positive length",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the fixed number of steps the march takes, the class's default 100, floored at 10 by the setter",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "number_of_steps",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "a march with no steps is not a march",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "how many tubes the flow is split across, the class's default 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "number_of_tubes",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the coolant branch's U, the class's default 50.0",
+          "dimension": "heat_transfer",
+          "kind": "quantity",
+          "name": "overall_heat_transfer_coefficient",
+          "range": [],
+          "required": true,
+          "unit": "W/(m**2*K)",
+          "values": []
+        },
+        {
+          "description": "A in k(T) = A * T**n * exp(-Ea/(R*T)); the class's default 1.0e10",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "pre_exponential_factor",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "steps between re-flashes on the frozen coupling, the class's default 10",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "property_update_frequency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "the class's setter floors it at one",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "power_law, lhhw or equilibrium - where equilibrium is evaluated as a power law, the class's own dispatch",
+          "dimension": null,
+          "kind": "enum",
+          "name": "rate_type",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": [
+            "power_law",
+            "lhhw",
+            "equilibrium"
+          ]
+        },
+        {
+          "description": "the rate law's name, and the stoichiometry the species set is widened by",
+          "dimension": null,
+          "kind": "string",
+          "name": "reaction",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "one power-law order per reactant the reaction data names, in the table's order - the argument `addReactant` takes a third time and the one the data does not carry",
+          "dimension": "dimensionless",
+          "kind": "vector",
+          "name": "reaction_orders",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "n in the same expression, the class's default 0; a magnitude below 1e-10 is taken as exactly zero",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "temperature_exponent",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "frozen_properties, the class's default, or fully_coupled, which re-flashes for every residual evaluation",
+          "dimension": null,
+          "kind": "enum",
+          "name": "thermodynamic_coupling",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": [
+            "frozen_properties",
+            "fully_coupled"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "product"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/reactor/PlugFlowReactor.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.stirred_tank_reactor",
+      "model": "process.stirred_tank_reactor",
+      "name": "Stirred-tank reactor",
+      "parameters": [
+        {
+          "description": "the fractional conversion of the limiting reactant, in [0, 1]",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "conversion",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a conversion is a fraction of the limiting reactant",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "whether the vessel holds its temperature, the class's own flag",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "isothermal",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the component whose moles times the conversion set the extent of the reaction",
+          "dimension": null,
+          "kind": "string",
+          "name": "limiting_reactant",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the drop the outlet takes where no reactor pressure is stated",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a vessel passes pressure down, not up",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the reaction's id in the reaction data, which is what `addReaction` names",
+          "dimension": null,
+          "kind": "string",
+          "name": "reaction",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the pressure the vessel holds, which replaces the feed's rather than dropping from it",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "reactor_pressure",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the temperature an isothermal vessel holds; required when isothermal and permitted and unread otherwise",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "reactor_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "product"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/reactor/StirredTankReactor.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.gas_scrubber",
+      "model": "process.gas_scrubber",
+      "name": "Gas scrubber",
+      "parameters": [
+        {
+          "description": "the fraction of the vapour's moles carried over into the liquid outlet, on NeqSim's `feed`/`mole` basis for `setEntrainment`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "gas_in_liquid",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "an entrainment fraction is a fraction",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "heat_input",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a vessel passes pressure down, not up",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/separator/GasScrubber.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.separator",
+      "model": "process.separator",
+      "name": "Separator",
+      "parameters": [
+        {
+          "description": "the fraction of the vapour's moles carried over into the liquid outlet, on NeqSim's `feed`/`mole` basis for `setEntrainment`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "gas_in_liquid",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "an entrainment fraction is a fraction",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "heat_input",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a vessel passes pressure down, not up",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "vapour"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/separator/Separator.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.three_phase_separator",
+      "model": "process.three_phase_separator",
+      "name": "Three-phase separator",
+      "parameters": [
+        {
+          "description": "the fraction of the aqueous phase's moles carried into the vapour",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "aqueous_in_gas",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a fraction of a phase's moles, which cannot exceed the phase",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of the aqueous phase's moles carried into the oil",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "aqueous_in_oil",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a fraction of a phase's moles, which cannot exceed the phase",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of the vapour's moles carried into the aqueous phase, on NeqSim's `feed`/`mole` basis for `setEntrainment`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "gas_in_aqueous",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a fraction of a phase's moles, which cannot exceed the phase",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of the vapour's moles carried into the oil",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "gas_in_oil",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a fraction of a phase's moles, which cannot exceed the phase",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "heat added to the feed before the flash; when given the outlets are at the temperature the shifted enthalpy implies rather than at the feed's, and the flash is the multiphase one `run` enables",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "heat_input",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the fraction of the oil's moles carried into the aqueous phase",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "oil_in_aqueous",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a fraction of a phase's moles, which cannot exceed the phase",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of the oil's moles carried into the vapour; with `aqueous_in_gas` it is also what re-runs the vapour outlet as a stream",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "oil_in_gas",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a fraction of a phase's moles, which cannot exceed the phase",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the pressure drop across the vessel; the outlets flash at the feed's pressure less this, and because `run` holds the temperature the outlets do not carry the inlet's enthalpy",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a vessel passes pressure down, not up, and the outlet would otherwise be at a pressure the feed never had",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "vapour"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "light_liquid"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "heavy_liquid"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/separator/ThreePhaseSeparator.java",
+      "unmodelled_ranges": [
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.compressor",
+      "model": "process.compressor",
+      "name": "Compressor",
+      "parameters": [
+        {
+          "description": "the compressor's isentropic efficiency, between 0 and 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "isentropic_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the reversible step divides by it, so zero has no answer and above one would beat the reversible machine",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the pressure the compressor raises the stream to",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "outlet_pressure",
+          "range": [],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/compressor/Compressor.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.cooler",
+      "model": "process.cooler",
+      "name": "Cooler",
+      "parameters": [
+        {
+          "description": "the heat removed; an alternative to specifying the outlet temperature",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "duty",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the temperature the stream is cooled to",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "outlet_temperature",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute temperature; zero and below are not states",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the pressure loss across the cooler",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/heatexchanger/Cooler.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.ejector",
+      "model": "process.ejector",
+      "name": "Ejector",
+      "parameters": [
+        {
+          "description": "the diffuser's isentropic efficiency, `setDiffuserEfficiency`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "diffuser_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a pressure-recovery efficiency, in (0, 1]",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the pressure the diffuser discharges at, `setDischargePressure`",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "discharge_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure; the diffuser discharges at it",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the mixing chamber's efficiency, `setMixingEfficiency`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "mixing_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a momentum-transfer efficiency, in (0, 1]",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the motive nozzle's isentropic efficiency, `setEfficiencyIsentropic` - the field the entry used to leave undeclared while `run` read it",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "motive_nozzle_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an isentropic efficiency, in (0, 1]",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the suction nozzle's isentropic efficiency, `setSuctionNozzleEfficiency`",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "suction_nozzle_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an isentropic efficiency, in (0, 1]",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "motive"
+        },
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "suction"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/ejector/Ejector.java",
+      "unmodelled_ranges": []
+    },
+    {
+      "id": "unit_ops.expander",
+      "model": "process.expander",
+      "name": "Expander",
+      "parameters": [
+        {
+          "description": "the expander's isentropic efficiency, between 0 and 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "isentropic_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the reversible step divides by it, so zero has no answer and above one would beat the reversible machine",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the pressure the expander lets the stream down to",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "outlet_pressure",
+          "range": [],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/expander/Expander.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.filter",
+      "model": "process.filter",
+      "name": "Filter",
+      "parameters": [
+        {
+          "description": "the pressure loss across the filter",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a negative drop would raise the pressure. `Filter.setDeltaP` clamps it to zero rather than refusing, so this is a warning and the kernel clamps - a refusal here would be inventing a bound the class does not have.",
+              "severity": "warning"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/filter/Filter.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.heater",
+      "model": "process.heater",
+      "name": "Heater",
+      "parameters": [
+        {
+          "description": "the heat added; an alternative to specifying the outlet temperature",
+          "dimension": "power",
+          "kind": "quantity",
+          "name": "duty",
+          "range": [],
+          "required": false,
+          "unit": "W",
+          "values": []
+        },
+        {
+          "description": "the temperature the stream is heated to",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "outlet_temperature",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute temperature; zero and below are not states",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the pressure loss across the heater",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "pressure_drop",
+          "range": [],
+          "required": false,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/heatexchanger/Heater.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.pipe",
+      "model": "process.pipe",
+      "name": "Pipe",
+      "parameters": [
+        {
+          "description": "internal pipe diameter",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "diameter",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a diameter of zero has no area to take a velocity over",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "pipe length",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "length",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a pipe's length is a positive length; the kernel refuses zero with the same message",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "sand-grain roughness height",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "roughness",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a sand-grain height is a positive length, and a smooth pipe states a small one rather than zero",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "m",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/pipeline/AdiabaticPipe.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.pump",
+      "model": "process.pump",
+      "name": "Pump",
+      "parameters": [
+        {
+          "description": "the pump's isentropic efficiency, between 0 and 1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "isentropic_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": 1.0,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "the reversible work divides by it, so zero has no answer and above one would recover more work than isentropic",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the pressure the pump raises the stream to",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "outlet_pressure",
+          "range": [],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/pump/Pump.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.throttling_valve",
+      "model": "process.throttling_valve",
+      "name": "Throttling valve",
+      "parameters": [
+        {
+          "description": "the pressure the valve drops the stream to",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "outlet_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/valve/ThrottlingValve.java",
+      "unmodelled_ranges": [
+        "inlet_t"
+      ]
+    },
+    {
+      "id": "unit_ops.flare",
+      "model": "process.flare",
+      "name": "Flare",
+      "parameters": [],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "product"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/flare/Flare.java",
+      "unmodelled_ranges": [
+        "inlet_n"
+      ]
+    },
+    {
+      "id": "unit_ops.manifold",
+      "model": "process.manifold",
+      "name": "Manifold",
+      "parameters": [
+        {
+          "description": "the fraction of the mixture to each outlet, one entry per outlet, summing to 1",
+          "dimension": "dimensionless",
+          "kind": "vector",
+          "name": "split_factors",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "a negative fraction is not a split; the splitter kernel refuses one rather than clamping as NeqSim does",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        }
+      ],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "feed"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "outlet"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/manifold/Manifold.java",
+      "unmodelled_ranges": [
+        "feed_t"
+      ]
+    },
+    {
+      "id": "unit_ops.tank",
+      "model": "process.tank",
+      "name": "Tank",
+      "parameters": [],
+      "ports": [
+        {
+          "direction": "in",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "many",
+          "name": "inlet"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "gas"
+        },
+        {
+          "direction": "out",
+          "fields": [
+            {
+              "dimension": "pressure",
+              "name": "P",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "thermodynamic_temperature",
+              "name": "T",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_energy",
+              "name": "h",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "molar_flow",
+              "name": "n",
+              "shape": "scalar"
+            },
+            {
+              "dimension": "dimensionless",
+              "name": "z",
+              "shape": "vector"
+            }
+          ],
+          "multiplicity": "one",
+          "name": "liquid"
+        }
+      ],
+      "refusal": null,
+      "runnable": true,
+      "source": "NeqSim process/equipment/tank/Tank.java",
+      "unmodelled_ranges": [
+        "feed_t"
+      ]
+    }
+  ]
+}
