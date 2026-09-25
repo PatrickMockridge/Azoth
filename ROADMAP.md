@@ -400,9 +400,9 @@ are one class under two sets of names, and `unit_ops.packed_column`, whose packi
 be a report read after the solve — measured, NeqSim's packed column at a 2.0 m bed and its base
 column at four stages are bit-identical on all twenty-two captured quantities. **The fifth is a
 measured non-port and a tranche of its own**, as its own bullet below says, and so are the
-reactive trays the base class reaches for: their flash exists here but fixes SRK where this
-library's column is PR, so no oracle state could be reproduced until `reactions.reactive_tp_flash`
-and `reactions.reactive_ph_flash` take a cubic parameter. That is the same discipline the rest of
+reactive trays the base class reaches for — and **those are in now too**: their two flashes
+take a cubic, the tray flashes the fluid the column carries, and a reactive answer whose two
+phases are the same state is refused rather than given an outlet it did not earn. That is the same discipline the rest of
 this record follows — each class beside the column is either ported or recorded as a non-port with
 the class and the blocker named — and it replaces an earlier sentence here which claimed the five
 were "neither owed nor refused", which the fifth entry's own measurement contradicted.
