@@ -49,6 +49,9 @@ unit = "dimensionless"
 description = "the bed's void fraction, the class's default 0.40"
 [parameters.reaction]
 description = "the rate law's name, and the stoichiometry the species set is widened by"
+[parameters.reaction_orders]
+unit = "dimensionless"
+description = "one power-law order per reactant the reaction data names, in the table's order - the argument `addReactant` takes a third time and the one the data does not carry"
 [parameters.rate_type]
 description = "power_law, lhhw or equilibrium - where equilibrium is evaluated as a power law, the class's own dispatch"
 [parameters.pre_exponential_factor]
