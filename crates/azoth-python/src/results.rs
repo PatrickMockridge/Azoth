@@ -1771,40 +1771,54 @@ impl From<&StirredTankReactorResult> for PyStirredTankReactorResult {
 /// vectors are every station of it.
 #[pyclass(
     frozen,
+    skip_from_py_object,
     module = "azoth._core",
     name = "PlugFlowReactorResult",
-    get_all,
     eq
 )]
 #[derive(Debug, Clone, PartialEq)]
 pub struct PyPlugFlowReactorResult {
     /// Product molar flow, mol/s.
+    #[pyo3(get)]
     pub product_n: PyQty,
     /// Product composition, over the feed's species then the reaction's added ones.
+    #[pyo3(get)]
     pub product_z: Vec<f64>,
     /// Product pressure.
+    #[pyo3(get)]
     pub product_p: PyQty,
     /// Product temperature.
+    #[pyo3(get)]
     pub product_t: PyQty,
     /// Product molar enthalpy.
+    #[pyo3(get)]
     pub product_h: PyQty,
     /// The key component's conversion over the whole reactor.
+    #[pyo3(get)]
     pub conversion: f64,
     /// The inlet pressure less the outlet's.
+    #[pyo3(get)]
     pub pressure_drop: PyQty,
     /// The outlet temperature the march reports.
+    #[pyo3(get)]
     pub outlet_temperature: PyQty,
     /// The duty an isothermal reactor supplies.
+    #[pyo3(get)]
     pub heat_duty: PyQty,
     /// Every station's axial position, m.
+    #[pyo3(get)]
     pub positions: Vec<f64>,
     /// Every station's temperature, K.
+    #[pyo3(get)]
     pub temperature_profile: Vec<f64>,
     /// Every station's pressure, Pa.
+    #[pyo3(get)]
     pub pressure_profile: Vec<f64>,
     /// Every station's conversion.
+    #[pyo3(get)]
     pub conversion_profile: Vec<f64>,
     /// Caveats.
+    #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
 }
 
