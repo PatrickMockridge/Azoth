@@ -307,6 +307,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::soreide_whitson_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(eos::siddiqi_lucas_diffusivity, m)?)?;
     m.add_function(wrap_pyfunction!(eos::co2_water_diffusivity, m)?)?;
+    m.add_function(wrap_pyfunction!(eos::parachor_mixture_surface_tension, m)?)?;
     m.add_function(wrap_pyfunction!(eos::parachor_surface_tension, m)?)?;
 
     // Introspection.

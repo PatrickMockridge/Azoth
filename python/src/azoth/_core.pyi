@@ -640,6 +640,11 @@ class NrtlActivityCoefficientsResult:
     warnings: list[Warning]
 
 @final
+class ParachorMixtureSurfaceTensionResult:
+    sigma: Qty
+    warnings: list[Warning]
+
+@final
 class ParachorSurfaceTensionResult:
     sigma: Qty
     warnings: list[Warning]
@@ -2312,6 +2317,15 @@ def nrtl_activity_coefficients(
     T: float,
     x: list[float],
 ) -> NrtlActivityCoefficientsResult: ...
+def parachor_mixture_surface_tension(
+    parachors: list[float],
+    rho_gas: float,
+    M_gas: float,
+    x_gas: list[float],
+    rho_liquid: float,
+    M_liquid: float,
+    x_liquid: list[float],
+) -> ParachorMixtureSurfaceTensionResult: ...
 def parachor_surface_tension(
     parachor: float,
     rho_l: float,

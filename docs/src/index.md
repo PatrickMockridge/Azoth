@@ -178,6 +178,7 @@ Five sections, and the difference between them is the point:
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
 - [`eos.nrtl_activity_coefficients`](./eos/nrtl_activity_coefficients.md) — Activity coefficients from the NRTL local-composition model
+- [`eos.parachor_mixture_surface_tension`](./eos/parachor_mixture_surface_tension.md) — Interface surface tension from the parachor (Weinaug-Katz)
 - [`eos.parahydrogen_solid_phase`](./eos/parahydrogen_solid_phase.md) — Solid para-hydrogen reference phase state
 - [`eos.pcsaft_rahmat_phase`](./eos/pcsaft_rahmat_phase.md) — PC-SAFT (Rahmat) phase state
 - [`eos.ph_flash`](./eos/ph_flash.md) — Pressure-enthalpy flash

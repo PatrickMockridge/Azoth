@@ -892,6 +892,38 @@ pub fn co2_water_diffusivity(py: Python<'_>, T: f64) -> PyResult<PyCo2WaterDiffu
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// The interface surface tension between a gas and a liquid, from the parachor.
+///
+/// The mixture form of the pure-component correlation, and a *model* rather than a
+/// calculation: both compositions are vectors.
+#[pyfunction]
+#[pyo3(signature = (parachors, rho_gas, M_gas, x_gas, rho_liquid, M_liquid, x_liquid))]
+#[pyo3(text_signature = "(parachors, rho_gas, M_gas, x_gas, rho_liquid, M_liquid, x_liquid)")]
+#[allow(non_snake_case)] // `M_gas` and `M_liquid` are the symbols in the equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn parachor_mixture_surface_tension(
+    py: Python<'_>,
+    parachors: Vec<f64>,
+    rho_gas: f64,
+    M_gas: f64,
+    x_gas: Vec<f64>,
+    rho_liquid: f64,
+    M_liquid: f64,
+    x_liquid: Vec<f64>,
+) -> PyResult<crate::results::PyParachorMixtureSurfaceTensionResult> {
+    azoth_eos::parachor_mixture_surface_tension(
+        &parachors,
+        kilograms_per_cubic_meter(rho_gas),
+        kilograms_per_mole(M_gas),
+        &x_gas,
+        kilograms_per_cubic_meter(rho_liquid),
+        kilograms_per_mole(M_liquid),
+        &x_liquid,
+    )
+    .map(|r| crate::results::PyParachorMixtureSurfaceTensionResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The surface tension from the parachor (Macleod-Sugden) correlation.
 #[pyfunction]
 #[pyo3(signature = (parachor, rho_l, rho_v, M))]

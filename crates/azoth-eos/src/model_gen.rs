@@ -39,6 +39,7 @@
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
+//!   - specs/models/eos/parachor_mixture_surface_tension.toml
 //!   - specs/models/eos/parahydrogen_solid_phase.toml
 //!   - specs/models/eos/pcsaft_rahmat_phase.toml
 //!   - specs/models/eos/ph_flash.toml
@@ -4833,6 +4834,195 @@ pub static NRTL_ACTIVITY_COEFFICIENTS_SPEC: ModelSpec = ModelSpec {
     cases: NRTL_ACTIVITY_COEFFICIENTS_CASES,
 };
 
+static PARACHOR_MIXTURE_SURFACE_TENSION_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho_gas",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a phase with no density has no interface to be in tension; the class would divide by it, catch the exception and answer zero",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "rho_liquid",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the liquid's density is the sum's positive term",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "M_gas",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`rho/M` divides by it",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "M_liquid",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`rho/M` divides by it",
+        },
+    },
+];
+
+static PARACHOR_MIXTURE_SURFACE_TENSION_CASES: &[TestCase] = &[
+    TestCase {
+        id: "methane_nbutane_gas_oil",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("rho_gas", 19.938328330315997),
+            ("M_gas", 0.022959902730870334),
+            ("rho_liquid", 549.3851668858096),
+            ("M_liquid", 0.054107691623917306),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("parachors", &[77.3, 191.7]),
+            ("x_gas", &[0.8356249351028912, 0.1643750648971088]),
+            ("x_liquid", &[0.09542082642782022, 0.9045791735721797]),
+        ],
+        matrices: &[],
+        expected: &[("sigma", 0.009424889197268286)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "three_component_gas_oil",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("rho_gas", 17.488347210328868),
+            ("M_gas", 0.020524091668986343),
+            ("rho_liquid", 608.1986162758507),
+            ("M_liquid", 0.06778863659145379),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("parachors", &[77.3, 191.7, 311.0]),
+            (
+                "x_gas",
+                &[
+                    0.8956085095409251,
+                    0.10229325961290625,
+                    0.002098230846168715,
+                ],
+            ),
+            (
+                "x_liquid",
+                &[0.0929335558496635, 0.5844515346496558, 0.3226149095006806],
+            ),
+        ],
+        matrices: &[],
+        expected: &[("sigma", 0.012857410974774119)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "co2_water_gas_aqueous",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("rho_gas", 113.27066791939949),
+            ("M_gas", 0.04395427203887297),
+            ("rho_liquid", 988.9287133030801),
+            ("M_liquid", 0.018032395235927503),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("parachors", &[78.0, 52.8786226]),
+            ("x_gas", &[0.9978562046113857, 0.002143795388614308]),
+            ("x_liquid", &[0.0006691762234084198, 0.9993308237765915]),
+        ],
+        matrices: &[],
+        expected: &[("sigma", 0.053145026912194734)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "methane_water_gas_aqueous",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("rho_gas", 34.86438099173673),
+            ("M_gas", 0.016044320517662743),
+            ("rho_liquid", 1000.9892088811749),
+            ("M_liquid", 0.018014999423996814),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("parachors", &[77.3, 52.8786226]),
+            ("x_gas", &[0.9993303662967818, 0.0006696337032181434]),
+            ("x_liquid", &[2.92090864962477e-07, 0.9999997079091351]),
+        ],
+        matrices: &[],
+        expected: &[("sigma", 0.058892233350760124)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.parachor_mixture_surface_tension`.
+pub static PARACHOR_MIXTURE_SURFACE_TENSION_SPEC: ModelSpec = ModelSpec {
+    id: "eos.parachor_mixture_surface_tension",
+    kind: "direct",
+    algorithm: None,
+    checks: PARACHOR_MIXTURE_SURFACE_TENSION_CHECKS,
+    cases: PARACHOR_MIXTURE_SURFACE_TENSION_CASES,
+};
+
 static PARAHYDROGEN_SOLID_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -9624,6 +9814,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
+    &PARACHOR_MIXTURE_SURFACE_TENSION_SPEC,
     &PARAHYDROGEN_SOLID_PHASE_SPEC,
     &PCSAFT_RAHMAT_PHASE_SPEC,
     &PH_FLASH_SPEC,

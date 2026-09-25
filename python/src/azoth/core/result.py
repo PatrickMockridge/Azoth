@@ -1664,6 +1664,16 @@ class FullerSchettlerGiddingsDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class ParachorMixtureSurfaceTensionResult(_HasWarnings):
+    """Result of ``eos.parachor_mixture_surface_tension``."""
+
+    #: The interface's surface tension.
+    sigma: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class HaydukMinhasDiffusivityResult(_HasWarnings):
     """Result of ``eos.hayduk_minhas_diffusivity``."""
 

@@ -35,22 +35,23 @@ use azoth_eos::results::{
     Matcop5PrumrAlphaResult, MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult, MolarEnthalpyEntropyResult, MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult, NrtlActivityCoefficientsResult,
-    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
-    PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
-    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
-    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
-    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
-    SaltPrecipitationResult, ScaleSaturationRatioResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SolidFugacityResult, SoreideWhitsonAlphaResult,
-    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
+    ParachorMixtureSurfaceTensionResult, ParachorSurfaceTensionResult,
+    ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult, PhFlashResult, PitzerPhaseResult,
+    Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult, PrDaneshAlphaResult,
+    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
+    RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult, SaltPrecipitationResult,
+    ScaleSaturationRatioResult, SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult,
+    SolidFugacityResult, SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult,
+    SrkCpaPhaseResult, SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult,
+    SrkZFactorResult, StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult,
+    ThermalConductivityResult, TpMultiflashResult, TpMultiflashWaxResult, TpSolidFlashResult,
+    TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult, TwuKappaResult,
+    TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
     UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
@@ -4241,6 +4242,45 @@ impl From<&Co2WaterDiffusivityResult> for PyCo2WaterDiffusivityResult {
             d: PyQty {
                 magnitude_si: r.d.value,
                 unit: "m**2/s".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.parachor_mixture_surface_tension`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "ParachorMixtureSurfaceTensionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyParachorMixtureSurfaceTensionResult {
+    /// The interface's surface tension, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub sigma: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyParachorMixtureSurfaceTensionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "ParachorMixtureSurfaceTensionResult(sigma={} {})",
+            self.sigma.magnitude_si, self.sigma.unit
+        )
+    }
+}
+
+impl From<&ParachorMixtureSurfaceTensionResult> for PyParachorMixtureSurfaceTensionResult {
+    fn from(r: &ParachorMixtureSurfaceTensionResult) -> Self {
+        Self {
+            sigma: PyQty {
+                magnitude_si: r.sigma.value,
+                unit: "N/m".to_string(),
             },
             warnings: transport(&r.warnings),
         }
@@ -9446,6 +9486,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         SoreideWhitsonAlphaResult::CALC_ID => SoreideWhitsonAlphaResult::FIELDS.to_vec(),
         SiddiqiLucasDiffusivityResult::CALC_ID => SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),
         Co2WaterDiffusivityResult::CALC_ID => Co2WaterDiffusivityResult::FIELDS.to_vec(),
+        ParachorMixtureSurfaceTensionResult::CALC_ID => {
+            ParachorMixtureSurfaceTensionResult::FIELDS.to_vec()
+        }
         ParachorSurfaceTensionResult::CALC_ID => ParachorSurfaceTensionResult::FIELDS.to_vec(),
         // Models. Present here because a result's *shape* is a cross-language
         // contract whether or not its spec calls it a calculation.
@@ -9491,6 +9534,9 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
         ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
         FreezingPointResult::CALC_ID => FreezingPointResult::FIELDS.to_vec(),
+        FullerSchettlerGiddingsDiffusivityResult::CALC_ID => {
+            FullerSchettlerGiddingsDiffusivityResult::FIELDS.to_vec()
+        }
         HydrateFormationTemperatureResult::CALC_ID => {
             HydrateFormationTemperatureResult::FIELDS.to_vec()
         }

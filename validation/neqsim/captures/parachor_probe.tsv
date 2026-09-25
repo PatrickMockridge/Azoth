@@ -1,0 +1,80 @@
+methane_nbutane_gas_oil_300K_20bar
+components=methane n-butane
+phase_count=2
+phase0_type=GAS
+phase0_temperature_K=300.0
+phase0_pressure_bara=20.0
+phase0_density_kg_per_m3=19.938328330315997
+phase0_molar_mass_kg_per_mol=0.022959902730870334
+phase0_x=methane:0.8356249351028912 n-butane:0.1643750648971088
+phase1_type=OIL
+phase1_temperature_K=300.0
+phase1_pressure_bara=20.0
+phase1_density_kg_per_m3=549.3851668858096
+phase1_molar_mass_kg_per_mol=0.054107691623917306
+phase1_x=methane:0.09542082642782022 n-butane:0.9045791735721797
+parachors=methane:77.3 n-butane:191.7
+gas_phase_index=0
+liquid_phase_index=1
+surface_tension_N_per_m=0.009424889197268286
+
+methane_nbutane_nheptane_gas_oil_300K_20bar
+components=methane n-butane n-heptane
+phase_count=2
+phase0_type=GAS
+phase0_temperature_K=300.0
+phase0_pressure_bara=20.0
+phase0_density_kg_per_m3=17.488347210328868
+phase0_molar_mass_kg_per_mol=0.020524091668986343
+phase0_x=methane:0.8956085095409251 n-butane:0.10229325961290625 n-heptane:0.002098230846168715
+phase1_type=OIL
+phase1_temperature_K=300.0
+phase1_pressure_bara=20.0
+phase1_density_kg_per_m3=608.1986162758507
+phase1_molar_mass_kg_per_mol=0.06778863659145379
+phase1_x=methane:0.0929335558496635 n-butane:0.5844515346496558 n-heptane:0.3226149095006806
+parachors=methane:77.3 n-butane:191.7 n-heptane:311.0
+gas_phase_index=0
+liquid_phase_index=1
+surface_tension_N_per_m=0.012857410974774119
+
+co2_water_gas_aqueous_313K_50bar
+components=CO2 water
+phase_count=2
+phase0_type=GAS
+phase0_temperature_K=313.15
+phase0_pressure_bara=50.0
+phase0_density_kg_per_m3=113.27066791939949
+phase0_molar_mass_kg_per_mol=0.04395427203887297
+phase0_x=CO2:0.9978562046113857 water:0.002143795388614308
+phase1_type=AQUEOUS
+phase1_temperature_K=313.15
+phase1_pressure_bara=50.0
+phase1_density_kg_per_m3=988.9287133030801
+phase1_molar_mass_kg_per_mol=0.018032395235927503
+phase1_x=CO2:6.691762234084198E-4 water:0.9993308237765915
+parachors=CO2:78.0 water:52.8786226
+gas_phase_index=0
+liquid_phase_index=1
+surface_tension_N_per_m=0.053145026912194734
+
+methane_water_gas_aqueous_300K_50bar
+components=methane water
+phase_count=2
+phase0_type=GAS
+phase0_temperature_K=300.0
+phase0_pressure_bara=50.0
+phase0_density_kg_per_m3=34.86438099173673
+phase0_molar_mass_kg_per_mol=0.016044320517662743
+phase0_x=methane:0.9993303662967818 water:6.696337032181434E-4
+phase1_type=AQUEOUS
+phase1_temperature_K=300.0
+phase1_pressure_bara=50.0
+phase1_density_kg_per_m3=1000.9892088811749
+phase1_molar_mass_kg_per_mol=0.018014999423996814
+phase1_x=methane:2.92090864962477E-7 water:0.9999997079091351
+parachors=methane:77.3 water:52.8786226
+gas_phase_index=0
+liquid_phase_index=1
+surface_tension_N_per_m=0.058892233350760124
+

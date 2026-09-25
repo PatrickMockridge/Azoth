@@ -115,6 +115,7 @@ from azoth.core.result import (
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     PackedColumnResult,
+    ParachorMixtureSurfaceTensionResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
@@ -5422,6 +5423,36 @@ def kinetics(
         coefficient=tuple(result.coefficient),
         phi_infinite=tuple(result.phi_infinite),
         irreversible=tuple(result.irreversible),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def parachor_mixture_surface_tension(
+    parachors: Sequence[float],
+    rho_gas: Q,
+    M_gas: Q,
+    x_gas: Sequence[float],
+    rho_liquid: Q,
+    M_liquid: Q,
+    x_liquid: Sequence[float],
+) -> ParachorMixtureSurfaceTensionResult:
+    """The interface surface tension, computed in Rust.
+
+    The two phases' densities and molar masses carry a unit, so each crosses as its SI
+    magnitude; the parachors and both compositions are dimensionless.
+    """
+    spec = _models_gen.model("eos.parachor_mixture_surface_tension")
+    result = _core.parachor_mixture_surface_tension(
+        [float(value) for value in parachors],
+        _si(spec, "rho_gas", rho_gas),
+        _si(spec, "M_gas", M_gas),
+        [float(value) for value in x_gas],
+        _si(spec, "rho_liquid", rho_liquid),
+        _si(spec, "M_liquid", M_liquid),
+        [float(value) for value in x_liquid],
+    )
+    return ParachorMixtureSurfaceTensionResult(
+        sigma=from_si(result.sigma.magnitude_si, result.sigma.unit),
         warnings=_warnings(result.warnings),
     )
 

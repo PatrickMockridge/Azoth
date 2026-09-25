@@ -1,0 +1,79 @@
+id = "eos.parachor_mixture_surface_tension"
+name = "Interface surface tension from the parachor (Weinaug-Katz)"
+kind = "direct"
+assumptions = [
+    "**the pair's form, not the pure component's.** `eos.parachor_surface_tension` ports `calcPureComponentSurfaceTension`, where the mole fractions divide out; this one sums `P_i (rho_l/M_l x_l_i - rho_g/M_g x_g_i)`, a per-component molar-density difference.\n",
+    "**the gas is the negative term.** `calcSurfaceTension(interface1, interface2)` subtracts `interface1`'s contribution, and `InterfaceProperties.getSurfaceTension` passes the gas first - so it is the order the class calls its two phases in and not a sign the arithmetic proves.\n",
+    "**one calculator serves all three interfaces.** The dispatch picks `gasLiquidSurfaceTensionCalc`, `gasAqueousSurfaceTensionCalc` or `liquidLiquidSurfaceTensionCalc` by the two phase types, and all three default to `ParachorSurfaceTension`, so a gas/oil and a gas/aqueous pair are one arithmetic here.\n",
+    "**a non-positive density or molar mass is refused**, where the class catches the arithmetic exception and answers `0.0` - a silent zero that reads as a tension of zero rather than as a failure.\n",
+    "**a single-phase system is not this id's state.** The class returns `0.0` when the system has fewer than two phases; one phase has no interface, so that is a caller's refusal rather than a tension.\n",
+    "the length of `parachors` must match both compositions; the class sums over the first phase's component count and would throw on a mismatch.\n",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `physicalproperties/interfaceproperties/surfacetension/ParachorSurfaceTension.java` is the port source, through `InterfaceProperties.getSurfaceTension`.",
+    "Weinaug, C. F.; Katz, D. L. (1943). \\\"Surface tensions of methane-propane mixtures.\\\" Ind. Eng. Chem. 35(2), 239-246. DOI 10.1021/ie50398a028. The parachor form for a mixture, which the pure-component Macleod-Sugden relation is the one-component case of.",
+    "`validation/neqsim/ParachorProbe.java` and `captures/parachor_probe.tsv` - four rows: two gas/oil pairs of two and three components, and two gas/aqueous pairs, printing every input the sum reads.\n",
+]
+[source]
+standard = "NeqSim master `ParachorSurfaceTension`"
+edition = "`calcSurfaceTension(interface1, interface2)`, the mixture form, reached through `InterfaceProperties`' three interface calculators."
+doi = "10.1021/ie50398a028"
+[inputs]
+[inputs.parachors]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "each component's `PARACHOR`, in NeqSim's mixed unit `(mN/m)**(1/4) * cm**3/mol`; the `1e-6` in the formula converts its `cm**3/mol` to `m**3/mol`. **Declared dimensionless** because no vocabulary unit expresses a fractional power of a non-SI unit.\n"
+[inputs.rho_gas]
+unit = "kg/m**3"
+description = "the gas phase's mass density.\n"
+[inputs.M_gas]
+unit = "kg/mol"
+description = "the gas phase's molar mass; `rho/M` is its molar density.\n"
+[inputs.x_gas]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the gas phase's mole fractions, in the same order as `parachors`.\n"
+[inputs.rho_liquid]
+unit = "kg/m**3"
+description = "the liquid (or aqueous) phase's mass density.\n"
+[inputs.M_liquid]
+unit = "kg/mol"
+description = "the liquid phase's molar mass.\n"
+[inputs.x_liquid]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid phase's mole fractions, in the same order as `parachors`.\n"
+[outputs]
+[outputs.sigma]
+unit = "N/m"
+description = "the interface's surface tension: `1e-3 * sum(...)**4`, the `1e-3` recovering `N/m` from `(mN/m)**(1/4)` to the fourth.\n"
+[[valid_range]]
+quantity = "rho_gas"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a phase with no density has no interface to be in tension; the class would divide by it, catch the exception and answer zero\n"
+[[valid_range]]
+quantity = "rho_liquid"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the liquid's density is the sum's positive term\n"
+[[valid_range]]
+quantity = "M_gas"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`rho/M` divides by it\n"
+[[valid_range]]
+quantity = "M_liquid"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`rho/M` divides by it\n"
+[implementations]
+python = "azoth.eos.parachor_mixture_surface_tension"
+rust = "azoth_eos::parachor_mixture_surface_tension"

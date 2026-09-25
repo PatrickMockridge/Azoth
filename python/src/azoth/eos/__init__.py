@@ -126,6 +126,7 @@ from azoth.core.result import (
     MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
+    ParachorMixtureSurfaceTensionResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
@@ -289,6 +290,7 @@ __all__ = [
     "molar_enthalpy_entropy",
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
+    "parachor_mixture_surface_tension",
     "parahydrogen_solid_phase",
     "pcsaft_rahmat_phase",
     "ph_flash",
@@ -472,6 +474,7 @@ _SCHWARTZENTRUBER_ALPHA = "eos.schwartzentruber_alpha"
 _SIDDIQI_LUCAS_DIFFUSIVITY = "eos.siddiqi_lucas_diffusivity"
 _SOREIDE_WHITSON_ALPHA = "eos.soreide_whitson_alpha"
 _CO2_WATER_DIFFUSIVITY = "eos.co2_water_diffusivity"
+_PARACHOR_MIXTURE_SURFACE_TENSION = "eos.parachor_mixture_surface_tension"
 _PARACHOR_SURFACE_TENSION = "eos.parachor_surface_tension"
 _VDW1F_MIX_BINARY = "eos.vdw1f_mix_binary"
 _VH_FLASH = "eos.vh_flash"
@@ -1209,6 +1212,38 @@ def co2_water_diffusivity(T: Q) -> Co2WaterDiffusivityResult:
     See :func:`azoth.eos.reference.co2_water_diffusivity`.
     """
     return resolve(_CO2_WATER_DIFFUSIVITY)(T=T)  # type: ignore[no-any-return]
+
+
+def parachor_mixture_surface_tension(
+    parachors: Sequence[float],
+    rho_gas: Q,
+    M_gas: Q,
+    x_gas: Sequence[float],
+    rho_liquid: Q,
+    M_liquid: Q,
+    x_liquid: Sequence[float],
+) -> ParachorMixtureSurfaceTensionResult:
+    """The interface surface tension between a gas and a liquid, from the parachor.
+
+    The mixture form: a per-component molar-density difference is summed over the
+    components, so both phases' densities and molar masses are inputs. **The gas is the
+    negative term**, which is the order the class passes its two phases in.
+
+    Raises:
+        InvalidInputError: if the three vectors differ in length.
+        OutOfRangeError: if a density or a molar mass is not positive.
+
+    See :func:`azoth.eos.reference.parachor_mixture_surface_tension`.
+    """
+    return resolve(_PARACHOR_MIXTURE_SURFACE_TENSION)(  # type: ignore[no-any-return]
+        parachors=parachors,
+        rho_gas=rho_gas,
+        M_gas=M_gas,
+        x_gas=x_gas,
+        rho_liquid=rho_liquid,
+        M_liquid=M_liquid,
+        x_liquid=x_liquid,
+    )
 
 
 def parachor_surface_tension(

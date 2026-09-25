@@ -3761,6 +3761,24 @@ impl CalcResult for ParachorSurfaceTensionResult {
     }
 }
 
+/// Result of `eos.parachor_mixture_surface_tension`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParachorMixtureSurfaceTensionResult {
+    /// The interface's surface tension, in N/m.
+    pub sigma: SurfaceTension,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for ParachorMixtureSurfaceTensionResult {
+    const CALC_ID: &'static str = "eos.parachor_mixture_surface_tension";
+    const FIELDS: &'static [&'static str] = &["sigma", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.aqueous_viscosity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AqueousViscosityResult {

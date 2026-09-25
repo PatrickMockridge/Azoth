@@ -107,6 +107,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
 | [`eos.nrtl_activity_coefficients`](./nrtl_activity_coefficients.md) | `direct composition` | Renon, H.; Prausnitz, J. M. (1968) |
+| [`eos.parachor_mixture_surface_tension`](./parachor_mixture_surface_tension.md) | `direct composition` | NeqSim master `ParachorSurfaceTension` |
 | [`eos.parahydrogen_solid_phase`](./parahydrogen_solid_phase.md) | `bracketed_log_volume_newton` | Sannerhaugen, A. (2026) |
 | [`eos.pcsaft_rahmat_phase`](./pcsaft_rahmat_phase.md) | `direct composition` | Gross, J.; Sadowski, G. (2001) |
 | [`eos.ph_flash`](./ph_flash.md) | `ph_flash_inverse_temperature_newton` | Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup |
