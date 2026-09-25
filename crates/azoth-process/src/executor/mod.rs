@@ -25,4 +25,4 @@ pub mod dispatch;
 pub mod session;
 
 pub use dispatch::{DISPATCH, Kernel, Parameters, UNRUNNABLE, dispatch, kernel_for};
-pub use session::{MAX_PASSES, RunReport, TearRecord, run};
+pub use session::{MAX_PASSES, RunReport, STREAM_FIELDS, Session, TearRecord, run};

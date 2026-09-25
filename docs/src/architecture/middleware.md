@@ -29,8 +29,10 @@ through P12, and written here so it is gated on the roadmap rather than lost.
 Each is a consequence of the calculus, named here because a front-end has to address it.
 
 - **session/document** — the live flowsheet plus its named stream results and a dirty/clean
-  flag. Every value has a stable path (`p1.outlet_pressure`, `recycle_1`), which is what a
-  widget and an agent both point at.
+  flag. Every value has a stable path (`p1.outlet.P`, `recycle_1`), which is what a widget and
+  an agent both point at. The path is `<endpoint>.<field>` and the field is one the port
+  declaration names - `n`, `z`, `P`, `T`, `h` - so a front-end derives the path from the
+  declaration rather than inventing a spelling for it.
 - **command model** — every edit is a typed command (add/remove an instance, connect two
   ports, set a parameter) that re-runs the checker. This is
   [linearity](../calculus/process.md) made incremental: a red arrow is a structured

@@ -282,10 +282,26 @@ fn bind_products(
         .map(|port| port.name.as_str())
         .collect();
     if outlets.len() != names.len() {
+        // **A splitter is the case, and it is a gap rather than a mismatch.** `unit_ops.splitter`
+        // declares its outlets as one `many` port named `products`, so a two-way split returns
+        // two streams for one port name and there is no way to say which is which: a connection
+        // writes `split1.products`, and both outlets would answer to it. Refusing here is the
+        // honest disposition - the alternative is to bind the last one and lose the first - and
+        // the class that would close it is the port declaration, which needs a way to name an
+        // outlet by index.
+        let many = spec.ports.iter().any(|port| {
+            port.direction == Direction::Out && port.multiplicity == Multiplicity::Many
+        });
+        let detail = if many && outlets.len() > names.len() {
+            " - the entry declares a `many` outlet port, and a connection cannot name one stream \
+             of it"
+        } else {
+            ""
+        };
         return Err(AzothError::invalid_input(
             "ports",
             format!(
-                "`{}` returned {} outlets for {} declared outlet ports",
+                "`{}` returned {} outlets for {} declared outlet ports{detail}",
                 instance.id,
                 outlets.len(),
                 names.len()
@@ -307,3 +323,156 @@ fn bind_products(
     }
     Ok(())
 }
+
+/// A live flowsheet and its named results.
+///
+/// **This is the object a widget and an agent both address**, and what makes that possible is that
+/// every value has a **stable path**. The paths are the endpoints the run produced plus the
+/// fields the palette declares, so `<endpoint>.<field>` — `p1.outlet.P`, `feed_1.n` — is derivable
+/// from the declaration rather than invented here. `middleware.md`'s own example spells one
+/// `p1.outlet_pressure`; the field names are the declaration's (`n`, `z`, `P`, `T`, `h`), so the
+/// path is `p1.outlet.P`, and the page is corrected to match rather than the other way round.
+///
+/// **A runtime `Stream` has no name.** That is the gap this closes: the stream is addressed
+/// *through* the session by the endpoint that produced it, and the session is what holds the two
+/// together.
+#[derive(Debug, Clone)]
+pub struct Session {
+    flowsheet: Flowsheet,
+    report: RunReport,
+}
+
+impl Session {
+    /// Run a flowsheet and hold what it reached.
+    ///
+    /// # Errors
+    /// Whatever [`run`] returns.
+    pub fn run(
+        flowsheet: Flowsheet,
+        palette: &[UnitOpSpec],
+        feeds: &BTreeMap<String, Stream>,
+        order: ExecutionOrder,
+    ) -> Result<Self> {
+        let report = run(&flowsheet, palette, feeds, order)?;
+        Ok(Self { flowsheet, report })
+    }
+
+    /// The flowsheet this session is a state of.
+    #[must_use]
+    pub fn flowsheet(&self) -> &Flowsheet {
+        &self.flowsheet
+    }
+
+    /// What the run reached, including the tear records.
+    #[must_use]
+    pub fn report(&self) -> &RunReport {
+        &self.report
+    }
+
+    /// Whether every tear solved within the cap.
+    #[must_use]
+    pub fn converged(&self) -> bool {
+        self.report.converged
+    }
+
+    /// Passes the run took.
+    #[must_use]
+    pub fn iterations(&self) -> u32 {
+        self.report.iterations
+    }
+
+    /// One stream, by the endpoint that produced it.
+    ///
+    /// # Errors
+    /// [`AzothError::InvalidInput`] if no stream has that name, listing what does - a path a
+    /// caller guessed is worth a list rather than a `None`.
+    pub fn stream(&self, endpoint: &str) -> Result<&Stream> {
+        self.report.streams.get(endpoint).ok_or_else(|| {
+            let mut known: Vec<&str> = self.report.streams.keys().map(String::as_str).collect();
+            known.sort_unstable();
+            AzothError::invalid_input(
+                "path",
+                format!("no stream is named `{endpoint}`; this run produced {known:?}"),
+            )
+        })
+    }
+
+    /// Every addressable path, sorted.
+    ///
+    /// **Both forms are listed**: `<endpoint>` for the stream itself and `<endpoint>.<field>` for
+    /// each scalar the declaration gives it, so a front-end can enumerate what it may point at
+    /// without guessing.
+    #[must_use]
+    pub fn paths(&self) -> Vec<String> {
+        let mut paths = Vec::new();
+        for endpoint in self.report.streams.keys() {
+            paths.push(endpoint.clone());
+            for field in STREAM_FIELDS {
+                paths.push(format!("{endpoint}.{field}"));
+            }
+        }
+        for tear in &self.report.tears {
+            paths.push(tear.stream.clone());
+        }
+        paths.sort();
+        paths
+    }
+
+    /// One named scalar, by path.
+    ///
+    /// # Errors
+    /// [`AzothError::InvalidInput`] if the path has no field, if no stream has its endpoint, or
+    /// if the field is `z` - a composition is a vector and not a scalar, and returning its first
+    /// entry would be the kind of guess this session exists to avoid.
+    pub fn value(&self, path: &str) -> Result<f64> {
+        let (endpoint, field) = path.rsplit_once('.').ok_or_else(|| {
+            AzothError::invalid_input(
+                "path",
+                format!("`{path}` names no field; a scalar is `<endpoint>.<field>` with field one of {STREAM_FIELDS:?}"),
+            )
+        })?;
+        if field == "z" {
+            return Err(AzothError::invalid_input(
+                "path",
+                format!(
+                    "`{path}` is a composition: `z` is a vector and has no single value - read \
+                     the stream with `stream({endpoint:?})`"
+                ),
+            ));
+        }
+        let stream = self.stream(endpoint)?;
+        match field {
+            "n" => Ok(stream.n),
+            "P" => Ok(stream.p.value),
+            "T" => Ok(stream.t.value),
+            "h" => Ok(stream.h.value),
+            other => Err(AzothError::invalid_input(
+                "path",
+                format!("`{other}` is not a field of a stream record; they are {STREAM_FIELDS:?}"),
+            )),
+        }
+    }
+
+    /// One tear's record.
+    ///
+    /// # Errors
+    /// [`AzothError::InvalidInput`] if no recycle carries that name.
+    pub fn tear(&self, name: &str) -> Result<&TearRecord> {
+        self.report
+            .tears
+            .iter()
+            .find(|tear| tear.stream == name)
+            .ok_or_else(|| {
+                AzothError::invalid_input(
+                    "recycles",
+                    format!("no recycle is named `{name}` in `{}`", self.flowsheet.id),
+                )
+            })
+    }
+}
+
+/// The fields a port's record declares, and therefore the ones a path may name.
+///
+/// **The declaration's own names, not a spelling of this module's**: a palette port writes `n`,
+/// `z`, `P`, `T`, `h`, so a path is `p1.outlet.P` and not `p1.outlet.pressure`.
+pub const STREAM_FIELDS: [&str; 5] = ["n", "z", "P", "T", "h"];

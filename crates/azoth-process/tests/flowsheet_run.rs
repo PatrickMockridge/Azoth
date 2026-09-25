@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::ExecutionOrder;
-use azoth_process::executor::run;
+use azoth_process::executor::{STREAM_FIELDS, Session, run};
 use azoth_process::{Flowsheet, Stream, load_palette};
 
 fn root() -> PathBuf {
@@ -182,4 +182,73 @@ fn the_shipped_flowsheet_is_the_one_with_an_empty_tear() {
         },
         "an empty tear has nothing to compare, which is the zero-flow floor"
     );
+}
+
+/// **The session's named results, and the paths they answer to.**
+///
+/// The point of the session is that a widget and an agent both point at a *string*, so the paths
+/// have to be derivable rather than discovered: `<endpoint>.<field>` where the field is one the
+/// port declaration names.
+#[test]
+fn the_session_addresses_every_value_by_a_stable_path() {
+    let text = std::fs::read_to_string(root().join("specs/flowsheets/demo.toml"))
+        .expect("the shipped flowsheet is there");
+    let flowsheet: Flowsheet = toml::from_str(&text).expect("it parses");
+    let palette = load_palette(&root().join("specs/unit_ops")).expect("the palette loads");
+    let feeds = BTreeMap::from([("feed_1".to_string(), feed())]);
+
+    let session = Session::run(flowsheet, &palette, &feeds, ExecutionOrder::Insertion)
+        .expect("the flowsheet runs");
+
+    // Every endpoint the run produced is addressable, and every field of each.
+    for endpoint in [
+        "feed_1",
+        "mix1.product",
+        "p1.outlet",
+        "hx1.outlet",
+        "sep1.liquid",
+    ] {
+        assert!(
+            session.stream(endpoint).is_ok(),
+            "`{endpoint}` is not addressable"
+        );
+        for field in STREAM_FIELDS {
+            let path = format!("{endpoint}.{field}");
+            if field == "z" {
+                assert!(session.value(&path).is_err(), "`{path}` is a vector");
+            } else {
+                assert!(session.value(&path).is_ok(), "`{path}` is not readable");
+            }
+        }
+    }
+
+    // The values are the stream's own, and the paths agree with the map.
+    let outlet = session.stream("p1.outlet").expect("addressable");
+    assert_eq!(session.value("p1.outlet.n").expect("readable"), outlet.n);
+    assert_eq!(
+        session.value("p1.outlet.T").expect("readable"),
+        outlet.t.value
+    );
+    assert_eq!(
+        session.value("p1.outlet.P").expect("readable"),
+        outlet.p.value
+    );
+
+    // A path nobody wrote is refused with a list rather than a `None`.
+    let error = session.value("nosuch.outlet.n").expect_err("it refuses");
+    assert!(error.to_string().contains("produced"), "{error}");
+
+    // The tear is addressable by its own name, and it is not a stream.
+    let tear = session.tear("recycle_1").expect("named");
+    assert_eq!(tear.stream, "recycle_1");
+    assert!(session.converged());
+    assert_eq!(session.iterations(), 2);
+    assert!(session.tear("recycle_9").is_err());
+
+    // And the enumeration a front-end needs.
+    let paths = session.paths();
+    assert!(paths.contains(&"p1.outlet".to_string()));
+    assert!(paths.contains(&"p1.outlet.T".to_string()));
+    assert!(paths.contains(&"recycle_1".to_string()));
+    assert!(paths.windows(2).all(|pair| pair[0] <= pair[1]), "sorted");
 }
