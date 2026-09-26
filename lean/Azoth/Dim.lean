@@ -88,8 +88,8 @@ theorem ofExponentsOn_singleton (b : String) (q : ℚ) :
 representation the vocabulary table, the generated Rust and the generated Python
 all exchange and the group element it means. That the two are inverse is what makes
 the representation faithful, and it is the claim in this module a change could
-break - silently, because every one of the twenty-four unit theorems in
-`Vocabulary.lean` would still agree with a table that meant nothing.
+break - silently, because every unit theorem in `Vocabulary.lean` would still agree
+with a table that meant nothing.
 
 The four lemmas below say what the projection `_impl` does to the operations, and
 each is `rfl`: `Dimension`'s `AddCommGroup` and `Module` instances are the

@@ -47,7 +47,7 @@ LEAN_DIR = ROOT / "lean"
 #: `Axioms.lean` is hand-written and holds the general theorems, beside the prose
 #: explaining what the gate is for. `Gate.lean` is generated from the vocabulary
 #: table and holds one line per canonical unit - generated because a
-#: hand-maintained list of twenty-four names goes stale the first time a unit is
+#: hand-maintained list of unit names goes stale the first time a unit is
 #: added, and it goes stale *silently*: the theorem is proved and nothing gates it.
 GATES = (
     LEAN_DIR / "Azoth" / "Axioms.lean",

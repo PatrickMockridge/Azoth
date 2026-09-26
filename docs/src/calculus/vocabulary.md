@@ -164,9 +164,9 @@ So declaring `mm` an area fails to prove, with a goal of `2 = 1`: the table's se
 exponent against the first one `Length` has. A unit with no entry in the map is
 refused at generation rather than skipped, so the map stays total as the table
 grows. And because the map is data, `Axioms.lean`'s sibling `Gate.lean` is generated
-from it too — a hand-maintained list of thirty-seven names would go stale the first
-time a unit was added, and go stale silently, with the theorem proved and nothing
-gating it.
+from it too — a hand-maintained list of unit names would go stale the first time a
+unit was added, and go stale silently, with the theorem proved and nothing gating
+it.
 
 ## Adding a unit
 

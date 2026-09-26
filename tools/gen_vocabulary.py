@@ -953,7 +953,7 @@ def emit_lean_gate(table: dict[str, Any]) -> str:
     """One `#print axioms` line per unit theorem, so the gate cannot miss one.
 
     Generated for the reason the rest of this file is: a hand-maintained list of
-    twenty-four names goes stale the first time a unit is added, and it goes stale
+    unit names goes stale the first time a unit is added, and it goes stale
     *silently* - the theorem is proved and nothing gates it. Here the gate grows
     with the table.
     """
