@@ -666,6 +666,71 @@ pub struct Overlay {
     cpa_kij: HashMap<(String, String, AssociationCubic), f64>,
 }
 
+/// Where a component parameter's value came from.
+///
+/// **Two of them, and the two are exhaustive for a substance's parameters.** Every parameter is
+/// either stated by a card or read from the table this build ships. A caller's explicit *argument*
+/// is not this enum's question, because an argument is not a component parameter - the two
+/// coefficient-shaped sources are the card and the caller, and neither is the table; see
+/// [`crate::card::Card::coefficient`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Origin {
+    /// The databank this build ships.
+    Shipped,
+    /// The card the caller passed.
+    Card,
+}
+
+impl ComponentOverride {
+    /// What this override states about one substance, by parameter name.
+    ///
+    /// **A list rather than a count, because that is the question disclosure asks.** A card's
+    /// authority is what it *states*, so a caller asking which of their values an answer rested on
+    /// needs the names - and a name absent from the list is the shipped table's, which is the other
+    /// half of the same answer. The five `cp_a`..`cp_e` and the five `dielectric_*` are one field
+    /// each and arrive all five or none, so a list is the only honest shape for them, and
+    /// `association` and `ion` are the two entries under a substance that are not numbers in a
+    /// unit - the same two `azoth.keycard.Component` carries beside its `parameters`.
+    #[must_use]
+    pub fn stated(&self) -> Vec<&'static str> {
+        let mut out = Vec::new();
+        if self.tc.is_some() {
+            out.push("Tc");
+        }
+        if self.pc.is_some() {
+            out.push("Pc");
+        }
+        if self.omega.is_some() {
+            out.push("omega");
+        }
+        if self.cp.is_some() {
+            out.extend(["cp_a", "cp_b", "cp_c", "cp_d", "cp_e"]);
+        }
+        if self.ionic_charge.is_some() {
+            out.push("ionic_charge");
+        }
+        if self.deshmukh_mather_diameter.is_some() {
+            out.push("deshmukh_mather_diameter");
+        }
+        if self.dielectric.is_some() {
+            out.extend([
+                "dielectric_1",
+                "dielectric_2",
+                "dielectric_3",
+                "dielectric_4",
+                "dielectric_5",
+            ]);
+        }
+        if self.ion.is_some() {
+            out.push("ion");
+        }
+        if self.association.is_some() {
+            out.push("association");
+        }
+        out
+    }
+}
+
 impl Overlay {
     /// An overlay that changes nothing.
     #[must_use]
@@ -807,6 +872,49 @@ impl Overlay {
     #[must_use]
     pub fn component_names(&self) -> Vec<&str> {
         self.components.keys().map(String::as_str).collect()
+    }
+
+    /// What this card states about one substance: `(parameter, origin)` per parameter it carries.
+    ///
+    /// **Disclosure, and the half an enforced capability does not give on its own.**
+    /// Non-amplification says an answer cannot rest on a datum the card does not grant; it does not
+    /// say the answer *says* what it rested on. This is the Rust reader's answer to that question,
+    /// and Python's has existed since the loader was written - `Keycard.component(name).parameters`
+    /// is a mapping whose keys are exactly these names. So the two readers disclose one fact in two
+    /// shapes, and `test_card_agreement.py` compares the shapes.
+    ///
+    /// Every entry is [`Origin::Card`], because the question asked of an overlay is what the *card*
+    /// states; a parameter absent from the list is the shipped table's, which is the other half of
+    /// the answer. The spellings are `card::COMPONENT_PARAMETERS`': the same names a card writes.
+    #[must_use]
+    pub fn origins(&self, name: &str) -> Vec<(&'static str, Origin)> {
+        let Some(stated) = self.components.get(&name.to_lowercase()) else {
+            return Vec::new();
+        };
+        stated
+            .stated()
+            .into_iter()
+            .map(|parameter| (parameter, Origin::Card))
+            .collect()
+    }
+
+    /// The same question for a whole fluid: every parameter the card states about any of `names`.
+    ///
+    /// **The shape a caller holding a fluid asks in.** A mixture resolved from names knows its own
+    /// substances ([`crate::Mixture::names`]) and not the card they came from, so the question
+    /// "which of my values did this fluid rest on" is asked of the card with the mixture's names -
+    /// and a caller who holds the mixture holds the card, because a card is a value a caller passes
+    /// and this library keeps no global one.
+    #[must_use]
+    pub fn origins_for(&self, names: &[String]) -> Vec<(String, &'static str, Origin)> {
+        names
+            .iter()
+            .flat_map(|name| {
+                self.origins(name)
+                    .into_iter()
+                    .map(|(parameter, origin)| (name.clone(), parameter, origin))
+            })
+            .collect()
     }
 
     /// Whether this overlay changes nothing.

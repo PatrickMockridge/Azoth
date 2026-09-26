@@ -165,13 +165,30 @@ holder is accountable for it.
 Non-amplification says a result cannot rest on data the card does not grant. It
 does not say the result has to *say* what it rested on, and by `specification.md`'s own
 account it must: *"What the library owes instead of a status field"* is disclosure.
-So the result carries the origins it used, and a caller can see which names an
-answer involved rather than inferring it from the card they handed in — which is
-the difference between a capability that is enforced and a capability that is
-auditable.
+So a caller can ask rather than infer — and the question is asked **of the card**,
+which is a value they hold and pass, so whoever holds the fluid holds the card. A
+card restating itself into every result struct would be the other reading, and the
+wrong one: a provenance field on 192 result types, read by nothing, is the vacuity
+the layer above refuses.
+
+There are two places a card reaches arithmetic, and each has one answer:
+
+- **A component's parameters.** `Overlay::origins(name)` gives every parameter the
+  card states about a substance, each paired with `Origin::Card`; a parameter absent
+  from the list is the shipped table's, which is the other half of the same answer.
+  `Overlay::origins_for(&[names])` asks it for a whole fluid, in the names
+  `Mixture::names` carries. `azoth.keycard` states the same three things as
+  `Component.parameters`, `Component.is_ion` and `Keycard.association_for` — the last
+  two because a site scheme and an ion class are statements about a substance that
+  are not numbers in a unit.
+- **A calculation's coefficient.** `Card::coefficient(calc_id, name)` is `Some` when
+  the card supplied the argument and `None` when the caller did — or when neither
+  did, in which case the error names the entry to add. Nothing *ships* a coefficient,
+  so there is no third answer to pair it with: an origin enum would have to mislabel
+  three states as two, which is why this one is an `Option`.
 
 The shipped data already carries the `verify_status` column for the library's own
 statement about itself. What the capability adds is the *user's* half: which of
 their names, and which of the library's, an answer actually rested on.
 
-*Enforcement: construction — `crates/azoth-eos/src/card.rs` and `python/src/azoth/keycard.py` are the two readers, and a card is a value a caller holds and passes: no module scope, no `current`, no `clear`.*
+*Enforcement: construction — `crates/azoth-eos/src/databank.rs` and `python/src/azoth/keycard.py` are the two readers and the two disclosure surfaces, `python/tests/test_card_agreement.py` compares them, and a card is a value a caller holds and passes: no module scope, no `current`, no `clear`.*

@@ -17,6 +17,7 @@ use azoth_eos::card::{
     },
 };
 use azoth_eos::databank;
+use azoth_eos::databank::Origin;
 
 /// The template, at the path the README tells a user to copy it from.
 fn template_path() -> PathBuf {
@@ -35,6 +36,73 @@ fn template() -> Card {
 /// testing something other than the reader.
 fn a_card(body: &str) -> String {
     format!("schema_version = {SCHEMA_VERSION}\n{body}")
+}
+
+/// **Disclosure: a card says what it supplied, and the rest is the shipped table's.**
+///
+/// Non-amplification says an answer cannot rest on a datum the card does not grant. It does not
+/// say the answer *says* what it rested on - and the capability layer's own page argues that it
+/// must, because a capability that is enforced but not auditable is one nobody can check. Python
+/// has disclosed since the loader was written (`Keycard.component(name).parameters` is a mapping
+/// whose keys are these names); this is the Rust half of the same answer, asked of the card rather
+/// than carried on a result: a card is a value the caller holds, and an origins field on every
+/// result struct would be a datum nothing reads.
+#[test]
+fn a_card_states_what_it_supplies_and_the_rest_is_the_shipped_table() {
+    let card = Card::from_toml(&a_card(
+        "[components.methane.omega]\nvalue = 0.012\nunit = \"dimensionless\"\n\
+         [components.water.Pc]\nvalue = 1.0e7\nunit = \"Pa\"\n\
+         [associations.water]\nscheme = \"4C\"\n\
+         [associations.methanol]\nscheme = \"2B\"\n\
+         [coefficients.\"hydraulics.orifice_flow\".Cd]\nvalue = 0.61\nunit = \"dimensionless\"\n",
+    ))
+    .expect("a valid card");
+
+    // The parameters it carries, and `Tc`/`Pc` are absent because it states `omega` alone - which
+    // is the other half of the answer and the reason this is a list rather than a count.
+    let stated: Vec<&str> = card
+        .overlay()
+        .origins("methane")
+        .into_iter()
+        .map(|(parameter, origin)| {
+            assert_eq!(origin, Origin::Card);
+            parameter
+        })
+        .collect();
+    assert_eq!(stated, ["omega"]);
+    // A substance the card says nothing about states nothing.
+    assert!(card.overlay().origins("n-butane").is_empty());
+    // A section and a parameter about one substance are one statement about it: the association is
+    // a read-modify-write of the same override, so `Pc` is not lost when the second section
+    // arrives.
+    assert_eq!(
+        card.overlay().origins("water"),
+        [("Pc", Origin::Card), ("association", Origin::Card)]
+    );
+    // And a card may state a scheme for a substance whose critical constants it does not touch -
+    // the template says so - so an association is a statement about a substance with no
+    // `components` entry behind it.
+    assert_eq!(
+        card.overlay().origins("methanol"),
+        [("association", Origin::Card)]
+    );
+
+    // The fluid-level question, asked with the names a mixture carries: one entry per name the
+    // card states something about, and none for the name it does not.
+    let fluid = card.overlay().origins_for(&[
+        "methane".to_string(),
+        "water".to_string(),
+        "methanol".to_string(),
+        "n-butane".to_string(),
+    ]);
+    assert_eq!(fluid.len(), 4);
+    assert_eq!(fluid[0].0, "methane");
+    assert_eq!(fluid[3].0, "methanol");
+
+    // The coefficient half, where the answer is `Option` rather than an origin: nothing ships a
+    // coefficient, so `None` is the caller's own argument and the table is never in it.
+    assert!(card.coefficient("hydraulics.orifice_flow", "Cd").is_some());
+    assert!(card.coefficient("hydraulics.orifice_flow", "d").is_none());
 }
 
 /// **A model definition is a fluid, and it builds one.**

@@ -499,6 +499,78 @@ def test_both_readers_build_the_same_fluid_from_a_model_definition() -> None:
         _core.card_model_components(A_MODEL_CARD, "nonesuch")
 
 
+#: A card stating two things about one substance in two sections, one thing about a
+#: substance it states no other parameter for, and a class beside a parameter. Those are the
+#: three shapes disclosure has to keep apart: the merge, the orphan association, and the two
+#: entries under a substance that are not numbers in a unit.
+TWO_SECTIONS_CARD = (
+    "schema_version = 2\n"
+    '[components.water.Pc]\nvalue = 1.0e7\nunit = "Pa"\n'
+    "[components.caco3]\nion = true\n"
+    '[components.caco3.ionic_charge]\nvalue = 2.0\nunit = "dimensionless"\n'
+    '[associations.water]\nscheme = "4C"\n'
+    '[associations.methanol]\nscheme = "2B"\n'
+)
+
+
+def _python_disclosure(card: keycard.Keycard, name: str) -> set[str]:
+    """What Python says this card states about one substance, in Rust's vocabularies.
+
+    Three sources because a `Component` holds three: its `parameters`, the class beside them,
+    and - on the card rather than the component - the association, because a card may state a
+    scheme for a substance whose critical constants it does not touch.
+    """
+    component = card.component(name)
+    stated = set(component.parameters) if component is not None else set()
+    if component is not None and component.is_ion is not None:
+        stated.add("ion")
+    if card.association_for(name) is not None:
+        stated.add("association")
+    return stated
+
+
+def _compare_disclosure(text: str) -> int:
+    """The comparison itself, over every name the card states anything about."""
+    card = python_card(text)
+    overlay = rust_card(text)
+    compared = 0
+    for name in sorted(card.names()):
+        assert set(_core.overlay_origins(overlay, name)) == _python_disclosure(card, name), name
+        compared += 1
+    return compared
+
+
+def test_both_readers_disclose_the_same_statement_about_a_substance() -> None:
+    """Disclosure: one card says what it supplied, and both readers say so in the same names.
+
+    Non-amplification says an answer cannot rest on a datum the card does not grant. It does
+    not say the answer *says* what it rested on, and a capability that is enforced but not
+    auditable is one nobody can check - so both readers disclose, and this compares the two
+    statements rather than each reader against itself. A reader that resolved the same numbers
+    and disclosed different names would be reporting a grant it had not acted on, or hiding one
+    it had.
+
+    The template is one of the three cards because it is the one a user copies; the other two
+    state the shapes a card's *sections* have and the template's one `Tc` does not: two sections
+    about one substance, which must merge rather than replace, an association for a substance
+    the `components` section never names, and a class (`ion`) beside a parameter.
+    """
+    assert _compare_disclosure(TEMPLATE.read_text(encoding="utf-8")) > 0, (
+        "the template states nothing, so the comparison would pass vacuously"
+    )
+    assert _compare_disclosure(TRANSPORTED_ASSOCIATION_CARD) == 1
+    assert _compare_disclosure(TWO_SECTIONS_CARD) == 3
+
+    # The coefficient path's disclosure is `Card::coefficient`'s `Option` rather than an
+    # origin, and the comparison above this file already holds the two readers to naming the
+    # same coefficients - so the one fact left to state is that a card's silence there is not
+    # the shipped table's answer: nothing ships a coefficient.
+    card = python_card(A_MATRIX_CARD)
+    assert card.coefficient("hydraulics.orifice_flow", "Cd") is not None
+    assert card.coefficient("hydraulics.orifice_flow", "d") is not None
+    assert card.coefficient("hydraulics.orifice_flow", "epsilon") is None
+
+
 def test_a_card_stating_a_zero_pair_keeps_it_on_both_sides() -> None:
     """A card's `value = 0.0` means "reset this pair to ideal mixing", not "no value".
 

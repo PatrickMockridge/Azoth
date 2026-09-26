@@ -461,6 +461,14 @@ impl Card {
     }
 
     /// The coefficient this card supplies for one calculation's argument, or `None`.
+    ///
+    /// **This is disclosure for the second of the two places a card reaches arithmetic.**
+    /// [`Overlay::origins`] answers the question for a component's parameters, where a parameter
+    /// the card does not state is the shipped table's. A coefficient is not that question: nothing
+    /// ships one, so `None` means the caller's own argument or - if they passed none - the error
+    /// that names the entry to add. Two states would have to mislabel three. `Some` is the whole
+    /// answer, and it is the same fact `azoth.keycard.coefficient_value` acts on when it lets an
+    /// explicit argument win without consulting the card at all.
     #[must_use]
     pub fn coefficient(&self, calc_id: &str, name: &str) -> Option<&Coefficient> {
         self.coefficients

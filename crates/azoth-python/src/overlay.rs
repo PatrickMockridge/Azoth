@@ -143,6 +143,25 @@ pub fn overlay_entry_row(
     Ok(row_of(&entry))
 }
 
+/// What a card states about one substance, as the parameters it carries.
+///
+/// **The disclosure parity surface.** Python states the same fact as
+/// `Keycard.component(name).parameters`, a mapping whose keys are these names; Rust states it as
+/// `Overlay::origins`, which pairs each name with the [`Origin`] it came from. This exposes the
+/// names so `test_card_agreement.py` can compare the two statements - every entry is the card's,
+/// and a parameter absent from the list is the shipped table's.
+///
+/// [`Origin`]: azoth_eos::databank::Origin
+#[pyfunction]
+pub fn overlay_origins(overlay: &PyOverlay, name: &str) -> Vec<String> {
+    overlay
+        .as_overlay()
+        .origins(name)
+        .into_iter()
+        .map(|(parameter, _)| parameter.to_string())
+        .collect()
+}
+
 /// Every substance a card names, resolved, in name order.
 ///
 /// Only the card's own names, because those are the ones the baseline does not answer
