@@ -406,6 +406,9 @@ pub fn solve(
 
     // `initializeLambda` starts from a **non-gas** phase when ions are present: an ion exists
     // only in solution, and a gas phase's ionic mole fraction is the floor rather than a state.
+    // numerics-ok: `ModifiedRANDSolver.initializeLambda` starts `int phaseIndex = 0` and
+    // only searches for a non-gas phase behind its own `if (ions)` - read from the pin's
+    // bytecode, where the method opens with `iconst_0; istore_1`.
     let reference_phase = ions
         .and_then(|constraints| constraints.is_gas.iter().position(|gas| !gas))
         .unwrap_or(0);

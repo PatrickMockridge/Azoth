@@ -191,3 +191,27 @@ def test_the_largest_float_outside_a_seed_is_reported(tmp_path: Path) -> None:
     assert len(offenders(tmp_path, "a.rs", fold)) == 1
     marked = "// numerics-ok: a paired min/max seed\n" + fold
     assert offenders(tmp_path, "a.rs", marked) == []
+
+
+def test_an_index_defaulted_to_zero_is_reported(tmp_path: Path) -> None:
+    """The fifth rule, which reads a statement rather than a line.
+
+    The lookup and its default are usually two lines apart - `position` on one, `unwrap_or(0)`
+    on the next - so a per-line rule would report the sites whose chain happens to fit on one
+    line and miss the rest.
+    """
+    split = (
+        "let index = names\n    .iter()\n    .position(|name| name == want)\n    .unwrap_or(0);\n"
+    )
+    messages = offenders(tmp_path, "a.rs", split)
+    assert len(messages) == 1, messages
+    assert "index zero" in messages[0]
+
+    # A `map_or` that *computes* a value from the index is not this defect: the absent case
+    # contributes nothing rather than addressing an entry.
+    computed = "let n = index_of(names, want).map_or(0.0, |i| values[i]);\n"
+    assert offenders(tmp_path, "a.rs", computed) == []
+
+    # And the marker excuses it where the source is the source of the answer.
+    marked = "// numerics-ok: the class's own `phaseIndex = 0`\n" + split
+    assert offenders(tmp_path, "a.rs", marked) == []

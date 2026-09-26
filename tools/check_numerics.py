@@ -23,6 +23,12 @@ refuses.
 reader cannot tell apart from the line: a bound somebody meant, a ceiling that saturates
 an infinity, and a `min` fold's seed.
 
+**An index lookup defaulted to zero.** `names.iter().position(|n| n == want).unwrap_or(0)`
+answers zero for a name the list does not carry, and zero is a *different* entry - so a
+caller asking for a field the table does not declare reads the first one. This is the one
+rule that reads a whole statement rather than a line, because the lookup and its default
+are usually two lines apart.
+
 # What it checks, and what it does not
 
 Syntactic rules over `crates/**/*.rs` and `python/src/**/*.py`, and nothing else. A rule
@@ -83,6 +89,13 @@ PY_POW = re.compile(r"\*\*\s*(?P<literal>-?\d+\.\d+)(?![\d.eE])")
 #: `f64::MAX`, and the one shape where it is unambiguously a fold's seed.
 F64_MAX = re.compile(r"\bf64::MAX\b")
 SEED = re.compile(r"^\s*let mut \w+ = f64::MAX;\s*$")
+
+#: An index lookup that defaults to zero: an index *value* defaulted, which the statement
+#: has to also contain an index idiom for. `map_or(0.0, |index| ...)` is deliberately not
+#: matched: that computes a value the absent case contributes, and this is about a number
+#: that is later used to address an entry.
+ZERO_INDEX_DEFAULT = re.compile(r"\.unwrap_or\(0\)")
+INDEX_IDIOM = re.compile(r"\.(?:position|rposition|binary_search)\(|\bindex_of\(")
 
 #: How a line says its number is deliberate.
 EXEMPT = "numerics-ok:"
@@ -150,6 +163,11 @@ class Rule:
     #: applied to both would report prose.
     patterns: dict[str, re.Pattern[str]]
     explain: Callable[[re.Match[str], str, str, str], str | None]
+
+    #: Whether the defect spans a statement rather than fitting on a line. A chain that
+    #: names a field on one line and defaults it on the next is one expression, so a
+    #: per-line rule would miss half the sites.
+    multiline: bool = False
 
     def messages(self, path: Path, line: str, number: int) -> list[str]:
         """Every finding this rule makes on one line of one file."""
@@ -233,6 +251,20 @@ def maximum_float_outside_a_seed(
     )
 
 
+def index_defaulted_to_zero(match: re.Match[str], line: str, where: str, suffix: str) -> str | None:
+    """A lookup whose index defaults to zero, and the statement it sits in."""
+    _ = (suffix,)
+    if not INDEX_IDIOM.search(line):
+        return None
+    return (
+        f"{where}: `{match.group(0)}` reads a name the lookup did not find as **index zero**. "
+        f"Zero is a different component, field or phase rather than an absence, and nothing "
+        f"about the number says which was meant. Refuse it, or mark it `{EXEMPT} <reason>` "
+        f"where zero is the deliberate answer - a substance a phase does not carry "
+        f"contributing nothing is the case in this tree."
+    )
+
+
 def build_rules() -> tuple[Rule, ...]:
     """The rules, in the order their findings are reported."""
     fields = "|".join(re.escape(name) for name in physical_fields())
@@ -257,6 +289,12 @@ def build_rules() -> tuple[Rule, ...]:
         ),
         Rule("physical-field-defaulted-to-zero", {".rs": defaults}, physical_field_defaulted),
         Rule("maximum-float-outside-a-seed", {".rs": F64_MAX}, maximum_float_outside_a_seed),
+        Rule(
+            "index-defaulted-to-zero",
+            {".rs": ZERO_INDEX_DEFAULT},
+            index_defaulted_to_zero,
+            multiline=True,
+        ),
     )
 
 
@@ -271,31 +309,81 @@ class Findings:
         self.excused[rule] = self.excused.get(rule, 0) + count
 
 
+def exempt(lines: list[str], number: int) -> bool:
+    """Whether a `numerics-ok:` marker covers one line.
+
+    **A marker opens a block that runs to the next blank line**, rather than covering one
+    line. An expression that carries a rational-approximating decimal is often wrapped
+    across several lines, and a per-line rule missed the continuation - which is how the
+    first version of this let `1.2083` through while exempting `0.3333` three lines above
+    it. So this walks back to the previous blank line, which is the block's own start.
+    """
+    for index in range(number - 1, -1, -1):
+        if not lines[index].strip():
+            return False
+        if EXEMPT in lines[index]:
+            return True
+    return False
+
+
+def statements(lines: list[str]) -> list[tuple[int, str]]:
+    """A file's statements as `(first line number, comment-stripped text)`.
+
+    A statement ends at a line whose code ends in `;` or `}`, or at a blank line - which is
+    also where a marker's block ends, so the two agree on what a unit is.
+    """
+    out: list[tuple[int, str]] = []
+    start = 0
+    buffer: list[str] = []
+    for number, line in enumerate(lines, start=1):
+        # A `//` inside a string truncates the statement rather than the comment. That can
+        # only shorten what a rule sees, and the alternative is a lexer this tool is not.
+        code = line.split("//", 1)[0]
+        if not line.strip():
+            if buffer:
+                out.append((start, "\n".join(buffer)))
+                buffer = []
+            continue
+        if not buffer:
+            start = number
+        if code.strip():
+            buffer.append(code)
+        if code.rstrip().endswith((";", "}")):
+            out.append((start, "\n".join(buffer)))
+            buffer = []
+    if buffer:
+        out.append((start, "\n".join(buffer)))
+    return out
+
+
 def scan(path: Path) -> Findings:
     """Every line of one file that breaks a rule, and how many a marker excused."""
     findings = Findings()
     text = path.read_text(encoding="utf-8")
     if GENERATED in text[:2000]:
         return findings
-    # **A marker opens a block that runs to the next blank line**, rather than covering
-    # one line. An expression that carries a rational-approximating decimal is often
-    # wrapped across several lines, and a per-line rule missed the continuation - which
-    # is how the first version of this let `1.2083` through while exempting `0.3333` three
-    # lines above it.
-    exempt = False
-    for number, line in enumerate(text.splitlines(), start=1):
-        if EXEMPT in line:
-            exempt = True
-        if not line.strip():
-            exempt = False
-            continue
-        if COMMENT.match(line):
+    lines = text.splitlines()
+    for number, line in enumerate(lines, start=1):
+        if not line.strip() or COMMENT.match(line):
             continue
         for rule in RULES:
+            if rule.multiline:
+                continue
             found = rule.messages(path, line, number)
             if not found:
                 continue
-            if exempt:
+            if exempt(lines, number):
+                findings.excuse(rule.name, len(found))
+            else:
+                findings.messages.extend(found)
+    for start, statement in statements(lines):
+        for rule in RULES:
+            if not rule.multiline:
+                continue
+            found = rule.messages(path, statement, start)
+            if not found:
+                continue
+            if exempt(lines, start):
                 findings.excuse(rule.name, len(found))
             else:
                 findings.messages.extend(found)

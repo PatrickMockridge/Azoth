@@ -67,7 +67,16 @@ fn parse() -> Result<Vec<Fitting>> {
             AzothError::invalid_input("fittings", format!("malformed CSV row: {e}"))
         })?;
         let field = |name: &str| -> Result<&str> {
-            record.get(record_field_index(name)).ok_or_else(|| {
+            // **Two failures, and the first had been silent.** A name no column carries used
+            // to answer index zero, so a caller asking for a field this registry does not
+            // declare read `fitting_id` instead - a plausible string rather than an error.
+            let index = record_field_index(name).ok_or_else(|| {
+                AzothError::invalid_input(
+                    "fittings",
+                    format!("`{name}` is not a column this registry declares"),
+                )
+            })?;
+            record.get(index).ok_or_else(|| {
                 AzothError::invalid_input("fittings", format!("row is missing column `{name}`"))
             })
         };
@@ -99,8 +108,8 @@ const COLUMNS: [&str; 7] = [
     "verify_status",
 ];
 
-fn record_field_index(name: &str) -> usize {
-    COLUMNS.iter().position(|c| *c == name).unwrap_or(0)
+fn record_field_index(name: &str) -> Option<usize> {
+    COLUMNS.iter().position(|c| *c == name)
 }
 
 /// The exact CSV text this crate embeds.
