@@ -155,7 +155,7 @@ fn inverse_diagonal(a: &[Vec<f64>]) -> Inverted {
 /// only its diagonal is read.
 pub fn maxwell_stefan_film_coefficient(
     view: &PhaseView,
-    component_index: usize,
+    component_index: Option<usize>,
     base: f64,
     reference: f64,
     gas_phase: bool,
@@ -163,6 +163,15 @@ pub fn maxwell_stefan_film_coefficient(
     if !(base > 0.0 && base.is_finite()) {
         return 0.0;
     }
+    let Some(component_index) = component_index else {
+        // **The class's `componentIndex(phase, component) < 0` branch**, and it is not a
+        // refusal: a component this phase does not carry has no row of the matrix, and
+        // `mixtureDiffusivityForComponent` answers the *reference* diffusivity for it - so
+        // `scaleFilmCoefficient` returns the base coefficient unscaled. Reaching for another
+        // component's row instead is what `unwrap_or(0)` did here, and component zero's
+        // diffusivity is not this component's.
+        return scale_film_coefficient(base, reference, reference);
+    };
     let count = view.z.len();
     let reduced = count.saturating_sub(1);
     // **Two states take the scalar route, and both are the class's own.** A phase of two
@@ -220,9 +229,13 @@ pub fn maxwell_stefan_film_coefficient(
 
 /// `calculateFilmCoefficient`: the base coefficient under the scalar model, and the matrix's
 /// correction under the Maxwell-Stefan one.
+///
+/// `component_index` is the component's position **in this phase's own system**, or `None`
+/// where that phase does not carry it - the class's own `componentIndex(phase, component)`,
+/// which it looks up once per phase rather than once per segment.
 pub fn film_coefficient(
     view: &PhaseView,
-    component_index: usize,
+    component_index: Option<usize>,
     base: f64,
     reference: f64,
     gas_phase: bool,
@@ -246,4 +259,70 @@ pub fn finite_positive(value: f64, fallback: f64) -> f64 {
 /// `clamp`.
 pub fn clamp(value: f64, min: f64, max: f64) -> f64 {
     value.max(min).min(max)
+}
+
+#[cfg(test)]
+mod tests {
+    use azoth_core::units::{kelvins, pascal_seconds, pascals, watts_per_meter_kelvin};
+    use azoth_eos::phase_transport::PhaseKind;
+    use azoth_eos::results::PhaseTransportResult;
+
+    use super::*;
+
+    /// A three-component phase whose components 0 and 1 have different binary diffusivities,
+    /// so a film coefficient read from component 0's row is visible against one read from
+    /// component 1's, and against the reference.
+    fn a_three_component_phase() -> PhaseView {
+        let d = |first: usize, second: usize| match (first.min(second), first.max(second)) {
+            (0, 1) => 1.0e-5,
+            (0, 2) => 2.0e-5,
+            (1, 2) => 4.0e-5,
+            _ => 0.0,
+        };
+        PhaseView {
+            z: vec![0.6, 0.3, 0.1],
+            n: 1.0,
+            t: kelvins(313.15),
+            p: pascals(5.0e6),
+            molar_mass: 0.02,
+            density: 40.0,
+            cp_mass: 2100.0,
+            kind: PhaseKind::Gas,
+            transport: PhaseTransportResult {
+                mu: pascal_seconds(1.0e-5),
+                k: watts_per_meter_kelvin(0.02),
+                d_binary: (0..3)
+                    .map(|row| (0..3).map(|column| d(row, column)).collect())
+                    .collect(),
+                d_effective: vec![1.0e-5, 2.0e-5, 3.0e-5],
+                warnings: Vec::new(),
+            },
+        }
+    }
+
+    /// **A component the phase does not carry is scaled by nothing, not by component zero.**
+    ///
+    /// `componentIndex(phase, component)` is `-1` for a component the phase's own system does
+    /// not have, and the class's `mixtureDiffusivityForComponent` answers the *reference*
+    /// diffusivity for it - so the film coefficient comes back as the base coefficient. The
+    /// port read component 0's row instead, which is a different number and a plausible one.
+    #[test]
+    fn a_component_the_phase_does_not_carry_is_the_base_coefficient() {
+        let view = a_three_component_phase();
+        let base = 100.0;
+        let reference = 2.0e-5;
+
+        assert_eq!(
+            film_coefficient(&view, None, base, reference, true, true),
+            base
+        );
+
+        // And the row that `unwrap_or(0)` reached for is not that number, which is what makes
+        // the `None` a value rather than a spelling of zero.
+        let component_zero = film_coefficient(&view, Some(0), base, reference, true, true);
+        assert!(
+            (component_zero - base).abs() > 1.0,
+            "component zero's row answers {component_zero}, so a fabricated index is visible"
+        );
+    }
 }

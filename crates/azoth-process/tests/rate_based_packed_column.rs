@@ -353,3 +353,34 @@ fn the_reference_diffusivity_is_the_classs_constant_and_the_matrix_is_real() {
         "the overall heat coefficient",
     );
 }
+
+/// **The union transfer list, which is the model's default, refuses - and it refused before
+/// this tranche too, for a different reason.**
+///
+/// The union of the two inlets' components always names the solvent, which the gas does not
+/// carry, so this is the one state that reaches the class's `componentIndex(phase, component)
+/// < 0` branch. Measured on both sides of that fix: without it the profile runs and does
+/// **not converge** (`union.converged` is false at the iteration cap, which is what the wrong
+/// gas-side film does to the solvent's transfer); with it, the solvent's film is the base
+/// coefficient and the first pass lands the liquid's composition at `1 + 2.9e-9`, which
+/// `crate::stream::Stream` refuses - "the composition sums to 1.0000000028839944, not to
+/// one", which is the guard that keeps a *caller's* error visible and is now being asked about
+/// the port's own renormalisation.
+///
+/// Both are findings about the union list rather than about the film index, and neither is
+/// this step's to fix. What is pinned here is that the state does not quietly work: the
+/// branch is exercised, and the refusal names the composition rather than a fabricated
+/// coefficient. The film index itself is pinned in
+/// `segment::film::tests::a_component_the_phase_does_not_carry_is_the_base_coefficient`.
+#[test]
+fn the_union_transfer_list_names_a_component_the_gas_does_not_carry() {
+    let (profile, snapshot) = settings(6.0, false);
+    let error =
+        solve_fixed_point_profile(&configured(6.0), &lean(6.0), &profile, &snapshot, &[], true)
+            .expect_err("the union list does not solve in this port");
+    let message = format!("{error}");
+    assert!(
+        message.contains("composition sums to"),
+        "and it refuses for a reason of its own: {message}"
+    );
+}

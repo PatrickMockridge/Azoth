@@ -224,10 +224,14 @@ fn component_transfer(
         return Ok(0.0);
     }
 
-    let gas_index = index_of(&gas.components, component).unwrap_or(0);
+    // **Each phase by its own index, and `None` where it has none.** The class looks the
+    // component up per phase (`componentIndex(phase, component)`) and takes the reference
+    // diffusivity when a phase does not carry it; `unwrap_or(0)` here read component zero's
+    // row instead, so the solvent's gas-side film came from the lightest component's
+    // diffusivity and nothing said so.
     let gas_film = film_coefficient(
         gas_phase,
-        gas_index,
+        index_of(&gas.components, component),
         snapshot.k_ga,
         snapshot.gas_diffusivity,
         true,
@@ -235,7 +239,7 @@ fn component_transfer(
     );
     let liquid_film = film_coefficient(
         liquid_phase,
-        gas_index,
+        index_of(&liquid.components, component),
         snapshot.k_la,
         snapshot.liquid_diffusivity,
         false,
