@@ -116,7 +116,9 @@ from azoth.core.result import (
     IapwsHenryLawResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
+    LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
+    LiquidViscosityPureResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
     MatcopAlphaResult,
@@ -286,7 +288,9 @@ __all__ = [
     "iapws_henry_law",
     "ideal_gas_cp",
     "kent_eisenberg_phase",
+    "liquid_conductivity_polynom",
     "liquid_heat_capacity",
+    "liquid_viscosity_pure",
     "mason_saxena_conductivity",
     "mixture",
     "molar_enthalpy_entropy",
@@ -369,7 +373,9 @@ _PR_PENELOUX_SHIFT = "eos.pr_peneloux_shift"
 _SRK_PENELOUX_SHIFT = "eos.srk_peneloux_shift"
 _HEAT_OF_VAPORIZATION = "eos.heat_of_vaporization"
 _ANTOINE_VAPOR_PRESSURE = "eos.antoine_vapor_pressure"
+_LIQUID_CONDUCTIVITY_POLYNOM = "eos.liquid_conductivity_polynom"
 _LIQUID_HEAT_CAPACITY = "eos.liquid_heat_capacity"
+_LIQUID_VISCOSITY_PURE = "eos.liquid_viscosity_pure"
 _MASON_SAXENA_CONDUCTIVITY = "eos.mason_saxena_conductivity"
 _MATCOP5_PRUMR_ALPHA = "eos.matcop5_prumr_alpha"
 _MATCOP_ALPHA = "eos.matcop_alpha"
@@ -979,6 +985,71 @@ def heat_of_vaporization(
     See :func:`azoth.eos.reference.heat_of_vaporization`.
     """
     return resolve(_HEAT_OF_VAPORIZATION)(c0=c0, c1=c1, c2=c2, c3=c3, Tc=Tc, T=T)  # type: ignore[no-any-return]
+
+
+def liquid_conductivity_polynom(
+    liquid_conductivity: Sequence[Sequence[float]],
+    molar_mass: Sequence[Q],
+    z: Sequence[float],
+    T: Q,
+) -> LiquidConductivityPolynomResult:
+    """A liquid mixture's thermal conductivity, from its components' LIQCOND polynomials.
+
+    A **mass**-fraction mean of per-component polynomials, which is NeqSim's polynom model - the
+    one an *aqueous* phase takes, where a gas or a hydrocarbon liquid takes PFCT.
+
+    Raises:
+        InvalidInputError: if the vectors differ in length.
+        OutOfRangeError: if ``T`` is not positive.
+
+    See :func:`azoth.eos.reference.liquid_conductivity_polynom`.
+    """
+    return resolve(_LIQUID_CONDUCTIVITY_POLYNOM)(  # type: ignore[no-any-return]
+        liquid_conductivity=liquid_conductivity,
+        molar_mass=molar_mass,
+        z=z,
+        T=T,
+    )
+
+
+def liquid_viscosity_pure(
+    form: str,
+    model: int,
+    l1: float,
+    l2: float,
+    l3: float,
+    l4: float,
+    Tc: Q,
+    Pc: Q,
+    omega: float,
+    T: Q,
+    P: Q,
+) -> LiquidViscosityPureResult:
+    """One component's pure-liquid viscosity, from its LIQVISC correlation.
+
+    ``form`` picks which of NeqSim's two ladders runs - ``common_phase``, whose model 2 branch
+    is empty, or ``liquid``, which implements it - because a phase gets whichever class its own
+    viscosity model extends.
+
+    Raises:
+        InvalidInputError: for a ``form`` that names neither ladder.
+        OutOfRangeError: if ``T``, ``Tc`` or ``Pc`` is not positive.
+
+    See :func:`azoth.eos.reference.liquid_viscosity_pure`.
+    """
+    return resolve(_LIQUID_VISCOSITY_PURE)(  # type: ignore[no-any-return]
+        form=form,
+        model=model,
+        l1=l1,
+        l2=l2,
+        l3=l3,
+        l4=l4,
+        Tc=Tc,
+        Pc=Pc,
+        omega=omega,
+        T=T,
+        P=P,
+    )
 
 
 def liquid_heat_capacity(

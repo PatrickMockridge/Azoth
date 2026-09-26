@@ -101,7 +101,9 @@ from azoth.core.result import (
     KFactorsResult,
     KineticRateLawResult,
     KineticsResult,
+    LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
+    LiquidViscosityPureResult,
     ManifoldResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
@@ -1261,6 +1263,60 @@ def tyn_calus_diffusivity(VA: Q, VB: Q, T: Q, eta: Q) -> TynCalusDiffusivityResu
     )
     return TynCalusDiffusivityResult(
         d=from_si(result.d.magnitude_si, result.d.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def liquid_conductivity_polynom(
+    liquid_conductivity: Sequence[Sequence[float]],
+    molar_mass: Sequence[Q],
+    z: Sequence[float],
+    T: Q,
+) -> LiquidConductivityPolynomResult:
+    """A liquid's thermal conductivity, computed in Rust."""
+    spec = _models_gen.model("eos.liquid_conductivity_polynom")
+    result = _core.liquid_conductivity_polynom(
+        [[float(value) for value in row] for row in liquid_conductivity],
+        [_si(spec, "molar_mass", value) for value in molar_mass],
+        [float(value) for value in z],
+        _si(spec, "T", T),
+    )
+    return LiquidConductivityPolynomResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def liquid_viscosity_pure(
+    form: str,
+    model: int,
+    l1: float,
+    l2: float,
+    l3: float,
+    l4: float,
+    Tc: Q,
+    Pc: Q,
+    omega: float,
+    T: Q,
+    P: Q,
+) -> LiquidViscosityPureResult:
+    """One component's pure-liquid viscosity, computed in Rust."""
+    spec = _spec_for("eos.liquid_viscosity_pure")
+    result = _core.liquid_viscosity_pure(
+        form,
+        int(model),
+        l1,
+        l2,
+        l3,
+        l4,
+        input_to_si(spec, "Tc", Tc),
+        input_to_si(spec, "Pc", Pc),
+        omega,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return LiquidViscosityPureResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
         warnings=_warnings(result.warnings),
     )
 

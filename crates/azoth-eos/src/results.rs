@@ -3357,6 +3357,42 @@ impl CalcResult for WilkeChangDiffusivityResult {
     }
 }
 
+/// Result of `eos.liquid_conductivity_polynom`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LiquidConductivityPolynomResult {
+    /// The mixture's thermal conductivity.
+    pub k: ThermalConductivity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for LiquidConductivityPolynomResult {
+    const CALC_ID: &'static str = "eos.liquid_conductivity_polynom";
+    const FIELDS: &'static [&'static str] = &["k", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `eos.liquid_viscosity_pure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LiquidViscosityPureResult {
+    /// The component's pure-liquid viscosity.
+    pub mu: DynamicViscosity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for LiquidViscosityPureResult {
+    const CALC_ID: &'static str = "eos.liquid_viscosity_pure";
+    const FIELDS: &'static [&'static str] = &["mu", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.chapman_enskog_diffusivity`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChapmanEnskogDiffusivityResult {

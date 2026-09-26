@@ -93,6 +93,7 @@ Five sections, and the difference between them is the point:
 - [`eos.iapws_henry_law`](./eos/iapws_henry_law.md)
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
 - [`eos.liquid_heat_capacity`](./eos/liquid_heat_capacity.md)
+- [`eos.liquid_viscosity_pure`](./eos/liquid_viscosity_pure.md)
 - [`eos.matcop5_prumr_alpha`](./eos/matcop5_prumr_alpha.md)
 - [`eos.matcop_alpha`](./eos/matcop_alpha.md)
 - [`eos.matcop_pr_alpha`](./eos/matcop_pr_alpha.md)
@@ -176,6 +177,7 @@ Five sections, and the difference between them is the point:
 - [`eos.hydrate_inhibitor_wt`](./eos/hydrate_inhibitor_wt.md) — Hydrate inhibitor weight fraction
 - [`eos.hydrogen_phase`](./eos/hydrogen_phase.md) — Hydrogen reference phase state
 - [`eos.kent_eisenberg_phase`](./eos/kent_eisenberg_phase.md) — Fugacity coefficients of a Kent-Eisenberg phase
+- [`eos.liquid_conductivity_polynom`](./eos/liquid_conductivity_polynom.md) — Liquid thermal conductivity from the LIQCOND polynomial
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
 - [`eos.nrtl_activity_coefficients`](./eos/nrtl_activity_coefficients.md) — Activity coefficients from the NRTL local-composition model

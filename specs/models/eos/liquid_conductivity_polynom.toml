@@ -1,0 +1,56 @@
+id = "eos.liquid_conductivity_polynom"
+name = "Liquid thermal conductivity from the LIQCOND polynomial"
+kind = "direct"
+assumptions = [
+    "**a mass-fraction mean of per-component polynomials**, which is all `calcConductivity` is: `k = sum_i w_i (c0_i + c1_i T + c2_i T^2)`, with `w_i` the phase's **mass** fraction - NeqSim's `getWtFrac(i)` - and not its mole fraction.\n",
+    "**it is the *polynom* model, not PFCT.** A gas or a hydrocarbon liquid takes `PFCTConductivityMethodMod86`, which `eos.thermal_conductivity` carries; an **aqueous** phase takes this one, and the two answer different numbers at the same state.\n",
+    "each pure component's polynomial is clamped at `1e-10` W/(m K) where it would go negative - NeqSim's own floor, and reachable: the coefficients of a light gas are such that its polynomial crosses zero above a few hundred kelvin.\n",
+    "the coefficients are the databank's `LIQCOND1`-`LIQCOND3` columns, whose unit follows the polynomial: the first is W/(m K), the second W/(m K)/K and the third W/(m K)/K^2.\n",
+    "the mixture rule ignores the pressure, and the class reads none: the polynomial is a function of temperature alone.\n",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `physicalproperties/methods/liquidphysicalproperties/conductivity/Conductivity.java` is the port source.",
+    "Yaws, C. L. (2003). \\\"Yaws' Handbook of Thermodynamic and Physical Properties of Chemical Compounds.\\\" Knovel. The polynomial form NeqSim stores as `LIQCOND1..3`.",
+    "`validation/neqsim/captures/phase_transport_probe.tsv` - the per-phase conductivity NeqSim answers, and the model class behind it, on four fluids.\n",
+]
+[source]
+standard = "NeqSim master `liquidphysicalproperties/conductivity/Conductivity`"
+edition = "`calcConductivity` and `calcPureComponentConductivity`, ported verbatim."
+[inputs]
+[inputs.liquid_conductivity]
+type = "matrix"
+unit = "dimensionless"
+shape = "one row per component, three columns: LIQCOND1, LIQCOND2 and LIQCOND3"
+description = "each component's polynomial coefficients. The unit follows the column: W/(m K), W/(m K)/K and W/(m K)/K**2, which is why the matrix is declared dimensionless rather than in one unit.\n"
+[inputs.molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per component"
+description = "the molar masses the mass fractions are formed from, with `z`.\n"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the phase's mole fractions.\n"
+[inputs.T]
+unit = "K"
+description = "absolute temperature.\n"
+[outputs]
+[outputs.k]
+unit = "W/(m*K)"
+description = "the mixture's conductivity, the mass-weighted mean of the components' polynomials.\n"
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "An absolute temperature; zero and below are not states.\n"
+[[valid_range]]
+quantity = "z"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a mole fraction cannot be negative, and the class reads one without checking\n"
+[implementations]
+python = "azoth.eos.liquid_conductivity_polynom"
+rust = "azoth_eos::liquid_conductivity_polynom"

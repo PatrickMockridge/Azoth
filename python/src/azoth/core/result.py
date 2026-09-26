@@ -1671,6 +1671,26 @@ class WilkeChangDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class LiquidConductivityPolynomResult(_HasWarnings):
+    """Result of ``eos.liquid_conductivity_polynom``."""
+
+    #: The mixture's thermal conductivity.
+    k: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class LiquidViscosityPureResult(_HasWarnings):
+    """Result of ``eos.liquid_viscosity_pure``."""
+
+    #: The component's pure-liquid viscosity.
+    mu: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class ChapmanEnskogDiffusivityResult(_HasWarnings):
     """Result of ``eos.chapman_enskog_diffusivity``."""
 

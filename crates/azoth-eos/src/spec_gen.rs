@@ -14,6 +14,7 @@
 //!   - specs/calcs/eos/iapws_henry_law.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
+//!   - specs/calcs/eos/liquid_viscosity_pure.toml
 //!   - specs/calcs/eos/matcop5_prumr_alpha.toml
 //!   - specs/calcs/eos/matcop_alpha.toml
 //!   - specs/calcs/eos/matcop_pr_alpha.toml
@@ -1798,6 +1799,183 @@ pub static LIQUID_HEAT_CAPACITY_SPEC: CalcSpec = CalcSpec {
         expected_strings: &[],
     },
     tests: LIQUID_HEAT_CAPACITY_TESTS,
+};
+
+/// Registry entry for `eos.liquid_viscosity_pure`.
+static LIQUID_VISCOSITY_PURE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states, and the models divide by it.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Tc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`T/Tc` is the correction's reduced temperature.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "Pc",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "`P/Pc` is the reduced pressure.",
+        },
+    },
+];
+
+static LIQUID_VISCOSITY_PURE_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "model_two_is_where_the_two_ladders_disagree",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("model", 2.0),
+            ("l1", -7.811),
+            ("l2", 3140.0),
+            ("l3", 0.0),
+            ("l4", 0.0),
+            ("Tc", 425.12),
+            ("Pc", 3796000.0),
+            ("omega", 0.2002),
+            ("T", 300.0),
+            ("P", 2000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("form", "liquid")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("mu", 0.014504116387418152)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "the_common_phase_ladder_leaves_model_two_at_zero",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("model", 2.0),
+            ("l1", -7.811),
+            ("l2", 3140.0),
+            ("l3", 0.0),
+            ("l4", 0.0),
+            ("Tc", 425.12),
+            ("Pc", 3796000.0),
+            ("omega", 0.2002),
+            ("T", 300.0),
+            ("P", 2000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("form", "common_phase")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("mu", 0.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "above_the_critical_temperature_the_sentinel_answers",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("model", 3.0),
+            ("l1", -26.87),
+            ("l2", 1150.0),
+            ("l3", 0.187),
+            ("l4", -0.000521),
+            ("Tc", 190.56),
+            ("Pc", 4599000.0),
+            ("omega", 0.0115),
+            ("T", 300.0),
+            ("P", 2000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("form", "common_phase")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("mu", 0.0005)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registered spec for `eos.liquid_viscosity_pure`.
+///
+/// Public and addressable directly, so a calc can hold `&LIQUID_VISCOSITY_PURE_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static LIQUID_VISCOSITY_PURE_SPEC: CalcSpec = CalcSpec {
+    id: "eos.liquid_viscosity_pure",
+    checks: LIQUID_VISCOSITY_PURE_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "water_in_the_aqueous_phase_worked_example",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[
+            ("model", 3.0),
+            ("l1", -27.952757828),
+            ("l2", 4665.22592993),
+            ("l3", 0.052323342),
+            ("l4", -3.8356e-05),
+            ("Tc", 647.3),
+            ("Pc", 22089000.0),
+            ("omega", 0.344),
+            ("T", 313.15),
+            ("P", 5000000.0),
+        ],
+        flags: &[],
+        lists: &[],
+        strings: &[("form", "liquid")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("mu", 0.0006528922494381046)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    tests: LIQUID_VISCOSITY_PURE_TESTS,
 };
 
 /// Registry entry for `eos.matcop5_prumr_alpha`.
@@ -6847,6 +7025,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &IAPWS_HENRY_LAW_SPEC,
     &IDEAL_GAS_CP_SPEC,
     &LIQUID_HEAT_CAPACITY_SPEC,
+    &LIQUID_VISCOSITY_PURE_SPEC,
     &MATCOP5_PRUMR_ALPHA_SPEC,
     &MATCOP_ALPHA_SPEC,
     &MATCOP_PR_ALPHA_SPEC,

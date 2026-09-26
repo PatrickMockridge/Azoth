@@ -3658,6 +3658,83 @@ pub fn solid_fugacity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A liquid's thermal conductivity, from the LIQCOND polynomials.
+#[pyfunction]
+#[pyo3(signature = (liquid_conductivity, molar_mass, z, T))]
+#[pyo3(text_signature = "(liquid_conductivity, molar_mass, z, T)")]
+#[allow(non_snake_case)] // `T` is the symbol in the polynomial
+pub fn liquid_conductivity_polynom(
+    py: Python<'_>,
+    liquid_conductivity: Vec<Vec<f64>>,
+    molar_mass: Vec<f64>,
+    z: Vec<f64>,
+    T: f64,
+) -> PyResult<crate::results::PyLiquidConductivityPolynomResult> {
+    let rows: Vec<[f64; 3]> = liquid_conductivity
+        .iter()
+        .map(|row| {
+            if row.len() != 3 {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "a row of {} coefficient(s); the polynomial has three",
+                    row.len()
+                )));
+            }
+            Ok([row[0], row[1], row[2]])
+        })
+        .collect::<PyResult<Vec<[f64; 3]>>>()?;
+    azoth_eos::liquid_conductivity_polynom::liquid_conductivity_polynom(
+        &rows,
+        &molar_mass
+            .iter()
+            .map(|m| kilograms_per_mole(*m))
+            .collect::<Vec<_>>(),
+        &z,
+        kelvins(T),
+    )
+    .map(|r| crate::results::PyLiquidConductivityPolynomResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// One component's pure-liquid viscosity, from the LIQVISC correlation.
+#[pyfunction]
+#[pyo3(signature = (form, model, l1, l2, l3, l4, Tc, Pc, omega, T, P))]
+#[pyo3(text_signature = "(form, model, l1, l2, l3, l4, Tc, Pc, omega, T, P)")]
+#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the correlation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn liquid_viscosity_pure(
+    py: Python<'_>,
+    form: &str,
+    model: u32,
+    l1: f64,
+    l2: f64,
+    l3: f64,
+    l4: f64,
+    Tc: f64,
+    Pc: f64,
+    omega: f64,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::results::PyLiquidViscosityPureResult> {
+    let form: azoth_eos::liquid_viscosity_pure::LiquidViscosityLadder = form
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::liquid_viscosity_pure::liquid_viscosity_pure(
+        form,
+        model,
+        l1,
+        l2,
+        l3,
+        l4,
+        kelvins(Tc),
+        pascals(Pc),
+        omega,
+        kelvins(T),
+        pascals(P),
+    )
+    .map(|r| crate::results::PyLiquidViscosityPureResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// The gas binary diffusivity, from the Chapman-Enskog theory.
 #[pyfunction]
 #[pyo3(signature = (MA, MB, sigma, eps, T, P))]

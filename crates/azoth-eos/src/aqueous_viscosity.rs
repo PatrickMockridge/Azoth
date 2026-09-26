@@ -24,9 +24,10 @@ use crate::mixture::Mixture;
 use crate::model_gen;
 use crate::results::AqueousViscosityResult;
 
-/// The viscosity a component takes above its critical temperature, in cP.
-const ABOVE_CRITICAL_CP: f64 = 0.5;
-/// And the one it takes when its row names no model at all: NeqSim's `else` branch.
+/// The viscosity a component takes when its row names no model at all: NeqSim's `else` branch.
+///
+/// The above-critical sentinel is `eos.liquid_viscosity_pure`'s now, since that is where the
+/// ladder lives.
 const NO_MODEL_CP: f64 = 0.7;
 /// `mPa*s` to `Pa*s`, applied once at the end: every correlation here is written in cP.
 const CP_TO_PA_S: f64 = 1.0e-3;
@@ -136,41 +137,25 @@ pub fn aqueous_viscosity(
     })
 }
 
-/// One component's pure-liquid viscosity in cP, with NeqSim's pressure correction applied.
+/// One component's pure-liquid viscosity in cP, with the pressure correction applied.
+///
+/// **The ladder is `eos.liquid_viscosity_pure`'s, called and not copied.** This id is that
+/// model's mixture rule; a second copy of the branch would be a second answer to the same
+/// question, and the *liquid* variant is the one this phase's own viscosity class carries.
 fn pure_viscosity(component: &crate::mixture::Component, temperature: f64, pressure: f64) -> f64 {
-    let tc = component.tc.value;
-    let pc = component.pc.value;
     let [l1, l2, l3, l4] = component.liqvisc;
-
-    let uncorrected = if temperature > tc {
-        ABOVE_CRITICAL_CP
-    } else {
-        match component.liqvisc_model {
-            1 => l1 * temperature.powf(l2),
-            2 => (l1 + l2 / temperature).exp(),
-            3 => (l1 + l2 / temperature + l3 * temperature + l4 * temperature.powi(2)).exp(),
-            4 => 10f64.powf(l1 * (1.0 / temperature - 1.0 / l2)),
-            _ => NO_MODEL_CP,
-        }
-    };
-
-    uncorrected * (pressure_correction(temperature, pressure, tc, pc, component.omega) + 1.0) / 2.0
-}
-
-/// `getViscosityPressureCorrection`: NeqSim's own four-coefficient form.
-fn pressure_correction(temperature: f64, pressure: f64, tc: f64, pc: f64, omega: f64) -> f64 {
-    let reduced_t = temperature / tc;
-    if reduced_t > 1.0 {
-        return 1.0;
-    }
-    let delta_pr = pressure / pc;
-    let a = 0.9991 - (4.674e-4 / (1.0523 * reduced_t.powf(-0.03877) - 1.0513));
-    let d = (0.3257 / (1.0039 - reduced_t.powf(2.573)).powf(0.2906)) - 0.2086;
-    let c = -0.07921 + 2.1616 * reduced_t - 13.4040 * reduced_t.powi(2)
-        + 44.1706 * reduced_t.powi(3)
-        - 84.8291 * reduced_t.powi(4)
-        + 96.1209 * reduced_t.powi(5)
-        - 59.8127 * reduced_t.powi(6)
-        + 15.6719 * reduced_t.powi(7);
-    (1.0 + d * (delta_pr / 2.118).powf(a)) / (1.0 + c * omega * delta_pr)
+    crate::liquid_viscosity_pure::liquid_viscosity_pure(
+        crate::liquid_viscosity_pure::LiquidViscosityLadder::Liquid,
+        component.liqvisc_model,
+        l1,
+        l2,
+        l3,
+        l4,
+        component.tc,
+        component.pc,
+        component.omega,
+        azoth_core::units::kelvins(temperature),
+        azoth_core::units::pascals(pressure),
+    )
+    .map_or(NO_MODEL_CP, |r| r.mu.value / CP_TO_PA_S)
 }

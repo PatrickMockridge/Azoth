@@ -36,6 +36,7 @@
 //!   - specs/models/eos/hydrate_inhibitor_wt.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
+//!   - specs/models/eos/liquid_conductivity_polynom.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
@@ -4540,6 +4541,111 @@ pub static KENT_EISENBERG_PHASE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: KENT_EISENBERG_PHASE_CHECKS,
     cases: KENT_EISENBERG_PHASE_CASES,
+};
+
+static LIQUID_CONDUCTIVITY_POLYNOM_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "An absolute temperature; zero and below are not states.",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "z",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a mole fraction cannot be negative, and the class reads one without checking",
+        },
+    },
+];
+
+static LIQUID_CONDUCTIVITY_POLYNOM_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_aqueous_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 313.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.04401, 0.018015]),
+            ("z", &[0.0006691762234084198, 0.9993308237765915]),
+        ],
+        matrices: &[(
+            "liquid_conductivity",
+            &[
+                0.251502,
+                0.0005238919,
+                -3.82111e-06,
+                -0.384,
+                0.00525,
+                -6.37e-06,
+            ],
+        )],
+        expected: &[("k", 0.6344057039895419)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "methane_nbutane_oil_phase",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 300.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.016043, 0.058123]),
+            ("z", &[0.09542082642782022, 0.9045791735721797]),
+        ],
+        matrices: &[(
+            "liquid_conductivity",
+            &[
+                0.290304,
+                -0.0004720407,
+                -4.320339e-06,
+                0.24688,
+                -0.0004719916,
+                -6.249512e-08,
+            ],
+        )],
+        expected: &[("k", 0.09683839660866919)],
+        expected_vectors: &[],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `eos.liquid_conductivity_polynom`.
+pub static LIQUID_CONDUCTIVITY_POLYNOM_SPEC: ModelSpec = ModelSpec {
+    id: "eos.liquid_conductivity_polynom",
+    kind: "direct",
+    algorithm: None,
+    checks: LIQUID_CONDUCTIVITY_POLYNOM_CHECKS,
+    cases: LIQUID_CONDUCTIVITY_POLYNOM_CASES,
 };
 
 static MASON_SAXENA_CONDUCTIVITY_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -9811,6 +9917,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &HYDRATE_INHIBITOR_WT_SPEC,
     &HYDROGEN_PHASE_SPEC,
     &KENT_EISENBERG_PHASE_SPEC,
+    &LIQUID_CONDUCTIVITY_POLYNOM_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,

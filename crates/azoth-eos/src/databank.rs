@@ -249,6 +249,10 @@ pub struct Entry {
     /// The four liquid-viscosity parameters `LIQVISC1`-`LIQVISC4`, whose meaning is
     /// [`Self::liqvisc_model`]. Read by `eos.aqueous_viscosity`.
     pub liqvisc: [f64; 4],
+    /// The three liquid-conductivity coefficients `LIQCOND1`-`LIQCOND3`, whose polynomial is
+    /// `c0 + c1 T + c2 T^2` with `T` in K and the result in W/(m K). Read by
+    /// `eos.liquid_conductivity_polynom`, which is what an *aqueous* phase's conductivity is.
+    pub liquid_conductivity: [f64; 3],
     /// Which of NeqSim's four liquid-viscosity expressions those four are: `1` is
     /// `L1 T^L2`, `2` is `exp(L1 + L2/T)`, `3` is `exp(L1 + L2/T + L3 T + L4 T^2)` and `4`
     /// is `10^(L1 (1/T - 1/L2))`. **Zero names none**, which is NeqSim's own default branch
@@ -454,6 +458,7 @@ impl Entry {
                 // is what NeqSim reads, and zero - which is the table's spelling of
                 // absence - is what makes the calc fall back. Measured on water, the two
                 // give the shift opposite signs.
+                .with_liquid_conductivity(self.liquid_conductivity)
                 .with_liquid_viscosity(self.liqvisc, self.liqvisc_model)
                 .with_volume_shift(
                     crate::pr_peneloux_shift::pr_peneloux_shift(
@@ -1062,6 +1067,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "liqvisc2",
         "liqvisc3",
         "liqvisc4",
+        "liquidconductivity1",
+        "liquidconductivity2",
+        "liquidconductivity3",
         "antoine_type",
         "antoinea",
         "antoineb",
@@ -1211,6 +1219,26 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     number(&record, index["liqvisc4"], "liqvisc4", row)?,
                 ],
                 liqvisc_model: number(&record, index["liqviscmodel"], "liqviscmodel", row)? as u32,
+                liquid_conductivity: [
+                    number(
+                        &record,
+                        index["liquidconductivity1"],
+                        "liquidconductivity1",
+                        row,
+                    )?,
+                    number(
+                        &record,
+                        index["liquidconductivity2"],
+                        "liquidconductivity2",
+                        row,
+                    )?,
+                    number(
+                        &record,
+                        index["liquidconductivity3"],
+                        "liquidconductivity3",
+                        row,
+                    )?,
+                ],
                 antoine: Some((
                     [
                         number(&record, index["antoinea"], "antoinea", row)?,
@@ -1705,6 +1733,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // Not overridable: a card states the parameters a cubic needs, and the
                 // Lennard-Jones diameter is not one of them.
                 lennard_jones_diameter: 0.0,
+                // Nor the liquid-conductivity polynomial, which no card carries: zero here
+                // is the absence of a correlation and not a conductivity of zero.
+                liquid_conductivity: [0.0; 3],
             })
         }
         (Some(base), Some(over)) => Ok(Entry {
@@ -1763,6 +1794,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 .map_or(base.deshmukh_mather_diameter, |metres| metres * 1.0e10),
             dielectric: over.dielectric.unwrap_or(base.dielectric),
             lennard_jones_diameter: base.lennard_jones_diameter,
+            liquid_conductivity: base.liquid_conductivity,
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
             association: over

@@ -60,6 +60,25 @@ public class PhaseTransportProbe {
     System.out.println(molarMasses.toString().trim());
     System.out.println(diameters.toString().trim());
     System.out.println(energies.toString().trim());
+    StringBuilder densities = new StringBuilder("normal_liquid_density_g_per_cm3=");
+    StringBuilder criticalVolumes = new StringBuilder("critical_volume_cm3_per_mol=");
+    StringBuilder viscosityModels = new StringBuilder("liquvisc_model=");
+    for (int c = 0; c < names.length; c++) {
+      densities.append(system.getPhase(0).getComponent(c).getNormalLiquidDensity()).append(" ");
+      criticalVolumes.append(system.getPhase(0).getComponent(c).getCriticalVolume()).append(" ");
+      viscosityModels.append(system.getPhase(0).getComponent(c).getLiquidViscosityModel())
+          .append(":");
+      for (int k = 0; k < 4; k++) {
+        viscosityModels.append(system.getPhase(0).getComponent(c).getLiquidViscosityParameter(k));
+        if (k < 3) {
+          viscosityModels.append(",");
+        }
+      }
+      viscosityModels.append(" ");
+    }
+    System.out.println(densities.toString().trim());
+    System.out.println(criticalVolumes.toString().trim());
+    System.out.println(viscosityModels.toString().trim());
 
     for (int p = 0; p < system.getNumberOfPhases(); p++) {
       System.out.println("phase" + p + "_type=" + system.getPhase(p).getType());
@@ -72,6 +91,32 @@ public class PhaseTransportProbe {
           + system.getPhase(p).getPhysicalProperties().getViscosity());
       System.out.println("phase" + p + "_conductivity_W_per_mK="
           + system.getPhase(p).getPhysicalProperties().getConductivity());
+      // The liquid diffusivity's own inputs, per component: SiddiqiLucasMethod builds its pair
+      // coefficients from a normal-boiling-point molar volume and a *pure component* viscosity,
+      // and that second one is the LIQVISC polynomial - a third viscosity correlation, beside
+      // PFCT's mixture value and Chung's gas one.
+      // **Two classes carry this and they disagree.** The common-phase one leaves model 2's
+      // branch empty, so a component with that model gets a pure-component viscosity of zero;
+      // the liquid one implements it as `exp(a0 + a1/T)`. Which one a phase gets is the phase's
+      // own viscosity model, so the probe asks whichever it holds.
+      Object viscosity = system.getPhase(p).getPhysicalProperties().viscosityCalc;
+      if (viscosity instanceof neqsim.physicalproperties.methods.commonphasephysicalproperties.viscosity.Viscosity) {
+        ((neqsim.physicalproperties.methods.commonphasephysicalproperties.viscosity.Viscosity) viscosity)
+            .calcPureComponentViscosity();
+      } else if (viscosity instanceof neqsim.physicalproperties.methods.liquidphysicalproperties.viscosity.Viscosity) {
+        ((neqsim.physicalproperties.methods.liquidphysicalproperties.viscosity.Viscosity) viscosity)
+            .calcPureComponentViscosity();
+      }
+      System.out.println("phase" + p + "_viscosity_model_class="
+          + viscosity.getClass().getSimpleName());
+      System.out.println("phase" + p + "_conductivity_model_class="
+          + system.getPhase(p).getPhysicalProperties().conductivityCalc.getClass().getSimpleName());
+      System.out.println("phase" + p + "_diffusivity_model_class="
+          + system.getPhase(p).getPhysicalProperties().diffusivityCalc.getClass().getSimpleName());
+      for (int c = 0; c < names.length; c++) {
+        System.out.println("phase" + p + "_pure_viscosity_cP_" + c + "="
+            + system.getPhase(p).getPhysicalProperties().getPureComponentViscosity(c));
+      }
       StringBuilder composition = new StringBuilder("phase" + p + "_x=");
       for (int c = 0; c < system.getPhase(p).getNumberOfComponents(); c++) {
         composition.append(names[c]).append(":").append(system.getPhase(p).getComponent(c).getx())

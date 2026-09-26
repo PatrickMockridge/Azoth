@@ -578,8 +578,18 @@ class KentEisenbergPhaseResult:
     warnings: list[Warning]
 
 @final
+class LiquidConductivityPolynomResult:
+    k: Qty
+    warnings: list[Warning]
+
+@final
 class LiquidHeatCapacityResult:
     cp: Qty
+    warnings: list[Warning]
+
+@final
+class LiquidViscosityPureResult:
+    mu: Qty
     warnings: list[Warning]
 
 @final
@@ -2251,6 +2261,12 @@ def kent_eisenberg_phase(
     P: float,
     x: list[float],
 ) -> KentEisenbergPhaseResult: ...
+def liquid_conductivity_polynom(
+    liquid_conductivity: list[list[float]],
+    molar_mass: list[float],
+    z: list[float],
+    T: float,
+) -> LiquidConductivityPolynomResult: ...
 def liquid_heat_capacity(
     c0: float,
     c1: float,
@@ -2259,6 +2275,19 @@ def liquid_heat_capacity(
     c4: float,
     T: float,
 ) -> LiquidHeatCapacityResult: ...
+def liquid_viscosity_pure(
+    form: str,
+    model: float,
+    l1: float,
+    l2: float,
+    l3: float,
+    l4: float,
+    Tc: float,
+    Pc: float,
+    omega: float,
+    T: float,
+    P: float,
+) -> LiquidViscosityPureResult: ...
 def mason_saxena_conductivity(
     Cv0: list[float],
     M: list[float],

@@ -209,6 +209,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         "eos.iapws_henry_law",
         "eos.hayduk_minhas_diffusivity",
         "eos.siddiqi_lucas_diffusivity",
+        # `form` picks which of NeqSim's two viscosity ladders runs, the same categorical
+        # choice: the branch they disagree on changes the arithmetic rather than scaling it.
+        "eos.liquid_viscosity_pure",
         # `eos` names the cubic the wax cut's reference liquid is built from, and it is a
         # categorical choice for the reason `form` is: there is no float-array column to put
         # it in, and the answer would differ per element if there were.

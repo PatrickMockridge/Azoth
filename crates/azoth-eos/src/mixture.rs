@@ -137,6 +137,9 @@ pub struct Component {
     /// is every caller-supplied component and every correlation that needs none.
     pub alpha_params: Vec<f64>,
     /// The four liquid-viscosity parameters `LIQVISC1`-`LIQVISC4`, whose meaning is
+    /// The three liquid-conductivity coefficients `LIQCOND1`-`LIQCOND3`, whose polynomial is
+    /// `c0 + c1 T + c2 T^2`. Read by `eos.liquid_conductivity_polynom`.
+    pub liquid_conductivity: [f64; 3],
     /// [`Self::liqvisc_model`]. Read by `eos.aqueous_viscosity`; a component built from
     /// critical constants alone carries zeros and a model of zero, which that model reads as
     /// NeqSim's own default branch.
@@ -225,6 +228,7 @@ impl Component {
             alpha_params: Vec::new(),
             liqvisc: [0.0; 4],
             liqvisc_model: 0,
+            liquid_conductivity: [0.0; 3],
             volume_shift: 0.0,
             wax_former: false,
             class: String::new(),
@@ -328,6 +332,13 @@ impl Component {
     }
 
     /// Attach a liquid-viscosity set: the four parameters and the model they belong to.
+    /// The three liquid-conductivity coefficients, from the databank's own columns.
+    #[must_use]
+    pub fn with_liquid_conductivity(mut self, conductivity: [f64; 3]) -> Self {
+        self.liquid_conductivity = conductivity;
+        self
+    }
+
     pub fn with_liquid_viscosity(mut self, liqvisc: [f64; 4], model: u32) -> Self {
         self.liqvisc = liqvisc;
         self.liqvisc_model = model;

@@ -18,6 +18,7 @@ Every calculation in this section is generated from its specification. Each page
 | [`eos.iapws_henry_law`](./iapws_henry_law.md) | $k_H = 10 \; \exp\!\left[ \ln 22.064 + \frac{S(\tau)}{T_r} + \frac{a}{T_r} + \frac{b\, \tau^{0.355}}{T_r} + c\, T_r^{-0.41} e^{\tau} \right], \quad T_r = \frac{T}{647.096}, \; \tau = 1 - T_r$ | IAPWS G7-04 |
 | [`eos.ideal_gas_cp`](./ideal_gas_cp.md) | $C_{p}^{\mathrm{ig}} = c_{0} + c_{1}T + c_{2}T^{2} + c_{3}T^{3} + c_{4}T^{4}$ | NeqSim, developed at NTNU and maintained by Equinor - Apache-2.0 |
 | [`eos.liquid_heat_capacity`](./liquid_heat_capacity.md) | $c_{p}^{\mathrm{liq}} = 10^{-3}\,\left(c_0 + c_1 T + c_2 T^{2} + c_3 T^{3} + c_4 T^{4}\right)$ | NeqSim's `getPureComponentCpLiquid` |
+| [`eos.liquid_viscosity_pure`](./liquid_viscosity_pure.md) | $\mu_i = \mu_i^{\mathrm{LIQVISC}}\,\frac{1 + \mathrm{corr}(T,P)}{2},\qquad \mathrm{corr} = \frac{1 + D\left(\frac{P/P_c}{2.118}\right)^{A}}{1 + C\,\omega\,P/P_c}$ | NeqSim master `commonphasephysicalproperties/viscosity/Viscosity` and `liquidphysicalproperties/viscosity/Viscosity` |
 | [`eos.matcop5_prumr_alpha`](./matcop5_prumr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & \text{all } c_k < 10^{-20} \\ \left(1 + c_1 u + c_2 u^2 + c_3 u^3 + c_4 u^4 + c_5 u^5\right)^2 & \text{otherwise} \end{cases}, \quad u = 1 - \sqrt{T_r}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2$ | NeqSim master `AttractiveTermMatCop5PRUMR` |
 | [`eos.matcop_alpha`](./matcop_alpha.md) | $\alpha = \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2$ | NeqSim master `AttractiveTermMatCop` |
 | [`eos.matcop_pr_alpha`](./matcop_pr_alpha.md) | $\alpha = \begin{cases} \left(1 + m(1 - \sqrt{T_r})\right)^2 & T_r > 1 \text{ or } c_1 < 10^{-20} \\ \left(1 + c_1(1 - \sqrt{T_r}) + c_2(1 - \sqrt{T_r})^2 + c_3(1 - \sqrt{T_r})^3\right)^2 & \text{otherwise} \end{cases}, \quad m = 0.37464 + 1.54226\omega - 0.26992\omega^2$ | NeqSim master `AttractiveTermMatCopPR` |
@@ -105,6 +106,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.hydrate_inhibitor_wt`](./hydrate_inhibitor_wt.md) | `inhibitor_moles_secant` | NeqSim master `HydrateInhibitorwtFlash` |
 | [`eos.hydrogen_phase`](./hydrogen_phase.md) | `density_solve_on_the_selected_root` | Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009) |
 | [`eos.kent_eisenberg_phase`](./kent_eisenberg_phase.md) | `direct composition` | NeqSim master `PhaseKentEisenberg` |
+| [`eos.liquid_conductivity_polynom`](./liquid_conductivity_polynom.md) | `direct composition` | NeqSim master `liquidphysicalproperties/conductivity/Conductivity` |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
 | [`eos.nrtl_activity_coefficients`](./nrtl_activity_coefficients.md) | `direct composition` | Renon, H.; Prausnitz, J. M. (1968) |
