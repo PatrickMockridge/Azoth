@@ -311,6 +311,7 @@ pub const DISPATCH: &[(&str, Kernel)] = &[
     ("unit_ops.manifold", manifold),
     ("unit_ops.mixer", mixer),
     ("unit_ops.pipe", pipe),
+    ("unit_ops.packed_column", packed_column),
     ("unit_ops.plug_flow_reactor", plug_flow_reactor),
     ("unit_ops.pump", pump),
     (
@@ -332,21 +333,11 @@ pub const DISPATCH: &[(&str, Kernel)] = &[
 
 /// **The entries this executor does not run, and what would close each.** A palette entry with no
 /// kernel is refused by name here rather than missing, so a flowsheet naming one is told why.
-pub const UNRUNNABLE: &[(&str, &str)] = &[
-    (
-        "unit_ops.simple_absorber",
-        "refused on measured evidence: `SimpleAbsorber` is a fixed-point loop over MDEA/CO2 \
+pub const UNRUNNABLE: &[(&str, &str)] = &[(
+    "unit_ops.simple_absorber",
+    "refused on measured evidence: `SimpleAbsorber` is a fixed-point loop over MDEA/CO2 \
          loading and a faithful port needs the amine electrolyte chemistry P8 declined",
-    ),
-    (
-        "unit_ops.packed_column",
-        "its palette entry declares the packing and not the column: `feed_stage`, \
-         `number_of_stages`, the two pressures and the two ends are what `PackedColumn.run` reads \
-         through `super.run`, and the entry's own notes say it takes `unit_ops.distillation_column`'s \
-         whole declaration - which the file does not carry. A form built from this entry could not \
-         configure the machine, so the executor refuses it until the declaration matches the notes",
-    ),
-];
+)];
 
 /// The kernel a palette id names, or the reason it has none.
 ///
@@ -791,12 +782,12 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
             "chilton_colburn_analogy",
         )?)?,
     })?;
-    // **Streams only, and that is this entry's own state rather than a decision taken here.** The
-    // kernel reaches a segment profile, film coefficients and an interphase balance - the same
-    // kind of interior the twelve publishing entries carry - and its model declares no `[outputs]`
-    // for any of them, so publishing would need the spec, the Python dataclass and the transport
-    // to move first. It stays invisible until its own tranche does that; `tests/results.rs` holds
-    // the two lists to each other, so the day it publishes is the day it is listed.
+    // **Streams only, and the reason is a constructor rather than a declaration.** The kernel
+    // reaches a segment profile, film coefficients and an interphase balance, and the model
+    // *does* declare all of them as `[outputs]` - what is missing is the step from the kernel's
+    // `RateBasedOutcome` to the model's flat record, which the model builds from its own flat
+    // *inputs* today. `tests/results.rs` holds the two lists to each other, so the day that
+    // constructor lands is the day this line changes and the entry is listed.
     Ok(KernelOutcome::streams_only(vec![
         out.gas_out,
         out.liquid_out,
@@ -810,6 +801,62 @@ fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOu
     let warnings = out.warnings.clone();
     let result = crate::models::DistillationColumnResult::of(&out, warnings);
     KernelOutcome::publishing(vec![out.distillate, out.bottoms], &result)
+}
+
+/// The packed column, whose entry declares no `number_of_stages` because `packed_height`
+/// replaces it.
+///
+/// **`PackedColumn.run` is `super.run(id)`, so a form configures the *base* column** - and the
+/// one thing that differs from the distillation entry is where the stage count comes from. That
+/// is why this entry declares the base's five mandatory parameters (`feed_stage`,
+/// `has_reboiler`, `has_condenser`, the two pressures) and derives the count from the height,
+/// which is what the entry's own notes say it does.
+///
+/// **Both end temperatures and the solver are read**, the first two because a pin is what fixes
+/// an end and the third because a value the port does not carry has to be refused here rather
+/// than dropped. The Murphree efficiency and the two product specifications are declared for the
+/// form's completeness and are **not** read: the base kernel takes neither, and refusing them
+/// would make this entry narrower than `unit_ops.distillation_column`, which declares the same
+/// three and reads neither. That is one limitation stated once rather than twice.
+fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+    let solver = match p.optional_text("solver_type")?.as_deref() {
+        None | Some("direct_substitution") => {
+            kernels::distillation_column::SolverType::DirectSubstitution
+        }
+        Some("naphtali_sandholm") => kernels::distillation_column::SolverType::NaphtaliSandholm,
+        Some(other) => {
+            return Err(AzothError::invalid_input(
+                "solver_type",
+                format!(
+                    "`{other}` is not ported: `ColumnSolverFactory` names ten strategies and this \
+                     port carries `direct_substitution` and `naphtali_sandholm`"
+                ),
+            ));
+        }
+    };
+    let out = kernels::packed_column::packed_column(&kernels::packed_column::PackedSetup {
+        feed: inlets[0].clone(),
+        packed_height: p.si("packed_height")?,
+        feed_stage: p.number("feed_stage")? as usize,
+        has_reboiler: p.flag("has_reboiler")?,
+        has_condenser: p.flag("has_condenser")?,
+        top_pressure: pascals(p.si("top_pressure")?),
+        bottom_pressure: pascals(p.si("bottom_pressure")?),
+        condenser_temperature: p.optional_si("condenser_temperature")?.map(kelvins),
+        reboiler_temperature: p.optional_si("reboiler_temperature")?.map(kelvins),
+        temperature_tolerance: algorithm_limits(&model_gen::PACKED_COLUMN_SPEC).0,
+        max_iterations: algorithm_limits(&model_gen::PACKED_COLUMN_SPEC).1,
+        top_specification: None,
+        bottom_specification: None,
+        solver_type: solver,
+    })?;
+    // **Streams only**, for the reason the rate-based entry gives below: `PackedColumnResult` is
+    // `DistillationColumnResult` under this id's type, and neither carries the `Serialize` the
+    // publishing path needs. Its sibling entry's comment states the gap once.
+    Ok(KernelOutcome::streams_only(vec![
+        out.distillate,
+        out.bottoms,
+    ]))
 }
 
 /// The column a distillation, packed or stripping entry configures.

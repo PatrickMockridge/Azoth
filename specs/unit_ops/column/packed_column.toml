@@ -7,6 +7,47 @@ standard = "NeqSim process/equipment/distillation/PackedColumn.java"
 required = true
 unit = "m"
 description = "the packed bed height, which the constructor divides by a 0.5 m HETP guess to fix the base column's stage count and which the hydraulics later divides by the calculated HETP to report theoretical stages; the class defaults it to 5.0"
+[parameters.feed_stage]
+required = true
+unit = "dimensionless"
+description = "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one **and the count is the derived one, not a declared `number_of_stages`**: `packed_height` replaces it, which is why this entry declares no stage count of its own"
+[parameters.has_reboiler]
+required = true
+description = "whether the column has a reboiler at stage 0, which is the base constructor's `hasReboiler`"
+[parameters.has_condenser]
+required = true
+description = "whether the column has a condenser at the top stage, which is the base constructor's `hasCondenser`"
+[parameters.top_pressure]
+required = true
+unit = "Pa"
+description = "the pressure at the top stage; the base's `setTopPressure` takes bara, and the two pressures fix the profile the stage pressures interpolate"
+[parameters.bottom_pressure]
+required = true
+unit = "Pa"
+description = "the pressure at the bottom stage; the base's `setBottomPressure` takes bara"
+[parameters.reboiler_temperature]
+unit = "K"
+description = "the reboiler's temperature, which with the bottom specification is what pins the bottom of the column; the class defaults it to 273.15 K"
+[parameters.condenser_temperature]
+unit = "K"
+description = "the condenser's temperature, which with the top specification is what pins the top of the column; the class defaults it to 270.15 K"
+[parameters.murphree_efficiency]
+unit = "dimensionless"
+description = "the Murphree tray efficiency applied to every equilibrium stage, where 1 is the ideal stage; the class defaults it to 1.0"
+[parameters.top_specification_type]
+description = "which of `ColumnSpecification`'s five types constrains the top product - product_purity, reflux_ratio, component_recovery, product_flow_rate or duty - and product_purity and component_recovery also need `top_specification_component`"
+[parameters.top_specification_target]
+description = "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty"
+[parameters.top_specification_component]
+description = "the component a purity or a recovery constrains; unread by the other three types"
+[parameters.bottom_specification_type]
+description = "which of `ColumnSpecification`'s five types constrains the bottom product, which is the same five as the top specification's and its own degree of freedom"
+[parameters.bottom_specification_target]
+description = "the target value, in the unit its type implies, as the top specification's is"
+[parameters.bottom_specification_component]
+description = "the component a purity or a recovery constrains; unread by the other three types"
+[parameters.solver_type]
+description = "which of the class's ten solving strategies runs - direct_substitution, damped_substitution, inside_out, matrix_inside_out, wegstein, sum_rates, newton, naphtali_sandholm, mesh_residual or auto - where auto is a ladder and not one method"
 [parameters.packing_type]
 description = "the packing's name, which `PackingSpecificationLibrary` resolves and the hydraulics reads; the class defaults it to Pall-Ring-50"
 [parameters.structured_packing]

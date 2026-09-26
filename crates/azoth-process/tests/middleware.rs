@@ -329,20 +329,21 @@ fn every_palette_entry_has_a_form_and_every_form_a_palette_entry() {
 
 /// **The count of entries a form can render, three ways.**
 ///
-/// Twenty-nine palette entries, twenty-eight with a model, twenty-seven with a kernel - and the
-/// two that are not runnable are in two different states: one has a model and its ranges, one
-/// declares no parameter at all. Collapsing them into one "unsupported" row would lose which of
-/// those a caller is looking at.
+/// Twenty-nine palette entries, twenty-eight with a model, twenty-eight with a kernel - **and
+/// one that is not runnable**, which declares no parameter at all. The count of refusals is the
+/// measurement this test exists for: it fell from three to two when the rate-based column's id
+/// landed, and from two to one when `unit_ops.packed_column`'s declaration was made to describe
+/// the machine its notes said it did.
 #[test]
-fn the_two_unrunnable_entries_are_two_different_states() {
+fn the_one_entry_that_does_not_run_declares_no_parameter() {
     let palette = palette();
     let forms = forms(&palette);
     assert_eq!(forms.len(), 29);
     assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 28);
-    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 27);
+    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 28);
 
     let refused: Vec<&FormSpec> = forms.iter().filter(|f| !f.runnable).collect();
-    assert_eq!(refused.len(), 2);
+    assert_eq!(refused.len(), 1);
     for form in &refused {
         assert!(
             form.refusal.is_some(),
@@ -352,10 +353,11 @@ fn the_two_unrunnable_entries_are_two_different_states() {
     }
 
     let by_id = |id: &str| forms.iter().find(|f| f.id == id).expect("declared");
-    // A model, its ranges, and a kernel that refuses it: the declaration describes the packing
-    // and not the column.
+    // The packed column is runnable now, and its declaration is the machine's: the base's five
+    // mandatory parameters are what its notes always said it took.
     let packed = by_id("unit_ops.packed_column");
     assert!(packed.model.is_some());
+    assert!(packed.runnable);
     assert!(!packed.parameters.is_empty());
     // And one with no parameters at all, only ports.
     let absorber = by_id("unit_ops.simple_absorber");

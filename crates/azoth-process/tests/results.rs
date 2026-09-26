@@ -65,12 +65,17 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
             "unit_ops.plug_flow_reactor",
             Some(models::PlugFlowReactorResult::FIELDS),
         ),
+        // **The packed column's entry became runnable**, so it appears here for the first time:
+        // it dispatches the base column's solve, and its record is not on the wire either - the
+        // same statement as its sibling's below.
+        ("unit_ops.packed_column", None),
         ("unit_ops.pump", None),
         // **The rate-based packed column reaches an interior and publishes none of it**, which is
-        // why its row is `None` rather than a `FIELDS`. Its kernel returns a segment profile, film
-        // coefficients and an interphase balance, and its model declares no `[outputs]` for any of
-        // them - so the row is a statement about the wire rather than about the arithmetic, and the
-        // day its model declares them is the day this row carries a `FIELDS` beside it.
+        // why its row is `None` rather than a `FIELDS`. What is missing is the step from its
+        // kernel's `RateBasedOutcome` to its model's flat record - the model *does* declare the
+        // segment profile as `[outputs]`, and builds them from its own flat inputs today. So the
+        // row is a statement about the wire rather than about the arithmetic, and the day that
+        // constructor lands is the day this row carries a `FIELDS` beside it.
         ("unit_ops.rate_based_packed_column", None),
         ("unit_ops.separator", None),
         (

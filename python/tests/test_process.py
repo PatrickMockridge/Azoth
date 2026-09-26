@@ -253,7 +253,7 @@ def test_the_palette_comes_back_as_a_form_per_entry() -> None:
     entries = process.forms()
     assert len(entries) == 29
     assert sum(1 for entry in entries if entry["model"]) == 28
-    assert sum(1 for entry in entries if entry["runnable"]) == 27
+    assert sum(1 for entry in entries if entry["runnable"]) == 28
 
     pump = next(entry for entry in entries if entry["id"] == "unit_ops.pump")
     pressure = next(p for p in pump["parameters"] if p["name"] == "outlet_pressure")

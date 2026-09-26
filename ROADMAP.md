@@ -462,14 +462,15 @@ continuation, the simultaneous-residual segment solve whose own test NeqSim disa
 second mass-transfer correlation, which is a constant multiplier rather than a correlation.
 `unit_ops.simple_absorber` stays refused, as above.
 
-**The third is refused for a defect in its own declaration, and it is the sharper case.**
-`unit_ops.packed_column` has a kernel and a registered `process.*` id, and its palette entry
-declares the *packing* rather than the column: `feed_stage`, `number_of_stages`, the two
-pressures and the two ends are what `PackedColumn.run` reads through `super.run`, and the entry's
-own notes say it takes `unit_ops.distillation_column`'s whole declaration. So the executor refuses
-it **by name** rather than running a machine the declaration does not describe - which is the
-palette failing its own test, caught by the dispatch table's first run, and it is the entry's to
-fix rather than the executor's to work around.
+**The third was refused for a defect in its own declaration, and the entry was fixed rather than
+the executor worked around.** `unit_ops.packed_column` had a kernel and a registered `process.*`
+id, and its palette entry declared the *packing* rather than the column - `feed_stage`,
+`number_of_stages`, the two pressures and the two ends are what `PackedColumn.run` reads through
+`super.run`. The entry now carries them, and the kernel derives the stage count from
+`packed_height` in one place instead of the model doing it: **`packed_height` replaces
+`number_of_stages`**, which is why the entry declares no stage count at all. It is the palette
+failing its own test, caught by the dispatch table's first run - and the test's remedy was the
+entry's.
 
 - **`fluidmechanics/`** — azoth has its own hydraulics (`hydraulics.*`); this tree is
   NeqSim's parallel one and is not the port source.

@@ -54,7 +54,7 @@ fn the_palette_comes_back_as_a_form_per_entry() {
             .iter()
             .filter(|entry| entry["runnable"] == true)
             .count(),
-        27
+        28
     );
 
     // The pump, field by field: the unit comes from the vocabulary and the kind from the model's

@@ -5752,6 +5752,7 @@ def rate_based_packed_column(
         segment_solver,
         column_solver,
     )
+
     def q(value: Any) -> Q:
         return from_si(value.magnitude_si, value.unit)
 
