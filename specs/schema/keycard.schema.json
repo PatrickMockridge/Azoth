@@ -13,7 +13,7 @@
     },
     "keyholder": {
       "x-azoth-stage": "runtime",
-      "description": "Who is asserting the right to use these values. Optional, and nothing in azoth reads it: no result carries it and no check requires it.",
+      "description": "Who is asserting the right to use these values. Optional, and it is a card's own statement rather than a check: no result carries it and no check requires it. What reads it is `Keycard.__repr__`, which shows the holder and the licence beside the sections the card carries - so a person holding a card can see whose values they are and what they may be used for, which is the first thing to know about data somebody else supplied.",
       "type": "object",
       "additionalProperties": false,
       "required": ["name"],
@@ -32,7 +32,7 @@
     },
     "fittings": {
       "x-azoth-stage": "compiled",
-      "description": "Equivalent-length coefficients, overriding or extending `data/fittings/crane_k_factors.csv`.",
+      "description": "Equivalent-length coefficients, overriding or extending `data/fittings/crane_k_factors.csv`. **Read at build time and not at run time**: `tools/gen_user_data.py` compiles the rows into that CSV, which is what the two implementations read - so a card's `fittings` change a calculation when the file is generated and not when it is called.",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -51,7 +51,7 @@
     },
     "fluids": {
       "x-azoth-stage": "compiled",
-      "description": "Property tables, keyed by fluid name, overriding or extending `data/fluids/`.",
+      "description": "Property tables, keyed by fluid name, overriding or extending `data/fluids/`. **Read at build time and not at run time**, like `fittings`: `tools/gen_user_data.py` writes `data/fluids/<name>.csv` from these rows. A fluid an implementation does not yet know needs one line added beside its loader, which that tool's own message says.",
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {

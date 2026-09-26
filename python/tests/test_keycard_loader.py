@@ -882,3 +882,31 @@ def test_a_card_cannot_reclassify_a_shipped_substance() -> None:
         components={"na+": {"ionic_charge": {"value": 2.0, "unit": "dimensionless"}}}
     )
     assert eos.components.entry("na+", card=corrected).ionic_charge == 2.0
+
+
+def test_the_card_shows_whose_values_they_are() -> None:
+    """A card's only reader, and the reason `keyholder` and `licence` are not carried unread.
+
+    A card is data somebody else supplied, so the first thing to know about it is whose it is and
+    what it may be used for - and the section that says so had no reader at all until this repr
+    showed it. The licence is *not* shown when the holder states none, which is the difference
+    between a card of public data and one whose terms nobody wrote down.
+    """
+    held = a_card(
+        **{
+            "keyholder": {
+                "name": "Example Engineering Ltd",
+                "licence": "https://example.test/terms",
+            }
+        }
+    )
+    shown = repr(held)
+    assert "Example Engineering Ltd" in shown
+    assert "https://example.test/terms" in shown
+
+    # The template's own holder, with the licence line commented out: named and no terms.
+    bare = a_card(**{"keyholder": {"name": "Example Engineering Ltd"}})
+    assert "licence" not in repr(bare), repr(bare)
+
+    # And a card with no `keyholder` at all says so rather than showing nothing.
+    assert "unnamed" in repr(a_card())

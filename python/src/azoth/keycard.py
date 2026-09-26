@@ -234,9 +234,17 @@ class Keycard:
         return self.cpa_kij.get((first, second, family))
 
     def __repr__(self) -> str:
+        """The card, as a holder and what it carries - and the terms it is used under.
+
+        This is a card's only reader in this library, and it is why nothing here is carried
+        unread: `keyholder` says whose values these are and `licence` says what they may be used
+        for, which is the half a person looking at a card needs first. Both are the holder's own
+        statement and neither is validated - a field a tool could check is a field people fill in.
+        """
         holder = self.keyholder or "unnamed"
+        terms = f", licence {self.licence!r}" if self.licence else ""
         return (
-            f"Keycard({holder!r}, {len(self.components)} component(s), "
+            f"Keycard({holder!r}{terms}, {len(self.components)} component(s), "
             f"{len(self.kij)} kij pair(s), {len(self.coefficients)} coefficient(s), "
             f"{len(self.models)} model(s))"
         )
