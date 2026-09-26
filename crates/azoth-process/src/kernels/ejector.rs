@@ -1,10 +1,45 @@
 //! `unit_ops.ejector` - a motive stream, a suction stream, and the diffuser that follows.
 
-use azoth_core::units::{Pressure, joules_per_mole, joules_per_mole_kelvin, pascals};
+use azoth_core::units::{
+    Pressure, Velocity, joules_per_mole, joules_per_mole_kelvin, meters_per_second, pascals,
+};
 use azoth_core::{AzothError, Result};
 use azoth_eos::{ph_flash, ps_flash};
 
 use crate::stream::Stream;
+
+/// The numbers the ejector's own route reached, in SI.
+///
+/// **None of them is an input.** `setMixingPressure` exists and the palette does not declare it,
+/// so the mixing pressure is the class's own estimate - and the four velocities are what the two
+/// nozzle efficiencies, the mixing efficiency and the diffuser's estimate produced from it. A
+/// reader who cannot see them is looking at an outlet state with no way to tell an ejector that
+/// barely drew from one that was near its limit.
+pub struct EjectorNumbers {
+    /// The pressure the two streams meet at, Pa: `estimateDefaultMixingPressure`, clamped to the
+    /// suction pressure.
+    pub mixing_pressure: Pressure,
+    /// The motive nozzle's exit velocity, m/s: `sqrt(2 dh)` at its own efficiency.
+    pub motive_nozzle_velocity: Velocity,
+    /// The suction nozzle's, m/s: the larger of its own `sqrt(2 dh)` and the class's blended
+    /// estimate.
+    pub suction_nozzle_velocity: Velocity,
+    /// The mixed stream's, m/s: the momentum balance, scaled by the mixing efficiency.
+    pub mixing_velocity: Velocity,
+    /// The diffuser's design velocity, m/s - the class's own estimate, which takes one more
+    /// `v^2/2` off before the discharge flash.
+    pub diffuser_velocity: Velocity,
+}
+
+/// What an ejector did: the discharge record, and the five numbers its route reached.
+pub struct EjectorOutcome {
+    /// The discharge record.
+    pub outlet: Stream,
+    /// The mixing pressure and the four velocities, or `None` where nothing flowed - the class
+    /// returns the motive stream unchanged there rather than dividing by a total of zero, and a
+    /// machine that ran on no fluid reached no pressure and no velocity at all.
+    pub numbers: Option<EjectorNumbers>,
+}
 
 /// The ejector's four parameters, as `unit_ops.ejector` declares them.
 ///
@@ -53,7 +88,7 @@ const BAR: f64 = 1.0e5;
 /// # Errors
 /// [`AzothError::InvalidInput`] if an efficiency is outside `(0, 1]` or the discharge pressure
 /// is below the suction's, and whatever the flashes refuse.
-pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result<Stream> {
+pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result<EjectorOutcome> {
     for (name, value) in [
         ("motive_nozzle_efficiency", setup.motive_nozzle_efficiency),
         ("suction_nozzle_efficiency", setup.suction_nozzle_efficiency),
@@ -86,7 +121,10 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
     // `run` returns the motive stream unchanged when nothing flows, rather than dividing by
     // the total.
     if total_mass <= 0.0 {
-        return Ok(motive.clone());
+        return Ok(EjectorOutcome {
+            outlet: motive.clone(),
+            numbers: None,
+        });
     }
 
     let mut mixing_pressure_bar = estimate_mixing_pressure(
@@ -156,7 +194,19 @@ pub fn ejector(motive: &Stream, suction: &Stream, setup: EjectorSetup) -> Result
     );
     let final_h = before_diffuser - 0.5 * design_diffuser_velocity * design_diffuser_velocity;
 
-    flash_at_enthalpy(&joined, setup.discharge_pressure, final_h)
+    // **Everything the route reached, kept rather than dropped.** The mixing pressure is the
+    // class's own estimate and the four velocities are what the efficiencies made of it, so the
+    // discharge state is the last line of an argument that was otherwise thrown away.
+    Ok(EjectorOutcome {
+        outlet: flash_at_enthalpy(&joined, setup.discharge_pressure, final_h)?,
+        numbers: Some(EjectorNumbers {
+            mixing_pressure,
+            motive_nozzle_velocity: meters_per_second(nozzle_velocity),
+            suction_nozzle_velocity: meters_per_second(design_suction_velocity),
+            mixing_velocity: meters_per_second(mixing_velocity),
+            diffuser_velocity: meters_per_second(design_diffuser_velocity),
+        }),
+    })
 }
 
 /// The isentropic flash of one stream to a pressure, as `(temperature, mass enthalpy)`.

@@ -47,7 +47,9 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
             "unit_ops.distillation_column",
             Some(models::DistillationColumnResult::FIELDS),
         ),
-        ("unit_ops.ejector", None),
+        // **The mixing pressure and the four velocities cross here**, none of them an input and
+        // none on the discharge state: `Option`s for the one case where no fluid flowed.
+        ("unit_ops.ejector", Some(models::EjectorResult::FIELDS)),
         ("unit_ops.expander", None),
         ("unit_ops.filter", Some(models::FilterResult::FIELDS)),
         ("unit_ops.flare", Some(models::FlareResult::FIELDS)),

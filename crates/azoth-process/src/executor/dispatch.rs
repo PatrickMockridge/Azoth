@@ -544,19 +544,22 @@ fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome
 }
 
 fn ejector(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    Ok(KernelOutcome::streams_only(vec![
-        kernels::ejector::ejector(
-            &inlets[0],
-            &inlets[1],
-            kernels::EjectorSetup {
-                discharge_pressure: pascals(p.si("discharge_pressure")?),
-                motive_nozzle_efficiency: p.number("motive_nozzle_efficiency")?,
-                suction_nozzle_efficiency: p.number("suction_nozzle_efficiency")?,
-                mixing_efficiency: p.number("mixing_efficiency")?,
-                diffuser_efficiency: p.number("diffuser_efficiency")?,
-            },
-        )?,
-    ]))
+    let out = kernels::ejector::ejector(
+        &inlets[0],
+        &inlets[1],
+        kernels::EjectorSetup {
+            discharge_pressure: pascals(p.si("discharge_pressure")?),
+            motive_nozzle_efficiency: p.number("motive_nozzle_efficiency")?,
+            suction_nozzle_efficiency: p.number("suction_nozzle_efficiency")?,
+            mixing_efficiency: p.number("mixing_efficiency")?,
+            diffuser_efficiency: p.number("diffuser_efficiency")?,
+        },
+    )?;
+    // **The mixing pressure and the four velocities cross here.** None of them is an input and
+    // none is on the discharge state; together they are what says whether the machine drew at all
+    // or was near its limit, which a bare outlet state cannot.
+    let result = crate::models::EjectorResult::of(&out, Vec::new());
+    KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
 fn three_phase_separator(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {

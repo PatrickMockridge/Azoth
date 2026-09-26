@@ -1994,6 +1994,21 @@ pub struct PyEjectorResult {
     /// Outlet molar enthalpy.
     #[pyo3(get)]
     pub outlet_h: PyQty,
+    /// The pressure the two streams met at, or `None` where nothing flowed.
+    #[pyo3(get)]
+    pub mixing_pressure: Option<PyQty>,
+    /// The motive nozzle's exit velocity, or `None` where nothing flowed.
+    #[pyo3(get)]
+    pub motive_nozzle_velocity: Option<PyQty>,
+    /// The suction nozzle's, or `None`.
+    #[pyo3(get)]
+    pub suction_nozzle_velocity: Option<PyQty>,
+    /// The mixed stream's, or `None`.
+    #[pyo3(get)]
+    pub mixing_velocity: Option<PyQty>,
+    /// The diffuser's design velocity, or `None`.
+    #[pyo3(get)]
+    pub diffuser_velocity: Option<PyQty>,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -2024,6 +2039,14 @@ impl From<&EjectorResult> for PyEjectorResult {
             outlet_p: quantity(r.outlet_p.value, "Pa"),
             outlet_t: quantity(r.outlet_t.value, "K"),
             outlet_h: quantity(r.outlet_h.value, "J/mol"),
+            // **A number the run did not reach crosses as `None`**, which is the same absence the
+            // dataclass spells `| None`: a machine handed no flow reached no pressure and no
+            // velocity, and the wire has written `null` for each of the five.
+            mixing_pressure: r.mixing_pressure.map(|q| quantity(q.value, "Pa")),
+            motive_nozzle_velocity: r.motive_nozzle_velocity.map(|q| quantity(q.value, "m/s")),
+            suction_nozzle_velocity: r.suction_nozzle_velocity.map(|q| quantity(q.value, "m/s")),
+            mixing_velocity: r.mixing_velocity.map(|q| quantity(q.value, "m/s")),
+            diffuser_velocity: r.diffuser_velocity.map(|q| quantity(q.value, "m/s")),
             warnings: transport(&r.warnings),
         }
     }

@@ -1524,6 +1524,11 @@ class EjectorResult:
     outlet_p: Qty
     outlet_t: Qty
     outlet_h: Qty
+    mixing_pressure: Qty | None
+    motive_nozzle_velocity: Qty | None
+    suction_nozzle_velocity: Qty | None
+    mixing_velocity: Qty | None
+    diffuser_velocity: Qty | None
     warnings: list[Warning]
 
 @final

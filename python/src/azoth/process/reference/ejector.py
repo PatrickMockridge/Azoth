@@ -161,19 +161,54 @@ def ejector(
         outlet_p=from_si(states.p, "Pa"),
         outlet_t=states.temperature,
         outlet_h=from_si(states.h, "J/mol"),
+        mixing_pressure=None
+        if states.mixing_pressure is None
+        else from_si(states.mixing_pressure, "Pa"),
+        motive_nozzle_velocity=(
+            None
+            if states.motive_nozzle_velocity is None
+            else from_si(states.motive_nozzle_velocity, "m/s")
+        ),
+        suction_nozzle_velocity=(
+            None
+            if states.suction_nozzle_velocity is None
+            else from_si(states.suction_nozzle_velocity, "m/s")
+        ),
+        mixing_velocity=(
+            None if states.mixing_velocity is None else from_si(states.mixing_velocity, "m/s")
+        ),
+        diffuser_velocity=(
+            None if states.diffuser_velocity is None else from_si(states.diffuser_velocity, "m/s")
+        ),
         warnings=tuple(warnings),
     )
 
 
 @dataclass(frozen=True, slots=True)
 class EjectorStates:
-    """The outlet's state, in SI."""
+    """The outlet's state, in SI, and the five numbers the route reached.
+
+    **``None`` for all five in the one case where nothing flowed**: ``run`` returns the motive
+    stream unchanged there rather than dividing by a total of zero, so the machine reached no
+    mixing pressure and no velocity at all. That is the same absence the wire writes ``null``
+    for, and it is why the published fields are ``| None`` rather than a mode's worth of zeros.
+    """
 
     n: float
     z: tuple[float, ...]
     p: float
     temperature: Q
     h: float
+    #: The pressure the two streams met at, Pa - the class's own estimate, or ``None``.
+    mixing_pressure: float | None
+    #: The motive nozzle's exit velocity, m/s, or ``None``.
+    motive_nozzle_velocity: float | None
+    #: The suction nozzle's, m/s, or ``None``.
+    suction_nozzle_velocity: float | None
+    #: The mixed stream's, m/s, or ``None``.
+    mixing_velocity: float | None
+    #: The diffuser's design velocity, m/s, or ``None``.
+    diffuser_velocity: float | None
 
 
 def _route(
@@ -226,6 +261,11 @@ def _route(
             p=motive_p,
             temperature=motive_t,
             h=float(motive_h),
+            mixing_pressure=None,
+            motive_nozzle_velocity=None,
+            suction_nozzle_velocity=None,
+            mixing_velocity=None,
+            diffuser_velocity=None,
         )
 
     mixing_bar = _estimate_mixing_pressure(suction_bar, discharge_bar, motive_mass, suction_mass)
@@ -316,6 +356,13 @@ def _route(
         p=discharge_pressure,
         temperature=temperature,
         h=float(final_state_h),
+        # `mixing_bar` is the class's own unit - see the constant the Rust half carries for why -
+        # so the boundary is where the bar becomes a pascal, exactly as it is there.
+        mixing_pressure=mixing_bar * 1.0e5,
+        motive_nozzle_velocity=nozzle_velocity,
+        suction_nozzle_velocity=design_suction_velocity,
+        mixing_velocity=mixing_velocity,
+        diffuser_velocity=design_diffuser_velocity,
     )
 
 

@@ -836,6 +836,17 @@ class EjectorResult(_HasWarnings):
     outlet_t: Q
     #: Outlet molar enthalpy.
     outlet_h: Q
+    #: The pressure the two streams met at: the class's own estimate, not an input. ``None``
+    #: where the machine was handed no flow.
+    mixing_pressure: Q | None
+    #: The motive nozzle's exit velocity, ``sqrt(2 dh)`` at its own efficiency, or ``None``.
+    motive_nozzle_velocity: Q | None
+    #: The suction nozzle's, or ``None``.
+    suction_nozzle_velocity: Q | None
+    #: The mixed stream's, from the momentum balance, or ``None``.
+    mixing_velocity: Q | None
+    #: The diffuser's design velocity, or ``None``.
+    diffuser_velocity: Q | None
     #: Caveats.
     warnings: tuple[Warning, ...]
 

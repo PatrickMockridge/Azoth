@@ -5102,6 +5102,20 @@ def iso6976(
     )
 
 
+def _optional_si(quantity: object) -> Q | None:
+    """A quantity the run may not have reached, as the dataclass spells it.
+
+    The Rust transport writes `None` for a number a run did not reach - an ejector handed no
+    flow, an exchanger's rating where one outlet was pinned - so the bridge's job here is to
+    keep that absence rather than to invent a zero for it.
+    """
+    if quantity is None:
+        return None
+    magnitude_si = quantity.magnitude_si  # type: ignore[attr-defined]
+    unit = quantity.unit  # type: ignore[attr-defined]
+    return from_si(magnitude_si, unit)
+
+
 def ejector(
     motive_components: Sequence[str],
     motive_n: Q,
@@ -5152,6 +5166,14 @@ def ejector(
         outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        # **A number the run did not reach is `None`**, which the transport has already said: a
+        # machine handed no flow reached no mixing pressure and no velocity, and `from_si` is only
+        # reached where the Rust side published a magnitude.
+        mixing_pressure=_optional_si(result.mixing_pressure),
+        motive_nozzle_velocity=_optional_si(result.motive_nozzle_velocity),
+        suction_nozzle_velocity=_optional_si(result.suction_nozzle_velocity),
+        mixing_velocity=_optional_si(result.mixing_velocity),
+        diffuser_velocity=_optional_si(result.diffuser_velocity),
         warnings=_warnings(result.warnings),
     )
 

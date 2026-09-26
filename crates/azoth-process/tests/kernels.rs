@@ -1113,8 +1113,9 @@ fn an_ejector_discharges_between_its_inlets() {
         mixing_efficiency: 0.85,
         diffuser_efficiency: 0.80,
     };
-    let out =
-        azoth_process::kernels::ejector::ejector(&motive, &suction, defaults).expect("ejector");
+    let out = azoth_process::kernels::ejector::ejector(&motive, &suction, defaults)
+        .expect("ejector")
+        .outlet;
 
     println!(
         "outlet n={} p={} T={} h={} z={:?}",
@@ -1152,6 +1153,7 @@ fn an_ejector_discharges_between_its_inlets() {
         },
     )
     .expect("ejector");
+    let poorer = poorer.outlet;
     println!("poorer nozzle: T={} h={}", poorer.t.value, poorer.h.value);
     println!("neqsim poorer: T=359.5821295331475 h=3541.935633243748");
     assert!(

@@ -86,6 +86,21 @@ description = "the outlet's temperature, which the final flash solves for.\n"
 [outputs.outlet_h]
 unit = "J/mol"
 description = "the outlet's molar enthalpy at its own state.\n"
+[outputs.mixing_pressure]
+unit = "Pa"
+description = "the pressure the two streams meet at: `estimateDefaultMixingPressure`, clamped to the suction pressure. **Not an input** - `setMixingPressure` exists and the palette does not declare it - and it is what fixes the two nozzle steps.\n"
+[outputs.motive_nozzle_velocity]
+unit = "m/s"
+description = "the motive nozzle's exit velocity, `sqrt(2 dh)` at its own isentropic efficiency.\n"
+[outputs.suction_nozzle_velocity]
+unit = "m/s"
+description = "the suction nozzle's: the larger of its own `sqrt(2 dh)` and the class's blended empirical estimate.\n"
+[outputs.mixing_velocity]
+unit = "m/s"
+description = "the mixed stream's, from the momentum balance, scaled by the mixing chamber's efficiency.\n"
+[outputs.diffuser_velocity]
+unit = "m/s"
+description = "the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash.\n"
 [[valid_range]]
 quantity = "discharge_pressure"
 min = 0
