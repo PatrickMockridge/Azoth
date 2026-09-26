@@ -451,10 +451,20 @@ impl Default for BroydenAccelerator {
             iteration_count: 0,
             delay_iterations: 2,
             relaxation_factor: 1.0,
-            max_step_size: f64::MAX,
+            max_step_size: CLASS_MAX_STEP_SIZE,
         }
     }
 }
+
+/// `Double.MAX_VALUE`, which is what `BroydenAccelerator`'s own constructor assigns to
+/// `maxStepSize` - read from the pin's bytecode, where both constructors carry
+/// `ldc2_w 1.7976931348623157E308` before the field's `putfield`.
+///
+/// **A transcription, and not "no bound".** The class's guard scales a step longer than this
+/// down, so the largest finite float is a real ceiling here - one an infinite norm reaches:
+/// `MAX / inf` rounds the scale to zero, and the step becomes `0 * inf`, which is `NaN`.
+/// Stated rather than replaced, because a port does not invent a bound the class does not have.
+const CLASS_MAX_STEP_SIZE: f64 = f64::MAX;
 
 /// The smallest `delta_x` norm and Sherman-Morrison denominator the update survives.
 const BROYDEN_EPSILON: f64 = 1e-15;

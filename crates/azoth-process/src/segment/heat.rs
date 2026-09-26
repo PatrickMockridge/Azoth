@@ -1,6 +1,6 @@
 //! The interphase heat step: the Chilton-Colburn coefficient and the heat it moves.
 
-use super::film::{clamp, finite_positive};
+use super::film::finite_positive;
 
 /// `calculateVolumetricHeatTransferCoefficient`: the Chilton-Colburn analogy.
 ///
@@ -114,15 +114,11 @@ pub fn apply_interphase_heat_transfer(
     }
     HeatStep {
         rate,
-        gas_temperature: clamp(
-            gas_temperature - rate / gas_heat_capacity_rate,
-            1.0,
-            f64::MAX,
-        ),
-        liquid_temperature: clamp(
-            liquid_temperature + rate / liquid_heat_capacity_rate,
-            1.0,
-            f64::MAX,
-        ),
+        // **One bound, and it is the class's.** `Math.max(1.0, ...)` on both lines: a floor of
+        // one kelvin and **no ceiling at all**. The port had written `clamp(x, 1.0, f64::MAX)`,
+        // which agrees with the class everywhere except an infinite temperature - where
+        // `f64::MAX` *saturates* it, and the class leaves it infinite.
+        gas_temperature: (gas_temperature - rate / gas_heat_capacity_rate).max(1.0),
+        liquid_temperature: (liquid_temperature + rate / liquid_heat_capacity_rate).max(1.0),
     }
 }
