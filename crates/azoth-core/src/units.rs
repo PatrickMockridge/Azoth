@@ -22,17 +22,24 @@ pub use uom::si::f64::{
     Velocity, VolumeRate,
 };
 pub use uom::si::{
-    amount_of_substance::mole, area::square_meter, diffusion_coefficient::square_meter_per_second,
-    dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::joule,
-    heat_transfer::watt_per_square_meter_kelvin, length::angstrom, length::meter,
-    length::millimeter, mass::kilogram, mass_density::kilogram_per_cubic_meter,
-    mass_rate::kilogram_per_second, molality::mole_per_kilogram, molar_energy::joule_per_mole,
+    acceleration::standard_gravity, amount_of_substance::kilomole, amount_of_substance::mole,
+    area::square_meter, diffusion_coefficient::square_meter_per_second,
+    dynamic_viscosity::pascal_second, electric_charge::coulomb, energy::btu_it, energy::joule,
+    energy::kilojoule, energy::megajoule, heat_transfer::watt_per_square_meter_kelvin,
+    length::angstrom, length::centimeter, length::foot, length::inch, length::meter,
+    length::millimeter, mass::kilogram, mass::ton, mass_density::kilogram_per_cubic_meter,
+    mass_rate::kilogram_per_hour, mass_rate::kilogram_per_second, mass_rate::ton_per_hour,
+    molality::mole_per_kilogram, molar_energy::joule_per_mole, molar_energy::kilojoule_per_mole,
     molar_heat_capacity::joule_per_kelvin_mole, molar_mass::kilogram_per_mole,
-    molar_volume::cubic_meter_per_mole, power::watt, pressure::pascal,
-    specific_heat_capacity::joule_per_kilogram_kelvin, surface_tension::newton_per_meter,
-    temperature_interval::kelvin as kelvin_interval, thermal_conductance::watt_per_kelvin,
-    thermal_conductivity::watt_per_meter_kelvin, thermodynamic_temperature::kelvin,
-    velocity::meter_per_second, volume_rate::cubic_meter_per_second,
+    molar_volume::cubic_meter_per_mole, power::kilowatt, power::megawatt, power::watt,
+    pressure::atmosphere, pressure::bar, pressure::kilopascal, pressure::megapascal,
+    pressure::pascal, specific_heat_capacity::joule_per_kilogram_kelvin,
+    specific_heat_capacity::kilojoule_per_kilogram_kelvin, surface_tension::newton_per_meter,
+    temperature_interval::degree_fahrenheit, temperature_interval::kelvin as kelvin_interval,
+    thermal_conductance::watt_per_kelvin, thermal_conductivity::watt_per_meter_kelvin,
+    thermodynamic_temperature::kelvin, time::hour, time::minute, velocity::foot_per_second,
+    velocity::meter_per_second, volume_rate::cubic_meter_per_hour,
+    volume_rate::cubic_meter_per_second, volume_rate::liter_per_minute,
 };
 
 /// A length in metres.
@@ -270,6 +277,288 @@ pub fn moles_per_kilogram(value: f64) -> Molality {
 #[must_use]
 pub fn kilograms_per_mole(value: f64) -> MolarMass {
     MolarMass::new::<kilogram_per_mole>(value)
+}
+
+/* --- the engineering units -------------------------------------------------
+ *
+ * The units a process engineer reads a flowsheet in: bar, psi, kW, Btu, lb/h, a
+ * column's reflux in kmol/h. Every one of them is a *scale* of the SI base its
+ * dimension already has, so nothing here is a new dimension - and that is the
+ * property the generated compile-time assertions check, one unit at a time.
+ *
+ * **Nothing below is a measured factor.** Where uom carries the unit, the
+ * constructor is uom's own definition, named so the vocabulary has something to
+ * point at. Where it does not, or where uom's literal is rounded - its imperial
+ * units are six or seven significant figures, and `psi` and `hp` are both out by
+ * nearly 1e-7 - the constructor is the unit's *definition* assembled from parts
+ * uom does define exactly: a pound-force is a pound times standard gravity, and a
+ * mechanical horsepower is 550 foot-pounds-force per second. The check that any
+ * of this is right is `python/tests/test_units_cross_library.py`, which holds
+ * every one of these to `pint`'s own answer at 1e-15 relative - a tolerance the
+ * rounded literals cannot pass, which is how they were found.
+ */
+
+/// One of a unit, as the SI base magnitude the quantity is stored in.
+///
+/// The two constructors below need a *part* of a definition rather than a whole
+/// quantity - a pound-force is a pound times standard gravity, and a horsepower
+/// is 550 of those per second - and `uom` exposes no other way to ask a unit for
+/// its coefficient without naming the quantity it measures.
+fn si_of<U: uom::Conversion<f64, T = f64>>() -> f64 {
+    U::coefficient()
+}
+
+/// The international avoirdupois pound in kilograms: `0.453 592 37` exactly, which
+/// the 1959 agreement fixed and no measurement decides.
+///
+/// **This number is here because `uom`'s is wrong at the seventh figure.** uom
+/// carries `mass::pound` as `4.535_924_E-1`, 6.6e-8 from the definition, and it
+/// carries `volume::cubic_foot` and `volume::gallon` rounded the same way - so
+/// `psi`, `hp`, `lb/ft**3`, `gpm`, `Btu/(lb*degF)` and `ft**3/min` are all out by
+/// that much if they are built on uom's. The cross-library check
+/// (`python/tests/test_units_cross_library.py`) compares every declared unit
+/// against `pint` at 1e-15 relative, which is how this was found and is the only
+/// reason to trust the replacement: `pint` reads the agreement, uom reads a
+/// rounding of it.
+///
+/// The rest of a pound-derived definition needs no number: a pound-force is this
+/// times `standard_gravity`, which uom carries exactly, and a foot, an inch and a
+/// Fahrenheit *interval* are exact in uom as well. This constant and the `550`
+/// below are the only two quantities in this module that are written out, and both
+/// are definitions rather than conversions.
+const POUND_KILOGRAMS: f64 = 0.453_592_37;
+
+/// A pressure in bars.
+#[must_use]
+pub fn bars(value: f64) -> Pressure {
+    Pressure::new::<bar>(value)
+}
+
+/// A pressure in kilopascals.
+#[must_use]
+pub fn kilopascals(value: f64) -> Pressure {
+    Pressure::new::<kilopascal>(value)
+}
+
+/// A pressure in megapascals.
+#[must_use]
+pub fn megapascals(value: f64) -> Pressure {
+    Pressure::new::<megapascal>(value)
+}
+
+/// A pressure in standard atmospheres: 101 325 Pa by definition.
+#[must_use]
+pub fn atmospheres(value: f64) -> Pressure {
+    Pressure::new::<atmosphere>(value)
+}
+
+/// A pressure in pounds-force per square inch.
+///
+/// Not uom's `pressure::psi` (`6.894_757_E3`, a rounded literal) and not its
+/// `pound_force_per_square_inch` either, which is built on uom's rounded pound. A
+/// pound-force is [`POUND_KILOGRAMS`] times `standard_gravity` and an inch is
+/// exact, so this is the definition with nothing rounded in it.
+#[must_use]
+pub fn pounds_per_square_inch(value: f64) -> Pressure {
+    let pound_force = POUND_KILOGRAMS * si_of::<standard_gravity>();
+    let square_inch = si_of::<inch>() * si_of::<inch>();
+    Pressure::new::<pascal>(value * pound_force / square_inch)
+}
+
+/// A power in watts, as mechanical horsepower: 550 foot-pounds-force per second.
+///
+/// Not uom's `power::horsepower` (`7.456_999_E2`) or `foot_pound_per_second`
+/// (`1.355_818`), both rounded - and a compressor's shaft power is a number a
+/// purchaser reads off a datasheet.
+#[must_use]
+pub fn mechanical_horsepower(value: f64) -> Power {
+    let foot_pound_force = si_of::<foot>() * POUND_KILOGRAMS * si_of::<standard_gravity>();
+    Power::new::<watt>(value * 550.0 * foot_pound_force)
+}
+
+/// A mass flow rate in kilograms per hour.
+#[must_use]
+pub fn kilograms_per_hour(value: f64) -> MassRate {
+    MassRate::new::<kilogram_per_hour>(value)
+}
+
+/// A mass flow rate in tonnes per hour.
+#[must_use]
+pub fn tonnes_per_hour(value: f64) -> MassRate {
+    MassRate::new::<ton_per_hour>(value)
+}
+
+/// A mass flow rate in pounds per hour.
+///
+/// Built on [`POUND_KILOGRAMS`] rather than on uom's `pound_per_hour`, for the
+/// reason that constant gives.
+#[must_use]
+pub fn pounds_per_hour(value: f64) -> MassRate {
+    MassRate::new::<kilogram_per_second>(value * POUND_KILOGRAMS / si_of::<hour>())
+}
+
+/// A mass in tonnes.
+#[must_use]
+pub fn tonnes(value: f64) -> Mass {
+    Mass::new::<ton>(value)
+}
+
+/// A mass in pounds.
+#[must_use]
+pub fn pounds(value: f64) -> Mass {
+    Mass::new::<kilogram>(value * POUND_KILOGRAMS)
+}
+
+/// An energy in kilojoules.
+#[must_use]
+pub fn kilojoules(value: f64) -> Energy {
+    Energy::new::<kilojoule>(value)
+}
+
+/// An energy in megajoules.
+#[must_use]
+pub fn megajoules(value: f64) -> Energy {
+    Energy::new::<megajoule>(value)
+}
+
+/// An energy in British thermal units, International Table.
+///
+/// `uom` calls this `btu_it`, and its literal `1.055_056_E3` is what `pint`'s
+/// `Btu` is to the last digit it carries, so this one is uom's own.
+#[must_use]
+pub fn british_thermal_units(value: f64) -> Energy {
+    Energy::new::<btu_it>(value)
+}
+
+/// A power in kilowatts.
+#[must_use]
+pub fn kilowatts(value: f64) -> Power {
+    Power::new::<kilowatt>(value)
+}
+
+/// A power in megawatts.
+#[must_use]
+pub fn megawatts(value: f64) -> Power {
+    Power::new::<megawatt>(value)
+}
+
+/// A length in feet.
+#[must_use]
+pub fn feet(value: f64) -> Length {
+    Length::new::<foot>(value)
+}
+
+/// A length in inches.
+#[must_use]
+pub fn inches(value: f64) -> Length {
+    Length::new::<inch>(value)
+}
+
+/// A length in centimetres.
+#[must_use]
+pub fn centimeters(value: f64) -> Length {
+    Length::new::<centimeter>(value)
+}
+
+/// A volumetric flow rate in cubic metres per hour.
+#[must_use]
+pub fn cubic_meters_per_hour(value: f64) -> VolumeRate {
+    VolumeRate::new::<cubic_meter_per_hour>(value)
+}
+
+/// A volumetric flow rate in litres per minute.
+#[must_use]
+pub fn liters_per_minute(value: f64) -> VolumeRate {
+    VolumeRate::new::<liter_per_minute>(value)
+}
+
+/// A volumetric flow rate in US gallons per minute.
+///
+/// A US liquid gallon is 231 cubic inches **by definition**, and an inch is exact
+/// in uom, so the `231` here is the definition and not a factor - uom's own
+/// `gallon` is a rounded literal for the same reason its pound is.
+#[must_use]
+pub fn gallons_per_minute(value: f64) -> VolumeRate {
+    let gallon = 231.0 * si_of::<inch>().powi(3);
+    VolumeRate::new::<cubic_meter_per_second>(value * gallon / si_of::<minute>())
+}
+
+/// A volumetric flow rate in cubic feet per minute.
+///
+/// uom's `cubic_foot` is `2.831_685_E-2`, 5.9e-8 from the cube of its own exact
+/// foot, so this is built from the foot.
+#[must_use]
+pub fn cubic_feet_per_minute(value: f64) -> VolumeRate {
+    let cubic_foot = si_of::<foot>().powi(3);
+    VolumeRate::new::<cubic_meter_per_second>(value * cubic_foot / si_of::<minute>())
+}
+
+/// A velocity in feet per second.
+#[must_use]
+pub fn feet_per_second(value: f64) -> Velocity {
+    Velocity::new::<foot_per_second>(value)
+}
+
+/// A mass density in pounds per cubic foot.
+#[must_use]
+pub fn pounds_per_cubic_foot(value: f64) -> MassDensity {
+    MassDensity::new::<kilogram_per_cubic_meter>(value * POUND_KILOGRAMS / si_of::<foot>().powi(3))
+}
+
+/// A specific heat capacity in kilojoules per kilogram kelvin.
+#[must_use]
+pub fn kilojoules_per_kilogram_kelvin(value: f64) -> SpecificHeatCapacity {
+    SpecificHeatCapacity::new::<kilojoule_per_kilogram_kelvin>(value)
+}
+
+/// A specific heat capacity in British thermal units per pound degree Fahrenheit.
+///
+/// The Fahrenheit here is an **interval** and not a temperature: a specific heat
+/// capacity is energy per mass per degree of *difference*, and `uom`'s
+/// `btu_it_per_pound_degree_fahrenheit` is built that way. An absolute °F would be
+/// an offset unit, which is a different thing this crate does not carry - see the
+/// note on [`kelvin_intervals`].
+#[must_use]
+pub fn british_thermal_units_per_pound_degree_fahrenheit(value: f64) -> SpecificHeatCapacity {
+    // The Fahrenheit here is uom's *interval*, which is exactly five ninths of a
+    // kelvin; only the pound in the denominator is uom's rounded one.
+    let fahrenheit_interval = si_of::<degree_fahrenheit>();
+    SpecificHeatCapacity::new::<joule_per_kilogram_kelvin>(
+        value * si_of::<btu_it>() / (POUND_KILOGRAMS * fahrenheit_interval),
+    )
+}
+
+/// A molar energy in kilojoules per mole.
+#[must_use]
+pub fn kilojoules_per_mole(value: f64) -> MolarEnergy {
+    MolarEnergy::new::<kilojoule_per_mole>(value)
+}
+
+/// A dynamic viscosity in centipoise.
+#[must_use]
+pub fn centipoise(value: f64) -> DynamicViscosity {
+    // Qualified, because the unit and this function are one name: the vocabulary's
+    // `rust_ctor` is spelled after the unit, and a `use` of both would be a
+    // redefinition rather than an import.
+    DynamicViscosity::new::<uom::si::dynamic_viscosity::centipoise>(value)
+}
+
+/// An amount of substance in kilomoles.
+#[must_use]
+pub fn kilomoles(value: f64) -> AmountOfSubstance {
+    AmountOfSubstance::new::<kilomole>(value)
+}
+
+/// A molar flow rate in kilomoles per hour, **as an SI base magnitude**.
+///
+/// The one constructor here that returns a plain `f64` rather than a quantity, and
+/// the reason is uom's: it carries no molar-flow quantity at all, so there is no
+/// `MolarFlow` type to build. The dimension's SI base is `mol/s`, and this is that
+/// — uom's kilomole over uom's hour, so the thousand and the three thousand six
+/// hundred are both read from the units library rather than written here.
+#[must_use]
+pub fn kilomoles_per_hour(value: f64) -> f64 {
+    value * si_of::<kilomole>() / si_of::<hour>()
 }
 
 /// The canonical unit strings the spec schema permits.

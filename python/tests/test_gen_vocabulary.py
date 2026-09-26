@@ -213,19 +213,100 @@ def test_an_exponent_vector_of_the_wrong_width_is_refused(tmp_path: Path) -> Non
 # ---------------------------------------------------------------------------
 
 
-def test_the_repository_table_has_no_uom_path_without_a_constructor() -> None:
-    """Every row claiming a `uom` path names a hand-written constructor.
+def test_a_uom_quantity_with_neither_a_path_nor_a_constructor_is_refused(tmp_path: Path) -> None:
+    """A unit uom carries may not fall through to the identity.
 
-    The schema enforces this too; asserting it here as well is what makes the fact
-    visible in Python, where the generator's own error message is the only other
-    place it appears.
+    **The identity is a claim, and it is false for every unit uom carries**: it says
+    the name is already its own SI base unit, which is true of `m` and `kg` and of
+    nothing else in the table. The two ways of being right are uom's own constructor
+    (a `uom:` path) and this crate's (a `rust_ctor`, returning the quantity - or, for
+    a dimension uom has no quantity for, the base magnitude), so a row names one or
+    the generator stops.
     """
     table = a_table()
+    row = unit(table, "mm")
+    # Both, because either one alone is a legitimate row: `uom` without a
+    # constructor is the schema's refusal, and a constructor without `uom` is what
+    # `psi` and `hp` are.
+    del row["uom"]
+    del row["rust_ctor"]
+    with pytest.raises(SystemExit, match="names neither a uom path nor a constructor"):
+        compile_table(tmp_path, table)
+
+
+def test_the_repository_table_names_a_constructor_for_every_unit_uom_carries() -> None:
+    """The same rule, held against the table that is actually in the tree.
+
+    The schema enforces the half of it that is a `uom` path implying a constructor;
+    asserting the whole rule here as well is what makes the other half visible in
+    Python, where the generator's own error message is the only other place it
+    appears. **`psi` and `hp` are the rows that look like a violation of the old
+    rule and are the point of the new one**: uom carries their quantities and defines
+    their units at six or seven significant figures, so the constructor is azoth's
+    derivation from the definition instead - and the cross-library check is what says
+    so, by failing on uom's own.
+    """
+    module = gen_vocabulary()
+    table = a_table()
+    exponents = {row["id"]: tuple(row["exponents"]) for row in table["dimensions"]}
     for row in table["units"]:
-        if "uom" not in row:
-            assert "rust_ctor" not in row, f"{row['id']} names a constructor with no uom path"
-        else:
+        if "uom" in row:
             assert row.get("rust_ctor"), f"{row['id']} claims a uom path and names no constructor"
+        elif module.UOM_TYPES[exponents[row["dimension"]]] is not None:
+            assert row.get("rust_ctor"), (
+                f"{row['id']} is a uom quantity and names neither a uom path nor a "
+                f"constructor, so the generated conversion would be the identity"
+            )
+
+
+# ---------------------------------------------------------------------------
+# The unit sets
+# ---------------------------------------------------------------------------
+
+
+def test_a_unit_set_that_switches_a_dimension_to_another_dimensions_unit_is_refused(
+    tmp_path: Path,
+) -> None:
+    """A set's key and its value's own dimension have to agree.
+
+    The one of the three that would survive a glance: a set naming a *length* for
+    pressure is a display showing a number with a unit beside it that does not
+    measure it, which is worse than the right number in the wrong unit - a reader
+    can convert the second and cannot see the first.
+    """
+    table = a_table()
+    table["unit_sets"][1]["units"]["pressure"] = "ft"
+    with pytest.raises(SystemExit, match="which is a length"):
+        compile_table(tmp_path, table)
+
+
+def test_a_unit_set_naming_a_unit_the_table_does_not_have_is_refused(tmp_path: Path) -> None:
+    """A set is a choice among declared units and not a second declaration."""
+    table = a_table()
+    table["unit_sets"][1]["units"]["pressure"] = "torr"
+    with pytest.raises(SystemExit, match="which is not in the vocabulary"):
+        compile_table(tmp_path, table)
+
+
+def test_a_unit_set_naming_something_that_is_not_a_dimension_is_refused(tmp_path: Path) -> None:
+    """A key no dimension declares is a set with a switch nothing reads."""
+    table = a_table()
+    table["unit_sets"][1]["units"]["head"] = "m"
+    with pytest.raises(SystemExit, match="which are not declared"):
+        compile_table(tmp_path, table)
+
+
+def test_two_unit_sets_covering_different_dimensions_are_refused(tmp_path: Path) -> None:
+    """Every set names the same dimensions, so switching back is the same document.
+
+    A dimension one set names and another does not is a display that changes what it
+    shows when a reader asks for the *other* set - and there is no unit it could fall
+    back to without the reader having chosen it.
+    """
+    table = a_table()
+    del table["unit_sets"][1]["units"]["length"]
+    with pytest.raises(SystemExit, match="differs from the first set"):
+        compile_table(tmp_path, table)
 
 
 def test_every_unit_in_the_table_has_a_distinct_pint_name_or_a_distinct_dimension() -> None:

@@ -5,11 +5,11 @@
   "description": "The canonical units a spec may declare, each with the dimension it carries and the name it has in `uom` and in `pint`. This is the one hand-written source for that list; `tools/gen_vocabulary.py` compiles it into Rust, Python and JSON Schema, and `--check` fails if any of the three has drifted. **No magnitude appears in it.** A conversion factor is a number the units libraries already know, and restating one here would be a second answer to a question they have answered - the failure that produced this repository's millimetre defect. `additionalProperties: false` throughout, so a field cannot be added without a deliberate edit here.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "slots", "dimensions", "units"],
+  "required": ["schema_version", "slots", "dimensions", "units", "unit_sets"],
   "properties": {
     "schema_version": {
-      "const": 1,
-      "description": "Bump only if the format changes; the generator refuses a version it does not know rather than guessing at what a newer shape meant."
+      "const": 2,
+      "description": "Bump only if the format changes; the generator refuses a version it does not know rather than guessing at what a newer shape meant. Version 2 added `unit_sets`, which a version-1 table does not carry and cannot be read without."
     },
     "slots": {
       "type": "array",
@@ -29,6 +29,12 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/unit" }
+    },
+    "unit_sets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/unit_set" },
+      "description": "The named sets a reader may switch a display between, each naming one unit per dimension. A set is a *choice* and not a conversion: every unit it names is a row above, with its own `pint` name and its own conversion, and the set says only which of them to read. A dimension no set names has no engineering alternative and is read in the unit the library computed it in, so a set may be partial without any display falling back to a blank."
     }
   },
   "$defs": {
@@ -76,21 +82,43 @@
         },
         "uom": {
           "$ref": "#/$defs/uom_path",
-          "description": "Where uom carries this dimension. Absent where uom has no such quantity: uom's `quantity!` macro must run inside `uom::si`, and the `Units` trait that makes `.new::<u>()` compile is assembled by `system!` from a closed list, so no crate outside uom can add a quantity to it. A unit with no `uom` converts by the identity, because it is already its own SI base unit."
+          "description": "Where uom carries this dimension. Absent in two cases: where uom has no such quantity at all - uom's `quantity!` macro must run inside `uom::si`, and the `Units` trait that makes `.new::<u>()` compile is assembled by `system!` from a closed list, so no crate outside uom can add a quantity to it - and where uom carries the quantity but defines this unit with a rounded literal, which is true of its imperial units. `psi` and `hp` are the two rows of the second kind, and `python/tests/test_units_cross_library.py` is what tells them apart from a unit uom defines exactly."
         },
         "rust_ctor": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "The hand-written constructor in crates/azoth-core/src/units.rs that the generated conversion calls. The generator never invents one, so a unit that claims a uom path and names no constructor is refused."
+          "description": "The hand-written constructor in crates/azoth-core/src/units.rs that the generated conversion calls. The generator never invents one, and every unit of a dimension uom carries must name one - uom's own definition where it is exact, this crate's derivation where uom's literal is rounded - so the magnitude a unit converts to is a definition a reader can find. A constructor for a dimension uom carries returns the uom quantity; one for a dimension it does not returns the SI base magnitude directly."
         }
       },
       "allOf": [
         {
           "if": { "required": ["uom"], "properties": { "uom": { "type": "string" } } },
-          "then": { "required": ["rust_ctor"] },
-          "else": { "not": { "required": ["rust_ctor"] } }
+          "then": { "required": ["rust_ctor"] }
         }
       ]
+    },
+    "unit_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "units"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/dimension_id",
+          "description": "The set's id, which is what a caller switches to: `si`, `field`."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The set's name as a reader sees it."
+        },
+        "units": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/dimension_id" },
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "description": "One dimension per key, and the unit it is read in as the value. The generator refuses a key that is not a declared dimension, a value that is not a declared unit, and a value whose own dimension is not the key - a set that switched a quantity to a unit of another quantity would convert nothing - and it refuses two sets that name different dimensions, so switching to one and back is the same document."
+        }
+      }
     }
   }
 }

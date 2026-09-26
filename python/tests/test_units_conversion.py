@@ -27,12 +27,62 @@ from azoth.core.units import CANONICAL_UNITS, from_si, quantity, to_si, unit_for
 
 #: The SI base magnitude of one of each unit, where it is not simply 1.0.
 #:
-#: Every vocabulary entry is its own SI base unit except the two below, so the default
-#: is 1.0 and this table carries only the exceptions. Having them spelled out means the
-#: assertion below is a statement about the world rather than a restatement of the
-#: implementation - and it is what would catch a change of convention, or a new entry
-#: whose base magnitude nobody thought about. It caught `angstrom`.
-NOT_ITS_OWN_SI_BASE_UNIT: dict[str, float] = {"mm": 1.0e-3, "angstrom": 1.0e-10}
+#: **A unit of a dimension whose SI base is its own unit is 1.0**, and that was every
+#: vocabulary entry but two until the engineering units arrived - so the default is 1.0
+#: and this table carries the exceptions. Having them spelled out means the assertion
+#: below is a statement about the world rather than a restatement of the implementation,
+#: and it is what would catch a change of convention or a new entry whose base magnitude
+#: nobody thought about. It caught `angstrom`.
+#:
+#: The imperial entries are written as the definitions they are - a pound is
+#: `0.453 592 37` kg by the 1959 agreement, a foot is `0.3048` m, standard gravity is
+#: `9.806 65` m/s², a US liquid gallon is 231 cubic inches, and an hour is 3600 s - so a
+#: reader can check the arithmetic rather than take a decimal on trust. **`uom`'s own
+#: literals for these are rounded** (its pound is `4.535 924e-1`, 6.6e-8 out), which is
+#: why `units.rs` derives them and why this file holds them: `psi` and `hp` are the two
+#: entries `python/tests/test_units_cross_library.py` found, and these are the same
+#: numbers reached from the other side.
+NOT_ITS_OWN_SI_BASE_UNIT: dict[str, float] = {
+    "mm": 1.0e-3,
+    "angstrom": 1.0e-10,
+    # pressure
+    "bar": 1.0e5,
+    "kPa": 1.0e3,
+    "MPa": 1.0e6,
+    "atm": 1.01325e5,
+    "psi": 0.45359237 * 9.80665 / 0.0254**2,
+    # mass flow and mass
+    "kg/h": 1.0 / 3600.0,
+    "t/h": 1000.0 / 3600.0,
+    "lb/h": 0.45359237 / 3600.0,
+    "t": 1000.0,
+    "lb": 0.45359237,
+    # energy and power
+    "kJ": 1.0e3,
+    "MJ": 1.0e6,
+    "Btu": 1055.056,
+    "kW": 1.0e3,
+    "MW": 1.0e6,
+    "hp": 550.0 * 0.3048 * 0.45359237 * 9.80665,
+    # length, volume rate and velocity
+    "ft": 0.3048,
+    "in": 0.0254,
+    "cm": 1.0e-2,
+    "m**3/h": 1.0 / 3600.0,
+    "L/min": 1.0e-3 / 60.0,
+    "gpm": 231.0 * 0.0254**3 / 60.0,
+    "ft**3/min": 0.3048**3 / 60.0,
+    "ft/s": 0.3048,
+    "lb/ft**3": 0.45359237 / 0.3048**3,
+    # specific heat, molar energy and viscosity
+    "kJ/(kg*K)": 1.0e3,
+    "Btu/(lb*degF)": 1055.056 / (0.45359237 * 5.0 / 9.0),
+    "kJ/mol": 1.0e3,
+    "cP": 1.0e-3,
+    # amount and molar flow
+    "kmol": 1.0e3,
+    "kmol/h": 1000.0 / 3600.0,
+}
 
 
 @pytest.mark.parametrize("spec_unit", sorted(CANONICAL_UNITS))

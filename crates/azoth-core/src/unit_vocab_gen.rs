@@ -155,6 +155,37 @@ pub const UNIT_NAMES: &[&str] = &[
     "1/K**2",
     "1/K**3",
     "mol/kg",
+    "bar",
+    "kPa",
+    "MPa",
+    "psi",
+    "atm",
+    "kg/h",
+    "t/h",
+    "lb/h",
+    "t",
+    "lb",
+    "kJ",
+    "MJ",
+    "Btu",
+    "kW",
+    "MW",
+    "hp",
+    "ft",
+    "in",
+    "cm",
+    "m**3/h",
+    "L/min",
+    "gpm",
+    "ft**3/min",
+    "ft/s",
+    "lb/ft**3",
+    "kJ/(kg*K)",
+    "Btu/(lb*degF)",
+    "kJ/mol",
+    "cP",
+    "kmol",
+    "kmol/h",
 ];
 
 /// Each unit's dimension, as exponents in [`SLOTS`] order.
@@ -196,6 +227,37 @@ pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
     ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
     ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
+    ("bar", [-1, 1, -2, 0, 0, 0, 0]),
+    ("kPa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("MPa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("psi", [-1, 1, -2, 0, 0, 0, 0]),
+    ("atm", [-1, 1, -2, 0, 0, 0, 0]),
+    ("kg/h", [0, 1, -1, 0, 0, 0, 0]),
+    ("t/h", [0, 1, -1, 0, 0, 0, 0]),
+    ("lb/h", [0, 1, -1, 0, 0, 0, 0]),
+    ("t", [0, 1, 0, 0, 0, 0, 0]),
+    ("lb", [0, 1, 0, 0, 0, 0, 0]),
+    ("kJ", [2, 1, -2, 0, 0, 0, 0]),
+    ("MJ", [2, 1, -2, 0, 0, 0, 0]),
+    ("Btu", [2, 1, -2, 0, 0, 0, 0]),
+    ("kW", [2, 1, -3, 0, 0, 0, 0]),
+    ("MW", [2, 1, -3, 0, 0, 0, 0]),
+    ("hp", [2, 1, -3, 0, 0, 0, 0]),
+    ("ft", [1, 0, 0, 0, 0, 0, 0]),
+    ("in", [1, 0, 0, 0, 0, 0, 0]),
+    ("cm", [1, 0, 0, 0, 0, 0, 0]),
+    ("m**3/h", [3, 0, -1, 0, 0, 0, 0]),
+    ("L/min", [3, 0, -1, 0, 0, 0, 0]),
+    ("gpm", [3, 0, -1, 0, 0, 0, 0]),
+    ("ft**3/min", [3, 0, -1, 0, 0, 0, 0]),
+    ("ft/s", [1, 0, -1, 0, 0, 0, 0]),
+    ("lb/ft**3", [-3, 1, 0, 0, 0, 0, 0]),
+    ("kJ/(kg*K)", [2, 0, -2, 0, -1, 0, 0]),
+    ("Btu/(lb*degF)", [2, 0, -2, 0, -1, 0, 0]),
+    ("kJ/mol", [2, 1, -2, 0, 0, -1, 0]),
+    ("cP", [-1, 1, -1, 0, 0, 0, 0]),
+    ("kmol", [0, 0, 0, 0, 0, 1, 0]),
+    ("kmol/h", [0, 0, -1, 0, 0, 1, 0]),
 ];
 
 /// One row of [`CONVERSION_PATHS`]: a canonical unit string, and the
@@ -204,9 +266,14 @@ pub type ConversionPath = (&'static str, fn(f64) -> f64);
 
 /// Each unit's conversion from the declared unit to the SI base magnitude.
 ///
-/// A unit whose dimension uom carries goes through the hand-written
-/// constructor in [`crate::units`]; one whose dimension it does not is
-/// already its own SI base unit, so the conversion is the identity.
+/// Three cases, and the table decides which rather than this list. A unit of
+/// a dimension uom carries goes through the hand-written constructor in
+/// [`crate::units`] and takes its `.value` - the constructor is uom's own
+/// where uom's definition is exact, and this crate's where uom's literal is
+/// rounded, which is why `psi` and `hp` reach it without a `uom` path. A unit
+/// of a dimension uom does *not* carry - molar flow is the one - is not its own
+/// SI base either, so its constructor returns the base magnitude directly.
+/// And a unit that is already its own SI base converts by the identity.
 ///
 /// There is deliberately no expected magnitude beside these. A factor is a
 /// number `uom` and `pint` each already know, and the check that these are
@@ -262,6 +329,43 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("1/K**2", |v| v),
     ("1/K**3", |v| v),
     ("mol/kg", |v| crate::units::moles_per_kilogram(v).value),
+    ("bar", |v| crate::units::bars(v).value),
+    ("kPa", |v| crate::units::kilopascals(v).value),
+    ("MPa", |v| crate::units::megapascals(v).value),
+    ("psi", |v| crate::units::pounds_per_square_inch(v).value),
+    ("atm", |v| crate::units::atmospheres(v).value),
+    ("kg/h", |v| crate::units::kilograms_per_hour(v).value),
+    ("t/h", |v| crate::units::tonnes_per_hour(v).value),
+    ("lb/h", |v| crate::units::pounds_per_hour(v).value),
+    ("t", |v| crate::units::tonnes(v).value),
+    ("lb", |v| crate::units::pounds(v).value),
+    ("kJ", |v| crate::units::kilojoules(v).value),
+    ("MJ", |v| crate::units::megajoules(v).value),
+    ("Btu", |v| crate::units::british_thermal_units(v).value),
+    ("kW", |v| crate::units::kilowatts(v).value),
+    ("MW", |v| crate::units::megawatts(v).value),
+    ("hp", |v| crate::units::mechanical_horsepower(v).value),
+    ("ft", |v| crate::units::feet(v).value),
+    ("in", |v| crate::units::inches(v).value),
+    ("cm", |v| crate::units::centimeters(v).value),
+    ("m**3/h", |v| crate::units::cubic_meters_per_hour(v).value),
+    ("L/min", |v| crate::units::liters_per_minute(v).value),
+    ("gpm", |v| crate::units::gallons_per_minute(v).value),
+    ("ft**3/min", |v| {
+        crate::units::cubic_feet_per_minute(v).value
+    }),
+    ("ft/s", |v| crate::units::feet_per_second(v).value),
+    ("lb/ft**3", |v| crate::units::pounds_per_cubic_foot(v).value),
+    ("kJ/(kg*K)", |v| {
+        crate::units::kilojoules_per_kilogram_kelvin(v).value
+    }),
+    ("Btu/(lb*degF)", |v| {
+        crate::units::british_thermal_units_per_pound_degree_fahrenheit(v).value
+    }),
+    ("kJ/mol", |v| crate::units::kilojoules_per_mole(v).value),
+    ("cP", |v| crate::units::centipoise(v).value),
+    ("kmol", |v| crate::units::kilomoles(v).value),
+    ("kmol/h", |v| crate::units::kilomoles_per_hour(v)),
 ];
 
 /// The conversion for one canonical unit, or `None` if the name is not in
@@ -294,6 +398,69 @@ pub fn dimension(name: &str) -> Option<[i8; 7]> {
         .find(|(n, _)| *n == name)
         .map(|(_, d)| *d)
 }
+
+/// One named unit set: a choice of one unit per dimension, and what to call it.
+///
+/// The dimensions a set names are the ones with a second unit worth reading -
+/// a pressure, a flow, a duty. A dimension absent from every set has none, and
+/// is shown in the unit the library computed it in rather than in a blank.
+pub struct UnitSet {
+    /// The set's id, e.g. `si`.
+    pub id: &'static str,
+    /// The set's name as a reader sees it, e.g. `SI`.
+    pub name: &'static str,
+    /// One `(dimension, unit)` per dimension the set names.
+    pub units: &'static [(&'static str, &'static str)],
+}
+
+/// The unit sets a caller may switch between, in the table's order.
+///
+/// Every set names the same dimensions - the generator refuses one that does
+/// not - so switching to a set and back is the same document, and a reader
+/// comparing two panes is comparing two units of one quantity rather than two
+/// quantities.
+pub const UNIT_SETS: &[UnitSet] = &[
+    UnitSet {
+        id: "si",
+        name: "SI",
+        units: &[
+            ("pressure", "Pa"),
+            ("mass_rate", "kg/s"),
+            ("molar_flow", "mol/s"),
+            ("amount", "mol"),
+            ("mass", "kg"),
+            ("energy", "J"),
+            ("power", "W"),
+            ("length", "m"),
+            ("volume_rate", "m**3/s"),
+            ("velocity", "m/s"),
+            ("mass_density", "kg/m**3"),
+            ("specific_heat_capacity", "J/(kg*K)"),
+            ("molar_energy", "J/mol"),
+            ("dynamic_viscosity", "Pa*s"),
+        ],
+    },
+    UnitSet {
+        id: "field",
+        name: "Field",
+        units: &[
+            ("pressure", "psi"),
+            ("mass_rate", "lb/h"),
+            ("molar_flow", "kmol/h"),
+            ("amount", "kmol"),
+            ("mass", "lb"),
+            ("energy", "Btu"),
+            ("power", "hp"),
+            ("length", "ft"),
+            ("volume_rate", "gpm"),
+            ("velocity", "ft/s"),
+            ("mass_density", "lb/ft**3"),
+            ("specific_heat_capacity", "Btu/(lb*degF)"),
+            ("molar_energy", "kJ/mol"),
+            ("dynamic_viscosity", "cP"),
+        ],
+    },
+];
 
 #[cfg(test)]
 mod dimension_assertions {
@@ -334,5 +501,37 @@ mod dimension_assertions {
         let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
         let _: uom::si::f64::Length = crate::units::angstroms(1.0);
         let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
+        let _: uom::si::f64::Pressure = crate::units::bars(1.0);
+        let _: uom::si::f64::Pressure = crate::units::kilopascals(1.0);
+        let _: uom::si::f64::Pressure = crate::units::megapascals(1.0);
+        let _: uom::si::f64::Pressure = crate::units::pounds_per_square_inch(1.0);
+        let _: uom::si::f64::Pressure = crate::units::atmospheres(1.0);
+        let _: uom::si::f64::MassRate = crate::units::kilograms_per_hour(1.0);
+        let _: uom::si::f64::MassRate = crate::units::tonnes_per_hour(1.0);
+        let _: uom::si::f64::MassRate = crate::units::pounds_per_hour(1.0);
+        let _: uom::si::f64::Mass = crate::units::tonnes(1.0);
+        let _: uom::si::f64::Mass = crate::units::pounds(1.0);
+        let _: uom::si::f64::Energy = crate::units::kilojoules(1.0);
+        let _: uom::si::f64::Energy = crate::units::megajoules(1.0);
+        let _: uom::si::f64::Energy = crate::units::british_thermal_units(1.0);
+        let _: uom::si::f64::Power = crate::units::kilowatts(1.0);
+        let _: uom::si::f64::Power = crate::units::megawatts(1.0);
+        let _: uom::si::f64::Power = crate::units::mechanical_horsepower(1.0);
+        let _: uom::si::f64::Length = crate::units::feet(1.0);
+        let _: uom::si::f64::Length = crate::units::inches(1.0);
+        let _: uom::si::f64::Length = crate::units::centimeters(1.0);
+        let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_hour(1.0);
+        let _: uom::si::f64::VolumeRate = crate::units::liters_per_minute(1.0);
+        let _: uom::si::f64::VolumeRate = crate::units::gallons_per_minute(1.0);
+        let _: uom::si::f64::VolumeRate = crate::units::cubic_feet_per_minute(1.0);
+        let _: uom::si::f64::Velocity = crate::units::feet_per_second(1.0);
+        let _: uom::si::f64::MassDensity = crate::units::pounds_per_cubic_foot(1.0);
+        let _: uom::si::f64::SpecificHeatCapacity =
+            crate::units::kilojoules_per_kilogram_kelvin(1.0);
+        let _: uom::si::f64::SpecificHeatCapacity =
+            crate::units::british_thermal_units_per_pound_degree_fahrenheit(1.0);
+        let _: uom::si::f64::MolarEnergy = crate::units::kilojoules_per_mole(1.0);
+        let _: uom::si::f64::DynamicViscosity = crate::units::centipoise(1.0);
+        let _: uom::si::f64::AmountOfSubstance = crate::units::kilomoles(1.0);
     }
 }

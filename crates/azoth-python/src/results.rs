@@ -9574,6 +9574,30 @@ pub fn unit_slots() -> Vec<String> {
         .collect()
 }
 
+/// The named unit sets, as `{set id: {dimension: unit}}`.
+///
+/// The same sets a front end switches a display between, and the same table
+/// `azoth.core._units_gen.UNIT_SETS` is generated from: this function is what makes
+/// the two halves of one table comparable from Python, so a set that reads one way
+/// in Rust and another in Python is a failing test rather than a difference a
+/// reader would have to notice.
+#[pyfunction]
+#[must_use]
+pub fn unit_sets() -> std::collections::BTreeMap<String, std::collections::BTreeMap<String, String>>
+{
+    azoth_core::unit_vocab_gen::UNIT_SETS
+        .iter()
+        .map(|set| {
+            let units = set
+                .units
+                .iter()
+                .map(|(dimension, unit)| ((*dimension).to_string(), (*unit).to_string()))
+                .collect();
+            (set.id.to_string(), units)
+        })
+        .collect()
+}
+
 /// Every solver kind this crate implements, in the schema's spelling.
 ///
 /// The third leg of the same contract `warning_codes` and `unit_names` each

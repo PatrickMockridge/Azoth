@@ -62,7 +62,7 @@ chemistry that cannot run away over a relief valve that catches it.
 - **A formal layer underneath, and a gate on it.** A quantity's dimension and the
   arithmetic over it are meant to be a proved construction, so a dimension that does not
   compose fails rather than converting. What reaches Lean today is the dimension group, the
-  37-unit vocabulary, the fractional-power conventions, the raw-to-normalised derivative,
+  68-unit vocabulary, the fractional-power conventions, the raw-to-normalised derivative,
   the first-order sensitivity of a solution and the keycard's non-amplification — each
   behind an axiom gate that fails the build on a `sorry`, including one inside a vendored
   dependency. **The physics kernels are measured, not proved**, and

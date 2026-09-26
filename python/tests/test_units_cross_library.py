@@ -36,7 +36,7 @@ from typing import Any, cast
 
 import pytest
 
-from azoth.core._units_gen import SLOTS
+from azoth.core._units_gen import SLOTS, UNIT_SETS
 from azoth.core.units import ureg
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -207,3 +207,58 @@ def test_the_rust_dimension_agrees_with_the_table() -> None:
         assert tuple(rust) == exponents, (
             f"{name}: the table says {exponents} and the generated Rust says {tuple(rust)}"
         )
+
+
+def sets() -> list[dict[str, Any]]:
+    """Every unit set in the table, in table order."""
+    return cast("list[dict[str, Any]]", table()["unit_sets"])
+
+
+@pytest.mark.requires_rust
+def test_a_unit_set_names_a_declared_unit_of_the_dimension_it_switches() -> None:
+    """A set is a choice of units, and every choice has to be one this table declares.
+
+    Three ways a set could look complete and convert nothing, and each is checked
+    here for the same reason the generator refuses it: a key that is not a
+    dimension, a value that is not a declared unit, and a value whose own dimension
+    is not the key. The last is the one that would survive a glance - a set that
+    switched pressure to a *length* is a display that shows a number with the wrong
+    unit beside it, which is worse than showing the right number in the wrong one.
+    """
+    declared = {unit["id"]: unit["dimension"] for unit in units()}
+    dimensions = {dimension["id"] for dimension in table()["dimensions"]}
+    covered: set[str] | None = None
+    for unit_set in sets():
+        names = set(unit_set["units"])
+        unknown = sorted(names - dimensions)
+        assert not unknown, f"{unit_set['id']}: {unknown} are not declared dimensions"
+        for dimension, unit in unit_set["units"].items():
+            assert unit in declared, f"{unit_set['id']}: {unit!r} is not in the vocabulary"
+            assert declared[unit] == dimension, (
+                f"unit set {unit_set['id']!r} gives {dimension!r} the unit {unit!r}, "
+                f"which is a {declared[unit]}"
+            )
+        # Every set names the same dimensions, so switching to one and back is the
+        # same document rather than a document read in two units at once.
+        if covered is None:
+            covered = names
+        else:
+            assert names == covered, (
+                f"unit set {unit_set['id']!r} differs from the first set by "
+                f"{sorted(names ^ covered)}"
+            )
+
+
+@pytest.mark.requires_rust
+def test_the_two_halves_carry_one_set_of_unit_sets() -> None:
+    """The table, the generated Rust and the generated Python are one set of sets.
+
+    The Rust side is what a front end reads - the middleware's catalogue is built
+    from `azoth_core::unit_vocab_gen::UNIT_SETS` - and the Python side is its mirror,
+    so this compares all three rather than either pair: a set that reached a reader
+    in one language and not the other is exactly the drift the rest of this file
+    exists to refuse.
+    """
+    expected = {unit_set["id"]: dict(unit_set["units"]) for unit_set in sets()}
+    assert expected == UNIT_SETS, "the generated Python sets are not the table's"
+    assert _extension().unit_sets() == expected, "the generated Rust sets are not the table's"

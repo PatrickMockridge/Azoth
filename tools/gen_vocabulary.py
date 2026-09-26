@@ -192,6 +192,41 @@ LEAN_DIMENSIONS: dict[str, str] = {
     # anywhere else in this table - every other ratio here divides by a time, a
     # temperature or an amount.
     "mol/kg": "Dimension.AmountOfSubstance / Dimension.Mass",
+    # The engineering units. Every expression below is already in this map for the
+    # SI unit of the same dimension, so a row here is a *claim* that the two units
+    # carry one dimension rather than a new dimension - which is exactly what the
+    # generated theorem checks, unit by unit, against the exponents in the table.
+    "bar": "Dimension.Pressure",
+    "kPa": "Dimension.Pressure",
+    "MPa": "Dimension.Pressure",
+    "psi": "Dimension.Pressure",
+    "atm": "Dimension.Pressure",
+    "kg/h": "Dimension.Mass / Dimension.Time",
+    "t/h": "Dimension.Mass / Dimension.Time",
+    "lb/h": "Dimension.Mass / Dimension.Time",
+    "t": "Dimension.Mass",
+    "lb": "Dimension.Mass",
+    "kJ": "Dimension.Energy",
+    "MJ": "Dimension.Energy",
+    "Btu": "Dimension.Energy",
+    "kW": "Dimension.Power",
+    "MW": "Dimension.Power",
+    "hp": "Dimension.Power",
+    "ft": "Dimension.Length",
+    "in": "Dimension.Length",
+    "cm": "Dimension.Length",
+    "m**3/h": "Dimension.Volume / Dimension.Time",
+    "L/min": "Dimension.Volume / Dimension.Time",
+    "gpm": "Dimension.Volume / Dimension.Time",
+    "ft**3/min": "Dimension.Volume / Dimension.Time",
+    "ft/s": "Dimension.Speed",
+    "lb/ft**3": "Dimension.Mass / Dimension.Volume",
+    "kJ/(kg*K)": "Dimension.Energy / (Dimension.Mass * Dimension.Temperature)",
+    "Btu/(lb*degF)": "Dimension.Energy / (Dimension.Mass * Dimension.Temperature)",
+    "kJ/mol": "Dimension.Energy / Dimension.AmountOfSubstance",
+    "cP": "Dimension.Pressure * Dimension.Time",
+    "kmol": "Dimension.AmountOfSubstance",
+    "kmol/h": "Dimension.AmountOfSubstance / Dimension.Time",
 }
 
 
@@ -270,13 +305,23 @@ def load_table() -> dict[str, Any]:
         exponents = tuple(dimension["exponents"])
         quantity = UOM_TYPES[exponents]
         uom = unit.get("uom")
-        if (uom is None) != (quantity is None):
+        if uom is not None and quantity is None:
             sys.exit(
                 f"gen_vocabulary: unit {unit['id']!r} names uom path {uom!r} but "
-                f"dimension {unit['dimension']!r} maps to {quantity!r}. A unit's uom "
-                f"path and its dimension's quantity type have to agree in both "
-                f"directions, or the generated conversion and the generated assertion "
-                f"would be about different things."
+                f"dimension {unit['dimension']!r} maps to None. `quantity!` has to run "
+                f"inside `uom::si` and `system!` assembles the `Units` trait from a "
+                f"closed list, so there is no such quantity for the path to resolve to."
+            )
+        if uom is None and quantity is not None and unit.get("rust_ctor") is None:
+            sys.exit(
+                f"gen_vocabulary: unit {unit['id']!r} is a {unit['dimension']!r}, which "
+                f"uom carries as {quantity!r}, and names neither a uom path nor a "
+                f"constructor. A unit of a quantity uom carries goes through a "
+                f"hand-written constructor - uom's own where its definition is exact, "
+                f"this crate's where uom's literal is rounded - so that the magnitude it "
+                f"converts to is a definition somebody can read. `psi` and `hp` are the "
+                f"two rows that take the second road, and "
+                f"`python/tests/test_units_cross_library.py` is what tells them apart."
             )
         if uom is not None:
             module = uom.split("::")[0]
@@ -287,6 +332,47 @@ def load_table() -> dict[str, Any]:
                     f"{unit['dimension']!r} is uom's {quantity!r}, whose module is "
                     f"{snake(quantity)!r}"
                 )
+
+    # The unit sets. Three ways one could look complete and convert nothing, each
+    # refused rather than emitted: a name that is not a dimension, a unit that is not
+    # in the vocabulary, and a unit filed under a dimension it does not carry.
+    set_ids = [unit_set["id"] for unit_set in table["unit_sets"]]
+    dupes = {i for i in set_ids if set_ids.count(i) > 1}
+    if dupes:
+        sys.exit(f"gen_vocabulary: duplicate unit set id(s): {sorted(dupes)}")
+    units_by_id = {u["id"]: u for u in table["units"]}
+    covered: set[str] | None = None
+    for unit_set in table["unit_sets"]:
+        names = set(unit_set["units"])
+        unknown = sorted(names - set(by_id))
+        if unknown:
+            sys.exit(
+                f"gen_vocabulary: unit set {unit_set['id']!r} names dimension(s) "
+                f"{unknown}, which are not declared."
+            )
+        for dimension_id, unit_id in unit_set["units"].items():
+            named = units_by_id.get(unit_id)
+            if named is None:
+                sys.exit(
+                    f"gen_vocabulary: unit set {unit_set['id']!r} gives {dimension_id!r} "
+                    f"the unit {unit_id!r}, which is not in the vocabulary."
+                )
+            if named["dimension"] != dimension_id:
+                sys.exit(
+                    f"gen_vocabulary: unit set {unit_set['id']!r} gives {dimension_id!r} "
+                    f"the unit {unit_id!r}, which is a {named['dimension']}. A set that "
+                    f"switches a quantity to a unit of another quantity converts nothing."
+                )
+        if covered is None:
+            covered = names
+        elif names != covered:
+            # A dimension one set names and another does not is a dimension the
+            # switcher cannot switch back.
+            sys.exit(
+                f"gen_vocabulary: unit set {unit_set['id']!r} differs from the first "
+                f"set by {sorted(names ^ covered)}. Every set names the same dimensions, "
+                f"so that switching to one and back is the same document."
+            )
 
     return table
 
@@ -364,9 +450,14 @@ def emit_rust(table: dict[str, Any]) -> str:
         "",
         "/// Each unit's conversion from the declared unit to the SI base magnitude.",
         "///",
-        "/// A unit whose dimension uom carries goes through the hand-written",
-        "/// constructor in [`crate::units`]; one whose dimension it does not is",
-        "/// already its own SI base unit, so the conversion is the identity.",
+        "/// Three cases, and the table decides which rather than this list. A unit of",
+        "/// a dimension uom carries goes through the hand-written constructor in",
+        "/// [`crate::units`] and takes its `.value` - the constructor is uom's own",
+        "/// where uom's definition is exact, and this crate's where uom's literal is",
+        "/// rounded, which is why `psi` and `hp` reach it without a `uom` path. A unit",
+        "/// of a dimension uom does *not* carry - molar flow is the one - is not its own",
+        "/// SI base either, so its constructor returns the base magnitude directly.",
+        "/// And a unit that is already its own SI base converts by the identity.",
         "///",
         "/// There is deliberately no expected magnitude beside these. A factor is a",
         "/// number `uom` and `pint` each already know, and the check that these are",
@@ -378,7 +469,13 @@ def emit_rust(table: dict[str, Any]) -> str:
     ]
     for unit in units:
         ctor = unit.get("rust_ctor")
-        body = "|v| v" if ctor is None else f"|v| crate::units::{ctor}(v).value"
+        quantity = UOM_TYPES[tuple(by_id[unit["dimension"]]["exponents"])]
+        if quantity is not None:
+            body = f"|v| crate::units::{ctor}(v).value"
+        elif ctor is not None:
+            body = f"|v| crate::units::{ctor}(v)"
+        else:
+            body = "|v| v"
         out.append(f"    ({json.dumps(unit['id'])}, {body}),")
     out += [
         "];",
@@ -413,6 +510,44 @@ def emit_rust(table: dict[str, Any]) -> str:
         "        .find(|(n, _)| *n == name)",
         "        .map(|(_, d)| *d)",
         "}",
+        "",
+        "/// One named unit set: a choice of one unit per dimension, and what to call it.",
+        "///",
+        "/// The dimensions a set names are the ones with a second unit worth reading -",
+        "/// a pressure, a flow, a duty. A dimension absent from every set has none, and",
+        "/// is shown in the unit the library computed it in rather than in a blank.",
+        "pub struct UnitSet {",
+        "    /// The set's id, e.g. `si`.",
+        "    pub id: &'static str,",
+        "    /// The set's name as a reader sees it, e.g. `SI`.",
+        "    pub name: &'static str,",
+        "    /// One `(dimension, unit)` per dimension the set names.",
+        "    pub units: &'static [(&'static str, &'static str)],",
+        "}",
+        "",
+        "/// The unit sets a caller may switch between, in the table's order.",
+        "///",
+        "/// Every set names the same dimensions - the generator refuses one that does",
+        "/// not - so switching to a set and back is the same document, and a reader",
+        "/// comparing two panes is comparing two units of one quantity rather than two",
+        "/// quantities.",
+        "pub const UNIT_SETS: &[UnitSet] = &[",
+    ]
+    for unit_set in table["unit_sets"]:
+        out += [
+            "    UnitSet {",
+            f"        id: {json.dumps(unit_set['id'])},",
+            f"        name: {json.dumps(unit_set['name'])},",
+            "        units: &[",
+        ]
+        for dimension_id, unit_id in unit_set["units"].items():
+            out.append(f"            ({json.dumps(dimension_id)}, {json.dumps(unit_id)}),")
+        out += [
+            "        ],",
+            "    },",
+        ]
+    out += [
+        "];",
         "",
         "#[cfg(test)]",
         "mod dimension_assertions {",
@@ -482,6 +617,21 @@ def emit_python(table: dict[str, Any]) -> str:
         "#: against this rather than reading the schema, which is a dev-time artefact",
         "#: and does not ship in the wheel.",
         "UNIT_VOCABULARY: Final[tuple[str, ...]] = tuple(CANONICAL_UNITS)",
+        "",
+        "#: The named unit sets, each mapping a dimension to the unit it is read in.",
+        "#: The same sets the Rust side carries in `azoth_core::unit_vocab_gen`, and",
+        "#: generated from the same table so the two halves cannot offer a caller",
+        "#: different ones. A dimension absent here has no engineering alternative and",
+        "#: is read in the unit it was computed in.",
+        "UNIT_SETS: Final[dict[str, dict[str, str]]] = {",
+    ]
+    for unit_set in table["unit_sets"]:
+        out.append(f"    {json.dumps(unit_set['id'])}: {{")
+        for dimension_id, unit_id in unit_set["units"].items():
+            out.append(f"        {json.dumps(dimension_id)}: {json.dumps(unit_id)},")
+        out.append("    },")
+    out += [
+        "}",
         "",
         "",
         "#: `SLOTS` is the table's slot order, and it is here because something reads",

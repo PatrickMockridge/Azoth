@@ -59,12 +59,83 @@ CANONICAL_UNITS: Final[dict[str, str]] = {
     "1/K**2": "1/kelvin**2",
     "1/K**3": "1/kelvin**3",
     "mol/kg": "mole/kilogram",
+    "bar": "bar",
+    "kPa": "kPa",
+    "MPa": "MPa",
+    "psi": "psi",
+    "atm": "atm",
+    "kg/h": "kg/hour",
+    "t/h": "t/hour",
+    "lb/h": "lb/hour",
+    "t": "tonne",
+    "lb": "lb",
+    "kJ": "kJ",
+    "MJ": "MJ",
+    "Btu": "Btu",
+    "kW": "kW",
+    "MW": "MW",
+    "hp": "hp",
+    "ft": "ft",
+    "in": "in",
+    "cm": "cm",
+    "m**3/h": "m**3/hour",
+    "L/min": "liter/minute",
+    "gpm": "gallon/minute",
+    "ft**3/min": "ft**3/min",
+    "ft/s": "ft/s",
+    "lb/ft**3": "lb/ft**3",
+    "kJ/(kg*K)": "kJ/(kg*K)",
+    "Btu/(lb*degF)": "Btu/(lb*degF)",
+    "kJ/mol": "kJ/mol",
+    "cP": "cP",
+    "kmol": "kmol",
+    "kmol/h": "kmol/hour",
 }
 
 #: The canonical unit strings, in table order. The keycard loader validates
 #: against this rather than reading the schema, which is a dev-time artefact
 #: and does not ship in the wheel.
 UNIT_VOCABULARY: Final[tuple[str, ...]] = tuple(CANONICAL_UNITS)
+
+#: The named unit sets, each mapping a dimension to the unit it is read in.
+#: The same sets the Rust side carries in `azoth_core::unit_vocab_gen`, and
+#: generated from the same table so the two halves cannot offer a caller
+#: different ones. A dimension absent here has no engineering alternative and
+#: is read in the unit it was computed in.
+UNIT_SETS: Final[dict[str, dict[str, str]]] = {
+    "si": {
+        "pressure": "Pa",
+        "mass_rate": "kg/s",
+        "molar_flow": "mol/s",
+        "amount": "mol",
+        "mass": "kg",
+        "energy": "J",
+        "power": "W",
+        "length": "m",
+        "volume_rate": "m**3/s",
+        "velocity": "m/s",
+        "mass_density": "kg/m**3",
+        "specific_heat_capacity": "J/(kg*K)",
+        "molar_energy": "J/mol",
+        "dynamic_viscosity": "Pa*s",
+    },
+    "field": {
+        "pressure": "psi",
+        "mass_rate": "lb/h",
+        "molar_flow": "kmol/h",
+        "amount": "kmol",
+        "mass": "lb",
+        "energy": "Btu",
+        "power": "hp",
+        "length": "ft",
+        "volume_rate": "gpm",
+        "velocity": "ft/s",
+        "mass_density": "lb/ft**3",
+        "specific_heat_capacity": "Btu/(lb*degF)",
+        "molar_energy": "kJ/mol",
+        "dynamic_viscosity": "cP",
+    },
+}
 
 
 #: `SLOTS` is the table's slot order, and it is here because something reads
