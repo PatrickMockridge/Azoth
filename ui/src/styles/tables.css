@@ -57,6 +57,54 @@
   color: var(--warn);
 }
 
+/* A kernel's caveat, which is the library's sentence about a number it did return - and not a
+   checker's diagnostic, which is about the document. */
+.caveat {
+  padding: var(--s3) var(--s5);
+  border-bottom: 1px solid var(--line);
+  color: var(--warn);
+  font-size: var(--fs-xs);
+}
+
+.caveat .code {
+  font-family: var(--font-mono);
+}
+
+.caveat .where {
+  margin-left: var(--s3);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.caveat p {
+  margin: var(--s2) 0 0;
+  color: var(--text);
+}
+
+/* A profile drawn beside the table that holds it: the shape at a glance, the numbers beside it. */
+.spark {
+  padding: var(--s3) var(--s5) 0;
+}
+
+.spark-label {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: 28px;
+}
+
+.chart polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+
 /* A value in a cell that is also a way somewhere: a connection's stream, a stream's unit op. */
 .link {
   padding: 0;

@@ -241,6 +241,31 @@ describe("the editor", () => {
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
   });
 
+  it("shows the duty a heater reached, under the field name its own model gives it", async () => {
+    stubFetch();
+    const { container } = await open();
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+
+    fireEvent.click(container.querySelector<HTMLElement>('[data-id="instance:hx1"]') as HTMLElement);
+    await waitFor(() => expect(screen.getAllByText("outlet_temperature").length).toBeGreaterThan(0));
+
+    // **The sheet is offered because the run published a result**, and it says the field by the
+    // name the operation's model declares - which is the name a case file and the Python half use.
+    // The number is the library's, in the unit the model named: this is the whole point of carrying
+    // a result on the wire, since the duty is on no outlet stream.
+    fireEvent.click(screen.getByRole("tab", { name: "Results" }));
+    const rows = [...container.querySelectorAll("#sheet-results tbody tr")].map(
+      (row) => row.textContent ?? "",
+    );
+    const duty = rows.find((text) => text.startsWith("outlet_duty"));
+    expect(duty).toBeDefined();
+    expect(duty).toContain("W");
+    // And the heater here is *cooling* - the pump's outlet is above the 320 K the document states -
+    // so the duty is negative, which is the model's own sign and not this front end's.
+    expect(duty).toContain("-");
+  });
+
   it("lists every stream the document wires, and Solve changes the values and not the rows", async () => {
     stubFetch();
     const { container } = await open();

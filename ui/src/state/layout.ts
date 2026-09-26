@@ -42,10 +42,22 @@ export function kindOf(node: GraphNode | null, edge: GraphEdge | null): Kind | n
  * **Connections is last**, as it is in the unit-op window this is imitating: the design is what a
  * person came for and the wiring is what they check afterwards.
  */
-export function tabsFor(kind: Kind, edge: GraphEdge | null): readonly TabId[] {
+export function tabsFor(
+  kind: Kind,
+  edge: GraphEdge | null,
+  /**
+   * The sheets a *result* adds, inserted after the first one.
+   *
+   * **The order is this file's and the membership is not.** Which result sheets exist depends on
+   * what the run published (`state/results.ts` decides), and where they sit is a rule about the
+   * window - so a column's stage table appears where a person looks for the operation's own answer,
+   * between its design and its wiring, without this module knowing what a stage is.
+   */
+  extra: readonly TabId[] = [],
+): readonly TabId[] {
   switch (kind) {
     case "instance":
-      return ["design", "worksheet", "connections"];
+      return ["design", ...extra, "worksheet", "connections"];
     case "feed":
     case "product":
       return ["conditions", "composition", "connections"];

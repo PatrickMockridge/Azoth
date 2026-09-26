@@ -1,13 +1,23 @@
 import { useState } from "react";
 
 import { kindOf, tabFor, tabsFor, type Kind, type TabId } from "../../state/layout";
+import { resultOf, resultTabs } from "../../state/results";
 import type { EditorCommand } from "../../wire/commands";
-import type { Catalogue, Envelope, Form, GraphEdge, GraphNode } from "../../wire/types";
+import type {
+  Catalogue,
+  Envelope,
+  Form,
+  GraphEdge,
+  GraphNode,
+  UnitResult,
+} from "../../wire/types";
 import { CompositionSheet } from "./CompositionSheet";
 import { ConditionsSheet } from "./ConditionsSheet";
 import { ConnectionsSheet } from "./ConnectionsSheet";
 import { DesignSheet } from "./DesignSheet";
 import { DockTabs } from "./DockTabs";
+import { ResultsSheet } from "./ResultsSheet";
+import { StagesSheet } from "./StagesSheet";
 import { TearSheet } from "./TearSheet";
 import { WorksheetSheet } from "./WorksheetSheet";
 
@@ -59,7 +69,13 @@ export function PropertyView({
     );
   }
 
-  const available = tabsFor(kind, edge);
+  /**
+   * **The result sheets are the run's and the rest are the document's**, so a document that has not
+   * run offers none of them rather than offering empty ones - and a unit operation whose answer is
+   * its streams publishes no result, so it offers none either.
+   */
+  const result = kind === "instance" ? resultOf(envelope, node?.data.name ?? "") : undefined;
+  const available = tabsFor(kind, edge, resultTabs(result));
   const active = tabFor(kind, remembered, available);
   const form: Form | undefined =
     node === null ? undefined : catalogue?.unit_ops.find((entry) => entry.id === node.data.unit);
@@ -76,7 +92,7 @@ export function PropertyView({
         tabs={available.map((id) => ({ id, label: LABELS[id] }))}
         onTab={(id) => setRemembered({ ...remembered, [kind]: id as TabId })}
       />
-      {sheet(active, { catalogue, envelope, node, edge, onCommand, onSelect })}
+      {sheet(active, { catalogue, envelope, node, edge, result, onCommand, onSelect })}
     </>
   );
 }
@@ -123,16 +139,21 @@ function sheet(
     envelope: Envelope;
     node: GraphNode | null;
     edge: GraphEdge | null;
+    result: UnitResult | undefined;
     onCommand: (command: EditorCommand) => void;
     onSelect: (id: string | null) => void;
   },
 ) {
-  const { catalogue, envelope, node, edge, onCommand, onSelect } = context;
+  const { catalogue, envelope, node, edge, result, onCommand, onSelect } = context;
   switch (active) {
     case "design":
       return node === null ? null : (
         <DesignSheet catalogue={catalogue} node={node} onCommand={onCommand} />
       );
+    case "results":
+      return result === undefined ? null : <ResultsSheet result={result} />;
+    case "stages":
+      return result === undefined ? null : <StagesSheet result={result} />;
     case "conditions":
       return node === null ? null : (
         <ConditionsSheet envelope={envelope} node={node} onCommand={onCommand} />
