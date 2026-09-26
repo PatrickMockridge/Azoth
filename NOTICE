@@ -143,10 +143,10 @@ Model Context Protocol - the specification's JSON Schema
 `azoth mcp` is a hand-rolled implementation of a published protocol, and the one thing such an
 implementation cannot check about itself is whether it is *conformant*: it writes what its author
 read. The specification publishes a JSON Schema per revision, whose `$defs` name the message types,
-so `python/tests/validation/test_mcp_conformance.py` validates every message the server writes
-against the definition for the revision that message belongs to. That is why it is vendored rather
-than fetched at test time: the schema is the *pin*, and a check that fetched it would pass on a
-revision nobody has read.
+so `python/tests/validation/test_mcp_conformance.py` validates every message **both transports**
+write - `azoth mcp` over stdio and `POST /mcp` on `azoth serve` - against the definition for the
+revision that message belongs to. That is why it is vendored rather than fetched at test time: the
+schema is the *pin*, and a check that fetched it would pass on a revision nobody has read.
 
 **Two files, because the protocol has two lanes.** `2026-07-28` removed the `initialize` handshake
 and has no `InitializeResult`; `2025-11-25` has no `server/discover`. The server answers both, so

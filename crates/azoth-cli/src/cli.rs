@@ -40,7 +40,8 @@ pub enum Command {
     /// Serve the flowsheet as MCP tools over stdio, for an agent.
     Mcp(McpArgs),
 
-    /// Serve one flowsheet over HTTP, for clients that cannot run the kernels themselves.
+    /// Serve one flowsheet over HTTP, for clients that cannot run the kernels themselves: the
+    /// editor's calls at `POST /rpc`, and the MCP tools at `POST /mcp` over the same document.
     Serve(ServeArgs),
 }
 

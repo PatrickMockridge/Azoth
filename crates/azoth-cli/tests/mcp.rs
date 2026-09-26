@@ -72,6 +72,9 @@ impl Client {
     }
 
     /// One request, and the one line it answers with.
+    ///
+    /// **Exactly as given**, so a test can send a request that is missing what the revision
+    /// requires — which is the only way to check that the server refuses it.
     fn call(&mut self, method: &str, params: Value) -> Value {
         let id = method.to_string();
         let request = json!({ "jsonrpc": "2.0", "id": id, "method": method, "params": params });
@@ -85,9 +88,15 @@ impl Client {
         serde_json::from_str(&line).unwrap_or_else(|error| panic!("{error}\n{line}"))
     }
 
+    /// One request in the current revision, which carries its protocol metadata on every call.
+    fn modern(&mut self, method: &str, mut params: Value) -> Value {
+        params["_meta"] = meta();
+        self.call(method, params)
+    }
+
     /// A request that expects a single `result`.
     fn result(&mut self, method: &str, params: Value) -> Value {
-        let response = self.call(method, params);
+        let response = self.modern(method, params);
         response
             .get("result")
             .cloned()
@@ -96,11 +105,20 @@ impl Client {
 
     /// One tool call's arguments, as `tools/call` takes them.
     fn tool(&mut self, name: &str, arguments: Value) -> Value {
-        self.call(
+        self.modern(
             "tools/call",
             json!({ "name": name, "arguments": arguments }),
         )
     }
+}
+
+/// The `_meta` the current revision requires: both keys, because the schema's own `required` array
+/// names both — `clientCapabilities` even though this server consumes no client capability.
+fn meta() -> Value {
+    json!({
+        "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+        "io.modelcontextprotocol/clientCapabilities": {},
+    })
 }
 
 impl Drop for Client {
@@ -134,6 +152,9 @@ fn the_handshake_lane_a_2025_client_opens_with() {
         refused["error"]["data"]["supported"],
         json!(["2026-07-28", "2025-11-25"])
     );
+    // **And the version that was asked for**, which the schema requires beside the list: a refusal
+    // naming only what this server speaks leaves a client unable to say what was refused.
+    assert_eq!(refused["error"]["data"]["requested"], "1900-01-01");
 }
 
 #[test]
@@ -153,11 +174,87 @@ fn the_discovery_lane_the_current_revision_requires() {
 
     // And the current revision's per-request version travels in `_meta`: one it does not speak is
     // refused there rather than at a handshake.
-    let refused = client.call(
-        "tools/list",
-        json!({ "_meta": { "io.modelcontextprotocol/protocolVersion": "1999-01-01" } }),
-    );
+    let mut asked = meta();
+    asked["io.modelcontextprotocol/protocolVersion"] = json!("1999-01-01");
+    let refused = client.call("tools/list", json!({ "_meta": asked }));
     assert_eq!(refused["error"]["code"], -32022);
+    assert_eq!(
+        refused["error"]["data"]["supported"],
+        json!(["2026-07-28", "2025-11-25"])
+    );
+    assert_eq!(refused["error"]["data"]["requested"], "1999-01-01");
+}
+
+/// **A request in the current revision carries its metadata, and one that does not is malformed.**
+///
+/// The requirement is the schema's — `_meta` is required on a request, and the request-metadata
+/// object requires both `protocolVersion` and `clientCapabilities` — and the specification's answer
+/// to a missing required field is `-32602` rather than the version refusal's `-32022`. Before this,
+/// a request with no `_meta` at all was served and its version was never judged.
+#[test]
+fn a_modern_request_without_its_metadata_is_malformed() {
+    let mut client = Client::start(&[]);
+
+    let bare = client.call("tools/list", json!({}));
+    assert_eq!(bare["error"]["code"], -32602);
+    assert!(
+        bare["error"]["message"]
+            .as_str()
+            .expect("a sentence")
+            .contains("_meta"),
+        "{bare}"
+    );
+
+    // One of the two keys is not enough, and the refusal names the one that is missing.
+    let half = client.call(
+        "tools/list",
+        json!({ "_meta": { "io.modelcontextprotocol/protocolVersion": "2026-07-28" } }),
+    );
+    assert_eq!(half["error"]["code"], -32602);
+    assert!(
+        half["error"]["message"]
+            .as_str()
+            .expect("a sentence")
+            .contains("clientCapabilities"),
+        "{half}"
+    );
+
+    // Missing it is a *protocol* error, which is what makes it a `400` on HTTP rather than a
+    // result a caller has to read.
+    assert!(bare.get("result").is_none());
+}
+
+/// **`ping` belongs to the handshake lane, and the schema is what says so.**
+///
+/// `2025-11-25` defines a `PingRequest`; `2026-07-28` defines none and never names `ping` — a
+/// modern client has `server/discover`, which this server already answers. So the lane a `ping` is
+/// served in is decided by what the request carries: with `_meta` it is a modern request naming a
+/// method that revision does not have, and without it it is the handshake lane's liveness check.
+#[test]
+fn ping_is_the_handshake_lanes_method() {
+    let mut client = Client::start(&[]);
+
+    // Without `_meta` on a connection that never opened: a modern request missing its metadata.
+    let unopened = client.call("ping", json!({}));
+    assert_eq!(unopened["error"]["code"], -32602);
+
+    // A `2025-11-25` client opens with the handshake, and its `ping` is then answered — sent raw,
+    // because `_meta` is what would put it in the other lane.
+    client.result("initialize", json!({ "protocolVersion": "2025-11-25" }));
+    let answered = client.call("ping", json!({}));
+    assert_eq!(answered["result"]["resultType"], "complete");
+
+    // And a request that *does* carry `_meta` is modern whatever came before it, where `ping` is
+    // not a method at all.
+    let modern = client.modern("ping", json!({}));
+    assert_eq!(modern["error"]["code"], -32601);
+    assert!(
+        !modern["error"]["data"]["methods"]
+            .as_array()
+            .expect("a list")
+            .contains(&json!("ping")),
+        "the modern lane's own method list is what it is refused with: {modern}"
+    );
 }
 
 /// **The claim the whole file exists for.** The tools the transport serves are the schema's own,
@@ -314,7 +411,7 @@ fn the_three_refusals_stay_three_things() {
     assert!(codes.contains(&"unknown_unit_op"), "{codes:?}");
 
     // An unknown method, and a line that is not JSON at all.
-    let missing = client.call("tools/write", json!({}));
+    let missing = client.modern("tools/write", json!({}));
     assert_eq!(missing["error"]["code"], -32601);
 }
 
@@ -322,7 +419,7 @@ fn the_three_refusals_stay_three_things() {
 fn the_process_ends_when_its_stdin_does() {
     let mut client = Client::start(&[]);
     // One exchange, so the server is provably running...
-    client.result("ping", json!({}));
+    client.result("server/discover", json!({}));
     // ...and then the write end closes, which is the end of its input.
     client.close_stdin();
     let status = client.child.wait().expect("the server exits");

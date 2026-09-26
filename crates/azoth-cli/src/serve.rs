@@ -1,8 +1,9 @@
 //! `azoth serve` — the same session, over HTTP.
 //!
-//! **The second transport and not a second surface.** The calls are [`crate::session::Session`]'s,
-//! the answer is the envelope, and this file is a request parser and a response writer: it decides
-//! nothing about a flowsheet.
+//! **A transport and not a second surface.** The calls are [`crate::session::Session`]'s, the answer
+//! is the envelope, and this file is a request parser and a response writer: it decides nothing
+//! about a flowsheet. It serves two doors — the editor's `/rpc` and the agent's `/mcp` — over one
+//! session, and `crate::mcp_http` owns the second door's protocol.
 //!
 //! **Why a hosted session exists at all**, given that the library is the backend and the browser
 //! runs the kernels itself as wasm: a *hosted* editor, where the document lives on one machine and
@@ -23,12 +24,23 @@
 //! POST /rpc   {"command": {…}|null, "run": bool?, "order": "insertion"|"topological"?}
 //!          →  200  the envelope
 //!          →  400  {"error": "…"}      the *request* or the *call* was refused
+//!
+//! POST /mcp   one JSON-RPC message, in the current revision of MCP
+//!          →  200  the message's answer
+//!          →  202  accepted, and a notification has no answer
+//!          →  400, 403, 404, 405, 406   see `crate::mcp_http`
 //! ```
 //!
 //! A `command` the checker then refuses is **200 with `ok: false`** — the same three-way split the
 //! MCP transport makes, in HTTP's own terms: a call that cannot take effect is a client error to
 //! fix, while a document that cannot run is a state to show. `null` for `command` asks for the
 //! envelope as it stands, which is what a client polls after somebody else's edit.
+//!
+//! **`/mcp` is the same session behind a second door**, and the rules it adds are the ones its
+//! protocol owns rather than ones about a flowsheet: a required protocol-version header that has to
+//! agree with the body, a handshake this revision removed, and a status for each refusal. It is in
+//! its own module because it is a different protocol speaking over the same socket rather than
+//! another route of this one.
 //!
 //! **Hand-rolled, and the cost is the same one the MCP transport named.** HTTP/1.1 is a large
 //! standard and this is a request line, a header block and a `Content-Length` body, answered with
@@ -46,8 +58,15 @@ use serde_json::{Value, json};
 
 use crate::session::Session;
 
-/// The request path every call goes to. One route, because there is one kind of call.
+/// The request path the editor's calls go to. One route, because there is one kind of call.
 const ROUTE: &str = "/rpc";
+
+/// The request path an agent's calls go to — the same session, the same envelope, a second door.
+///
+/// **The two routes are one document.** An edit through `/mcp` is visible to `/rpc` on the next
+/// request and the other way round, because there is one `Session` behind both; that is what makes
+/// this a second door rather than a second server, and it is a test rather than a claim.
+const MCP_ROUTE: &str = "/mcp";
 
 /// The largest body accepted, in bytes.
 ///
@@ -131,11 +150,23 @@ fn handle(
             ),
         };
     }
+    if request.path == MCP_ROUTE {
+        // The agent's door, whose rules are its own because its protocol is: the status a refusal
+        // is served with is the specification's, and the header checks are HTTP's rather than the
+        // command model's. What is *not* here is anything about a flowsheet.
+        return match crate::mcp_http::answer(&request, cors.as_deref(), session) {
+            crate::mcp_http::Answer::Reply { status, body } => {
+                write_json(&mut writer, status, &body, cors.as_deref())
+            }
+            // A notification: accepted, and there is nothing to answer with.
+            crate::mcp_http::Answer::Accepted => write_raw(&mut writer, 202, "", cors.as_deref()),
+        };
+    }
     if request.method != "POST" || request.path != ROUTE {
         return write_json(
             &mut writer,
             404,
-            &json!({ "error": format!("no route; every call is a POST to {ROUTE}") }),
+            &json!({ "error": format!("no route; every call is a POST to {ROUTE} or {MCP_ROUTE}") }),
             cors.as_deref(),
         );
     }
@@ -205,15 +236,17 @@ fn dispatch(session: &mut Session, body: &Value) -> std::result::Result<Value, S
 }
 
 /// The parts of a request this server reads, and nothing else.
-struct Request {
-    method: String,
-    path: String,
+pub(crate) struct Request {
+    pub(crate) method: String,
+    pub(crate) path: String,
     headers: Vec<(String, String)>,
-    body: Vec<u8>,
+    pub(crate) body: Vec<u8>,
 }
 
 impl Request {
-    fn header(&self, name: &str) -> Option<String> {
+    /// A header's value, by name and **case-insensitively**: HTTP field names are, and a client
+    /// that spells `mcp-method` is a conforming one.
+    pub(crate) fn header(&self, name: &str) -> Option<String> {
         self.headers
             .iter()
             .find(|(key, _)| key.eq_ignore_ascii_case(name))
@@ -227,7 +260,7 @@ impl Request {
 /// A sentence for anything the parser will not guess at: a request line that is not three parts, a
 /// header without a colon, a `Content-Length` that is not a number, a body longer than
 /// [`MAX_BODY`], or a body that ends early.
-fn read_request(reader: &mut impl BufRead) -> std::result::Result<Request, String> {
+pub(crate) fn read_request(reader: &mut impl BufRead) -> std::result::Result<Request, String> {
     let mut line = String::new();
     reader
         .read_line(&mut line)
@@ -310,16 +343,30 @@ fn write_raw(
 ) -> std::result::Result<(), String> {
     let reason = match status {
         200 => "OK",
+        202 => "Accepted",
         204 => "No Content",
         400 => "Bad Request",
+        // The one status here no route of this server returns yet: `crate::mcp_http`'s payment
+        // gate is dormant and answers nothing, and this is the status its seam would carry.
+        402 => "Payment Required",
         403 => "Forbidden",
+        404 => "Not Found",
+        405 => "Method Not Allowed",
+        406 => "Not Acceptable",
         _ => "Not Found",
     };
     let cors = cors.unwrap_or_default();
+    // A response with nothing in it has no content to describe: a `Content-Type` on an empty body
+    // is a claim about bytes that are not there.
+    let content_type = if body.is_empty() {
+        String::new()
+    } else {
+        "Content-Type: application/json\r\n".to_string()
+    };
     let response = format!(
         "HTTP/1.1 {status} {reason}\r\n\
          {cors}\
-         Content-Type: application/json\r\n\
+         {content_type}\
          Content-Length: {}\r\n\
          Connection: close\r\n\
          \r\n\
@@ -330,4 +377,41 @@ fn write_raw(
         .write_all(response.as_bytes())
         .and_then(|()| writer.flush())
         .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn a_request() -> Request {
+        Request {
+            method: "POST".to_string(),
+            path: MCP_ROUTE.to_string(),
+            headers: Vec::new(),
+            body: Vec::new(),
+        }
+    }
+
+    /// **The payment gate refuses nothing, and that is measured rather than assumed.** The seam is
+    /// dormant because this server does not charge — there is no token, no issuer and no quota — and
+    /// a dormant branch with no test is the shape this repository's gates exist to catch.
+    #[test]
+    fn the_payment_gate_refuses_nothing_today() {
+        assert!(crate::mcp_http::payment_refusal(&a_request()).is_none());
+    }
+
+    /// **And the status it would answer with is renderable**, which is the other half: the reason
+    /// map is what decides whether a client is told "payment required" or "not found", and no route
+    /// returns it yet.
+    #[test]
+    fn the_payment_required_status_is_renderable() {
+        let mut written = Vec::new();
+        write_raw(&mut written, 402, r#"{"error":"payment required"}"#, None).expect("it writes");
+        let text = String::from_utf8(written).expect("it is text");
+        assert!(
+            text.starts_with("HTTP/1.1 402 Payment Required\r\n"),
+            "{text}"
+        );
+        assert!(text.contains("Connection: close"), "{text}");
+    }
 }

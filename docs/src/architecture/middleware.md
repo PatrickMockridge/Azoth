@@ -71,17 +71,19 @@ only.
 | a browser | `crates/azoth-wasm`, compiled with `wasm-bindgen` and carrying its own palette and databank — no fetch, no filesystem | a Node driver over the built module, in the crate |
 | a notebook | `azoth.process.Session`, which is the same `Workspace` as a Python object, with `forms()` and `tools()` beside it | `python/tests/test_process.py` |
 | a shell | `azoth forms` and `azoth edit --flowsheet F --command JSON [--run] [--json]` | `crates/azoth-cli/tests/wire.rs` |
-| an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field |
-| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope | `crates/azoth-cli/tests/serve.rs` |
+| an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope — and the same messages again at `POST /mcp` on `azoth serve`, for a client that cannot start a process | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field, and `tests/mcp_http.rs` for the HTTP lane |
+| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope — it hosts the editor's `POST /rpc` and the agent's `POST /mcp` over **one** `Session` | `crates/azoth-cli/tests/serve.rs`, and `tests/mcp_http.rs` for the MCP endpoint |
 
 `--json` prints the envelope, which is byte for byte the object a browser is handed — so the CLI
 is a way to look at the wire without a front-end, and a way to capture a fixture for one.
 
-**The two network transports call the same code.** `azoth mcp` and `azoth serve` both hold a
-`crate::session::Session` and hand it a tool name and its arguments; neither knows what an edit is,
-and the only thing that differs between them is how a refusal is *expressed* — a JSON-RPC error
-code, or an HTTP status. A second dispatch table, a second place to read a command, is what that
-shared session exists to make impossible.
+**The network transports call the same code.** `azoth mcp`, `azoth serve`'s `/rpc` and its `/mcp`
+all hold a `crate::session::Session` and hand it a tool name and its arguments; none knows what an
+edit is, and what differs between them is how a refusal is *expressed* — a JSON-RPC error code, an
+HTTP status, or a status the MCP transport's own specification fixes. **`/rpc` and `/mcp` are one
+`Session` in one process**, so an edit through either is visible through the other and an agent and
+a person are looking at the same document. A second dispatch table, a second place to read a
+command, is what that shared session exists to make impossible.
 
 ## The GUI
 
@@ -122,7 +124,9 @@ descriptions for the tools, derived from the command model (`list_unit_ops`, `ru
 words — one tool per command, in the code), and an in-process runner that executes them against
 the same session a human edits. It is hosted twice — a Jupyter/Colab cell and a GUI side panel —
 and an MCP server is a projection of the same schema — `azoth mcp`, over stdio, for one document
-at a time.
+at a time. **The same projection is served over HTTP** at `POST /mcp` on `azoth serve`, which
+speaks the current protocol revision only: the handshake revisions are the stdio door's, one
+process away, and an HTTP client that asks for one is told so rather than left guessing.
 
 **Only edits are tools.** Every call returns the whole envelope, so reading a stream is reading the
 answer to the call that changed it, and loading, saving and validating are the session's own
@@ -133,21 +137,36 @@ openings rather than edits to it. A read tool would return the same document as 
 Named with the class that would close each, because a page that lists only what works is a page
 that reads as finished.
 
-- **MCP resources, and a transport other than stdio.** The tools are served; a *resource* is a
-  second surface for a document every call already returns, with a URI grammar to invent and a
-  cache a client may serve stale — which is what `dirty` exists to prevent. The palette is already
-  `add_instance`'s `unit` enum, and an HTTP transport for MCP is the same kind of not-built. **The
+- **MCP resources.** The tools are served; a *resource* is a second surface for a document every
+  call already returns, with a URI grammar to invent and a cache a client may serve stale — which is
+  what `dirty` exists to prevent. The palette is already `add_instance`'s `unit` enum. **The
   messages are checked against the specification now**: its JSON Schema for each revision is
   vendored under `python/tests/validation/vendor/mcp/`, and `test_mcp_conformance.py` holds every
-  message the server writes to the definition for the revision that message belongs to — two
+  message both transports write to the definition for the revision that message belongs to — two
   schemas because the protocol has two lanes, since `2026-07-28` removed the handshake and
-  `2025-11-25` has no discovery. What that cannot see is a *new* revision: the vendored file is the
-  pin, so upstream moving is invisible until somebody re-fetches it.
+  `2025-11-25` has no discovery, and two transports because `POST /mcp` writes the same messages as
+  stdio. What that cannot see is a *new* revision: the vendored file is the pin, so upstream moving
+  is invisible until somebody re-fetches it.
+- **Streaming, and the things that only exist to carry a stream.** `POST /mcp` answers with one
+  JSON object, which the specification allows the server to choose; the other option is a
+  request-scoped SSE stream, and its reason to exist is a `notifications/progress` while a long call
+  runs. Every tool here is synchronous and emits none, so a stream would carry exactly one event, and
+  cancellation-by-disconnect — which closing that stream *is* — has nothing to cancel.
+  `subscriptions/listen`, whose whole response is an open stream, needs a notification source and
+  there is none: no resources, no list changes. `x-mcp-header` annotations are a server's option and
+  this one publishes none, so there is nothing to mirror into `Mcp-Param-*` and nothing to validate.
+  The legacy lane over HTTP — a session id, a standalone GET stream, `Last-Event-ID` resumption — is
+  deliberately not built either: this endpoint is modern-only and says so, and the handshake is at
+  the stdio door.
 - **Authentication, and who edited what.** `azoth serve` hosts one document over HTTP, and what it
   does not have is named in its own module: no identity, no conflict resolution beyond the order
   requests arrive in, no TLS. It binds `127.0.0.1` and refuses every origin it was not told to
   allow, which is the posture a single-user local tool can defend — anything past that is a
-  deployment, and a deployment is not built.
+  deployment, and a deployment is not built. **The seam a tokenized deployment needs exists and is
+  dormant**: `mcp_http::payment_refusal` is called on every request and refuses nothing, because
+  this server has no token, no issuer and no quota — and `402 Payment Required` is in the status
+  map beside it, because the transport must be able to answer *payment required* rather than *bad
+  request*, which are different instructions to a client. A test drives both halves.
 - **A published distribution, and the two things only a person can do.** The wheel and the sdist
   are built, signed, verified and — by the `pypi` job, on a `v*` tag — uploaded to the index under
   the name **`azoth-engine`**, which Trusted Publishing exchanges this workflow's OIDC token for.
