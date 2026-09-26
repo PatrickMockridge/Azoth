@@ -368,6 +368,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(process::absorption_column, m)?)?;
     m.add_function(wrap_pyfunction!(process::stripping_column, m)?)?;
     m.add_function(wrap_pyfunction!(process::packed_column, m)?)?;
+    m.add_function(wrap_pyfunction!(process::rate_based_packed_column, m)?)?;
     m.add_function(wrap_pyfunction!(process::heat_exchanger, m)?)?;
     m.add_function(wrap_pyfunction!(process::throttling_valve, m)?)?;
     m.add_function(wrap_pyfunction!(process::splitter, m)?)?;

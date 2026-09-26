@@ -64,10 +64,10 @@ use azoth_process::{
     AbsorptionColumnResult, ComponentSplitterResult, CompressorResult, CoolerResult,
     DistillationColumnResult, EjectorResult, ExpanderResult, FilterResult, FlareResult,
     GasScrubberResult, GibbsReactorResult, HeatExchangerResult, HeaterResult, ManifoldResult,
-    MixerResult, PackedColumnResult, PlugFlowReactorResult, PumpResult, SeparatorResult,
-    ShortcutDistillationColumnResult, SplitterResult, StirredTankReactorResult,
-    StrippingColumnResult, TankResult, ThreePhaseSeparatorResult, ThrottlingValveResult,
-    pipe::PipeResult,
+    MixerResult, PackedColumnResult, PlugFlowReactorResult, PumpResult,
+    RateBasedPackedColumnResult, SeparatorResult, ShortcutDistillationColumnResult, SplitterResult,
+    StirredTankReactorResult, StrippingColumnResult, TankResult, ThreePhaseSeparatorResult,
+    ThrottlingValveResult, pipe::PipeResult,
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
@@ -9722,6 +9722,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         AbsorptionColumnResult::CALC_ID => AbsorptionColumnResult::FIELDS.to_vec(),
         StrippingColumnResult::CALC_ID => StrippingColumnResult::FIELDS.to_vec(),
         PackedColumnResult::CALC_ID => PackedColumnResult::FIELDS.to_vec(),
+        RateBasedPackedColumnResult::CALC_ID => RateBasedPackedColumnResult::FIELDS.to_vec(),
         StirredTankReactorResult::CALC_ID => StirredTankReactorResult::FIELDS.to_vec(),
         ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
         SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
@@ -11473,6 +11474,296 @@ impl From<&DistillationColumnResult> for PyDistillationColumnResult {
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
             warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `process.rate_based_packed_column`, transported.
+///
+/// **The per-segment profile crosses as parallel vectors**, one entry per segment, and the
+/// dimensioned ones cross as quantities - the shape `eos.pt_phase_envelope`'s trace points set.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "RateBasedPackedColumnResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyRateBasedPackedColumnResult {
+    /// The gas leaving the top segment.
+    #[pyo3(get)]
+    pub gas_out_n: PyQty,
+    /// The gas outlet's composition.
+    #[pyo3(get)]
+    pub gas_out_z: Vec<f64>,
+    /// The gas outlet's pressure.
+    #[pyo3(get)]
+    pub gas_out_p: PyQty,
+    /// The gas outlet's temperature.
+    #[pyo3(get)]
+    pub gas_out_t: PyQty,
+    /// The gas outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub gas_out_h: PyQty,
+    /// The liquid leaving the bottom segment.
+    #[pyo3(get)]
+    pub liquid_out_n: PyQty,
+    /// The liquid outlet's composition.
+    #[pyo3(get)]
+    pub liquid_out_z: Vec<f64>,
+    /// The liquid outlet's pressure.
+    #[pyo3(get)]
+    pub liquid_out_p: PyQty,
+    /// The liquid outlet's temperature.
+    #[pyo3(get)]
+    pub liquid_out_t: PyQty,
+    /// The liquid outlet's molar enthalpy.
+    #[pyo3(get)]
+    pub liquid_out_h: PyQty,
+    /// The passes taken.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The outlet residual at the last pass.
+    #[pyo3(get)]
+    pub convergence_residual: PyQty,
+    /// Whether the gate was met.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// The sum of every segment's transfers, magnitudes added.
+    #[pyo3(get)]
+    pub total_absolute_molar_transfer: PyQty,
+    /// Each transferred component's net total.
+    #[pyo3(get)]
+    pub component_transfer_totals: Vec<PyQty>,
+    /// The components the totals are stated over.
+    #[pyo3(get)]
+    pub transfer_components: Vec<String>,
+    /// Each segment's mid-point height.
+    #[pyo3(get)]
+    pub segment_height_from_bottom: Vec<PyQty>,
+    /// Each segment's outlet gas temperature.
+    #[pyo3(get)]
+    pub segment_gas_temperature: Vec<PyQty>,
+    /// Each segment's outlet liquid temperature.
+    #[pyo3(get)]
+    pub segment_liquid_temperature: Vec<PyQty>,
+    /// Each segment's outlet gas pressure.
+    #[pyo3(get)]
+    pub segment_gas_pressure: Vec<PyQty>,
+    /// Each segment's outlet liquid pressure.
+    #[pyo3(get)]
+    pub segment_liquid_pressure: Vec<PyQty>,
+    /// Each segment's outlet gas traffic.
+    #[pyo3(get)]
+    pub segment_gas_molar_flow: Vec<PyQty>,
+    /// Each segment's outlet liquid traffic.
+    #[pyo3(get)]
+    pub segment_liquid_molar_flow: Vec<PyQty>,
+    /// Each segment's **inlet** gas density.
+    #[pyo3(get)]
+    pub segment_gas_density: Vec<PyQty>,
+    /// Each segment's inlet liquid density.
+    #[pyo3(get)]
+    pub segment_liquid_density: Vec<PyQty>,
+    /// Each segment's inlet gas viscosity.
+    #[pyo3(get)]
+    pub segment_gas_viscosity: Vec<PyQty>,
+    /// Each segment's inlet liquid viscosity.
+    #[pyo3(get)]
+    pub segment_liquid_viscosity: Vec<PyQty>,
+    /// The reference diffusivity the gas film scales against.
+    #[pyo3(get)]
+    pub segment_gas_diffusivity: Vec<PyQty>,
+    /// The liquid's reference diffusivity.
+    #[pyo3(get)]
+    pub segment_liquid_diffusivity: Vec<PyQty>,
+    /// The wetted area in m**2/m**3.
+    #[pyo3(get)]
+    pub segment_wetted_area: Vec<f64>,
+    /// The volumetric gas-film coefficient in 1/s.
+    #[pyo3(get)]
+    pub segment_k_ga: Vec<f64>,
+    /// The volumetric liquid-film coefficient in 1/s.
+    #[pyo3(get)]
+    pub segment_k_la: Vec<f64>,
+    /// The gas-side volumetric heat-transfer coefficient.
+    #[pyo3(get)]
+    pub segment_gas_heat_transfer_coefficient: Vec<f64>,
+    /// The liquid-side one.
+    #[pyo3(get)]
+    pub segment_liquid_heat_transfer_coefficient: Vec<f64>,
+    /// The two in series.
+    #[pyo3(get)]
+    pub segment_overall_heat_transfer_coefficient: Vec<f64>,
+    /// The interface temperature the mixture is flashed at.
+    #[pyo3(get)]
+    pub segment_interface_temperature: Vec<PyQty>,
+    /// The heat moved, positive from gas to liquid.
+    #[pyo3(get)]
+    pub segment_heat_transfer_rate: Vec<PyQty>,
+    /// The bed's pressure drop per metre.
+    #[pyo3(get)]
+    pub segment_pressure_drop_per_meter: Vec<PyQty>,
+    /// The vapour velocity as a percentage of the flooding velocity.
+    #[pyo3(get)]
+    pub segment_percent_flood: Vec<f64>,
+    /// Each segment's net transfer.
+    #[pyo3(get)]
+    pub segment_net_molar_transfer: Vec<PyQty>,
+    /// The segment's own enthalpy closure.
+    #[pyo3(get)]
+    pub segment_enthalpy_balance_residual: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+impl From<&RateBasedPackedColumnResult> for PyRateBasedPackedColumnResult {
+    fn from(r: &RateBasedPackedColumnResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        let quantities = |values: &[f64], unit: &str| -> Vec<PyQty> {
+            values.iter().map(|value| quantity(*value, unit)).collect()
+        };
+        Self {
+            gas_out_n: quantity(r.gas_out_n, "mol/s"),
+            gas_out_z: r.gas_out_z.clone(),
+            gas_out_p: quantity(r.gas_out_p.value, "Pa"),
+            gas_out_t: quantity(r.gas_out_t.value, "K"),
+            gas_out_h: quantity(r.gas_out_h.value, "J/mol"),
+            liquid_out_n: quantity(r.liquid_out_n, "mol/s"),
+            liquid_out_z: r.liquid_out_z.clone(),
+            liquid_out_p: quantity(r.liquid_out_p.value, "Pa"),
+            liquid_out_t: quantity(r.liquid_out_t.value, "K"),
+            liquid_out_h: quantity(r.liquid_out_h.value, "J/mol"),
+            iterations: r.iterations,
+            convergence_residual: quantity(r.convergence_residual, "mol/s"),
+            converged: r.converged,
+            total_absolute_molar_transfer: quantity(r.total_absolute_molar_transfer, "mol/s"),
+            component_transfer_totals: quantities(&r.component_transfer_totals, "mol/s"),
+            transfer_components: r.transfer_components.clone(),
+            segment_height_from_bottom: quantities(
+                &r.segment_height_from_bottom
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "m",
+            ),
+            segment_gas_temperature: quantities(
+                &r.segment_gas_temperature
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "K",
+            ),
+            segment_liquid_temperature: quantities(
+                &r.segment_liquid_temperature
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "K",
+            ),
+            segment_gas_pressure: quantities(
+                &r.segment_gas_pressure
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "Pa",
+            ),
+            segment_liquid_pressure: quantities(
+                &r.segment_liquid_pressure
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "Pa",
+            ),
+            segment_gas_molar_flow: quantities(&r.segment_gas_molar_flow, "mol/s"),
+            segment_liquid_molar_flow: quantities(&r.segment_liquid_molar_flow, "mol/s"),
+            segment_gas_density: quantities(
+                &r.segment_gas_density
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "kg/m**3",
+            ),
+            segment_liquid_density: quantities(
+                &r.segment_liquid_density
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "kg/m**3",
+            ),
+            segment_gas_viscosity: quantities(
+                &r.segment_gas_viscosity
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "Pa*s",
+            ),
+            segment_liquid_viscosity: quantities(
+                &r.segment_liquid_viscosity
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "Pa*s",
+            ),
+            segment_gas_diffusivity: quantities(
+                &r.segment_gas_diffusivity
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "m**2/s",
+            ),
+            segment_liquid_diffusivity: quantities(
+                &r.segment_liquid_diffusivity
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "m**2/s",
+            ),
+            segment_wetted_area: r.segment_wetted_area.clone(),
+            segment_k_ga: r.segment_k_ga.clone(),
+            segment_k_la: r.segment_k_la.clone(),
+            segment_gas_heat_transfer_coefficient: r.segment_gas_heat_transfer_coefficient.clone(),
+            segment_liquid_heat_transfer_coefficient: r
+                .segment_liquid_heat_transfer_coefficient
+                .clone(),
+            segment_overall_heat_transfer_coefficient: r
+                .segment_overall_heat_transfer_coefficient
+                .clone(),
+            segment_interface_temperature: quantities(
+                &r.segment_interface_temperature
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "K",
+            ),
+            segment_heat_transfer_rate: quantities(
+                &r.segment_heat_transfer_rate
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "W",
+            ),
+            segment_pressure_drop_per_meter: quantities(
+                &r.segment_pressure_drop_per_meter
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "Pa",
+            ),
+            segment_percent_flood: r.segment_percent_flood.clone(),
+            segment_net_molar_transfer: quantities(&r.segment_net_molar_transfer, "mol/s"),
+            segment_enthalpy_balance_residual: quantities(
+                &r.segment_enthalpy_balance_residual
+                    .iter()
+                    .map(|value| value.value)
+                    .collect::<Vec<f64>>(),
+                "W",
+            ),
+            warnings: r.warnings.iter().map(PyWarning::from).collect(),
         }
     }
 }

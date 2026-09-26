@@ -49,6 +49,7 @@ pub mod packed_column;
 pub mod pipe;
 pub mod plug_flow_reactor;
 pub mod pump;
+pub mod rate_based_packed_column;
 pub mod separator;
 pub mod shortcut_distillation_column;
 pub mod splitter;
@@ -77,6 +78,7 @@ pub use packed_column::{PackedColumnResult, packed_column};
 pub use pipe::{PipeResult, pipe};
 pub use plug_flow_reactor::{PlugFlowReactorResult, plug_flow_reactor};
 pub use pump::{PumpResult, pump};
+pub use rate_based_packed_column::{RateBasedPackedColumnResult, rate_based_packed_column};
 pub use separator::{SeparatorResult, separator};
 pub use shortcut_distillation_column::{
     ShortcutDistillationColumnResult, shortcut_distillation_column,

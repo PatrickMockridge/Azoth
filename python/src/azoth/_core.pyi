@@ -1691,6 +1691,51 @@ class PumpResult:
     warnings: list[Warning]
 
 @final
+class RateBasedPackedColumnResult:
+    gas_out_n: Qty
+    gas_out_z: list[float]
+    gas_out_p: Qty
+    gas_out_t: Qty
+    gas_out_h: Qty
+    liquid_out_n: Qty
+    liquid_out_z: list[float]
+    liquid_out_p: Qty
+    liquid_out_t: Qty
+    liquid_out_h: Qty
+    iterations: int
+    convergence_residual: Qty
+    converged: bool
+    total_absolute_molar_transfer: Qty
+    component_transfer_totals: list[Qty]
+    transfer_components: list[str]
+    segment_height_from_bottom: list[Qty]
+    segment_gas_temperature: list[Qty]
+    segment_liquid_temperature: list[Qty]
+    segment_gas_pressure: list[Qty]
+    segment_liquid_pressure: list[Qty]
+    segment_gas_molar_flow: list[Qty]
+    segment_liquid_molar_flow: list[Qty]
+    segment_gas_density: list[Qty]
+    segment_liquid_density: list[Qty]
+    segment_gas_viscosity: list[Qty]
+    segment_liquid_viscosity: list[Qty]
+    segment_gas_diffusivity: list[Qty]
+    segment_liquid_diffusivity: list[Qty]
+    segment_wetted_area: list[float]
+    segment_k_ga: list[float]
+    segment_k_la: list[float]
+    segment_gas_heat_transfer_coefficient: list[float]
+    segment_liquid_heat_transfer_coefficient: list[float]
+    segment_overall_heat_transfer_coefficient: list[float]
+    segment_interface_temperature: list[Qty]
+    segment_heat_transfer_rate: list[Qty]
+    segment_pressure_drop_per_meter: list[Qty]
+    segment_percent_flood: list[float]
+    segment_net_molar_transfer: list[Qty]
+    segment_enthalpy_balance_residual: list[Qty]
+    warnings: list[Warning]
+
+@final
 class SeparatorResult:
     vapour_n: Qty
     vapour_z: list[float]
@@ -3323,6 +3368,31 @@ def pump(
     outlet_pressure: float,
     isentropic_efficiency: float,
 ) -> PumpResult: ...
+def rate_based_packed_column(
+    gas_components: list[str],
+    liquid_components: list[str],
+    transfer_components: list[str],
+    gas_n: float,
+    gas_z: list[float],
+    gas_p: float,
+    gas_t: float,
+    liquid_n: float,
+    liquid_z: list[float],
+    liquid_p: float,
+    liquid_t: float,
+    column_diameter: float | None = None,
+    packed_height: float | None = None,
+    number_of_segments: float | None = None,
+    packing_type: str | None = None,
+    max_iterations: float | None = None,
+    convergence_tolerance: float | None = None,
+    mass_transfer_correction: float | None = None,
+    mass_transfer_correlation: str | None = None,
+    film_model: str | None = None,
+    heat_transfer_model: str | None = None,
+    segment_solver: str | None = None,
+    column_solver: str | None = None,
+) -> RateBasedPackedColumnResult: ...
 def separator(
     components: list[str],
     feed_n: float,

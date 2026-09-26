@@ -81,6 +81,10 @@
           "type": "string",
           "minLength": 1,
           "description": "What the length means, e.g. 'one entry per component'. Prose rather than a number, because the model is written for any N."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether a caller may leave the list out. Absent means required, which is the shape every fluid-naming input has; a list the model *defaults* - the rate-based packed column's transfer whitelist, whose default is the union of its inlets' components - states `true`."
         }
       }
     },

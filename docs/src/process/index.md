@@ -32,6 +32,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`process.pipe`](./pipe.md) | `direct composition` | NeqSim process/equipment/pipeline/AdiabaticPipe.java |
 | [`process.plug_flow_reactor`](./plug_flow_reactor.md) | `direct composition` | NeqSim process/equipment/reactor/PlugFlowReactor.java |
 | [`process.pump`](./pump.md) | `direct composition` | NeqSim process/equipment/pump/Pump.java |
+| [`process.rate_based_packed_column`](./rate_based_packed_column.md) | `counter_current_fixed_point_profile` | NeqSim process/equipment/distillation/RateBasedPackedColumn.java |
 | [`process.separator`](./separator.md) | `direct composition` | NeqSim process/equipment/separator/Separator.java |
 | [`process.shortcut_distillation_column`](./shortcut_distillation_column.md) | `underwood_bisection` | NeqSim process/equipment/distillation/ShortcutDistillationColumn.java |
 | [`process.splitter`](./splitter.md) | `direct composition` | NeqSim process/equipment/splitter/Splitter.java |

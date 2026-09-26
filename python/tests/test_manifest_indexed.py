@@ -34,9 +34,10 @@ RUST = Path("crates") / "azoth-eos" / "src" / "databank.rs"
 #: it is still `vendored`, so a scratch allow-list naming it is the only thing that can make
 #: it a violation.
 #:
-#: It was `LJEPS` until `eos.phase_transport` started indexing it: the sabotage has to name a
-#: column whose marking is genuinely wrong, so a fixed parser retires its own example.
-UNREAD = "neqsim/COMP.csv.PARACHOR"
+#: It was `LJEPS` until `eos.phase_transport` started indexing it, and then `PARACHOR` until the
+#: rate-based packed column's segment model did: the sabotage has to name a column whose marking
+#: is genuinely wrong, so a parser that starts reading one retires its own example.
+UNREAD = "neqsim/COMP.csv.TRIPLEPOINTDENSITY"
 
 #: What the scratch parser has to hold for the rule to find it. The include is the anchor
 #: that pairs the allow-list with the table it reads; the two paths resolve inside whichever
@@ -85,7 +86,11 @@ def test_an_indexed_column_marked_vendored_is_reported(tmp_path: Path) -> None:
     The root is a scratch tree rather than the repository, so this is a test of the rule
     and not of the tree it happens to be sitting in.
     """
-    scratch(tmp_path, parser("parachor"))
+    # `triplepointdensity`, and it has to be a column the manifest still calls `vendored`:
+    # **`parachor` was this test's example until the rate-based packed column's segment model
+    # started reading it**, at which point the sabotage stopped firing - which is the rule
+    # working, and a stale test rather than a stale manifest.
+    scratch(tmp_path, parser("triplepointdensity"))
 
     problems = manifest_tool().indexed_column_problems(_manifest(), tmp_path)
     assert len(problems) == 1, problems
@@ -94,7 +99,7 @@ def test_an_indexed_column_marked_vendored_is_reported(tmp_path: Path) -> None:
 
     # And the same tree with a name no column claims is left alone, which is what stops the
     # rule being one that fires on everything.
-    scratch(tmp_path, parser("parachor2"))
+    scratch(tmp_path, parser("nosuchcolumn"))
     assert manifest_tool().indexed_column_problems(_manifest(), tmp_path) == []
 
 

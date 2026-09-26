@@ -1525,3 +1525,75 @@ impl PySession {
         self.workspace.run_error().map(str::to_string)
     }
 }
+
+/// `process.rate_based_packed_column` - the segment model as a registered id.
+///
+/// **A second physics rather than a packed column**: `RateBasedPackedColumn` extends
+/// `ProcessEquipmentBaseClass`, and its packing is *inside* the equations - the wetted area and
+/// the two film coefficients come from `PackingHydraulicsCalculator` every segment.
+#[pyfunction]
+#[pyo3(
+    signature = (gas_components, liquid_components, transfer_components, gas_n, gas_z, gas_p, gas_t, liquid_n, liquid_z, liquid_p, liquid_t, column_diameter = None, packed_height = None, number_of_segments = None, packing_type = None, max_iterations = None, convergence_tolerance = None, mass_transfer_correction = None, mass_transfer_correlation = None, film_model = None, heat_transfer_model = None, segment_solver = None, column_solver = None)
+)]
+#[pyo3(
+    text_signature = "(gas_components, liquid_components, transfer_components, gas_n, gas_z, gas_p, gas_t, liquid_n, liquid_z, liquid_p, liquid_t, column_diameter=None, packed_height=None, number_of_segments=None, packing_type=None, max_iterations=None, convergence_tolerance=None, mass_transfer_correction=None, mass_transfer_correlation=None, film_model=None, heat_transfer_model=None, segment_solver=None, column_solver=None)"
+)]
+#[allow(clippy::too_many_arguments)] // one parameter per declared input
+pub fn rate_based_packed_column(
+    py: Python<'_>,
+    gas_components: Vec<String>,
+    liquid_components: Vec<String>,
+    transfer_components: Vec<String>,
+    gas_n: f64,
+    gas_z: Vec<f64>,
+    gas_p: f64,
+    gas_t: f64,
+    liquid_n: f64,
+    liquid_z: Vec<f64>,
+    liquid_p: f64,
+    liquid_t: f64,
+    column_diameter: Option<f64>,
+    packed_height: Option<f64>,
+    number_of_segments: Option<usize>,
+    packing_type: Option<&str>,
+    max_iterations: Option<usize>,
+    convergence_tolerance: Option<f64>,
+    mass_transfer_correction: Option<f64>,
+    mass_transfer_correlation: Option<&str>,
+    film_model: Option<&str>,
+    heat_transfer_model: Option<&str>,
+    segment_solver: Option<&str>,
+    column_solver: Option<&str>,
+) -> PyResult<crate::results::PyRateBasedPackedColumnResult> {
+    azoth_process::rate_based_packed_column(
+        &gas_components,
+        gas_n,
+        &gas_z,
+        pascals(gas_p),
+        kelvins(gas_t),
+        &liquid_components,
+        liquid_n,
+        &liquid_z,
+        pascals(liquid_p),
+        kelvins(liquid_t),
+        if transfer_components.is_empty() {
+            None
+        } else {
+            Some(transfer_components.as_slice())
+        },
+        column_diameter,
+        packed_height,
+        number_of_segments,
+        packing_type,
+        max_iterations,
+        convergence_tolerance,
+        mass_transfer_correction,
+        mass_transfer_correlation,
+        film_model,
+        heat_transfer_model,
+        segment_solver,
+        column_solver,
+    )
+    .map(|out| crate::results::PyRateBasedPackedColumnResult::from(&out))
+    .map_err(|e| to_pyerr(py, e))
+}

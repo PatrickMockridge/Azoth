@@ -47,10 +47,10 @@ done with it and a reason; the other four are vendored whole, three of them beca
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (38 vendored file(s), 1538 column(s), 1511 carried of which 1198 read, 0 not-vendored entr(ies))
-  313  carried, nothing reads it yet
+check_manifest: OK (38 vendored file(s), 1538 column(s), 1511 carried of which 1199 read, 0 not-vendored entr(ies))
+  312  carried, nothing reads it yet
   1094  carried with no unit NeqSim states (neqsim-internal)
-  276  not-ported
+  275  not-ported
    20  not-a-value
    10  empty-upstream
     1  superseded-by

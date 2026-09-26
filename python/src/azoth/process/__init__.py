@@ -38,6 +38,7 @@ from azoth.core.result import (
     PipeResult,
     PlugFlowReactorResult,
     PumpResult,
+    RateBasedPackedColumnResult,
     SeparatorResult,
     ShortcutDistillationColumnResult,
     SplitterResult,
@@ -90,6 +91,7 @@ __all__ = [
     "pipe",
     "plug_flow_reactor",
     "pump",
+    "rate_based_packed_column",
     "run_flowsheet",
     "separator",
     "shortcut_distillation_column",
@@ -106,6 +108,7 @@ __all__ = [
 _MANIFOLD = "process.manifold"
 _MIXER = "process.mixer"
 _PACKED_COLUMN = "process.packed_column"
+_RATE_BASED_PACKED_COLUMN = "process.rate_based_packed_column"
 _PIPE = "process.pipe"
 _GAS_SCRUBBER = "process.gas_scrubber"
 _HEAT_EXCHANGER = "process.heat_exchanger"
@@ -414,6 +417,76 @@ def packed_column(
         bottom_specification_type=bottom_specification_type,
         bottom_specification_target=bottom_specification_target,
         bottom_specification_component=bottom_specification_component,
+    )
+
+
+def rate_based_packed_column(
+    gas_components: list[str],
+    gas_n: Q,
+    gas_z: list[float],
+    gas_p: Q,
+    gas_t: Q,
+    liquid_components: list[str],
+    liquid_n: Q,
+    liquid_z: list[float],
+    liquid_p: Q,
+    liquid_t: Q,
+    transfer_components: list[str] | None = None,
+    column_diameter: Q | None = None,
+    packed_height: Q | None = None,
+    number_of_segments: int | None = None,
+    packing_type: str | None = None,
+    max_iterations: int | None = None,
+    convergence_tolerance: Q | None = None,
+    mass_transfer_correction: float | None = None,
+    mass_transfer_correlation: str | None = None,
+    film_model: str | None = None,
+    heat_transfer_model: str | None = None,
+    segment_solver: str | None = None,
+    column_solver: str | None = None,
+) -> RateBasedPackedColumnResult:
+    """Solve a rate-based packed column.
+
+    **A second physics rather than a packed column**: ``RateBasedPackedColumn`` extends
+    ``ProcessEquipmentBaseClass`` and its 4,081 lines are a segment model - axial slices through
+    the packing, each with gas and liquid film coefficients, an interface equilibrium and an
+    interphase heat balance, coupled counter-currently by a profile solver. There is no stage, no
+    condenser, no reboiler and no MESH residual; the four streams are the whole interface.
+
+    **The packing is inside the equations here**, unlike :func:`packed_column`, whose packing is
+    read by a report after the solve: the wetted area and the two film coefficients come from
+    ``hydraulics.packing_hydraulics`` every segment.
+
+    A profile that reaches its iteration cap is *published* with its last iterate, and
+    ``converged`` says so - which is what the class does. A bed of no height is a converged
+    solve on its first pass and transfers nothing.
+
+    See :func:`azoth.process.reference.rate_based_packed_column`.
+    """
+    return resolve(_RATE_BASED_PACKED_COLUMN)(  # type: ignore[no-any-return]
+        gas_components=gas_components,
+        gas_n=gas_n,
+        gas_z=gas_z,
+        gas_p=gas_p,
+        gas_t=gas_t,
+        liquid_components=liquid_components,
+        liquid_n=liquid_n,
+        liquid_z=liquid_z,
+        liquid_p=liquid_p,
+        liquid_t=liquid_t,
+        transfer_components=transfer_components,
+        column_diameter=column_diameter,
+        packed_height=packed_height,
+        number_of_segments=number_of_segments,
+        packing_type=packing_type,
+        max_iterations=max_iterations,
+        convergence_tolerance=convergence_tolerance,
+        mass_transfer_correction=mass_transfer_correction,
+        mass_transfer_correlation=mass_transfer_correlation,
+        film_model=film_model,
+        heat_transfer_model=heat_transfer_model,
+        segment_solver=segment_solver,
+        column_solver=column_solver,
     )
 
 

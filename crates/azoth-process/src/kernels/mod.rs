@@ -25,6 +25,7 @@ pub mod packed_column;
 pub mod pipe;
 pub mod plug_flow_reactor;
 pub mod pump;
+pub mod rate_based_packed_column;
 pub mod separator;
 pub mod shortcut_distillation_column;
 pub mod splitter;

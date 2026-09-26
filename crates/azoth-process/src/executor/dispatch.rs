@@ -249,6 +249,10 @@ pub const DISPATCH: &[(&str, Kernel)] = &[
     ("unit_ops.pipe", pipe),
     ("unit_ops.plug_flow_reactor", plug_flow_reactor),
     ("unit_ops.pump", pump),
+    (
+        "unit_ops.rate_based_packed_column",
+        rate_based_packed_column,
+    ),
     ("unit_ops.separator", separator),
     (
         "unit_ops.shortcut_distillation_column",
@@ -277,11 +281,6 @@ pub const UNRUNNABLE: &[(&str, &str)] = &[
          through `super.run`, and the entry's own notes say it takes `unit_ops.distillation_column`'s \
          whole declaration - which the file does not carry. A form built from this entry could not \
          configure the machine, so the executor refuses it until the declaration matches the notes",
-    ),
-    (
-        "unit_ops.rate_based_packed_column",
-        "a second physics - a segment model with film coefficients and an interphase heat balance \
-         - carried by the distillation workstream rather than by this one",
     ),
 ];
 
@@ -653,6 +652,51 @@ fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stream>
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,
         },
     )?;
+    Ok(vec![out.gas_out, out.liquid_out])
+}
+
+/// The rate-based packed column, whose geometry is a gas inlet and a liquid inlet and whose
+/// declaration names its two outlets **gas then liquid**.
+///
+/// **Every declared parameter is read, including the four the kernel refuses.** A value the port
+/// does not carry has to be refused *here* rather than ignored: a form that offered a solver the
+/// executor silently dropped would be a parameter the palette declares and nothing honours, which
+/// is the defect `unit_ops.throttling_valve`'s `valve_opening` was withdrawn for.
+fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Vec<Stream>> {
+    use kernels::rate_based_packed_column::{
+        ColumnSolver, FilmModel, HeatTransferModel, MassTransferCorrelation, RateBasedSetup,
+        SegmentSolver,
+    };
+    let text = |name: &str, default: &str| -> Result<String> {
+        Ok(p.optional_text(name)?
+            .unwrap_or_else(|| default.to_string()))
+    };
+    MassTransferCorrelation::parse(&text("mass_transfer_correlation", "onda_1968")?)?;
+    SegmentSolver::parse(&text("segment_solver", "sequential_explicit")?)?;
+    ColumnSolver::parse(&text("column_solver", "fixed_point_profile")?)?;
+
+    let out = kernels::rate_based_packed_column::rate_based_packed_column(&RateBasedSetup {
+        gas: inlets[0].clone(),
+        liquid: inlets[1].clone(),
+        column_diameter: p.optional_si("column_diameter")?.unwrap_or(1.0),
+        packed_height: p.optional_si("packed_height")?.unwrap_or(5.0),
+        number_of_segments: p.optional_number("number_of_segments")?.unwrap_or(10.0) as usize,
+        packing_type: text("packing_type", "Pall-Ring-50")?,
+        max_iterations: p.optional_number("max_iterations")?.unwrap_or(30.0) as usize,
+        convergence_tolerance: p.optional_si("convergence_tolerance")?.unwrap_or(1.0e-8),
+        mass_transfer_correction: p
+            .optional_number("mass_transfer_correction")?
+            .unwrap_or(1.0),
+        heat_transfer_correction: 1.0,
+        // **The palette declares no transfer whitelist**, so a flowsheet's column walks the
+        // union of its two inlets' components, which is the class's own default.
+        transfer_components: None,
+        film_model: FilmModel::parse(&text("film_model", "maxwell_stefan_matrix")?)?,
+        heat_transfer_model: HeatTransferModel::parse(&text(
+            "heat_transfer_model",
+            "chilton_colburn_analogy",
+        )?)?,
+    })?;
     Ok(vec![out.gas_out, out.liquid_out])
 }
 

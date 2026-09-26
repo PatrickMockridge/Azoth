@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, OutOfRangeError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import PhaseTransportResult
 from azoth.core.units import Q, from_si, input_to_si, ureg
@@ -222,8 +222,21 @@ def phase_transport(
                 ).d
 
     # The assembly takes quantities, not magnitudes: it is the same kernel the id exposes.
-    assembled = effective_diffusion(matrix, list(z))
-    warnings.extend(assembled.warnings)
+    #
+    # **A phase that is one substance has no effective diffusivity, and that is not this id's
+    # refusal.** The assembly divides by the *other* components' fractions, so on a pure phase
+    # there is nothing for the one component to diffuse into and ``eos.effective_diffusion``
+    # refuses - rightly, for the question *it* asks. ``RateBasedPackedColumnTest``'s own lean
+    # solvent is pure water, and NeqSim answers a **zero** vector there rather than refusing;
+    # the Rust twin carries the same narrowing for the same measurement.
+    try:
+        assembled = effective_diffusion(matrix, list(z))
+        d_effective = assembled.effective_diffusion
+        warnings.extend(assembled.warnings)
+    except OutOfRangeError as refusal:
+        if refusal.input_field != "x":
+            raise
+        d_effective = tuple(from_si(0.0, "m**2/s") for _ in z)
 
     apply_checks(
         checks.derived,
@@ -239,7 +252,7 @@ def phase_transport(
         mu=mu,
         k=k,
         d_binary=tuple(tuple(value for value in row) for row in matrix),
-        d_effective=assembled.effective_diffusion,
+        d_effective=d_effective,
         warnings=tuple(warnings),
     )
 

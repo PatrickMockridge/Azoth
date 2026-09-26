@@ -329,20 +329,20 @@ fn every_palette_entry_has_a_form_and_every_form_a_palette_entry() {
 
 /// **The count of entries a form can render, three ways.**
 ///
-/// Twenty-nine palette entries, twenty-seven with a model, twenty-six with a kernel - and the
-/// three that are not runnable are in three different states: one has a model and its ranges, one
-/// has parameters and no model, one declares no parameter at all. Collapsing them into one
-/// "unsupported" row would lose which of those a caller is looking at.
+/// Twenty-nine palette entries, twenty-eight with a model, twenty-seven with a kernel - and the
+/// two that are not runnable are in two different states: one has a model and its ranges, one
+/// declares no parameter at all. Collapsing them into one "unsupported" row would lose which of
+/// those a caller is looking at.
 #[test]
-fn the_three_unrunnable_entries_are_three_different_states() {
+fn the_two_unrunnable_entries_are_two_different_states() {
     let palette = palette();
     let forms = forms(&palette);
     assert_eq!(forms.len(), 29);
-    assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 27);
-    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 26);
+    assert_eq!(forms.iter().filter(|f| f.model.is_some()).count(), 28);
+    assert_eq!(forms.iter().filter(|f| f.runnable).count(), 27);
 
     let refused: Vec<&FormSpec> = forms.iter().filter(|f| !f.runnable).collect();
-    assert_eq!(refused.len(), 3);
+    assert_eq!(refused.len(), 2);
     for form in &refused {
         assert!(
             form.refusal.is_some(),
@@ -357,10 +357,6 @@ fn the_three_unrunnable_entries_are_three_different_states() {
     let packed = by_id("unit_ops.packed_column");
     assert!(packed.model.is_some());
     assert!(!packed.parameters.is_empty());
-    // Parameters and no model: nothing declares what kind of thing they are.
-    let rate_based = by_id("unit_ops.rate_based_packed_column");
-    assert!(rate_based.model.is_none());
-    assert!(!rate_based.parameters.is_empty());
     // And one with no parameters at all, only ports.
     let absorber = by_id("unit_ops.simple_absorber");
     assert!(absorber.model.is_none());
@@ -379,24 +375,10 @@ fn every_parameter_of_a_modelled_entry_has_a_kind_and_the_other_two_do_not() {
         }
     }
     // Measured: the kinds are the five `executor::dispatch` has a reader for, so the kind rule
-    // covers every parameter of every entry that has a model - and the two entries without one
-    // are exactly the two that say `unknown`.
-    assert_eq!(
-        unknown,
-        [
-            "unit_ops.rate_based_packed_column.column_diameter",
-            "unit_ops.rate_based_packed_column.column_solver",
-            "unit_ops.rate_based_packed_column.convergence_tolerance",
-            "unit_ops.rate_based_packed_column.film_model",
-            "unit_ops.rate_based_packed_column.heat_transfer_model",
-            "unit_ops.rate_based_packed_column.mass_transfer_correlation",
-            "unit_ops.rate_based_packed_column.max_iterations",
-            "unit_ops.rate_based_packed_column.number_of_segments",
-            "unit_ops.rate_based_packed_column.packed_height",
-            "unit_ops.rate_based_packed_column.packing_type",
-            "unit_ops.rate_based_packed_column.segment_solver",
-        ]
-    );
+    // covers every parameter of every entry that has a model - and **after the rate-based
+    // column's id landed, no parameter of any entry says `unknown`**: the one entry without a
+    // model declares no parameter at all, only its four ports.
+    assert_eq!(unknown, Vec::<String>::new());
 
     // Every other kind is one the shim reads, which is what makes the rule total.
     let readable = ["quantity", "vector", "boolean", "enum", "string"];
@@ -466,7 +448,7 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
         }
         checked += spec.input_checks().count();
     }
-    assert_eq!(checked, 82, "the bounds this test walked");
+    assert_eq!(checked, 89, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -526,7 +508,7 @@ fn the_generated_input_table_is_the_models_own() {
             walked += 1;
         }
     }
-    assert_eq!(walked, 309, "the inputs this test walked");
+    assert_eq!(walked, 332, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

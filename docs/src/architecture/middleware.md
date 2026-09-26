@@ -27,7 +27,7 @@ is named at the foot of this page.
 | an edit as one typed command | **yes** — `middleware::command`, fifteen variants, each a structure edit that leaves the checker to rule on the result |
 | a graph a canvas draws | **yes** — `middleware::graph`, in xyflow's own node/edge shape, with the layout in one `[layout]` table the document carries |
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
-| a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be. **Every registered calculation and every registered model is run and its result serialised** by `python/tests/test_result_json.py` — the twenty-seven `process.*` models among them, so a `PumpResult` reads field by field with no codec of its own |
+| a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be. **Every registered calculation and every registered model is run and its result serialised** by `python/tests/test_result_json.py` — the twenty-eight `process.*` models among them, so a `PumpResult` reads field by field with no codec of its own |
 | a tool schema for an agent | **yes** — `middleware::tools`, one tool per command, projected from the command model rather than written beside it, and **served over MCP** by `azoth mcp`, which is that schema's projection and not a second one |
 
 ## The layers
@@ -72,7 +72,7 @@ only.
 | a notebook | `azoth.process.Session`, which is the same `Workspace` as a Python object, with `forms()` and `tools()` beside it | `python/tests/test_process.py` |
 | a shell | `azoth forms` and `azoth edit --flowsheet F --command JSON [--run] [--json]` | `crates/azoth-cli/tests/wire.rs` |
 | an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope — and the same messages again at `POST /mcp` on `azoth serve`, for a client that cannot start a process | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field, and `crates/azoth-cli/tests/mcp_http.rs` for the HTTP lane |
-| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope — it hosts the editor's `POST /rpc` and the agent's `POST /mcp` over **one** `Session` | `crates/azoth-cli/tests/serve.rs`; `ui/src/wire/http.ts` is the editor reaching `/rpc` when the page was loaded for it, held to the bodies the route reads by `ui/test/http.test.tsx`, and `crates/azoth-cli/tests/mcp_http.rs` covers the MCP endpoint |
+| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope — it hosts the editor's `POST /rpc` and the agent's `POST /mcp` over **one** `Session` | `crates/azoth-cli/tests/serve.rs`, and `crates/azoth-cli/tests/mcp_http.rs` for the MCP endpoint |
 
 `--json` prints the envelope, which is byte for byte the object a browser is handed — so the CLI
 is a way to look at the wire without a front-end, and a way to capture a fixture for one.
@@ -102,24 +102,7 @@ editor are these layers viewed one way:
 whole envelope, so the canvas, the form and the diagnostics are three readings of one object. The
 drag is the one piece of local state: xyflow applies a position change every frame and the library
 is told once, on release — a `set_position` per frame would be a command and a re-projection for a
-figure that has not moved yet. `ui/test/app.test.tsx` drags a node through the real module and
-asserts the position the canvas draws is the position the document carries, which is the difference
-between a gesture that sent a command and one that only moved a figure.
-
-**The editor is one front-end over two of those doors.** `ui/src/wire/session.ts` is the seam — a
-palette and three calls, every one of them a promise, because a `fetch` cannot answer a synchronous
-call and one interface both doors implement is the only version where a panel does not have to know
-which it is behind. `?serve=http://127.0.0.1:4000` on the page's URL is the served door and no
-parameter is the wasm module; the server has to be told the editor's origin
-(`--allow-origin`), because a `Content-Type: application/json` POST is not a simple request and the
-answer is unreadable without the CORS header it earns.
-
-**What the served door cannot do is the server's shape, not an omission.** `azoth serve` holds one
-document for the life of its process and the route has no call that replaces it, so New, Open and
-Demo are refused there with the reason on the control, and a save still works because every envelope
-carries the document. The palette is the exception in the other direction: a form per unit op is on
-no envelope, so `/rpc` answers `{"catalogue": …}` as a *read* of the palette the process loaded —
-enough for a palette panel and a unit-op window, and not an opening of anything.
+figure that has not moved yet.
 
 ### The stack
 
@@ -139,9 +122,9 @@ process the same way). The agentic middleware is a **tool schema and a session**
 descriptions for the tools, derived from the command model (`list_unit_ops`, `run_calc`,
 `read_stream`, `set_parameter`, `add_instance`, `validate`, `load`, `save` in the page's own
 words — one tool per command, in the code), and an in-process runner that executes them against
-the same session a human edits. It is hosted twice — a Jupyter/Colab cell, through the notebook
-door, and an MCP server — and the latter is a projection of the same schema — `azoth mcp`, over
-stdio, for one document at a time. **The same projection is served over HTTP** at `POST /mcp` on `azoth serve`, which
+the same session a human edits. It is hosted twice — a Jupyter/Colab cell and a GUI side panel —
+and an MCP server is a projection of the same schema — `azoth mcp`, over stdio, for one document
+at a time. **The same projection is served over HTTP** at `POST /mcp` on `azoth serve`, which
 speaks the current protocol revision only: the handshake revisions are the stdio door's, one
 process away, and an HTTP client that asks for one is told so rather than left guessing.
 
@@ -162,17 +145,8 @@ that reads as finished.
   message both transports write to the definition for the revision that message belongs to — two
   schemas because the protocol has two lanes, since `2026-07-28` removed the handshake and
   `2025-11-25` has no discovery, and two transports because `POST /mcp` writes the same messages as
-  stdio. **What that cannot see is a *new* revision, and the pin now has a reader on both halves of
-  it.** `tools/check_mcp_schema.py` holds the vendored bytes to the digests `NOTICE` records, in
-  `spec-validate` on every push; `--upstream` re-fetches the URLs `NOTICE` records, on the weekly
-  `.github/workflows/mcp-pin.yml`. The two are one command with a flag rather than one check because
-  they fail differently: an unreachable upstream is not a revision having moved, and only the
-  scheduled run can say which happened.
-- **The agent in the editor.** A GUI side panel that shows the tools and drives them is not built,
-  so an agent reaches a session the way a person does not: over `azoth mcp` or `azoth serve`. What it
-  would be made of is above rather than new — `middleware::tools` for what may be called, and the
-  envelope every call answers with — so it would close no layer, which is why the section on the
-  agent no longer reads as though it existed.
+  stdio. What that cannot see is a *new* revision: the vendored file is the pin, so upstream moving
+  is invisible until somebody re-fetches it.
 - **Streaming, and the things that only exist to carry a stream.** `POST /mcp` answers with one
   JSON object, which the specification allows the server to choose; the other option is a
   request-scoped SSE stream, and its reason to exist is a `notifications/progress` while a long call

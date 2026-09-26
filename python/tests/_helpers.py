@@ -100,6 +100,14 @@ _DIAGNOSTIC_FIELDS: frozenset[str] = frozenset(
         # while the compositions agree to `1e-7`. `residual` is `max` of that and the worst
         # potential error, and is the same kind of quantity one level along.
         "element_residual",
+        # `process.rate_based_packed_column`'s, and the same shape again: it is the quantity the
+        # profile loop *stops on* - the largest per-component change between successive outlets -
+        # so the two kernels land either side of their own gate for the reason an `error` does.
+        # Measured at the class's `1e-9` gate, the heat-disabled state comes out `1.32544217e-10`
+        # in Rust and `1.32544217e-10` in Python: they agree to eight figures, and what is left
+        # is the arithmetic that decided where each stopped. The model's declared tolerance is
+        # the bound.
+        "convergence_residual",
     }
 )
 
@@ -210,9 +218,18 @@ def assert_close(actual: float, expected_value: float, tolerance: float, context
     meaningless at both ends.
     """
     assert actual == actual, f"{context}: got NaN, expected {expected_value}"
-    assert actual not in (float("inf"), float("-inf")), (
-        f"{context}: got {actual}, expected {expected_value}"
-    )
+    # **Two infinities of the same sign are equal, and only that is allowed through.** The
+    # guard is against a solver that diverged where the other implementation answered a number
+    # - a real defect, and still refused below. But `RateBasedPackedColumn.calculateOutletResidual`
+    # returns `Double.POSITIVE_INFINITY` as a *sentinel* on the first pass, when there is no
+    # previous outlet to compare against, and the zero-height state accepts exactly that pass -
+    # so both implementations report it and the capture prints `Infinity`.
+    if actual in (float("inf"), float("-inf")):
+        assert actual == expected_value, (
+            f"{context}: got {actual}, expected {expected_value} - an infinite value is only "
+            f"comparable with the same infinity"
+        )
+        return
     scale = max(abs(expected_value), float.fromhex("0x0.0000000000001p-1022"))
     relative = abs(actual - expected_value) / scale
     assert relative <= tolerance, (
@@ -569,6 +586,17 @@ def _assert_diagnostic(a: Any, b: Any, bound: float, context: str) -> None:
         assert a_nan and b_nan, (
             f"{context}: one implementation did not converge and the other did "
             f"({a!r} against {b!r})"
+        )
+        return
+    # **An infinite sentinel is equal to itself, and to nothing else.** Both are refused
+    # otherwise - see `assert_close` for the same guard on the answer path.
+    # `RateBasedPackedColumn.calculateOutletResidual` returns `Double.POSITIVE_INFINITY` on the
+    # first pass, when there is no previous outlet; the zero-height state accepts exactly that
+    # pass, so both implementations report it and the capture prints `Infinity`.
+    if a in (float("inf"), float("-inf")) or b in (float("inf"), float("-inf")):
+        assert a == b, (
+            f"{context}: one implementation answered an infinite residual and the other a "
+            f"number ({a!r} against {b!r})"
         )
         return
     difference = abs(float(a) - float(b))

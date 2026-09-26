@@ -257,8 +257,15 @@ fn estimate_surface_tension(gas: &Stream, liquid: &Stream) -> Result<(f64, bool)
     let z: Vec<f64> = names
         .iter()
         .map(|name| {
-            let gas_fraction =
-                gas.z[gas.components.iter().position(|c| c == name).unwrap_or(0)] * gas.n;
+            // **A component the system does not carry contributes nothing, and index zero is
+            // not nothing.** `unwrap_or(0)` here read the *first* component's moles for every
+            // name the gas does not have - so the solvent's water entered the mixture at
+            // methane's flow, and the surface tension came back as the class's fallback.
+            let gas_fraction = gas
+                .components
+                .iter()
+                .position(|c| c == name)
+                .map_or(0.0, |index| gas.z[index] * gas.n);
             let liquid_fraction = liquid
                 .components
                 .iter()
@@ -277,6 +284,23 @@ fn estimate_surface_tension(gas: &Stream, liquid: &Stream) -> Result<(f64, bool)
         Ok(mixed) => mixed,
         Err(_) => return Ok((DEFAULT_SURFACE_TENSION, true)),
     };
+    // **The class asks for a two-phase mixture with a gas in it, and answers its own default
+    // otherwise.** `estimateSurfaceTension` is `if (mixed.hasPhaseType(GAS) &&
+    // mixed.getNumberOfPhases() > 1) { ... }` with `return DEFAULT_SURFACE_TENSION` on both the
+    // else and the catch - and the gate is *reached*: the class's own absorber state mixes to
+    // 68 per cent water, which is one liquid phase, so its surface tension is the `0.025`
+    // constant. Measured: feeding that constant to the hydraulics reproduces the capture's
+    // wetted area `56.907889197418655` exactly, where the parachor's own `0.05303` gives
+    // `32.91880623113832`.
+    let phases = match mixed.mixture().and_then(|(mixture, _)| {
+        azoth_eos::pt_flash::pt_flash(&mixture, mixed.t, mixed.p, &mixed.z)
+    }) {
+        Ok(flash) => flash,
+        Err(_) => return Ok((DEFAULT_SURFACE_TENSION, true)),
+    };
+    if !matches!(phases.phase, azoth_eos::Phase::TwoPhase) {
+        return Ok((DEFAULT_SURFACE_TENSION, true));
+    }
     let (gas_phase, liquid_phase) = match (
         phase_view(&mixed, Pick::Gas),
         phase_view(&mixed, Pick::Liquid),
@@ -284,6 +308,23 @@ fn estimate_surface_tension(gas: &Stream, liquid: &Stream) -> Result<(f64, bool)
         (Ok(gas_phase), Ok(liquid_phase)) => (gas_phase, liquid_phase),
         _ => return Ok((DEFAULT_SURFACE_TENSION, true)),
     };
+    if gas_phase.kind != azoth_eos::phase_transport::PhaseKind::Gas {
+        return Ok((DEFAULT_SURFACE_TENSION, true));
+    }
+    // **A gas-and-aqueous pair answers `0.0` upstream, and the constant is the class's answer.**
+    // Measured on this class's own path - the gas cloned, the liquid's positive-mole components
+    // added, flashed at the gas's temperature and pressure - `InterfaceProperties.getSurfaceTension`
+    // returns `0.0` for the pair at dissolved-CO2 loadings of `0`, `1e-6`, `1e-3`, `1e-2` and
+    // `0.04`. `isFinitePositive(0.0)` is false, so `estimateSurfaceTension` falls through to its
+    // `DEFAULT_SURFACE_TENSION`, which is what the capture's wetted area is built from.
+    //
+    // The parachor form is *not* wrong here - it answers `0.05303` on the same mixture, which
+    // would move the wetted area from `56.9` to `32.9` - it is a different branch. An oil pair
+    // takes it, and the class's own states are all gas-and-aqueous, so this is where its answer
+    // comes from.
+    if liquid_phase.kind == azoth_eos::phase_transport::PhaseKind::Aqueous {
+        return Ok((DEFAULT_SURFACE_TENSION, true));
+    }
     let parachors: Vec<f64> = match mixed.mixture() {
         Ok((mixture, _)) => mixture
             .components()

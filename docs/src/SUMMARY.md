@@ -193,6 +193,7 @@
   - [Pipe](./process/pipe.md)
   - [Plug-flow reactor](./process/plug_flow_reactor.md)
   - [Pump](./process/pump.md)
+  - [Rate-based packed column](./process/rate_based_packed_column.md)
   - [Separator](./process/separator.md)
   - [Shortcut distillation column](./process/shortcut_distillation_column.md)
   - [Splitter](./process/splitter.md)

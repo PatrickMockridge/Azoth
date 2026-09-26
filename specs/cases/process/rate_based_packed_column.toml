@@ -1,0 +1,100 @@
+model = "process.rate_based_packed_column"
+[[cases]]
+id = "co2_water_absorber"
+tolerance = 0.0001
+source = "`RateBasedPackedColumnTest.configuredColumn`'s own state, re-cased on PR, from `validation/neqsim/captures/process_rate_based_packed_column.tsv`. The class's own test runs SRK; this library's process layer resolves PR, so the capture holds the state on **both** cubics and this case is the PR row - the class's SRK row differs by three-fold on the transfer. **The convergence pair is the sharpest thing here**: NeqSim stops after fifteen passes at `6.009670053264138e-10` mol/s, and the port lands on the same fifteen and the same residual to four figures. The tolerance is the `1e-4` band the hydraulics and the heat rate are reproduced inside; the products and the transport quantities agree to `1e-6` or better.\n"
+[cases.inputs]
+gas_components = ["methane", "CO2"]
+gas_n = 14.744278187963598
+gas_z = [0.9, 0.1]
+gas_p = 5000000.0
+gas_t = 313.15
+liquid_components = ["water", "CO2"]
+liquid_n = 30.8384987818793
+liquid_z = [1.0, 0.0]
+liquid_p = 5000000.0
+liquid_t = 303.15
+transfer_components = ["CO2"]
+column_diameter = 1.0
+packed_height = 6.0
+number_of_segments = 4
+packing_type = "Pall-Ring-50"
+max_iterations = 20
+convergence_tolerance = 1e-09
+mass_transfer_correction = 3.0
+mass_transfer_correlation = "onda_1968"
+film_model = "maxwell_stefan_matrix"
+heat_transfer_model = "chilton_colburn_analogy"
+segment_solver = "sequential_explicit"
+column_solver = "fixed_point_profile"
+[cases.expected]
+iterations = 15
+convergence_residual = 6.009670053264138e-10
+converged = true
+total_absolute_molar_transfer = 0.021771811808519004
+gas_out_n = 14.74081280540249
+gas_out_z = [0.900211578855669, 0.09978842114433098]
+liquid_out_n = 30.841964163798856
+liquid_out_z = [0.9998876406865285, 0.00011235931347143501]
+segment_gas_temperature = [308.7440274651043, 306.2281774135255, 304.7912613020779, 303.97063065103896]
+segment_k_ga = [135.79988356254145, 135.40532946699855, 135.18635521597457, 135.08218563019824]
+segment_k_la = [0.009432860559780317, 0.009313075941948846, 0.009252184910419781, 0.00922515474948599]
+segment_wetted_area = [57.01800105586562, 56.95831167563964, 56.927194082018914, 56.90788895496918]
+segment_net_molar_transfer = [-0.0018659748797604063, -0.0028707307673891567, -0.004416508976555226, 0.012618597184814215]
+[[cases]]
+id = "heat_transfer_disabled"
+tolerance = 0.0001
+source = "The same state with `heat_transfer_model = \"none\"`, which is `testCanDisableExplicitHeatTransfer`'s own state. **Both zeros are exact, and the case's band is the model's own rather than the exactness's.** The harness compares every field at one tolerance, and this model's fields agree across the two kernels inside `1e-4` - so a case stated at `1e-9` would fail on the segment's enthalpy closure, a sum of enthalpies of order `35` W that differs in the last few digits. The exactness is asserted where it belongs: `crates/azoth-process/tests/rate_based_packed_column.rs` holds both fields with `assert_eq!`, and a coefficient computed under the analogy is of order `1e5` - so a wrong one fails at any band either way. the class returns `0.0` before any correlation runs, so a port that computed a coefficient and clamped it to zero would not reproduce this. The capture's `heat_transfer_disabled` row holds the same two numbers under SRK.\n"
+[cases.inputs]
+gas_components = ["methane", "CO2"]
+gas_n = 14.744278187963598
+gas_z = [0.9, 0.1]
+gas_p = 5000000.0
+gas_t = 313.15
+liquid_components = ["water", "CO2"]
+liquid_n = 30.8384987818793
+liquid_z = [1.0, 0.0]
+liquid_p = 5000000.0
+liquid_t = 303.15
+transfer_components = ["CO2"]
+column_diameter = 1.0
+packed_height = 6.0
+number_of_segments = 4
+packing_type = "Pall-Ring-50"
+max_iterations = 20
+convergence_tolerance = 1e-09
+mass_transfer_correction = 3.0
+heat_transfer_model = "none"
+[cases.expected]
+segment_overall_heat_transfer_coefficient = [0.0, 0.0, 0.0, 0.0]
+segment_heat_transfer_rate = [0.0, 0.0, 0.0, 0.0]
+[[cases]]
+id = "zero_packed_height"
+tolerance = 0.0001
+source = "The same state with no bed at all, which is `testZeroPackedHeightGivesNoTransfer`. **A height of zero is a valid state** - `validateSetup` refuses only a negative one - and it is a *converged* solve on its first pass: the gate is short-circuited and the whole transfer block is behind the class's own `if (segmentHeight > 0.0)`. So the transfer is exactly zero, the component totals are empty and the profile is still four records.\n"
+[cases.inputs]
+gas_components = ["methane", "CO2"]
+gas_n = 14.744278187963598
+gas_z = [0.9, 0.1]
+gas_p = 5000000.0
+gas_t = 313.15
+liquid_components = ["water", "CO2"]
+liquid_n = 30.8384987818793
+liquid_z = [1.0, 0.0]
+liquid_p = 5000000.0
+liquid_t = 303.15
+transfer_components = ["CO2"]
+column_diameter = 1.0
+packed_height = 0.0
+number_of_segments = 4
+packing_type = "Pall-Ring-50"
+max_iterations = 20
+convergence_tolerance = 1e-09
+mass_transfer_correction = 3.0
+[cases.expected]
+iterations = 1
+converged = true
+total_absolute_molar_transfer = 0.0
+segment_height_from_bottom = [0.0, 0.0, 0.0, 0.0]
+segment_heat_transfer_rate = [0.0, 0.0, 0.0, 0.0]
+segment_net_molar_transfer = [0.0, 0.0, 0.0, 0.0]

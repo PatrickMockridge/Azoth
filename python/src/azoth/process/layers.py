@@ -656,7 +656,76 @@ def _packed_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     return layers
 
 
+def _rate_based_packed_column(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.rate_based_packed_column`'s layers: the segment profile itself.
+
+    **A rate-based column's four ports being out says nothing about which segment moved**, and
+    the segment profile is the layer - the same reason `_distillation_column` dumps the tray
+    profile. The keys are the capture's own, so a divergence names the segment it is in.
+
+    Three mixtures are formed per segment - the two systems and an interface mix - so this is
+    the closest layer the model has to its own arithmetic.
+
+    **The two densities are deliberately not dumped.** They are the snapshot's *inputs*, read
+    from NeqSim's `getDensity("kg/m3")` - the cubic's volume with the Peneloux shift - and the
+    two implementations' shift paths agree to `6e-8` relative rather than to the dump's own
+    band. A key that never agrees is noise in the one instrument whose job is to say which
+    segment moved; the wetted area and the two film coefficients already carry what the density
+    feeds.
+    """
+    from azoth.process.reference.rate_based_packed_column import DEFAULTS, _states
+
+    def value(name: str, fallback: float) -> float:
+        return float(inputs[name]) if name in inputs else fallback
+
+    states = _states(
+        [str(name) for name in inputs["gas_components"]],
+        float(inputs["gas_n"]),
+        [float(v) for v in inputs["gas_z"]],
+        float(inputs["gas_p"]),
+        float(inputs["gas_t"]),
+        [str(name) for name in inputs["liquid_components"]],
+        float(inputs["liquid_n"]),
+        [float(v) for v in inputs["liquid_z"]],
+        float(inputs["liquid_p"]),
+        float(inputs["liquid_t"]),
+        [str(name) for name in inputs["transfer_components"]]
+        if "transfer_components" in inputs
+        else None,
+        value("column_diameter", DEFAULTS["column_diameter"]),
+        value("packed_height", DEFAULTS["packed_height"]),
+        int(value("number_of_segments", DEFAULTS["number_of_segments"])),
+        str(inputs["packing_type"]) if "packing_type" in inputs else DEFAULTS["packing_type"],
+        int(value("max_iterations", DEFAULTS["max_iterations"])),
+        value("convergence_tolerance", DEFAULTS["convergence_tolerance"]),
+        value("mass_transfer_correction", DEFAULTS["mass_transfer_correction"]),
+        str(inputs["mass_transfer_correlation"])
+        if "mass_transfer_correlation" in inputs
+        else DEFAULTS["mass_transfer_correlation"],
+        str(inputs["film_model"]) if "film_model" in inputs else DEFAULTS["film_model"],
+        str(inputs["heat_transfer_model"])
+        if "heat_transfer_model" in inputs
+        else DEFAULTS["heat_transfer_model"],
+        str(inputs["segment_solver"]) if "segment_solver" in inputs else DEFAULTS["segment_solver"],
+        str(inputs["column_solver"]) if "column_solver" in inputs else DEFAULTS["column_solver"],
+    )
+    layers: dict[str, float] = {}
+    for segment in states["segments"]:
+        index = segment["number"]
+        layers[f"segment{index}_gas_temperature_K"] = segment["gas_temperature"]
+        layers[f"segment{index}_liquid_temperature_K"] = segment["liquid_temperature"]
+        layers[f"segment{index}_wetted_area_m2_per_m3"] = segment["wetted_area"]
+        layers[f"segment{index}_kga"] = segment["k_ga"]
+        layers[f"segment{index}_kla"] = segment["k_la"]
+        layers[f"segment{index}_interface_temperature_K"] = segment["interface_temperature"]
+        layers[f"segment{index}_heat_transfer_rate_W"] = segment["heat_transfer_rate"]
+        layers[f"segment{index}_percent_flood"] = segment["percent_flood"]
+        layers[f"segment{index}_net_molar_transfer_mol_per_s"] = segment["net_molar_transfer"]
+    return layers
+
+
 DUMPERS: dict[str, Dumper] = {
+    "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
     "process.packed_column": _packed_column,
     "process.stripping_column": _stripping_column,
@@ -942,6 +1011,39 @@ _SPLITTER_DIVERGENCE: tuple[Divergence, ...] = (
 #: without a case - or a case whose probe row was reordered - is a mismatch
 #: `python/tests/test_process_layer_diff.py` fails on rather than a silent mis-pairing.
 LAYER_CASES: tuple[LayerCase, ...] = (
+    LayerCase(
+        model="process.rate_based_packed_column",
+        case="co2_water_absorber",
+        capture="process_rate_based_packed_column.tsv",
+        block=0,
+        identified_by=("#label", "co2_water_absorber"),
+        # **The heat rate is the model's loosest layer, and it is bounded absolutely.**
+        # Measured, the four segments differ from the capture by `1.955e-4` relative - the
+        # largest of any dumped key, because the heat step's capacity rates go through the
+        # *phase mass* (`n M`) and the class's own `getMass()` carries the flash's own rounding.
+        # A band of 1 W on a rate of order 2731 W is `3.7e-4` relative and names the key rather
+        # than loosening the case.
+        diagnostic=(
+            ("segment1_heat_transfer_rate_W", 1.0),
+            ("segment2_heat_transfer_rate_W", 1.0),
+            ("segment3_heat_transfer_rate_W", 1.0),
+            ("segment4_heat_transfer_rate_W", 1.0),
+        ),
+    ),
+    LayerCase(
+        model="process.rate_based_packed_column",
+        case="heat_transfer_disabled",
+        capture="process_rate_based_packed_column.tsv",
+        block=6,
+        identified_by=("#label", "heat_transfer_disabled"),
+    ),
+    LayerCase(
+        model="process.rate_based_packed_column",
+        case="zero_packed_height",
+        capture="process_rate_based_packed_column.tsv",
+        block=7,
+        identified_by=("#label", "zero_packed_height"),
+    ),
     # The specification rows. **Four are cases and three are declared uncased**, and the split
     # is the measurement: a purity, a flow rate, a duty and a purity at the *bottom* location
     # converge, while a recovery specification does not converge in NeqSim at all, a reflux
@@ -1318,6 +1420,13 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 #: held to the `reference_pin_*` rows instead. Counting them here rather than leaving the
 #: block count open keeps the check exact: a probe row added without a case still fails.
 UNCASED_ROWS: dict[str, int] = {
+    # The rate-based column's seven. `_srk` is the class's own state on the cubic its test file
+    # uses, kept beside the PR row that the port is held to so the pair measures what the cubic
+    # moved; the two TEG rows are `SystemSrkCPAstatoil` with mixing rule 10, which PR cannot
+    # represent - so they are evidence for a refusal rather than an oracle for a state - and the
+    # three remaining CO2/water rows are the stripper and the two heights, which the port's own
+    # test asserts as *directions* rather than as digits.
+    "process_rate_based_packed_column.tsv": 7,
     "process_heat_exchanger.tsv": 2,
     # The shortcut column's two degenerate rows. **Both are evidence rather than oracles**:
     # a reflux multiplier of exactly one leaves Gilliland's `X` at zero and the class returns

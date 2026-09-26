@@ -47,14 +47,14 @@ fn the_palette_comes_back_as_a_form_per_entry() {
             .iter()
             .filter(|entry| !entry["model"].is_null())
             .count(),
-        27
+        28
     );
     assert_eq!(
         entries
             .iter()
             .filter(|entry| entry["runnable"] == true)
             .count(),
-        26
+        27
     );
 
     // The pump, field by field: the unit comes from the vocabulary and the kind from the model's

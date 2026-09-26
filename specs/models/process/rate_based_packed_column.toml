@@ -1,0 +1,344 @@
+id = "process.rate_based_packed_column"
+name = "Rate-based packed column"
+kind = "procedure"
+assumptions = [
+    "**the packing is inside the equations.** The wetted area and the two film coefficients `kGa`/`kLa` come from `PackingHydraulicsCalculator` every segment, and the fluxes are built from them - unlike `process.packed_column`, whose packing is a report read after the solve.\n",
+    "**a segment forms three mixtures**: the gas system, the liquid system, and an interface mix built by cloning the gas and adding the liquid's positive-mole components, flashed at the interface temperature and the mean pressure.\n",
+    "**the interface's compositions are reported over the transfer whitelist while its mixture is stated over the two systems' union**, and the two lists are not the same one. Reading one against the other's indices moves the transfer by three orders of magnitude.\n",
+    "**it converges in fifteen passes at a residual of `6.02e-10` mol/s on the class's own absorber state**, and NeqSim's own row says fifteen and `6.009670053264138e-10`. The two cubics are captured side by side: the class's state is SRK and this library resolves PR.\n",
+    "**the reference diffusivity is the class's own constant, and that is measured.** `averageDiffusivity` averages a vector NeqSim never populates - every entry of both phases is `0.0` - while the pair matrix on the same state is real. See `segment::fallbacks`.\n",
+    "**the profile is not monotone**: on the absorber's own state the three lower segments strip CO2 back out of the liquid and the top one absorbs it, so a port that summed a single direction lands elsewhere.\n",
+    "**a bed of no height is a converged solve**: the class accepts it on the first pass, so a warning there would fail its own zero-height test. The profile is still `number_of_segments` records, at a height of zero.\n",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/RateBasedPackedColumn.java` is the port source; `internals/PackingHydraulicsCalculator.java` is the packing's, and `process.rate_based_packed_column` composes it through `hydraulics.packing_hydraulics`.\n",
+    "`validation/neqsim/captures/process_rate_based_packed_column.tsv` - ten rows: the class's own states on SRK and the same states re-cased on PR, with two CPA-Statoil TEG rows as evidence for a refusal. Each row prints the four ports, the convergence pair and the twenty-nine carried segment fields.\n",
+]
+[source]
+standard = "NeqSim process/equipment/distillation/RateBasedPackedColumn.java"
+edition = "`solveFixedPointProfile`, `calculateSegment`, `calculateTransportSnapshot`, `calculateInterfaceEquilibrium`, `applyInterphaseHeatTransfer` and the ten `DEFAULT_*` constants, ported verbatim. The equation-oriented and simultaneous-residual solvers are not ported, and the enums name them."
+[algorithm]
+scheme = "counter_current_fixed_point_profile"
+initialisation = "uniform_liquid_profile"
+convergence = "absolute"
+tolerance = 1.0e-08
+max_iterations = 30
+[inputs]
+[inputs.gas_components]
+type = "components"
+description = "the gas's substances, by name. The order is the order of `gas_z`.\n"
+[inputs.gas_n]
+unit = "mol/s"
+description = "the gas's molar flow, which enters at the **bottom** segment.\n"
+[inputs.gas_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the gas's composition.\n"
+[inputs.gas_p]
+unit = "Pa"
+description = "the gas's pressure.\n"
+[inputs.gas_t]
+unit = "K"
+description = "the gas's temperature.\n"
+[inputs.liquid_components]
+type = "components"
+description = "the solvent's substances, by name. The order is the order of `liquid_z`.\n"
+[inputs.liquid_n]
+unit = "mol/s"
+description = "the solvent's molar flow, which enters at the **top** segment.\n"
+[inputs.liquid_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the solvent's composition. A pure solvent is the class's own lean-liquid state, and a zero fraction is allowed.\n"
+[inputs.liquid_p]
+unit = "Pa"
+description = "the solvent's pressure, which is its own - the segments' pressures are the two inlets'.\n"
+[inputs.liquid_t]
+unit = "K"
+description = "the solvent's temperature.\n"
+[inputs.transfer_components]
+type = "components"
+optional = true
+description = "the components the two films walk, which is `setTransferComponents`. **Omitted means the union of the two inlets' components**, which is the class's own default; every state in its test file states the list.\n"
+[inputs.column_diameter]
+unit = "m"
+optional = true
+description = "the column's internal diameter, which the hydraulics and the segment volume are computed on. The class defaults it to 1.0.\n"
+[inputs.packed_height]
+unit = "m"
+optional = true
+description = "the packed height, divided into `number_of_segments` slices. **A height of zero is a valid state** - `validateSetup` refuses only a negative one - and it transfers nothing. The class defaults it to 5.0.\n"
+[inputs.number_of_segments]
+unit = "dimensionless"
+optional = true
+description = "the axial slices, which is the model's resolution and the length of every `segment_*` vector. The class defaults it to 10.\n"
+[inputs.packing_type]
+type = "string"
+optional = true
+description = "the packing's name, which `PackingSpecificationLibrary` resolves - a name nothing carries is `Pall-Ring-50`. The class defaults it to Pall-Ring-50.\n"
+[inputs.max_iterations]
+unit = "dimensionless"
+optional = true
+description = "the profile iteration cap. **A solve that reaches it publishes its last iterate**, with `convergence_residual` and `converged` saying so. The class defaults it to 30.\n"
+[inputs.convergence_tolerance]
+unit = "mol/s"
+optional = true
+description = "the outlet convergence gate - the largest per-component change between successive outlets. The class defaults it to 1.0e-8.\n"
+[inputs.mass_transfer_correction]
+unit = "dimensionless"
+optional = true
+description = "`setMassTransferCorrectionFactor`, which scales both film coefficients. The class's own tests set 3.0 and 5.0/20.0; its default is 1.0.\n"
+[inputs.mass_transfer_correlation]
+type = "enum"
+values = ["onda_1968", "billet_schultes_1999"]
+optional = true
+description = "**`onda_1968` is ported**; `billet_schultes_1999` is refused by name, with `MassTransferCorrelation` behind it. That value is a constant multiplier on the two coefficients rather than a correlation.\n"
+[inputs.film_model]
+type = "enum"
+values = ["overall_two_resistance", "maxwell_stefan_matrix"]
+optional = true
+description = "the scalar gas/liquid film pair, or the Maxwell-Stefan matrix correction. **Both are ported**, and the class defaults to the matrix.\n"
+[inputs.heat_transfer_model]
+type = "enum"
+values = ["none", "chilton_colburn_analogy"]
+optional = true
+description = "**`none` re-equilibrates the outlets after material transfer alone**, and both coefficients are then exactly zero; `chilton_colburn_analogy` takes them from the packed-bed films. The class defaults to the analogy.\n"
+[inputs.segment_solver]
+type = "enum"
+values = ["sequential_explicit", "simultaneous_residual"]
+optional = true
+description = "**`sequential_explicit` is ported**; `simultaneous_residual` is refused by name, with `SegmentSolver` behind it, and **NeqSim disables its own test** for that branch.\n"
+[inputs.column_solver]
+type = "enum"
+values = ["fixed_point_profile", "equation_oriented"]
+optional = true
+description = "**`fixed_point_profile` is ported**; `equation_oriented` is refused by name, with `ColumnSolver` behind it - the column-wide damped Newton with homotopy continuation.\n"
+[outputs]
+[outputs.gas_out_n]
+unit = "mol/s"
+description = "the gas leaving the top segment.\n"
+[outputs.gas_out_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the gas outlet's composition.\n"
+[outputs.gas_out_p]
+unit = "Pa"
+description = "the gas outlet's pressure.\n"
+[outputs.gas_out_t]
+unit = "K"
+description = "the gas outlet's temperature.\n"
+[outputs.gas_out_h]
+unit = "J/mol"
+description = "the gas outlet's molar enthalpy.\n"
+[outputs.liquid_out_n]
+unit = "mol/s"
+description = "the liquid leaving the **bottom** segment.\n"
+[outputs.liquid_out_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the liquid outlet's composition.\n"
+[outputs.liquid_out_p]
+unit = "Pa"
+description = "the liquid outlet's pressure.\n"
+[outputs.liquid_out_t]
+unit = "K"
+description = "the liquid outlet's temperature.\n"
+[outputs.liquid_out_h]
+unit = "J/mol"
+description = "the liquid outlet's molar enthalpy.\n"
+[outputs.iterations]
+unit = "dimensionless"
+description = "the passes taken. **Where the loop stops is what its answer is**, so this is not a diagnostic.\n"
+[outputs.convergence_residual]
+unit = "mol/s"
+description = "the outlet residual at the last pass, in mol/s.\n"
+[outputs.converged]
+type = "boolean"
+description = "whether the gate was met. **A bed of no height is converged**, on its first pass.\n"
+[outputs.total_absolute_molar_transfer]
+unit = "mol/s"
+description = "the sum of every segment's per-component transfers, magnitudes added.\n"
+[outputs.transfer_components]
+type = "vector"
+unit = "dimensionless"
+length = "one per transferred component"
+description = "the components `component_transfer_totals` is stated over, in the same order - the active transfer list the segment loop walks. A name is an identity rather than a magnitude, which is why it carries no unit.\n"
+[outputs.component_transfer_totals]
+type = "vector"
+unit = "mol/s"
+length = "one per transfer component, in the order the segments produced them"
+description = "each transferred component's net total, positive from gas to liquid.\n"
+[outputs.segment_height_from_bottom]
+type = "vector"
+unit = "m"
+length = "one per segment"
+description = "each segment's mid-point height.\n"
+[outputs.segment_gas_temperature]
+type = "vector"
+unit = "K"
+length = "one per segment"
+description = "each segment's outlet gas temperature.\n"
+[outputs.segment_liquid_temperature]
+type = "vector"
+unit = "K"
+length = "one per segment"
+description = "each segment's outlet liquid temperature.\n"
+[outputs.segment_gas_pressure]
+type = "vector"
+unit = "Pa"
+length = "one per segment"
+description = "each segment's outlet gas pressure.\n"
+[outputs.segment_liquid_pressure]
+type = "vector"
+unit = "Pa"
+length = "one per segment"
+description = "each segment's outlet liquid pressure.\n"
+[outputs.segment_gas_molar_flow]
+type = "vector"
+unit = "mol/s"
+length = "one per segment"
+description = "each segment's outlet gas traffic.\n"
+[outputs.segment_liquid_molar_flow]
+type = "vector"
+unit = "mol/s"
+length = "one per segment"
+description = "each segment's outlet liquid traffic.\n"
+[outputs.segment_gas_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per segment"
+description = "each segment's **inlet** gas density, which the snapshot is taken on.\n"
+[outputs.segment_liquid_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per segment"
+description = "each segment's inlet liquid density.\n"
+[outputs.segment_gas_viscosity]
+type = "vector"
+unit = "Pa*s"
+length = "one per segment"
+description = "each segment's inlet gas viscosity.\n"
+[outputs.segment_liquid_viscosity]
+type = "vector"
+unit = "Pa*s"
+length = "one per segment"
+description = "each segment's inlet liquid viscosity.\n"
+[outputs.segment_gas_diffusivity]
+type = "vector"
+unit = "m**2/s"
+length = "one per segment"
+description = "the reference diffusivity the gas film scales against - the class's own constant. See the assumptions.\n"
+[outputs.segment_liquid_diffusivity]
+type = "vector"
+unit = "m**2/s"
+length = "one per segment"
+description = "the liquid's reference diffusivity, likewise.\n"
+[outputs.segment_wetted_area]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the wetted area in m**2/m**3, declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.segment_k_ga]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the volumetric gas-film coefficient in 1/s, declared dimensionless for the same reason.\n"
+[outputs.segment_k_la]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the volumetric liquid-film coefficient in 1/s.\n"
+[outputs.segment_gas_heat_transfer_coefficient]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the gas-side volumetric heat-transfer coefficient in W/(m**3 K), declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.segment_liquid_heat_transfer_coefficient]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the liquid-side volumetric heat-transfer coefficient in W/(m**3 K), declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.segment_overall_heat_transfer_coefficient]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the two in series, in W/(m**3 K), declared dimensionless because no vocabulary unit expresses it. **Exactly zero under `heat_transfer_model = none`.**\n"
+[outputs.segment_interface_temperature]
+type = "vector"
+unit = "K"
+length = "one per segment"
+description = "the interface temperature the mixture is flashed at.\n"
+[outputs.segment_heat_transfer_rate]
+type = "vector"
+unit = "W"
+length = "one per segment"
+description = "the heat moved, positive from gas to liquid. Zero under `none` and on a bed of no height.\n"
+[outputs.segment_pressure_drop_per_meter]
+type = "vector"
+unit = "Pa"
+length = "one per segment"
+description = "the bed's pressure drop per metre.\n"
+[outputs.segment_percent_flood]
+type = "vector"
+unit = "dimensionless"
+length = "one per segment"
+description = "the vapour velocity as a percentage of the flooding velocity.\n"
+[outputs.segment_net_molar_transfer]
+type = "vector"
+unit = "mol/s"
+length = "one per segment"
+description = "each segment's net transfer, positive from gas to liquid. **Not monotone in the segment index**, and that is the profile.\n"
+[outputs.segment_enthalpy_balance_residual]
+type = "vector"
+unit = "W"
+length = "one per segment"
+description = "the segment's own enthalpy closure, `out - in`.\n"
+[[valid_range]]
+quantity = "column_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "every velocity and the segment volume divide by the cross-section\n"
+[[valid_range]]
+quantity = "packed_height"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "**the class allows zero and forbids only a negative height**, which is what makes the zero-height state valid\n"
+[[valid_range]]
+quantity = "number_of_segments"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a column of no segments has no profile\n"
+[[valid_range]]
+quantity = "max_iterations"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "the loop runs at least once, and a cap of zero has no last iterate to publish\n"
+[[valid_range]]
+quantity = "convergence_tolerance"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a convergence gate is positive, and zero is a solve that never stops\n"
+[[valid_range]]
+quantity = "gas_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the interface mixture sums the two inlets' moles\n"
+[[valid_range]]
+quantity = "liquid_n"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "likewise\n"
+[implementations]
+python = "azoth.process.rate_based_packed_column"
+rust = "azoth_process::rate_based_packed_column"

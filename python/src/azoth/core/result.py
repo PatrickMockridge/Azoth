@@ -4386,3 +4386,99 @@ class DistillationColumnResult(_HasWarnings):
     energy_residual: float
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class RateBasedPackedColumnResult(_HasWarnings):
+    """Result of ``process.rate_based_packed_column``.
+
+    **The per-segment profile is parallel tuples over the segments**, the shape
+    ``eos.pt_phase_envelope``'s trace points set: one entry per segment for each of the class's
+    carried ``SegmentResult`` fields. Three of the class's thirty-four are constants on the
+    ported path and one is derived, so they are not here.
+    """
+
+    #: The gas leaving the top segment.
+    gas_out_n: Q
+    #: The gas outlet's composition.
+    gas_out_z: tuple[float, ...]
+    #: The gas outlet's pressure.
+    gas_out_p: Q
+    #: The gas outlet's temperature.
+    gas_out_t: Q
+    #: The gas outlet's molar enthalpy.
+    gas_out_h: Q
+    #: The liquid leaving the **bottom** segment.
+    liquid_out_n: Q
+    #: The liquid outlet's composition.
+    liquid_out_z: tuple[float, ...]
+    #: The liquid outlet's pressure.
+    liquid_out_p: Q
+    #: The liquid outlet's temperature.
+    liquid_out_t: Q
+    #: The liquid outlet's molar enthalpy.
+    liquid_out_h: Q
+    #: The passes taken - where the loop stops is what its answer is.
+    iterations: int
+    #: The outlet residual at the last pass.
+    convergence_residual: Q
+    #: Whether the gate was met. **A bed of no height is converged**, on its first pass.
+    converged: bool
+    #: The sum of every segment's transfers, magnitudes added.
+    total_absolute_molar_transfer: Q
+    #: Each transferred component's net total, positive from gas to liquid.
+    component_transfer_totals: tuple[Q, ...]
+    #: The components the totals are stated over, in the same order.
+    transfer_components: tuple[str, ...]
+    #: Each segment's mid-point height.
+    segment_height_from_bottom: tuple[Q, ...]
+    #: Each segment's outlet gas temperature.
+    segment_gas_temperature: tuple[Q, ...]
+    #: Each segment's outlet liquid temperature.
+    segment_liquid_temperature: tuple[Q, ...]
+    #: Each segment's outlet gas pressure.
+    segment_gas_pressure: tuple[Q, ...]
+    #: Each segment's outlet liquid pressure.
+    segment_liquid_pressure: tuple[Q, ...]
+    #: Each segment's outlet gas traffic.
+    segment_gas_molar_flow: tuple[Q, ...]
+    #: Each segment's outlet liquid traffic.
+    segment_liquid_molar_flow: tuple[Q, ...]
+    #: Each segment's **inlet** gas density, which the snapshot is taken on.
+    segment_gas_density: tuple[Q, ...]
+    #: Each segment's inlet liquid density.
+    segment_liquid_density: tuple[Q, ...]
+    #: Each segment's inlet gas viscosity, Pa*s.
+    segment_gas_viscosity: tuple[Q, ...]
+    #: Each segment's inlet liquid viscosity, Pa*s.
+    segment_liquid_viscosity: tuple[Q, ...]
+    #: The reference diffusivity the gas film scales against - the class's own constant.
+    segment_gas_diffusivity: tuple[Q, ...]
+    #: The liquid's reference diffusivity, likewise.
+    segment_liquid_diffusivity: tuple[Q, ...]
+    #: The wetted area in m**2/m**3.
+    segment_wetted_area: tuple[float, ...]
+    #: The volumetric gas-film coefficient in 1/s.
+    segment_k_ga: tuple[float, ...]
+    #: The volumetric liquid-film coefficient in 1/s.
+    segment_k_la: tuple[float, ...]
+    #: The gas-side volumetric heat-transfer coefficient, W/(m**3 K).
+    segment_gas_heat_transfer_coefficient: tuple[float, ...]
+    #: The liquid-side one.
+    segment_liquid_heat_transfer_coefficient: tuple[float, ...]
+    #: The two in series. **Exactly zero under ``heat_transfer_model = "none"``.**
+    segment_overall_heat_transfer_coefficient: tuple[float, ...]
+    #: The interface temperature the mixture is flashed at.
+    segment_interface_temperature: tuple[Q, ...]
+    #: The heat moved, positive from gas to liquid, W.
+    segment_heat_transfer_rate: tuple[Q, ...]
+    #: The bed's pressure drop per metre.
+    segment_pressure_drop_per_meter: tuple[Q, ...]
+    #: The vapour velocity as a percentage of the flooding velocity.
+    segment_percent_flood: tuple[float, ...]
+    #: Each segment's net transfer. **Not monotone in the segment index.**
+    segment_net_molar_transfer: tuple[Q, ...]
+    #: The segment's own enthalpy closure, ``out - in``, W.
+    segment_enthalpy_balance_residual: tuple[Q, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]

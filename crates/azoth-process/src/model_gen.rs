@@ -20,6 +20,7 @@
 //!   - specs/models/process/pipe.toml
 //!   - specs/models/process/plug_flow_reactor.toml
 //!   - specs/models/process/pump.toml
+//!   - specs/models/process/rate_based_packed_column.toml
 //!   - specs/models/process/separator.toml
 //!   - specs/models/process/shortcut_distillation_column.toml
 //!   - specs/models/process/splitter.toml
@@ -4407,6 +4408,317 @@ pub static PUMP_SPEC: ModelSpec = ModelSpec {
     cases: PUMP_CASES,
 };
 
+static RATE_BASED_PACKED_COLUMN_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "column_diameter",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "every velocity and the segment volume divide by the cross-section",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "packed_height",
+            min: Some(0.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "**the class allows zero and forbids only a negative height**, which is what makes the zero-height state valid",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "number_of_segments",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a column of no segments has no profile",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "max_iterations",
+            min: Some(1.0),
+            min_inclusive: true,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the loop runs at least once, and a cap of zero has no last iterate to publish",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "convergence_tolerance",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "a convergence gate is positive, and zero is a solve that never stops",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "gas_n",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "the interface mixture sums the two inlets' moles",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "liquid_n",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "likewise",
+        },
+    },
+];
+
+static RATE_BASED_PACKED_COLUMN_CASES: &[TestCase] = &[
+    TestCase {
+        id: "co2_water_absorber",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("gas_n", 14.744278187963598),
+            ("gas_p", 5000000.0),
+            ("gas_t", 313.15),
+            ("liquid_n", 30.8384987818793),
+            ("liquid_p", 5000000.0),
+            ("liquid_t", 303.15),
+            ("column_diameter", 1.0),
+            ("packed_height", 6.0),
+            ("number_of_segments", 4.0),
+            ("max_iterations", 20.0),
+            ("convergence_tolerance", 1e-09),
+            ("mass_transfer_correction", 3.0),
+        ],
+        flags: &[],
+        lists: &[
+            ("gas_components", &["methane", "CO2"]),
+            ("liquid_components", &["water", "CO2"]),
+            ("transfer_components", &["CO2"]),
+        ],
+        strings: &[
+            ("packing_type", "Pall-Ring-50"),
+            ("mass_transfer_correlation", "onda_1968"),
+            ("film_model", "maxwell_stefan_matrix"),
+            ("heat_transfer_model", "chilton_colburn_analogy"),
+            ("segment_solver", "sequential_explicit"),
+            ("column_solver", "fixed_point_profile"),
+        ],
+        vectors: &[("gas_z", &[0.9, 0.1]), ("liquid_z", &[1.0, 0.0])],
+        matrices: &[],
+        expected: &[
+            ("iterations", 15.0),
+            ("convergence_residual", 6.009670053264138e-10),
+            ("total_absolute_molar_transfer", 0.021771811808519004),
+            ("gas_out_n", 14.74081280540249),
+            ("liquid_out_n", 30.841964163798856),
+        ],
+        expected_vectors: &[
+            ("gas_out_z", &[0.900211578855669, 0.09978842114433098]),
+            (
+                "liquid_out_z",
+                &[0.9998876406865285, 0.00011235931347143501],
+            ),
+            (
+                "segment_gas_temperature",
+                &[
+                    308.7440274651043,
+                    306.2281774135255,
+                    304.7912613020779,
+                    303.97063065103896,
+                ],
+            ),
+            (
+                "segment_k_ga",
+                &[
+                    135.79988356254145,
+                    135.40532946699855,
+                    135.18635521597457,
+                    135.08218563019824,
+                ],
+            ),
+            (
+                "segment_k_la",
+                &[
+                    0.009432860559780317,
+                    0.009313075941948846,
+                    0.009252184910419781,
+                    0.00922515474948599,
+                ],
+            ),
+            (
+                "segment_wetted_area",
+                &[
+                    57.01800105586562,
+                    56.95831167563964,
+                    56.927194082018914,
+                    56.90788895496918,
+                ],
+            ),
+            (
+                "segment_net_molar_transfer",
+                &[
+                    -0.0018659748797604063,
+                    -0.0028707307673891567,
+                    -0.004416508976555226,
+                    0.012618597184814215,
+                ],
+            ),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "heat_transfer_disabled",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("gas_n", 14.744278187963598),
+            ("gas_p", 5000000.0),
+            ("gas_t", 313.15),
+            ("liquid_n", 30.8384987818793),
+            ("liquid_p", 5000000.0),
+            ("liquid_t", 303.15),
+            ("column_diameter", 1.0),
+            ("packed_height", 6.0),
+            ("number_of_segments", 4.0),
+            ("max_iterations", 20.0),
+            ("convergence_tolerance", 1e-09),
+            ("mass_transfer_correction", 3.0),
+        ],
+        flags: &[],
+        lists: &[
+            ("gas_components", &["methane", "CO2"]),
+            ("liquid_components", &["water", "CO2"]),
+            ("transfer_components", &["CO2"]),
+        ],
+        strings: &[
+            ("packing_type", "Pall-Ring-50"),
+            ("heat_transfer_model", "none"),
+        ],
+        vectors: &[("gas_z", &[0.9, 0.1]), ("liquid_z", &[1.0, 0.0])],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            (
+                "segment_overall_heat_transfer_coefficient",
+                &[0.0, 0.0, 0.0, 0.0],
+            ),
+            ("segment_heat_transfer_rate", &[0.0, 0.0, 0.0, 0.0]),
+        ],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "zero_packed_height",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.0001,
+        numbers: &[
+            ("gas_n", 14.744278187963598),
+            ("gas_p", 5000000.0),
+            ("gas_t", 313.15),
+            ("liquid_n", 30.8384987818793),
+            ("liquid_p", 5000000.0),
+            ("liquid_t", 303.15),
+            ("column_diameter", 1.0),
+            ("packed_height", 0.0),
+            ("number_of_segments", 4.0),
+            ("max_iterations", 20.0),
+            ("convergence_tolerance", 1e-09),
+            ("mass_transfer_correction", 3.0),
+        ],
+        flags: &[],
+        lists: &[
+            ("gas_components", &["methane", "CO2"]),
+            ("liquid_components", &["water", "CO2"]),
+            ("transfer_components", &["CO2"]),
+        ],
+        strings: &[("packing_type", "Pall-Ring-50")],
+        vectors: &[("gas_z", &[0.9, 0.1]), ("liquid_z", &[1.0, 0.0])],
+        matrices: &[],
+        expected: &[("iterations", 1.0), ("total_absolute_molar_transfer", 0.0)],
+        expected_vectors: &[
+            ("segment_height_from_bottom", &[0.0, 0.0, 0.0, 0.0]),
+            ("segment_heat_transfer_rate", &[0.0, 0.0, 0.0, 0.0]),
+            ("segment_net_molar_transfer", &[0.0, 0.0, 0.0, 0.0]),
+        ],
+        expected_strings: &[],
+    },
+];
+
+static RATE_BASED_PACKED_COLUMN_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "counter_current_fixed_point_profile",
+    convergence: "absolute",
+    tolerance: 1e-08,
+    max_iterations: 30,
+    bracket: None,
+    initialisation: Some("uniform_liquid_profile"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `process.rate_based_packed_column`.
+pub static RATE_BASED_PACKED_COLUMN_SPEC: ModelSpec = ModelSpec {
+    id: "process.rate_based_packed_column",
+    kind: "procedure",
+    algorithm: Some(&RATE_BASED_PACKED_COLUMN_ALGORITHM),
+    checks: RATE_BASED_PACKED_COLUMN_CHECKS,
+    cases: RATE_BASED_PACKED_COLUMN_CASES,
+};
+
 static SEPARATOR_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -6078,6 +6390,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PIPE_SPEC,
     &PLUG_FLOW_REACTOR_SPEC,
     &PUMP_SPEC,
+    &RATE_BASED_PACKED_COLUMN_SPEC,
     &SEPARATOR_SPEC,
     &SHORTCUT_DISTILLATION_COLUMN_SPEC,
     &SPLITTER_SPEC,

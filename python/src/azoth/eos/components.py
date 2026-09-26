@@ -592,6 +592,10 @@ class DatabankEntry:
     #: unconditionally, and methane's own `941.0` J/mol at `90.69` K is what that gives.
     heat_of_fusion: float
     triple_point_temperature: float
+    #: The parachor, in NeqSim's mixed unit `(mN/m)**(1/4) * cm**3/mol`: ``PARACHOR``.
+    #: Read by the two surface-tension ids and by the rate-based packed column's segment
+    #: model, which asks for the interface tension the packing's wetted area is built from.
+    parachor: float
     #: The solid's and the liquid's heat-capacity polynomials and the two density ones:
     #: NeqSim's ``CPsolid1``-``4``, ``CPliquid1``-``5``, ``SOLIDDENSITYCOEFS1``-``4`` and
     #: ``LIQUIDDENSITYCOEFS1``-``4``. The ``/1000`` the table's own coefficients carry is
@@ -663,6 +667,7 @@ class DatabankEntry:
             wax_former=self.wax_former,
             component_class=self.component_type,
             heat_of_fusion=self.heat_of_fusion,
+            parachor=self.parachor,
             triple_point_temperature=self.triple_point_temperature,
             cp_solid=self.cp_solid,
             cp_liquid=self.cp_liquid,
@@ -807,6 +812,7 @@ def _table() -> dict[str, DatabankEntry]:
             # and not one of the `yes`/`no` flags beside it.
             wax_former=float(row["waxformer"]) == 1.0,
             heat_of_fusion=float(row["heatoffusion"]),
+            parachor=float(row["parachor"]),
             triple_point_temperature=float(row["triplepointtemperature"]),
             cp_solid=tuple(float(row[f"cpsolid{k}"]) for k in range(1, 5)),  # type: ignore[arg-type]
             cp_liquid=tuple(float(row[f"cpliquid{k}"]) for k in range(1, 6)),  # type: ignore[arg-type]
@@ -1618,6 +1624,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # a substance a card supplies has no table row to inherit either from.
             wax_former=False,
             heat_of_fusion=0.0,
+            parachor=0.0,
             triple_point_temperature=0.0,
             cp_solid=(0.0, 0.0, 0.0, 0.0),
             cp_liquid=(0.0, 0.0, 0.0, 0.0, 0.0),

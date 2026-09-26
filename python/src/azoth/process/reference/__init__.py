@@ -28,7 +28,9 @@ from azoth.process.reference.manifold import manifold
 from azoth.process.reference.mixer import mixer
 from azoth.process.reference.packed_column import packed_column
 from azoth.process.reference.pipe import pipe
+from azoth.process.reference.plug_flow_reactor import plug_flow_reactor
 from azoth.process.reference.pump import pump
+from azoth.process.reference.rate_based_packed_column import rate_based_packed_column
 from azoth.process.reference.separator import separator
 from azoth.process.reference.shortcut_distillation_column import shortcut_distillation_column
 from azoth.process.reference.splitter import splitter
@@ -55,7 +57,9 @@ __all__ = [
     "mixer",
     "packed_column",
     "pipe",
+    "plug_flow_reactor",
     "pump",
+    "rate_based_packed_column",
     "separator",
     "shortcut_distillation_column",
     "splitter",

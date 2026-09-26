@@ -221,12 +221,11 @@ the checker's `UnknownInstance` explains, and which is reported rather than repa
 
 ## The kernels
 
-A kernel is a unit operation's arithmetic, a pure function of its inlets. **Twenty-seven of the
+A kernel is a unit operation's arithmetic, a pure function of its inlets. **Twenty-eight of the
 29 palette entries carry a registered `process.*` id** — a spec, a kernel, a Python reference, a
 case set and a NeqSim capture — composing the calculations in `azoth-eos` rather than adding new
-physics. Two do not: `unit_ops.simple_absorber` is refused on measured evidence, and
-`unit_ops.rate_based_packed_column` is a second physics carried by the distillation workstream
-that added it beside the column.
+physics. One does not: `unit_ops.simple_absorber` is refused on measured evidence, because a
+faithful port needs the amine electrolyte chemistry P8 declined.
 
 **The flowsheet executor is built**, and it is `crates/azoth-process`'s `executor` module: the
 `unit_ops.*` → kernel dispatch table, the execution order, the tear with `Recycle`'s own four

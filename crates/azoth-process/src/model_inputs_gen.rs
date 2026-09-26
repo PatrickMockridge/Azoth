@@ -1595,6 +1595,150 @@ static ALL: &[ModelInputs] = &[
         ],
     },
     ModelInputs {
+        unit_op: "unit_ops.rate_based_packed_column",
+        model: "process.rate_based_packed_column",
+        inputs: &[
+            ModelInput {
+                name: "gas_components",
+                kind: "components",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "gas_n",
+                kind: "quantity",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "gas_z",
+                kind: "vector",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "gas_p",
+                kind: "quantity",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "gas_t",
+                kind: "quantity",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "liquid_components",
+                kind: "components",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "liquid_n",
+                kind: "quantity",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "liquid_z",
+                kind: "vector",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "liquid_p",
+                kind: "quantity",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "liquid_t",
+                kind: "quantity",
+                values: &[],
+                optional: false,
+            },
+            ModelInput {
+                name: "transfer_components",
+                kind: "components",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "column_diameter",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "packed_height",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "number_of_segments",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "packing_type",
+                kind: "string",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "max_iterations",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "convergence_tolerance",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "mass_transfer_correction",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+            },
+            ModelInput {
+                name: "mass_transfer_correlation",
+                kind: "enum",
+                values: &["onda_1968", "billet_schultes_1999"],
+                optional: true,
+            },
+            ModelInput {
+                name: "film_model",
+                kind: "enum",
+                values: &["overall_two_resistance", "maxwell_stefan_matrix"],
+                optional: true,
+            },
+            ModelInput {
+                name: "heat_transfer_model",
+                kind: "enum",
+                values: &["none", "chilton_colburn_analogy"],
+                optional: true,
+            },
+            ModelInput {
+                name: "segment_solver",
+                kind: "enum",
+                values: &["sequential_explicit", "simultaneous_residual"],
+                optional: true,
+            },
+            ModelInput {
+                name: "column_solver",
+                kind: "enum",
+                values: &["fixed_point_profile", "equation_oriented"],
+                optional: true,
+            },
+        ],
+    },
+    ModelInputs {
         unit_op: "unit_ops.separator",
         model: "process.separator",
         inputs: &[
@@ -2155,8 +2299,8 @@ pub fn model_inputs() -> &'static [ModelInputs] {
 
 /// One entry's model inputs, or `None` for an entry with no model.
 ///
-/// Two of the twenty-nine are in that state and `executor::dispatch::UNRUNNABLE` names
-/// both, so `None` here and a refusal there are the same fact stated twice.
+/// One of the twenty-nine is in that state and `executor::dispatch::UNRUNNABLE` names
+/// it, so `None` here and a refusal there are the same fact stated twice.
 #[must_use]
 pub fn inputs_for(unit_op: &str) -> Option<&'static ModelInputs> {
     ALL.iter().find(|entry| entry.unit_op == unit_op)

@@ -252,8 +252,8 @@ def test_the_palette_comes_back_as_a_form_per_entry() -> None:
     """The declaration a unit-op window *is*, and the embedded bundle is the shipped palette."""
     entries = process.forms()
     assert len(entries) == 29
-    assert sum(1 for entry in entries if entry["model"]) == 27
-    assert sum(1 for entry in entries if entry["runnable"]) == 26
+    assert sum(1 for entry in entries if entry["model"]) == 28
+    assert sum(1 for entry in entries if entry["runnable"]) == 27
 
     pump = next(entry for entry in entries if entry["id"] == "unit_ops.pump")
     pressure = next(p for p in pump["parameters"] if p["name"] == "outlet_pressure")
