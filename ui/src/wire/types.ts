@@ -139,12 +139,24 @@ export interface Quantity {
   unit: string;
 }
 
+/**
+ * A stream, on the palette's five declared fields and the three the run knew.
+ *
+ * **`mass_flow` and `molar_mass` are `null` where the library cannot weigh the fluid** — a
+ * component built from critical constants alone carries no molar mass, and a record that defaulted
+ * it to zero would report a mass flow of zero for a real stream. **`vapour_fraction` is `null`
+ * where nothing flashed the stream**: it is the one field a record cannot derive, so its absence is
+ * a fact about the run and not a zero.
+ */
 export interface StreamRecord {
   n: Quantity;
   z: number[];
   P: Quantity;
   T: Quantity;
   h: Quantity;
+  mass_flow: Quantity | null;
+  molar_mass: Quantity | null;
+  vapour_fraction: number | null;
 }
 
 export interface Residuals {
@@ -168,8 +180,27 @@ export interface SessionReport {
   converged: boolean;
   iterations: number;
   streams: Record<string, StreamRecord>;
-  tears: TearRecord[];
+  /**
+   * Every unit operation's own answer, by instance id — **the numbers on no outlet stream**.
+   *
+   * A unit op whose whole answer is its streams has no entry, which is a statement about the
+   * arithmetic rather than a gap: a mixer's result *is* its mixed stream. What appears is what a
+   * kernel computed *beside* its outlets — a duty, a tray profile, a conversion, a convergence —
+   * under the field names that operation's own model declares, so a reader can name a column's
+   * `condenser_duty` without a table per unit operation.
+   */
+  results: Record<string, UnitResult>;
 }
+
+/**
+ * One unit operation's published result.
+ *
+ * **The shape is the model's and not this front end's.** The Rust half derives `Serialize` on the
+ * struct its case publishes and the Python half publishes the same field names, so an entry here
+ * is whatever that operation declares — a scalar, a vector, an array of quantities — and nothing
+ * in this file enumerates them. `ResultsSheet` draws what it finds.
+ */
+export type UnitResult = Record<string, unknown>;
 
 /** Everything one call answers with. */
 export interface Envelope {
@@ -243,6 +274,15 @@ export interface Form {
   name: string;
   source: string | null;
   model: string | null;
+  /**
+   * The palette directory the entry was read from, e.g. `two_port`.
+   *
+   * **The grouping a palette panel draws, and the only place it is stated.** An id is
+   * `unit_ops.<leaf>`, so splitting the id takes the leaf for a family and draws one group; and
+   * `source` is NeqSim's taxonomy rather than this palette's, where `cooler` is a `two_port` entry
+   * inside NeqSim's `heatexchanger/` directory.
+   */
+  family: string | null;
   runnable: boolean;
   refusal: string | null;
   ports: FormPort[];

@@ -1,9 +1,11 @@
 /**
- * A connection, or a tear — one panel, because a tear *is* a connection with a name.
+ * A tear's convergence: the seven settings `Recycle` declares.
  *
- * **This is where the tear's convergence becomes reachable.** The seven settings live on the edge
+ * **This is where they become reachable.** The settings live on the edge
  * (`graph::EdgeData::settings`), project from the document, and are sent back one at a time as
- * `set_recycle`, so the panel holds no copy: it reads the envelope and writes a command.
+ * `set_recycle`, so the sheet holds no copy: it reads the envelope and writes a command. What the
+ * connection *is* — and removing it, or making it a tear — is the Connections sheet, because an
+ * edge's window is two sheets and this is the one only a tear has.
  *
  * **`acceleration_method` is a select, and its options come from the wire.** The names live once,
  * in `recycle::ACCELERATION_NAMES`, and the tool schema publishes them; this reads them
@@ -14,16 +16,9 @@
  * honest fallback rather than an empty dropdown.
  */
 
-import type { EditorCommand, RecycleField } from "../wire/commands";
-import { accelerationNames } from "../wire/field";
-import type { Catalogue, Envelope, GraphEdge } from "../wire/types";
-
-export interface EdgePanelProps {
-  catalogue: Catalogue | null;
-  envelope: Envelope;
-  edge: GraphEdge;
-  onCommand: (command: EditorCommand) => void;
-}
+import type { EditorCommand, RecycleField } from "../../wire/commands";
+import { accelerationNames } from "../../wire/field";
+import type { Catalogue, GraphEdge } from "../../wire/types";
 
 /** The seven settings, in the order `Recycle` declares them, with what each one says. */
 const SETTINGS: readonly { field: RecycleField; kind: "number" | "text" | "names"; hint: string }[] = [
@@ -43,63 +38,29 @@ const SETTINGS: readonly { field: RecycleField; kind: "number" | "text" | "names
   },
 ];
 
-export function EdgePanel({ catalogue, envelope, edge, onCommand }: EdgePanelProps) {
+export function TearSheet({
+  catalogue,
+  edge,
+  onCommand,
+}: {
+  catalogue: Catalogue | null;
+  edge: GraphEdge;
+  onCommand: (command: EditorCommand) => void;
+}) {
   const names = accelerationNames(catalogue);
-  const isTear = edge.data.kind === "recycle";
   const settings = edge.data.settings;
 
   return (
-    <>
-      <h2>{isTear ? `Tear ${edge.data.path}` : "Connection"}</h2>
-      <p className="note">
-        {edge.data.from} → {edge.data.to}
-      </p>
-
-      <div className="field">
-        {isTear ? (
-          <button
-            type="button"
-            className="entry"
-            onClick={() => onCommand({ command: "remove_recycle", stream: edge.data.path })}
-          >
-            Remove the tear
-          </button>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="entry"
-              onClick={() =>
-                onCommand({
-                  command: "disconnect",
-                  from: edge.data.from,
-                  to: edge.data.to,
-                })
-              }
-            >
-              Remove the connection
-            </button>
-            <button
-              type="button"
-              className="entry"
-              onClick={() =>
-                onCommand({
-                  command: "add_recycle",
-                  stream: nextTear(envelope),
-                  from: edge.data.from,
-                  to: edge.data.to,
-                })
-              }
-            >
-              Make it a tear
-            </button>
-          </>
-        )}
-      </div>
-
-      {!isTear || settings === undefined ? null : (
+    <div
+      className="sheet"
+      id="sheet-convergence"
+      role="tabpanel"
+      aria-labelledby="tab-convergence"
+    >
+      {settings === undefined ? (
+        <p className="note">this edge carries no convergence settings</p>
+      ) : (
         <>
-          <h2>Convergence</h2>
           <p className="note">
             an unstated setting is the class&apos;s own default: the field is empty, writing a
             number in pins it, and clearing the field returns it to silence
@@ -177,18 +138,6 @@ export function EdgePanel({ catalogue, envelope, edge, onCommand }: EdgePanelPro
           })}
         </>
       )}
-    </>
+    </div>
   );
-}
-
-/** A fresh tear name, over the ones the document already holds. */
-function nextTear(envelope: Envelope): string {
-  const taken = new Set(envelope.flowsheet.graph.edges.map((edge) => edge.data.path));
-  for (let index = 1; index < 100; index += 1) {
-    const candidate = `recycle_${index}`;
-    if (!taken.has(candidate)) {
-      return candidate;
-    }
-  }
-  return "recycle_x";
 }

@@ -14,7 +14,14 @@ import { resolve } from "node:path";
 import { expect, it } from "vitest";
 
 /** The stylesheet files, by name, relative to the package root the runner is started in. */
-const FILES = ["tokens.css", "base.css", "chrome.css", "canvas.css", "forms.css"] as const;
+const FILES = [
+  "tokens.css",
+  "base.css",
+  "chrome.css",
+  "canvas.css",
+  "forms.css",
+  "tables.css",
+] as const;
 
 const read = (name: string): string =>
   readFileSync(resolve(process.cwd(), "src/styles", name), "utf8");

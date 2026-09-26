@@ -19,14 +19,12 @@ import blankDocument from "../../specs/flowsheets/blank.toml?raw";
 import demoDocument from "../../specs/flowsheets/demo.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
-import { EdgePanel } from "./components/EdgePanel";
 import { Flowsheet } from "./components/Flowsheet";
-import { InputsPanel } from "./components/InputsPanel";
 import { Palette } from "./components/Palette";
+import { PropertyView } from "./components/property/PropertyView";
 import { RibbonGroup } from "./components/RibbonGroup";
 import { StatusBar } from "./components/StatusBar";
 import { TitleStrip } from "./components/TitleStrip";
-import { UnitOpPanel } from "./components/UnitOpPanel";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
 import { applyTheme, readTheme, type Theme } from "./state/theme";
@@ -299,25 +297,16 @@ export function App() {
 
         <aside className="side right">
           {fault !== null ? <div className="fault">{fault}</div> : null}
-          {envelope !== null && node !== null && node.role === "instance" ? (
-            <UnitOpPanel
+          {envelope === null ? null : (
+            <PropertyView
               catalogue={catalogue}
               envelope={envelope}
               node={node}
-              onCommand={send}
-            />
-          ) : null}
-          {envelope !== null && node !== null && node.role !== "instance" ? (
-            <InputsPanel envelope={envelope} node={node} onCommand={send} />
-          ) : null}
-          {envelope !== null && edge !== null ? (
-            <EdgePanel
-              catalogue={catalogue}
-              envelope={envelope}
               edge={edge}
               onCommand={send}
+              onSelect={setSelected}
             />
-          ) : null}
+          )}
           {envelope !== null ? (
             <DiagnosticsPanel
               diagnostics={envelope.diagnostics}
