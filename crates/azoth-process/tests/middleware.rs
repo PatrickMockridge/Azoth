@@ -579,7 +579,7 @@ fn a_dimension_id_is_the_inverse_of_the_exponents_it_names() {
 /// showing a plausible number in a unit that does not measure it.
 #[test]
 fn the_catalogue_carries_every_unit_and_both_sets() {
-    use azoth_core::unit_vocab_gen::{UNIT_NAMES, UNIT_SETS, si_factor};
+    use azoth_core::unit_vocab_gen::{DISPLAY_UNITS, UNIT_NAMES, UNIT_SETS, si_factor};
 
     let document: serde_json::Value =
         serde_json::from_str(&azoth_process::middleware::catalogue(&[], false).expect("it writes"))
@@ -587,7 +587,11 @@ fn the_catalogue_carries_every_unit_and_both_sets() {
     let units = document["units"].as_object().expect("an object");
     let sets = document["unit_sets"].as_array().expect("an array");
 
-    assert_eq!(units.len(), UNIT_NAMES.len());
+    // **Seventy, and the two extra are the display units.** A reader looks a unit up by name and
+    // does not care which table it came from, so both land in one map - and the difference is
+    // visible in the entry: a scale's factor is `si_factor`, which runs the conversion a
+    // calculation runs, and an affine unit's offset is the definition the table carries.
+    assert_eq!(units.len(), UNIT_NAMES.len() + DISPLAY_UNITS.len());
     for name in UNIT_NAMES {
         let entry = units
             .get(*name)
@@ -598,6 +602,26 @@ fn the_catalogue_carries_every_unit_and_both_sets() {
             "`{name}` names a different dimension on the wire than in the vocabulary"
         );
         assert_eq!(entry["factor"].as_f64(), si_factor(name));
+        assert_eq!(
+            entry["offset"].as_f64(),
+            Some(0.0),
+            "`{name}` is a scale, so its offset is zero rather than absent"
+        );
+    }
+    for unit in DISPLAY_UNITS {
+        let entry = units
+            .get(unit.id)
+            .expect("every display unit is on the wire");
+        assert_eq!(entry["dimension"].as_str(), Some(unit.dimension));
+        assert_eq!(entry["factor"].as_f64(), Some(unit.factor));
+        assert_eq!(entry["offset"].as_f64(), Some(unit.offset));
+        // **And a display unit is not a unit a spec may declare**, which is what the two tables
+        // exist to separate: the wire carries it, the enum a spec is checked against does not.
+        assert!(
+            !UNIT_NAMES.contains(&unit.id),
+            "`{}` is in both tables",
+            unit.id
+        );
     }
 
     assert_eq!(sets.len(), UNIT_SETS.len());
@@ -614,16 +638,19 @@ fn the_catalogue_carries_every_unit_and_both_sets() {
                 declared.id
             );
             // The one property the front end depends on: the unit a set switches a dimension to
-            // is a unit of *that* dimension, so a display can reach its factor through it.
+            // is a unit of *that* dimension, so a display can reach its conversion through it.
+            // Read off the catalogue's own map rather than through `dimension_id`, because a set
+            // may name a display unit and that accessor only knows the spec table.
+            let entry = units.get(*unit).unwrap_or_else(|| {
+                panic!(
+                    "{}.{named} names {unit}, which is not in the units",
+                    declared.id
+                )
+            });
             assert_eq!(
-                dimension_id(unit),
+                entry["dimension"].as_str(),
                 Some(*named),
                 "{}.{named} names {unit}, which is a different dimension",
-                declared.id
-            );
-            assert!(
-                units.contains_key(*unit),
-                "{}.{named} names {unit}, which is not in the catalogue's units",
                 declared.id
             );
         }

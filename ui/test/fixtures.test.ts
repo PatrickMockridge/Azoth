@@ -39,10 +39,17 @@ const solved = envelopeJson as unknown as Envelope;
 const refused = brokenJson as unknown as Envelope;
 
 describe("the catalogue", () => {
-  it("is the palette, with a model for all but two and a kernel for all but three", () => {
+  it("is the palette, with a model for all but one and a kernel for all but one", () => {
+    // **The two counts moved together, and that is the entry that moved them.** The rate-based
+    // packed column was a refusal by name and is now a kernel with a model of its own, so the
+    // library the fixture captures has twenty-eight of each - and `simple_absorber` is the one
+    // entry left with neither, refused on measured evidence rather than for want of a port.
     expect(catalogue.unit_ops).toHaveLength(29);
-    expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(27);
-    expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(26);
+    expect(catalogue.unit_ops.filter((entry) => entry.model !== null)).toHaveLength(28);
+    expect(catalogue.unit_ops.filter((entry) => entry.runnable)).toHaveLength(28);
+    expect(catalogue.unit_ops.filter((entry) => entry.model === null).map((e) => e.id)).toEqual([
+      "unit_ops.simple_absorber",
+    ]);
     expect(catalogue.tools).toHaveLength(15);
   });
 
@@ -56,17 +63,20 @@ describe("the catalogue", () => {
     expect(pressure?.required).toBe(true);
     expect(controlFor(pressure?.kind ?? "unknown")).toBe("number");
 
-    // The two entries no model declares are the only ones a field cannot choose a widget for.
+    // **And every declared parameter now has a kind**, which is a stronger statement than the one
+    // this assertion used to make. It read "the entries no model declares are the only ones a
+    // field cannot choose a widget for", and there was a parameter in that state; the one entry
+    // left without a model declares no parameters at all, so nothing is left needing a guess. A
+    // parameter whose kind the library cannot name would be a widget chosen by `unknown`.
     const unknown = catalogue.unit_ops.flatMap((entry) =>
       entry.parameters.filter((parameter) => parameter.kind === "unknown"),
     );
-    expect(new Set(unknown.map((parameter) => parameter.name)).size).toBeGreaterThan(0);
+    expect(unknown).toEqual([]);
     expect(
       catalogue.unit_ops
         .filter((entry) => entry.model === null)
-        .flatMap((entry) => entry.parameters)
-        .every((parameter) => parameter.kind === "unknown"),
-    ).toBe(true);
+        .flatMap((entry) => entry.parameters),
+    ).toEqual([]);
   });
 
   it("carries a model's bound with the sentence that explains it", () => {
@@ -105,20 +115,36 @@ describe("the catalogue", () => {
     // `si_factor` runs the conversion a calculation runs, and `test_units_cross_library.py` holds
     // every one of them to `pint`. A unit the catalogue omits would be one a display could not
     // convert, so the count is asserted rather than a sample.
+    // **Seventy, and two of them a spec may not declare.** Sixty-eight are the vocabulary's
+    // units; a degree Celsius and a degree Fahrenheit are *display* units, kept in their own
+    // table so that `unit.schema.json` - the enum a spec's `unit:` is checked against - does not
+    // offer them, and merged into this map because a display looks a unit up by name and does not
+    // care which table it came from.
     const units = catalogue.units ?? {};
-    expect(Object.keys(units)).toHaveLength(68);
-    expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1 });
+    expect(Object.keys(units)).toHaveLength(70);
+    expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1, offset: 0 });
     expect(units["psi"]?.dimension).toBe("pressure");
     expect(units["psi"]?.factor).toBeCloseTo(6894.757293168361, 6);
     // The dimension a unit measures is the vocabulary's name for it, which is what a set keys on.
     expect(units["kmol/h"]?.dimension).toBe("molar_flow");
     expect(units["J/(mol*K)"]?.dimension).toBe("molar_heat_capacity");
+    // The affine pair: a factor and an offset, and neither is a number the front end wrote.
+    expect(units["°C"]).toEqual({
+      dimension: "thermodynamic_temperature",
+      factor: 1,
+      offset: 273.15,
+    });
+    expect(units["°F"]?.factor).toBeCloseTo(5 / 9, 15);
+    expect(units["°F"]?.offset).toBe(459.67);
 
     const sets = catalogue.unit_sets ?? [];
     expect(sets.map((set) => set.id)).toEqual(["si", "field"]);
     expect(sets.map((set) => set.name)).toEqual(["SI", "Field"]);
     for (const set of sets) {
-      expect(Object.keys(set.units)).toHaveLength(14);
+      // **Fifteen, and the fifteenth is temperature**: a scale is a choice between units like any
+      // other, so a set names one per dimension - and the pair that could not be a set's before
+      // is the one the display table made possible.
+      expect(Object.keys(set.units)).toHaveLength(15);
       // Every unit a set names is one this catalogue declares, and it measures the dimension it
       // was filed under - otherwise the switcher would offer a unit the display cannot reach.
       for (const [dimension, unit] of Object.entries(set.units)) {
@@ -128,9 +154,15 @@ describe("the catalogue", () => {
     expect(sets[0]?.units["pressure"]).toBe("Pa");
     expect(sets[1]?.units["pressure"]).toBe("psi");
     expect(sets[1]?.units["molar_flow"]).toBe("kmol/h");
-    // And a dimension neither set names, which is how temperature stays in kelvin.
-    expect(sets[0]?.units["thermodynamic_temperature"]).toBeUndefined();
-    expect(sets[1]?.units["thermodynamic_temperature"]).toBeUndefined();
+    // **Temperature is in both sets now**, which is the change the display table made possible:
+    // a kelvin in one, a degree Fahrenheit in the other, and both are units this catalogue
+    // declares - one a spec may name and one it may not.
+    expect(sets[0]?.units["thermodynamic_temperature"]).toBe("K");
+    expect(sets[1]?.units["thermodynamic_temperature"]).toBe("°F");
+    // And the dimensions the sets name agree, which the generator gates and this reads.
+    expect(Object.keys(sets[0]?.units ?? {}).sort()).toEqual(
+      Object.keys(sets[1]?.units ?? {}).sort(),
+    );
   });
 });
 

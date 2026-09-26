@@ -148,8 +148,8 @@ export function formatQuantity(
   digits = 4,
   units?: Units,
 ): string {
-  const shown = units === undefined ? { unit, factor: 1 } : displayOf(units, unit);
-  const rounded = Number((magnitude / shown.factor).toPrecision(digits));
+  const shown = units === undefined ? { unit, factor: 1, offset: 0 } : displayOf(units, unit);
+  const rounded = Number((magnitude / shown.factor - shown.offset).toPrecision(digits));
   return `${rounded} ${shown.unit}`;
 }
 

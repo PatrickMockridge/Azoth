@@ -2,14 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/vocabulary.schema.json",
   "title": "Azoth unit vocabulary",
-  "description": "The canonical units a spec may declare, each with the dimension it carries and the name it has in `uom` and in `pint`. This is the one hand-written source for that list; `tools/gen_vocabulary.py` compiles it into Rust, Python and JSON Schema, and `--check` fails if any of the three has drifted. **No magnitude appears in it.** A conversion factor is a number the units libraries already know, and restating one here would be a second answer to a question they have answered - the failure that produced this repository's millimetre defect. `additionalProperties: false` throughout, so a field cannot be added without a deliberate edit here.",
+  "description": "The canonical units a spec may declare, each with the dimension it carries and the name it has in `uom` and in `pint`. This is the one hand-written source for that list; `tools/gen_vocabulary.py` compiles it into Rust, Python and JSON Schema, and `--check` fails if any of the three has drifted. **No magnitude appears in it, with one exception that the display table states.** A scale unit's conversion factor is a number the units libraries already know, and restating one here would be a second answer to a question they have answered - the failure that produced this repository's millimetre defect. `additionalProperties: false` throughout, so a field cannot be added without a deliberate edit here.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "slots", "dimensions", "units", "unit_sets"],
+  "required": ["schema_version", "slots", "dimensions", "units", "unit_sets", "display_units"],
   "properties": {
     "schema_version": {
-      "const": 2,
-      "description": "Bump only if the format changes; the generator refuses a version it does not know rather than guessing at what a newer shape meant. Version 2 added `unit_sets`, which a version-1 table does not carry and cannot be read without."
+      "const": 3,
+      "description": "Bump only if the format changes; the generator refuses a version it does not know rather than guessing at what a newer shape meant. Version 2 added `unit_sets` and version 3 `display_units`, neither of which an earlier table carries and neither of which can be read without."
     },
     "slots": {
       "type": "array",
@@ -29,6 +29,12 @@
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/unit" }
+    },
+    "display_units": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/display_unit" },
+      "description": "The units a *display* may switch to and a spec may not declare. **Why they are a separate table and not rows above**: `specs/schema/unit.schema.json` - the enum a spec's `unit:` is checked against - is generated from `units`, so keeping an affine unit out of *this* table is what makes \"no spec may name one\" a generated fact rather than a rule somebody has to remember. It is also what the Lean map needs: every `units` row makes a dimension claim that `lean/Azoth/Gate.lean` proves, and a unit declared for presentation makes no such claim. **A row here carries numbers**, which a row above deliberately does not: a scale unit's factor is one `uom` and `pint` both know, while an affine unit's offset is the unit's own *definition* - 273.15 K for \u00b0C, 459.67 \u00b0R for \u00b0F - which neither library exposes as data. The check that makes them trustworthy is the same one: `python/tests/test_units_cross_library.py` holds each affine conversion to `pint`'s own answer for the unit, at two values because an affine conversion is pinned by two."
     },
     "unit_sets": {
       "type": "array",
@@ -96,6 +102,32 @@
           "then": { "required": ["rust_ctor"] }
         }
       ]
+    },
+    "display_unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "dimension", "pint", "factor", "offset"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The unit string a set names and a display shows, e.g. `degC`. Refused if it is also a `units` id, because a reader cannot tell which of the two a name meant."
+        },
+        "dimension": { "$ref": "#/$defs/dimension_id" },
+        "pint": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The unit's name in pint's registry. pint supplies the reference answer, which is what makes the two numbers below checkable."
+        },
+        "factor": {
+          "type": "number",
+          "description": "The unit's scale: one of it is this many SI base units, before the offset."
+        },
+        "offset": {
+          "type": "number",
+          "description": "The affine constant, in **the same unit as `factor`'s SI base** - uom's own convention, `si = (value + offset) * factor`, which is what makes \u00b0C `(u + 273.15) * 1` and \u00b0F `(u + 459.67) * 5/9`. A display inverts it, `u = si / factor - offset`, and a scale unit is the same expression with an offset of zero."
+        }
+      }
     },
     "unit_set": {
       "type": "object",

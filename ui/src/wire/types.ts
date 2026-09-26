@@ -304,12 +304,21 @@ export interface Catalogue {
    * Every canonical unit, keyed by the string a quantity carries: what it measures, and what one
    * of it is worth in SI.
    *
-   * **Computed by the library and not tabulated here.** `factor` is `si_factor`, which runs the
-   * same conversion a calculation runs, and `python/tests/test_units_cross_library.py` holds every
-   * one of them to `pint`. A front end converting with its own table would be a second answer to a
-   * question the library has answered, which is the defect the vocabulary's gate exists to refuse.
+   * **Computed by the library and not tabulated here.** For a scale, `factor` is `si_factor`,
+   * which runs the same conversion a calculation runs; for an affine display unit - a degree
+   * Celsius, a degree Fahrenheit - `offset` is the unit's own definition, which neither library
+   * exposes as data, and `factor` is its scale. `python/tests/test_units_cross_library.py` holds
+   * `pint` to each, at one value for a scale and two for a shift. A front end converting with its
+   * own table would be a second answer to a question the library has answered, which is the defect
+   * the vocabulary's gate exists to refuse.
+   *
+   * A scale is the same expression with an offset of zero, so a display has one formula:
+   * `value / factor - offset`.
    */
-  units?: Record<string, { dimension: string | null; factor: number | null }>;
+  units?: Record<
+    string,
+    { dimension: string | null; factor: number | null; offset: number | null }
+  >;
   /**
    * The named unit sets a reader may switch between, as the vocabulary declares them.
    *

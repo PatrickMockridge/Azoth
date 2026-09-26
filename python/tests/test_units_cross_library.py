@@ -36,7 +36,7 @@ from typing import Any, cast
 
 import pytest
 
-from azoth.core._units_gen import SLOTS, UNIT_SETS
+from azoth.core._units_gen import DISPLAY_UNITS, SLOTS, UNIT_SETS
 from azoth.core.units import ureg
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -209,6 +209,11 @@ def test_the_rust_dimension_agrees_with_the_table() -> None:
         )
 
 
+def display_units() -> list[dict[str, Any]]:
+    """Every display unit in the table, in table order."""
+    return cast("list[dict[str, Any]]", table()["display_units"])
+
+
 def sets() -> list[dict[str, Any]]:
     """Every unit set in the table, in table order."""
     return cast("list[dict[str, Any]]", table()["unit_sets"])
@@ -225,7 +230,11 @@ def test_a_unit_set_names_a_declared_unit_of_the_dimension_it_switches() -> None
     switched pressure to a *length* is a display that shows a number with the wrong
     unit beside it, which is worse than showing the right number in the wrong one.
     """
+    # **Both tables, because a set may name either.** A display unit is one a switcher offers and
+    # a spec may not declare - which is what the `unit.schema.json` enum being generated from
+    # `units` alone makes true - so the two are one vocabulary as far as a set is concerned.
     declared = {unit["id"]: unit["dimension"] for unit in units()}
+    declared.update({unit["id"]: unit["dimension"] for unit in display_units()})
     dimensions = {dimension["id"] for dimension in table()["dimensions"]}
     covered: set[str] | None = None
     for unit_set in sets():
@@ -262,3 +271,56 @@ def test_the_two_halves_carry_one_set_of_unit_sets() -> None:
     expected = {unit_set["id"]: dict(unit_set["units"]) for unit_set in sets()}
     assert expected == UNIT_SETS, "the generated Python sets are not the table's"
     assert _extension().unit_sets() == expected, "the generated Rust sets are not the table's"
+
+
+@pytest.mark.requires_rust
+def test_the_two_units_libraries_agree_on_every_affine_conversion() -> None:
+    """`pint`'s answer for a display unit equals the affine conversion this library runs.
+
+    **Two values, because one cannot tell a scale from a shifted one.** A unit whose offset were
+    dropped would still agree at zero - and a unit whose factor were wrong would agree at
+    whichever point the two happened to cross - so the check asks at one and at thirty, which is
+    between the ice point and the boiling point in both scales.
+
+    The comparison is `pint`'s affine conversion against `azoth._core.unit_affine_si`, which is
+    the `(value + offset) * factor` the generated table carries. Neither number is written down
+    in this repository: `pint` reads its own definition of the scale and the table's two numbers
+    are the unit's definition, which is the same arrangement `psi` and `hp` have on the other
+    side of the vocabulary - a definition written in the spec, held to a library by a test.
+    """
+    affine = _extension().unit_affine_si
+    for unit in display_units():
+        for value in (1.0, 30.0):
+            expected = float(
+                ureg.Quantity(value, unit["pint"]).to_base_units().magnitude
+            )
+            got = affine(unit["id"], value)
+            assert got is not None, f"{unit['id']}: the Rust vocabulary has no conversion for it"
+            assert got == pytest.approx(expected, rel=1.0e-15), (
+                f"{unit['id']} at {value}: pint says {expected} K and this library's affine "
+                f"conversion gives {got}"
+            )
+
+
+def test_a_display_unit_is_not_a_unit_a_spec_may_declare() -> None:
+    """The separation the two tables exist for, held where it can be checked.
+
+    `specs/schema/unit.schema.json` is the enum a spec's `unit:` is validated against, and it is
+    generated from `units` alone. So an affine unit added to that list is a unit a case file
+    could declare - and `to_si` would then convert an absolute temperature by a constant, which
+    is the confusion `interval=True` and `has_offset` exist to refuse. This asserts the
+    separation from the table's side; the enum's own contents are held by
+    `test_units_contract.py`.
+    """
+    import json
+
+    spec_units = json.loads(
+        (REPO_ROOT / "specs" / "schema" / "unit.schema.json").read_text(encoding="utf-8")
+    )["enum"]
+    names = {unit["id"] for unit in display_units()}
+    assert names, "the table declares no display unit, so this test asserts nothing"
+    assert not (names & set(spec_units)), (
+        f"{sorted(names & set(spec_units))} are both display units and units a spec may declare"
+    )
+    # And the generated Python carries the same set, so a display cannot be added on one side.
+    assert set(DISPLAY_UNITS) == names

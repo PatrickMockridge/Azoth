@@ -403,15 +403,15 @@ describe("the editor", () => {
     fireEvent.change(chooser() as HTMLSelectElement, { target: { value: "field" } });
     await waitFor(() => expect(headers()[3]).toBe("P psi"));
 
-    // Four of the seven move, and the three that do not are the ones no set names: a molar mass
-    // in `lb/lbmol` would need a pound-mole, which the vocabulary does not carry, and `T` is in
-    // kelvin in both because an absolute °C is an offset unit the library does not convert.
+    // Five of the seven move, and the two that do not are the ones no set names: a molar mass in
+    // `lb/lbmol` would need a pound-mole, which the vocabulary does not carry, and a vapour
+    // fraction has no unit at all.
     expect(headers()).toEqual([
       "flow kmol/h",
       "mass flow lb/h",
       "M kg/mol",
       "P psi",
-      "T K",
+      "T °F",
       "h kJ/mol",
       "VF",
     ]);
@@ -420,6 +420,16 @@ describe("the editor", () => {
     const pounds = cell("mix1.product", 3);
     expect(pounds * 6894.757293168361).toBeGreaterThan(pascals * 0.99);
     expect(pounds * 6894.757293168361).toBeLessThan(pascals * 1.01);
+
+    // **And the temperature is a temperature, not a relabeled kelvin.** The demo's mixer outlet is
+    // at 300 K, which is 80.33 °F - so the affine inverse is `si / factor - offset` and not a
+    // division, and a front end that dropped the offset would show 540 here. This is the one cell
+    // in the document that can tell the two apart.
+    const temperature = cell("mix1.product", 4);
+    expect(temperature).toBeCloseTo(80.33, 1);
+    // And the definition inverts it: `si = (value + offset) * factor`, which is uom's own form -
+    // `(80.33 + 459.67) * 5/9` is the 300 K the record holds.
+    expect((temperature + 459.67) * 0.5555555555555556).toBeCloseTo(300, 0);
 
     // A reader's choice, remembered the way the theme is - and not on the wire, because it is not
     // a fact about the document.

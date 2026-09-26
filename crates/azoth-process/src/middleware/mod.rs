@@ -19,7 +19,7 @@ pub mod session;
 pub mod tools;
 
 use azoth_core::Result;
-use azoth_core::unit_vocab_gen::{UNIT_NAMES, UNIT_SETS, si_factor};
+use azoth_core::unit_vocab_gen::{DISPLAY_UNITS, UNIT_NAMES, UNIT_SETS, si_factor};
 
 use crate::middleware::form::dimension_id;
 use crate::unit_op::UnitOpSpec;
@@ -61,13 +61,20 @@ pub fn catalogue(palette: &[UnitOpSpec], with_tools: bool) -> Result<String> {
     })
 }
 
-/// Every canonical unit, keyed by the string a spec and a stream record spell: its dimension
-/// and the SI base magnitude one of it is worth.
+/// Every canonical unit **and every display unit**, keyed by the string a spec and a stream
+/// record spell: its dimension, the SI base magnitude one of it is worth, and the affine
+/// constant where it has one.
 ///
 /// **The factor is computed and not written down.** `si_factor` runs the same conversion a
 /// calculation runs, so a front end converting for display and a calculation converting on the
 /// way in reach one function - and the number a reader is shown is the number `pint` was used
-/// to check, not a copy of it.
+/// to check, not a copy of it. A **display unit** is the one case where the table carries a
+/// number, because an offset is a definition neither library exposes as data; the conversion
+/// itself is `affine_si`, held to `pint` by the same test.
+///
+/// Both lists land in one map because that is what a reader looks a unit up in: a set names a
+/// unit's id and a quantity carries one, and the front end has no way to know - and no reason
+/// to care - which table the name came from.
 fn units() -> serde_json::Value {
     let mut out = serde_json::Map::new();
     for name in UNIT_NAMES {
@@ -76,6 +83,19 @@ fn units() -> serde_json::Value {
             serde_json::json!({
                 "dimension": dimension_id(name),
                 "factor": si_factor(name),
+                // A scale is the same expression with no shift, so the front end has one
+                // formula rather than two branches.
+                "offset": 0.0,
+            }),
+        );
+    }
+    for unit in DISPLAY_UNITS {
+        out.insert(
+            unit.id.to_string(),
+            serde_json::json!({
+                "dimension": unit.dimension,
+                "factor": unit.factor,
+                "offset": unit.offset,
             }),
         );
     }

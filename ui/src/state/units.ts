@@ -23,6 +23,15 @@ import type { Catalogue } from "../wire/types";
 export interface UnitDecl {
   dimension: string | null;
   factor: number | null;
+  /**
+   * The affine constant, in the same base unit `factor` is measured from - and zero for every
+   * unit that is a scale, which is all but a display unit.
+   *
+   * **`si = (value + offset) * factor` is uom's convention and this is its inverse**:
+   * `value = si / factor - offset`. One expression covers both kinds, so nothing here branches on
+   * whether a unit happens to be shifted.
+   */
+  offset: number | null;
 }
 
 /** One named set: a unit per dimension, and what to call it. */
@@ -84,8 +93,11 @@ export function unitsOf(catalogue: Catalogue | null, wanted: string | null): Uni
  * `null` factors and unknown units return the quantity's own unit with a factor of one, which
  * makes every absence the same absence: what the library wrote, unchanged.
  */
-export function displayOf(units: Units, unit: string): { unit: string; factor: number } {
-  const same = { unit, factor: 1 };
+export function displayOf(
+  units: Units,
+  unit: string,
+): { unit: string; factor: number; offset: number } {
+  const same = { unit, factor: 1, offset: 0 };
   const declared = units.declared[unit];
   if (declared?.dimension == null) {
     return same;
@@ -95,16 +107,27 @@ export function displayOf(units: Units, unit: string): { unit: string; factor: n
   if (wanted === undefined) {
     return same;
   }
-  const factor = units.declared[wanted]?.factor;
+  const target = units.declared[wanted];
+  const factor = target?.factor;
   // A factor of zero would be a division by zero rather than a unit, and a negative one is not a
   // unit at all - neither is a conversion the library declares, so both mean "leave it alone".
   if (factor === undefined || factor === null || !(factor > 0)) {
-    return { unit, factor: 1 };
+    return same;
   }
-  return { unit: wanted, factor };
+  // **The offset is the *target* unit's**, because it is the unit being shown in that decides
+  // where its zero sits - a degree Celsius is 273.15 above a kelvin, whatever the quantity
+  // arrived in.
+  return { unit: wanted, factor, offset: target?.offset ?? 0 };
 }
 
-/** The number to draw for a magnitude the library wrote in SI, in the unit it is read in. */
+/**
+ * The number to draw for a magnitude the library wrote in SI, in the unit it is read in.
+ *
+ * **One formula for both kinds of unit**: a scale's offset is zero, so `si / factor - offset`
+ * is the division it always was where a set says nothing about scale, and where a set says
+ * `°C` it is the affine inverse as well.
+ */
 export function inDisplayUnit(units: Units, magnitudeSi: number, unit: string): number {
-  return magnitudeSi / displayOf(units, unit).factor;
+  const shown = displayOf(units, unit);
+  return magnitudeSi / shown.factor - shown.offset;
 }

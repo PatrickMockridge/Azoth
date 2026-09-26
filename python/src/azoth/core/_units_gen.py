@@ -118,6 +118,7 @@ UNIT_SETS: Final[dict[str, dict[str, str]]] = {
         "specific_heat_capacity": "J/(kg*K)",
         "molar_energy": "J/mol",
         "dynamic_viscosity": "Pa*s",
+        "thermodynamic_temperature": "K",
     },
     "field": {
         "pressure": "psi",
@@ -134,7 +135,19 @@ UNIT_SETS: Final[dict[str, dict[str, str]]] = {
         "specific_heat_capacity": "Btu/(lb*degF)",
         "molar_energy": "kJ/mol",
         "dynamic_viscosity": "cP",
+        "thermodynamic_temperature": "°F",
     },
+}
+
+#: The units a display may switch to and a spec may not declare, each as
+#: `(dimension, factor, offset)` under uom's affine convention
+#: `si = (value + offset) * factor`. **Kept out of `CANONICAL_UNITS` deliberately**:
+#: that mapping is what a spec's `unit:` is validated against, so an affine unit in it
+#: would be one a case file could declare and `to_si` would convert by a constant
+#: nobody meant.
+DISPLAY_UNITS: Final[dict[str, tuple[str, float, float]]] = {
+    "°C": ("thermodynamic_temperature", 1.0, 273.15),
+    "°F": ("thermodynamic_temperature", 0.5555555555555556, 459.67),
 }
 
 

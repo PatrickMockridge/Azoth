@@ -438,6 +438,7 @@ pub const UNIT_SETS: &[UnitSet] = &[
             ("specific_heat_capacity", "J/(kg*K)"),
             ("molar_energy", "J/mol"),
             ("dynamic_viscosity", "Pa*s"),
+            ("thermodynamic_temperature", "K"),
         ],
     },
     UnitSet {
@@ -458,9 +459,61 @@ pub const UNIT_SETS: &[UnitSet] = &[
             ("specific_heat_capacity", "Btu/(lb*degF)"),
             ("molar_energy", "kJ/mol"),
             ("dynamic_viscosity", "cP"),
+            ("thermodynamic_temperature", "°F"),
         ],
     },
 ];
+
+/// One unit a display may switch to and a spec may not declare.
+///
+/// **Not in [`UNIT_NAMES`], and that is the point of the table**: the schema a spec's
+/// `unit:` is checked against is generated from that list, so an affine unit kept out of
+/// it is one no case file can name. It is also why no Lean theorem corresponds to a row
+/// here - a spec unit makes a dimension claim that `lean/Azoth/Gate.lean` proves, and a
+/// presentation choice makes none.
+pub struct DisplayUnit {
+    /// The unit string a set names and a display shows.
+    pub id: &'static str,
+    /// The dimension it measures, which is what a set files it under.
+    pub dimension: &'static str,
+    /// One of it, in the dimension's SI base unit, before the offset.
+    pub factor: f64,
+    /// The affine constant, in the same unit `factor`'s base is.
+    pub offset: f64,
+}
+
+/// The display units, in the table's order.
+pub const DISPLAY_UNITS: &[DisplayUnit] = &[
+    DisplayUnit {
+        id: "°C",
+        dimension: "thermodynamic_temperature",
+        factor: 1.0,
+        offset: 273.15,
+    },
+    DisplayUnit {
+        id: "°F",
+        dimension: "thermodynamic_temperature",
+        factor: 0.5555555555555556,
+        offset: 459.67,
+    },
+];
+
+/// One display unit's conversion to the SI base magnitude: `(value + offset) * factor`.
+///
+/// **uom's own affine convention**, which is what makes a degree Celsius
+/// `(u + 273.15) * 1` and a degree Fahrenheit `(u + 459.67) * 5/9`. This is not
+/// [`conversion`]: that one is a *scale*, and [`si_factor`] reads it at one, while an
+/// affine unit's answer at one is not its factor. What is compared against here is
+/// `pint`'s own reading of the unit, **at two values**, in
+/// `python/tests/test_units_cross_library.py` - two because one point cannot tell a scale
+/// from a shifted one.
+#[must_use]
+pub fn affine_si(name: &str, value: f64) -> Option<f64> {
+    DISPLAY_UNITS
+        .iter()
+        .find(|unit| unit.id == name)
+        .map(|unit| (value + unit.offset) * unit.factor)
+}
 
 #[cfg(test)]
 mod dimension_assertions {

@@ -135,12 +135,23 @@ streams publishes no entry at all, which is a statement about the arithmetic rat
 
 **A unit set is a reading of a run, not a second run.** The vocabulary declares named sets — `si` and
 `field` — as one unit per dimension, and the catalogue carries them beside every declared unit's
-dimension and its `si_factor`, which is the same conversion a calculation runs. So the editor
-divides by a factor the library computed, and `ui/src/state/units.ts` holds no conversion table: a
-display switches unit, a document does not change, and Solve has no opinion about which set is in
-force. A dimension no set names is read in the unit the library computed it in — most of the
-vocabulary has no engineering alternative — and absolute temperature is deliberately one of them,
-because an offset unit is a different thing from a scale and this library converts scales.
+dimension and its conversion, which is the same one a calculation runs. So the editor divides by a
+factor the library computed, and `ui/src/state/units.ts` holds no conversion table: a display
+switches unit, a document does not change, and Solve has no opinion about which set is in force. A
+dimension no set names is read in the unit the library computed it in, which is most of the
+vocabulary: `Pa*m**6/mol**2` has no engineering alternative.
+
+**Temperature is the one dimension whose unit is not a scale, and that is why it has a table of its
+own.** A degree Celsius is affine — `si = (value + 273.15) * 1` — and a scale's factor, which is what
+`si_factor` reads and what a spec's `unit:` converts by, cannot express the shift: read at one, an
+affine unit answers 274.15 rather than its factor. So `degC` and `degF` are declared as
+**display units**, in their own table, and two generated facts follow from that rather than from a
+rule anybody has to remember. `specs/schema/unit.schema.json` — the enum a spec's `unit:` is checked
+against — is generated from the scale table alone, so **no case file can name one**; and the Lean
+vocabulary, which makes and proves a dimension claim per spec unit, carries none of them either,
+because a presentation choice makes no such claim. What makes the two numbers trustworthy is the
+check every other unit gets: `pint`'s own answer for the unit, asked at **two** values, because one
+point cannot tell a scale from a shifted one.
 
 **The editor is one front-end over two of those doors.** `ui/src/wire/session.ts` is the seam — a
 palette and three calls, every one of them a promise, because a `fetch` cannot answer a synchronous

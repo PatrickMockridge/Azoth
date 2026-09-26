@@ -230,6 +230,28 @@ LEAN_DIMENSIONS: dict[str, str] = {
 }
 
 
+def rust_str(value: str) -> str:
+    """A Rust string literal for `value`.
+
+    **`json.dumps` is not one.** It escapes a non-ASCII character as `\\u00b0`, which is valid
+    JSON and a compile error in Rust - and a display unit's id is written the way a reader reads
+    it, so `°C` is a name this table legitimately carries. For ASCII the two are identical, which
+    is why the older emissions could get away with the JSON spelling.
+    """
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def py_str(value: str) -> str:
+    """A Python string literal for `value`, with a non-ASCII character kept as itself.
+
+    `json.dumps` escapes `°` as `\\u00b0`, which Python reads correctly and a person reading the
+    generated file does not - and a display unit's id is written the way a reader sees it, so the
+    file should read that way too.
+    """
+    return json.dumps(value, ensure_ascii=False)
+
+
 def snake(name: str) -> str:
     """`VolumeRate` -> `volume_rate`, which is uom's module name for it."""
     return "".join(f"_{c.lower()}" if c.isupper() else c for c in name).lstrip("_")
@@ -333,6 +355,33 @@ def load_table() -> dict[str, Any]:
                     f"{snake(quantity)!r}"
                 )
 
+    # The display units. A name that is also a spec-declarable unit is refused, because a
+    # reader - and a set - cannot tell which of the two a name meant; and a dimension the
+    # table does not declare is refused for the reason a unit's is.
+    unit_ids = {u["id"] for u in table["units"]}
+    display_ids = [u["id"] for u in table["display_units"]]
+    dupes = {i for i in display_ids if display_ids.count(i) > 1}
+    if dupes:
+        sys.exit(f"gen_vocabulary: duplicate display unit id(s): {sorted(dupes)}")
+    shared = sorted(set(display_ids) & unit_ids)
+    if shared:
+        sys.exit(
+            f"gen_vocabulary: {shared} name both a spec-declarable unit and a display unit. "
+            f"A spec's `unit:` is checked against the first list, so a name in both would be "
+            f"one string meaning two conversions depending on who read it."
+        )
+    for unit in table["display_units"]:
+        if unit["dimension"] not in by_id:
+            sys.exit(
+                f"gen_vocabulary: display unit {unit['id']!r} names dimension "
+                f"{unit['dimension']!r}, which is not declared"
+            )
+        if unit["factor"] == 0.0:
+            sys.exit(
+                f"gen_vocabulary: display unit {unit['id']!r} has a factor of zero, which is "
+                f"not a scale - a display dividing by it would have no answer."
+            )
+
     # The unit sets. Three ways one could look complete and convert nothing, each
     # refused rather than emitted: a name that is not a dimension, a unit that is not
     # in the vocabulary, and a unit filed under a dimension it does not carry.
@@ -341,6 +390,7 @@ def load_table() -> dict[str, Any]:
     if dupes:
         sys.exit(f"gen_vocabulary: duplicate unit set id(s): {sorted(dupes)}")
     units_by_id = {u["id"]: u for u in table["units"]}
+    units_by_id.update({u["id"]: u for u in table["display_units"]})
     covered: set[str] | None = None
     for unit_set in table["unit_sets"]:
         names = set(unit_set["units"])
@@ -536,18 +586,68 @@ def emit_rust(table: dict[str, Any]) -> str:
     for unit_set in table["unit_sets"]:
         out += [
             "    UnitSet {",
-            f"        id: {json.dumps(unit_set['id'])},",
-            f"        name: {json.dumps(unit_set['name'])},",
+            f"        id: {rust_str(unit_set['id'])},",
+            f"        name: {rust_str(unit_set['name'])},",
             "        units: &[",
         ]
         for dimension_id, unit_id in unit_set["units"].items():
-            out.append(f"            ({json.dumps(dimension_id)}, {json.dumps(unit_id)}),")
+            out.append(f"            ({rust_str(dimension_id)}, {rust_str(unit_id)}),")
         out += [
             "        ],",
             "    },",
         ]
     out += [
         "];",
+        "",
+        "/// One unit a display may switch to and a spec may not declare.",
+        "///",
+        "/// **Not in [`UNIT_NAMES`], and that is the point of the table**: the schema a spec's",
+        "/// `unit:` is checked against is generated from that list, so an affine unit kept out of",
+        "/// it is one no case file can name. It is also why no Lean theorem corresponds to a row",
+        "/// here - a spec unit makes a dimension claim that `lean/Azoth/Gate.lean` proves, and a",
+        "/// presentation choice makes none.",
+        "pub struct DisplayUnit {",
+        "    /// The unit string a set names and a display shows.",
+        "    pub id: &'static str,",
+        "    /// The dimension it measures, which is what a set files it under.",
+        "    pub dimension: &'static str,",
+        "    /// One of it, in the dimension's SI base unit, before the offset.",
+        "    pub factor: f64,",
+        "    /// The affine constant, in the same unit `factor`'s base is.",
+        "    pub offset: f64,",
+        "}",
+        "",
+        "/// The display units, in the table's order.",
+        "pub const DISPLAY_UNITS: &[DisplayUnit] = &[",
+    ]
+    for unit in table["display_units"]:
+        out += [
+            "    DisplayUnit {",
+            f"        id: {rust_str(unit['id'])},",
+            f"        dimension: {rust_str(unit['dimension'])},",
+            f"        factor: {unit['factor']!r},",
+            f"        offset: {unit['offset']!r},",
+            "    },",
+        ]
+    out += [
+        "];",
+        "",
+        "/// One display unit's conversion to the SI base magnitude: `(value + offset) * factor`.",
+        "///",
+        "/// **uom's own affine convention**, which is what makes a degree Celsius",
+        "/// `(u + 273.15) * 1` and a degree Fahrenheit `(u + 459.67) * 5/9`. This is not",
+        "/// [`conversion`]: that one is a *scale*, and [`si_factor`] reads it at one, while an",
+        "/// affine unit's answer at one is not its factor. What is compared against here is",
+        "/// `pint`'s own reading of the unit, **at two values**, in",
+        "/// `python/tests/test_units_cross_library.py` - two because one point cannot tell a scale",
+        "/// from a shifted one.",
+        "#[must_use]",
+        "pub fn affine_si(name: &str, value: f64) -> Option<f64> {",
+        "    DISPLAY_UNITS",
+        "        .iter()",
+        "        .find(|unit| unit.id == name)",
+        "        .map(|unit| (value + unit.offset) * unit.factor)",
+        "}",
         "",
         "#[cfg(test)]",
         "mod dimension_assertions {",
@@ -609,7 +709,7 @@ def emit_python(table: dict[str, Any]) -> str:
         "CANONICAL_UNITS: Final[dict[str, str]] = {",
     ]
     for unit in units:
-        out.append(f"    {json.dumps(unit['id'])}: {json.dumps(unit['pint'])},")
+        out.append(f"    {py_str(unit['id'])}: {py_str(unit['pint'])},")
     out += [
         "}",
         "",
@@ -626,10 +726,26 @@ def emit_python(table: dict[str, Any]) -> str:
         "UNIT_SETS: Final[dict[str, dict[str, str]]] = {",
     ]
     for unit_set in table["unit_sets"]:
-        out.append(f"    {json.dumps(unit_set['id'])}: {{")
+        out.append(f"    {py_str(unit_set['id'])}: {{")
         for dimension_id, unit_id in unit_set["units"].items():
-            out.append(f"        {json.dumps(dimension_id)}: {json.dumps(unit_id)},")
+            out.append(f"        {py_str(dimension_id)}: {py_str(unit_id)},")
         out.append("    },")
+    out += [
+        "}",
+        "",
+        "#: The units a display may switch to and a spec may not declare, each as",
+        "#: `(dimension, factor, offset)` under uom's affine convention",
+        "#: `si = (value + offset) * factor`. **Kept out of `CANONICAL_UNITS` deliberately**:",
+        "#: that mapping is what a spec's `unit:` is validated against, so an affine unit in it",
+        "#: would be one a case file could declare and `to_si` would convert by a constant",
+        "#: nobody meant.",
+        "DISPLAY_UNITS: Final[dict[str, tuple[str, float, float]]] = {",
+    ]
+    for unit in table["display_units"]:
+        out.append(
+            f"    {py_str(unit['id'])}: ("
+            f"{py_str(unit['dimension'])}, {unit['factor']!r}, {unit['offset']!r}),"
+        )
     out += [
         "}",
         "",

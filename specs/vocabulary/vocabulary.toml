@@ -1,4 +1,4 @@
-schema_version = 2
+schema_version = 3
 slots = ["L", "M", "T", "I", "Th", "N", "J"]
 [[dimensions]]
 id = "dimensionless"
@@ -510,6 +510,7 @@ mass_density = "kg/m**3"
 specific_heat_capacity = "J/(kg*K)"
 molar_energy = "J/mol"
 dynamic_viscosity = "Pa*s"
+thermodynamic_temperature = "K"
 [[unit_sets]]
 id = "field"
 name = "Field"
@@ -528,3 +529,16 @@ mass_density = "lb/ft**3"
 specific_heat_capacity = "Btu/(lb*degF)"
 molar_energy = "kJ/mol"
 dynamic_viscosity = "cP"
+thermodynamic_temperature = "°F"
+[[display_units]]
+id = "°C"
+dimension = "thermodynamic_temperature"
+pint = "degC"
+factor = 1.0
+offset = 273.15
+[[display_units]]
+id = "°F"
+dimension = "thermodynamic_temperature"
+pint = "degF"
+factor = 0.5555555555555556
+offset = 459.67

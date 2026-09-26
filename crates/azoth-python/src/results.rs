@@ -9614,6 +9614,19 @@ pub fn unit_si_factor(name: &str) -> Option<f64> {
     azoth_core::unit_vocab_gen::si_factor(name)
 }
 
+/// One display unit's conversion to the SI base magnitude: `(value + offset) * factor`.
+///
+/// **The counterpart of [`unit_si_factor`] for the units a spec may not declare.** That function
+/// reads a scale at one, which is exactly what an affine unit's answer at one is *not* - a degree
+/// Celsius is 274.15 K at one - so the two are different calls and the check that holds each is
+/// `python/tests/test_units_cross_library.py`, at one value for a scale and two for an affine
+/// unit, because one point cannot tell a scale from a shifted one.
+#[pyfunction]
+#[must_use]
+pub fn unit_affine_si(name: &str, value: f64) -> Option<f64> {
+    azoth_core::unit_vocab_gen::affine_si(name, value)
+}
+
 /// The base dimensions, in the order the exponent tuples above are written in.
 #[pyfunction]
 #[must_use]

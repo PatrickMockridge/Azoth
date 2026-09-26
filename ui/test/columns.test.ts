@@ -156,7 +156,7 @@ describe("the workbook's rows", () => {
       "mass flow lb/h",
       "M kg/mol",
       "P psi",
-      "T K",
+      "T °F",
       "h kJ/mol",
       "VF null",
     ]);

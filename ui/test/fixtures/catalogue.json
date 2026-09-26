@@ -1154,6 +1154,64 @@
       "name": "Packed column",
       "parameters": [
         {
+          "description": "the pressure at the bottom stage; the base's `setBottomPressure` takes bara",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "bottom_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the component a purity or a recovery constrains; unread by the other three types",
+          "dimension": null,
+          "kind": "string",
+          "name": "bottom_specification_component",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the target value, in the unit its type implies, as the top specification's is",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "bottom_specification_target",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "which of `ColumnSpecification`'s five types constrains the bottom product, which is the same five as the top specification's and its own degree of freedom",
+          "dimension": null,
+          "kind": "enum",
+          "name": "bottom_specification_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "product_purity",
+            "reflux_ratio",
+            "component_recovery",
+            "product_flow_rate",
+            "duty"
+          ]
+        },
+        {
           "description": "the column's internal diameter; a value at or below zero auto-sizes it from the hydraulics, and the class defaults it to -1.0",
           "dimension": "length",
           "kind": "quantity",
@@ -1164,10 +1222,60 @@
           "values": []
         },
         {
+          "description": "the condenser's temperature, which with the top specification is what pins the top of the column; the class defaults it to 270.15 K",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "condenser_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
           "description": "the fraction of flood the packing is sized to, which the hydraulics reads and the solve does not; the class defaults it to 0.70",
           "dimension": "dimensionless",
           "kind": "quantity",
           "name": "design_flood_fraction",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one **and the count is the derived one, not a declared `number_of_stages`**: `packed_height` replaces it, which is why this entry declares no stage count of its own",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "feed_stage",
+          "range": [],
+          "required": true,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "whether the column has a condenser at the top stage, which is the base constructor's `hasCondenser`",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "has_condenser",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "whether the column has a reboiler at stage 0, which is the base constructor's `hasReboiler`",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "has_reboiler",
+          "range": [],
+          "required": true,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the Murphree tray efficiency applied to every equilibrium stage, where 1 is the ideal stage; the class defaults it to 1.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "murphree_efficiency",
           "range": [],
           "required": false,
           "unit": "dimensionless",
@@ -1204,6 +1312,37 @@
           "values": []
         },
         {
+          "description": "the reboiler's temperature, which with the bottom specification is what pins the bottom of the column; the class defaults it to 273.15 K",
+          "dimension": "thermodynamic_temperature",
+          "kind": "quantity",
+          "name": "reboiler_temperature",
+          "range": [],
+          "required": false,
+          "unit": "K",
+          "values": []
+        },
+        {
+          "description": "which of the class's ten solving strategies runs - direct_substitution, damped_substitution, inside_out, matrix_inside_out, wegstein, sum_rates, newton, naphtali_sandholm, mesh_residual or auto - where auto is a ladder and not one method",
+          "dimension": null,
+          "kind": "enum",
+          "name": "solver_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "direct_substitution",
+            "damped_substitution",
+            "inside_out",
+            "matrix_inside_out",
+            "wegstein",
+            "sum_rates",
+            "newton",
+            "naphtali_sandholm",
+            "mesh_residual",
+            "auto"
+          ]
+        },
+        {
           "description": "whether the packing is structured or random, which selects the hydraulic correlation",
           "dimension": null,
           "kind": "boolean",
@@ -1212,6 +1351,64 @@
           "required": false,
           "unit": null,
           "values": []
+        },
+        {
+          "description": "the pressure at the top stage; the base's `setTopPressure` takes bara, and the two pressures fix the profile the stage pressures interpolate",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "top_pressure",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "an absolute pressure",
+              "severity": "error"
+            }
+          ],
+          "required": true,
+          "unit": "Pa",
+          "values": []
+        },
+        {
+          "description": "the component a purity or a recovery constrains; unread by the other three types",
+          "dimension": null,
+          "kind": "string",
+          "name": "top_specification_component",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "top_specification_target",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "which of `ColumnSpecification`'s five types constrains the top product - product_purity, reflux_ratio, component_recovery, product_flow_rate or duty - and product_purity and component_recovery also need `top_specification_component`",
+          "dimension": null,
+          "kind": "enum",
+          "name": "top_specification_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "product_purity",
+            "reflux_ratio",
+            "component_recovery",
+            "product_flow_rate",
+            "duty"
+          ]
         }
       ],
       "ports": [
@@ -1312,12 +1509,10 @@
           "name": "bottoms"
         }
       ],
-      "refusal": "its palette entry declares the packing and not the column: `feed_stage`, `number_of_stages`, the two pressures and the two ends are what `PackedColumn.run` reads through `super.run`, and the entry's own notes say it takes `unit_ops.distillation_column`'s whole declaration - which the file does not carry. A form built from this entry could not configure the machine, so the executor refuses it until the declaration matches the notes",
-      "runnable": false,
+      "refusal": null,
+      "runnable": true,
       "source": "NeqSim process/equipment/distillation/PackedColumn.java",
       "unmodelled_ranges": [
-        "top_pressure",
-        "bottom_pressure",
         "temperature_tolerance",
         "feed_t"
       ]
@@ -1325,15 +1520,27 @@
     {
       "family": "column",
       "id": "unit_ops.rate_based_packed_column",
-      "model": null,
+      "model": "process.rate_based_packed_column",
       "name": "Rate-based packed column",
       "parameters": [
         {
           "description": "the column's internal diameter, which the hydraulics and the interfacial area are computed on; the class defaults it to 1.0",
           "dimension": "length",
-          "kind": "unknown",
+          "kind": "quantity",
           "name": "column_diameter",
-          "range": [],
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "every velocity and the segment volume divide by the cross-section",
+              "severity": "error"
+            }
+          ],
           "required": false,
           "unit": "m",
           "values": []
@@ -1341,19 +1548,34 @@
         {
           "description": "fixed_point_profile, the counter-current liquid profile iteration, or equation_oriented, a column-wide damped Newton with homotopy continuation; the class defaults to the first",
           "dimension": null,
-          "kind": "unknown",
+          "kind": "enum",
           "name": "column_solver",
           "range": [],
           "required": false,
           "unit": null,
-          "values": []
+          "values": [
+            "fixed_point_profile",
+            "equation_oriented"
+          ]
         },
         {
           "description": "the outlet convergence tolerance the profile iterates to, which the class defaults to 1.0e-8",
           "dimension": "molar_flow",
-          "kind": "unknown",
+          "kind": "quantity",
           "name": "convergence_tolerance",
-          "range": [],
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "a convergence gate is positive, and zero is a solve that never stops",
+              "severity": "error"
+            }
+          ],
           "required": false,
           "unit": "mol/s",
           "values": []
@@ -1361,39 +1583,60 @@
         {
           "description": "overall_two_resistance, a scalar gas and liquid film pair, or maxwell_stefan_matrix, which corrects it with NeqSim's binary diffusivities and the phase composition; the class defaults to the matrix",
           "dimension": null,
-          "kind": "unknown",
+          "kind": "enum",
           "name": "film_model",
           "range": [],
           "required": false,
           "unit": null,
-          "values": []
+          "values": [
+            "overall_two_resistance",
+            "maxwell_stefan_matrix"
+          ]
         },
         {
           "description": "none, which re-equilibrates the segment outlets after material transfer alone, or chilton_colburn_analogy, which takes the heat coefficients from the packed-bed film coefficients; the class defaults to the analogy",
           "dimension": null,
-          "kind": "unknown",
+          "kind": "enum",
           "name": "heat_transfer_model",
           "range": [],
           "required": false,
           "unit": null,
-          "values": []
+          "values": [
+            "none",
+            "chilton_colburn_analogy"
+          ]
         },
         {
           "description": "onda_1968 or billet_schultes_1999, which is the wetted-area and film-coefficient correlation; the class defaults to onda_1968",
           "dimension": null,
-          "kind": "unknown",
+          "kind": "enum",
           "name": "mass_transfer_correlation",
           "range": [],
           "required": false,
           "unit": null,
-          "values": []
+          "values": [
+            "onda_1968",
+            "billet_schultes_1999"
+          ]
         },
         {
           "description": "the counter-current profile iteration cap, which the class defaults to 30",
           "dimension": "dimensionless",
-          "kind": "unknown",
+          "kind": "quantity",
           "name": "max_iterations",
-          "range": [],
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "the loop runs at least once, and a cap of zero has no last iterate to publish",
+              "severity": "error"
+            }
+          ],
           "required": false,
           "unit": "dimensionless",
           "values": []
@@ -1401,9 +1644,21 @@
         {
           "description": "the axial slices the packed height is divided into, which is the model's resolution and the size of its profile; the class defaults it to 10",
           "dimension": "dimensionless",
-          "kind": "unknown",
+          "kind": "quantity",
           "name": "number_of_segments",
-          "range": [],
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 1.0,
+              "min_inclusive": true,
+              "rationale": "a column of no segments has no profile",
+              "severity": "error"
+            }
+          ],
           "required": false,
           "unit": "dimensionless",
           "values": []
@@ -1411,9 +1666,21 @@
         {
           "description": "the packed section's height, which is divided into `number_of_segments` slices; the class defaults it to 5.0",
           "dimension": "length",
-          "kind": "unknown",
+          "kind": "quantity",
           "name": "packed_height",
-          "range": [],
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": true,
+              "rationale": "**the class allows zero and forbids only a negative height**, which is what makes the zero-height state valid",
+              "severity": "error"
+            }
+          ],
           "required": false,
           "unit": "m",
           "values": []
@@ -1421,7 +1688,7 @@
         {
           "description": "the packing's name, which `PackingSpecificationLibrary` resolves into the wetted area and film coefficients",
           "dimension": null,
-          "kind": "unknown",
+          "kind": "string",
           "name": "packing_type",
           "range": [],
           "required": false,
@@ -1431,12 +1698,15 @@
         {
           "description": "sequential_explicit, which applies mass transfer then heat transfer then re-flashes, or simultaneous_residual, which solves the flux residuals and the interfacial heat balance together; the class defaults to the first",
           "dimension": null,
-          "kind": "unknown",
+          "kind": "enum",
           "name": "segment_solver",
           "range": [],
           "required": false,
           "unit": null,
-          "values": []
+          "values": [
+            "sequential_explicit",
+            "simultaneous_residual"
+          ]
         }
       ],
       "ports": [
@@ -1569,10 +1839,13 @@
           "name": "liquid_out"
         }
       ],
-      "refusal": "a second physics - a segment model with film coefficients and an interphase heat balance - carried by the distillation workstream rather than by this one",
-      "runnable": false,
+      "refusal": null,
+      "runnable": true,
       "source": "NeqSim process/equipment/distillation/RateBasedPackedColumn.java",
-      "unmodelled_ranges": []
+      "unmodelled_ranges": [
+        "gas_n",
+        "liquid_n"
+      ]
     },
     {
       "family": "column",
@@ -5518,6 +5791,7 @@
         "power": "W",
         "pressure": "Pa",
         "specific_heat_capacity": "J/(kg*K)",
+        "thermodynamic_temperature": "K",
         "velocity": "m/s",
         "volume_rate": "m**3/s"
       }
@@ -5538,6 +5812,7 @@
         "power": "hp",
         "pressure": "psi",
         "specific_heat_capacity": "Btu/(lb*degF)",
+        "thermodynamic_temperature": "°F",
         "velocity": "ft/s",
         "volume_rate": "gpm"
       }
@@ -5546,275 +5821,353 @@
   "units": {
     "1/K": {
       "dimension": "per_temperature",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "1/K**2": {
       "dimension": "per_temperature_squared",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "1/K**3": {
       "dimension": "per_temperature_cubed",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "Btu": {
       "dimension": "energy",
-      "factor": 1055.056
+      "factor": 1055.056,
+      "offset": 0.0
     },
     "Btu/(lb*degF)": {
       "dimension": "specific_heat_capacity",
-      "factor": 4186.800584851107
+      "factor": 4186.800584851107,
+      "offset": 0.0
     },
     "C": {
       "dimension": "charge",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J": {
       "dimension": "energy",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/(kg*K)": {
       "dimension": "specific_heat_capacity",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/(mol*K)": {
       "dimension": "molar_heat_capacity",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/(mol*K**2)": {
       "dimension": "molar_heat_capacity_coefficient_2",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/(mol*K**3)": {
       "dimension": "molar_heat_capacity_coefficient_3",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/(mol*K**4)": {
       "dimension": "molar_heat_capacity_coefficient_4",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/(mol*K**5)": {
       "dimension": "molar_heat_capacity_coefficient_5",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "J/mol": {
       "dimension": "molar_energy",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "K": {
       "dimension": "thermodynamic_temperature",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "L/min": {
       "dimension": "volume_rate",
-      "factor": 0.000016666666666666667
+      "factor": 0.000016666666666666667,
+      "offset": 0.0
     },
     "MJ": {
       "dimension": "energy",
-      "factor": 1000000.0
+      "factor": 1000000.0,
+      "offset": 0.0
     },
     "MPa": {
       "dimension": "pressure",
-      "factor": 1000000.0
+      "factor": 1000000.0,
+      "offset": 0.0
     },
     "MW": {
       "dimension": "power",
-      "factor": 1000000.0
+      "factor": 1000000.0,
+      "offset": 0.0
     },
     "N/m": {
       "dimension": "surface_tension",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "Pa": {
       "dimension": "pressure",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "Pa*m**6/mol**2": {
       "dimension": "attraction_parameter",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "Pa*s": {
       "dimension": "dynamic_viscosity",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "W": {
       "dimension": "power",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "W/(m**2*K)": {
       "dimension": "heat_transfer",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "W/(m*K)": {
       "dimension": "thermal_conductivity",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "W/K": {
       "dimension": "thermal_conductance",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "angstrom": {
       "dimension": "length",
-      "factor": 1e-10
+      "factor": 1e-10,
+      "offset": 0.0
     },
     "atm": {
       "dimension": "pressure",
-      "factor": 101325.0
+      "factor": 101325.0,
+      "offset": 0.0
     },
     "bar": {
       "dimension": "pressure",
-      "factor": 100000.0
+      "factor": 100000.0,
+      "offset": 0.0
     },
     "cP": {
       "dimension": "dynamic_viscosity",
-      "factor": 0.001
+      "factor": 0.001,
+      "offset": 0.0
     },
     "cm": {
       "dimension": "length",
-      "factor": 0.01
+      "factor": 0.01,
+      "offset": 0.0
     },
     "dimensionless": {
       "dimension": "dimensionless",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "ft": {
       "dimension": "length",
-      "factor": 0.3048
+      "factor": 0.3048,
+      "offset": 0.0
     },
     "ft**3/min": {
       "dimension": "volume_rate",
-      "factor": 0.0004719474432000001
+      "factor": 0.0004719474432000001,
+      "offset": 0.0
     },
     "ft/s": {
       "dimension": "velocity",
-      "factor": 0.3048
+      "factor": 0.3048,
+      "offset": 0.0
     },
     "gpm": {
       "dimension": "volume_rate",
-      "factor": 0.00006309019639999999
+      "factor": 0.00006309019639999999,
+      "offset": 0.0
     },
     "hp": {
       "dimension": "power",
-      "factor": 745.6998715822704
+      "factor": 745.6998715822704,
+      "offset": 0.0
     },
     "in": {
       "dimension": "length",
-      "factor": 0.0254
+      "factor": 0.0254,
+      "offset": 0.0
     },
     "kJ": {
       "dimension": "energy",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "kJ/(kg*K)": {
       "dimension": "specific_heat_capacity",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "kJ/mol": {
       "dimension": "molar_energy",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "kPa": {
       "dimension": "pressure",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "kW": {
       "dimension": "power",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "kg": {
       "dimension": "mass",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "kg/h": {
       "dimension": "mass_rate",
-      "factor": 0.0002777777777777778
+      "factor": 0.0002777777777777778,
+      "offset": 0.0
     },
     "kg/m**3": {
       "dimension": "mass_density",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "kg/mol": {
       "dimension": "molar_mass",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "kg/s": {
       "dimension": "mass_rate",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "kmol": {
       "dimension": "amount",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "kmol/h": {
       "dimension": "molar_flow",
-      "factor": 0.2777777777777778
+      "factor": 0.2777777777777778,
+      "offset": 0.0
     },
     "lb": {
       "dimension": "mass",
-      "factor": 0.45359237
+      "factor": 0.45359237,
+      "offset": 0.0
     },
     "lb/ft**3": {
       "dimension": "mass_density",
-      "factor": 16.018463373960138
+      "factor": 16.018463373960138,
+      "offset": 0.0
     },
     "lb/h": {
       "dimension": "mass_rate",
-      "factor": 0.00012599788055555556
+      "factor": 0.00012599788055555556,
+      "offset": 0.0
     },
     "m": {
       "dimension": "length",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "m**2": {
       "dimension": "area",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "m**2/s": {
       "dimension": "diffusion_coefficient",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "m**3/h": {
       "dimension": "volume_rate",
-      "factor": 0.0002777777777777778
+      "factor": 0.0002777777777777778,
+      "offset": 0.0
     },
     "m**3/mol": {
       "dimension": "molar_volume",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "m**3/s": {
       "dimension": "volume_rate",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "m/s": {
       "dimension": "velocity",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "mm": {
       "dimension": "length",
-      "factor": 0.001
+      "factor": 0.001,
+      "offset": 0.0
     },
     "mol": {
       "dimension": "amount",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "mol/kg": {
       "dimension": "molality",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "mol/s": {
       "dimension": "molar_flow",
-      "factor": 1.0
+      "factor": 1.0,
+      "offset": 0.0
     },
     "psi": {
       "dimension": "pressure",
-      "factor": 6894.757293168361
+      "factor": 6894.757293168361,
+      "offset": 0.0
     },
     "t": {
       "dimension": "mass",
-      "factor": 1000.0
+      "factor": 1000.0,
+      "offset": 0.0
     },
     "t/h": {
       "dimension": "mass_rate",
-      "factor": 0.2777777777777778
+      "factor": 0.2777777777777778,
+      "offset": 0.0
+    },
+    "°C": {
+      "dimension": "thermodynamic_temperature",
+      "factor": 1.0,
+      "offset": 273.15
+    },
+    "°F": {
+      "dimension": "thermodynamic_temperature",
+      "factor": 0.5555555555555556,
+      "offset": 459.67
     }
   }
 }

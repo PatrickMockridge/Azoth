@@ -296,6 +296,78 @@ def test_a_unit_set_naming_something_that_is_not_a_dimension_is_refused(tmp_path
         compile_table(tmp_path, table)
 
 
+def test_a_display_unit_named_like_a_spec_unit_is_refused(tmp_path: Path) -> None:
+    """A name in both tables is one string meaning two conversions.
+
+    `Pa`-style names are what a spec's `unit:` is checked against and a display's names are what a
+    switcher offers, so a name in both would convert by a scale for a case file and - where it is
+    affine - by a shift for a reader. Refusing the overlap is what lets the front end look a unit
+    up by name without asking which table it meant.
+    """
+    table = a_table()
+    table["display_units"].append(
+        {
+            "id": "K",
+            "dimension": "thermodynamic_temperature",
+            "pint": "degC",
+            "factor": 1.0,
+            "offset": 273.15,
+        }
+    )
+    with pytest.raises(SystemExit, match="both a spec-declarable unit and a display unit"):
+        compile_table(tmp_path, table)
+
+
+def test_a_display_unit_with_a_dimension_the_table_lacks_is_refused(tmp_path: Path) -> None:
+    """The same dangling reference a unit's `dimension:` is refused for."""
+    table = a_table()
+    table["display_units"].append(
+        {
+            "id": "furlong",
+            "dimension": "length_of_a_horse",
+            "pint": "furlong",
+            "factor": 201.168,
+            "offset": 0.0,
+        }
+    )
+    with pytest.raises(SystemExit, match="which is not declared"):
+        compile_table(tmp_path, table)
+
+
+def test_a_display_unit_with_a_zero_factor_is_refused(tmp_path: Path) -> None:
+    """A factor of zero is not a scale: a display dividing by it has no answer."""
+    table = a_table()
+    table["display_units"][0]["factor"] = 0.0
+    with pytest.raises(SystemExit, match="factor of zero"):
+        compile_table(tmp_path, table)
+
+
+def test_the_two_display_tables_are_one_set_on_both_halves() -> None:
+    """The generated Rust and Python carry the table's display units, and the schema does not.
+
+    **The third list is the point of the separation.** `specs/schema/unit.schema.json` is generated
+    from `units` alone, so a display unit cannot appear in it - and that is what makes "a spec may
+    not declare one" a fact about a generated file rather than a rule to remember. The Lean
+    vocabulary is generated from `units` for the same reason: a spec unit makes a dimension claim
+    the gate proves, and a display unit makes none.
+    """
+    module = gen_vocabulary()
+    table = a_table()
+    declared = sorted(unit["id"] for unit in table["display_units"])
+
+    generated = [line.strip() for line in module.emit_rust(table).splitlines()]
+    assert declared, "the table declares no display unit, so this test asserts nothing"
+    for name in declared:
+        assert f'id: "{name}",' in generated, f"{name} is not in the generated Rust"
+        assert f'"{name}"' in module.emit_python(table), f"{name} is not in the generated Python"
+        assert f'"{name}"' not in module.emit_unit_schema(table), (
+            f"{name} is in the spec-facing enum, so a case file could declare it"
+        )
+        assert f'"{name}"' not in module.emit_lean(table), (
+            f"{name} is in the Lean vocabulary, which makes a dimension claim it cannot prove"
+        )
+
+
 def test_two_unit_sets_covering_different_dimensions_are_refused(tmp_path: Path) -> None:
     """Every set names the same dimensions, so switching back is the same document.
 
