@@ -316,6 +316,26 @@ def load_table() -> dict[str, Any]:
                 f"UOM_TYPES, so this generator does not know whether uom carries it. "
                 f"Add it with a quantity type, or with None if uom has none."
             )
+        # `uom_absent` is present exactly when uom carries no quantity for the dimension, and
+        # it is the reason the emitted register gives beside every unit of one. A dimension
+        # uom does carry may not have one - the reason would be false, and every unit of it
+        # gets an ascription - and a dimension it does not may not be without one, because
+        # then the register would name the units and say nothing about why no line can be
+        # written for them.
+        reason = dimension.get("uom_absent")
+        if UOM_TYPES[key] is not None and reason is not None:
+            sys.exit(
+                f"gen_vocabulary: dimension {dimension['id']!r} states `uom_absent` "
+                f"{reason!r}, but UOM_TYPES carries it as {UOM_TYPES[key]!r}: every unit of "
+                f"it gets an ascription, so the reason would be false."
+            )
+        if UOM_TYPES[key] is None and not (reason or "").strip():
+            sys.exit(
+                f"gen_vocabulary: dimension {dimension['id']!r} maps to None in UOM_TYPES "
+                f"and states no `uom_absent` reason. A unit of it gets no ascription, so "
+                f"PINT_ASSERTED_UNITS would name it without saying why - which is the gap "
+                f"that register exists to declare."
+            )
 
     for unit in table["units"]:
         dimension = by_id.get(unit["dimension"])
@@ -649,30 +669,44 @@ def emit_rust(table: dict[str, Any]) -> str:
         "        .map(|unit| (value + unit.offset) * unit.factor)",
         "}",
         "",
-        "#[cfg(test)]",
-        "mod dimension_assertions {",
-        "    //! One assertion per unit, and the whole point of deriving the uom type",
-        "    //! from the exponents rather than declaring it beside them.",
-        "    //!",
-        "    //! Each line says: the constructor the conversion calls produces the uom",
-        "    //! quantity that THIS unit's exponents name. Change an exponent in the",
-        "    //! table and the two sides stop being the same type, so this fails to",
-        "    //! compile rather than passing on a name that happens to match.",
-        "",
-        "    #[test]",
-        "    fn the_table_agrees_with_uom() {",
+        "/// One ascription per unit whose dimension `uom` carries: the constructor a",
+        "/// unit's conversion calls must produce the quantity the table's exponents name.",
+        "///",
+        "/// **A `const` item rather than a `#[cfg(test)]` function, and that is what makes",
+        "/// it bite.** The closure's body is the assertion - change an exponent in the",
+        "/// table and the two sides stop being the same type - and a `const` is compiled by",
+        "/// `cargo build`, so a wrong exponent fails the build rather than waiting for the",
+        "/// test sweep. The item is never called: it is a `fn` because a body is where a",
+        "/// type is ascribed.",
+        "pub const DIMENSION_ASSERTIONS: fn() = || {",
     ]
     for unit in units:
         exps = by_id[unit["dimension"]]["exponents"]
         quantity = UOM_TYPES[tuple(exps)]
         if quantity is None:
             continue
-        out.append(
-            f"        let _: uom::si::f64::{quantity} = crate::units::{unit['rust_ctor']}(1.0);"
-        )
+        out.append(f"    let _: uom::si::f64::{quantity} = crate::units::{unit['rust_ctor']}(1.0);")
     out += [
-        "    }",
-        "}",
+        "};",
+        "",
+        "/// The units with no ascription above, each with the table's reason it has none.",
+        "///",
+        "/// **The gap, declared.** uom has no quantity for these dimensions - the table",
+        "/// states why, dimension by dimension - so there is no type to ascribe and no",
+        "/// constructor to ascribe it through. Nothing in Rust then holds their exponents:",
+        "/// what holds them is `python/tests/test_units_cross_library.py`, which compares",
+        "/// every unit's exponents and its factor against `pint`'s own answer. A unit here",
+        "/// is therefore not a unit nobody checks, and it is not one this build checks",
+        "/// either - which is the difference the register exists to state.",
+        "pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[",
+    ]
+    for unit in units:
+        dimension = by_id[unit["dimension"]]
+        if UOM_TYPES[tuple(dimension["exponents"])] is not None:
+            continue
+        out.append(f"    ({rust_str(unit['id'])}, {rust_str(dimension['uom_absent'])}),")
+    out += [
+        "];",
         "",
     ]
     return "\n".join(out)

@@ -62,7 +62,12 @@
       "required": ["id", "exponents"],
       "properties": {
         "id": { "$ref": "#/$defs/dimension_id" },
-        "exponents": { "$ref": "#/$defs/exponents" }
+        "exponents": { "$ref": "#/$defs/exponents" },
+        "uom_absent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why uom carries no quantity for this dimension, present exactly when it carries none: the generator refuses it on a dimension uom does carry, and refuses its absence on one it does not. uom's `quantity!` macro has to run inside `uom::si` and `system!` assembles the `Units` trait from a closed list, so no crate outside uom can add a quantity - which makes this a fact about uom rather than a gap here, and a fact worth stating because a unit of such a dimension gets no compile-time ascription: nothing in Rust checks that unit's exponents, and what holds them instead is `python/tests/test_units_cross_library.py`, which holds every unit's exponents and factor to pint's own answer. The generated `PINT_ASSERTED_UNITS` names every such unit with this reason beside it."
+        }
       }
     },
     "uom_path": {

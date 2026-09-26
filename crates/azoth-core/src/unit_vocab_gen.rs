@@ -515,76 +515,128 @@ pub fn affine_si(name: &str, value: f64) -> Option<f64> {
         .map(|unit| (value + unit.offset) * unit.factor)
 }
 
-#[cfg(test)]
-mod dimension_assertions {
-    //! One assertion per unit, and the whole point of deriving the uom type
-    //! from the exponents rather than declaring it beside them.
-    //!
-    //! Each line says: the constructor the conversion calls produces the uom
-    //! quantity that THIS unit's exponents name. Change an exponent in the
-    //! table and the two sides stop being the same type, so this fails to
-    //! compile rather than passing on a name that happens to match.
+/// One ascription per unit whose dimension `uom` carries: the constructor a
+/// unit's conversion calls must produce the quantity the table's exponents name.
+///
+/// **A `const` item rather than a `#[cfg(test)]` function, and that is what makes
+/// it bite.** The closure's body is the assertion - change an exponent in the
+/// table and the two sides stop being the same type - and a `const` is compiled by
+/// `cargo build`, so a wrong exponent fails the build rather than waiting for the
+/// test sweep. The item is never called: it is a `fn` because a body is where a
+/// type is ascribed.
+pub const DIMENSION_ASSERTIONS: fn() = || {
+    let _: uom::si::f64::Length = crate::units::meters(1.0);
+    let _: uom::si::f64::Length = crate::units::millimeters(1.0);
+    let _: uom::si::f64::Area = crate::units::square_meters(1.0);
+    let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_second(1.0);
+    let _: uom::si::f64::MassRate = crate::units::kilograms_per_second(1.0);
+    let _: uom::si::f64::AmountOfSubstance = crate::units::moles(1.0);
+    let _: uom::si::f64::Mass = crate::units::kilograms(1.0);
+    let _: uom::si::f64::MassDensity = crate::units::kilograms_per_cubic_meter(1.0);
+    let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
+    let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);
+    let _: uom::si::f64::Pressure = crate::units::pascals(1.0);
+    let _: uom::si::f64::DynamicViscosity = crate::units::pascal_seconds(1.0);
+    let _: uom::si::f64::ThermodynamicTemperature = crate::units::kelvins(1.0);
+    let _: uom::si::f64::Power = crate::units::watts(1.0);
+    let _: uom::si::f64::SpecificHeatCapacity = crate::units::joules_per_kilogram_kelvin(1.0);
+    let _: uom::si::f64::ThermalConductivity = crate::units::watts_per_meter_kelvin(1.0);
+    let _: uom::si::f64::HeatTransfer = crate::units::watts_per_square_meter_kelvin(1.0);
+    let _: uom::si::f64::ThermalConductance = crate::units::watts_per_kelvin(1.0);
+    let _: uom::si::f64::SurfaceTension = crate::units::newtons_per_meter(1.0);
+    let _: uom::si::f64::MolarMass = crate::units::kilograms_per_mole(1.0);
+    let _: uom::si::f64::MolarVolume = crate::units::cubic_meters_per_mole(1.0);
+    let _: uom::si::f64::Energy = crate::units::joules(1.0);
+    let _: uom::si::f64::MolarEnergy = crate::units::joules_per_mole(1.0);
+    let _: uom::si::f64::MolarHeatCapacity = crate::units::joules_per_mole_kelvin(1.0);
+    let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
+    let _: uom::si::f64::Length = crate::units::angstroms(1.0);
+    let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
+    let _: uom::si::f64::Pressure = crate::units::bars(1.0);
+    let _: uom::si::f64::Pressure = crate::units::kilopascals(1.0);
+    let _: uom::si::f64::Pressure = crate::units::megapascals(1.0);
+    let _: uom::si::f64::Pressure = crate::units::pounds_per_square_inch(1.0);
+    let _: uom::si::f64::Pressure = crate::units::atmospheres(1.0);
+    let _: uom::si::f64::MassRate = crate::units::kilograms_per_hour(1.0);
+    let _: uom::si::f64::MassRate = crate::units::tonnes_per_hour(1.0);
+    let _: uom::si::f64::MassRate = crate::units::pounds_per_hour(1.0);
+    let _: uom::si::f64::Mass = crate::units::tonnes(1.0);
+    let _: uom::si::f64::Mass = crate::units::pounds(1.0);
+    let _: uom::si::f64::Energy = crate::units::kilojoules(1.0);
+    let _: uom::si::f64::Energy = crate::units::megajoules(1.0);
+    let _: uom::si::f64::Energy = crate::units::british_thermal_units(1.0);
+    let _: uom::si::f64::Power = crate::units::kilowatts(1.0);
+    let _: uom::si::f64::Power = crate::units::megawatts(1.0);
+    let _: uom::si::f64::Power = crate::units::mechanical_horsepower(1.0);
+    let _: uom::si::f64::Length = crate::units::feet(1.0);
+    let _: uom::si::f64::Length = crate::units::inches(1.0);
+    let _: uom::si::f64::Length = crate::units::centimeters(1.0);
+    let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_hour(1.0);
+    let _: uom::si::f64::VolumeRate = crate::units::liters_per_minute(1.0);
+    let _: uom::si::f64::VolumeRate = crate::units::gallons_per_minute(1.0);
+    let _: uom::si::f64::VolumeRate = crate::units::cubic_feet_per_minute(1.0);
+    let _: uom::si::f64::Velocity = crate::units::feet_per_second(1.0);
+    let _: uom::si::f64::MassDensity = crate::units::pounds_per_cubic_foot(1.0);
+    let _: uom::si::f64::SpecificHeatCapacity = crate::units::kilojoules_per_kilogram_kelvin(1.0);
+    let _: uom::si::f64::SpecificHeatCapacity =
+        crate::units::british_thermal_units_per_pound_degree_fahrenheit(1.0);
+    let _: uom::si::f64::MolarEnergy = crate::units::kilojoules_per_mole(1.0);
+    let _: uom::si::f64::DynamicViscosity = crate::units::centipoise(1.0);
+    let _: uom::si::f64::AmountOfSubstance = crate::units::kilomoles(1.0);
+};
 
-    #[test]
-    fn the_table_agrees_with_uom() {
-        let _: uom::si::f64::Length = crate::units::meters(1.0);
-        let _: uom::si::f64::Length = crate::units::millimeters(1.0);
-        let _: uom::si::f64::Area = crate::units::square_meters(1.0);
-        let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_second(1.0);
-        let _: uom::si::f64::MassRate = crate::units::kilograms_per_second(1.0);
-        let _: uom::si::f64::AmountOfSubstance = crate::units::moles(1.0);
-        let _: uom::si::f64::Mass = crate::units::kilograms(1.0);
-        let _: uom::si::f64::MassDensity = crate::units::kilograms_per_cubic_meter(1.0);
-        let _: uom::si::f64::Velocity = crate::units::meters_per_second(1.0);
-        let _: uom::si::f64::DiffusionCoefficient = crate::units::square_meters_per_second(1.0);
-        let _: uom::si::f64::Pressure = crate::units::pascals(1.0);
-        let _: uom::si::f64::DynamicViscosity = crate::units::pascal_seconds(1.0);
-        let _: uom::si::f64::ThermodynamicTemperature = crate::units::kelvins(1.0);
-        let _: uom::si::f64::Power = crate::units::watts(1.0);
-        let _: uom::si::f64::SpecificHeatCapacity = crate::units::joules_per_kilogram_kelvin(1.0);
-        let _: uom::si::f64::ThermalConductivity = crate::units::watts_per_meter_kelvin(1.0);
-        let _: uom::si::f64::HeatTransfer = crate::units::watts_per_square_meter_kelvin(1.0);
-        let _: uom::si::f64::ThermalConductance = crate::units::watts_per_kelvin(1.0);
-        let _: uom::si::f64::SurfaceTension = crate::units::newtons_per_meter(1.0);
-        let _: uom::si::f64::MolarMass = crate::units::kilograms_per_mole(1.0);
-        let _: uom::si::f64::MolarVolume = crate::units::cubic_meters_per_mole(1.0);
-        let _: uom::si::f64::Energy = crate::units::joules(1.0);
-        let _: uom::si::f64::MolarEnergy = crate::units::joules_per_mole(1.0);
-        let _: uom::si::f64::MolarHeatCapacity = crate::units::joules_per_mole_kelvin(1.0);
-        let _: uom::si::f64::ElectricCharge = crate::units::coulombs(1.0);
-        let _: uom::si::f64::Length = crate::units::angstroms(1.0);
-        let _: uom::si::f64::Molality = crate::units::moles_per_kilogram(1.0);
-        let _: uom::si::f64::Pressure = crate::units::bars(1.0);
-        let _: uom::si::f64::Pressure = crate::units::kilopascals(1.0);
-        let _: uom::si::f64::Pressure = crate::units::megapascals(1.0);
-        let _: uom::si::f64::Pressure = crate::units::pounds_per_square_inch(1.0);
-        let _: uom::si::f64::Pressure = crate::units::atmospheres(1.0);
-        let _: uom::si::f64::MassRate = crate::units::kilograms_per_hour(1.0);
-        let _: uom::si::f64::MassRate = crate::units::tonnes_per_hour(1.0);
-        let _: uom::si::f64::MassRate = crate::units::pounds_per_hour(1.0);
-        let _: uom::si::f64::Mass = crate::units::tonnes(1.0);
-        let _: uom::si::f64::Mass = crate::units::pounds(1.0);
-        let _: uom::si::f64::Energy = crate::units::kilojoules(1.0);
-        let _: uom::si::f64::Energy = crate::units::megajoules(1.0);
-        let _: uom::si::f64::Energy = crate::units::british_thermal_units(1.0);
-        let _: uom::si::f64::Power = crate::units::kilowatts(1.0);
-        let _: uom::si::f64::Power = crate::units::megawatts(1.0);
-        let _: uom::si::f64::Power = crate::units::mechanical_horsepower(1.0);
-        let _: uom::si::f64::Length = crate::units::feet(1.0);
-        let _: uom::si::f64::Length = crate::units::inches(1.0);
-        let _: uom::si::f64::Length = crate::units::centimeters(1.0);
-        let _: uom::si::f64::VolumeRate = crate::units::cubic_meters_per_hour(1.0);
-        let _: uom::si::f64::VolumeRate = crate::units::liters_per_minute(1.0);
-        let _: uom::si::f64::VolumeRate = crate::units::gallons_per_minute(1.0);
-        let _: uom::si::f64::VolumeRate = crate::units::cubic_feet_per_minute(1.0);
-        let _: uom::si::f64::Velocity = crate::units::feet_per_second(1.0);
-        let _: uom::si::f64::MassDensity = crate::units::pounds_per_cubic_foot(1.0);
-        let _: uom::si::f64::SpecificHeatCapacity =
-            crate::units::kilojoules_per_kilogram_kelvin(1.0);
-        let _: uom::si::f64::SpecificHeatCapacity =
-            crate::units::british_thermal_units_per_pound_degree_fahrenheit(1.0);
-        let _: uom::si::f64::MolarEnergy = crate::units::kilojoules_per_mole(1.0);
-        let _: uom::si::f64::DynamicViscosity = crate::units::centipoise(1.0);
-        let _: uom::si::f64::AmountOfSubstance = crate::units::kilomoles(1.0);
-    }
-}
+/// The units with no ascription above, each with the table's reason it has none.
+///
+/// **The gap, declared.** uom has no quantity for these dimensions - the table
+/// states why, dimension by dimension - so there is no type to ascribe and no
+/// constructor to ascribe it through. Nothing in Rust then holds their exponents:
+/// what holds them is `python/tests/test_units_cross_library.py`, which compares
+/// every unit's exponents and its factor against `pint`'s own answer. A unit here
+/// is therefore not a unit nobody checks, and it is not one this build checks
+/// either - which is the difference the register exists to state.
+pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
+    (
+        "dimensionless",
+        "uom carries a pure ratio as `Ratio`, and this library does not use it: a dimensionless value is a bare `f64` in the conversion table, so there is no constructor for an ascription to go through.",
+    ),
+    (
+        "mol/s",
+        "uom has no molar-flow quantity, and no crate outside uom can add one. `mol/s` is already its own SI base, so its conversion is the identity; `kmol/h` is not, and `kilomoles_per_hour` returns the base magnitude as a bare `f64`.",
+    ),
+    (
+        "Pa*m**6/mol**2",
+        "uom carries a pressure and a molar volume, and no quantity for their product with a length to the sixth. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "J/(mol*K**2)",
+        "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "J/(mol*K**3)",
+        "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "J/(mol*K**4)",
+        "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "J/(mol*K**5)",
+        "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "1/K",
+        "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "1/K**2",
+        "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "1/K**3",
+        "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity.",
+    ),
+    (
+        "kmol/h",
+        "uom has no molar-flow quantity, and no crate outside uom can add one. `mol/s` is already its own SI base, so its conversion is the identity; `kmol/h` is not, and `kilomoles_per_hour` returns the base magnitude as a bare `f64`.",
+    ),
+];

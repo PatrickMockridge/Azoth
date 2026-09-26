@@ -97,6 +97,45 @@ def test_a_dimension_the_generator_does_not_know_is_refused(tmp_path: Path) -> N
         compile_table(tmp_path, table)
 
 
+def test_a_reason_for_a_dimension_uom_carries_is_refused(tmp_path: Path) -> None:
+    """`uom_absent` on a dimension uom carries states something false.
+
+    Every unit of such a dimension gets a compile-time ascription - the constructor its
+    conversion calls must produce the quantity its exponents name - so there is no
+    absence for a reason to explain, and the emitted register would say a line was
+    missing where the line is there.
+    """
+    table = a_table()
+    dimension(table, "length")["uom_absent"] = "uom has no length"
+    with pytest.raises(SystemExit, match="uom_absent"):
+        compile_table(tmp_path, table)
+
+
+def test_a_dimension_uom_lacks_with_no_reason_is_refused(tmp_path: Path) -> None:
+    """The unit gets no ascription, so the table has to say why not.
+
+    Without this the classification would be carried and the reason dropped, and
+    `PINT_ASSERTED_UNITS` would name each such unit with nothing beside it - a gap
+    declared in the sense that a blank line declares one.
+    """
+    table = a_table()
+    del dimension(table, "molar_flow")["uom_absent"]
+    with pytest.raises(SystemExit, match="uom_absent"):
+        compile_table(tmp_path, table)
+
+
+def test_a_blank_reason_is_refused(tmp_path: Path) -> None:
+    """A reason that is whitespace is not a reason.
+
+    The schema's `minLength` catches the empty string, so this is the one shape it
+    cannot: a field that satisfies both checks and states nothing.
+    """
+    table = a_table()
+    dimension(table, "per_temperature")["uom_absent"] = "   "
+    with pytest.raises(SystemExit, match="uom_absent"):
+        compile_table(tmp_path, table)
+
+
 def test_a_unit_whose_uom_path_disagrees_with_its_dimension_is_refused(
     tmp_path: Path,
 ) -> None:

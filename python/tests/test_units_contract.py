@@ -66,6 +66,20 @@ def table_units() -> set[str]:
     return {unit["id"] for unit in table["units"]}
 
 
+def _generator() -> ModuleType:
+    """The vocabulary generator, imported from `tools/`.
+
+    Its `UOM_TYPES` is the claim about which dimensions `uom` carries - and the table
+    states a reason for exactly the ones it does not - so the check below needs the
+    map the generator itself reads. `test_gen_vocabulary.py` reaches it the same way.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "tools"))
+    try:
+        return importlib.import_module("gen_vocabulary")
+    finally:
+        sys.path.pop(0)
+
+
 def schema_units() -> set[str]:
     """The unit strings the spec schema permits, read from the generated enum."""
     schema: dict[str, Any] = json.loads(UNIT_SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -122,6 +136,46 @@ def test_the_generated_files_are_current() -> None:
         f"gen_vocabulary.py --check failed, so a generated copy is stale:\n"
         f"{result.stdout}{result.stderr}"
     )
+
+
+def test_the_table_states_which_dimensions_uom_has_no_quantity_for() -> None:
+    """A reason is stated for exactly the dimensions whose units get no ascription.
+
+    A unit of a dimension `uom` carries gets a compile-time ascription in
+    ``crates/azoth-core/src/unit_vocab_gen.rs``: the constructor its conversion calls
+    must produce the quantity its exponents name, so an exponent edited to something
+    wrong fails ``cargo build``. A unit of a dimension `uom` has no quantity for gets
+    no such line, and nothing in Rust then holds it - what holds it is
+    ``test_units_cross_library.py``, which compares that unit's exponents and its
+    factor against ``pint``'s own answer.
+
+    So the table says which is which, and the generator refuses to guess at either
+    half. This is the same rule stated a second time - from the table rather than from
+    the generator's own reading of it - which is what makes an omission a failure here
+    rather than a difference somebody has to notice.
+    """
+    uom_types = _generator().UOM_TYPES
+    table = tomllib.loads(VOCAB_PATH.read_text(encoding="utf-8"))
+    carried = 0
+    lacked = 0
+    for dimension in table["dimensions"]:
+        key = tuple(dimension["exponents"])
+        assert key in uom_types, (
+            f"{dimension['id']}: the generator does not know whether uom carries it"
+        )
+        reason = dimension.get("uom_absent")
+        if uom_types[key] is None:
+            assert isinstance(reason, str) and reason.strip(), (
+                f"{dimension['id']}: no unit of it can be ascribed, and no reason is stated"
+            )
+            lacked += 1
+        else:
+            assert reason is None, (
+                f"{dimension['id']}: uom carries it as {uom_types[key]}, so a reason for its "
+                f"absence would be false"
+            )
+            carried += 1
+    assert carried and lacked, "one of the two classes is empty, so nothing was compared"
 
 
 def test_every_vocabulary_entry_has_a_working_conversion() -> None:

@@ -107,17 +107,25 @@ generator holds and refuses to be incomplete. That is what makes the generated
 assertion bite: `crates/azoth-core/src/unit_vocab_gen.rs` contains, for each unit,
 a line saying the constructor produces the quantity *this unit's exponents* name —
 so declaring `mm` with the wrong dimension fails to compile rather than being waved
-through by a name that happens to match.
+through by a name that happens to match. Those lines are `DIMENSION_ASSERTIONS`, a
+`const fn()` rather than a `#[cfg(test)]` one, so the build is what fails.
+
+**A unit whose dimension `uom` has no quantity for cannot have such a line**, and
+the file says so rather than leaving the absence to be inferred. No molar flow, no
+reciprocal temperature, no product of a pressure and a molar volume with a length to
+the sixth: the table states why, dimension by dimension, in `uom_absent:`, and
+`PINT_ASSERTED_UNITS` names every unit of one with that reason beside it. Nothing in
+Rust then holds those exponents; what holds them is the `pint` comparison below.
 
 ## The checks, and what each one can see
 
-Four, and they are complementary rather than redundant. Each was verified by
+Five, and they are complementary rather than redundant. Each was verified by
 breaking the thing it guards.
 
 | Check | Where | Catches |
 |---|---|---|
-| Generator consistency | `gen_vocabulary.py` | a dimension and a `uom` path that disagree with each other |
-| Compile-time dimension | `unit_vocab_gen.rs`, `the_table_agrees_with_uom` | a constructor that produces a different quantity than the exponents name |
+| Generator consistency | `gen_vocabulary.py` | a dimension and a `uom` path that disagree with each other, and a dimension uom does not carry with no reason stated |
+| Compile-time dimension | `unit_vocab_gen.rs`, `DIMENSION_ASSERTIONS` | a constructor that produces a different quantity than the exponents name |
 | `pint` dimensionality | `python/tests/test_units_cross_library.py` | table exponents that `pint` disagrees with |
 | Factor agreement | the same file | the two units libraries disagreeing about a factor |
 | Lean dimension | `lean/Azoth/Vocabulary.lean`, one theorem per unit | a unit whose exponents name a different dimension than `lean-units` does |

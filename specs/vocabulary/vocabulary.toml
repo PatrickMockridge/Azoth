@@ -3,6 +3,7 @@ slots = ["L", "M", "T", "I", "Th", "N", "J"]
 [[dimensions]]
 id = "dimensionless"
 exponents = [0, 0, 0, 0, 0, 0, 0]
+uom_absent = "uom carries a pure ratio as `Ratio`, and this library does not use it: a dimensionless value is a bare `f64` in the conversion table, so there is no constructor for an ascription to go through."
 [[dimensions]]
 id = "length"
 exponents = [1, 0, 0, 0, 0, 0, 0]
@@ -24,6 +25,7 @@ exponents = [0, 0, 0, 0, 0, 1, 0]
 [[dimensions]]
 id = "molar_flow"
 exponents = [0, 0, -1, 0, 0, 1, 0]
+uom_absent = "uom has no molar-flow quantity, and no crate outside uom can add one. `mol/s` is already its own SI base, so its conversion is the identity; `kmol/h` is not, and `kilomoles_per_hour` returns the base magnitude as a bare `f64`."
 [[dimensions]]
 id = "mass_density"
 exponents = [-3, 1, 0, 0, 0, 0, 0]
@@ -75,21 +77,26 @@ exponents = [2, 1, -2, 0, 0, -1, 0]
 [[dimensions]]
 id = "attraction_parameter"
 exponents = [5, 1, -2, 0, 0, -2, 0]
+uom_absent = "uom carries a pressure and a molar volume, and no quantity for their product with a length to the sixth. The unit is already its own SI base, so its conversion is the identity."
 [[dimensions]]
 id = "molar_heat_capacity"
 exponents = [2, 1, -2, 0, -1, -1, 0]
 [[dimensions]]
 id = "molar_heat_capacity_coefficient_2"
 exponents = [2, 1, -2, 0, -2, -1, 0]
+uom_absent = "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity."
 [[dimensions]]
 id = "molar_heat_capacity_coefficient_3"
 exponents = [2, 1, -2, 0, -3, -1, 0]
+uom_absent = "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity."
 [[dimensions]]
 id = "molar_heat_capacity_coefficient_4"
 exponents = [2, 1, -2, 0, -4, -1, 0]
+uom_absent = "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity."
 [[dimensions]]
 id = "molar_heat_capacity_coefficient_5"
 exponents = [2, 1, -2, 0, -5, -1, 0]
+uom_absent = "uom carries a molar heat capacity and no quantity for the temperature raised to a further power. The unit is already its own SI base, so its conversion is the identity."
 [[units]]
 id = "dimensionless"
 dimension = "dimensionless"
@@ -269,12 +276,15 @@ exponents = [0, 0, 1, 1, 0, 0, 0]
 [[dimensions]]
 id = "per_temperature"
 exponents = [0, 0, 0, 0, -1, 0, 0]
+uom_absent = "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity."
 [[dimensions]]
 id = "per_temperature_squared"
 exponents = [0, 0, 0, 0, -2, 0, 0]
+uom_absent = "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity."
 [[dimensions]]
 id = "per_temperature_cubed"
 exponents = [0, 0, 0, 0, -3, 0, 0]
+uom_absent = "uom carries a temperature and not its reciprocal. The unit is already its own SI base, so its conversion is the identity."
 [[units]]
 id = "C"
 dimension = "charge"
