@@ -25,6 +25,10 @@
 //!          →  200  the envelope
 //!          →  400  {"error": "…"}      the *request* or the *call* was refused
 //!
+//! POST /rpc   {"catalogue": bool}
+//!          →  200  the catalogue: one form per unit op, and the tools on request
+//!          →  400  {"error": "…"}
+//!
 //! POST /mcp   one JSON-RPC message, in the current revision of MCP
 //!          →  200  the message's answer
 //!          →  202  accepted, and a notification has no answer
@@ -35,6 +39,13 @@
 //! MCP transport makes, in HTTP's own terms: a call that cannot take effect is a client error to
 //! fix, while a document that cannot run is a state to show. `null` for `command` asks for the
 //! envelope as it stands, which is what a client polls after somebody else's edit.
+//!
+//! **The catalogue is the one request that is not a call.** A front-end draws a palette and a form
+//! per unit op, and neither is on the envelope, so a hosted editor has nowhere else to ask — but it
+//! is a *read* of what this process loaded at startup and not an opening: nothing is handed a
+//! document, nothing is replaced, and the session stays the one document `--flowsheet` named. It is
+//! therefore its own body shape rather than a key on a call, because a body that asked for a
+//! catalogue and an edit at once would have two answers and no way to choose between them.
 //!
 //! **`/mcp` is the same session behind a second door**, and the rules it adds are the ones its
 //! protocol owns rather than ones about a flowsheet: a required protocol-version header that has to
@@ -201,10 +212,23 @@ fn handle(
 /// three things a client can want are one shape: an edit, a run, and a look at the envelope as it
 /// stands. `order` is applied first, because it is a property of the *next* run and a request that
 /// set it and ran in the same call means the run it sets it for.
+///
+/// `{"catalogue": …}` is the fourth and the only one that is not a call, so it is read first and
+/// alone: nothing else in the body means anything to an answer that is not an envelope.
 fn dispatch(session: &mut Session, body: &Value) -> std::result::Result<Value, String> {
     let object = body
         .as_object()
         .ok_or_else(|| "the request body is not an object".to_string())?;
+
+    if let Some(with_tools) = object.get("catalogue") {
+        if object.len() != 1 {
+            return Err("a `catalogue` request carries nothing else".to_string());
+        }
+        let with_tools = with_tools
+            .as_bool()
+            .ok_or_else(|| "`catalogue` takes true or false".to_string())?;
+        return session.catalogue(with_tools);
+    }
 
     if let Some(order) = object.get("order") {
         let name = order

@@ -214,6 +214,70 @@ fn a_call_edits_the_document_the_next_call_sees() {
     );
 }
 
+/// **The palette is the one thing a hosted editor has nowhere else to ask for.** A form per unit op
+/// is on no envelope, so a client that draws a widget cannot read it off the answer to a call —
+/// which is why this is a request of its own, and why it is a *read*: nothing here is handed a
+/// document.
+#[test]
+fn the_catalogue_is_the_palette_the_process_loaded() {
+    let server = Server::start(&[]);
+
+    let (status, catalogue) = server.call(json!({ "catalogue": false }));
+    assert_eq!(status, 200);
+    assert_eq!(
+        catalogue["unit_ops"].as_array().map(Vec::len),
+        Some(29),
+        "the shipped palette, entry by entry"
+    );
+    // A form carries the parameters a unit-op window is drawn from, which is the whole point of
+    // asking: without them a selected node has no fields.
+    let pump = catalogue["unit_ops"]
+        .as_array()
+        .expect("an array")
+        .iter()
+        .find(|form| form["id"] == "unit_ops.pump")
+        .expect("the palette has a pump");
+    assert!(
+        !pump["parameters"]
+            .as_array()
+            .expect("parameters")
+            .is_empty(),
+        "{pump}"
+    );
+    // The tools are the agent's schema, and they are asked for rather than always carried.
+    assert_eq!(catalogue["tools"], Value::Null);
+
+    let (status, catalogue) = server.call(json!({ "catalogue": true }));
+    assert_eq!(status, 200);
+    assert_eq!(
+        catalogue["tools"].as_array().map(Vec::len),
+        Some(15),
+        "the fifteen commands, which `/mcp` serves the same way"
+    );
+
+    // **A body that asks for two things has two answers**, so it is a request this server cannot
+    // read rather than one it serves by preferring a field.
+    let (status, answer) = server.call(json!({ "catalogue": false, "command": {} }));
+    assert_eq!(status, 400);
+    assert!(
+        answer["error"]
+            .as_str()
+            .expect("a sentence")
+            .contains("nothing else"),
+        "{answer}"
+    );
+
+    let (status, answer) = server.call(json!({ "catalogue": "yes" }));
+    assert_eq!(status, 400);
+    assert!(
+        answer["error"]
+            .as_str()
+            .expect("a sentence")
+            .contains("true or false"),
+        "{answer}"
+    );
+}
+
 #[test]
 fn an_edit_runs_the_document_unless_the_request_says_not_to() {
     let server = Server::start(&[]);

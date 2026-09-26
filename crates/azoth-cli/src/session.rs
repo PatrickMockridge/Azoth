@@ -17,7 +17,7 @@ use std::path::Path;
 use azoth_core::{AzothError, Result};
 use azoth_process::middleware::command::Command;
 use azoth_process::middleware::session::Workspace;
-use azoth_process::middleware::{envelope, tools};
+use azoth_process::middleware::{self, envelope, tools};
 use azoth_process::{ExecutionOrder, UnitOpSpec, load_palette};
 use serde_json::{Value, json};
 
@@ -54,6 +54,22 @@ impl Session {
     #[must_use]
     pub fn tools(&self) -> Vec<tools::Tool> {
         tools::tools(&self.palette)
+    }
+
+    /// The palette this process loaded, as the catalogue a front-end draws its widgets from.
+    ///
+    /// **A read, and not an opening.** It answers what [`Session::open`] already loaded and changes
+    /// nothing — which is all a hosted editor needs and no more: one form per unit op, so a palette
+    /// and a unit-op window exist without the session becoming something that can be handed a
+    /// second document. The catalogue is nowhere on the envelope, so a client that draws a form has
+    /// nothing else to ask.
+    ///
+    /// # Errors
+    /// A sentence if the catalogue cannot be written.
+    pub fn catalogue(&self, with_tools: bool) -> std::result::Result<Value, String> {
+        let document =
+            middleware::catalogue(&self.palette, with_tools).map_err(|error| error.to_string())?;
+        serde_json::from_str(&document).map_err(|error| error.to_string())
     }
 
     /// One tool call: the envelope, or the sentence that refused the call.
