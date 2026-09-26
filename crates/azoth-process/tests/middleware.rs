@@ -570,6 +570,48 @@ fn a_dimension_id_is_the_inverse_of_the_exponents_it_names() {
     }
 }
 
+/// The catalogue's substances, which are the databank's own numbers.
+#[test]
+fn the_catalogue_weighs_every_substance_the_databank_resolves() {
+    let document: serde_json::Value =
+        serde_json::from_str(&azoth_process::middleware::catalogue(&[], false).expect("it writes"))
+            .expect("it is JSON");
+    let components = document["components"].as_array().expect("an array");
+    let entries = azoth_eos::databank::all_entries();
+    assert_eq!(components.len(), entries.len());
+
+    // **One row per entry, in the databank's order, with the databank's mass** - a front end
+    // weighing a composition must be using the numbers the run used, and this is what says so.
+    //
+    // Compared to the last bit rather than exactly, because the wire is a *decimal* encoding of an
+    // `f64`: a molar mass that differs from the databank's by one unit in the last place is the
+    // same molecular weight, and a test that insisted on the bit pattern would be testing
+    // `serde_json`'s float writer instead of this projection.
+    for (row, entry) in components.iter().zip(entries) {
+        assert_eq!(row["name"].as_str(), Some(entry.name.as_str()));
+        match (row["molar_mass"].as_f64(), entry.molar_mass) {
+            (Some(written), Some(declared)) => assert!(
+                (written - declared).abs() <= f64::EPSILON * declared.abs(),
+                "{}: the wire says {written} and the databank {declared}",
+                entry.name
+            ),
+            (None, None) => {}
+            (written, declared) => panic!(
+                "{}: the wire says {written:?} and the databank {declared:?}",
+                entry.name
+            ),
+        }
+    }
+    // And three that a reader can check by hand, in kg/mol: water, methane, nitrogen.
+    let by_name: std::collections::BTreeMap<&str, f64> = components
+        .iter()
+        .filter_map(|row| Some((row["name"].as_str()?, row["molar_mass"].as_f64()?)))
+        .collect();
+    assert!((by_name["water"] * 1000.0 - 18.015).abs() < 1.0e-3);
+    assert!((by_name["methane"] * 1000.0 - 16.043).abs() < 1.0e-3);
+    assert!((by_name["nitrogen"] * 1000.0 - 28.013).abs() < 1.0e-3);
+}
+
 /// The catalogue's two unit regions, which are the same fact the vocabulary declares.
 ///
 /// **A front end converts with these numbers and computes nothing**, so the numbers have to be

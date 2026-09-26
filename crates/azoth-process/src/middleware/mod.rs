@@ -20,6 +20,7 @@ pub mod tools;
 
 use azoth_core::Result;
 use azoth_core::unit_vocab_gen::{DISPLAY_UNITS, UNIT_NAMES, UNIT_SETS, si_factor};
+use azoth_eos::databank;
 
 use crate::middleware::form::dimension_id;
 use crate::unit_op::UnitOpSpec;
@@ -43,6 +44,7 @@ pub fn catalogue(palette: &[UnitOpSpec], with_tools: bool) -> Result<String> {
         "unit_ops": form::forms(palette),
         "units": units(),
         "unit_sets": unit_sets(),
+        "components": components(),
     });
     if with_tools {
         let object = document
@@ -59,6 +61,34 @@ pub fn catalogue(palette: &[UnitOpSpec], with_tools: bool) -> Result<String> {
             format!("it could not be written: {error}"),
         )
     })
+}
+
+/// Every substance the compiled databank resolves, with its molar mass where it has one.
+///
+/// **A mass column is the databank's to state, not a front end's to guess.** A stream's record
+/// carries the *mixture's* molar mass and not each substance's, so a workbook cannot turn a mole
+/// fraction into a mass fraction without these - and a molecular weight taken from anywhere else
+/// would be a number the run did not use.
+///
+/// **The compiled table, and not the table with an overlay.** A keycard's components are an input
+/// to a *calculation*, resolved per call; a flowsheet's feeds are resolved against this table, so
+/// this is what a document's substances come from. A substance an overlay added is therefore not
+/// here, and a composition that names one shows no mass column rather than a wrong one.
+///
+/// The mass is kg/mol, which is the vocabulary's own `molar_mass` - the unit the record's
+/// `molar_mass` crosses in, so the two multiply without a conversion.
+fn components() -> serde_json::Value {
+    serde_json::Value::Array(
+        databank::all_entries()
+            .into_iter()
+            .map(|entry| {
+                serde_json::json!({
+                    "name": entry.name,
+                    "molar_mass": entry.molar_mass,
+                })
+            })
+            .collect(),
+    )
 }
 
 /// Every canonical unit **and every display unit**, keyed by the string a spec and a stream

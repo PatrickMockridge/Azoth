@@ -326,6 +326,15 @@ export interface Catalogue {
    * computed it in - most of the vocabulary has no engineering alternative.
    */
   unit_sets?: { id: string; name: string; units: Record<string, string> }[];
+  /**
+   * Every substance the compiled databank resolves, with its molar mass where it has one.
+   *
+   * **A mass column is the databank's to state.** A stream's record carries the *mixture's* molar
+   * mass and not each substance's, so a composition table cannot weigh a component without these -
+   * and a molecular weight from anywhere else would be a number the run did not use. The mass is
+   * kg/mol, the unit the record's own `molar_mass` crosses in, so the two multiply directly.
+   */
+  components?: { name: string; molar_mass: number | null }[];
   tools?: Tool[];
 }
 

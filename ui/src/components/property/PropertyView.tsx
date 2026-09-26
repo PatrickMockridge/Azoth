@@ -165,7 +165,12 @@ function sheet(
       );
     case "composition":
       return node === null ? null : (
-        <CompositionSheet envelope={envelope} node={node} units={units} />
+        <CompositionSheet
+          catalogue={catalogue}
+          envelope={envelope}
+          node={node}
+          units={units}
+        />
       );
     case "worksheet":
       return node === null ? null : (

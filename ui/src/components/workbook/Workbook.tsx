@@ -1,9 +1,16 @@
 import { useState } from "react";
 
-import { componentAxis, compositionRows, fraction, streamColumns, streamRows } from "../../state/columns";
+import {
+  componentAxis,
+  compositionRows,
+  fraction,
+  molarMasses,
+  streamColumns,
+  streamRows,
+} from "../../state/columns";
 import { displayOf, type Units } from "../../state/units";
 import { formatQuantity } from "../../wire/field";
-import type { Envelope, Quantity, StreamRecord } from "../../wire/types";
+import type { Catalogue, Envelope, Quantity, StreamRecord } from "../../wire/types";
 import { DockTabs } from "../property/DockTabs";
 import { WorkbookGrid } from "./WorkbookGrid";
 
@@ -30,10 +37,12 @@ const LABELS: Record<Sheet, string> = {
  * it says so.
  */
 export function Workbook({
+  catalogue,
   envelope,
   units,
   onSelect,
 }: {
+  catalogue: Catalogue | null;
   envelope: Envelope;
   /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
   units: Units;
@@ -41,6 +50,7 @@ export function Workbook({
 }) {
   const [sheet, setSheet] = useState<Sheet>("streams");
   const rows = streamRows(envelope);
+  const masses = molarMasses(catalogue);
   const axis = componentAxis(envelope);
   const stale = envelope.dirty;
 
@@ -85,22 +95,29 @@ export function Workbook({
               // **The label names the unit the cells are in**, which is the set's: the sheet
               // converts `n · z` with the same factor the workbook converts `n` with.
               { key: "flow", label: `n · z ${flowUnit(units)}`, numeric: true },
+              { key: "mass_fraction", label: "mass fraction", numeric: true },
+              { key: "mass_flow", label: `mass flow ${massUnit(units)}`, numeric: true },
             ]}
             stale={stale}
             empty="no stream in this document carries a composition yet"
             onSelect={(id) => {
-              const row = compositionRows(envelope, units).find(
+              const row = compositionRows(envelope, units, masses).find(
                 (candidate) => `${candidate.path}:${candidate.component}` === id,
               );
               onSelect(row?.nodeId === undefined || row.nodeId === "" ? null : row.nodeId);
             }}
-            rows={compositionRows(envelope, units).map((row) => ({
+            rows={compositionRows(envelope, units, masses).map((row) => ({
               id: `${row.path}:${row.component}`,
               head: row.component,
               cells: [
                 row.path,
                 fraction(row.fraction),
                 row.flow === null ? "—" : fraction(row.flow),
+                // **A dash where the databank cannot weigh the substance**, which is a fact about
+                // the substance rather than a missing run: the record carries the mixture's molar
+                // mass and not each one's, so this is the column the catalogue exists for.
+                row.mass_fraction === null ? "—" : fraction(row.mass_fraction),
+                row.mass_flow === null ? "—" : fraction(row.mass_flow / massFactor(units)),
               ],
             }))}
           />
@@ -153,6 +170,16 @@ export function Workbook({
 /** The unit the composition sheet's derived column is read in. */
 function flowUnit(units: Units): string {
   return displayOf(units, "mol/s").unit;
+}
+
+/** The unit its mass columns are read in. */
+function massUnit(units: Units): string {
+  return displayOf(units, "kg/s").unit;
+}
+
+/** The factor those cells are divided by. */
+function massFactor(units: Units): number {
+  return displayOf(units, "kg/s").factor;
 }
 
 /** One cell: the record's value, or a dash where the run left none. */

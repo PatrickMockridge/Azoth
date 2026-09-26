@@ -9,7 +9,14 @@
 
 import { describe, expect, it } from "vitest";
 
-import { componentAxis, compositionRows, fraction, streamColumns, streamRows } from "../src/state/columns";
+import {
+  componentAxis,
+  compositionRows,
+  fraction,
+  molarMasses,
+  streamColumns,
+  streamRows,
+} from "../src/state/columns";
 import { unitsOf } from "../src/state/units";
 import catalogue from "./fixtures/catalogue.json";
 import fixture from "./fixtures/envelope.json";
@@ -134,6 +141,43 @@ describe("the workbook's rows", () => {
     const kmolPerHour = 1000 / 3600;
     const inField = compositionRows(envelope, field).filter((row) => row.path === "sep1.vapour");
     expect(inField[0]?.flow).toBeCloseTo((vapour[0]?.flow ?? 0) / kmolPerHour, 10);
+  });
+
+  it("weighs a composition with the databank's own molar masses", () => {
+    const masses = molarMasses(catalogue as unknown as Catalogue);
+    const rows = compositionRows(envelope, undefined, masses).filter(
+      (row) => row.path === "sep1.vapour",
+    );
+    expect(rows.map((row) => row.component)).toEqual(["methane", "n-butane"]);
+    // The masses are the databank's own: 16.043 g/mol and 58.123 g/mol.
+    expect(masses["methane"]).toBeCloseTo(0.016043, 9);
+    expect(masses["n-butane"]).toBeCloseTo(0.058123, 9);
+
+    // **The cross-check that says they are the masses the library used**: the per-substance mass
+    // flows sum to the *record's* own `mass_flow`, which no front end had a hand in.
+    const record = envelope.session?.streams["sep1.vapour"];
+    const total = rows.reduce((sum, row) => sum + (row.mass_flow ?? 0), 0);
+    expect(total).toBeCloseTo(record?.mass_flow?.magnitude_si ?? 0, 12);
+    // And the fractions are a partition: they sum to one.
+    expect(rows.reduce((sum, row) => sum + (row.mass_fraction ?? 0), 0)).toBeCloseTo(1, 12);
+  });
+
+  it("leaves a mass column empty for a substance the databank cannot weigh", () => {
+    // A name the databank does not carry is absent from the map, and the row says so with a
+    // `null` rather than with a zero - a fraction whose denominator is missing a term is a
+    // different number, not a smaller one.
+    const rows = compositionRows(envelope, undefined, { methane: 0.016043 }).filter(
+      (row) => row.path === "sep1.vapour",
+    );
+    // Methane's own mass flow is still computable - it needs nothing but its own weight and the
+    // flow the record carries.
+    const flow = envelope.session?.streams["sep1.vapour"]?.n.magnitude_si ?? 0;
+    expect(rows[0]?.mass_flow).toBeCloseTo((rows[0]?.fraction ?? 0) * flow * 0.016043, 9);
+    // But *neither* mass fraction is, because a fraction's denominator is the whole stream.
+    expect(rows[0]?.mass_fraction).toBeNull();
+    expect(rows[1]?.mass_fraction).toBeNull();
+    // And n-butane's mass flow is unknown for want of its own weight.
+    expect(rows[1]?.mass_flow).toBeNull();
   });
 
   it("renames a column to the unit it is read in, and leaves the rest alone", () => {

@@ -379,7 +379,12 @@ export function App() {
         {envelope === null ? (
           <p className="note">no document</p>
         ) : docked === "workbook" ? (
-          <Workbook envelope={envelope} units={units} onSelect={setSelected} />
+          <Workbook
+            catalogue={catalogue}
+            envelope={envelope}
+            units={units}
+            onSelect={setSelected}
+          />
         ) : (
           <DiagnosticsPanel
             diagnostics={envelope.diagnostics}

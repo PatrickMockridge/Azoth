@@ -110,6 +110,25 @@ describe("the catalogue", () => {
     ]);
   });
 
+  it("weighs every substance the databank resolves", () => {
+    // **The region a composition table needs and no record carries.** A stream's record has the
+    // *mixture's* molar mass; turning a mole fraction into a mass fraction needs each substance's,
+    // and a front end that guessed one would be using a number the run did not.
+    const components = catalogue.components ?? [];
+    expect(components.length).toBeGreaterThan(300);
+    const byName = new Map(components.map((entry) => [entry.name, entry.molar_mass]));
+    // The two the demo is made of, in g/mol: 16.043 and 58.123.
+    expect((byName.get("methane") ?? 0) * 1000).toBeCloseTo(16.043, 3);
+    expect((byName.get("n-butane") ?? 0) * 1000).toBeCloseTo(58.123, 3);
+    // A name the databank does not carry is absent rather than zero - an absent name and a null
+    // mass mean the same thing to a caller, and neither is a molar mass of nothing.
+    expect(byName.has("unobtainium")).toBe(false);
+    for (const entry of components) {
+      expect(entry.name).not.toBe("");
+      expect(entry.molar_mass === null || entry.molar_mass > 0).toBe(true);
+    }
+  });
+
   it("carries every declared unit with its factor, and the sets that choose between them", () => {
     // **The one place a factor is stated to the front end**, and it is the library's own:
     // `si_factor` runs the conversion a calculation runs, and `test_units_cross_library.py` holds

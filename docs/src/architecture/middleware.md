@@ -171,9 +171,9 @@ answer is unreadable without the CORS header it earns.
 **What the served door cannot do is the server's shape, not an omission.** `azoth serve` holds one
 document for the life of its process and the route has no call that replaces it, so New, Open and
 Demo are refused there with the reason on the control, and a save still works because every envelope
-carries the document. The catalogue is the exception in the other direction: a form per unit op, and
-the units with their factors and the sets that choose between them, are facts about the *library* and
-are on no envelope — so `/rpc` answers `{"catalogue": …}` as a *read* of the palette the process
+carries the document. The catalogue is the exception in the other direction: a form per unit op,
+the units with their factors and the sets that choose between them, and every substance's molar
+mass, are facts about the *library* and are on no envelope — so `/rpc` answers `{"catalogue": …}` as a *read* of the palette the process
 loaded, enough for a palette panel, a unit-op window and a unit set, and not an opening of anything.
 
 ### The stack

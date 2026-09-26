@@ -17,7 +17,7 @@
  */
 
 import { displayOf, type Units } from "./units";
-import type { Envelope, Quantity, StreamRecord } from "../wire/types";
+import type { Catalogue, Envelope, Quantity, StreamRecord } from "../wire/types";
 
 /** The substance axis a composition table is laid out over. */
 export interface Axis {
@@ -201,6 +201,23 @@ export function streamRows(envelope: Envelope): Row[] {
   return rows;
 }
 
+/**
+ * Every substance's molar mass, by name, in kg/mol - the databank's own numbers.
+ *
+ * A name the databank does not carry is absent from the map and a name it carries without a mass
+ * maps to `null`; both mean the same thing downstream, which is that a mass cannot be formed.
+ */
+export type MolarMasses = Record<string, number | null>;
+
+/** The catalogue's substances, keyed by name. */
+export function molarMasses(catalogue: Catalogue | null): MolarMasses {
+  const out: MolarMasses = {};
+  for (const component of catalogue?.components ?? []) {
+    out[component.name] = component.molar_mass;
+  }
+  return out;
+}
+
 /** One row of the composition sheet. */
 export interface CompositionRow {
   readonly component: string;
@@ -209,6 +226,15 @@ export interface CompositionRow {
   readonly fraction: number;
   /** `n · z`, or `null` where the run reached no flow for this stream. */
   readonly flow: number | null;
+  /**
+   * `z_i · M_i / Σ z_j · M_j`, or `null` where any substance's mass is unknown.
+   *
+   * **`null` rather than a partial fraction**, because a fraction is a ratio to a total: a
+   * denominator missing one term is not a smaller answer, it is a different one.
+   */
+  readonly mass_fraction: number | null;
+  /** `n · z_i · M_i`, in kg/s, or `null` where *this* substance's mass is unknown. */
+  readonly mass_flow: number | null;
 }
 
 /**
@@ -219,7 +245,11 @@ export interface CompositionRow {
  * division is the same one `formatQuantity` would have done, which is what keeps the sheet's `n · z`
  * column in the same unit as the workbook's `flow` column.
  */
-export function compositionRows(envelope: Envelope, units?: Units): CompositionRow[] {
+export function compositionRows(
+  envelope: Envelope,
+  units?: Units,
+  masses: MolarMasses = {},
+): CompositionRow[] {
   const axis = componentAxis(envelope);
   const perSecond = units === undefined ? 1 : displayOf(units, "mol/s").factor;
   const rows: CompositionRow[] = [];
@@ -228,13 +258,23 @@ export function compositionRows(envelope: Envelope, units?: Units): CompositionR
     if (z === undefined) {
       continue;
     }
+    const n = row.record?.n.magnitude_si;
+    // The weights this stream's substances have, in its own axis order - so a substance the
+    // databank does not carry is `null` here and takes both mass columns with it.
+    const weights = z.map((_, index) => masses[axis.names[index] ?? ""] ?? null);
+    const total = weights.every((mass) => mass !== null)
+      ? z.reduce((sum, value, index) => sum + value * (weights[index] as number), 0)
+      : null;
     z.forEach((value, index) => {
+      const mass = weights[index];
       rows.push({
         component: axis.names[index] ?? `z[${index}]`,
         path: row.path,
         nodeId: row.nodeId,
         fraction: value,
-        flow: row.record === undefined ? null : (value * row.record.n.magnitude_si) / perSecond,
+        flow: n === undefined ? null : (value * n) / perSecond,
+        mass_fraction: total === null || total === 0 ? null : (value * (mass as number)) / total,
+        mass_flow: mass === null || mass === undefined || n === undefined ? null : value * n * mass,
       });
     });
   }
