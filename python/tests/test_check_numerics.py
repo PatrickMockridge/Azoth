@@ -31,6 +31,19 @@ def lint() -> ModuleType:
         sys.path.pop(0)
 
 
+def scan(tmp_path: Path, name: str, text: str) -> Any:
+    """The lint's whole verdict on one synthetic file, exemptions included."""
+    path = tmp_path / name
+    path.write_text(text, encoding="utf-8")
+    tool: Any = lint()
+    original = tool.ROOT
+    tool.ROOT = tmp_path
+    try:
+        return tool.scan(path)
+    finally:
+        tool.ROOT = original
+
+
 def offenders(tmp_path: Path, name: str, text: str) -> list[str]:
     """The lint's verdict on one synthetic file.
 
@@ -113,3 +126,50 @@ def test_a_generated_file_is_not_scanned(tmp_path: Path) -> None:
     """A generator emits an `equation` string and a worked example, not arithmetic."""
     text = "//! GENERATED FILE - DO NOT EDIT BY HAND.\nlet y = x.powf(2.0);\n"
     assert offenders(tmp_path, "a.rs", text) == []
+
+
+def test_a_component_field_defaulted_to_zero_is_reported(tmp_path: Path) -> None:
+    """The third rule: an absence written as a number every model computes with."""
+    messages = offenders(tmp_path, "a.rs", "let tc = over.tc.unwrap_or_default();\n")
+    assert len(messages) == 1, messages
+    assert "absent tc" in messages[0]
+
+    # The name list is the schema's, so a field no card may state is not a finding.
+    assert offenders(tmp_path, "a.rs", "let x = over.wobble.unwrap_or_default();\n") == []
+
+
+def test_a_field_defaulted_to_zero_is_excused_by_the_marker(tmp_path: Path) -> None:
+    """Where zero *is* the statement, the marker says so and the count shows it."""
+    text = (
+        "// numerics-ok: a neutral substance has no charge, and zero is neutral\n"
+        "let charge = over.ionic_charge.unwrap_or_default();\n"
+    )
+    assert offenders(tmp_path, "a.rs", text) == []
+
+    scanned = scan(tmp_path, "a.rs", text)
+    assert scanned.messages == []
+    assert scanned.excused == {"physical-field-defaulted-to-zero": 1}, scanned.excused
+
+
+def test_a_comment_is_not_arithmetic(tmp_path: Path) -> None:
+    """The pages quote these forms, so a rule that read prose would be about the docs."""
+    assert offenders(tmp_path, "a.rs", "// x.powf(2.0) is the trap\n") == []
+    assert offenders(tmp_path, "a.py", "# y = x ** 3.0\n") == []
+
+
+def test_a_python_file_is_read_as_python(tmp_path: Path) -> None:
+    """**A `.py` docstring quoting the Rust it mirrors is not a finding.**
+
+    Every `python/src/azoth/eos/reference/` module quotes its NeqSim counterpart's
+    expression, and four of them quote a `powf`, so applying the Rust pattern to a Python
+    file reported eleven docstring lines.
+    """
+    text = '"""The port of `x.powf(3.0)`, which is the class\'s own expression."""\ny = 1.0\n'
+    assert offenders(tmp_path, "a.py", text) == []
+
+
+def test_the_reexported_helpers_still_answer_the_two_original_rules(tmp_path: Path) -> None:
+    """`offenders` is the messages-only view of `scan`, which is what the counts need."""
+    scanned = scan(tmp_path, "a.rs", "let y = x.powf(2.0);\n")
+    assert scanned.messages == offenders(tmp_path, "a.rs", "let y = x.powf(2.0);\n")
+    assert scanned.excused == {}

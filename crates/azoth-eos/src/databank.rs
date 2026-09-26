@@ -1793,6 +1793,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // Checked complete above for anything that is not an ion; for an ion the
                 // defaults are deliberate - the zero states that no critical constant was
                 // given, and `mixture_of` refuses one rather than reading the zero.
+                // numerics-ok: an ion has no meaningful critical constants, and the zero is
+                // how the entry says so - `mixture_of` refuses one rather than reading it.
                 tc: over.tc.unwrap_or_default(),
                 pc: over.pc.unwrap_or_default(),
                 omega: over.omega.unwrap_or_default(),
@@ -1870,6 +1872,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                     h2: 0.0,
                     h3: 0.0,
                 },
+                // numerics-ok: a card that states no charge states a neutral substance, and
+                // zero *is* neutral - the ion class is `ion`, not this number.
                 ionic_charge: over.ionic_charge.unwrap_or_default(),
                 // The card states metres and the table holds ångström; this is the one
                 // crossing, so the factor appears once rather than at every read.
