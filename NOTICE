@@ -127,3 +127,38 @@ the `neqsim-*` name is rewritten to `azoth-*`, the sections are renamed to azoth
 standard, and each `screening` skill is annotated with the port tranche that will
 back it. The Python screening code is not ported - only the guidance.
 
+--------------------------------------------------------------------------------
+Model Context Protocol - the specification's JSON Schema
+--------------------------------------------------------------------------------
+
+  Project:   Model Context Protocol - https://github.com/modelcontextprotocol/modelcontextprotocol
+  Version:   the 2026-07-28 revision at commit 271ecc9, and the 2025-11-25 revision at c4c367f
+  Licence:   Apache-2.0. The project is transitioning from the MIT License, and "all new code and
+             specification contributions to the project are licensed under Apache-2.0" - these two
+             revisions are specification contributions, and the licence file states it directly.
+  Vendored:  python/tests/validation/vendor/mcp/, unmodified
+  Digest:    schema-2026-07-28.json sha256 ef70b61f99b6d2e5e3b46863822eab08dff6a45bedc7a08914e0e5b133f40203
+             schema-2025-11-25.json sha256 268a5f82ba70fd7e4b6dc4aa1e64f116f74b4d0edcb69dc046829c79dd4e97e7
+
+`azoth mcp` is a hand-rolled implementation of a published protocol, and the one thing such an
+implementation cannot check about itself is whether it is *conformant*: it writes what its author
+read. The specification publishes a JSON Schema per revision, whose `$defs` name the message types,
+so `python/tests/validation/test_mcp_conformance.py` validates every message the server writes
+against the definition for the revision that message belongs to. That is why it is vendored rather
+than fetched at test time: the schema is the *pin*, and a check that fetched it would pass on a
+revision nobody has read.
+
+**Two files, because the protocol has two lanes.** `2026-07-28` removed the `initialize` handshake
+and has no `InitializeResult`; `2025-11-25` has no `server/discover`. The server answers both, so
+each lane is held to its own schema - and the split is load-bearing rather than tidy: a
+`CallToolResult` missing the current revision's required `resultType` fails one schema and passes
+the other.
+
+The vendor directory is under the *test* rather than beside the transport it validates. The
+transport is Rust; the validator is Python, because `jsonschema` is already a dev dependency and a
+Rust JSON-Schema implementation would be a new one for a test.
+
+Nothing is changed: the two files are copied byte for byte from the URLs above. The digest is
+recorded because neither file names its own revision - neither carries an `$id` - so the URL and
+the digest above are the whole of what pins them. They were checked against upstream `main` on
+2026-09-26, and they matched.

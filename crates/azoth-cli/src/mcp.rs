@@ -20,12 +20,14 @@
 //! partial one, which is the classic hand-rolled-framing failure and the reason the test reads a
 //! line per request rather than writing everything and reading to the end.
 //!
-//! **Hand-rolled, and the cost is named.** Four things have to be right and only the last is cheap:
-//! the framing above; error codes (`-32700` parse, `-32601` method, `-32602` tool, `-32022` the
-//! protocol version, which is the specification's own number for it); the `input_schema` →
-//! `inputSchema` rename; and the revision drift, which nothing here can detect. The class that
-//! would make drift a *failing test* is a vendored `schema.json` for the revision plus a validator,
-//! named in ROADMAP.md as not built rather than pretended away.
+//! **Hand-rolled, and the cost is named.** Four things have to be right: the framing above; error
+//! codes (`-32700` parse, `-32601` method, `-32602` tool, `-32022` the protocol version, which is
+//! the specification's own number for it); the `input_schema` → `inputSchema` rename; and the
+//! *shape* of every message, which is now checked rather than trusted - the specification's JSON
+//! Schema for each revision is vendored under `python/tests/validation/vendor/mcp/` and every
+//! message this file writes is validated against the definition for its own lane. **What that
+//! cannot see is a new revision**: the vendored files are the pin, so upstream moving is invisible
+//! until somebody re-fetches them deliberately.
 
 use std::io::{BufRead, Write};
 use std::path::Path;

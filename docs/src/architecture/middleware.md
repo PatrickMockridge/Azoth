@@ -136,9 +136,13 @@ that reads as finished.
 - **MCP resources, and a transport other than stdio.** The tools are served; a *resource* is a
   second surface for a document every call already returns, with a URI grammar to invent and a
   cache a client may serve stale — which is what `dirty` exists to prevent. The palette is already
-  `add_instance`'s `unit` enum. An HTTP transport, and a vendored `schema.json` for the protocol
-  revision plus a validator — which is what would turn a revision's drift into a failing test
-  rather than a client failure — are the same kind of not-built.
+  `add_instance`'s `unit` enum, and an HTTP transport for MCP is the same kind of not-built. **The
+  messages are checked against the specification now**: its JSON Schema for each revision is
+  vendored under `python/tests/validation/vendor/mcp/`, and `test_mcp_conformance.py` holds every
+  message the server writes to the definition for the revision that message belongs to — two
+  schemas because the protocol has two lanes, since `2026-07-28` removed the handshake and
+  `2025-11-25` has no discovery. What that cannot see is a *new* revision: the vendored file is the
+  pin, so upstream moving is invisible until somebody re-fetches it.
 - **Authentication, and who edited what.** `azoth serve` hosts one document over HTTP, and what it
   does not have is named in its own module: no identity, no conflict resolution beyond the order
   requests arrive in, no TLS. It binds `127.0.0.1` and refuses every origin it was not told to
