@@ -27,6 +27,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 PALETTE_DIR = ROOT / "specs" / "unit_ops"
 MODEL_DIR = ROOT / "specs" / "models" / "process"
+VOCABULARY = ROOT / "specs" / "vocabulary" / "vocabulary.toml"
 OUT = ROOT / "crates" / "azoth-process" / "src" / "model_inputs_gen.rs"
 
 #: A palette id and the model id it names. The rule, not a table: `unit_ops.pump` is
@@ -57,6 +58,37 @@ def load_models() -> dict[str, dict[str, Any]]:
     if not models:
         sys.exit(f"gen_model_inputs: no models under {MODEL_DIR}")
     return models
+
+
+def load_vocabulary() -> dict[str, str]:
+    """Each canonical unit's dimension, from the table the vocabulary generator reads.
+
+    The dimension is what connects an input's declared unit to the type the arithmetic takes,
+    and until this table carried it the two were statements nothing compared: a spec could say
+    an input is in `K` while the implementation wrapped it as a pressure, and no level of the
+    tree noticed. The id rather than the exponents, because the id is what a dimension is
+    *called* in the specs and the Lean vocabulary.
+    """
+    table = tomllib.loads(VOCABULARY.read_text(encoding="utf-8"))
+    units = {unit["id"]: unit["dimension"] for unit in table["units"]}
+    if not units:
+        sys.exit(f"gen_model_inputs: no units under {VOCABULARY}")
+    return units
+
+
+def dimension_of(unit: str | None, vocabulary: dict[str, str], where: str) -> str | None:
+    """The dimension an input's declared unit carries, or `None` where there is no unit.
+
+    **A unit the vocabulary does not carry is refused rather than defaulted.** `spec_lint`
+    already holds every declared unit to the schema's enum, so this cannot happen - and a
+    default here would be a dimension that is absent for a reason nobody can see, which is
+    the state this whole change exists to remove.
+    """
+    if unit is None:
+        return None
+    if unit not in vocabulary:
+        sys.exit(f"gen_model_inputs: {where} declares unit {unit!r}, which is not in {VOCABULARY}")
+    return vocabulary[unit]
 
 
 def model_id_for(palette_id: str) -> str:
@@ -94,6 +126,14 @@ def emit_rust(
         "    pub values: &'static [&'static str],\n"
         "    /// Whether the spec marks the input `optional = true`.\n"
         "    pub optional: bool,\n"
+        "    /// The dimension the spec's `unit` carries, or `None` where the input has no\n"
+        "    /// unit: a boolean, an enum, a substance list, or a matrix.\n"
+        "    ///\n"
+        "    /// **The declaration and the arithmetic meet here.** A spec states an input's\n"
+        "    /// unit and the implementation takes a typed quantity, and before this field\n"
+        "    /// the two were compared by nothing - so `an_input_of_the_wrong_dimension` in\n"
+        "    /// this table's own test is what says they agree, input by input.\n"
+        "    pub dimension: Option<&'static str>,\n"
         "}\n\n"
         "/// The inputs one palette entry's model declares.\n"
         "pub struct ModelInputs {\n"
@@ -107,15 +147,23 @@ def emit_rust(
         "static ALL: &[ModelInputs] = &[\n"
     )
 
+    vocabulary = load_vocabulary()
     rows_text = []
     for palette_entry, model in rows:
         inputs = "".join(
             "            ModelInput {{ name: {}, kind: {}, values: &[{}],"
-            " optional: {} }},\n".format(
+            " optional: {}, dimension: {} }},\n".format(
                 rust_str(name),
                 rust_str(declaration.get("type", "quantity")),
                 ", ".join(rust_str(value) for value in declaration.get("values", [])),
                 "true" if declaration.get("optional") else "false",
+                dimension_text(
+                    dimension_of(
+                        declaration.get("unit"),
+                        vocabulary,
+                        f"{model['id']}.{name}",
+                    )
+                ),
             )
             for name, declaration in model.get("inputs", {}).items()
         )
@@ -145,6 +193,11 @@ def emit_rust(
         "    ALL.iter().find(|entry| entry.unit_op == unit_op)\n"
         "}\n"
     )
+
+
+def dimension_text(dimension: str | None) -> str:
+    """A dimension as a Rust expression: `Some("pressure")`, or `None`."""
+    return f"Some({rust_str(dimension)})" if dimension else "None"
 
 
 def format_rust(text: str, generator: str) -> str:

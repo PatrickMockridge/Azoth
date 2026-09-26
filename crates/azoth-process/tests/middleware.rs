@@ -460,6 +460,24 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
 /// enum's values would otherwise emit a form whose widgets are quietly the wrong ones.
 #[test]
 fn the_generated_input_table_is_the_models_own() {
+    // Each canonical unit's dimension, read from the vocabulary rather than from the generated
+    // table, so the assertion below compares two independent readings of one fact.
+    let vocabulary: std::collections::BTreeMap<String, String> = {
+        let text = std::fs::read_to_string(root().join("specs/vocabulary/vocabulary.toml"))
+            .expect("the vocabulary table is there");
+        let document: toml::Value = toml::from_str(&text).expect("it parses");
+        document["units"]
+            .as_array()
+            .expect("a `[[units]]` array")
+            .iter()
+            .map(|unit| {
+                (
+                    unit["id"].as_str().expect("an id").to_string(),
+                    unit["dimension"].as_str().expect("a dimension").to_string(),
+                )
+            })
+            .collect()
+    };
     let mut walked = 0;
     for entry in azoth_process::model_inputs_gen::model_inputs() {
         let path = root().join("specs/models/process").join(format!(
@@ -506,6 +524,27 @@ fn the_generated_input_table_is_the_models_own() {
                 "{}: `{}`'s optional",
                 entry.model,
                 input.name
+            );
+            // **The dimension, which is where the declaration and the arithmetic meet.** The
+            // spec states a unit, the vocabulary says what dimension that unit carries, and the
+            // table carries that dimension so the implementation's typed quantity has something
+            // to be held against. A unit the vocabulary does not carry stops this test rather
+            // than reaching a form whose widget was chosen from a dimension nobody declared.
+            let expected = spec.get("unit").and_then(toml::Value::as_str).map(|unit| {
+                vocabulary
+                    .get(unit)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "{}: `{}` declares unit {unit}, which is not in the vocabulary",
+                            entry.model, input.name
+                        )
+                    })
+                    .as_str()
+            });
+            assert_eq!(
+                input.dimension, expected,
+                "{}: `{}`'s dimension",
+                entry.model, input.name
             );
             walked += 1;
         }
