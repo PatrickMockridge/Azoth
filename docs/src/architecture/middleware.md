@@ -141,6 +141,13 @@ switches unit, a document does not change, and Solve has no opinion about which 
 dimension no set names is read in the unit the library computed it in, which is most of the
 vocabulary: `Pa*m**6/mol**2` has no engineering alternative.
 
+**A field is where the two units meet, and it converts in both directions.** The document keeps the
+unit its spec declares — `K`, `Pa`, `mol/s` — and a parameter field *shows and accepts* the one the
+set names, because a set of units that only changed what a reader sees would still have them typing
+kelvin. So the two conversions sit together in `ui/src/wire/field.ts`, the bounds stay stated against
+the physics rather than the display, and a value typed in °C arrives in the document as the kelvin it
+stands for — which is the error that would be invisible in the editor and arrive 273 K cold.
+
 **Temperature is the one dimension whose unit is not a scale, and that is why it has a table of its
 own.** A degree Celsius is affine — `si = (value + 273.15) * 1` — and a scale's factor, which is what
 `si_factor` reads and what a spec's `unit:` converts by, cannot express the shift: read at one, an

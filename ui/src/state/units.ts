@@ -131,3 +131,26 @@ export function inDisplayUnit(units: Units, magnitudeSi: number, unit: string): 
   const shown = displayOf(units, unit);
   return magnitudeSi / shown.factor - shown.offset;
 }
+
+/**
+ * The SI magnitude a number typed in the unit it is read in stands for.
+ *
+ * **The inverse of [`inDisplayUnit`], and the reason it has to exist rather than be assumed**:
+ * the document stores what the spec declares - `K`, `Pa`, `mol/s` - so a field that showed a
+ * temperature in `°C` and put the typed number straight into the document would be storing a
+ * Celsius number in a kelvin field. That error is invisible in the editor (the field shows what
+ * was typed) and arrives as a state 273 K colder than the one somebody meant, which is the shape
+ * of the millimetre defect the vocabulary's own checks were built after.
+ */
+export function toDisplayUnit(units: Units, value: number, unit: string): number {
+  const shown = displayOf(units, unit);
+  return (value + shown.offset) * shown.factor;
+}
+
+/** The unit a value declared in `unit` is shown and typed in. */
+export function displayUnitOf(units: Units | null, unit: string | null): string | null {
+  if (unit === null || units === null) {
+    return unit;
+  }
+  return displayOf(units, unit).unit;
+}

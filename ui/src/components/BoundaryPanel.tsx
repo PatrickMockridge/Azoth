@@ -16,15 +16,19 @@
 
 import { useState } from "react";
 
+import { displayUnitOf, toDisplayUnit, type Units } from "../state/units";
+
 import type { EditorCommand } from "../wire/commands";
 import type { Envelope } from "../wire/types";
 
 export interface BoundaryPanelProps {
   envelope: Envelope;
+  /** The unit a reader wants values in. A feed is stored in the units its spec declares. */
+  units: Units;
   onCommand: (command: EditorCommand) => void;
 }
 
-export function BoundaryPanel({ envelope, onCommand }: BoundaryPanelProps) {
+export function BoundaryPanel({ envelope, units, onCommand }: BoundaryPanelProps) {
   const nodes = envelope.flowsheet.graph.nodes;
   const feeds = nodes.filter((node) => node.role === "input");
   const products = nodes.filter((node) => node.role === "product");
@@ -56,14 +60,14 @@ export function BoundaryPanel({ envelope, onCommand }: BoundaryPanelProps) {
         </button>
       ))}
 
-      <NewFeed envelope={envelope} onCommand={onCommand} />
+      <NewFeed envelope={envelope} units={units} onCommand={onCommand} />
       <NewProduct envelope={envelope} onCommand={onCommand} />
     </div>
   );
 }
 
 /** The record of a feed, which is four numbers and a fluid. */
-function NewFeed({ envelope, onCommand }: BoundaryPanelProps) {
+function NewFeed({ envelope, units, onCommand }: BoundaryPanelProps) {
   const existing = envelope.flowsheet.graph.nodes.find((node) => node.role === "input");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(nextName(envelope, "feed"));
@@ -115,9 +119,24 @@ function NewFeed({ envelope, onCommand }: BoundaryPanelProps) {
         onChange={(event) => setZ(event.target.value)}
         placeholder="0.9, 0.1"
       />
-      <input value={n} onChange={(event) => setN(event.target.value)} placeholder="mol/s" />
-      <input value={P} onChange={(event) => setP(event.target.value)} placeholder="Pa" />
-      <input value={T} onChange={(event) => setT(event.target.value)} placeholder="K" />
+      {/* **The placeholders name the unit the box accepts**, which is the set's and not the
+          document's: a feed is stored in the units its spec declares, and the conversion happens
+          here rather than in a reader's head. */}
+      <input
+        value={n}
+        onChange={(event) => setN(event.target.value)}
+        placeholder={unit(units, "mol/s")}
+      />
+      <input
+        value={P}
+        onChange={(event) => setP(event.target.value)}
+        placeholder={unit(units, "Pa")}
+      />
+      <input
+        value={T}
+        onChange={(event) => setT(event.target.value)}
+        placeholder={unit(units, "K")}
+      />
       {ready ? null : (
         <div className="hint bad">
           a fluid names at least one substance, and one mole fraction each
@@ -132,10 +151,12 @@ function NewFeed({ envelope, onCommand }: BoundaryPanelProps) {
             command: "add_input",
             name: name.trim(),
             components: fluids,
-            n: Number(n),
+            // **Back to the units the document stores**, which is what makes each box above a
+            // box in the reader's unit rather than a relabelled one.
+            n: toDisplayUnit(units, Number(n), "mol/s"),
             z: fractions,
-            P: Number(P),
-            T: Number(T),
+            P: toDisplayUnit(units, Number(P), "Pa"),
+            T: toDisplayUnit(units, Number(T), "K"),
           });
           setOpen(false);
         }}
@@ -147,7 +168,13 @@ function NewFeed({ envelope, onCommand }: BoundaryPanelProps) {
 }
 
 /** A product is a name and nothing else: an output is calculated. */
-function NewProduct({ envelope, onCommand }: BoundaryPanelProps) {
+function NewProduct({
+  envelope,
+  onCommand,
+}: {
+  envelope: Envelope;
+  onCommand: (command: EditorCommand) => void;
+}) {
   const [name, setName] = useState(nextName(envelope, "product"));
   return (
     <div className="field">
@@ -177,4 +204,9 @@ function nextName(envelope: Envelope, stem: string): string {
     }
   }
   return `${stem}_x`;
+}
+
+/** The unit a box's placeholder names, in the set in force. */
+function unit(units: Units, declared: string): string {
+  return displayUnitOf(units, declared) ?? declared;
 }

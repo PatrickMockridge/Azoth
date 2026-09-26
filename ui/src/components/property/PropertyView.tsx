@@ -153,7 +153,7 @@ function sheet(
   switch (active) {
     case "design":
       return node === null ? null : (
-        <DesignSheet catalogue={catalogue} node={node} onCommand={onCommand} />
+        <DesignSheet catalogue={catalogue} node={node} units={units} onCommand={onCommand} />
       );
     case "results":
       return result === undefined ? null : <ResultsSheet result={result} units={units} />;

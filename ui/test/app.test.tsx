@@ -325,6 +325,57 @@ describe("the editor", () => {
   });
 
   /**
+   * **A field reads and writes in the set, and the document keeps its own unit.** This is the half
+   * the display-only switcher could not do, and the failure it guards against is invisible in the
+   * editor: a field that showed a temperature in °F and put the typed number straight into the
+   * document would show the reader exactly what they typed while the run used a state 273 K colder.
+   * So the assertion is not on the box - it is on what the document holds once the box is out of
+   * the way, which is why the set is switched back to SI to read it.
+   */
+  it("accepts a value in the set's unit and stores the document's", async () => {
+    stubFetch();
+    window.localStorage.clear();
+    const { container } = await open();
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+
+    const chooser = () => container.querySelector<HTMLSelectElement>("select.units");
+    fireEvent.change(chooser() as HTMLSelectElement, { target: { value: "field" } });
+    fireEvent.click(container.querySelector<HTMLElement>('[data-id="instance:hx1"]') as HTMLElement);
+    await waitFor(() => expect(screen.getAllByText("outlet_temperature").length).toBeGreaterThan(0));
+
+    // The field says which unit it accepts, and it is the set's rather than the spec's: the heater
+    // declares `outlet_temperature` in K and a field set reads a temperature in °F.
+    const head = screen.getByText("outlet_temperature").parentElement;
+    expect(head?.textContent).toContain("°F");
+    // The document's 320 K, shown as a reader would say it: 116.33 °F.
+    const field = screen.getByDisplayValue("116.33");
+
+    fireEvent.change(field, { target: { value: "200" } });
+    await waitFor(() => expect(pill(container)).toBe("stale"));
+
+    // **Back to SI to read what was stored.** 200 °F is 366.483 K, so a document that received the
+    // typed number would show 200 here.
+    fireEvent.change(chooser() as HTMLSelectElement, { target: { value: "si" } });
+    // The box shows the number the document holds, in its own unit - which is the full float,
+    // because SI is the identity conversion and an identity is not something to round.
+    await waitFor(() => {
+      const stored = screen.getByDisplayValue(/^366\.48/) as HTMLInputElement;
+      expect(Number(stored.value)).toBeCloseTo(366.4833, 3);
+    });
+
+    // And the run uses it: the outlet reaches the temperature the document holds.
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+    await waitFor(() => {
+      const readouts = [
+        ...container.querySelectorAll('[data-id="instance:hx1"] .readout'),
+      ].map((node) => node.textContent ?? "");
+      expect(readouts.join(" | ")).toContain("366.5");
+    });
+  });
+
+  /**
    * **The navigator and the canvas are one selection**, because both call the app's own
    * `setSelected`. So the proof is the object's window opening — which nothing but the selection
    * can produce — and then the same thing in the other direction: a click on the drawing moves the

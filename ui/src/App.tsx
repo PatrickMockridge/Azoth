@@ -325,7 +325,7 @@ export function App() {
             }
           />
           {envelope === null ? null : (
-            <BoundaryPanel envelope={envelope} onCommand={send} />
+            <BoundaryPanel envelope={envelope} units={units} onCommand={send} />
           )}
         </aside>
 

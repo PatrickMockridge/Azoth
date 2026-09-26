@@ -8,7 +8,7 @@
  * cannot choose a widget says so rather than guessing at a number box.
  */
 
-import { displayOf, type Units } from "../state/units";
+import { displayOf, inDisplayUnit, toDisplayUnit, type Units } from "../state/units";
 import type { Catalogue, FormParameter, FormRange, Kind } from "./types";
 
 /** What a field renders as. */
@@ -131,6 +131,81 @@ export function fieldText(value: unknown): string {
     return value.join(", ");
   }
   return String(value);
+}
+
+/**
+ * What a field shows for a value the document holds, in the unit set in force.
+ *
+ * **A document's unit and a reader's are two different things, and a field is where they meet**:
+ * the value is stored in the unit the spec declares and shown in the one the set names. So the
+ * two conversions live here, beside each other, rather than in a widget - and a caller with no
+ * set gets exactly what the document says, which is what keeps every test that has no catalogue
+ * reading the shipped units.
+ *
+ * A vector is converted entry by entry: a tray-temperature profile is one `K` column, and a
+ * field that converted the first entry and not the rest would be showing two units in one box.
+ */
+export function fieldTextIn(
+  value: unknown,
+  declared: string | null,
+  units: Units | null,
+): string {
+  if (declared === null || units === null) {
+    return fieldText(value);
+  }
+  if (typeof value === "number") {
+    return shownNumber(inDisplayUnit(units, value, declared), value);
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) =>
+        typeof entry === "number" ? shownNumber(inDisplayUnit(units, entry, declared), entry) : entry,
+      )
+      .join(", ");
+  }
+  return fieldText(value);
+}
+
+/**
+ * A converted number as a box shows it.
+ *
+ * **Rounded only where the conversion did something.** An input is controlled, so its text is
+ * rewritten on every keystroke: a field that always rounded would fight somebody typing a tenth
+ * digit, which is exactly why the SI set - whose conversion is the identity - shows `String(value)`
+ * and has always behaved. A converted value has no such history to preserve, and the alternative
+ * is a box reading `366.4833333333333` where the reader wants a temperature.
+ */
+function shownNumber(converted: number, original: number): string {
+  return converted === original ? String(converted) : String(Number(converted.toPrecision(6)));
+}
+
+/**
+ * The value a command should carry for what a field holds, converted back to the document's unit.
+ *
+ * [`commandValue`] shapes it by kind first, so a field cannot write a document the checker will
+ * refuse for its type; this converts whatever number came out of that into the declared unit -
+ * which is the whole point, because the document stores what its spec declares and a reader types
+ * what the set names.
+ */
+export function commandValueIn(
+  kind: Kind,
+  raw: string,
+  declared: string | null,
+  units: Units | null,
+): unknown {
+  const shaped = commandValue(kind, raw);
+  if (declared === null || units === null) {
+    return shaped;
+  }
+  if (typeof shaped === "number") {
+    return toDisplayUnit(units, shaped, declared);
+  }
+  if (Array.isArray(shaped)) {
+    return shaped.map((entry) =>
+      typeof entry === "number" ? toDisplayUnit(units, entry, declared) : entry,
+    );
+  }
+  return shaped;
 }
 
 /**

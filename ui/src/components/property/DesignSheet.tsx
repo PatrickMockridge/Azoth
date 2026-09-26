@@ -1,3 +1,4 @@
+import type { Units } from "../../state/units";
 import { ParameterField } from "../ParameterField";
 import type { EditorCommand } from "../../wire/commands";
 import type { Catalogue, Form, GraphNode } from "../../wire/types";
@@ -17,10 +18,19 @@ import type { Catalogue, Form, GraphNode } from "../../wire/types";
 export function DesignSheet({
   catalogue,
   node,
+  units,
   onCommand,
 }: {
   catalogue: Catalogue | null;
   node: GraphNode;
+  /**
+   * The unit a reader wants values in, or `null` where there is no catalogue yet.
+   *
+   * **A field with a unit reads and writes in this set**, which is what makes the switcher a set
+   * of units rather than a way of reading: the document keeps its spec's unit and the conversion
+   * happens at the field's two edges.
+   */
+  units: Units | null;
   onCommand: (command: EditorCommand) => void;
 }) {
   const form: Form | undefined = catalogue?.unit_ops.find((entry) => entry.id === node.data.unit);
@@ -46,6 +56,7 @@ export function DesignSheet({
           key={parameter.name}
           parameter={parameter}
           value={values[parameter.name]}
+          units={units}
           onChange={(value) =>
             onCommand(
               value === undefined || value === null || value === ""
