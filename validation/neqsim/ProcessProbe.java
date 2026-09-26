@@ -46,6 +46,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe component_splitter \
 //       > captures/process_component_splitter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe tray > captures/process_column_tray.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe side_draw \
+//       > captures/process_side_draw.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
 //       > captures/process_rate_based_packed_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
@@ -177,6 +179,9 @@ public class ProcessProbe {
       case "tray":
         trayRows();
         phFlashRows();
+        break;
+      case "side_draw":
+        sideDrawRows();
         break;
       case "rate_based":
         rateBasedRows();
@@ -659,6 +664,20 @@ public class ProcessProbe {
     // The reactive section's rows, which belong with the state they are compared
     // against - see the helper's own note on why they live in this capture.
     reactiveColumnRowsInColumnCapture();
+
+    // The side-draw column rows, which live here for the same reason.
+    sideDrawColumnRowsInColumnCapture();
+  }
+
+  /// **The side-draw column rows, and why they are in this capture rather than one of their own.**
+  /// The layer diff pairs one capture with one model - `layers.LAYER_CASES` is grouped by model and
+  /// `test_a_capture_has_one_block_per_case` asserts each model reads exactly one capture - so a
+  /// side-draw state on `process.distillation_column` has to sit in the capture whose blocks that
+  /// model's cases already claim. `ProcessProbe side_draw` writes the same rows to
+  /// `captures/process_side_draw.tsv` as the subject's own record, the shape the reactive column's
+  /// rows already have.
+  static void sideDrawColumnRowsInColumnCapture() {
+    sideDrawColumnRows();
   }
 
   static void specificationRow(String label, String component, double target, Boolean recovery,
@@ -1435,6 +1454,16 @@ public class ProcessProbe {
     // apart.
     trayRow("heat_input_5000_W_two_mol_per_second", new double[][] { { 300.0, 20.0, 2.0 } }, names,
         z, -1.0, null, 5000.0);
+
+    // The side-draw tray rows, which belong with the tray's own - see the helper's note.
+    sideDrawRowsInTrayCapture();
+  }
+
+  /// The side-draw tray rows, in the tray's own capture for the same reason the column rows are in
+  /// the column's: the tray has no palette entry, so its rows are the oracle its own Rust tests
+  /// read rather than a model case's.
+  static void sideDrawRowsInTrayCapture() {
+    sideDrawTrayRows();
   }
 
   /// **Whether NeqSim's own `PHflash` honours the enthalpy it is given.**
@@ -1511,6 +1540,234 @@ public class ProcessProbe {
     print("gas_out", tray.getGasOutStream());
     print("liquid_out", tray.getLiquidOutStream());
     System.out.println();
+  }
+
+  /// **The side draw, which is a split of the tray's own outlet phase.** From
+  /// `SimpleTraySideDrawTest`: `getGasOutStream` is the vapour scaled by `1 - gasSideDrawFraction`,
+  /// `getLiquidOutStream` the liquid by `1 - liquidSideDrawFraction - liquidPumparoundDrawFraction`,
+  /// and each draw the *same* phase scaled by its own - so a draw carries the tray's composition,
+  /// temperature and pressure and a different flow, and a draw taken from the wrong phase is
+  /// impossible by construction.
+  ///
+  /// **Every row is a pure component, and that is what makes the split an oracle rather than an
+  /// identity.** The class's own tests run a pure-methane feed (`SystemSrkEos`, 300 K, 10 bara, 100
+  /// kg/hr, classic rule) through two standalone trays - a reference and one drawing a quarter of
+  /// its vapour - and assert the reference's gas equals the drawing tray's gas plus its draw, and
+  /// that the draw is `0.25` of the reference. On a pure fluid the flash cannot move either
+  /// composition or the mass flow, so the split is exact arithmetic on `100` kg/hr and every
+  /// library agrees on it whatever its equation of state: `25.0` kg/hr is a number, not a band.
+  ///
+  /// **The fluid is PR, where the class's test uses SRK**, because the process tier is PR-only and
+  /// an oracle in a fluid the port cannot carry would be no oracle. On the pure fluids here the two
+  /// cubics give the same single phase, so the row is the class's own state in the fluid the port
+  /// holds.
+  ///
+  /// **The pumparound row has no test in the class.** It is here because it is the one state where
+  /// *two* liquid fractions compose: `0.20` and `0.30` leave half the liquid in the tray, which is
+  /// the composition `validateLiquidSplitFractions` bounds and `SimpleTraySideDrawTest` only
+  /// exercises at the setter.
+  static void sideDrawRows() {
+    sideDrawTrayRows();
+    sideDrawColumnRows();
+  }
+
+  /// The tray rows, which belong in the tray's own capture - see the helper that calls them there.
+  static void sideDrawTrayRows() {
+    sideDrawTrayRow("side_draw_reference_tray", "methane", 300.0, 10.0, 100.0, 0.0, 0.0, 0.0);
+    sideDrawTrayRow("side_draw_gas_quarter_methane", "methane", 300.0, 10.0, 100.0, 0.25, 0.0,
+        0.0);
+    sideDrawTrayRow("side_draw_liquid_quarter_pentane", "n-pentane", 300.0, 2.0, 100.0, 0.0, 0.25,
+        0.0);
+    sideDrawTrayRow("side_draw_liquid_with_pumparound_pentane", "n-pentane", 300.0, 2.0, 100.0, 0.0,
+        0.20, 0.30);
+  }
+
+  static void sideDrawTrayRow(String label, String name, double temperatureK, double pressureBara,
+      double kgPerHour, double gasFraction, double liquidFraction, double pumparoundFraction) {
+    Stream inlet = pureFeed(name, temperatureK, pressureBara, kgPerHour);
+
+    neqsim.process.equipment.distillation.SimpleTray tray =
+        new neqsim.process.equipment.distillation.SimpleTray("side draw tray");
+    tray.addStream(inlet);
+    if (gasFraction > 0.0) {
+      tray.setGasSideDrawFraction(gasFraction);
+    }
+    if (liquidFraction > 0.0) {
+      tray.setLiquidSideDrawFraction(liquidFraction);
+    }
+    if (pumparoundFraction > 0.0) {
+      tray.setLiquidPumparoundDrawFraction(pumparoundFraction);
+    }
+    tray.run();
+
+    System.out.println(label);
+    System.out.println("component=" + name);
+    System.out.println("cubic=pr");
+    System.out.println("gas_side_draw_fraction=" + tray.getGasSideDrawFraction());
+    System.out.println("liquid_side_draw_fraction=" + tray.getLiquidSideDrawFraction());
+    System.out.println("pumparound_fraction=" + tray.getLiquidPumparoundDrawFraction());
+    print("feed", inlet);
+    System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("tray_temperature_K=" + tray.getTemperature());
+    System.out.println("tray_pressure_bara=" + tray.getPressure());
+    print("gas_out", tray.getGasOutStream());
+    print("liquid_out", tray.getLiquidOutStream());
+    System.out.println("gas_out_kg_per_hour=" + tray.getGasOutStream().getFlowRate("kg/hr"));
+    System.out.println("liquid_out_kg_per_hour=" + tray.getLiquidOutStream().getFlowRate("kg/hr"));
+    if (gasFraction > 0.0) {
+      print("gas_side_draw", tray.getGasSideDrawStream());
+      System.out.println(
+          "gas_side_draw_kg_per_hour=" + tray.getGasSideDrawStream().getFlowRate("kg/hr"));
+    }
+    if (liquidFraction > 0.0) {
+      print("liquid_side_draw", tray.getLiquidSideDrawStream());
+      System.out.println(
+          "liquid_side_draw_kg_per_hour=" + tray.getLiquidSideDrawStream().getFlowRate("kg/hr"));
+    }
+    if (pumparoundFraction > 0.0) {
+      print("liquid_pumparound_draw", tray.getLiquidPumparoundDrawStream());
+      System.out.println("liquid_pumparound_draw_kg_per_hour="
+          + tray.getLiquidPumparoundDrawStream().getFlowRate("kg/hr"));
+    }
+    System.out.println();
+  }
+
+  /// The column rows, which belong in the column's own capture - see the helper that calls them
+  /// there, and the note on why they live there rather than in a capture of their own.
+  static void sideDrawColumnRows() {
+    // **The class's own three column states**, from tests 2 and 3: a one-tray column with no ends,
+    // fed a pure fluid, drawing a tenth and then a quarter of its vapour - and the class's own
+    // second half, the same column on liquid n-pentane drawing a quarter of its liquid.
+    sideDrawColumnRow("side_draw_column_gas_tenth_methane", new String[] { "methane" },
+        new double[] { 1.0 }, 300.0, 10.0, 100.0, 1, 0, false, false, 0.0, 0.0, 10.0, 10.0, 1.0e-6,
+        0, 0.10, 0.0, 0.0);
+    sideDrawColumnRow("side_draw_column_gas_quarter_methane", new String[] { "methane" },
+        new double[] { 1.0 }, 300.0, 10.0, 100.0, 1, 0, false, false, 0.0, 0.0, 10.0, 10.0, 1.0e-6,
+        0, 0.25, 0.0, 0.0);
+    sideDrawColumnRow("side_draw_column_liquid_quarter_pentane", new String[] { "n-pentane" },
+        new double[] { 1.0 }, 300.0, 2.0, 100.0, 1, 0, false, false, 0.0, 0.0, 2.0, 2.0, 1.0e-6, 0,
+        0.0, 0.25, 0.0);
+    // **The mechanism on a column that has both products**, which is the state the port's case is
+    // held to: the model's own binary column, four stages with both ends, one tray drawing. The
+    // draw's placement is tray 3, a middle tray, because a fraction on an end is a draw this port
+    // refuses by name - its ends are `column::reboiler` and `column::condenser` rather than stages.
+    sideDrawColumnRow("side_draw_column_binary_gas_quarter", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, true, true, -20.0, 100.0, 19.0, 20.0,
+        1.0e-6, SIDE_DRAW_TRAY, 0.25, 0.0, 0.0);
+    // The same column drawing liquid, and drawing a pumparound off the same liquid beside it: the
+    // one state where the pair composes, at a column level rather than a tray's.
+    sideDrawColumnRow("side_draw_column_binary_liquid_and_pumparound",
+        new String[] { "methane", "n-butane" }, new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4,
+        2, true, true, -20.0, 100.0, 19.0, 20.0, 1.0e-6, SIDE_DRAW_TRAY, 0.0, 0.10, 0.05);
+  }
+
+  static void sideDrawColumnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, boolean condenser,
+      boolean reboiler, double condenserC, double reboilerC, double topBara, double bottomBara,
+      double tolerance, int drawTray, double gasFraction, double liquidFraction,
+      double pumparoundFraction) {
+    SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(kgPerHour, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", stages, reboiler,
+            condenser);
+    column.addFeedStream(inlet, feedTray);
+    if (condenser) {
+      column.setCondenserTemperature(condenserC, "C");
+    }
+    if (reboiler) {
+      column.setReboilerTemperature(reboilerC, "C");
+    }
+    column.setTopPressure(topBara);
+    column.setBottomPressure(bottomBara);
+    column.setTemperatureTolerance(tolerance);
+    if (gasFraction > 0.0) {
+      column.setGasSideDrawFraction(drawTray, gasFraction);
+    }
+    if (liquidFraction > 0.0) {
+      column.setLiquidSideDrawFraction(drawTray, liquidFraction);
+    }
+    if (pumparoundFraction > 0.0) {
+      column.getTray(drawTray).setLiquidPumparoundDrawFraction(pumparoundFraction);
+    }
+    column.run();
+
+    System.out.println(label);
+    System.out.println("cubic=pr");
+    System.out.println("stages=" + stages);
+    System.out.println("feed_tray=" + feedTray);
+    System.out.println("has_condenser=" + condenser);
+    System.out.println("has_reboiler=" + reboiler);
+    System.out.println("temperature_tolerance=" + tolerance);
+    System.out.println("gas_side_draw_fraction=" + gasFraction);
+    System.out.println("liquid_side_draw_fraction=" + liquidFraction);
+    System.out.println("pumparound_fraction=" + pumparoundFraction);
+    print("feed", inlet);
+    System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
+    System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
+    System.out.println("tray_count=" + column.getNumberOfTrays());
+    System.out.println("solved=" + column.solved());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("mass_balance_kg_per_hour=" + column.getMassBalance("kg/hr"));
+    System.out.println("energy_balance_error=" + column.getEnergyBalanceError());
+    if (condenser) {
+      System.out.println("condenser_duty_W=" + column.getCondenser().getDuty());
+    }
+    if (reboiler) {
+      System.out.println("reboiler_duty_W=" + column.getReboiler().getDuty());
+    }
+    System.out.println("outlet_count=" + column.getOutletStreams().size());
+    System.out.println("side_draw_count=" + column.getSideDrawStreams().size());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println("tray" + i + "_gas_n="
+          + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n="
+          + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    if (gasFraction > 0.0) {
+      print("gas_side_draw",
+          column.getSideDrawStream(drawTray,
+              neqsim.process.equipment.distillation.DistillationColumn.SideDrawPhase.GAS));
+    }
+    if (liquidFraction > 0.0) {
+      print("liquid_side_draw",
+          column.getSideDrawStream(drawTray,
+              neqsim.process.equipment.distillation.DistillationColumn.SideDrawPhase.LIQUID));
+    }
+    if (pumparoundFraction > 0.0) {
+      print("liquid_pumparound_draw",
+          column.getTray(drawTray).getLiquidPumparoundDrawStream());
+    }
+    System.out.println();
+  }
+
+  /// **The tray the binary rows draw from**, which is a middle one: a fraction on an end is a draw
+  /// this port refuses by name, because its ends are `column::reboiler` and `column::condenser`
+  /// rather than stages.
+  static final int SIDE_DRAW_TRAY = 3;
+
+  /// The class's own side-draw feed: one pure component, its own temperature and pressure, and a
+  /// stated mass flow - `SimpleTraySideDrawTest.createMethaneFeed`, in PR.
+  static Stream pureFeed(String name, double temperatureK, double pressureBara, double kgPerHour) {
+    SystemInterface fluid = new SystemPrEos(temperatureK, pressureBara);
+    fluid.addComponent(name, 1.0);
+    fluid.setMixingRule(2);
+    Stream stream = new Stream("side draw feed", fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
   }
 
   /// **The family's closed-form member, and the one place the two libraries can be expected
