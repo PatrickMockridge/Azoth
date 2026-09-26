@@ -1403,6 +1403,7 @@ mod tests {
                 port("discharge", Direction::Out, Multiplicity::One),
             ],
             notes: None,
+            family: None,
         }
     }
 
@@ -1418,6 +1419,7 @@ mod tests {
                 port("product", Direction::Out, Multiplicity::One),
             ],
             notes: None,
+            family: None,
         }
     }
 
@@ -1432,6 +1434,7 @@ mod tests {
                 port("products", Direction::Out, Multiplicity::Many),
             ],
             notes: None,
+            family: None,
         }
     }
 

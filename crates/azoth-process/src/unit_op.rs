@@ -75,4 +75,16 @@ pub struct UnitOpSpec {
     /// and its ports describe, and the chemistry that would close it is unported.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+    /// The palette directory this entry was read from, e.g. `two_port`.
+    ///
+    /// **Not a declaration: the loader's own fact.** An entry's file lives in a directory that
+    /// groups it - `specs/unit_ops/<family>/<id>.toml` - and the grouping is the *palette's*
+    /// rather than the entry's, which is why no spec file carries it, why this is `skip`ped so a
+    /// document cannot declare one, and why both loaders fill it from the path they were given
+    /// rather than from the text.
+    ///
+    /// **`deny_unknown_fields` is what makes that safe.** A `family =` line written into a spec is
+    /// still an unknown key, because a skipped field is not one serde expects.
+    #[serde(skip)]
+    pub family: Option<String>,
 }

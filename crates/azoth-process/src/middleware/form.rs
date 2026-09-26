@@ -113,6 +113,14 @@ pub struct FormSpec {
     pub source: Option<String>,
     /// The model id, where one exists.
     pub model: Option<&'static str>,
+    /// The palette directory the entry was read from, e.g. `two_port`.
+    ///
+    /// **The grouping a palette panel draws and nothing the document says.** It was on no wire
+    /// until an editor needed to group twenty-nine entries: every id is `unit_ops.<leaf>`, so a
+    /// reader that split the id took the leaf for a family and drew one group called `other`, and
+    /// `source` is NeqSim's taxonomy rather than this palette's (`cooler` is `two_port` here and
+    /// `heatexchanger/` there). The directory is the one place the grouping is stated.
+    pub family: Option<String>,
     /// Whether the executor has a kernel for it.
     pub runnable: bool,
     /// Why not, verbatim from the refusal table, where it does not.
@@ -173,6 +181,7 @@ pub fn form(spec: &UnitOpSpec) -> FormSpec {
         name: spec.name.clone(),
         source: spec.source.as_ref().map(|source| source.standard.clone()),
         model: model_inputs.map(|entry| entry.model),
+        family: spec.family.clone(),
         runnable: DISPATCH.iter().any(|(id, _)| *id == spec.id),
         refusal: UNRUNNABLE
             .iter()

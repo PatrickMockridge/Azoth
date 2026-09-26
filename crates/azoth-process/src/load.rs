@@ -19,8 +19,14 @@ pub fn load_palette(dir: &Path) -> Result<Vec<UnitOpSpec>, String> {
     for path in paths {
         let text =
             std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-        let spec: UnitOpSpec =
+        let mut spec: UnitOpSpec =
             toml::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        // The directory the entry was read from, which is the palette's own grouping - see
+        // `UnitOpSpec::family`. The other loader reads the same thing out of the bundle's name.
+        spec.family = path
+            .parent()
+            .and_then(Path::file_name)
+            .map(|name| name.to_string_lossy().into_owned());
         specs.push(spec);
     }
     Ok(specs)
@@ -39,7 +45,10 @@ pub fn load_palette_text(entries: &[(&str, &str)]) -> Result<Vec<UnitOpSpec>, St
     entries
         .iter()
         .map(|(name, text)| {
-            toml::from_str(text).map_err(|error| format!("specs/unit_ops/{name}: {error}"))
+            let mut spec: UnitOpSpec =
+                toml::from_str(text).map_err(|error| format!("specs/unit_ops/{name}: {error}"))?;
+            spec.family = name.split_once('/').map(|(family, _)| family.to_string());
+            Ok(spec)
         })
         .collect()
 }

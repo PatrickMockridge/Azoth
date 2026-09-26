@@ -223,3 +223,49 @@ fn every_declared_parameter_reaches_its_kernel() {
         }
     }
 }
+
+/// **Every entry carries the directory it was read from, which is the palette's own grouping.**
+///
+/// The grouping is stated nowhere else. An id is `unit_ops.<leaf>`, so a reader that split the id
+/// took the leaf for a family and drew one group called `other` - which is what the editor did
+/// until this was named - and `source` is NeqSim's taxonomy rather than this palette's, where
+/// `cooler` is a `two_port` entry inside NeqSim's `heatexchanger/` directory.
+///
+/// **Read through the real loader**, not this file's own: the family comes from the path a loader
+/// was given, which is the thing being asserted, and a test that parsed the text itself would be
+/// asserting about a field nothing had set.
+#[test]
+fn every_entry_carries_the_family_it_was_read_from() {
+    let palette = azoth_process::load_palette(unit_op_root()).expect("the palette loads");
+    let mut families: HashSet<String> = HashSet::new();
+    for spec in &palette {
+        let family = spec
+            .family
+            .clone()
+            .unwrap_or_else(|| panic!("{} was loaded with no family", spec.id));
+        assert!(
+            unit_op_root().join(&family).is_dir(),
+            "{} names the family `{family}`, which is not a directory under specs/unit_ops",
+            spec.id
+        );
+        families.insert(family);
+    }
+    // The seven the directories declare, so a new directory is a new family and belongs here too.
+    for expected in [
+        "column",
+        "heat_exchanger",
+        "mixer",
+        "reactor",
+        "separator",
+        "two_port",
+        "utility",
+    ] {
+        assert!(families.contains(expected), "no entry is in `{expected}`");
+    }
+    assert_eq!(
+        families.len(),
+        7,
+        "the palette has {} families: {families:?}",
+        families.len()
+    );
+}
