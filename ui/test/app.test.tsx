@@ -19,22 +19,11 @@ import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-/** xyflow constructs this for every node it mounts, unguarded. */
-class ResizeObserver {
-  observe(): void {}
-  unobserve(): void {}
-  disconnect(): void {}
-}
+import { only, stubDownload, textOf, unstubDownload } from "./download";
+import { drag, drawnPosition } from "./drag";
+import { idPill, nodeIds, pill, stubXyflowEnvironment } from "./xyflow-env";
 
-/** xyflow reads `m22` off the viewport's computed `transform`; jsdom has no such class. */
-class DOMMatrixReadOnly {
-  m22 = 1;
-}
-
-beforeAll(() => {
-  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = ResizeObserver;
-  (globalThis as { DOMMatrixReadOnly?: unknown }).DOMMatrixReadOnly = DOMMatrixReadOnly;
-});
+beforeAll(stubXyflowEnvironment);
 
 /** The module the build just produced, served the way a static host serves it. */
 function stubFetch(): void {
@@ -63,20 +52,13 @@ async function open() {
   return rendered;
 }
 
-const nodeIds = (container: HTMLElement): string[] =>
-  [...container.querySelectorAll<HTMLElement>(".react-flow__node")].map(
-    (node) => node.dataset.id ?? "",
-  );
-
-const pill = (container: HTMLElement): string =>
-  [...container.querySelectorAll(".pill")].at(-1)?.textContent ?? "";
-
 afterEach(() => {
   // **Not automatic here.** React Testing Library unmounts between tests only when `afterEach`
   // is a *global*, and this suite imports it from `vitest` with `globals` off — so without this
   // line every test's tree stays in the document and a query finds the previous test's buttons.
   cleanup();
   vi.unstubAllGlobals();
+  unstubDownload();
 });
 
 describe("the editor", () => {
@@ -108,6 +90,28 @@ describe("the editor", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Solve" }));
     await waitFor(() => expect(pill(container)).toBe("solved"));
+  });
+
+  /**
+   * **New opens a document, and what it leaves out is the checker's to say.** The blank flowsheet is
+   * `specs/flowsheets/blank.toml`, the two keys a flowsheet cannot omit; everything a flow sheet
+   * still needs reaches the editor as a diagnostic rather than as a page that refused to open.
+   */
+  it("opens a blank document rather than a fault", async () => {
+    stubFetch();
+    const { container } = await open();
+    expect(idPill(container)).toBe("flowsheets.demo");
+
+    fireEvent.click(screen.getByRole("button", { name: "New" }));
+
+    await waitFor(() => expect(nodeIds(container)).toEqual([]));
+    // A document, not a refusal: the id is the blank one's and there is no fault to show.
+    expect(idPill(container)).toBe("flowsheets.blank");
+    expect(container.querySelector(".fault")).toBeNull();
+    // It has not run, so its values are older than it.
+    expect(pill(container)).toBe("stale");
+    // And the palette is the module's, which no document changes.
+    expect(container.querySelectorAll("aside.side .entry").length).toBeGreaterThanOrEqual(29);
   });
 
   /** A gesture, the command it emits, and the value that can only come back from the library. */
@@ -166,6 +170,39 @@ describe("the editor", () => {
       );
       expect(codes).toContain("underfed_port");
     });
+  });
+
+  /**
+   * **The one wire command no other gesture test reaches.** `set_position` goes out of
+   * `onNodeDragStop`, and a drag is the one gesture a synthetic event cannot produce cheaply:
+   * xyflow drags through `d3-drag`, which listens for *mouse* events and attaches its move handler
+   * to `event.view`. `./drag.ts` states what that costs and how it is paid.
+   *
+   * **Three things have to hold, and each fails on its own.** The gesture has to emit the command
+   * (the pill goes stale, which no local state can do); the canvas has to move (the drawn
+   * position); and the *document* has to carry what the canvas draws — a position xyflow moved in
+   * its own state and never sent would satisfy the first two.
+   */
+  it("moves a node with a command, and the document carries the position", async () => {
+    stubFetch();
+    const { container } = await open();
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+
+    const before = drawnPosition(container, "instance:hx1");
+    const heater = container.querySelector<HTMLElement>('[data-id="instance:hx1"]');
+    drag(heater as HTMLElement, [200, 200], [260, 240]);
+
+    await waitFor(() => expect(pill(container)).toBe("stale"));
+    const after = drawnPosition(container, "instance:hx1");
+    expect(after).not.toEqual(before);
+
+    // **The document, which is only reachable through a save.** Its layout table is what the
+    // library holds, and it has to be the numbers the canvas is drawing.
+    const download = stubDownload();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(download.names).toEqual(["flowsheets.demo.toml"]));
+    expect(await textOf(only(download.blobs))).toContain(`hx1 = [${after[0]}.0, ${after[1]}.0]`);
   });
 
   it("sets the order the next run takes, from the session rather than a copy", async () => {

@@ -2,9 +2,9 @@
  * The command model, held to the schema the library publishes.
  *
  * **This is the "14 of 14" claim.** The editor's `COMMAND_NAMES` and the tool list in the
- * catalogue fixture must be the same fourteen, and that fixture is `azoth forms --tools` output —
+ * catalogue fixture must be the same fifteen, and that fixture is `azoth forms --tools` output —
  * so the editor's reachable set, the wire's command enum and the agent's tool list meet in the
- * middle. A fifteenth command in Rust would fail here until the editor could send it.
+ * middle. A sixteenth command in Rust would fail here until the editor could send it.
  */
 
 import { describe, expect, it } from "vitest";
@@ -18,7 +18,7 @@ import type { Catalogue } from "../src/wire/types";
 const catalogue = catalogueJson as unknown as Catalogue;
 
 describe("the command model", () => {
-  it("is the same fourteen the agent's tool schema publishes", () => {
+  it("is the same fifteen the agent's tool schema publishes", () => {
     const tools = (catalogue.tools ?? []).map((tool) => tool.name);
     expect(tools).toHaveLength(15);
     expect([...COMMAND_NAMES].sort()).toEqual([...tools].sort());

@@ -1,0 +1,9 @@
+# What the editor's New opens: a document with nothing in it.
+#
+# **Two keys, because two are what a flowsheet cannot omit.** Every other field defaults, so this is
+# a complete document rather than a stub of one — and what a flow sheet still needs is the
+# *checker's* to say, through the diagnostics panel, rather than this file's. A blank page that
+# carried its own list of what was missing would be a second rule set beside the one that already
+# exists.
+id = "flowsheets.blank"
+name = "Untitled"

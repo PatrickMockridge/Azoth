@@ -96,8 +96,15 @@ body {
   cursor: pointer;
 }
 
-.bar .button:hover {
+.bar .button:hover:not(.off) {
   border-color: var(--accent);
+}
+
+/* A label cannot be `disabled`, so a served door's Open is one that draws nothing to click. It
+   reads the same as a disabled button, which is the point: it is the same fact about the door. */
+.bar .button.off {
+  color: var(--dim);
+  cursor: default;
 }
 
 .bar .button input {

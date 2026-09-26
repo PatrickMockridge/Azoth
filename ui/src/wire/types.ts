@@ -264,7 +264,7 @@ export interface Catalogue {
 /**
  * One edit, as the command model reads it.
  *
- * Re-exported from `commands.ts` rather than declared twice: that file is where the fourteen are
+ * Re-exported from `commands.ts` rather than declared twice: that file is where the fifteen are
  * written out, and a second `{ command: string } & Record<string, unknown>` here would let a
  * widget send anything at all and still typecheck.
  */

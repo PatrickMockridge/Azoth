@@ -1,7 +1,7 @@
 /**
  * Every edit the middleware has, as a type.
  *
- * **This is the check that the editor can reach all fourteen, and it is the TypeScript
+ * **This is the check that the editor can reach all fifteen, and it is the TypeScript
  * `deny_unknown_fields`.** The Rust command enum refuses a key it does not declare; a union here
  * refuses one at compile time, so a typo'd field name is a type error rather than a command the
  * wasm boundary rejects at run time with a sentence about a key nobody meant to write.
@@ -22,7 +22,7 @@ export type RecycleField =
   | "minimum_flow"
   | "acceleration_method";
 
-/** One edit, as the command model reads it — the fourteen, and nothing else. */
+/** One edit, as the command model reads it — the fifteen, and nothing else. */
 export type EditorCommand =
   | { command: "add_instance"; id: string; unit: string; parameters: Record<string, unknown> }
   | { command: "remove_instance"; id: string }

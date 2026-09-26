@@ -5,11 +5,17 @@
  * goes out as a command, the library answers with the whole document, and this sets it. That is
  * what keeps the canvas, the form and the diagnostics from disagreeing — they are three readings
  * of one object rather than three copies of one state.
+ *
+ * **The door is chosen once, from the URL** (`./wire/door.ts`), and what happens after that is the
+ * same for both: a call, and an envelope back. The two differ in one place only — the controls that
+ * *hand a document to the library* exist on a door that can be handed one, and a door that hosts a
+ * single document for the life of its process is not one.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
+import blankDocument from "../../specs/flowsheets/blank.toml?raw";
 import demoDocument from "../../specs/flowsheets/demo.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
@@ -18,10 +24,20 @@ import { Flowsheet } from "./components/Flowsheet";
 import { InputsPanel } from "./components/InputsPanel";
 import { Palette } from "./components/Palette";
 import { UnitOpPanel } from "./components/UnitOpPanel";
+import { saveDocument } from "./save";
 import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
-import type { Middleware, Session } from "./wire/client";
-import { wasmMiddleware } from "./wire/client";
+import { door } from "./wire/door";
+import type { Door, Opened, Session } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
+
+/**
+ * Why a served door has no New, Open or Demo.
+ *
+ * In the tool bar as a `title` rather than in a paragraph somewhere: the control is where a person
+ * asks the question, so the control is where the answer belongs.
+ */
+const HOSTED =
+  "azoth serve holds one document for the life of its process — restart it with --flowsheet F to serve another";
 
 export function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -29,38 +45,96 @@ export function App() {
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [fault, setFault] = useState<string | null>(null);
+  const [openable, setOpenable] = useState(false);
 
-  const middleware = useRef<Middleware | null>(null);
+  const middleware = useRef<Door | null>(null);
 
-  /** Open a document, from anywhere: the demo on load, the Demo button, or a file. */
-  const open = useCallback((text: string) => {
-    const loaded = middleware.current;
-    if (loaded === null) {
-      return;
-    }
-    try {
-      const opened = loaded.open(text);
-      setSession(opened);
-      setEnvelope(opened.envelope());
-      setSelected(null);
-      setFault(null);
-    } catch (error: unknown) {
-      // A document the schema cannot read is a fault, which is what the editor already shows for
-      // a refusal. The session that was open stays open, because the new one never became one.
-      setFault(String(error));
-    }
+  /**
+   * **The newest call's number, so an answer to an older one cannot land on top of it.** The module
+   * answers in order because it answers at once; a served door answers when the socket says so, and
+   * two edits in flight can come back the other way round — which would leave the editor drawing
+   * the older document. Every call takes a ticket, and only the newest one is allowed to set state.
+   */
+  const issued = useRef(0);
+
+  /** One call's answer, or the sentence that refused it. */
+  const answer = useCallback((pending: Promise<Envelope>) => {
+    const ticket = (issued.current += 1);
+    void pending.then(
+      (next) => {
+        if (ticket === issued.current) {
+          setEnvelope(next);
+          setFault(null);
+        }
+      },
+      (error: unknown) => {
+        if (ticket === issued.current) {
+          setFault(String(error));
+        }
+      },
+    );
   }, []);
+
+  /** A session and the envelope it opened at, as the editor's state. */
+  const land = useCallback((opening: Promise<Opened>) => {
+    const ticket = (issued.current += 1);
+    void opening.then(
+      (opened) => {
+        if (ticket !== issued.current) {
+          return;
+        }
+        setSession(opened.session);
+        setEnvelope(opened.envelope);
+        setSelected(null);
+        setFault(null);
+      },
+      (error: unknown) => {
+        // A document the schema cannot read is a fault, which is what the editor already shows for
+        // a refusal. The session that was open stays open, because the new one never became one.
+        if (ticket === issued.current) {
+          setFault(String(error));
+        }
+      },
+    );
+  }, []);
+
+  /** Hand a document to the library: the Demo button, New, or a file. */
+  const open = useCallback(
+    (text: string) => {
+      const loaded = middleware.current;
+      if (loaded === null || loaded.kind !== "openable") {
+        return;
+      }
+      land(loaded.open(text));
+    },
+    [land],
+  );
 
   useEffect(() => {
     let live = true;
-    wasmMiddleware()
+    door(window.location.search)
       .then((loaded) => {
         if (!live) {
           return;
         }
         middleware.current = loaded;
-        setCatalogue(loaded.catalogue(true));
-        open(demoDocument);
+        setOpenable(loaded.kind === "openable");
+        void loaded.catalogue(true).then(
+          (palette) => {
+            if (live) {
+              setCatalogue(palette);
+            }
+          },
+          (error: unknown) => {
+            if (live) {
+              setFault(String(error));
+            }
+          },
+        );
+        // **The door says how to open on it.** A served one already holds a document and has no
+        // call that would replace it, so asking it to open the demo would be a call it does not
+        // have — the kind of thing that reads as a bug in the editor rather than in the request.
+        land(loaded.kind === "openable" ? loaded.open(demoDocument) : loaded.attach());
       })
       .catch((error: unknown) => {
         if (live) {
@@ -70,64 +144,47 @@ export function App() {
     return () => {
       live = false;
     };
-  }, [open]);
+  }, [land]);
 
   /** One edit, one answer. A command the library refuses is a fault rather than a silent no-op. */
   const send = useCallback(
     (command: Command) => {
-      if (session === null) {
-        return;
-      }
-      try {
-        setEnvelope(session.apply(command));
-        setFault(null);
-      } catch (error: unknown) {
-        setFault(String(error));
+      if (session !== null) {
+        answer(session.apply(command));
       }
     },
-    [session],
+    [session, answer],
   );
 
   const solve = useCallback(() => {
-    if (session === null) {
-      return;
+    if (session !== null) {
+      answer(session.run());
     }
-    try {
-      setEnvelope(session.run());
-      setFault(null);
-    } catch (error: unknown) {
-      setFault(String(error));
-    }
-  }, [session]);
+  }, [session, answer]);
 
   const setOrder = useCallback(
     (order: ExecutionOrder) => {
-      if (session === null) {
-        return;
-      }
-      try {
-        setEnvelope(session.setOrder(order));
-        setFault(null);
-      } catch (error: unknown) {
-        setFault(String(error));
+      if (session !== null) {
+        answer(session.setOrder(order));
       }
     },
-    [session],
+    [session, answer],
   );
 
+  /**
+   * Write the document where a person says.
+   *
+   * **Off the envelope rather than off the session**, because every envelope carries
+   * `flowsheet.document` — which is what makes a save no call at all, on either door.
+   */
   const save = useCallback(() => {
-    if (session === null) {
+    if (envelope === null) {
       return;
     }
-    // `text`, not `document`: the global `document` is what the download anchor is created from.
-    const text = session.document();
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${envelope?.flowsheet.id ?? "flowsheet"}.toml`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [session, envelope]);
+    void saveDocument(`${envelope.flowsheet.id}.toml`, envelope.flowsheet.document).catch(
+      (error: unknown) => setFault(String(error)),
+    );
+  }, [envelope]);
 
   const node = envelope === null ? null : selectedNode(envelope, selected);
   const edge = envelope === null ? null : selectedEdge(envelope, selected);
@@ -158,22 +215,37 @@ export function App() {
         <button type="button" onClick={solve} disabled={session === null}>
           Solve
         </button>
-        <label className="button">
+        <button
+          type="button"
+          onClick={() => open(blankDocument)}
+          disabled={!openable}
+          title={openable ? "a document with nothing in it" : HOSTED}
+        >
+          New
+        </button>
+        <label className={`button${openable ? "" : " off"}`} title={openable ? undefined : HOSTED}>
           Open
-          <input
-            type="file"
-            accept=".toml,text/plain"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file !== undefined) {
-                void file.text().then(open);
-              }
-              // So that choosing the same file twice fires again.
-              event.target.value = "";
-            }}
-          />
+          {openable ? (
+            <input
+              type="file"
+              accept=".toml,text/plain"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file !== undefined) {
+                  void file.text().then(open);
+                }
+                // So that choosing the same file twice fires again.
+                event.target.value = "";
+              }}
+            />
+          ) : null}
         </label>
-        <button type="button" onClick={() => open(demoDocument)} disabled={session === null}>
+        <button
+          type="button"
+          onClick={() => open(demoDocument)}
+          disabled={!openable}
+          title={openable ? "the shipped demo flowsheet" : HOSTED}
+        >
           Demo
         </button>
         <button type="button" onClick={save} disabled={session === null}>
