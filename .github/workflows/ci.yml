@@ -46,6 +46,12 @@ jobs:
       # done with it. It also prints the tally, because the interesting number is how
       # many columns are absent because the model does not exist yet.
       - run: python tools/check_manifest.py
+      # The two version numbers, held to each other: `pyproject.toml`'s is what the wheel
+      # is published as, `Cargo.toml`'s is what every binary reports - and it reaches a
+      # client as `azoth mcp`'s `serverInfo.version`. Each is correct for the file it was
+      # written in, so nothing in the build notices a release that bumped one and not the
+      # other: it ships a wheel whose own MCP server names a different number.
+      - run: python tools/check_versions.py
       # The numbers and paths the normative pages state, against the tree that produces
       # them. `check_links.py` says a link resolves and `prose_lint.py` says a page is
       # written well; neither says a page is *true*, and `prose_lint.py` excludes
