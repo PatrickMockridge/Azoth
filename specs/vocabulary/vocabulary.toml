@@ -25,7 +25,7 @@ exponents = [0, 0, 0, 0, 0, 1, 0]
 [[dimensions]]
 id = "molar_flow"
 exponents = [0, 0, -1, 0, 0, 1, 0]
-uom_absent = "uom has no molar-flow quantity, and no crate outside uom can add one. `mol/s` is already its own SI base, so its conversion is the identity; `kmol/h` is not, and `kilomoles_per_hour` returns the base magnitude as a bare `f64`."
+uom_absent = "uom has no molar-flow quantity, and no crate outside uom can add one: `quantity!` runs inside `uom::si` and the `Units` trait `system!` assembles is a closed list. Every unit of the dimension converts through this crate's `MolarFlow` instead - `mol/s` itself, which is the SI base, through `moles_per_second`, and `kmol/h` through `kilomoles_per_hour` - so none of them gets a type ascription."
 [[dimensions]]
 id = "mass_density"
 exponents = [-3, 1, 0, 0, 0, 0, 0]
@@ -135,6 +135,7 @@ rust_ctor = "kilograms_per_second"
 id = "mol/s"
 dimension = "molar_flow"
 pint = "mole/second"
+rust_ctor = "moles_per_second"
 [[units]]
 id = "mol"
 dimension = "amount"

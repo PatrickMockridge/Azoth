@@ -520,14 +520,13 @@ def emit_rust(table: dict[str, Any]) -> str:
         "",
         "/// Each unit's conversion from the declared unit to the SI base magnitude.",
         "///",
-        "/// Three cases, and the table decides which rather than this list. A unit of",
-        "/// a dimension uom carries goes through the hand-written constructor in",
-        "/// [`crate::units`] and takes its `.value` - the constructor is uom's own",
-        "/// where uom's definition is exact, and this crate's where uom's literal is",
-        "/// rounded, which is why `psi` and `hp` reach it without a `uom` path. A unit",
-        "/// of a dimension uom does *not* carry - molar flow is the one - is not its own",
-        "/// SI base either, so its constructor returns the base magnitude directly.",
-        "/// And a unit that is already its own SI base converts by the identity.",
+        "/// Two cases, and the table decides which rather than this list. A unit that",
+        "/// names a constructor goes through it and takes `.value`, the SI base",
+        "/// magnitude - the constructor is uom's own where uom's definition is exact,",
+        "/// this crate's where uom's literal is rounded (which is why `psi` and `hp`",
+        "/// reach it without a `uom` path), and `crate::units::MolarFlow` for the one",
+        "/// dimension uom carries no quantity for at all. A unit with no constructor is",
+        "/// already its own SI base and converts by the identity.",
         "///",
         "/// There is deliberately no expected magnitude beside these. A factor is a",
         "/// number `uom` and `pint` each already know, and the check that these are",
@@ -539,13 +538,7 @@ def emit_rust(table: dict[str, Any]) -> str:
     ]
     for unit in units:
         ctor = unit.get("rust_ctor")
-        quantity = UOM_TYPES[tuple(by_id[unit["dimension"]]["exponents"])]
-        if quantity is not None:
-            body = f"|v| crate::units::{ctor}(v).value"
-        elif ctor is not None:
-            body = f"|v| crate::units::{ctor}(v)"
-        else:
-            body = "|v| v"
+        body = f"|v| crate::units::{ctor}(v).value" if ctor is not None else "|v| v"
         out.append(f"    ({json.dumps(unit['id'])}, {body}),")
     out += [
         "];",

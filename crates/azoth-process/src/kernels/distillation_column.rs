@@ -1,6 +1,8 @@
 //! `unit_ops.distillation_column` - the tray-by-tray sequential-substitution solve.
 
-use azoth_core::units::{Power, Pressure, ThermodynamicTemperature, kelvins, pascals, watts};
+use azoth_core::units::{
+    MolarFlow, Power, Pressure, ThermodynamicTemperature, kelvins, pascals, watts,
+};
 use azoth_core::{AzothError, Result};
 
 use crate::column::tray::{self as stage, SideDraws, TrayOutcome};
@@ -343,8 +345,11 @@ impl Specification {
                 }
                 Ok(product.n * product.z[index] / supplied)
             }
-            // `getFlowRate("mol/hr")`: the class's own target unit for this type.
-            SpecificationKind::ProductFlowRate => Ok(product.n * 3600.0),
+            // `getFlowRate("mol/hr")`: the class's own target unit for this type, so the
+            // product's traffic is read in that unit and compared with a target in it.
+            SpecificationKind::ProductFlowRate => {
+                Ok(MolarFlow::from_si(product.n).as_moles_per_hour())
+            }
             SpecificationKind::RefluxRatio | SpecificationKind::Duty => Ok(0.0),
         }
     }

@@ -37,7 +37,7 @@ description = "the Murphree tray efficiency applied to every equilibrium stage, 
 [parameters.top_specification_type]
 description = "which of `ColumnSpecification`'s five types constrains the top product - product_purity, reflux_ratio, component_recovery, product_flow_rate or duty - and product_purity and component_recovery also need `top_specification_component`"
 [parameters.top_specification_target]
-description = "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty"
+description = "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/hr for a product flow, W for a duty"
 [parameters.top_specification_component]
 description = "the component a purity or a recovery constrains; unread by the other three types"
 [parameters.bottom_specification_type]

@@ -266,14 +266,13 @@ pub type ConversionPath = (&'static str, fn(f64) -> f64);
 
 /// Each unit's conversion from the declared unit to the SI base magnitude.
 ///
-/// Three cases, and the table decides which rather than this list. A unit of
-/// a dimension uom carries goes through the hand-written constructor in
-/// [`crate::units`] and takes its `.value` - the constructor is uom's own
-/// where uom's definition is exact, and this crate's where uom's literal is
-/// rounded, which is why `psi` and `hp` reach it without a `uom` path. A unit
-/// of a dimension uom does *not* carry - molar flow is the one - is not its own
-/// SI base either, so its constructor returns the base magnitude directly.
-/// And a unit that is already its own SI base converts by the identity.
+/// Two cases, and the table decides which rather than this list. A unit that
+/// names a constructor goes through it and takes `.value`, the SI base
+/// magnitude - the constructor is uom's own where uom's definition is exact,
+/// this crate's where uom's literal is rounded (which is why `psi` and `hp`
+/// reach it without a `uom` path), and `crate::units::MolarFlow` for the one
+/// dimension uom carries no quantity for at all. A unit with no constructor is
+/// already its own SI base and converts by the identity.
 ///
 /// There is deliberately no expected magnitude beside these. A factor is a
 /// number `uom` and `pint` each already know, and the check that these are
@@ -288,7 +287,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("m**2", |v| crate::units::square_meters(v).value),
     ("m**3/s", |v| crate::units::cubic_meters_per_second(v).value),
     ("kg/s", |v| crate::units::kilograms_per_second(v).value),
-    ("mol/s", |v| v),
+    ("mol/s", |v| crate::units::moles_per_second(v).value),
     ("mol", |v| crate::units::moles(v).value),
     ("kg", |v| crate::units::kilograms(v).value),
     ("kg/m**3", |v| {
@@ -365,7 +364,7 @@ pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("kJ/mol", |v| crate::units::kilojoules_per_mole(v).value),
     ("cP", |v| crate::units::centipoise(v).value),
     ("kmol", |v| crate::units::kilomoles(v).value),
-    ("kmol/h", |v| crate::units::kilomoles_per_hour(v)),
+    ("kmol/h", |v| crate::units::kilomoles_per_hour(v).value),
 ];
 
 /// The conversion for one canonical unit, or `None` if the name is not in
@@ -601,7 +600,7 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     ),
     (
         "mol/s",
-        "uom has no molar-flow quantity, and no crate outside uom can add one. `mol/s` is already its own SI base, so its conversion is the identity; `kmol/h` is not, and `kilomoles_per_hour` returns the base magnitude as a bare `f64`.",
+        "uom has no molar-flow quantity, and no crate outside uom can add one: `quantity!` runs inside `uom::si` and the `Units` trait `system!` assembles is a closed list. Every unit of the dimension converts through this crate's `MolarFlow` instead - `mol/s` itself, which is the SI base, through `moles_per_second`, and `kmol/h` through `kilomoles_per_hour` - so none of them gets a type ascription.",
     ),
     (
         "Pa*m**6/mol**2",
@@ -637,6 +636,6 @@ pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     ),
     (
         "kmol/h",
-        "uom has no molar-flow quantity, and no crate outside uom can add one. `mol/s` is already its own SI base, so its conversion is the identity; `kmol/h` is not, and `kilomoles_per_hour` returns the base magnitude as a bare `f64`.",
+        "uom has no molar-flow quantity, and no crate outside uom can add one: `quantity!` runs inside `uom::si` and the `Units` trait `system!` assembles is a closed list. Every unit of the dimension converts through this crate's `MolarFlow` instead - `mol/s` itself, which is the SI base, through `moles_per_second`, and `kmol/h` through `kilomoles_per_hour` - so none of them gets a type ascription.",
     ),
 ];

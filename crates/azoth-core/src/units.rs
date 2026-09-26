@@ -14,6 +14,8 @@
 //! Dimensionless quantities - Reynolds number, relative roughness, friction factor,
 //! resistance coefficient - are plain `f64`, here and in the Python API.
 
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+
 pub use uom::si::f64::{
     AmountOfSubstance, Area, DiffusionCoefficient, DynamicViscosity, ElectricCharge, Energy,
     HeatTransfer, Length, Mass, MassDensity, MassRate, Molality, MolarEnergy, MolarHeatCapacity,
@@ -549,16 +551,150 @@ pub fn kilomoles(value: f64) -> AmountOfSubstance {
     AmountOfSubstance::new::<kilomole>(value)
 }
 
-/// A molar flow rate in kilomoles per hour, **as an SI base magnitude**.
+/// A molar flow rate, **always as an SI base magnitude** in `mol/s`.
 ///
-/// The one constructor here that returns a plain `f64` rather than a quantity, and
-/// the reason is uom's: it carries no molar-flow quantity at all, so there is no
-/// `MolarFlow` type to build. The dimension's SI base is `mol/s`, and this is that
-/// — uom's kilomole over uom's hour, so the thousand and the three thousand six
-/// hundred are both read from the units library rather than written here.
+/// **The one dimension in the library with a type of its own rather than a `uom` one.**
+/// `uom` carries no molar-flow quantity: `quantity!` has to run inside `uom::si` and
+/// `system!` assembles the `Units` trait from a closed list, so no crate outside `uom`
+/// can add one. A column's flows are quoted in `mol/hr` and `kmol/h` - NeqSim's own
+/// `defaultTargetUnit` for a flow specification is `mol/hr` - so the crossings are where
+/// this type earns its keep: [`Self::moles_per_hour`] and [`Self::kilomoles_per_hour`]
+/// name the unit, and `value` is the base magnitude every calculation here works in.
+///
+/// **The arithmetic is the bound.** Two flows add, subtract and compare, and a flow
+/// scales by a scalar; there is deliberately no `Mul<MolarFlow>`, because a squared flow
+/// is not a quantity any calculation here has. A flow *ratio* - a reflux split, a side
+/// draw fraction, a purity - is dimensionless and so is a bare `f64`, here as everywhere
+/// else in this crate.
+#[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
+pub struct MolarFlow {
+    /// The SI base magnitude, in `mol/s`. Public for the reason `uom`'s is: the
+    /// generated conversion table takes `.value` from every constructor, and a field
+    /// is what makes one spelling of it possible.
+    pub value: f64,
+}
+
+impl MolarFlow {
+    /// A flow from its SI base magnitude, in `mol/s`.
+    #[must_use]
+    pub fn from_si(value: f64) -> Self {
+        Self { value }
+    }
+
+    /// A flow in moles per second, which is the dimension's SI base.
+    #[must_use]
+    pub fn moles_per_second(value: f64) -> Self {
+        Self { value }
+    }
+
+    /// A flow in moles per hour, which is the unit a column's specifications are written in.
+    #[must_use]
+    pub fn moles_per_hour(value: f64) -> Self {
+        Self {
+            value: value / 3600.0,
+        }
+    }
+
+    /// A flow in kilomoles per hour.
+    #[must_use]
+    pub fn kilomoles_per_hour(value: f64) -> Self {
+        Self {
+            value: value * si_of::<kilomole>() / si_of::<hour>(),
+        }
+    }
+
+    /// The flow as a number of moles per hour - the unit a column's flow specifications
+    /// are written in, and the one NeqSim's own `getFlowRate("mol/hr")` reads.
+    ///
+    /// The inverse of [`Self::moles_per_hour`], and the two are held to each other by a
+    /// test rather than by a comment: a crossing applied twice is a factor of twelve
+    /// million and one applied not at all a factor of three thousand six hundred, and
+    /// either would otherwise be found by a column that failed to converge rather than by
+    /// a reader.
+    #[must_use]
+    pub fn as_moles_per_hour(self) -> f64 {
+        self.value * 3600.0
+    }
+}
+
+impl Add for MolarFlow {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            value: self.value + other.value,
+        }
+    }
+}
+
+impl Sub for MolarFlow {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            value: self.value - other.value,
+        }
+    }
+}
+
+impl Neg for MolarFlow {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self { value: -self.value }
+    }
+}
+
+impl AddAssign for MolarFlow {
+    fn add_assign(&mut self, other: Self) {
+        self.value += other.value;
+    }
+}
+
+impl SubAssign for MolarFlow {
+    fn sub_assign(&mut self, other: Self) {
+        self.value -= other.value;
+    }
+}
+
+impl Mul<f64> for MolarFlow {
+    type Output = Self;
+
+    fn mul(self, scale: f64) -> Self {
+        Self {
+            value: self.value * scale,
+        }
+    }
+}
+
+impl Div<f64> for MolarFlow {
+    type Output = Self;
+
+    fn div(self, scale: f64) -> Self {
+        Self {
+            value: self.value / scale,
+        }
+    }
+}
+
+/// A molar flow rate in kilomoles per hour.
+///
+/// The vocabulary's constructor for `kmol/h`, and the reason the generated
+/// [`unit_vocab_gen::CONVERSION_PATHS`] takes a `.value` for every row rather than only
+/// for the ones `uom` carries: the quantity a dimension needs is the dimension's, and
+/// this one is this crate's.
 #[must_use]
-pub fn kilomoles_per_hour(value: f64) -> f64 {
-    value * si_of::<kilomole>() / si_of::<hour>()
+pub fn kilomoles_per_hour(value: f64) -> MolarFlow {
+    MolarFlow::kilomoles_per_hour(value)
+}
+
+/// A molar flow rate in moles per second, the dimension's SI base magnitude.
+///
+/// The constructor is `MolarFlow`'s own, kept here because a unit that converts by the
+/// identity may still name one.
+#[must_use]
+pub fn moles_per_second(value: f64) -> MolarFlow {
+    MolarFlow::moles_per_second(value)
 }
 
 /// The canonical unit strings the spec schema permits.
@@ -588,6 +724,32 @@ mod tests {
         assert_eq!(kilograms_per_cubic_meter(998.0).value, 998.0);
         assert_eq!(pascal_seconds(1.002e-3).value, 1.002e-3);
         assert_eq!(pascals(22455.0).value, 22455.0);
+    }
+
+    #[test]
+    fn a_molar_flow_reads_the_same_number_in_both_directions() {
+        // The crossing this type exists for: a column's specification is in mol/hr and
+        // the arithmetic is in mol/s. Two facts, and the second is what a crossing
+        // applied twice would break.
+        assert_eq!(MolarFlow::kilomoles_per_hour(3600.0).value, 1000.0);
+        assert_eq!(MolarFlow::moles_per_hour(3600.0).value, 1.0);
+        assert_eq!(MolarFlow::moles_per_second(1.0).as_moles_per_hour(), 3600.0);
+        assert_eq!(MolarFlow::from_si(1.0).as_moles_per_hour(), 3600.0);
+
+        // And the uom side of the same conversion, so the thousand and the three
+        // thousand six hundred are read from the units library rather than typed here.
+        assert_eq!(
+            MolarFlow::kilomoles_per_hour(1.0).value,
+            si_of::<kilomole>() / si_of::<hour>()
+        );
+
+        // The arithmetic the bound allows, and nothing else: two flows add and compare.
+        let total = MolarFlow::from_si(2.0) + MolarFlow::from_si(3.0);
+        assert_eq!(total, MolarFlow::from_si(5.0));
+        assert!(total > MolarFlow::from_si(4.0));
+        assert_eq!((total - MolarFlow::from_si(1.0)).value, 4.0);
+        assert_eq!((total * 0.5).value, 2.5);
+        assert_eq!((total / 2.0).value, 2.5);
     }
 
     #[test]

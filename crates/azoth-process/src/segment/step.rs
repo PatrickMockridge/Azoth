@@ -1,7 +1,7 @@
 //! One segment: the class's `calculateSegment`, and the transfer it applies.
 
 use azoth_core::Result;
-use azoth_core::units::kelvins;
+use azoth_core::units::{MolarFlow, kelvins};
 
 use super::equilibrium::{InterfaceEquilibrium, calculate_interface_equilibrium};
 use super::fallbacks::Fallbacks;
@@ -28,8 +28,10 @@ pub struct SegmentResult {
     pub liquid_temperature: f64,
     pub gas_pressure: f64,
     pub liquid_pressure: f64,
-    pub gas_molar_flow: f64,
-    pub liquid_molar_flow: f64,
+    /// The segment's outlet gas traffic, in mol/s.
+    pub gas_molar_flow: MolarFlow,
+    /// The segment's outlet liquid traffic, in mol/s.
+    pub liquid_molar_flow: MolarFlow,
     pub gas_density: f64,
     pub liquid_density: f64,
     pub gas_viscosity: f64,
@@ -158,8 +160,8 @@ pub fn calculate_segment(
         liquid_temperature: liquid.t.value,
         gas_pressure: gas.p.value,
         liquid_pressure: liquid.p.value,
-        gas_molar_flow: gas.n,
-        liquid_molar_flow: liquid.n,
+        gas_molar_flow: MolarFlow::from_si(gas.n),
+        liquid_molar_flow: MolarFlow::from_si(liquid.n),
         gas_density: snapshot.gas_density,
         liquid_density: snapshot.liquid_density,
         gas_viscosity: snapshot.gas_viscosity,
