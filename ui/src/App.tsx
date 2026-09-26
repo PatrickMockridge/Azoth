@@ -23,9 +23,13 @@ import { EdgePanel } from "./components/EdgePanel";
 import { Flowsheet } from "./components/Flowsheet";
 import { InputsPanel } from "./components/InputsPanel";
 import { Palette } from "./components/Palette";
+import { RibbonGroup } from "./components/RibbonGroup";
+import { StatusBar } from "./components/StatusBar";
+import { TitleStrip } from "./components/TitleStrip";
 import { UnitOpPanel } from "./components/UnitOpPanel";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
+import { applyTheme, readTheme, type Theme } from "./state/theme";
 import { door } from "./wire/door";
 import type { Door, Opened, Session } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
@@ -46,6 +50,7 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
+  const [theme, setTheme] = useState<Theme>(readTheme);
 
   const middleware = useRef<Door | null>(null);
 
@@ -97,6 +102,11 @@ export function App() {
       },
     );
   }, []);
+
+  /** The theme, in force and remembered. Dark is CSS's default; this only overrides it. */
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   /** Hand a document to the library: the Demo button, New, or a file. */
   const open = useCallback(
@@ -191,67 +201,70 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="bar">
-        <h1>azoth</h1>
-        <span className="spacer" />
-        {envelope === null ? null : (
-          <>
-            <span className="pill">{envelope.flowsheet.id}</span>
-            <span className={`pill ${statusClass(envelope)}`}>{status(envelope)}</span>
-          </>
-        )}
-        {envelope === null ? null : (
-          <select
-            className="order"
-            value={envelope.execution_order}
+      <TitleStrip
+        envelope={envelope}
+        session={session !== null}
+        theme={theme}
+        onOrder={setOrder}
+        onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+      />
+
+      <div className="ribbon">
+        <RibbonGroup label="Run">
+          <button
+            type="button"
+            className="primary"
+            onClick={solve}
             disabled={session === null}
-            title="which order the next run takes; ProcessSystem.useGraphBasedExecution is a flag, so there are two"
-            onChange={(event) => setOrder(event.target.value as ExecutionOrder)}
+            title="run the physics; a check happens on every edit and a run is when you ask"
           >
-            <option value="insertion">insertion</option>
-            <option value="topological">topological</option>
-          </select>
-        )}
-        <button type="button" onClick={solve} disabled={session === null}>
-          Solve
-        </button>
-        <button
-          type="button"
-          onClick={() => open(blankDocument)}
-          disabled={!openable}
-          title={openable ? "a document with nothing in it" : HOSTED}
-        >
-          New
-        </button>
-        <label className={`button${openable ? "" : " off"}`} title={openable ? undefined : HOSTED}>
-          Open
-          {openable ? (
-            <input
-              type="file"
-              accept=".toml,text/plain"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file !== undefined) {
-                  void file.text().then(open);
-                }
-                // So that choosing the same file twice fires again.
-                event.target.value = "";
-              }}
-            />
-          ) : null}
-        </label>
-        <button
-          type="button"
-          onClick={() => open(demoDocument)}
-          disabled={!openable}
-          title={openable ? "the shipped demo flowsheet" : HOSTED}
-        >
-          Demo
-        </button>
-        <button type="button" onClick={save} disabled={session === null}>
-          Save
-        </button>
-      </header>
+            Solve
+          </button>
+        </RibbonGroup>
+        <RibbonGroup label="Case">
+          <button
+            type="button"
+            onClick={() => open(blankDocument)}
+            disabled={!openable}
+            title={openable ? "a document with nothing in it" : HOSTED}
+          >
+            New
+          </button>
+          <label className={`button${openable ? "" : " off"}`} title={openable ? undefined : HOSTED}>
+            Open
+            {openable ? (
+              <input
+                type="file"
+                accept=".toml,text/plain"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file !== undefined) {
+                    void file.text().then(open);
+                  }
+                  // So that choosing the same file twice fires again.
+                  event.target.value = "";
+                }}
+              />
+            ) : null}
+          </label>
+          <button
+            type="button"
+            onClick={() => open(demoDocument)}
+            disabled={!openable}
+            title={openable ? "the shipped demo flowsheet" : HOSTED}
+          >
+            Demo
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={session === null}
+            title="write the document where you say; it rides every envelope, so this is no call"
+          >
+            Save
+          </button>
+        </RibbonGroup>
+      </div>
 
       <div className="body">
         <Palette
@@ -314,26 +327,10 @@ export function App() {
           ) : null}
         </aside>
       </div>
+
+      <StatusBar envelope={envelope} />
     </div>
   );
-}
-
-/** The word a status pill shows. */
-function status(envelope: Envelope): string {
-  if (!envelope.ok) {
-    return "refused";
-  }
-  if (envelope.run_error !== null) {
-    return "failed";
-  }
-  return envelope.dirty ? "stale" : "solved";
-}
-
-function statusClass(envelope: Envelope): string {
-  if (!envelope.ok || envelope.run_error !== null) {
-    return "bad";
-  }
-  return envelope.dirty ? "stale" : "ok";
 }
 
 /**

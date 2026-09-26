@@ -220,4 +220,24 @@ describe("the editor", () => {
     // An order is not a change to the document, so the values are still current.
     expect(pill(container)).toBe("stale");
   });
+
+  it("is dark until somebody says otherwise, and remembers that they did", async () => {
+    stubFetch();
+    // This suite shares one jsdom, and the theme is remembered in that document's store.
+    window.localStorage.clear();
+    await open();
+
+    // **The attribute is an override and not what makes it dark.** `:root` carries the dark
+    // tokens, so a document with no attribute is already dark - which is what makes dark a
+    // default rather than a value somebody set.
+    expect(document.documentElement.dataset.theme).toBe("dark");
+
+    fireEvent.click(screen.getByRole("button", { name: "Light" }));
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe("light"));
+    expect(window.localStorage.getItem("azoth.theme")).toBe("light");
+
+    // And it toggles back, which a one-way switch would not.
+    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
+  });
 });

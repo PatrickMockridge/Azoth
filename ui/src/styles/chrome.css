@@ -33,8 +33,59 @@
   flex: 1;
 }
 
+/* --- the ribbon ------------------------------------------------------------ */
+
+/*
+ * The commands, in one always-visible row.
+ *
+ * A group and not a tab: six of the rendered cases address these by their exact accessible name,
+ * and a control behind a ribbon tab is a control `getByRole` does not find. A later tabbed ribbon
+ * may hold everything else; these five stay where they are.
+ */
+.ribbon {
+  display: flex;
+  align-items: stretch;
+  padding: var(--s3) var(--s6) var(--s2);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel-2);
+}
+
+.ribbon-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 0 var(--s6);
+}
+
+.ribbon-group + .ribbon-group {
+  border-left: 1px solid var(--line);
+}
+
+.ribbon-group:first-child {
+  padding-left: 0;
+}
+
+.ribbon-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.ribbon-label {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+  text-align: center;
+}
+
+/* --- controls -------------------------------------------------------------- */
+
 .bar button,
-.bar .button {
+.bar .button,
+.ribbon button,
+.ribbon .button {
   display: inline-flex;
   align-items: center;
   gap: var(--s3);
@@ -52,31 +103,39 @@
 }
 
 .bar button:hover:not(:disabled),
-.bar .button:hover:not(.off) {
+.bar .button:hover:not(.off),
+.ribbon button:hover:not(:disabled),
+.ribbon .button:hover:not(.off) {
   background: var(--bg-hover);
   border-color: var(--accent);
 }
 
 .bar button:disabled,
-.bar .button.off {
+.bar .button.off,
+.ribbon button:disabled,
+.ribbon .button.off {
   color: var(--text-dim);
   cursor: default;
 }
 
 /* A file input cannot be styled, so its label is the button and the input is out of the flow. */
-.bar .button input {
+.bar .button input,
+.ribbon .button input {
   display: none;
 }
 
-.bar .primary {
+.bar .primary,
+.ribbon .primary {
   border-color: var(--accent);
   color: var(--accent-ink);
   background: var(--accent);
   font-weight: 600;
 }
 
-.bar .primary:hover:not(:disabled) {
+.bar .primary:hover:not(:disabled),
+.ribbon .primary:hover:not(:disabled) {
   background: var(--accent-hi);
+  border-color: var(--accent-hi);
 }
 
 .bar select {
