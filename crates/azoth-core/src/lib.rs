@@ -34,6 +34,7 @@ pub mod range;
 pub mod result;
 pub mod solver;
 pub mod spec;
+pub mod spec_inputs_gen;
 pub mod unit_vocab_gen;
 pub mod units;
 pub mod warning;

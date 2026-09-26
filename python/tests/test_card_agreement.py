@@ -295,7 +295,7 @@ citation = "a representative UNIQUAC matrix; NeqSim carries no such table"
 value = 0.61
 unit = "dimensionless"
 
-[coefficients."hydraulics.choked_flow_area".d]
+[coefficients."hydraulics.orifice_flow".d]
 value = 50.0
 unit = "mm"
 """
@@ -420,6 +420,43 @@ def test_both_readers_refuse_an_empty_coefficient() -> None:
         python_card(empty)
     with pytest.raises(InvalidInputError, match="rectangular"):
         _core.card_coefficients(empty)
+
+
+def test_both_readers_refuse_a_coefficient_of_the_wrong_dimension() -> None:
+    """A declaration and an arithmetic that disagree, refused when the card is read.
+
+    **This is the case that was missing and the reason the check exists.** A coefficient is
+    whatever the calculation it belongs to takes, so the spec's unit is the only thing the card's
+    can be held to - and the Rust reader held it to nothing at all: it checked that the unit was
+    one the vocabulary carries and stopped there, while Python refused the same card later, when a
+    calculation asked for the value. A card stating `aij` in pascals was therefore readable by one
+    reader and refusable by the other, and nothing compared them on it.
+    """
+    wrong = (
+        'schema_version = 2\n[coefficients."eos.uniquac_activity_coefficients".aij]\n'
+        'value = [[0.0, -71.0], [209.0, 0.0]]\nunit = "Pa"\n'
+    )
+    with pytest.raises(KeycardError, match="different dimension"):
+        python_card(wrong)
+    with pytest.raises(InvalidInputError, match="different dimension"):
+        _core.card_coefficients(wrong)
+
+
+def test_both_readers_refuse_a_coefficient_no_spec_declares() -> None:
+    """And the same for an input that does not exist: authority no calculation can exercise.
+
+    `orifice_flow` declares `d`, so a card stating a value for `diameter` is a claim about an
+    input no spec has - a misspelling read as data in use, which is the class
+    `tools/check_user_data.py` refuses for a section and this refuses for an argument.
+    """
+    mistyped = (
+        'schema_version = 2\n[coefficients."hydraulics.orifice_flow".diameter]\n'
+        'value = 50.0\nunit = "mm"\n'
+    )
+    with pytest.raises(KeycardError, match="no input"):
+        python_card(mistyped)
+    with pytest.raises(InvalidInputError, match="not a quantity input"):
+        _core.card_coefficients(mistyped)
 
 
 def test_a_card_stating_a_zero_pair_keeps_it_on_both_sides() -> None:

@@ -24,6 +24,9 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from vocabulary_table import dimension_of, load_vocabulary
+
 ROOT = Path(__file__).resolve().parent.parent
 PALETTE_DIR = ROOT / "specs" / "unit_ops"
 MODEL_DIR = ROOT / "specs" / "models" / "process"
@@ -58,37 +61,6 @@ def load_models() -> dict[str, dict[str, Any]]:
     if not models:
         sys.exit(f"gen_model_inputs: no models under {MODEL_DIR}")
     return models
-
-
-def load_vocabulary() -> dict[str, str]:
-    """Each canonical unit's dimension, from the table the vocabulary generator reads.
-
-    The dimension is what connects an input's declared unit to the type the arithmetic takes,
-    and until this table carried it the two were statements nothing compared: a spec could say
-    an input is in `K` while the implementation wrapped it as a pressure, and no level of the
-    tree noticed. The id rather than the exponents, because the id is what a dimension is
-    *called* in the specs and the Lean vocabulary.
-    """
-    table = tomllib.loads(VOCABULARY.read_text(encoding="utf-8"))
-    units = {unit["id"]: unit["dimension"] for unit in table["units"]}
-    if not units:
-        sys.exit(f"gen_model_inputs: no units under {VOCABULARY}")
-    return units
-
-
-def dimension_of(unit: str | None, vocabulary: dict[str, str], where: str) -> str | None:
-    """The dimension an input's declared unit carries, or `None` where there is no unit.
-
-    **A unit the vocabulary does not carry is refused rather than defaulted.** `spec_lint`
-    already holds every declared unit to the schema's enum, so this cannot happen - and a
-    default here would be a dimension that is absent for a reason nobody can see, which is
-    the state this whole change exists to remove.
-    """
-    if unit is None:
-        return None
-    if unit not in vocabulary:
-        sys.exit(f"gen_model_inputs: {where} declares unit {unit!r}, which is not in {VOCABULARY}")
-    return vocabulary[unit]
 
 
 def model_id_for(palette_id: str) -> str:

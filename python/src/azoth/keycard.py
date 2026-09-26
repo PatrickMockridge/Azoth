@@ -29,7 +29,7 @@ from typing import Any
 import pint
 
 from azoth.core._units_gen import UNIT_VOCABULARY as _UNIT_VOCABULARY
-from azoth.core.errors import KeycardError
+from azoth.core.errors import InvalidInputError, KeycardError
 from azoth.core.units import Q, ureg
 
 #: The format version this module reads. A keycard declaring anything else is refused
@@ -572,6 +572,36 @@ def _coefficients(raw: Any, where: str, section: str) -> dict[str, dict[str, Q]]
                     f"against the spec's is what catches a value in the wrong one, and "
                     f"a wrong unit is a factor with no symptom.",
                 )
+            # **The declaration has to exist, and its unit has to be this one's dimension.**
+            # A coefficient is whatever the calculation it belongs to takes, so the pair
+            # `(calc_id, name)` is a claim about a spec - and a claim about an input no spec
+            # declares is authority the card holds that no calculation can exercise. The
+            # dimension check is the one `coefficient_value` makes at use; making it here too
+            # means a card is refused when it is read rather than when it is run, which is what
+            # the Rust reader (`azoth-eos::card`) does, so the two agree on both counts.
+            # A declaration that cannot be found is the card's error rather than the caller's, so
+            # the refusal is restated in this loader's own class: the use-time path
+            # (`coefficient_value`) wants `InvalidInputError`, and a card being *read* wants
+            # `KeycardError` with the entry named.
+            try:
+                declaration = _declaration(str(calc_id), str(name))
+            except InvalidInputError as exc:
+                raise KeycardError(where, f"`{field_name}`: {exc}") from exc
+            declared_unit = declaration.get("unit")
+            if declared_unit is None:
+                raise KeycardError(
+                    where,
+                    f"`{field_name}` names an input that carries no unit, so there is no "
+                    f"dimension for a quantity to be checked against. A coefficient belongs "
+                    f"to an input that is a quantity.",
+                )
+            if not _same_dimension(unit, declared_unit):
+                raise KeycardError(
+                    where,
+                    f"`{field_name}` declares the unit {unit!r}, which is a different "
+                    f"dimension from the one `{calc_id}` declares `{name}` in "
+                    f"({declared_unit!r}).",
+                )
             try:
                 resolved[name] = _coefficient_value(body["value"], unit, where, field_name)
             except KeyError as exc:
@@ -580,6 +610,18 @@ def _coefficients(raw: Any, where: str, section: str) -> dict[str, dict[str, Q]]
                 raise KeycardError(where, f"`{field_name}` cannot be read: {exc}") from exc
         out[str(calc_id)] = resolved
     return out
+
+
+def _same_dimension(unit: str, declared: str) -> bool:
+    """Whether two vocabulary units carry the same dimension.
+
+    Compared through pint rather than by the unit string, because a card may legitimately state a
+    value in any unit convertible to the spec's: `50 mm` for a diameter the spec declares in `m`
+    is one length, and only the dimension has to agree.
+    """
+    from azoth.core.units import ureg
+
+    return bool(ureg.Quantity(1.0, unit).check(declared))
 
 
 def _coefficient_value(raw: Any, unit: str, where: str, field_name: str) -> Any:
@@ -799,7 +841,14 @@ def _declaration(calc_id: str, name: str) -> Mapping[str, Any]:
             f"`{calc_id}` is in neither registry, so there is no spec declaring what "
             f"its `{name}` is and no unit to check a card's value against",
         )
-    declaration: Mapping[str, Any] = document["inputs"][name]
+    inputs: Mapping[str, Any] = document["inputs"]
+    if name not in inputs:
+        raise InvalidInputError(
+            "coefficients",
+            f"`{calc_id}` declares no input `{name}`, so there is nothing for a card's value "
+            f"to be. Its inputs are {sorted(inputs)}.",
+        )
+    declaration: Mapping[str, Any] = inputs[name]
     return declaration
 
 

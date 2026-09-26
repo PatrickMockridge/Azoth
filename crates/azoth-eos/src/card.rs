@@ -706,10 +706,34 @@ fn check_coefficients(
                     ),
                 ));
             }
-            // The dimension is the *spec's* to declare for an input - a coefficient is
-            // whatever the calculation it belongs to takes - so the check here is that
-            // the unit is one this build can convert at all, and the conversion is
-            // `Coefficient::si_value`.
+            // **The dimension is the *spec's*, and now the spec's is reachable.** A coefficient
+            // is whatever the calculation it belongs to takes, so a card stating `aij` in `bar`
+            // where the spec declares `K` is a value with no meaning. Until
+            // `azoth_core::spec_inputs_gen` existed, the only check here was that the unit was
+            // one this build can convert at all - which accepted it - while Python refused it
+            // through the conversion in `keycard.coefficient_value`. The two readers agree now,
+            // and `test_card_agreement.py` holds them to it.
+            let declared =
+                azoth_core::spec_inputs_gen::input_dimension(calc_id, name).ok_or_else(|| {
+                    AzothError::invalid_input(
+                        &field,
+                        format!(
+                            "names `{calc_id}.{name}`, which is not a quantity input in any \
+                             spec. A coefficient belongs to an input that carries a unit, so \
+                             there is nothing for this value to be checked against."
+                        ),
+                    )
+                })?;
+            if dimension(&body.unit) != azoth_core::unit_vocab_gen::dimension_exponents(declared) {
+                return Err(AzothError::invalid_input(
+                    &field,
+                    format!(
+                        "declares the unit {:?}, which is a different dimension from the one \
+                         `{calc_id}` declares `{name}` in (`{declared}`).",
+                        body.unit
+                    ),
+                ));
+            }
         }
     }
     Ok(())

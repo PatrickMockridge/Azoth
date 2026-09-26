@@ -774,22 +774,36 @@ def test_an_explicit_matrix_wins_and_the_keycard_is_not_consulted() -> None:
 
 
 def test_a_matrix_coefficient_in_the_wrong_unit_is_refused() -> None:
-    """The dimension check reaches a matrix, entry by entry.
+    """The dimension check reaches a matrix, and reaches it when the card is read.
 
-    `to_si_shaped` converts each entry against the spec's declared unit, so a `aij`
-    declared in pascals where the spec says kelvin is caught by the same check that
-    catches a scalar in the wrong unit - rather than being read as a plausible number.
+    `aij` is declared in kelvin, so a matrix in pascals is a value the calculation cannot mean.
+    **The refusal is at load**, which is the change this test records: the check used to happen
+    only when a calculation asked for the value - through `to_si_shaped`, which still refuses a
+    mismatched quantity handed to it directly, and that route is asserted below - while the Rust
+    reader refused nothing at all. Both readers refuse a card when they read it now, which is one
+    rule at one moment rather than two rules at two.
     """
-    card = a_card(
-        coefficients={
-            "eos.uniquac_activity_coefficients": {
-                "aij": {"value": [[0.0, -71.0], [209.0, 0.0]], "unit": "Pa"}
+    with pytest.raises(KeycardError) as refused:
+        a_card(
+            coefficients={
+                "eos.uniquac_activity_coefficients": {
+                    "aij": {"value": [[0.0, -71.0], [209.0, 0.0]], "unit": "Pa"}
+                }
             }
-        }
-    )
+        )
+    assert "different dimension" in str(refused.value)
+
+    # The use-time check remains for a quantity a caller passes directly: a card can no longer
+    # carry the mismatch, so this is how it is reached.
     params = eos.components.uniquac_parameters(["methanol", "water"])
     with pytest.raises(UnitMismatchError):
-        eos.uniquac_activity_coefficients(params, q(298.15, "K"), [0.5, 0.5], card=card)
+        eos.uniquac_activity_coefficients(
+            params,
+            q(298.15, "K"),
+            [0.5, 0.5],
+            # A list of quantities, one per entry: the shape a card's matrix arrives in.
+            aij=[[q(0.0, "Pa"), q(-71.0, "Pa")], [q(209.0, "Pa"), q(0.0, "Pa")]],
+        )
 
 
 def test_a_card_value_is_restated_in_the_spec_s_own_unit() -> None:

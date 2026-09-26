@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use azoth_eos::Cubic;
 use azoth_eos::association::SiteScheme;
 use azoth_eos::card::{
-    CoefficientValue,
+    Coefficient, CoefficientValue,
     {
         ASSOCIATION_PARAMETERS, ASSOCIATION_SCHEMES, COMPONENT_PARAMETERS, Card, MODEL_KINDS,
         SCHEMA_VERSION,
@@ -105,17 +105,17 @@ fn a_card_reaches_the_databank() {
 
 #[test]
 fn a_coefficient_is_carried_as_written_and_converted_beside_it() {
-    // A coefficient is whatever the calculation it belongs to takes, so the card's unit
-    // is not checked against a dimension the way a component parameter's is - it is
-    // checked against the vocabulary, and the conversion is offered beside the value.
-    // `mm` is in the vocabulary and is a thousandth of a metre, which is the whole
+    // A coefficient is whatever the calculation it belongs to takes, and *which* calculation is
+    // now a checked fact: the input has to exist and the card's unit has to be its dimension.
+    // Here both hold - `orifice_flow`'s `d` is a length and `mm` is a thousandth of a metre -
+    // so the card loads and the conversion is offered beside the value, which is the whole
     // content of the test.
     let card = Card::from_toml(&a_card(
-        "[coefficients.\"hydraulics.choked_flow_area\".d]\nvalue = 50.0\nunit = \"mm\"\n",
+        "[coefficients.\"hydraulics.orifice_flow\".d]\nvalue = 50.0\nunit = \"mm\"\n",
     ))
     .expect("a valid card");
     let d = card
-        .coefficient("hydraulics.choked_flow_area", "d")
+        .coefficient("hydraulics.orifice_flow", "d")
         .expect("the card states it");
 
     assert_eq!(
@@ -285,18 +285,31 @@ fn a_matrix_coefficient_keeps_its_shape_and_its_unit() {
 }
 
 /// A matrix in millimetres converts every entry, and a vector is a value too.
+///
+/// **Built as a `Coefficient` rather than read from a card**, which is the change the dimension
+/// check forced and a better test for it: the property is `si_value`'s, and a card can now only
+/// state a unit of the spec's own dimension - so a temperature matrix in millimetres is a card
+/// that is refused, not one that converts. What converts a length is a length, and the
+/// conversion is the same function either way.
 #[test]
 fn a_vector_is_a_value_and_a_unit_scales_every_entry() {
-    let card = Card::from_toml(&a_card(
-        "[coefficients.\"eos.uniquac_activity_coefficients\".aij]\n\
-         value = [[0.0, 2.0], [3.0, 0.0]]\nunit = \"mm\"\n",
-    ))
-    .expect("a valid card");
-    let aij = card
-        .coefficient("eos.uniquac_activity_coefficients", "aij")
-        .expect("the card states it");
+    let millimetres = Coefficient {
+        value: CoefficientValue::List(vec![
+            CoefficientValue::List(vec![
+                CoefficientValue::Scalar(0.0),
+                CoefficientValue::Scalar(2.0),
+            ]),
+            CoefficientValue::List(vec![
+                CoefficientValue::Scalar(3.0),
+                CoefficientValue::Scalar(0.0),
+            ]),
+        ]),
+        unit: "mm".to_string(),
+        convention: None,
+        citation: None,
+    };
     assert_eq!(
-        aij.si_value(),
+        millimetres.si_value(),
         CoefficientValue::List(vec![
             CoefficientValue::List(vec![
                 CoefficientValue::Scalar(0.0),
@@ -308,6 +321,35 @@ fn a_vector_is_a_value_and_a_unit_scales_every_entry() {
             ]),
         ])
     );
+}
+
+/// **A coefficient's unit has to be the dimension the spec declares.** A card stating a value
+/// the calculation cannot mean is refused when the card is read, which is where Python's loader
+/// refuses it too - before this check the two readers disagreed, and the Rust one accepted a
+/// temperature in millimetres.
+#[test]
+fn a_coefficient_in_a_unit_of_another_dimension_is_refused() {
+    let err = Card::from_toml(&a_card(
+        "[coefficients.\"eos.uniquac_activity_coefficients\".aij]\n\
+         value = [[0.0, 2.0], [3.0, 0.0]]\nunit = \"mm\"\n",
+    ))
+    .expect_err("`aij` is in kelvin and millimetres are not");
+    let message = format!("{err}");
+    assert!(
+        message.contains("different dimension") && message.contains("thermodynamic_temperature"),
+        "{message}"
+    );
+}
+
+/// And the same check refuses a coefficient for an input no spec declares: a card's authority
+/// over a calculation that does not take it is authority nothing can exercise.
+#[test]
+fn a_coefficient_for_an_input_no_spec_declares_is_refused() {
+    let err = Card::from_toml(&a_card(
+        "[coefficients.\"hydraulics.orifice_flow\".diameter]\nvalue = 50.0\nunit = \"mm\"\n",
+    ))
+    .expect_err("`orifice_flow` declares `d`, not `diameter`");
+    assert!(format!("{err}").contains("not a quantity input"), "{err}");
 }
 
 /// A ragged list of lists is not a matrix, and is refused rather than read row by row
