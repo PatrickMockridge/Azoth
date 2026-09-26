@@ -240,4 +240,31 @@ describe("the editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
   });
+
+  it("groups the palette by the family the library filed each entry under", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    const headings = [...container.querySelectorAll("aside.side .group > .label")].map(
+      (label) => label.textContent,
+    );
+    // **Seven, and not the one group called `other` this drew until the wire carried the family.**
+    // The fault was here and the missing fact was in the wire: every id is `unit_ops.<leaf>`, so a
+    // split on `.` took the leaf for a family.
+    expect(headings).toEqual([
+      "column",
+      "heat exchanger",
+      "mixer",
+      "reactor",
+      "separator",
+      "two port",
+      "utility",
+      // And the boundary, which is a group of the same column and not a family: feeds and products
+      // are what a flowsheet is *between*, so they sit under the palette rather than in one.
+      "Boundary",
+    ]);
+    // And every entry is in one of them, so a group cannot be a heading with nothing under it.
+    const grouped = container.querySelectorAll("aside.side .group .entry");
+    expect(grouped.length).toBeGreaterThanOrEqual(29);
+  });
 });

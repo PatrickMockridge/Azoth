@@ -13,6 +13,7 @@
 
 import {
   Background,
+  BackgroundVariant,
   Controls,
   ReactFlow,
   useEdgesState,
@@ -122,7 +123,11 @@ export function Flowsheet({ catalogue, envelope, selected, onSelect, onCommand }
       fitView
       proOptions={{ hideAttribution: true }}
     >
-      <Background />
+      {/* **xyflow's own grid, and not a gradient on the container.** A background painted on the
+          pane is fixed to the viewport while the flowsheet moves under it, which is the one thing a
+          PFD's grid must not do; this one pans and zooms with the drawing and takes its colour from
+          the theme through `--xy-background-pattern-color`. */}
+      <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
       <Controls showInteractive={false} />
     </ReactFlow>
   );
@@ -168,6 +173,10 @@ function derive(
       // A recycle is drawn moving, which is what a loop is: the tear's value is the previous
       // pass's, and the animation is the honest picture of that.
       animated: edge.data.kind === "recycle",
+      // **A tear is stroked in its own hue**, and the class is where the stylesheet learns which
+      // edge this is: `animated` is xyflow's own and says nothing about *why* the edge moves, and
+      // `domAttributes` is typed as SVG attributes, which `data-*` is not.
+      className: edge.data.kind === "recycle" ? "tear" : "",
       ...(stream === undefined
         ? {}
         : {

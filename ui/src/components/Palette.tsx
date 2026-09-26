@@ -1,9 +1,14 @@
 /**
  * The palette: the entries a flowsheet can be built from.
  *
- * **Grouped by the entry's own family**, which is the directory the spec lives in — `two_port`,
- * `separator`, `column`, and so on. The grouping is read off the id rather than declared a second
- * time, so a palette entry cannot arrive in a family the palette does not know about.
+ * **Grouped by the family the entry was filed under**, which is the directory its spec lives in —
+ * `two_port`, `separator`, `column`, and so on — and which the *library* names, in `Form.family`.
+ *
+ * **The grouping is not read off the id, and the difference is a defect this file used to have.**
+ * Every id is `unit_ops.<leaf>`, so a split on `.` takes the leaf for a family: all twenty-nine
+ * entries came out in one group called `other`. `Form.source` cannot supply it either — that is
+ * NeqSim's taxonomy, where `cooler` is a `two_port` entry inside NeqSim's `heatexchanger/`
+ * directory.
  *
  * An entry the executor refuses is listed and not offered: it is part of the palette, its refusal
  * is a measurement rather than an absence, and hiding it would make the palette look smaller than
@@ -25,16 +30,21 @@ export interface PaletteProps {
   children?: React.ReactNode;
 }
 
-/** The family a palette id names, e.g. `unit_ops.two_port.pump` → `two_port`. */
-function family(id: string): string {
-  const parts = id.split(".");
-  return parts.length > 2 ? (parts[1] ?? "other") : "other";
+/**
+ * The family an entry is filed under, or `unfiled` where the catalogue did not say.
+ *
+ * **`unfiled` is a visible group rather than a silent merge into `other`**: a palette entry that
+ * arrives without its family is a wire that stopped carrying it, and a person should see that as
+ * its own heading rather than as one more entry in a group that looks like a family.
+ */
+function family(form: Form): string {
+  return form.family ?? "unfiled";
 }
 
 export function Palette({ forms, onAdd, children }: PaletteProps) {
   const families = new Map<string, Form[]>();
   for (const form of forms) {
-    const key = family(form.id);
+    const key = family(form);
     families.set(key, [...(families.get(key) ?? []), form]);
   }
 

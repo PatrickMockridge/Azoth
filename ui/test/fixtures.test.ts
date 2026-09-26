@@ -3,9 +3,23 @@
  *
  * **This is the gate `gen_stub.py` is for the Python side.** `src/wire/types.ts` is hand-written
  * from the Rust structs, and a hand-written mirror drifts — so the fixtures under `test/fixtures/`
- * are the CLI's own output, captured with `azoth forms --tools` and `azoth edit --json`, and this
- * file reads them as the types. A field renamed in Rust fails here rather than showing up as
- * `undefined` in a widget, which is what the same mistake looks like in a browser.
+ * are the CLI's own output, and this file reads them as the types. A field renamed in Rust fails
+ * here rather than showing up as `undefined` in a widget, which is what the same mistake looks like
+ * in a browser.
+ *
+ * **How to recapture them, exactly** — the commands are the whole pin, because a fixture captured
+ * some other way asserts something about a document nobody can reproduce:
+ *
+ * ```bash
+ * cargo run -p azoth-cli -- forms --tools > ui/test/fixtures/catalogue.json
+ * cargo run -p azoth-cli -- edit --flowsheet specs/flowsheets/demo.toml \
+ *     --command '{"command":"set_position","node":"instance:sep1","x":1234,"y":56}' \
+ *     --run --json > ui/test/fixtures/envelope.json
+ * ```
+ *
+ * The edit is a **position**, which is why the assertions below can say that one gesture is in the
+ * document *and* in the graph: it is a command that changes the layout and nothing else, so the run
+ * it reports is the shipped demo's own.
  *
  * The fixtures are committed, so the check runs with no Rust toolchain and no wasm build.
  */
@@ -64,6 +78,26 @@ describe("the catalogue", () => {
     expect(range?.max).toBe(1);
     expect(range?.max_inclusive).toBe(true);
     expect(range?.rationale).not.toBe("");
+  });
+
+  it("says which family each entry was filed under", () => {
+    // **The grouping a palette panel draws, and the only place it is stated.** An id is
+    // `unit_ops.<leaf>`, so a reader that split the id took the leaf for a family and drew one
+    // group called `other` - and `source` is NeqSim's taxonomy rather than this palette's, where
+    // `cooler` is a `two_port` entry inside NeqSim's `heatexchanger/` directory.
+    const families = new Set(catalogue.unit_ops.map((entry) => entry.family));
+    for (const entry of catalogue.unit_ops) {
+      expect(entry.family, `${entry.id} names no family`).not.toBeNull();
+    }
+    expect([...families].sort()).toEqual([
+      "column",
+      "heat_exchanger",
+      "mixer",
+      "reactor",
+      "separator",
+      "two_port",
+      "utility",
+    ]);
   });
 });
 
@@ -124,6 +158,32 @@ describe("the envelope", () => {
     expect(
       solved.flowsheet.graph.nodes.find((node) => node.id === "instance:sep1")?.position,
     ).toEqual({ x: 1234, y: 56 });
+  });
+
+  it("carries what the run computed beside the streams, under the model's own names", () => {
+    // **The heater's duty is the number no outlet stream carries**, and it is why the executor
+    // had to start publishing results at all: the kernel computed it and the dispatcher dropped it.
+    const results = solved.session?.results ?? {};
+    expect(Object.keys(results)).toEqual(["hx1"]);
+    expect(results.hx1?.outlet_duty).toMatchObject({ unit: "W" });
+    // A mixer's whole answer *is* its stream, so it publishes nothing rather than a restatement.
+    expect(results).not.toHaveProperty("mix1");
+    expect(results).not.toHaveProperty("sep1");
+  });
+
+  it("carries the three fields a stream record could not derive", () => {
+    // Mass flow and molar mass are the library's own (a component without a molar mass is `null`,
+    // which is why the mirror admits it), and the vapour fraction is what the *flash* established -
+    // the one field of the three that no record can work out for itself.
+    const vapour = solved.session?.streams["sep1.vapour"];
+    expect(vapour?.mass_flow?.unit).toBe("kg/s");
+    expect(vapour?.molar_mass?.unit).toBe("kg/mol");
+    expect(vapour?.vapour_fraction).toBe(1);
+    // **And the endpoints are the phase's, not the flash's extrapolated root.** The demo's feed is
+    // a gas at 300 K and 5 bar whose Rachford-Rice root converges to `1.9847`; a fraction outside
+    // `[0, 1]` is a split that does not exist, and a separator's two outlets are the two endpoints.
+    expect(solved.session?.streams["feed_1"]?.vapour_fraction).toBe(1);
+    expect(solved.session?.streams["sep1.liquid"]?.vapour_fraction).toBe(0);
   });
 
   it("carries a diagnostic with a target a canvas can select", () => {

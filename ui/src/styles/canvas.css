@@ -75,6 +75,7 @@
  */
 .glyph {
   display: block;
+  margin: var(--s3) auto var(--s1);
   pointer-events: none;
 }
 
@@ -103,6 +104,16 @@
 
 .glyph.selected .accent {
   fill: var(--accent);
+}
+
+/* A diagnostic names this node: the drawing says so, because the border is a thin line on a
+   surface a person is reading at a glance. */
+.glyph.flagged .body {
+  stroke: var(--error);
+}
+
+.glyph.flagged .accent {
+  fill: var(--error);
 }
 
 .react-flow__handle {

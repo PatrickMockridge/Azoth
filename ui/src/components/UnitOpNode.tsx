@@ -8,11 +8,19 @@
  *
  * A `many` outlet draws one handle per stream it returns — three for a splitter with three
  * factors — and a `many` inlet draws one however many edges reach it, which is what makes a
- * recycle wireable to a mixer.
+ * recycle wireable to a mixer. **They are spread along the side rather than stacked**, so a mixer
+ * with three feeds shows three places to connect rather than one that three edges leave from.
+ *
+ * **Which side is `state/glyphs.ts`'s answer and not the direction's.** An inlet is on the left and
+ * an outlet on the right for most machinery, but a column's distillate leaves the top and its
+ * bottoms the bottom — and a drawing that put those on the sides would be drawing a different
+ * machine from the one the declaration describes.
  */
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
+import { glyphFor, isVertical, senseFor, sideOf, type Side } from "../state/glyphs";
+import { Glyph } from "./Glyph";
 import type { Form, FormPort, GraphNode } from "../wire/types";
 
 /** One line of a node's readout: what a stream on one of its ports reached. */
@@ -35,10 +43,22 @@ export type NodePayload = {
 export const UNIT_NODE = "unit_op";
 export const STREAM_NODE = "stream";
 
-/** The side a port's handles sit at. */
-function side(direction: "in" | "out"): Position {
-  return direction === "in" ? Position.Left : Position.Right;
-}
+/** A side, as xyflow names it. */
+const POSITION: Record<Side, Position> = {
+  top: Position.Top,
+  bottom: Position.Bottom,
+  left: Position.Left,
+  right: Position.Right,
+};
+
+/** One handle: which port it belongs to, which side it sits on, and how far along that side. */
+type Slot = {
+  handle: string;
+  port: string;
+  direction: "in" | "out";
+  side: Side;
+  at: number;
+};
 
 /**
  * The handle ids one port draws.
@@ -51,6 +71,28 @@ function handlesOf(port: FormPort, graph: GraphNode): string[] {
   const declared = graph.data.ports;
   const ports = declared?.[port.direction === "in" ? "inlets" : "outlets"];
   return ports?.find((candidate) => candidate.name === port.name)?.handles ?? [];
+}
+
+/** Every handle this node draws, with the place its port's side puts it. */
+function slotsOf(form: Form | undefined, graph: GraphNode): Slot[] {
+  const unit = graph.data.unit ?? "";
+  return (form?.ports ?? []).flatMap((port) =>
+    handlesOf(port, graph).map((handle, index, all) => ({
+      handle,
+      port: port.name,
+      direction: port.direction,
+      side: sideOf(unit, port.name, port.direction),
+      // Evenly along the side, never at an end: a handle at 0% sits on the corner an edge would
+      // leave from anyway, and one at 100% reads as belonging to the next side.
+      at: (index + 1) / (all.length + 1),
+    })),
+  );
+}
+
+/** The offset along a side a handle sits at, which is the axis the side does not fix. */
+function offset(slot: Slot): { left?: string; top?: string } {
+  const percent = `${String(slot.at * 100)}%`;
+  return isVertical(slot.side) ? { left: percent } : { top: percent };
 }
 
 export function UnitOpNode({ data, selected }: NodeProps) {
@@ -66,7 +108,7 @@ export function UnitOpNode({ data, selected }: NodeProps) {
       <div className={`stream${selected === true ? " selected" : ""}${bad ? " bad" : ""}`}>
         <Handle
           type={leaving ? "source" : "target"}
-          position={side(leaving ? "out" : "in")}
+          position={leaving ? Position.Right : Position.Left}
           id={graph.data.name}
         />
         {graph.data.name}
@@ -82,17 +124,22 @@ export function UnitOpNode({ data, selected }: NodeProps) {
 
   return (
     <div className={`unit${selected === true ? " selected" : ""}${bad ? " bad" : ""}`}>
-      {(form?.ports ?? []).flatMap((port) =>
-        handlesOf(port, graph).map((handle) => (
-          <Handle
-            key={handle}
-            type={port.direction === "in" ? "target" : "source"}
-            position={side(port.direction)}
-            id={handle}
-            title={port.name}
-          />
-        )),
-      )}
+      {slotsOf(form, graph).map((slot) => (
+        <Handle
+          key={slot.handle}
+          type={slot.direction === "in" ? "target" : "source"}
+          position={POSITION[slot.side]}
+          id={slot.handle}
+          title={slot.port}
+          style={offset(slot)}
+        />
+      ))}
+      <Glyph
+        kind={glyphFor(graph.data.unit)}
+        sense={senseFor(graph.data.unit)}
+        selected={selected === true}
+        flagged={bad}
+      />
       <header>{graph.data.unit_name ?? graph.data.unit ?? "unknown unit"}</header>
       <div className="id">
         {graph.data.name}

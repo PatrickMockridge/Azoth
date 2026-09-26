@@ -493,6 +493,7 @@
   ],
   "unit_ops": [
     {
+      "family": "column",
       "id": "unit_ops.absorption_column",
       "model": "process.absorption_column",
       "name": "Absorption column",
@@ -755,6 +756,7 @@
       ]
     },
     {
+      "family": "column",
       "id": "unit_ops.distillation_column",
       "model": "process.distillation_column",
       "name": "Distillation column",
@@ -1146,6 +1148,7 @@
       ]
     },
     {
+      "family": "column",
       "id": "unit_ops.packed_column",
       "model": "process.packed_column",
       "name": "Packed column",
@@ -1320,6 +1323,7 @@
       ]
     },
     {
+      "family": "column",
       "id": "unit_ops.rate_based_packed_column",
       "model": null,
       "name": "Rate-based packed column",
@@ -1571,6 +1575,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "column",
       "id": "unit_ops.shortcut_distillation_column",
       "model": "process.shortcut_distillation_column",
       "name": "Shortcut distillation column",
@@ -1788,6 +1793,7 @@
       ]
     },
     {
+      "family": "column",
       "id": "unit_ops.simple_absorber",
       "model": null,
       "name": "Simple absorber",
@@ -1928,6 +1934,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "column",
       "id": "unit_ops.stripping_column",
       "model": "process.stripping_column",
       "name": "Stripping column",
@@ -2190,6 +2197,7 @@
       ]
     },
     {
+      "family": "heat_exchanger",
       "id": "unit_ops.heat_exchanger",
       "model": "process.heat_exchanger",
       "name": "Heat exchanger",
@@ -2390,6 +2398,7 @@
       ]
     },
     {
+      "family": "mixer",
       "id": "unit_ops.component_splitter",
       "model": "process.component_splitter",
       "name": "Component splitter",
@@ -2491,6 +2500,7 @@
       ]
     },
     {
+      "family": "mixer",
       "id": "unit_ops.mixer",
       "model": "process.mixer",
       "name": "Mixer",
@@ -2590,6 +2600,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "mixer",
       "id": "unit_ops.splitter",
       "model": "process.splitter",
       "name": "Splitter",
@@ -2679,6 +2690,7 @@
       ]
     },
     {
+      "family": "reactor",
       "id": "unit_ops.gibbs_reactor",
       "model": "process.gibbs_reactor",
       "name": "Gibbs reactor",
@@ -2847,6 +2859,7 @@
       ]
     },
     {
+      "family": "reactor",
       "id": "unit_ops.plug_flow_reactor",
       "model": "process.plug_flow_reactor",
       "name": "Plug-flow reactor",
@@ -3238,6 +3251,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "reactor",
       "id": "unit_ops.stirred_tank_reactor",
       "model": "process.stirred_tank_reactor",
       "name": "Stirred-tank reactor",
@@ -3409,6 +3423,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "separator",
       "id": "unit_ops.gas_scrubber",
       "model": "process.gas_scrubber",
       "name": "Gas scrubber",
@@ -3572,6 +3587,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "separator",
       "id": "unit_ops.separator",
       "model": "process.separator",
       "name": "Separator",
@@ -3735,6 +3751,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "separator",
       "id": "unit_ops.three_phase_separator",
       "model": "process.three_phase_separator",
       "name": "Three-phase separator",
@@ -4042,6 +4059,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.compressor",
       "model": "process.compressor",
       "name": "Compressor",
@@ -4153,6 +4171,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.cooler",
       "model": "process.cooler",
       "name": "Cooler",
@@ -4274,6 +4293,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.ejector",
       "model": "process.ejector",
       "name": "Ejector",
@@ -4493,6 +4513,7 @@
       "unmodelled_ranges": []
     },
     {
+      "family": "two_port",
       "id": "unit_ops.expander",
       "model": "process.expander",
       "name": "Expander",
@@ -4604,6 +4625,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.filter",
       "model": "process.filter",
       "name": "Filter",
@@ -4705,6 +4727,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.heater",
       "model": "process.heater",
       "name": "Heater",
@@ -4826,6 +4849,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.pipe",
       "model": "process.pipe",
       "name": "Pipe",
@@ -4971,6 +4995,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.pump",
       "model": "process.pump",
       "name": "Pump",
@@ -5082,6 +5107,7 @@
       ]
     },
     {
+      "family": "two_port",
       "id": "unit_ops.throttling_valve",
       "model": "process.throttling_valve",
       "name": "Throttling valve",
@@ -5183,6 +5209,7 @@
       ]
     },
     {
+      "family": "utility",
       "id": "unit_ops.flare",
       "model": "process.flare",
       "name": "Flare",
@@ -5261,6 +5288,7 @@
       ]
     },
     {
+      "family": "utility",
       "id": "unit_ops.manifold",
       "model": "process.manifold",
       "name": "Manifold",
@@ -5362,6 +5390,7 @@
       ]
     },
     {
+      "family": "utility",
       "id": "unit_ops.tank",
       "model": "process.tank",
       "name": "Tank",

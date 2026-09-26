@@ -175,11 +175,11 @@
 /*
  * A tear is not a connection, and it is drawn as its own kind.
  *
- * xyflow spreads an edge's `domAttributes` onto the edge's `g`, so `data-kind` is where a document
- * fact becomes a selector - and the alternative, xyflow's own `animated`, is a bare class
- * (`.react-flow__edge.animated`) that says nothing about *why* the edge moves.
+ * The class is the projection's (`Flowsheet.derive` puts `tear` on a recycle edge), so the
+ * stylesheet learns which edge this is from the document rather than from xyflow's own `animated` -
+ * which says an edge moves and not why.
  */
-.react-flow__edge[data-kind="recycle"] .react-flow__edge-path {
+.react-flow__edge.tear .react-flow__edge-path {
   stroke: var(--edge-recycle);
   stroke-dasharray: 6 3;
 }
