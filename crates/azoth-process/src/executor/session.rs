@@ -90,6 +90,14 @@ pub struct RunReport {
     pub tears: Vec<TearRecord>,
     /// Every stream the run produced, keyed by the endpoint that produced it.
     pub streams: BTreeMap<String, Stream>,
+    /// Every unit op's own result, keyed by instance id, where it computed one.
+    ///
+    /// **The numbers a unit operation reached that are on no outlet stream** - a duty, a tray
+    /// profile, a conversion, a convergence - published by the kernel that computed them rather
+    /// than recomputed by anything downstream. A unit op whose whole answer is its outlets has no
+    /// entry, which is a statement about the arithmetic and not a gap: a mixer's result *is* its
+    /// mixed stream.
+    pub results: BTreeMap<String, serde_json::Value>,
 }
 
 /// The acceleration's own state, carried across a run's passes.
@@ -246,10 +254,15 @@ pub fn run(
     let mut iterations = 0u32;
     let mut converged = false;
     let mut streams: BTreeMap<String, Stream> = BTreeMap::new();
+    // **Overwritten every pass, exactly as `streams` is.** A pass re-runs every unit op, so the
+    // result this key held is the *previous* pass's - and a tear's converged answer is the last
+    // pass's, not the second-to-last one's.
+    let mut results: BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
     for pass in 1..=MAX_PASSES {
         iterations = pass;
         streams = boundary.clone();
+        results = BTreeMap::new();
 
         for &index in &sequence {
             let instance = &flowsheet.instances[index];
@@ -267,8 +280,11 @@ pub fn run(
                 })?;
             let inlets = inlets_of(flowsheet, spec, instance, &streams, &tears)?;
             let parameters = Parameters::new(spec, &instance.parameters);
-            let outlets = dispatch(&instance.unit, &inlets, &parameters)?;
-            bind_products(flowsheet, spec, instance, outlets, &mut streams)?;
+            let outcome = dispatch(&instance.unit, &inlets, &parameters)?;
+            if let Some(result) = outcome.result {
+                results.insert(instance.id.clone(), result);
+            }
+            bind_products(flowsheet, spec, instance, outcome.streams, &mut streams)?;
         }
 
         // The tears, once every unit has run - which is what makes the value they publish this
@@ -388,6 +404,7 @@ pub fn run(
         converged,
         tears: records,
         streams,
+        results,
     })
 }
 

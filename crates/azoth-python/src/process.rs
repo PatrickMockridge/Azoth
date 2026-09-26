@@ -56,6 +56,9 @@ impl PyStream {
             p: pascals(self.p),
             t: kelvins(self.t),
             h: joules_per_mole(self.h),
+            // A transported stream carries the record's five fields, and the vapour fraction is
+            // not one of them: a caller that wants one runs the flash that answers it.
+            vapour_fraction: None,
         }
     }
 }

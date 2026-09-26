@@ -6,28 +6,55 @@
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, warnings as wire_warnings};
 use crate::kernels::stirred_tank_reactor::{ReactorSetup, stirred_tank_reactor as kernel};
 use crate::model_gen;
 use crate::stream::Stream;
 
 /// Result of `process.stirred_tank_reactor`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct StirredTankReactorResult {
     /// Product molar flow, mol/s.
     pub product_n: f64,
     /// Product composition.
     pub product_z: Vec<f64>,
     /// Product pressure.
+    #[serde(serialize_with = "scalar")]
     pub product_p: Pressure,
     /// Product temperature.
+    #[serde(serialize_with = "scalar")]
     pub product_t: ThermodynamicTemperature,
     /// Product molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub product_h: MolarEnergy,
     /// The heat the vessel had to supply, W - nonzero only when it is isothermal.
+    #[serde(serialize_with = "scalar")]
     pub heat_duty: Power,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl StirredTankReactorResult {
+    /// The result of one kernel call.
+    ///
+    /// **The warnings are the caller's, because the two callers have different ones.** A case
+    /// runs the spec's checks through [`apply_checks`]; a flowsheet's equivalent is the
+    /// *checker's*, which reports through the envelope's diagnostics rather than through a result.
+    #[must_use]
+    pub fn of(product: &Stream, duty: Power, warnings: Vec<Warning>) -> Self {
+        Self {
+            product_n: product.n,
+            product_z: product.z.clone(),
+            product_p: product.p,
+            product_t: product.t,
+            product_h: joules_per_mole(product.h.value),
+            heat_duty: duty,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for StirredTankReactorResult {
@@ -93,13 +120,5 @@ pub fn stirred_tank_reactor(
         },
     )?;
 
-    Ok(StirredTankReactorResult {
-        product_n: product.n,
-        product_z: product.z,
-        product_p: product.p,
-        product_t: product.t,
-        product_h: joules_per_mole(product.h.value),
-        heat_duty,
-        warnings,
-    })
+    Ok(StirredTankReactorResult::of(&product, heat_duty, warnings))
 }

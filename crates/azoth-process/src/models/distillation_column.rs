@@ -7,7 +7,9 @@
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::distillation_column as kernel;
 use crate::kernels::distillation_column::{Specification, SpecificationKind};
 use crate::stream::Stream;
@@ -18,11 +20,13 @@ use crate::stream::Stream;
 /// rather than a scalar: four quantities over the trays, then the two products' records, the
 /// two duties and the three residuals. The vector lengths are the tray count, which the inputs
 /// decide - a shape `eos.pt_phase_envelope` already exercises with its trace points.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct DistillationColumnResult {
     /// Each tray's temperature, K.
+    #[serde(serialize_with = "scalars")]
     pub tray_temperature: Vec<ThermodynamicTemperature>,
     /// Each tray's pressure, Pa.
+    #[serde(serialize_with = "scalars")]
     pub tray_pressure: Vec<Pressure>,
     /// Each tray's vapour traffic, mol/s.
     pub tray_gas_n: Vec<f64>,
@@ -33,20 +37,26 @@ pub struct DistillationColumnResult {
     /// Distillate composition.
     pub distillate_z: Vec<f64>,
     /// Distillate pressure.
+    #[serde(serialize_with = "scalar")]
     pub distillate_p: Pressure,
     /// Distillate temperature.
+    #[serde(serialize_with = "scalar")]
     pub distillate_t: ThermodynamicTemperature,
     /// Distillate molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub distillate_h: MolarEnergy,
     /// Bottoms molar flow, mol/s.
     pub bottoms_n: f64,
     /// Bottoms composition.
     pub bottoms_z: Vec<f64>,
     /// Bottoms pressure.
+    #[serde(serialize_with = "scalar")]
     pub bottoms_p: Pressure,
     /// Bottoms temperature.
+    #[serde(serialize_with = "scalar")]
     pub bottoms_t: ThermodynamicTemperature,
     /// Bottoms molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub bottoms_h: MolarEnergy,
     /// **The vapour each tray withdrew**, one entry per tray and zero where it drew none.
     pub gas_side_draw_n: Vec<f64>,
@@ -55,8 +65,10 @@ pub struct DistillationColumnResult {
     /// The liquid each tray withdrew as a pumparound.
     pub pumparound_n: Vec<f64>,
     /// The condenser's duty, W.
+    #[serde(serialize_with = "scalar")]
     pub condenser_duty: Power,
     /// The reboiler's duty, W.
+    #[serde(serialize_with = "scalar")]
     pub reboiler_duty: Power,
     /// Iterations taken.
     pub iterations: u32,
@@ -67,7 +79,56 @@ pub struct DistillationColumnResult {
     /// The enthalpy closure.
     pub energy_residual: f64,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl DistillationColumnResult {
+    /// The result of one kernel call.
+    ///
+    /// **The warnings are the caller's**: a case's are the spec's `apply_checks` and a flowsheet's
+    /// are the checker's, which report through the envelope rather than through a result.
+    #[must_use]
+    pub fn of(outcome: &kernel::ColumnOutcome, warnings: Vec<Warning>) -> Self {
+        Self {
+            tray_temperature: outcome.trays.iter().map(|t| t.temperature).collect(),
+            tray_pressure: outcome.trays.iter().map(|t| t.pressure).collect(),
+            tray_gas_n: outcome.trays.iter().map(|t| t.gas_n).collect(),
+            tray_liquid_n: outcome.trays.iter().map(|t| t.liquid_n).collect(),
+            distillate_n: outcome.distillate.n,
+            distillate_z: outcome.distillate.z.clone(),
+            distillate_p: outcome.distillate.p,
+            distillate_t: outcome.distillate.t,
+            distillate_h: joules_per_mole(outcome.distillate.h.value),
+            bottoms_n: outcome.bottoms.n,
+            bottoms_z: outcome.bottoms.z.clone(),
+            bottoms_p: outcome.bottoms.p,
+            bottoms_t: outcome.bottoms.t,
+            bottoms_h: joules_per_mole(outcome.bottoms.h.value),
+            gas_side_draw_n: outcome
+                .gas_side_draws
+                .iter()
+                .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+                .collect(),
+            liquid_side_draw_n: outcome
+                .liquid_side_draws
+                .iter()
+                .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+                .collect(),
+            pumparound_n: outcome
+                .pumparounds
+                .iter()
+                .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+                .collect(),
+            condenser_duty: outcome.condenser_duty,
+            reboiler_duty: outcome.reboiler_duty,
+            iterations: outcome.iterations,
+            temperature_residual: outcome.temperature_residual,
+            mass_residual: outcome.mass_residual,
+            energy_residual: outcome.energy_residual,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for DistillationColumnResult {
@@ -286,44 +347,7 @@ pub fn distillation_column(
     // from the result whether they ran reactively.
     warnings.extend(out.warnings.iter().cloned());
 
-    Ok(DistillationColumnResult {
-        tray_temperature: out.trays.iter().map(|t| t.temperature).collect(),
-        tray_pressure: out.trays.iter().map(|t| t.pressure).collect(),
-        tray_gas_n: out.trays.iter().map(|t| t.gas_n).collect(),
-        tray_liquid_n: out.trays.iter().map(|t| t.liquid_n).collect(),
-        distillate_n: out.distillate.n,
-        distillate_z: out.distillate.z,
-        distillate_p: out.distillate.p,
-        distillate_t: out.distillate.t,
-        distillate_h: joules_per_mole(out.distillate.h.value),
-        bottoms_n: out.bottoms.n,
-        bottoms_z: out.bottoms.z,
-        bottoms_p: out.bottoms.p,
-        bottoms_t: out.bottoms.t,
-        bottoms_h: joules_per_mole(out.bottoms.h.value),
-        gas_side_draw_n: out
-            .gas_side_draws
-            .iter()
-            .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
-            .collect(),
-        liquid_side_draw_n: out
-            .liquid_side_draws
-            .iter()
-            .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
-            .collect(),
-        pumparound_n: out
-            .pumparounds
-            .iter()
-            .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
-            .collect(),
-        condenser_duty: out.condenser_duty,
-        reboiler_duty: out.reboiler_duty,
-        iterations: out.iterations,
-        temperature_residual: out.temperature_residual,
-        mass_residual: out.mass_residual,
-        energy_residual: out.energy_residual,
-        warnings,
-    })
+    Ok(DistillationColumnResult::of(&out, warnings))
 }
 
 /// The `ColumnSolverFactory` class behind each strategy this port does not carry.

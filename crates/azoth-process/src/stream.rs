@@ -27,6 +27,18 @@ pub struct Stream {
     pub t: ThermodynamicTemperature,
     /// Molar enthalpy in J/mol, on the databank's reference.
     pub h: MolarEnergy,
+    /// The vapour fraction of the state, when the construction knew one.
+    ///
+    /// **Carried, not derived, and this is the one field where that is the honest choice.** `s`,
+    /// `cp` and the density are functions of `(T, P, z)` a caller can cheaply recompute - see
+    /// [`Stream::entropy`] - so they are not fields. The vapour fraction is a function of the same
+    /// three, but the accessor that would compute it *refuses* a two-phase stream rather than
+    /// answering ([`Stream::single_phase_root`]), and a two-phase stream is exactly the one whose
+    /// vapour fraction a reader wants. So whichever constructor already ran the flash keeps its
+    /// answer: [`Stream::from_pt`] and [`Stream::from_ph`] take it from the flash and
+    /// [`Stream::from_side`] reports the side it was given. `None` means nothing computed one, and
+    /// it is not a `0.5` by default.
+    pub vapour_fraction: Option<f64>,
 }
 
 impl Stream {
@@ -46,7 +58,10 @@ impl Stream {
     ) -> azoth_core::Result<Self> {
         let names: Vec<&str> = components.iter().map(String::as_str).collect();
         let (mixture, ideal_gas) = databank::mixture_of(&names, Cubic::Pr, None)?;
-        let (h, _) = ph_flash::enthalpy_at(&mixture, &ideal_gas, t, p, &z)?;
+        // The flash was already run for the enthalpy, so its vapour fraction is the one this
+        // constructor does not have to pay for - and a two-phase feed, which is the case a reader
+        // most wants it for, is one this constructor reaches every day.
+        let (h, flash) = ph_flash::enthalpy_at(&mixture, &ideal_gas, t, p, &z)?;
         Ok(Stream {
             components,
             z,
@@ -54,6 +69,7 @@ impl Stream {
             p,
             t,
             h: joules_per_mole(h),
+            vapour_fraction: flash.beta,
         })
     }
 
@@ -93,6 +109,12 @@ impl Stream {
             p,
             t,
             h: joules_per_mole(state.h.value),
+            // The side *is* the phase, so this is not a flash's estimate of one: a vapour outlet
+            // is all vapour whatever its composition would settle on by itself.
+            vapour_fraction: Some(match side {
+                RootSide::Vapour => 1.0,
+                RootSide::Liquid => 0.0,
+            }),
         })
     }
 
@@ -239,6 +261,7 @@ impl Stream {
             p,
             t: r.temperature,
             h,
+            vapour_fraction: r.beta,
         })
     }
 }

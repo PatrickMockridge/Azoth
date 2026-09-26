@@ -7,23 +7,30 @@
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, kelvins, pascals};
 use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use serde::Serialize;
 
-use crate::kernels::gibbs_reactor::{EnergyMode, ReactorSetup, gibbs_reactor as solve_equilibrium};
+use crate::executor::json::{scalar, warnings as wire_warnings};
+use crate::kernels::gibbs_reactor::{
+    EnergyMode, ReactorNumbers, ReactorSetup, gibbs_reactor as solve_equilibrium,
+};
 use crate::model_gen;
 use crate::stream::Stream;
 
 /// Result of `process.gibbs_reactor`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct GibbsReactorResult {
     /// Product molar flow, mol/s.
     pub product_n: f64,
     /// Product composition, over the feed's own species order.
     pub product_z: Vec<f64>,
     /// Product pressure.
+    #[serde(serialize_with = "scalar")]
     pub product_p: Pressure,
     /// Product temperature.
+    #[serde(serialize_with = "scalar")]
     pub product_t: ThermodynamicTemperature,
     /// Product molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub product_h: MolarEnergy,
     /// `hasConverged()`, which a run that reached the cap reports as false.
     pub converged: bool,
@@ -38,7 +45,41 @@ pub struct GibbsReactorResult {
     /// The total Gibbs energy at the top of every iteration, W.
     pub gibbs_energy_history: Vec<f64>,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl GibbsReactorResult {
+    /// The result of one kernel call, from the solve's own two answers.
+    ///
+    /// **The warnings are the caller's, because the two callers have different ones.** A case
+    /// runs the spec's checks through [`apply_checks`]; a flowsheet's equivalent is the
+    /// *checker's*, which reports through the envelope's diagnostics rather than through a result.
+    #[must_use]
+    pub fn of(outlet: &Stream, numbers: &ReactorNumbers, warnings: Vec<Warning>) -> Self {
+        Self {
+            product_n: outlet.n,
+            product_z: outlet.z.clone(),
+            product_p: pascals(outlet.p.value),
+            product_t: kelvins(outlet.t.value),
+            product_h: outlet.h,
+            converged: numbers.converged,
+            iterations: f64::from(numbers.iterations),
+            final_error: numbers.final_error,
+            lagrange_multipliers: numbers
+                .lagrange_multipliers
+                .iter()
+                .map(|v| v * 1000.0)
+                .collect(),
+            element_balance_difference: numbers.element_balance_difference.to_vec(),
+            gibbs_energy_history: numbers
+                .gibbs_energy_history
+                .iter()
+                .map(|v| v * 1000.0)
+                .collect(),
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for GibbsReactorResult {
@@ -120,26 +161,5 @@ pub fn gibbs_reactor(
         &mut warnings,
     )?;
 
-    Ok(GibbsReactorResult {
-        product_n: outlet.n,
-        product_z: outlet.z.clone(),
-        product_p: pascals(outlet.p.value),
-        product_t: kelvins(outlet.t.value),
-        product_h: outlet.h,
-        converged: numbers.converged,
-        iterations: f64::from(numbers.iterations),
-        final_error: numbers.final_error,
-        lagrange_multipliers: numbers
-            .lagrange_multipliers
-            .iter()
-            .map(|v| v * 1000.0)
-            .collect(),
-        element_balance_difference: numbers.element_balance_difference.to_vec(),
-        gibbs_energy_history: numbers
-            .gibbs_energy_history
-            .iter()
-            .map(|v| v * 1000.0)
-            .collect(),
-        warnings,
-    })
+    Ok(GibbsReactorResult::of(&outlet, &numbers, warnings))
 }

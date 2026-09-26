@@ -33,6 +33,9 @@ pub fn splitter(feed: &Stream, fractions: &[f64]) -> azoth_core::Result<Vec<Stre
             p: feed.p,
             t: feed.t,
             h: feed.h,
+            // A split moves no composition, so it moves no phase: each product is on the side its
+            // feed was on, and a product of a feed nothing flashed is one nothing knows about.
+            vapour_fraction: feed.vapour_fraction,
         })
         .collect())
 }

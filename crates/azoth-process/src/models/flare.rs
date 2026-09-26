@@ -12,30 +12,58 @@ use azoth_core::units::{
     MassRate, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole,
 };
 use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, warnings as wire_warnings};
 use crate::kernels::flare as kernel;
 use crate::model_gen;
 use crate::stream::Stream;
 
 /// Result of `process.flare`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct FlareResult {
     /// Product molar flow, mol/s.
     pub product_n: f64,
     /// Product composition.
     pub product_z: Vec<f64>,
     /// Product pressure.
+    #[serde(serialize_with = "scalar")]
     pub product_p: Pressure,
     /// Product temperature.
+    #[serde(serialize_with = "scalar")]
     pub product_t: ThermodynamicTemperature,
     /// Product molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub product_h: MolarEnergy,
     /// The heat the flare releases, W.
+    #[serde(serialize_with = "scalar")]
     pub heat_duty: Power,
     /// The carbon dioxide the combustion forms, kg/s.
+    #[serde(serialize_with = "scalar")]
     pub co2_emission: MassRate,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl FlareResult {
+    /// The result of one kernel call.
+    ///
+    /// **The warnings are the caller's**: a flowsheet's are the *checker's* rather than
+    /// [`apply_checks`]'.
+    #[must_use]
+    pub fn of(product: &Stream, numbers: &kernel::FlareNumbers, warnings: Vec<Warning>) -> Self {
+        Self {
+            product_n: product.n,
+            product_z: product.z.clone(),
+            product_p: product.p,
+            product_t: product.t,
+            product_h: joules_per_mole(product.h.value),
+            heat_duty: numbers.heat_duty,
+            co2_emission: numbers.co2_emission,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for FlareResult {
@@ -101,14 +129,5 @@ pub fn flare(
         &mut warnings,
     )?;
 
-    Ok(FlareResult {
-        product_n: product.n,
-        product_z: product.z,
-        product_p: product.p,
-        product_t: product.t,
-        product_h: joules_per_mole(product.h.value),
-        heat_duty: numbers.heat_duty,
-        co2_emission: numbers.co2_emission,
-        warnings,
-    })
+    Ok(FlareResult::of(&product, &numbers, warnings))
 }

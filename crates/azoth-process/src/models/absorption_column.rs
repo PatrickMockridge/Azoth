@@ -7,7 +7,10 @@
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
+use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::kernels::absorption_column::AbsorberSetup;
 use crate::kernels::absorption_column::absorption_column as kernel;
 use crate::kernels::distillation_column::SolverType;
@@ -19,11 +22,13 @@ use crate::stream::Stream;
 /// **The profile is the answer, as it is for the column, and the products are the class's own
 /// getters**: `getGasOutStream` is the treated gas overhead and `getLiquidOutStream` the
 /// loaded solvent. There is no condenser and no reboiler, so there are no duties.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct AbsorptionColumnResult {
     /// Each tray's temperature, K, from the gas end at stage 0 up.
+    #[serde(serialize_with = "scalars")]
     pub tray_temperature: Vec<ThermodynamicTemperature>,
     /// Each tray's pressure, Pa.
+    #[serde(serialize_with = "scalars")]
     pub tray_pressure: Vec<Pressure>,
     /// Each tray's vapour traffic, mol/s.
     pub tray_gas_n: Vec<f64>,
@@ -34,20 +39,26 @@ pub struct AbsorptionColumnResult {
     /// The treated gas's composition.
     pub gas_out_z: Vec<f64>,
     /// The treated gas's pressure.
+    #[serde(serialize_with = "scalar")]
     pub gas_out_p: Pressure,
     /// The treated gas's temperature.
+    #[serde(serialize_with = "scalar")]
     pub gas_out_t: ThermodynamicTemperature,
     /// The treated gas's molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub gas_out_h: MolarEnergy,
     /// The loaded solvent's molar flow, mol/s.
     pub liquid_out_n: f64,
     /// The loaded solvent's composition.
     pub liquid_out_z: Vec<f64>,
     /// The loaded solvent's pressure.
+    #[serde(serialize_with = "scalar")]
     pub liquid_out_p: Pressure,
     /// The loaded solvent's temperature.
+    #[serde(serialize_with = "scalar")]
     pub liquid_out_t: ThermodynamicTemperature,
     /// The loaded solvent's molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub liquid_out_h: MolarEnergy,
     /// Iterations taken.
     pub iterations: u32,
@@ -58,7 +69,39 @@ pub struct AbsorptionColumnResult {
     /// The enthalpy closure.
     pub energy_residual: f64,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl AbsorptionColumnResult {
+    /// The result of one kernel call.
+    ///
+    /// **The warnings are the caller's**: a case's are the spec's `apply_checks` and a flowsheet's
+    /// are the checker's, which report through the envelope rather than through a result.
+    #[must_use]
+    pub fn of(outcome: &AbsorberOutcome, warnings: Vec<Warning>) -> Self {
+        Self {
+            tray_temperature: outcome.trays.iter().map(|tray| tray.temperature).collect(),
+            tray_pressure: outcome.trays.iter().map(|tray| tray.pressure).collect(),
+            tray_gas_n: outcome.trays.iter().map(|tray| tray.gas_n).collect(),
+            tray_liquid_n: outcome.trays.iter().map(|tray| tray.liquid_n).collect(),
+            gas_out_n: outcome.gas_out.n,
+            gas_out_z: outcome.gas_out.z.clone(),
+            gas_out_p: outcome.gas_out.p,
+            gas_out_t: outcome.gas_out.t,
+            gas_out_h: joules_per_mole(outcome.gas_out.h.value),
+            liquid_out_n: outcome.liquid_out.n,
+            liquid_out_z: outcome.liquid_out.z.clone(),
+            liquid_out_p: outcome.liquid_out.p,
+            liquid_out_t: outcome.liquid_out.t,
+            liquid_out_h: joules_per_mole(outcome.liquid_out.h.value),
+            iterations: outcome.iterations,
+            temperature_residual: outcome.temperature_residual,
+            mass_residual: outcome.mass_residual,
+            energy_residual: outcome.energy_residual,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for AbsorptionColumnResult {
@@ -189,27 +232,7 @@ pub fn absorption_column(
 
     warnings.extend(out.warnings.iter().cloned());
 
-    Ok(AbsorptionColumnResult {
-        tray_temperature: out.trays.iter().map(|tray| tray.temperature).collect(),
-        tray_pressure: out.trays.iter().map(|tray| tray.pressure).collect(),
-        tray_gas_n: out.trays.iter().map(|tray| tray.gas_n).collect(),
-        tray_liquid_n: out.trays.iter().map(|tray| tray.liquid_n).collect(),
-        gas_out_n: out.gas_out.n,
-        gas_out_z: out.gas_out.z,
-        gas_out_p: out.gas_out.p,
-        gas_out_t: out.gas_out.t,
-        gas_out_h: joules_per_mole(out.gas_out.h.value),
-        liquid_out_n: out.liquid_out.n,
-        liquid_out_z: out.liquid_out.z,
-        liquid_out_p: out.liquid_out.p,
-        liquid_out_t: out.liquid_out.t,
-        liquid_out_h: joules_per_mole(out.liquid_out.h.value),
-        iterations: out.iterations,
-        temperature_residual: out.temperature_residual,
-        mass_residual: out.mass_residual,
-        energy_residual: out.energy_residual,
-        warnings,
-    })
+    Ok(AbsorptionColumnResult::of(&out, warnings))
 }
 
 /// Refuse every parameter the palette declares and this stage does not implement.

@@ -12,33 +12,41 @@
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, warnings as wire_warnings};
 use crate::kernels::shortcut_distillation_column as kernel;
 use crate::model_gen;
 use crate::stream::Stream;
 
 /// Result of `process.shortcut_distillation_column`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ShortcutDistillationColumnResult {
     /// Distillate molar flow, mol/s.
     pub distillate_n: f64,
     /// Distillate composition.
     pub distillate_z: Vec<f64>,
     /// Distillate pressure.
+    #[serde(serialize_with = "scalar")]
     pub distillate_p: Pressure,
     /// Distillate temperature.
+    #[serde(serialize_with = "scalar")]
     pub distillate_t: ThermodynamicTemperature,
     /// Distillate molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub distillate_h: MolarEnergy,
     /// Bottoms molar flow, mol/s.
     pub bottoms_n: f64,
     /// Bottoms composition.
     pub bottoms_z: Vec<f64>,
     /// Bottoms pressure.
+    #[serde(serialize_with = "scalar")]
     pub bottoms_p: Pressure,
     /// Bottoms temperature.
+    #[serde(serialize_with = "scalar")]
     pub bottoms_t: ThermodynamicTemperature,
     /// Bottoms molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub bottoms_h: MolarEnergy,
     /// Fenske's minimum stages.
     pub minimum_stages: f64,
@@ -51,13 +59,48 @@ pub struct ShortcutDistillationColumnResult {
     /// The feed stage counted from the top.
     pub feed_tray_number: i64,
     /// The condenser duty the class reports.
+    #[serde(serialize_with = "scalar")]
     pub condenser_duty: Power,
     /// The reboiler duty the class reports.
+    #[serde(serialize_with = "scalar")]
     pub reboiler_duty: Power,
     /// `alpha_LK/HK`.
     pub relative_volatility: f64,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl ShortcutDistillationColumnResult {
+    /// The result of one kernel call.
+    ///
+    /// **The warnings are the caller's, because the two callers have different ones.** A case
+    /// runs the spec's checks through [`apply_checks`]; a flowsheet's equivalent is the
+    /// *checker's*, which reports through the envelope's diagnostics rather than through a result.
+    #[must_use]
+    pub fn of(outcome: &kernel::ShortcutColumn, warnings: Vec<Warning>) -> Self {
+        Self {
+            distillate_n: outcome.distillate.n,
+            distillate_z: outcome.distillate.z.clone(),
+            distillate_p: outcome.distillate.p,
+            distillate_t: outcome.distillate.t,
+            distillate_h: joules_per_mole(outcome.distillate.h.value),
+            bottoms_n: outcome.bottoms.n,
+            bottoms_z: outcome.bottoms.z.clone(),
+            bottoms_p: outcome.bottoms.p,
+            bottoms_t: outcome.bottoms.t,
+            bottoms_h: joules_per_mole(outcome.bottoms.h.value),
+            minimum_stages: outcome.minimum_stages,
+            minimum_reflux_ratio: outcome.minimum_reflux_ratio,
+            actual_stages: outcome.actual_stages,
+            actual_reflux_ratio: outcome.actual_reflux_ratio,
+            feed_tray_number: outcome.feed_tray_number,
+            condenser_duty: outcome.condenser_duty,
+            reboiler_duty: outcome.reboiler_duty,
+            relative_volatility: outcome.relative_volatility,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for ShortcutDistillationColumnResult {
@@ -136,25 +179,5 @@ pub fn shortcut_distillation_column(
         reboiler_pressure,
     )?;
 
-    Ok(ShortcutDistillationColumnResult {
-        distillate_n: out.distillate.n,
-        distillate_z: out.distillate.z,
-        distillate_p: out.distillate.p,
-        distillate_t: out.distillate.t,
-        distillate_h: joules_per_mole(out.distillate.h.value),
-        bottoms_n: out.bottoms.n,
-        bottoms_z: out.bottoms.z,
-        bottoms_p: out.bottoms.p,
-        bottoms_t: out.bottoms.t,
-        bottoms_h: joules_per_mole(out.bottoms.h.value),
-        minimum_stages: out.minimum_stages,
-        minimum_reflux_ratio: out.minimum_reflux_ratio,
-        actual_stages: out.actual_stages,
-        actual_reflux_ratio: out.actual_reflux_ratio,
-        feed_tray_number: out.feed_tray_number,
-        condenser_duty: out.condenser_duty,
-        reboiler_duty: out.reboiler_duty,
-        relative_volatility: out.relative_volatility,
-        warnings,
-    })
+    Ok(ShortcutDistillationColumnResult::of(&out, warnings))
 }

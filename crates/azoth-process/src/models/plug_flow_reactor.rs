@@ -16,7 +16,9 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use azoth_reactions::databank::stoichiometry;
+use serde::Serialize;
 
+use crate::executor::json::{scalar, warnings as wire_warnings};
 use crate::kernels::plug_flow_reactor::{
     EnergyMode, PlugFlowProfile, ReactorNumbers, ReactorSetup, ThermodynamicCoupling,
     plug_flow_reactor as kernel,
@@ -28,25 +30,31 @@ use crate::reactor::stepper::Scheme;
 use crate::stream::Stream;
 
 /// Result of `process.plug_flow_reactor`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct PlugFlowReactorResult {
     /// Product molar flow, mol/s.
     pub product_n: f64,
     /// Product composition, over the feed's species then the reaction's added ones.
     pub product_z: Vec<f64>,
     /// Product pressure.
+    #[serde(serialize_with = "scalar")]
     pub product_p: Pressure,
     /// Product temperature.
+    #[serde(serialize_with = "scalar")]
     pub product_t: ThermodynamicTemperature,
     /// Product molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub product_h: MolarEnergy,
     /// The key component's conversion over the whole reactor.
     pub conversion: f64,
     /// The inlet pressure less the outlet's.
+    #[serde(serialize_with = "scalar")]
     pub pressure_drop: Pressure,
     /// The outlet temperature the march reports.
+    #[serde(serialize_with = "scalar")]
     pub outlet_temperature: ThermodynamicTemperature,
     /// The duty an isothermal reactor supplies, zero on the other branches.
+    #[serde(serialize_with = "scalar")]
     pub heat_duty: Power,
     /// Every station's axial position, m.
     pub positions: Vec<f64>,
@@ -57,6 +65,7 @@ pub struct PlugFlowReactorResult {
     /// Every station's conversion.
     pub conversion_profile: Vec<f64>,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
 }
 
@@ -247,32 +256,40 @@ pub fn plug_flow_reactor(
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
     let (product, numbers, profile) = kernel(&feed, &setup)?;
 
-    Ok(build(product, numbers, profile, warnings))
+    Ok(PlugFlowReactorResult::of(
+        &product, &numbers, &profile, warnings,
+    ))
 }
 
-/// Assemble the result from the kernel's three pieces.
-fn build(
-    product: Stream,
-    numbers: ReactorNumbers,
-    profile: PlugFlowProfile,
-    warnings: Vec<Warning>,
-) -> PlugFlowReactorResult {
-    PlugFlowReactorResult {
-        product_n: product.n,
-        product_z: product.z,
-        product_p: product.p,
-        product_t: product.t,
-        product_h: joules_per_mole(product.h.value),
-        conversion: numbers.conversion,
-        pressure_drop: pascals(numbers.pressure_drop_bar * 1.0e5),
-        outlet_temperature: kelvins(numbers.outlet_temperature),
-        heat_duty: watts(numbers.heat_duty),
-        positions: profile.positions,
-        temperature_profile: profile.temperatures,
-        // The march carries bara, as `calculateDerivatives` writes its own row, so the report
-        // to the declaration's pascals happens here and nowhere else.
-        pressure_profile: profile.pressures.iter().map(|p| p * 1.0e5).collect(),
-        conversion_profile: profile.conversions,
-        warnings,
+impl PlugFlowReactorResult {
+    /// The result of one kernel call, from the march's three pieces.
+    ///
+    /// **The warnings are the caller's**: a case's are the spec's `apply_checks` and a flowsheet's
+    /// are the checker's, which report through the envelope rather than through a result.
+    #[must_use]
+    pub fn of(
+        product: &Stream,
+        numbers: &ReactorNumbers,
+        profile: &PlugFlowProfile,
+        warnings: Vec<Warning>,
+    ) -> Self {
+        Self {
+            product_n: product.n,
+            product_z: product.z.clone(),
+            product_p: product.p,
+            product_t: product.t,
+            product_h: joules_per_mole(product.h.value),
+            conversion: numbers.conversion,
+            pressure_drop: pascals(numbers.pressure_drop_bar * 1.0e5),
+            outlet_temperature: kelvins(numbers.outlet_temperature),
+            heat_duty: watts(numbers.heat_duty),
+            positions: profile.positions.clone(),
+            temperature_profile: profile.temperatures.clone(),
+            // The march carries bara, as `calculateDerivatives` writes its own row, so the report
+            // to the declaration's pascals happens here and nowhere else.
+            pressure_profile: profile.pressures.iter().map(|p| p * 1.0e5).collect(),
+            conversion_profile: profile.conversions.clone(),
+            warnings,
+        }
     }
 }

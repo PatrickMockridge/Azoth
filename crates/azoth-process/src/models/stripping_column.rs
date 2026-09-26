@@ -7,7 +7,10 @@
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{CalcResult, Result, Warning};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
+use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::models::absorption_column::absorption_column as absorber;
 
 /// Result of `process.stripping_column`.
@@ -15,11 +18,13 @@ use crate::models::absorption_column::absorption_column as absorber;
 /// **The same record as the absorber's under the class's own getters**:
 /// `getOverheadGasStream` is the stripped gas leaving the top tray and `getLeanLiquidStream` the
 /// stripped liquid leaving the bottom, and there is no condenser and no reboiler, so no duties.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct StrippingColumnResult {
     /// Each tray's temperature, K, from the gas end at stage 0 up.
+    #[serde(serialize_with = "scalars")]
     pub tray_temperature: Vec<ThermodynamicTemperature>,
     /// Each tray's pressure, Pa.
+    #[serde(serialize_with = "scalars")]
     pub tray_pressure: Vec<Pressure>,
     /// Each tray's vapour traffic, mol/s.
     pub tray_gas_n: Vec<f64>,
@@ -30,20 +35,26 @@ pub struct StrippingColumnResult {
     /// The stripped gas's composition.
     pub overhead_gas_z: Vec<f64>,
     /// The stripped gas's pressure.
+    #[serde(serialize_with = "scalar")]
     pub overhead_gas_p: Pressure,
     /// The stripped gas's temperature.
+    #[serde(serialize_with = "scalar")]
     pub overhead_gas_t: ThermodynamicTemperature,
     /// The stripped gas's molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub overhead_gas_h: MolarEnergy,
     /// The stripped liquid's molar flow, mol/s.
     pub lean_liquid_n: f64,
     /// The stripped liquid's composition.
     pub lean_liquid_z: Vec<f64>,
     /// The stripped liquid's pressure.
+    #[serde(serialize_with = "scalar")]
     pub lean_liquid_p: Pressure,
     /// The stripped liquid's temperature.
+    #[serde(serialize_with = "scalar")]
     pub lean_liquid_t: ThermodynamicTemperature,
     /// The stripped liquid's molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub lean_liquid_h: MolarEnergy,
     /// Iterations taken.
     pub iterations: u32,
@@ -54,7 +65,39 @@ pub struct StrippingColumnResult {
     /// The enthalpy closure.
     pub energy_residual: f64,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl StrippingColumnResult {
+    /// The result of one kernel call, which is the shared absorber's outcome under this id's names.
+    ///
+    /// **The warnings are the caller's**: a case's are `apply_checks`'s and a flowsheet's are the
+    /// checker's, which report through the envelope rather than through a result.
+    #[must_use]
+    pub fn of(outcome: &AbsorberOutcome, warnings: Vec<Warning>) -> Self {
+        Self {
+            tray_temperature: outcome.trays.iter().map(|tray| tray.temperature).collect(),
+            tray_pressure: outcome.trays.iter().map(|tray| tray.pressure).collect(),
+            tray_gas_n: outcome.trays.iter().map(|tray| tray.gas_n).collect(),
+            tray_liquid_n: outcome.trays.iter().map(|tray| tray.liquid_n).collect(),
+            overhead_gas_n: outcome.gas_out.n,
+            overhead_gas_z: outcome.gas_out.z.clone(),
+            overhead_gas_p: outcome.gas_out.p,
+            overhead_gas_t: outcome.gas_out.t,
+            overhead_gas_h: joules_per_mole(outcome.gas_out.h.value),
+            lean_liquid_n: outcome.liquid_out.n,
+            lean_liquid_z: outcome.liquid_out.z.clone(),
+            lean_liquid_p: outcome.liquid_out.p,
+            lean_liquid_t: outcome.liquid_out.t,
+            lean_liquid_h: joules_per_mole(outcome.liquid_out.h.value),
+            iterations: outcome.iterations,
+            temperature_residual: outcome.temperature_residual,
+            mass_residual: outcome.mass_residual,
+            energy_residual: outcome.energy_residual,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for StrippingColumnResult {

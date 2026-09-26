@@ -7,28 +7,54 @@
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_core::{CalcResult, Result, apply_checks};
+use serde::Serialize;
 
+use crate::executor::json::{scalar, warnings as wire_warnings};
 use crate::kernels::filter as kernel;
 use crate::model_gen;
 use crate::stream::Stream;
 
 /// Result of `process.filter`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct FilterResult {
     /// Molar flow out, mol/s: the inlet's.
     pub outlet_n: f64,
     /// Outlet composition, the inlet's.
     pub outlet_z: Vec<f64>,
     /// Outlet pressure: `inlet_p - applied_drop`.
+    #[serde(serialize_with = "scalar")]
     pub outlet_p: Pressure,
     /// Outlet temperature, which is the inlet's.
+    #[serde(serialize_with = "scalar")]
     pub outlet_t: ThermodynamicTemperature,
     /// Outlet molar enthalpy, which is not the inlet's - the drop is isothermal.
+    #[serde(serialize_with = "scalar")]
     pub outlet_h: MolarEnergy,
     /// The drop actually applied, which is the requested one unless it was clamped.
+    #[serde(serialize_with = "scalar")]
     pub applied_drop: Pressure,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
+}
+
+impl FilterResult {
+    /// The result of one kernel call.
+    ///
+    /// **The warnings are the caller's**: a flowsheet's are the *checker's* rather than
+    /// [`apply_checks`]'.
+    #[must_use]
+    pub fn of(outcome: &kernel::FilterOutcome, warnings: Vec<Warning>) -> Self {
+        Self {
+            outlet_n: outcome.outlet.n,
+            outlet_z: outcome.outlet.z.clone(),
+            outlet_p: outcome.outlet.p,
+            outlet_t: outcome.outlet.t,
+            outlet_h: joules_per_mole(outcome.outlet.h.value),
+            applied_drop: outcome.applied_drop,
+            warnings,
+        }
+    }
 }
 
 impl CalcResult for FilterResult {
@@ -102,13 +128,5 @@ pub fn filter(
         ));
     }
 
-    Ok(FilterResult {
-        outlet_n: outcome.outlet.n,
-        outlet_z: outcome.outlet.z,
-        outlet_p: outcome.outlet.p,
-        outlet_t: outcome.outlet.t,
-        outlet_h: joules_per_mole(outcome.outlet.h.value),
-        applied_drop: outcome.applied_drop,
-        warnings,
-    })
+    Ok(FilterResult::of(&outcome, warnings))
 }
