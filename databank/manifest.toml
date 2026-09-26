@@ -268,7 +268,7 @@ reason = """\
     `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod`."""
 [[upstreams.files.columns]]
 name = "LJEPS"
-disposition = "vendored"
+disposition = "used"
 as = "ljeps"
 unit = "K"
 reason = "not-ported: the gas diffusivity method; NeqSim's `physicalproperties/methods/gasphysicalproperties/diffusivity/Diffusivity`. `eos.viscosity` and `eos.thermal_conductivity` do not read it - they port `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod` respectively, neither of which reads these."
@@ -428,21 +428,21 @@ reason = """\
     rather than from the file."""
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY1"
-disposition = "vendored"
+disposition = "used"
 as = "liquidconductivity1"
 unit = "neqsim-internal"
 reason = "not-ported: the liquid-conductivity `polynom` and Filippov models; NeqSim's `liquidphysicalproperties/conductivity`. `eos.viscosity` and `eos.thermal_conductivity` do not read it - they port `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod` respectively, neither of which reads these."
 consumer = "roadmap:P1"
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY2"
-disposition = "vendored"
+disposition = "used"
 as = "liquidconductivity2"
 unit = "neqsim-internal"
 reason = "not-ported: the liquid-conductivity `polynom` and Filippov models; NeqSim's `liquidphysicalproperties/conductivity`. `eos.viscosity` and `eos.thermal_conductivity` do not read it - they port `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod` respectively, neither of which reads these."
 consumer = "roadmap:P1"
 [[upstreams.files.columns]]
 name = "LIQUIDCONDUCTIVITY3"
-disposition = "vendored"
+disposition = "used"
 as = "liquidconductivity3"
 unit = "neqsim-internal"
 reason = "not-ported: the liquid-conductivity `polynom` and Filippov models; NeqSim's `liquidphysicalproperties/conductivity`. `eos.viscosity` and `eos.thermal_conductivity` do not read it - they port `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod` respectively, neither of which reads these."
@@ -2483,6 +2483,78 @@ disposition = "vendored"
 as = "umrcpa_volcorr_t"
 unit = "neqsim-internal"
 reason = "not-ported: vendored whole; nothing reads it yet"
+[[upstreams.files]]
+id = "neqsim/Packing.csv"
+compiled_to = "data/packing/packing.csv"
+upstream_path = "src/main/resources/designdata/Packing.csv"
+vendored_source = "databank/sources/neqsim/Packing.csv"
+source_rows = 28
+compiled_rows = 28
+[[upstreams.files.columns]]
+name = "ID"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "not-a-value: the file's own row number; the compiled table is read by name, so nothing keys on it"
+[[upstreams.files.columns]]
+name = "NAME"
+disposition = "used"
+as = "name"
+unit = "text"
+[[upstreams.files.columns]]
+name = "TYPE"
+disposition = "used"
+as = "type"
+unit = "text"
+[[upstreams.files.columns]]
+name = "material"
+disposition = "used"
+as = "material"
+unit = "text"
+[[upstreams.files.columns]]
+name = "size"
+disposition = "used"
+as = "size_mm"
+unit = "mm"
+[[upstreams.files.columns]]
+name = "surfaceAreaPrVolume"
+disposition = "used"
+as = "surface_area_pr_volume"
+unit = "neqsim-internal"
+reason = "carried with no unit NeqSim states: the table's own figure, in m**2/m**3"
+[[upstreams.files.columns]]
+name = "voidFraction"
+disposition = "used"
+as = "void_fraction"
+unit = "dimensionless"
+[[upstreams.files.columns]]
+name = "PackingFactor"
+disposition = "used"
+as = "packing_factor"
+unit = "neqsim-internal"
+reason = "carried with no unit NeqSim states: the table's own figure, in 1/m"
+[[upstreams.files.columns]]
+name = "Cp"
+disposition = "used"
+as = "cp"
+unit = "neqsim-internal"
+reason = "carried with no unit NeqSim states: the Billet-Schultes liquid constant, which the library's parser derives from this column"
+[[upstreams.files.columns]]
+name = "load"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: `PackingSpecificationLibrary.parseCsvLine` reads fields 1 to 8 and 10, and this is field 9"
+[[upstreams.files.columns]]
+name = "Ch"
+disposition = "used"
+as = "ch"
+unit = "neqsim-internal"
+reason = "carried with no unit NeqSim states: the Billet-Schultes gas constant, which the parser divides by six"
+[[upstreams.files.columns]]
+name = "A"
+disposition = "dropped"
+unit = "neqsim-internal"
+reason = "unread-upstream: `PackingSpecificationLibrary.parseCsvLine` reads no such field, and the value it carries on 21 of the 28 rows is the same zero"
+
 [[upstreams.files]]
 id = "neqsim/PitzerParameters.csv"
 compiled_to = "data/components/PitzerParameters.csv"

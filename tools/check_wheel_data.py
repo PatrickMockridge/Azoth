@@ -70,6 +70,7 @@ REQUIRED_IN_WHEEL: tuple[str, ...] = (
     "azoth/__init__.py",
     "azoth/_core",
     "data/components/",
+    "data/packing/",
     "data/reactions/",
     "data/reactors/",
     "data/fittings/",

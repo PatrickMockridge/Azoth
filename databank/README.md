@@ -15,6 +15,7 @@ databank/sources/          upstream files, whole, at a named revision      EXIST
         v
 data/components/           the files both languages read                   EXISTS
 data/reactors/             GibbsReactor's species database                 EXISTS
+data/packing/              the packing table the hydraulics reads           EXISTS
         |  derive              tools/gen_keycard.py
         v
 databank/keycard.toml      the baseline card: the subset a user overrides  EXISTS
@@ -25,7 +26,7 @@ comes from the compiled files. The card is the **subset a user may override** - 
 cubic's `Tc`, `Pc` and `omega` and the Peng-Robinson `kij` - stated in the format a
 user's card takes, so the library's data and a user's data are one object. It is not
 the source of the compiled files, which carry every column the manifest dispositions;
-`databank/compiled/` does not exist because the compiled files live at `data/`, where <!-- doc-claims-ok: the sentence says this path is absent -->
+`databank/compiled/` does not exist because the compiled files live at `data/`, where
 the two languages read them at fixed paths - Rust embeds them with `include_str!`, and
 `python/src/azoth/_data.py` finds them by walking up from the package.
 
@@ -41,21 +42,21 @@ NeqSim is Apache-2.0; the attribution is in [`NOTICE`](../NOTICE).
 ## `manifest.toml` is the record of what was taken
 
 Every resource file NeqSim ships is declared once, and every column of every one of
-them whose columns are enumerated — 33 files, 1,526 columns — is listed with what was
-done with it and a reason; the other six are vendored whole, three of them because
+them whose columns are enumerated — 34 files, 1,538 columns — is listed with what was
+done with it and a reason; the other four are vendored whole, three of them because
 they are not tabular at all. `tools/check_manifest.py` prints the tally:
 
 ```
-check_manifest: OK (37 vendored file(s), 1526 column(s), 1502 carried of which 1185 read, 0 not-vendored entr(ies))
-  317  carried, nothing reads it yet
-  1090  carried with no unit NeqSim states (neqsim-internal)
+check_manifest: OK (38 vendored file(s), 1538 column(s), 1511 carried of which 1198 read, 0 not-vendored entr(ies))
+  313  carried, nothing reads it yet
+  1094  carried with no unit NeqSim states (neqsim-internal)
   276  not-ported
-   19  not-a-value
+   20  not-a-value
    10  empty-upstream
     1  superseded-by
     7  unreachable-upstream
    14  uncalled-upstream
-   11  unread-upstream
+   13  unread-upstream
 ```
 
 **The porting backlog is "carried, nothing reads it yet" — 317 columns — and it is
