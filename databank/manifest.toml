@@ -449,10 +449,10 @@ reason = "not-ported: the liquid-conductivity `polynom` and Filippov models; Neq
 consumer = "roadmap:P1"
 [[upstreams.files.columns]]
 name = "PARACHOR"
-disposition = "vendored"
+disposition = "used"
 as = "parachor"
 unit = "parachor"
-reason = "not-ported: surface tension; NeqSim's `ParachorSurfaceTension`"
+reason = "read by `eos.parachor_surface_tension`, `eos.parachor_mixture_surface_tension` and the rate-based packed column's segment model, which asks for the interface tension the packing's wetted area is built from. **It was dispositioned `not-ported`, and the rate-based tranche is what made that false**: the two surface-tension ids take it as an input and the segment model is the caller that supplies it, so the column is read rather than carried."
 [[upstreams.files.columns]]
 name = "HEATOFFUSION"
 disposition = "used"

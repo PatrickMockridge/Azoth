@@ -268,9 +268,22 @@ pub fn phase_transport(
         }
     };
 
-    let assembled = effective_diffusion(&d_binary, z)?;
-    let d_effective = assembled.effective_diffusion;
-    warnings.extend(assembled.warnings.iter().cloned());
+    // **A phase that is one substance has no effective diffusivity, and that is not this
+    // id's refusal.** The assembly divides by the *other* components' fractions, so on a
+    // pure phase there is nothing for the one component to diffuse into and
+    // `eos.effective_diffusion` refuses - rightly, for the question *it* asks.
+    // `RateBasedPackedColumnTest`'s own lean solvent is pure water, and NeqSim answers a
+    // **zero** vector there rather than refusing: measured, the capture's absorber row prints
+    // `0.0` for every entry of both phases. So the vector is zeros, and the three properties
+    // that *are* defined - the viscosity, the conductivity and the pair matrix - are reported.
+    let d_effective = match effective_diffusion(&d_binary, z) {
+        Ok(assembled) => {
+            warnings.extend(assembled.warnings.iter().cloned());
+            assembled.effective_diffusion
+        }
+        Err(AzothError::OutOfRange { ref field, .. }) if field == "x" => vec![0.0; count],
+        Err(other) => return Err(other),
+    };
 
     apply_checks(
         spec.derived_checks(),

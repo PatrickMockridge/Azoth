@@ -10,6 +10,7 @@ description = "Unit operations and flowsheets: the process layer on typed, direc
 [dependencies]
 azoth-core.workspace = true
 azoth-eos.workspace = true
+azoth-hydraulics.workspace = true
 azoth-reactions.workspace = true
 azoth-standards.workspace = true
 csv.workspace = true

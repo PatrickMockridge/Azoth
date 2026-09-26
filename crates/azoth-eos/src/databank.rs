@@ -339,6 +339,13 @@ pub struct Entry {
     /// reading it and a model ignoring it are answers about different fluids. 16 of the 348
     /// compiled rows carry it, and they are the n-alkanes from n-hexane up.
     pub wax_former: bool,
+    /// The parachor, in NeqSim's mixed unit `(mN/m)**(1/4) * cm**3/mol`: NeqSim's `PARACHOR`.
+    ///
+    /// It is the input of the two surface-tension ids - the pure Macleod-Sugden form and the
+    /// mixture (Weinaug-Katz) one - and the rate-based packed column's segment model reads it
+    /// for the interface tension the wetted area is built from. The manifest carried the
+    /// column whole and nothing read it until the segment model needed it.
+    pub parachor: f64,
     /// Heat of fusion, in J/mol: NeqSim's `HEATOFFUSION`, read into `Component` for **every**
     /// substance and not only the solids - the wax probe's capture prints methane at
     /// `941.0` J/mol, which is its own.
@@ -471,6 +478,7 @@ impl Entry {
                 // is what NeqSim reads, and zero - which is the table's spelling of
                 // absence - is what makes the calc fall back. Measured on water, the two
                 // give the shift opposite signs.
+                .with_parachor(self.parachor)
                 .with_liquid_conductivity(self.liquid_conductivity)
                 .with_transport_data(
                     self.lennard_jones_diameter,
@@ -1140,6 +1148,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "umrcpa_mc5",
         "hydrateformer",
         "waxformer",
+        "parachor",
         "heatoffusion",
         "triplepointtemperature",
         "cpsolid1",
@@ -1344,6 +1353,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     .and_then(|value| value.trim().parse::<f64>().ok())
                     .is_some_and(|value| value == 1.0),
                 heat_of_fusion: number(&record, index["heatoffusion"], "heatoffusion", row)?,
+                parachor: number(&record, index["parachor"], "parachor", row)?,
                 cp_solid: {
                     let mut fitted = [0.0; 4];
                     for (k, slot) in fitted.iter_mut().enumerate() {
@@ -1714,6 +1724,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 hydrate_guo_finch_b: [[0.0; 2]; 2],
                 hydrate_former: false,
                 wax_former: false,
+                parachor: 0.0,
                 heat_of_fusion: 0.0,
                 triple_point_temperature: 0.0,
                 cp_solid: [0.0; 4],
@@ -1801,6 +1812,7 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             hydrate_guo_finch_b: base.hydrate_guo_finch_b,
             hydrate_former: base.hydrate_former,
             wax_former: base.wax_former,
+            parachor: base.parachor,
             heat_of_fusion: base.heat_of_fusion,
             triple_point_temperature: base.triple_point_temperature,
             cp_solid: base.cp_solid,

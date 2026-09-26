@@ -46,6 +46,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe component_splitter \
 //       > captures/process_component_splitter.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe tray > captures/process_column_tray.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
+//       > captures/process_rate_based_packed_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -175,6 +177,9 @@ public class ProcessProbe {
       case "tray":
         trayRows();
         phFlashRows();
+        break;
+      case "rate_based":
+        rateBasedRows();
         break;
       case "shortcut_column":
         shortcutColumnRows();
@@ -2967,6 +2972,213 @@ public class ProcessProbe {
     System.out.println("recycle_error_composition=" + recycle1.getErrorComposition());
     System.out.println("recycle_error_temperature=" + recycle1.getErrorTemperature());
     System.out.println("recycle_error_pressure=" + recycle1.getErrorPressure());
+    System.out.println();
+  }
+
+  /// **The rate-based column, on two cubics.** `RateBasedPackedColumnTest` runs SRK, and this
+  /// library's process layer resolves PR - so the class's own state is run on both, and the
+  /// pair measures what the cubic moved. The PR rows are the ones the port is held to. The two
+  /// TEG rows are `SystemSrkCPAstatoil` with mixing rule 10, which PR cannot represent, so they
+  /// are evidence for a refusal rather than an oracle for a state.
+  static void rateBasedRows() {
+    rateBasedCo2WaterRow("co2_water_absorber", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false);
+    rateBasedCo2WaterRow("co2_water_absorber_srk", 0.10, 0.0, 6.0, "Pall-Ring-50", false, false);
+    rateBasedCo2WaterRow("co2_water_stripper", 0.0, 0.04, 6.0, "Pall-Ring-50", true, false);
+    rateBasedCo2WaterRow("co2_water_short", 0.10, 0.0, 1.0, "Pall-Ring-50", true, false);
+    rateBasedCo2WaterRow("co2_water_tall", 0.10, 0.0, 8.0, "Pall-Ring-50", true, false);
+    rateBasedCo2WaterRow("co2_water_mellapak", 0.10, 0.0, 6.0, "Mellapak-250Y", true, false);
+    rateBasedCo2WaterRow("heat_transfer_disabled", 0.10, 0.0, 6.0, "Pall-Ring-50", true, true);
+    rateBasedCo2WaterRow("zero_packed_height", 0.10, 0.0, 0.0, "Pall-Ring-50", true, false);
+    rateBasedTegRow("teg_dehydration", 2000.0, 8.0, 5, 5.0);
+    rateBasedTegRow("teg_circulation", 50.0, 12.0, 6, 20.0);
+  }
+
+  /// `configuredColumn`'s own state and settings - the four segments, the 3.0 correction, the
+  /// 1e-9 tolerance and `CO2` as the only transfer component - on the cubic the row names.
+  static void rateBasedCo2WaterRow(String label, double gasCo2, double liquidCo2, double height,
+      String packing, boolean pr, boolean heatOff) {
+    Stream gas = rateFeed("gas in", pr, 313.15, 50.0, 1000.0, new String[] { "methane", "CO2" },
+        new double[] { 1.0 - gasCo2, gasCo2 });
+    Stream liquid = rateFeed("lean liquid", pr, 303.15, 50.0, 2000.0,
+        new String[] { "water", "CO2" }, new double[] { 1.0 - liquidCo2, liquidCo2 });
+    neqsim.process.equipment.distillation.RateBasedPackedColumn column =
+        new neqsim.process.equipment.distillation.RateBasedPackedColumn("rate based column", gas,
+            liquid);
+    column.setColumnDiameter(1.0);
+    column.setPackedHeight(height);
+    column.setNumberOfSegments(4);
+    column.setMaxIterations(20);
+    column.setPackingType(packing);
+    column.setTransferComponents("CO2");
+    column.setMassTransferCorrectionFactor(3.0);
+    column.setConvergenceTolerance(1.0e-9);
+    if (heatOff) {
+      column.setHeatTransferModel(
+          neqsim.process.equipment.distillation.RateBasedPackedColumn.HeatTransferModel.NONE);
+    }
+    column.run();
+    printRateBased(label, column, gas, liquid, packing);
+  }
+
+  /// The class's own TEG contactor states, which are CPA-Statoil and are the refusal's evidence.
+  static void rateBasedTegRow(String label, double tegKgPerHour, double height, int segments,
+      double correction) {
+    SystemInterface wet = new neqsim.thermo.system.SystemSrkCPAstatoil(313.15, 70.0);
+    wet.addComponent("methane", 0.94);
+    wet.addComponent("ethane", 0.04);
+    wet.addComponent("propane", 0.018);
+    wet.addComponent("water", 0.002);
+    wet.createDatabase(true);
+    wet.setMixingRule(10);
+    Stream wetGas = new Stream("wet natural gas", wet);
+    wetGas.setFlowRate(1000.0, "kg/hr");
+    wetGas.run();
+
+    SystemInterface teg = new neqsim.thermo.system.SystemSrkCPAstatoil(303.15, 70.0);
+    teg.addComponent("TEG", 0.9999);
+    teg.addComponent("water", 0.0001);
+    teg.createDatabase(true);
+    teg.setMixingRule(10);
+    Stream leanTeg = new Stream("lean TEG", teg);
+    leanTeg.setFlowRate(tegKgPerHour, "kg/hr");
+    leanTeg.run();
+
+    neqsim.process.equipment.distillation.RateBasedPackedColumn column =
+        new neqsim.process.equipment.distillation.RateBasedPackedColumn("TEG contactor", wetGas,
+            leanTeg);
+    column.setColumnDiameter(1.2);
+    column.setPackedHeight(height);
+    column.setNumberOfSegments(segments);
+    column.setMaxIterations(25);
+    column.setPackingType("Mellapak-250Y");
+    column.setTransferComponents("water");
+    column.setMassTransferCorrectionFactor(correction);
+    column.setConvergenceTolerance(1.0e-9);
+    column.run();
+    printRateBased(label, column, wetGas, leanTeg, "Mellapak-250Y");
+  }
+
+  /// **What `averageDiffusivity` and `binaryDiffusivity` actually read**, on the state the class
+  /// flashes: the phase's effective diffusion vector and its binary matrix. The segment model
+  /// falls back to `DEFAULT_GAS_DIFFUSIVITY`/`DEFAULT_LIQUID_DIFFUSIVITY` when the effective
+  /// vector carries nothing positive, so whether the class computes a real one decides whether
+  /// the whole transport runs on the correlations or on the fallbacks.
+  static void printDiffusion(String port, StreamInterface stream) {
+    SystemInterface fluid = stream.getThermoSystem().clone();
+    try {
+      new neqsim.thermodynamicoperations.ThermodynamicOperations(fluid).TPflash();
+    } catch (RuntimeException ex) {
+      fluid.init(3);
+    }
+    fluid.initProperties();
+    for (int p = 0; p < fluid.getNumberOfPhases(); p++) {
+      StringBuilder effective = new StringBuilder(port + "_phase" + p + "_effective_diffusivity=");
+      for (int i = 0; i < fluid.getPhase(p).getNumberOfComponents(); i++) {
+        effective.append(fluid.getPhase(p).getPhysicalProperties().getEffectiveDiffusionCoefficient(i))
+            .append(" ");
+      }
+      System.out.println(effective.toString().trim());
+      for (int i = 0; i < fluid.getPhase(p).getNumberOfComponents(); i++) {
+        for (int j = 0; j < fluid.getPhase(p).getNumberOfComponents(); j++) {
+          if (i != j) {
+            System.out.println(port + "_phase" + p + "_diffusivity_" + i + "_" + j + "="
+                + fluid.getPhase(p).getPhysicalProperties().getDiffusionCoefficient(i, j));
+          }
+        }
+      }
+    }
+  }
+
+  /// A feed on the cubic a rate-based row names: SRK, which the class's own tests use, or the PR
+  /// the probe's other feeds use.
+  static Stream rateFeed(String name, boolean pr, double temperatureK, double pressureBara,
+      double kgPerHour, String[] names, double[] z) {
+    SystemInterface fluid = pr ? new SystemPrEos(temperatureK, pressureBara)
+        : new neqsim.thermo.system.SystemSrkEos(temperatureK, pressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream stream = new Stream(name, fluid);
+    stream.setFlowRate(kgPerHour, "kg/hr");
+    stream.run();
+    return stream;
+  }
+
+  /// One rate-based row: the configuration, the four ports, the convergence scalar and the
+  /// per-segment profile the port's layer diff reads.
+  static void printRateBased(String label,
+      neqsim.process.equipment.distillation.RateBasedPackedColumn column, Stream gasIn,
+      Stream liquidIn, String packing) {
+    System.out.println(label);
+    System.out.println("packing=" + packing);
+    System.out.println("column_diameter_m=" + column.getColumnDiameter());
+    System.out.println("packed_height_m=" + column.getPackedHeight());
+    System.out.println("number_of_segments=" + column.getNumberOfSegments());
+    System.out.println("max_iterations=" + column.getMaxIterations());
+    System.out.println("convergence_tolerance_mol_per_s=" + column.getConvergenceTolerance());
+    System.out.println("mass_transfer_correction_factor=" + column.getMassTransferCorrectionFactor());
+    System.out.println("mass_transfer_correlation=" + column.getMassTransferCorrelation().name());
+    System.out.println("film_model=" + column.getFilmModel().name());
+    System.out.println("heat_transfer_model=" + column.getHeatTransferModel().name());
+    System.out.println("segment_solver=" + column.getSegmentSolver().name());
+    System.out.println("column_solver=" + column.getColumnSolver().name());
+    print("gas_in", gasIn);
+    print("liquid_in", liquidIn);
+    printDiffusion("gas_in", gasIn);
+    printDiffusion("liquid_in", liquidIn);
+    print("gas_out", column.getGasOutStream());
+    print("liquid_out", column.getLiquidOutStream());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("convergence_residual_mol_per_s=" + column.getLastConvergenceResidual());
+    System.out.println("total_absolute_molar_transfer_mol_per_s="
+        + column.getTotalAbsoluteMolarTransfer());
+    for (java.util.Map.Entry<String, Double> entry : column.getComponentTransferTotals().entrySet()) {
+      System.out.println("transfer_total_" + entry.getKey() + "_mol_per_s=" + entry.getValue());
+    }
+    System.out.println("segment_count=" + column.getSegmentResults().size());
+    for (neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentResult segment : column
+        .getSegmentResults()) {
+      String prefix = "segment" + segment.getSegmentNumber() + "_";
+      System.out.println(prefix + "height_from_bottom_m=" + segment.getHeightFromBottom());
+      System.out.println(prefix + "gas_temperature_K=" + segment.getGasTemperatureK());
+      System.out.println(prefix + "liquid_temperature_K=" + segment.getLiquidTemperatureK());
+      System.out.println(prefix + "gas_pressure_bara=" + segment.getGasPressureBar());
+      System.out.println(prefix + "liquid_pressure_bara=" + segment.getLiquidPressureBar());
+      System.out.println(prefix + "gas_molar_flow_mol_per_s=" + segment.getGasMolarFlow());
+      System.out.println(prefix + "liquid_molar_flow_mol_per_s=" + segment.getLiquidMolarFlow());
+      System.out.println(prefix + "gas_density_kg_per_m3=" + segment.getGasDensity());
+      System.out.println(prefix + "liquid_density_kg_per_m3=" + segment.getLiquidDensity());
+      System.out.println(prefix + "gas_viscosity_Pa_s=" + segment.getGasViscosity());
+      System.out.println(prefix + "liquid_viscosity_Pa_s=" + segment.getLiquidViscosity());
+      System.out.println(prefix + "gas_diffusivity_m2_per_s=" + segment.getGasDiffusivity());
+      System.out.println(prefix + "liquid_diffusivity_m2_per_s=" + segment.getLiquidDiffusivity());
+      System.out.println(prefix + "wetted_area_m2_per_m3=" + segment.getWettedArea());
+      System.out.println(prefix + "kga=" + segment.getKGa());
+      System.out.println(prefix + "kla=" + segment.getKLa());
+      System.out.println(prefix + "gas_heat_transfer_coefficient_W_per_m3_K="
+          + segment.getGasHeatTransferCoefficient());
+      System.out.println(prefix + "liquid_heat_transfer_coefficient_W_per_m3_K="
+          + segment.getLiquidHeatTransferCoefficient());
+      System.out.println(prefix + "overall_heat_transfer_coefficient_W_per_m3_K="
+          + segment.getOverallHeatTransferCoefficient());
+      System.out.println(prefix + "interface_temperature_K=" + segment.getInterfaceTemperatureK());
+      System.out.println(prefix + "heat_transfer_rate_W=" + segment.getHeatTransferRateW());
+      System.out.println(prefix + "pressure_drop_per_meter_Pa=" + segment.getPressureDropPerMeter());
+      System.out.println(prefix + "percent_flood=" + segment.getPercentFlood());
+      System.out.println(prefix + "net_molar_transfer_mol_per_s=" + segment.getNetMolarTransfer());
+      System.out.println(
+          prefix + "enthalpy_balance_residual_W=" + segment.getEnthalpyBalanceResidualW());
+      for (java.util.Map.Entry<String, Double> entry : segment.getInterfaceEquilibriumRatios()
+          .entrySet()) {
+        System.out.println(
+            prefix + "interface_ratio_" + entry.getKey() + "=" + entry.getValue());
+      }
+      for (java.util.Map.Entry<String, Double> entry : segment.getComponentMoleTransfer()
+          .entrySet()) {
+        System.out.println(prefix + "transfer_" + entry.getKey() + "_mol_per_s=" + entry.getValue());
+      }
+    }
     System.out.println();
   }
 

@@ -137,6 +137,10 @@ pub struct Component {
     /// is every caller-supplied component and every correlation that needs none.
     pub alpha_params: Vec<f64>,
     /// The four liquid-viscosity parameters `LIQVISC1`-`LIQVISC4`, whose meaning is
+    /// The parachor, in NeqSim's mixed unit `(mN/m)**(1/4) * cm**3/mol`: `PARACHOR`. Read by
+    /// the two surface-tension ids and by the rate-based packed column's segment model, which
+    /// asks for the interface tension the packing's wetted area is built from.
+    pub parachor: f64,
     /// The three liquid-conductivity coefficients `LIQCOND1`-`LIQCOND3`, whose polynomial is
     /// `c0 + c1 T + c2 T^2`. Read by `eos.liquid_conductivity_polynom`.
     pub liquid_conductivity: [f64; 3],
@@ -241,6 +245,7 @@ impl Component {
             liqvisc: [0.0; 4],
             liqvisc_model: 0,
             liquid_conductivity: [0.0; 3],
+            parachor: 0.0,
             lennard_jones_diameter: 0.0,
             lennard_jones_energy: 0.0,
             normal_liquid_density: 0.0,
@@ -344,6 +349,13 @@ impl Component {
     #[must_use]
     pub fn with_volume_shift(mut self, volume_shift: f64) -> Self {
         self.volume_shift = volume_shift;
+        self
+    }
+
+    /// The parachor, from the databank's own column.
+    #[must_use]
+    pub fn with_parachor(mut self, parachor: f64) -> Self {
+        self.parachor = parachor;
         self
     }
 

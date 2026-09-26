@@ -68,6 +68,17 @@ packing geometry - so this probe states them and prints both sides.
 java -cp .:neqsim-f0c7436.jar PackingProbe > captures/packing_probe.tsv
 ```
 
+**`ProcessProbe rate_based` runs every state on two cubics.** `RateBasedPackedColumnTest` uses
+SRK and this library's process layer resolves PR, so each state is run on both and the pair
+measures what the cubic moved; the PR rows are the ones the port is held to. `teg_dehydration`
+and `teg_circulation` are `SystemSrkCPAstatoil` with mixing rule 10, which PR cannot
+represent, so they are evidence for a refusal rather than an oracle for a state.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
+  > captures/process_rate_based_packed_column.tsv
+```
+
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
 output is what lets `tools/gen_neqsim_cases.py --check` be a build gate: it reads a capture

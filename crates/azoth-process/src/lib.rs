@@ -24,6 +24,7 @@ pub mod order;
 pub mod palette_gen;
 pub mod reactor;
 pub mod recycle;
+pub mod segment;
 pub mod stream;
 pub mod unit_op;
 
