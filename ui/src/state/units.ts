@@ -88,7 +88,21 @@ export function unitsOf(catalogue: Catalogue | null, wanted: string | null): Uni
 }
 
 /**
- * The unit one quantity is read in, and the factor its SI magnitude is divided by.
+ * The unit one quantity is read in, and the conversion its SI magnitude is put through.
+ *
+ * **A dimension is not a kind, and there is one place that matters.** A temperature *interval* -
+ * a wall's `dT`, a convergence tolerance in kelvin - has the same exponents as a temperature and
+ * the same vocabulary unit, so nothing in the catalogue can tell the two apart and this will
+ * convert either as an absolute scale. uom carries the distinction in the *type*
+ * (`TemperatureInterval` against `ThermodynamicTemperature`) and the vocabulary cannot, because
+ * two dimension ids may not share an exponent tuple.
+ *
+ * **Measured, and why nothing is wrong today**: every palette parameter whose dimension is a
+ * temperature is an absolute one - the ten outlet, condenser, reboiler, coolant and reactor
+ * temperatures - and the tear sheet's `temperature_tolerance` is a *residual norm* rather than a
+ * kelvin, so it carries no unit and is not converted. The day a model declares an approach
+ * temperature or a `dT_min`, the wire has to say which of the two a quantity is before this can
+ * convert it, and the mark would come from the same place `interval=True` does in `to_si`.
  *
  * `null` factors and unknown units return the quantity's own unit with a factor of one, which
  * makes every absence the same absence: what the library wrote, unchanged.
