@@ -1,0 +1,17 @@
+/*
+ * The editor's stylesheet, in the order the layers depend on each other.
+ *
+ * `tokens.css` first because everything else reads it, `base.css` next because it is what a bare
+ * element gets, and then the three surfaces - chrome, canvas, forms - which do not know about each
+ * other.
+ *
+ * **The split is the one that keeps a value out of a rule.** A colour, a duration, a radius or a
+ * size written into `chrome.css` is a value `[data-theme="light"]` cannot reach, and
+ * `test/tokens.test.ts` fails on one.
+ */
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./chrome.css";
+@import "./canvas.css";
+@import "./forms.css";

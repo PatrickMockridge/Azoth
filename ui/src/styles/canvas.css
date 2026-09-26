@@ -1,0 +1,127 @@
+/*
+ * The PFD: the field, the node plates, the stream pills, the handles and the edges.
+ *
+ * **Nothing here transitions a node's position.** A transition on `.react-flow__node`'s
+ * `transform` makes a drag lag the cursor, and it would not even fail a test: `test/drag.ts` reads
+ * `style.transform`, which a CSS transition does not change - so the drag test would stay green
+ * while the app felt broken.
+ */
+
+.canvas {
+  min-height: 0;
+  background: var(--bg-canvas);
+}
+
+.unit {
+  min-width: 130px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r4);
+  background: var(--bg-panel);
+  box-shadow: var(--e-node);
+}
+
+.unit.selected {
+  border-color: var(--accent);
+}
+
+.unit.bad {
+  border-color: var(--error);
+}
+
+.unit header {
+  padding: var(--s3) var(--s5);
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.unit .id {
+  padding: var(--s1) var(--s5) var(--s4);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.unit .readout {
+  padding: 0 var(--s5) var(--s4);
+  font-size: var(--fs-xs);
+  color: var(--ok);
+}
+
+.stream {
+  padding: var(--s3) var(--s6);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--bg-panel);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.stream.selected {
+  border-color: var(--accent);
+}
+
+.stream.bad {
+  border-color: var(--error);
+}
+
+/*
+ * A glyph is drawn inside the plate, and it must not eat the drag.
+ *
+ * `pointer-events: none` on the drawing with the handles on top of it is what keeps `d3-drag`'s
+ * `mousedown` reaching the node - and the handles mount with the node rather than with a tab,
+ * because xyflow measures their rectangles to place an edge's endpoints and a handle that mounts
+ * late leaves the edge drawn to the origin.
+ */
+.glyph {
+  display: block;
+  pointer-events: none;
+}
+
+.glyph .body {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph .detail {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph .accent {
+  fill: var(--text-dim);
+  stroke: none;
+}
+
+.glyph.selected .body {
+  stroke: var(--accent);
+}
+
+.glyph.selected .accent {
+  fill: var(--accent);
+}
+
+.react-flow__handle {
+  width: 7px;
+  height: 7px;
+  background: var(--text-dim);
+  border: 0;
+  pointer-events: auto;
+}
+
+.react-flow__edge-text {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.react-flow__edge-textbg {
+  fill: var(--bg-panel);
+}
+
+.react-flow__controls-button {
+  border-bottom: 1px solid var(--line);
+}

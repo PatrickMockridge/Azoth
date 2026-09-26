@@ -1,0 +1,74 @@
+/*
+ * One parameter on a form: its name, its unit, its control, its bounds and its hint.
+ *
+ * **A field's well is darker than the panel it sits on**, which is the industrial convention and
+ * the opposite of a consumer form's raised input: the panel is the surface and the well is the
+ * hole a value goes in.
+ */
+
+.field {
+  padding: var(--s3) var(--s5);
+}
+
+.field .head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.field .head .name {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.field .head .unit {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.field .required {
+  color: var(--warn);
+}
+
+.field .entry {
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  margin-top: var(--s2);
+  background: var(--bg-raised);
+}
+
+.field input,
+.field select {
+  width: 100%;
+  height: var(--ctl-h);
+  margin-top: var(--s2);
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r2);
+  color: var(--text);
+  background: var(--bg-input);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-variant-numeric: var(--tabnum);
+}
+
+/* A value out of the model's declared range, marked where the value is rather than in a list. */
+.field input.violating {
+  border-color: var(--error);
+}
+
+.field .hint {
+  margin-top: var(--s1);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.field .hint.bad {
+  color: var(--error);
+}
+
+.field .hint.warn {
+  color: var(--warn);
+}

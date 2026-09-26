@@ -1,0 +1,72 @@
+/*
+ * The reset, the page, and the two things every control inherits: the focus ring and the
+ * scrollbar.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font: var(--fs-md) / var(--lh-body) var(--font-ui);
+  color: var(--text);
+  background: var(--bg-app);
+}
+
+/*
+ * A 2px ring, on `:focus-visible` only.
+ *
+ * The rule this replaces rang on **every** click (`:focus`, 1px) - which trains a user to ignore
+ * it - and 1px is under the minimum a ring is legible at on a dense surface.
+ */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* Numbers are tabular everywhere they are set, and the face is the mono one. */
+.num,
+.readout,
+.pill,
+.chip,
+.grid td,
+.grid th {
+  font-family: var(--font-mono);
+  font-variant-numeric: var(--tabnum);
+}
+
+/* A thin scrollbar, because a docked panel's is part of the chrome and not of the content. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--r-pill);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

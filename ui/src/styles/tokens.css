@@ -1,0 +1,201 @@
+/*
+ * The editor's tokens: every value, in one place.
+ *
+ * **`:root` is the dark theme, so dark is the default with no attribute and no script.** A light
+ * theme is `[data-theme="light"]`, which is the same list of names with different values - and the
+ * two lists are held equal by `test/tokens.test.ts`, because a token that exists in one and not
+ * the other resolves to nothing rather than failing.
+ *
+ * **Elevation is lightness, not shadow.** Industrial chrome is flat panels separated by hairlines;
+ * a shadow is reserved for what actually floats over something (a menu, a dialog, a node plate).
+ *
+ * **Contrast is measured, not asserted.** Against `--bg-panel` the ratios are: `--text` 14.7:1,
+ * `--text-dim` 6.6:1, `--text-faint` 5.0:1, `--accent` 6.2:1, `--ok` 7.6:1, `--warn` 8.2:1,
+ * `--error` 5.9:1 - all past 4.5:1 for body text. One constraint falls out and it is the kind of
+ * thing a later hover style breaks: on `--bg-raised`, `--text-faint` measures 4.22:1, so
+ * **`--text-faint` is never used on `--bg-raised`, `--bg-hover` or `--bg-selected`**, which take
+ * `--text-dim` (5.6:1 there).
+ */
+
+:root {
+  /* surfaces */
+  --bg-app: #0b0e13;
+  --bg-canvas: #0e1218;
+  --bg-panel: #141922;
+  --bg-panel-2: #1a212b;
+  --bg-raised: #202836;
+  --bg-hover: #232d3b;
+  --bg-input: #0a0d12;
+  --bg-selected: #1d2a3d;
+
+  /* lines */
+  --line: #262e3a;
+  --line-strong: #333d4d;
+  --grid-minor: #1b2230;
+
+  /* text */
+  --text: #e6ebf2;
+  --text-strong: #f4f7fb;
+  --text-dim: #93a0b1;
+  --text-faint: #7d8a9c;
+
+  /* accent, status, and the one hue that is neither */
+  --accent: #4c9aff;
+  --accent-hi: #6cb0ff;
+  --accent-ink: #06101f;
+  --accent-tint: color-mix(in srgb, var(--accent) 14%, transparent);
+  --ok: #3fbf87;
+  --warn: #e8a33d;
+  --error: #ff5f56;
+  --ok-tint: color-mix(in srgb, var(--ok) 40%, transparent);
+  --warn-tint: color-mix(in srgb, var(--warn) 40%, transparent);
+  --error-tint: color-mix(in srgb, var(--error) 40%, transparent);
+  --focus: var(--accent-hi);
+
+  /* a connection is one thing and a tear is another */
+  --edge: var(--text-dim);
+  --edge-recycle: #b98cf0;
+
+  /* elevation */
+  --e-highlight: rgb(255 255 255 / 4%);
+  --e2: 0 1px 2px rgb(0 0 0 / 45%);
+  --e3: 0 4px 12px rgb(0 0 0 / 50%);
+  --e-node: 0 2px 6px rgb(0 0 0 / 55%);
+
+  /* type */
+  --font-ui: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  --fs-2xs: 10px;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --lh-tight: 1.25;
+  --lh-body: 1.45;
+  --ls-label: 0.07em;
+  /* Tabular figures and a slashed zero: a column of pressures must not shimmy as its digits
+     change, and `sep1.liquid` sits in the same face as the numbers beside it. */
+  --tabnum: "tnum" 1, "zero" 1;
+
+  /* space, on a 2px base - HYSYS density is the point */
+  --s1: 2px;
+  --s2: 4px;
+  --s3: 6px;
+  --s4: 8px;
+  --s5: 10px;
+  --s6: 12px;
+  --s7: 16px;
+  --s8: 20px;
+  --s9: 24px;
+  --s10: 32px;
+
+  /* density */
+  --row-h: 22px;
+  --head-h: 26px;
+  --ctl-h: 24px;
+  --tab-h: 28px;
+
+  /* radii: tight, because a process simulator is a tool and not a phone */
+  --r1: 2px;
+  --r2: 3px;
+  --r3: 4px;
+  --r4: 6px;
+  --r-pill: 999px;
+
+  /* motion */
+  --t-fast: 90ms;
+  --t-mid: 140ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="light"] {
+  --bg-app: #e8ecf1;
+  --bg-canvas: #eef1f5;
+  --bg-panel: #f4f6f9;
+  --bg-panel-2: #eaedf2;
+  --bg-raised: #ffffff;
+  --bg-hover: #e4e9f0;
+  --bg-input: #ffffff;
+  --bg-selected: #dbe7f8;
+
+  --line: #d7dde5;
+  --line-strong: #bcc6d3;
+  --grid-minor: #d3dae3;
+
+  --text: #1a2029;
+  --text-strong: #0b0f14;
+  --text-dim: #56616f;
+  --text-faint: #6d7887;
+
+  --accent: #1f5fd0;
+  --accent-hi: #17489c;
+  --accent-ink: #ffffff;
+  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  --ok: #1d7f56;
+  --warn: #8a5a00;
+  --error: #c1332a;
+  --focus: var(--accent);
+
+  --edge: #6d7887;
+  --edge-recycle: #6b46a8;
+
+  --e-highlight: rgb(255 255 255 / 70%);
+  --e2: 0 1px 2px rgb(15 23 42 / 12%);
+  --e3: 0 4px 12px rgb(15 23 42 / 16%);
+  --e-node: 0 2px 6px rgb(15 23 42 / 18%);
+}
+
+/*
+ * xyflow's own variables, bridged rather than overridden.
+ *
+ * The canvas therefore follows `data-theme` from this one place, and xyflow's defaults never show
+ * through - which is why `.react-flow.dark` is not used at all: one theme switch is enough.
+ */
+.react-flow {
+  --xy-background-color: var(--bg-canvas);
+  --xy-background-pattern-color: var(--grid-minor);
+  --xy-edge-stroke-default: var(--edge);
+  --xy-edge-stroke-width-default: 1.2;
+  --xy-edge-stroke-selected-default: var(--accent);
+  --xy-connectionline-stroke-default: var(--accent);
+  --xy-handle-background-color-default: var(--text-dim);
+  --xy-handle-border-color-default: var(--bg-panel);
+  --xy-selection-background-color-default: var(--accent-tint);
+  --xy-selection-border-default: 1px dashed var(--accent);
+  --xy-edge-label-background-color-default: var(--bg-panel);
+  --xy-edge-label-color-default: var(--text);
+  --xy-controls-button-background-color-default: var(--bg-raised);
+  --xy-controls-button-background-color-hover-default: var(--bg-hover);
+  --xy-controls-button-color-default: var(--text);
+  --xy-controls-button-border-color-default: var(--line);
+}
+
+/*
+ * A tear is not a connection, and it is drawn as its own kind.
+ *
+ * xyflow spreads an edge's `domAttributes` onto the edge's `g`, so `data-kind` is where a document
+ * fact becomes a selector - and the alternative, xyflow's own `animated`, is a bare class
+ * (`.react-flow__edge.animated`) that says nothing about *why* the edge moves.
+ */
+.react-flow__edge[data-kind="recycle"] .react-flow__edge-path {
+  stroke: var(--edge-recycle);
+  stroke-dasharray: 6 3;
+}
+
+/*
+ * Reduced motion zeroes the durations rather than each rule, which is why a duration written as a
+ * literal anywhere else would escape this - the test beside this file forbids one.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-mid: 0ms;
+  }
+
+  .react-flow__edge.animated path,
+  .react-flow__edge.animated .react-flow__edge-interaction {
+    animation: none;
+  }
+}
