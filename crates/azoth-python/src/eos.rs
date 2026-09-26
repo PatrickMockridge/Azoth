@@ -3658,6 +3658,35 @@ pub fn solid_fugacity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A phase's transport properties, by NeqSim's phase-type dispatch.
+///
+/// **The names cross verbatim and this side resolves them**, the shape the process bindings
+/// use: the dispatch reads every component parameter its composed correlations need - the
+/// Lennard-Jones pair, the LIQVISC set, the LIQCOND coefficients, the densities - and all of
+/// them are on the resolved mixture's own components.
+#[pyfunction]
+#[pyo3(signature = (components, phase, T, P, z))]
+#[pyo3(text_signature = "(components, phase, T, P, z)")]
+#[allow(non_snake_case)] // `T` and `P` are the state's symbols
+pub fn phase_transport(
+    py: Python<'_>,
+    components: Vec<String>,
+    phase: &str,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::results::PyPhaseTransportResult> {
+    let phase: azoth_eos::phase_transport::PhaseKind = phase
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    let (mixture, ideal_gas) = azoth_eos::databank::mixture_of(&names, azoth_eos::Cubic::Pr, None)
+        .map_err(|e| to_pyerr(py, e))?;
+    azoth_eos::phase_transport(&mixture, &ideal_gas, phase, kelvins(T), pascals(P), &z)
+        .map(|r| crate::results::PyPhaseTransportResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// A liquid's thermal conductivity, from the LIQCOND polynomials.
 #[pyfunction]
 #[pyo3(signature = (liquid_conductivity, molar_mass, z, T))]

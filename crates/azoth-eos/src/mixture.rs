@@ -140,6 +140,18 @@ pub struct Component {
     /// The three liquid-conductivity coefficients `LIQCOND1`-`LIQCOND3`, whose polynomial is
     /// `c0 + c1 T + c2 T^2`. Read by `eos.liquid_conductivity_polynom`.
     pub liquid_conductivity: [f64; 3],
+    /// The Lennard-Jones collision diameter, in angstrom, and the energy parameter over
+    /// Boltzmann's constant, in kelvin. Read by `eos.phase_transport`'s gas branch, which
+    /// combines them into a pair's before `eos.chapman_enskog_diffusivity`.
+    pub lennard_jones_diameter: f64,
+    /// See [`Self::lennard_jones_diameter`].
+    pub lennard_jones_energy: f64,
+    /// The normal liquid density, in kg/m**3, and the critical volume, in m**3/mol. Read by
+    /// `eos.phase_transport`'s liquid branch, which turns them into the molar volume at the
+    /// normal boiling point the diffusivity correlations take.
+    pub normal_liquid_density: f64,
+    /// See [`Self::normal_liquid_density`].
+    pub critical_volume: Option<f64>,
     /// [`Self::liqvisc_model`]. Read by `eos.aqueous_viscosity`; a component built from
     /// critical constants alone carries zeros and a model of zero, which that model reads as
     /// NeqSim's own default branch.
@@ -229,6 +241,10 @@ impl Component {
             liqvisc: [0.0; 4],
             liqvisc_model: 0,
             liquid_conductivity: [0.0; 3],
+            lennard_jones_diameter: 0.0,
+            lennard_jones_energy: 0.0,
+            normal_liquid_density: 0.0,
+            critical_volume: None,
             volume_shift: 0.0,
             wax_former: false,
             class: String::new(),
@@ -336,6 +352,22 @@ impl Component {
     #[must_use]
     pub fn with_liquid_conductivity(mut self, conductivity: [f64; 3]) -> Self {
         self.liquid_conductivity = conductivity;
+        self
+    }
+
+    /// The Lennard-Jones pair data and the two densities, from the databank's own columns.
+    #[must_use]
+    pub fn with_transport_data(
+        mut self,
+        lennard_jones_diameter: f64,
+        lennard_jones_energy: f64,
+        normal_liquid_density: f64,
+        critical_volume: Option<f64>,
+    ) -> Self {
+        self.lennard_jones_diameter = lennard_jones_diameter;
+        self.lennard_jones_energy = lennard_jones_energy;
+        self.normal_liquid_density = normal_liquid_density;
+        self.critical_volume = critical_volume;
         self
     }
 

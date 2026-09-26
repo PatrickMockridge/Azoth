@@ -1,0 +1,79 @@
+model = "eos.phase_transport"
+[[cases]]
+id = "methane_nitrogen_298k_1atm_gas"
+tolerance = 1e-4
+source = "The capture's `methane_nitrogen_298k_1atm` row, its **gas** phase: NeqSim's `PhysicalProperties` for that phase kind, whose model classes the same row prints. The viscosity and the conductivity are its own numbers, and the model's own test holds the matrix to them; **the effective vector is not stated here** because the class leaves it at zero on a liquid - its `SiddiqiLucasMethod` never computes one - and `eos.effective_diffusion` is what the port assembles instead. See the model's assumptions. **The tolerance is the PFCT conductivity's own band** - the port's `eos.thermal_conductivity` case is stated at `1e-5` and this state measures `5.7e-5`, because the correlation's reference methane flash is a solve of its own - and the viscosity and the matrix agree to `1e-9` well inside it.\n"
+[cases.inputs]
+components = ["methane", "nitrogen"]
+phase = "gas"
+T = 298.15
+P = 101325.0
+z = [0.5, 0.5]
+[cases.expected]
+mu = 1.4506127676908967e-05
+k = 0.029958794899910723
+[[cases]]
+id = "methane_co2_313k_50bar_gas"
+tolerance = 1e-4
+source = "The capture's `methane_co2_313k_50bar` row, its **gas** phase: NeqSim's `PhysicalProperties` for that phase kind, whose model classes the same row prints. The viscosity and the conductivity are its own numbers, and the model's own test holds the matrix to them; **the effective vector is not stated here** because the class leaves it at zero on a liquid - its `SiddiqiLucasMethod` never computes one - and `eos.effective_diffusion` is what the port assembles instead. See the model's assumptions. **The tolerance is the PFCT conductivity's own band** - the port's `eos.thermal_conductivity` case is stated at `1e-5` and this state measures `5.7e-5`, because the correlation's reference methane flash is a solve of its own - and the viscosity and the matrix agree to `1e-9` well inside it.\n"
+[cases.inputs]
+components = ["methane", "CO2"]
+phase = "gas"
+T = 313.15
+P = 5000000.0
+z = [0.5, 0.5]
+[cases.expected]
+mu = 1.6159655797683304e-05
+k = 0.030071678065251736
+[[cases]]
+id = "methane_nbutane_300k_20bar_gas"
+tolerance = 1e-4
+source = "The capture's `methane_nbutane_300k_20bar` row, its **gas** phase: NeqSim's `PhysicalProperties` for that phase kind, whose model classes the same row prints. The viscosity and the conductivity are its own numbers, and the model's own test holds the matrix to them; **the effective vector is not stated here** because the class leaves it at zero on a liquid - its `SiddiqiLucasMethod` never computes one - and `eos.effective_diffusion` is what the port assembles instead. See the model's assumptions. **The tolerance is the PFCT conductivity's own band** - the port's `eos.thermal_conductivity` case is stated at `1e-5` and this state measures `5.7e-5`, because the correlation's reference methane flash is a solve of its own - and the viscosity and the matrix agree to `1e-9` well inside it.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+phase = "gas"
+T = 300.0
+P = 2000000.0
+z = [0.8356249351028912, 0.1643750648971088]
+[cases.expected]
+mu = 1.1173254776369514e-05
+k = 0.032654729853716064
+[[cases]]
+id = "methane_nbutane_300k_20bar_oil"
+tolerance = 1e-4
+source = "The capture's `methane_nbutane_300k_20bar` row, its **oil** phase: NeqSim's `PhysicalProperties` for that phase kind, whose model classes the same row prints. The viscosity and the conductivity are its own numbers, and the model's own test holds the matrix to them; **the effective vector is not stated here** because the class leaves it at zero on a liquid - its `SiddiqiLucasMethod` never computes one - and `eos.effective_diffusion` is what the port assembles instead. See the model's assumptions. **The tolerance is the PFCT conductivity's own band** - the port's `eos.thermal_conductivity` case is stated at `1e-5` and this state measures `5.7e-5`, because the correlation's reference methane flash is a solve of its own - and the viscosity and the matrix agree to `1e-9` well inside it.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+phase = "oil"
+T = 300.0
+P = 2000000.0
+z = [0.09542082642782022, 0.9045791735721797]
+[cases.expected]
+mu = 0.00013466360688772563
+k = 0.09534463941597507
+[[cases]]
+id = "co2_water_313k_50bar_gas"
+tolerance = 1e-4
+source = "The capture's `co2_water_313k_50bar` row, its **gas** phase: NeqSim's `PhysicalProperties` for that phase kind, whose model classes the same row prints. The viscosity and the conductivity are its own numbers, and the model's own test holds the matrix to them; **the effective vector is not stated here** because the class leaves it at zero on a liquid - its `SiddiqiLucasMethod` never computes one - and `eos.effective_diffusion` is what the port assembles instead. See the model's assumptions. **The tolerance is the PFCT conductivity's own band** - the port's `eos.thermal_conductivity` case is stated at `1e-5` and this state measures `5.7e-5`, because the correlation's reference methane flash is a solve of its own - and the viscosity and the matrix agree to `1e-9` well inside it.\n"
+[cases.inputs]
+components = ["CO2", "water"]
+phase = "gas"
+T = 313.15
+P = 5000000.0
+z = [0.9978562046113857, 0.002143795388614308]
+[cases.expected]
+mu = 1.8462596972222117e-05
+k = 0.024804749452710006
+[[cases]]
+id = "co2_water_313k_50bar_aqueous"
+tolerance = 1e-12
+source = "The capture's `co2_water_313k_50bar` row, its **aqueous** phase: NeqSim's `PhysicalProperties` for that phase kind, whose model classes the same row prints. The viscosity and the conductivity are its own numbers, and the model's own test holds the matrix to them; **the effective vector is not stated here** because the class leaves it at zero on a liquid - its `SiddiqiLucasMethod` never computes one - and `eos.effective_diffusion` is what the port assembles instead. See the model's assumptions.\n"
+[cases.inputs]
+components = ["CO2", "water"]
+phase = "aqueous"
+T = 313.15
+P = 5000000.0
+z = [0.0006691762234084198, 0.9993308237765915]
+[cases.expected]
+mu = 0.0006526078179332641
+k = 0.6344057039895419

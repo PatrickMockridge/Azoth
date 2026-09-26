@@ -411,6 +411,19 @@ pub struct Entry {
     /// fitted `furstParams` - and then *overwrites* the diameter with the value derived
     /// back out of that covolume. So a neutral keeps this number and an ion does not.
     pub lennard_jones_diameter: f64,
+    /// `LJEPS`, the Lennard-Jones energy parameter over Boltzmann's constant, in kelvin.
+    ///
+    /// Read by `eos.phase_transport`, which combines two components' values into a pair's for
+    /// the Chapman-Enskog diffusivity. `LJDIAMETER` above is the other half of that pair, and
+    /// it is read by the Fürst electrolyte as well - which is why the two are not one field.
+    pub lennard_jones_energy: f64,
+    /// `LIQDENS`, the normal liquid density in g/cm**3, times 1000.
+    ///
+    /// **Zero on most rows**, which is how the table spells "not given": `getNormalLiquidDensity`
+    /// then estimates it from the critical volume, and
+    /// [`normal_liquid_density`] is that estimate. The liquid diffusivity's molar volume at the
+    /// normal boiling point is `M/rho` and this is the `rho`.
+    pub liquid_density_kg_per_m3: f64,
     /// The four coefficients of NeqSim's Henry correlation.
     ///
     /// **All four are zero on 296 of the 348 rows**, which is how the table spells "no
@@ -459,6 +472,12 @@ impl Entry {
                 // absence - is what makes the calc fall back. Measured on water, the two
                 // give the shift opposite signs.
                 .with_liquid_conductivity(self.liquid_conductivity)
+                .with_transport_data(
+                    self.lennard_jones_diameter,
+                    self.lennard_jones_energy,
+                    self.liquid_density_kg_per_m3,
+                    self.critical_volume,
+                )
                 .with_liquid_viscosity(self.liqvisc, self.liqvisc_model)
                 .with_volume_shift(
                     crate::pr_peneloux_shift::pr_peneloux_shift(
@@ -1082,6 +1101,8 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "ioniccharge",
         "deshmationicdiameter",
         "ljdiameter",
+        "ljeps",
+        "liquid_density_kg_per_m3",
         "henrycoef1",
         "henrycoef2",
         "henrycoef3",
@@ -1398,6 +1419,13 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     row,
                 )?,
                 lennard_jones_diameter: number(&record, index["ljdiameter"], "ljdiameter", row)?,
+                lennard_jones_energy: number(&record, index["ljeps"], "ljeps", row)?,
+                liquid_density_kg_per_m3: number(
+                    &record,
+                    index["liquid_density_kg_per_m3"],
+                    "liquid_density_kg_per_m3",
+                    row,
+                )?,
                 henry: crate::henry::HenryRecord {
                     h0: number(&record, index["henrycoef1"], "henrycoef1", row)?,
                     h1: number(&record, index["henrycoef2"], "henrycoef2", row)?,
@@ -1733,6 +1761,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // Not overridable: a card states the parameters a cubic needs, and the
                 // Lennard-Jones diameter is not one of them.
                 lennard_jones_diameter: 0.0,
+                lennard_jones_energy: 0.0,
+                liquid_density_kg_per_m3: 0.0,
                 // Nor the liquid-conductivity polynomial, which no card carries: zero here
                 // is the absence of a correlation and not a conductivity of zero.
                 liquid_conductivity: [0.0; 3],
@@ -1794,6 +1824,8 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 .map_or(base.deshmukh_mather_diameter, |metres| metres * 1.0e10),
             dielectric: over.dielectric.unwrap_or(base.dielectric),
             lennard_jones_diameter: base.lennard_jones_diameter,
+            lennard_jones_energy: base.lennard_jones_energy,
+            liquid_density_kg_per_m3: base.liquid_density_kg_per_m3,
             liquid_conductivity: base.liquid_conductivity,
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
@@ -1880,6 +1912,59 @@ pub fn kij(first: &str, second: &str, cubic: Cubic, overlay: Option<&Overlay>) -
             Cubic::Pr => interaction.kij_pr,
             _ => interaction.kij_srk,
         })
+}
+
+/// A component's normal liquid density in g/cm**3, from the table's `liqdens` column or the
+/// estimate NeqSim falls back to.
+///
+/// `Component.getNormalLiquidDensity`, in its own order: the database's value where the row
+/// carries one, and `M / (0.285 Vc**1.048) * 1000` where it does not - the Tyn-Calus molar-volume
+/// estimate inverted, with the molar mass in kg/mol and the critical volume in cm**3/mol. **Most
+/// rows carry none**: measured, n-butane's is zero and the estimate answers `0.6129838790149476`
+/// g/cm**3, which is what the capture's oil phase reports.
+#[must_use]
+pub fn normal_liquid_density(
+    liquid_density_kg_per_m3: f64,
+    molar_mass_kg_per_mol: f64,
+    critical_volume_m3_per_mol: Option<f64>,
+) -> f64 {
+    if liquid_density_kg_per_m3 != 0.0 {
+        return liquid_density_kg_per_m3 / 1000.0;
+    }
+    match critical_volume_m3_per_mol.filter(|vc| *vc > 0.0) {
+        Some(vc_m3_per_mol) => {
+            let vc_cm3_per_mol = vc_m3_per_mol * 1.0e6;
+            molar_mass_kg_per_mol / (0.285 * vc_cm3_per_mol.powf(1.048)) * 1000.0
+        }
+        None => 0.0,
+    }
+}
+
+/// A component's molar volume at its normal boiling point, in cm**3/mol, from
+/// [`normal_liquid_density`].
+///
+/// `SiddiqiLucasMethod.getMolarVolume`, in its own order: `M/rho` where the density is real
+/// (`rho > 0.01` g/cm**3), then the critical volume, then `max(20, 0.285 M)` with the molar mass
+/// in g/mol. The liquid diffusivity correlations take this as `VA` and `VB`.
+#[must_use]
+pub fn normal_boiling_molar_volume(
+    liquid_density_kg_per_m3: f64,
+    molar_mass_kg_per_mol: f64,
+    critical_volume_m3_per_mol: Option<f64>,
+) -> f64 {
+    let density = normal_liquid_density(
+        liquid_density_kg_per_m3,
+        molar_mass_kg_per_mol,
+        critical_volume_m3_per_mol,
+    );
+    let molar_mass_g = molar_mass_kg_per_mol * 1000.0;
+    if density > 0.01 {
+        return molar_mass_g / density;
+    }
+    match critical_volume_m3_per_mol.filter(|vc| *vc > 0.0) {
+        Some(vc) => vc * 1.0e6,
+        None => (0.285 * molar_mass_g).max(20.0),
+    }
 }
 
 /// Two components' Lennard-Jones parameters combined into a pair's, and the pair's reduced

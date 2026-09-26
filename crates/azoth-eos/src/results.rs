@@ -3357,6 +3357,30 @@ impl CalcResult for WilkeChangDiffusivityResult {
     }
 }
 
+/// Result of `eos.phase_transport`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PhaseTransportResult {
+    /// The phase's dynamic viscosity.
+    pub mu: DynamicViscosity,
+    /// The phase's thermal conductivity.
+    pub k: ThermalConductivity,
+    /// The binary diffusivity matrix, one row per component.
+    pub d_binary: Vec<Vec<f64>>,
+    /// The effective diffusivity of each component, in the same order.
+    pub d_effective: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PhaseTransportResult {
+    const CALC_ID: &'static str = "eos.phase_transport";
+    const FIELDS: &'static [&'static str] = &["mu", "k", "d_binary", "d_effective", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.liquid_conductivity_polynom`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LiquidConductivityPolynomResult {

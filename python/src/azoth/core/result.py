@@ -1671,6 +1671,22 @@ class WilkeChangDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PhaseTransportResult(_HasWarnings):
+    """Result of ``eos.phase_transport``."""
+
+    #: The phase's dynamic viscosity.
+    mu: Q
+    #: The phase's thermal conductivity.
+    k: Q
+    #: The binary diffusivity matrix, one row per component.
+    d_binary: tuple[tuple[Q, ...], ...]
+    #: Each component's effective diffusivity.
+    d_effective: tuple[Q, ...]
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LiquidConductivityPolynomResult(_HasWarnings):
     """Result of ``eos.liquid_conductivity_polynom``."""
 

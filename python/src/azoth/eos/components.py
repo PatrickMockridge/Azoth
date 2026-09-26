@@ -481,6 +481,14 @@ class DatabankEntry:
     #: The four liquid-viscosity parameters ``LIQVISC1``-``LIQVISC4``, whose meaning is
     #: :attr:`liqvisc_model`. Read by :func:`azoth.eos.aqueous_viscosity`, and by nothing
     #: else: the PFCT correlation ``eos.viscosity`` ports reads none of them.
+    #: The Lennard-Jones energy parameter over Boltzmann's constant, in kelvin, which
+    #: `azoth.eos.phase_transport`'s gas branch combines with
+    #: :attr:`lennard_jones_diameter` into a pair's for `azoth.eos.chapman_enskog_diffusivity`.
+    lennard_jones_energy: float
+    #: The three liquid-conductivity coefficients, whose polynomial is
+    #: `c0 + c1 T + c2 T^2`: read by `azoth.eos.liquid_conductivity_polynom`, which is what an
+    #: aqueous phase's conductivity is.
+    liquid_conductivity: tuple[float, float, float]
     liqvisc: tuple[float, float, float, float]
     #: Which of NeqSim's four liquid-viscosity expressions those four are; ``0`` names none.
     liqvisc_model: int
@@ -557,6 +565,9 @@ class DatabankEntry:
     #: MSA and Born terms use, and for an **ion** it is a *starting* value - the covolume is
     #: built from it and the diameter is then overwritten by the value derived back out of
     #: that covolume. The short-range correlation reads the table's value for both.
+    #:
+    #: And `azoth.eos.phase_transport`'s gas branch pairs it with
+    #: :attr:`lennard_jones_energy`, which is the other half of a Chapman-Enskog pair.
     lennard_jones_diameter: float
     #: The hydrate Langmuir constants' fitted ``A``, indexed ``structure * 2 + cavity`` -
     #: structure I's small and large cavities first, then structure II's. The guest's
@@ -744,6 +755,12 @@ def _table() -> dict[str, DatabankEntry]:
             Pc=ureg.Quantity(float(row["pc_pa"]), "Pa"),
             omega=float(row["acentric_factor"]),
             rackett_z=float(row["racketz"]),
+            lennard_jones_energy=float(row["ljeps"]),
+            liquid_conductivity=(
+                float(row["liquidconductivity1"]),
+                float(row["liquidconductivity2"]),
+                float(row["liquidconductivity3"]),
+            ),
             liqvisc=(
                 float(row["liqvisc1"]),
                 float(row["liqvisc2"]),
@@ -1331,6 +1348,69 @@ _WILKE_CHANG_PHI = {
 }
 
 
+def lennard_jones_pair(
+    sigma_i_angstrom: float,
+    eps_i: float,
+    sigma_j_angstrom: float,
+    eps_j: float,
+    m_i_kg_per_mol: float,
+    m_j_kg_per_mol: float,
+) -> tuple[float, float, float]:
+    """Two components' Lennard-Jones parameters combined into a pair's.
+
+    `GasPhysicalPropertyMethod`'s own rules: `sigma = (sigma_i + sigma_j)/2` in angstrom,
+    `eps = sqrt(eps_i eps_j)` in kelvin, and the pair's reduced molar mass
+    `M = 2/(1/M_i + 1/M_j)` in **g/mol** - which is what the class's own `1.0/M/1000.0`
+    computes, left to right.
+    """
+    sigma = (sigma_i_angstrom + sigma_j_angstrom) / 2.0
+    eps = math.sqrt(eps_i * eps_j)
+    pair_mass = 2.0 / (1.0 / (m_i_kg_per_mol * 1000.0) + 1.0 / (m_j_kg_per_mol * 1000.0))
+    return sigma, eps, pair_mass
+
+
+def normal_liquid_density(
+    liquid_density_kg_per_m3: float,
+    molar_mass_kg_per_mol: float,
+    critical_volume_m3_per_mol: float | None,
+) -> float:
+    """A component's normal liquid density in g/cm**3, from the table or the estimate.
+
+    `getNormalLiquidDensity`, in its own order: the database's value where the row carries
+    one, and `M / (0.285 Vc**1.048) * 1000` where it does not - most rows carry none.
+    """
+    if liquid_density_kg_per_m3 != 0.0:
+        return liquid_density_kg_per_m3 / 1000.0
+    if critical_volume_m3_per_mol:
+        return (
+            molar_mass_kg_per_mol
+            / (0.285 * math.pow(critical_volume_m3_per_mol * 1.0e6, 1.048))
+            * 1000.0
+        )
+    return 0.0
+
+
+def normal_boiling_molar_volume(
+    liquid_density_kg_per_m3: float,
+    molar_mass_kg_per_mol: float,
+    critical_volume_m3_per_mol: float | None,
+) -> float:
+    """A component's molar volume at its normal boiling point, in cm**3/mol.
+
+    `SiddiqiLucasMethod.getMolarVolume`: `M/rho` where the density is real, then the critical
+    volume, then `max(20, 0.285 M)` with the molar mass in g/mol.
+    """
+    density = normal_liquid_density(
+        liquid_density_kg_per_m3, molar_mass_kg_per_mol, critical_volume_m3_per_mol
+    )
+    molar_mass_g = molar_mass_kg_per_mol * 1000.0
+    if density > 0.01:
+        return molar_mass_g / density
+    if critical_volume_m3_per_mol:
+        return critical_volume_m3_per_mol * 1.0e6
+    return max(0.285 * molar_mass_g, 20.0)
+
+
 def wilke_chang_phi(name: str) -> float:
     """The Wilke-Chang association parameter for a solvent, by name.
 
@@ -1505,6 +1585,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # A card carries no liquid-viscosity set either, and a model of zero is how the
             # table states that - NeqSim's own default branch, `0.7` cP rather than a number
             # read from four zeros.
+            lennard_jones_diameter=0.0,
+            lennard_jones_energy=0.0,
+            liquid_conductivity=(0.0, 0.0, 0.0),
             liqvisc=(0.0, 0.0, 0.0, 0.0),
             liqvisc_model=0,
             molar_mass=None,
@@ -1525,8 +1608,6 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             # A card carries no Henry correlation: a card states the parameters a cubic or
             # an activity model reads, and this is neither.
             henry=HenryRecord(h0=0.0, h1=0.0, h2=0.0, h3=0.0),
-            lennard_jones_diameter=0.0,
-            # A card states what a cubic or an activity model reads, and a hydrate's guest
             # table is neither: a substance a card supplies is not a guest of a cage.
             hydrate_langmuir_a=(0.0, 0.0, 0.0, 0.0),
             hydrate_langmuir_b=(0.0, 0.0, 0.0, 0.0),

@@ -38,26 +38,26 @@ use azoth_eos::results::{
     MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult, ParachorMixtureSurfaceTensionResult,
     ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
-    PhFlashResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrCpaPhaseResult,
-    PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult,
-    PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult,
-    PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult,
-    PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult,
-    PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult,
-    RkAlphaAbResult, RkDepartureResult, SaftFlashResult, SaftVrMiePhaseResult,
-    SaltPrecipitationResult, ScaleSaturationRatioResult, SchwartzentruberAlphaResult,
-    SiddiqiLucasDiffusivityResult, SolidFugacityResult, SoreideWhitsonAlphaResult,
-    SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult, SrkDepartureResult,
-    SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult,
-    TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult, TpMultiflashResult,
-    TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult, TvFlashResult,
-    TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult,
-    TwucoonStatoilAlphaResult, TynCalusDiffusivityResult, UmrCpaPhaseResult, UmrprAlphaResult,
-    UnifacActivityCoefficientsResult, UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult, UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult, VhFlashResult, ViscosityResult,
-    VsFlashResult, VuFlashResult, VuFlashSingleCompResult, WaterPhaseResult,
-    WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
+    PhFlashResult, PhaseTransportResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
+    PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
+    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
+    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
+    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
+    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
+    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SaftFlashResult,
+    SaftVrMiePhaseResult, SaltPrecipitationResult, ScaleSaturationRatioResult,
+    SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SolidFugacityResult,
+    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
+    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
+    StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult,
+    TpMultiflashResult, TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult,
+    TvFlashResult, TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult,
+    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
+    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
+    VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
+    WaterPhaseResult, WaxSolidFugacityResult, WilkeChangDiffusivityResult, WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
 };
 use azoth_process::{
@@ -4053,6 +4053,78 @@ impl From<&WilkeChangDiffusivityResult> for PyWilkeChangDiffusivityResult {
                 magnitude_si: r.d.value,
                 unit: "m**2/s".to_string(),
             },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
+/// Result of `eos.phase_transport`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PhaseTransportResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPhaseTransportResult {
+    /// The phase's dynamic viscosity, as an SI magnitude and display unit.
+    #[pyo3(get)]
+    pub mu: PyQty,
+    /// The phase's thermal conductivity.
+    #[pyo3(get)]
+    pub k: PyQty,
+    /// The binary diffusivity matrix, one row per component.
+    #[pyo3(get)]
+    pub d_binary: Vec<Vec<PyQty>>,
+    /// Each component's effective diffusivity.
+    #[pyo3(get)]
+    pub d_effective: Vec<PyQty>,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPhaseTransportResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PhaseTransportResult(mu={} {}, k={} {})",
+            self.mu.magnitude_si, self.mu.unit, self.k.magnitude_si, self.k.unit
+        )
+    }
+}
+
+impl From<&PhaseTransportResult> for PyPhaseTransportResult {
+    fn from(r: &PhaseTransportResult) -> Self {
+        Self {
+            mu: PyQty {
+                magnitude_si: r.mu.value,
+                unit: "Pa*s".to_string(),
+            },
+            k: PyQty {
+                magnitude_si: r.k.value,
+                unit: "W/(m*K)".to_string(),
+            },
+            d_binary: r
+                .d_binary
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|value| PyQty {
+                            magnitude_si: *value,
+                            unit: "m**2/s".to_string(),
+                        })
+                        .collect()
+                })
+                .collect(),
+            d_effective: r
+                .d_effective
+                .iter()
+                .map(|value| PyQty {
+                    magnitude_si: *value,
+                    unit: "m**2/s".to_string(),
+                })
+                .collect(),
             warnings: transport(&r.warnings),
         }
     }
@@ -9652,6 +9724,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
         ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
         FreezingPointResult::CALC_ID => FreezingPointResult::FIELDS.to_vec(),
+        PhaseTransportResult::CALC_ID => PhaseTransportResult::FIELDS.to_vec(),
         LiquidConductivityPolynomResult::CALC_ID => {
             LiquidConductivityPolynomResult::FIELDS.to_vec()
         }

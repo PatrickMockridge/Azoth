@@ -122,6 +122,7 @@ from azoth.core.result import (
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
+    PhaseTransportResult,
     PhFlashResult,
     PipeResult,
     PitzerPhaseResult,
@@ -1514,6 +1515,38 @@ def viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> ViscosityResult:
     )
     return ViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def phase_transport(
+    components: Sequence[str],
+    phase: str,
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> PhaseTransportResult:
+    """A phase's transport properties, computed in Rust.
+
+    The names cross verbatim and the Rust side resolves them, because the dispatch reads every
+    parameter its composed correlations need and the resolved mixture carries them all.
+    """
+    spec = _models_gen.model("eos.phase_transport")
+    result = _core.phase_transport(
+        [str(name) for name in components],
+        phase,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [float(value) for value in z],
+    )
+    return PhaseTransportResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        k=from_si(result.k.magnitude_si, result.k.unit),
+        d_binary=tuple(
+            tuple(from_si(value.magnitude_si, value.unit) for value in row)
+            for row in result.d_binary
+        ),
+        d_effective=tuple(from_si(value.magnitude_si, value.unit) for value in result.d_effective),
         warnings=_warnings(result.warnings),
     )
 

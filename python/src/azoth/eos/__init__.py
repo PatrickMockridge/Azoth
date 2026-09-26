@@ -133,6 +133,7 @@ from azoth.core.result import (
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
+    PhaseTransportResult,
     PhFlashResult,
     PitzerPhaseResult,
     Pr78KappaResult,
@@ -300,6 +301,7 @@ __all__ = [
     "parahydrogen_solid_phase",
     "pcsaft_rahmat_phase",
     "ph_flash",
+    "phase_transport",
     "pitzer_phase",
     "pr78_kappa",
     "pr_alpha_ab",
@@ -437,6 +439,7 @@ _DEW_PRESSURE = "eos.dew_pressure"
 _DEW_TEMPERATURE = "eos.dew_temperature"
 _CAPILLARY_DEW_POINT = "eos.capillary_dew_point"
 _PH_FLASH = "eos.ph_flash"
+_PHASE_TRANSPORT = "eos.phase_transport"
 _KENT_EISENBERG_PHASE = "eos.kent_eisenberg_phase"
 _DESMUKH_MATHER_PHASE = "eos.desmukh_mather_phase"
 _EFFECTIVE_DIFFUSION = "eos.effective_diffusion"
@@ -3178,6 +3181,35 @@ def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelope
     See :func:`azoth.eos.reference.pt_phase_envelope`.
     """
     return resolve(_PT_PHASE_ENVELOPE)(mixture=mixture, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def phase_transport(
+    components: Sequence[str],
+    phase: str,
+    T: Q,
+    P: Q,
+    z: Sequence[float],
+) -> PhaseTransportResult:
+    """A phase's viscosity, conductivity, binary diffusivity matrix and effective diffusivities.
+
+    **``phase`` decides which correlations run**: NeqSim builds ``PhysicalProperties`` by phase
+    type, so one fluid's gas and liquid answer from different models - PFCT for both of a gas's
+    transport properties with Chapman-Enskog for its diffusivity, the polynom correlations for an
+    aqueous phase, and PFCT with Siddiqi-Lucas for an oil.
+
+    Raises:
+        InvalidInputError: for a phase kind that is not ``gas``, ``oil`` or ``aqueous``, or for a
+            pure phase - the effective diffusivity divides by an empty sum there.
+
+    See :func:`azoth.eos.reference.phase_transport`.
+    """
+    return resolve(_PHASE_TRANSPORT)(  # type: ignore[no-any-return]
+        components=components,
+        phase=phase,
+        T=T,
+        P=P,
+        z=z,
+    )
 
 
 def ph_flash(

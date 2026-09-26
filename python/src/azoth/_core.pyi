@@ -699,6 +699,14 @@ class PhFlashResult:
     warnings: list[Warning]
 
 @final
+class PhaseTransportResult:
+    mu: Qty
+    k: Qty
+    d_binary: list[list[Qty]]
+    d_effective: list[Qty]
+    warnings: list[Warning]
+
+@final
 class PitzerPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
@@ -2400,6 +2408,13 @@ def ph_flash(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> PhFlashResult: ...
+def phase_transport(
+    components: list[str],
+    phase: str,
+    T: float,
+    P: float,
+    z: list[float],
+) -> PhaseTransportResult: ...
 def pitzer_phase(
     components: list[str],
     T: float,
