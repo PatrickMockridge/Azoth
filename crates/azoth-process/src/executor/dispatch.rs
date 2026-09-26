@@ -526,7 +526,7 @@ fn throttling_valve(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
 }
 
 fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    let (hot, cold) = kernels::heat_exchanger::heat_exchanger(
+    let out = kernels::heat_exchanger::heat_exchanger(
         &inlets[0],
         &inlets[1],
         p.optional_si("ua")?
@@ -535,7 +535,12 @@ fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome
         p.optional_si("hot_outlet_temperature")?.map(kelvins),
         p.optional_si("cold_outlet_temperature")?.map(kelvins),
     )?;
-    Ok(KernelOutcome::streams_only(vec![hot, cold]))
+    // **The duty and the rating cross here.** Neither is on an outlet stream, and the four the
+    // rating names are what tell a reader whether the exchanger was area-limited or
+    // capacity-limited - which is the difference between a bigger one helping and it not
+    // helping at all.
+    let result = crate::models::HeatExchangerResult::of(&out, Vec::new());
+    KernelOutcome::publishing(vec![out.hot_out, out.cold_out], &result)
 }
 
 fn ejector(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {

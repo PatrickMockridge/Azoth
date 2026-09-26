@@ -180,7 +180,14 @@ pub fn heat_exchanger_stream(
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
     )
-    .map(|(h, c)| (PyStream::from_inner(h), PyStream::from_inner(c)))
+    // **Two streams, which is this shape's contract**: the id's result carries the duty and the
+    // rating beside them, and the stream-level call is what a connection carries.
+    .map(|outcome| {
+        (
+            PyStream::from_inner(outcome.hot_out),
+            PyStream::from_inner(outcome.cold_out),
+        )
+    })
     .map_err(|e| to_pyerr(py, e))
 }
 

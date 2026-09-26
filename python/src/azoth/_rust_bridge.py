@@ -4357,6 +4357,19 @@ def heat_exchanger(
         cold_out_p=from_si(result.cold_out_p.magnitude_si, result.cold_out_p.unit),
         cold_out_t=from_si(result.cold_out_t.magnitude_si, result.cold_out_t.unit),
         cold_out_h=from_si(result.cold_out_h.magnitude_si, result.cold_out_h.unit),
+        duty=from_si(result.duty.magnitude_si, result.duty.unit),
+        ntu=result.ntu,
+        effectiveness=result.effectiveness,
+        # **A quantity the run did not reach is `None`**, which the transport has already said:
+        # `from_si` is only reached where the Rust side published a magnitude, so a pinned-outlet
+        # run arrives with five `None`s rather than with zeros the dataclass would have to guess at.
+        c_min=(
+            None if result.c_min is None else from_si(result.c_min.magnitude_si, result.c_min.unit)
+        ),
+        c_max=(
+            None if result.c_max is None else from_si(result.c_max.magnitude_si, result.c_max.unit)
+        ),
+        capacity_ratio=result.capacity_ratio,
         warnings=_warnings(result.warnings),
     )
 

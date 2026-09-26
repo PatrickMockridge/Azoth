@@ -102,6 +102,25 @@ description = "the cold outlet's temperature.\n"
 [outputs.cold_out_h]
 unit = "J/mol"
 description = "the cold outlet's molar enthalpy: the inlet's plus the duty it gained, which is the hot side's to the flash's own arithmetic.\n"
+[outputs.duty]
+unit = "W"
+description = "the heat the hot side released, W: positive when the hot side cools, which is what the cold side's gain balances. The one figure that means the same thing in both modes, and it is on no outlet stream.\n"
+[outputs.ntu]
+unit = "dimensionless"
+description = "`UA / C_min`, the number of transfer units the rating sized the exchanger by, or null where one outlet was pinned instead of rated. With `effectiveness` it is what says whether the machine is area-limited or capacity-limited.\n"
+[outputs.effectiveness]
+unit = "dimensionless"
+description = "the fraction of the capacity-limited side's possible swing the rating reached, or null where one outlet was pinned. One is the infinite-area limit, which is the state the rating's own branch keeps.\n"
+[outputs.c_min]
+unit = "W/K"
+description = "the smaller of the two capacities the rating estimated - each side flashed at the *other's* inlet temperature - or null where one outlet was pinned.\n"
+[outputs.c_max]
+unit = "W/K"
+description = "the larger of them, or null where one outlet was pinned.\n"
+[outputs.capacity_ratio]
+unit = "dimensionless"
+description = "`C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned.\n"
+
 [[valid_range]]
 quantity = "ua"
 min = 0

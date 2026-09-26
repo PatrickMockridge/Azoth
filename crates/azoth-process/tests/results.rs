@@ -56,7 +56,13 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
             "unit_ops.gibbs_reactor",
             Some(models::GibbsReactorResult::FIELDS),
         ),
-        ("unit_ops.heat_exchanger", None),
+        // **The duty and the rating cross here**, and the four rating numbers are `Option`s
+        // because a pinned-outlet run reaches none of them: the record writes `null` where a
+        // rating did not happen, which is the same absence a single-phase flash is.
+        (
+            "unit_ops.heat_exchanger",
+            Some(models::HeatExchangerResult::FIELDS),
+        ),
         ("unit_ops.heater", Some(models::HeaterResult::FIELDS)),
         ("unit_ops.manifold", None),
         ("unit_ops.mixer", None),

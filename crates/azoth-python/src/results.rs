@@ -553,6 +553,24 @@ pub struct PyHeatExchangerResult {
     /// Cold outlet molar enthalpy.
     #[pyo3(get)]
     pub cold_out_h: PyQty,
+    /// The heat the hot side released, positive when it cooled.
+    #[pyo3(get)]
+    pub duty: PyQty,
+    /// `UA / C_min`, or `None` where one outlet was pinned instead of rated.
+    #[pyo3(get)]
+    pub ntu: Option<f64>,
+    /// The fraction of the capacity-limited swing the rating reached, or `None`.
+    #[pyo3(get)]
+    pub effectiveness: Option<f64>,
+    /// The smaller estimated capacity, or `None` where one outlet was pinned.
+    #[pyo3(get)]
+    pub c_min: Option<PyQty>,
+    /// The larger of them, or `None` where one outlet was pinned.
+    #[pyo3(get)]
+    pub c_max: Option<PyQty>,
+    /// `C_min / C_max`, or `None` where one outlet was pinned.
+    #[pyo3(get)]
+    pub capacity_ratio: Option<f64>,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -585,6 +603,15 @@ impl From<&HeatExchangerResult> for PyHeatExchangerResult {
             cold_out_p: quantity(r.cold_out_p.value, "Pa"),
             cold_out_t: quantity(r.cold_out_t.value, "K"),
             cold_out_h: quantity(r.cold_out_h.value, "J/mol"),
+            duty: quantity(r.duty.value, "W"),
+            ntu: r.ntu,
+            effectiveness: r.effectiveness,
+            // **A quantity a run did not reach crosses as `None`**, which is the same absence the
+            // dataclass spells `| None` - the wire has written `null` for it and the transport
+            // must not turn that into a zero.
+            c_min: r.c_min.map(|value| quantity(value.value, "W/K")),
+            c_max: r.c_max.map(|value| quantity(value.value, "W/K")),
+            capacity_ratio: r.capacity_ratio,
             warnings: transport(&r.warnings),
         }
     }

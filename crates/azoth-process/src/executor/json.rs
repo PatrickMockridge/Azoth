@@ -22,7 +22,9 @@
 //! what the Python half already does. Refusing there would let one bad number inside one unit op
 //! take the whole envelope with it, which is the failure `run_error` exists to prevent.
 
-use azoth_core::units::{MassRate, MolarEnergy, Power, Pressure, ThermodynamicTemperature};
+use azoth_core::units::{
+    MassRate, MolarEnergy, Power, Pressure, ThermalConductance, ThermodynamicTemperature,
+};
 use azoth_core::{AzothError, Result, Warning};
 use serde::ser::SerializeSeq;
 use serde::{Serialize, Serializer};
@@ -109,6 +111,13 @@ impl WireScalar for MassRate {
     }
 }
 
+impl WireScalar for ThermalConductance {
+    const UNIT: &'static str = "W/K";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
 /// A `#[serde(serialize_with = "…")]` for one quantity field.
 pub fn scalar<T: WireScalar, S: Serializer>(
     value: &T,
@@ -119,6 +128,23 @@ pub fn scalar<T: WireScalar, S: Serializer>(
         unit: T::UNIT,
     }
     .serialize(serializer)
+}
+
+/// The same for a quantity a run may not have reached, which writes `null`.
+///
+/// **The quantity counterpart of an `Option<f64>` result field**, and it exists because a
+/// process record has the same absence a flash does: `SaftFlashResult::beta` is `None` when the
+/// flash found one phase, and an exchanger's effectiveness is `None` when it was handed a pinned
+/// outlet instead of a rating. A `null` says "this run did not reach it", which is a different
+/// statement from a zero and the one a reader comparing two runs needs.
+pub fn optional_scalar<T: WireScalar, S: Serializer>(
+    value: &Option<T>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    match value {
+        Some(quantity) => scalar(quantity, serializer),
+        None => serializer.serialize_none(),
+    }
 }
 
 /// The same for a vector of them, one entry per element.

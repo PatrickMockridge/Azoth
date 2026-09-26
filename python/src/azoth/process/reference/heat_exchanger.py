@@ -169,6 +169,17 @@ def heat_exchanger(
         cold_out_p=cold_in_p,
         cold_out_t=states.cold_out_t,
         cold_out_h=from_si(states.cold_out_h, "J/mol"),
+        # **The hot side's release, and not `states.duty`.** That one is the *kept* side's own
+        # change - NeqSim's `getDuty`, whose sign depends on which side `run` happened to keep -
+        # so the same exchanger could report either sign for one physical direction of heat. This
+        # is `n_hot * (h_hot_in - h_hot_out)`, positive whenever the hot side cools, which is the
+        # frame a reader comparing two runs needs and the one the Rust half publishes.
+        duty=from_si((states.hot_in_h - states.hot_out_h) * hot_n, "W"),
+        ntu=None if states.rating is None else states.rating.ntu,
+        effectiveness=None if states.rating is None else states.rating.effectiveness,
+        c_min=None if states.rating is None else from_si(states.rating.c_min, "W/K"),
+        c_max=None if states.rating is None else from_si(states.rating.c_max, "W/K"),
+        capacity_ratio=None if states.rating is None else states.rating.capacity_ratio,
         warnings=tuple(warnings),
     )
 

@@ -145,7 +145,7 @@ fn a_valve_is_isenthalpic() {
 fn a_heat_exchanger_conserves_energy() {
     let hot = binary(1.0, 50.0, 1e5, 350.0);
     let cold = binary(0.0, 50.0, 1e5, 300.0);
-    let (hot_out, cold_out) = heat_exchanger(
+    let outcome = heat_exchanger(
         &hot,
         &cold,
         Some(watts_per_kelvin(50.0)),
@@ -154,6 +154,7 @@ fn a_heat_exchanger_conserves_energy() {
         None,
     )
     .expect("heat_exchanger");
+    let (hot_out, cold_out) = (outcome.hot_out, outcome.cold_out);
 
     // Whatever the rating decides, the two sides' duties are one duty.
     close(
@@ -170,9 +171,9 @@ fn a_heat_exchanger_conserves_energy() {
 fn a_pinned_outlet_temperature_is_honoured() {
     let hot = binary(1.0, 50.0, 1e5, 350.0);
     let cold = binary(0.0, 50.0, 1e5, 300.0);
-    let (hot_out, cold_out) =
-        heat_exchanger(&hot, &cold, None, "counterflow", Some(kelvins(330.0)), None)
-            .expect("heat_exchanger");
+    let pinned = heat_exchanger(&hot, &cold, None, "counterflow", Some(kelvins(330.0)), None)
+        .expect("heat_exchanger");
+    let (hot_out, cold_out) = (pinned.hot_out, pinned.cold_out);
 
     close(hot_out.t.value, 330.0);
     close(

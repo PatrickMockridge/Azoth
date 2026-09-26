@@ -945,6 +945,20 @@ class HeatExchangerResult(_HasWarnings):
     cold_out_t: Q
     #: Cold outlet molar enthalpy.
     cold_out_h: Q
+    #: The heat the hot side released, positive when it cooled, which is what the cold side's
+    #: gain balances. The one figure that means the same thing in both modes.
+    duty: Q
+    #: ``UA / C_min``, or ``None`` where one outlet was pinned instead of rated.
+    ntu: float | None
+    #: The fraction of the capacity-limited side's possible swing the rating reached, or ``None``.
+    effectiveness: float | None
+    #: The smaller of the two capacities the rating estimated, or ``None`` where one outlet was
+    #: pinned.
+    c_min: Q | None
+    #: The larger of them, or ``None`` where one outlet was pinned.
+    c_max: Q | None
+    #: ``C_min / C_max``, or ``None`` where one outlet was pinned.
+    capacity_ratio: float | None
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -1597,6 +1597,12 @@ class HeatExchangerResult:
     cold_out_p: Qty
     cold_out_t: Qty
     cold_out_h: Qty
+    duty: Qty
+    ntu: float | None
+    effectiveness: float | None
+    c_min: Qty | None
+    c_max: Qty | None
+    capacity_ratio: float | None
     warnings: list[Warning]
 
 @final

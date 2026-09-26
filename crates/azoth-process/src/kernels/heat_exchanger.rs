@@ -1,7 +1,8 @@
 //! `unit_ops.heat_exchanger` - two streams, coupled by an overall conductance.
 
 use azoth_core::units::{
-    MolarEnergy, ThermalConductance, ThermodynamicTemperature, joules_per_mole,
+    MolarEnergy, Power, ThermalConductance, ThermodynamicTemperature, joules_per_mole, watts,
+    watts_per_kelvin,
 };
 use azoth_core::{AzothError, Result};
 
@@ -28,6 +29,58 @@ impl Side {
         match self {
             Side::Hot => Side::Cold,
             Side::Cold => Side::Hot,
+        }
+    }
+}
+
+/// The numbers the effectiveness-NTU rating sized the exchanger by.
+///
+/// **Present only when a rating was asked for**, which is the default mode and not the only one:
+/// a run handed a pinned outlet temperature energy-balances the other side instead, and reaches
+/// the duty without any of these. That is why [`HeatExchangerOutcome::rating`] is an `Option` and
+/// why the record writes `null` for them - the absence of a rating, not a rating of zero.
+pub struct Rating {
+    /// `UA / C_min`, dimensionless.
+    pub ntu: f64,
+    /// The swing the relation scaled, as a fraction of the capacity-limited side's.
+    pub effectiveness: f64,
+    /// The smaller of the two estimated capacities, W/K.
+    pub c_min: ThermalConductance,
+    /// The larger of them, W/K.
+    pub c_max: ThermalConductance,
+    /// `C_min / C_max`, dimensionless.
+    pub capacity_ratio: f64,
+}
+
+/// What an exchanger did: both outlet records, the duty, and the rating where there was one.
+pub struct HeatExchangerOutcome {
+    /// The hot outlet record.
+    pub hot_out: Stream,
+    /// The cold outlet record.
+    pub cold_out: Stream,
+    /// The heat the hot side released, W - positive when the hot side cools, which is what the
+    /// cold side's gain balances. **The same number either mode reaches**, and the one figure a
+    /// faceplate shows whatever the exchanger was told to do.
+    pub duty: Power,
+    /// The rating's own numbers, or `None` where one outlet was pinned instead.
+    pub rating: Option<Rating>,
+}
+
+impl HeatExchangerOutcome {
+    /// The outcome of one solve, with the duty read off the hot side's own two states.
+    ///
+    /// **The duty is derived rather than carried from the branch that computed it**, because the
+    /// two branches hold it in different terms - the rating scales a swing it chose, the pinned
+    /// solve releases the swing it pinned - and the hot side's own enthalpy change is the one
+    /// expression both reach. It is also what makes the sign one rule instead of two.
+    #[must_use]
+    fn of(hot: &Stream, hot_out: Stream, cold_out: Stream, rating: Option<Rating>) -> Self {
+        let duty = watts(-total_swing(hot, &hot_out));
+        Self {
+            hot_out,
+            cold_out,
+            duty,
+            rating,
         }
     }
 }
@@ -60,7 +113,7 @@ pub fn heat_exchanger(
     flow_arrangement: &str,
     hot_outlet_temperature: Option<ThermodynamicTemperature>,
     cold_outlet_temperature: Option<ThermodynamicTemperature>,
-) -> Result<(Stream, Stream)> {
+) -> Result<HeatExchangerOutcome> {
     if hot_outlet_temperature.is_some() && cold_outlet_temperature.is_some() {
         return Err(AzothError::invalid_input(
             "hot_outlet_temperature",
@@ -69,10 +122,12 @@ pub fn heat_exchanger(
         ));
     }
     if let Some(pinned) = hot_outlet_temperature {
-        return specified_outlet(hot, cold, Side::Hot, pinned);
+        let (hot_out, cold_out) = specified_outlet(hot, cold, Side::Hot, pinned)?;
+        return Ok(HeatExchangerOutcome::of(hot, hot_out, cold_out, None));
     }
     if let Some(pinned) = cold_outlet_temperature {
-        return specified_outlet(hot, cold, Side::Cold, pinned);
+        let (hot_out, cold_out) = specified_outlet(hot, cold, Side::Cold, pinned)?;
+        return Ok(HeatExchangerOutcome::of(hot, hot_out, cold_out, None));
     }
 
     let Some(ua) = ua else {
@@ -132,6 +187,17 @@ pub fn heat_exchanger(
     let capacity_ratio = c_min / c_max;
     let ntu = ua.value / c_min;
     let effectiveness = effectiveness(ntu, capacity_ratio, flow_arrangement);
+    // **The rating's own numbers, kept rather than dropped.** They are what sized the exchanger,
+    // and a faceplate that shows a duty and nothing else cannot say whether the answer was
+    // capacity-limited or area-limited - which is the difference between a bigger machine helping
+    // and it not helping at all.
+    let rating = Rating {
+        ntu,
+        effectiveness,
+        c_min: watts_per_kelvin(c_min),
+        c_max: watts_per_kelvin(c_max),
+        capacity_ratio,
+    };
 
     // `run` energy-balances the side it swapped *away* from, and the side it keeps is the
     // one whose seeded swing is the larger. Both are totals, so the comparison is between
@@ -176,10 +242,16 @@ pub fn heat_exchanger(
         set_seeded.clone()
     };
 
-    Ok(match set_side {
+    let (hot_out, cold_out) = match set_side {
         Side::Hot => (set_out, calculated_out),
         Side::Cold => (calculated_out, set_out),
-    })
+    };
+    Ok(HeatExchangerOutcome::of(
+        hot,
+        hot_out,
+        cold_out,
+        Some(rating),
+    ))
 }
 
 /// The `outTemperature` specification: pin one outlet, energy-balance the other.
