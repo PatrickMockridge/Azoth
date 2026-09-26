@@ -549,8 +549,13 @@ fn a_dimension_id_is_the_inverse_of_the_exponents_it_names() {
     assert_eq!(dimension_id("K"), Some("thermodynamic_temperature"));
     assert_eq!(dimension_id("mol/s"), Some("molar_flow"));
     assert_eq!(dimension_id("dimensionless"), Some("dimensionless"));
+    // `psi` and `kmol/h` arrived with the engineering units and answer like any other here even
+    // though `units.rs` derives both rather than naming a uom literal: the dimension is the
+    // table's, and where a conversion comes from is not this function's question.
+    assert_eq!(dimension_id("psi"), Some("pressure"));
+    assert_eq!(dimension_id("kmol/h"), Some("molar_flow"));
     assert_eq!(
-        dimension_id("psi"),
+        dimension_id("torr"),
         None,
         "not a unit the vocabulary carries"
     );
@@ -561,6 +566,80 @@ fn a_dimension_id_is_the_inverse_of_the_exponents_it_names() {
             assert!(dimension_id(unit).is_some(), "`{unit}` has no dimension id");
         }
     }
+}
+
+/// The catalogue's two unit regions, which are the same fact the vocabulary declares.
+///
+/// **A front end converts with these numbers and computes nothing**, so the numbers have to be
+/// the library's own: the factor here is `si_factor`, which is the conversion a calculation runs,
+/// and the unit a set names is the unit the vocabulary declares for that dimension. A set that
+/// named a unit of another dimension, or a factor copied from somewhere else, would be a display
+/// showing a plausible number in a unit that does not measure it.
+#[test]
+fn the_catalogue_carries_every_unit_and_both_sets() {
+    use azoth_core::unit_vocab_gen::{UNIT_NAMES, UNIT_SETS, si_factor};
+
+    let document: serde_json::Value =
+        serde_json::from_str(&azoth_process::middleware::catalogue(&[], false).expect("it writes"))
+            .expect("it is JSON");
+    let units = document["units"].as_object().expect("an object");
+    let sets = document["unit_sets"].as_array().expect("an array");
+
+    assert_eq!(units.len(), UNIT_NAMES.len());
+    for name in UNIT_NAMES {
+        let entry = units
+            .get(*name)
+            .expect("every declared unit is on the wire");
+        assert_eq!(
+            entry["dimension"].as_str(),
+            dimension_id(name),
+            "`{name}` names a different dimension on the wire than in the vocabulary"
+        );
+        assert_eq!(entry["factor"].as_f64(), si_factor(name));
+    }
+
+    assert_eq!(sets.len(), UNIT_SETS.len());
+    for (set, declared) in sets.iter().zip(UNIT_SETS) {
+        assert_eq!(set["id"].as_str(), Some(declared.id));
+        assert_eq!(set["name"].as_str(), Some(declared.name));
+        let switched = set["units"].as_object().expect("an object");
+        assert_eq!(switched.len(), declared.units.len());
+        for (named, unit) in declared.units {
+            assert_eq!(
+                switched.get(*named).and_then(|value| value.as_str()),
+                Some(*unit),
+                "{}.{named} is not the unit the vocabulary declares",
+                declared.id
+            );
+            // The one property the front end depends on: the unit a set switches a dimension to
+            // is a unit of *that* dimension, so a display can reach its factor through it.
+            assert_eq!(
+                dimension_id(unit),
+                Some(*named),
+                "{}.{named} names {unit}, which is a different dimension",
+                declared.id
+            );
+            assert!(
+                units.contains_key(*unit),
+                "{}.{named} names {unit}, which is not in the catalogue's units",
+                declared.id
+            );
+        }
+    }
+
+    // The shipped pair, so the two ways of reading it cannot drift: `SI` is the base unit of
+    // each dimension and `Field` is not, for every dimension either of them names.
+    let si = sets
+        .iter()
+        .find(|set| set["id"] == "si")
+        .expect("the table declares an SI set");
+    assert_eq!(si["units"]["pressure"].as_str(), Some("Pa"));
+    let field = sets
+        .iter()
+        .find(|set| set["id"] == "field")
+        .expect("the table declares a field set");
+    assert_eq!(field["units"]["pressure"].as_str(), Some("psi"));
+    assert_eq!(field["units"]["molar_flow"].as_str(), Some("kmol/h"));
 }
 
 /// **The hole the kind rule closes, driven through the checker rather than through the rule.**

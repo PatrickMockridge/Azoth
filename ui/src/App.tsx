@@ -12,7 +12,7 @@
  * single document for the life of its process is not one.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
 import blankDocument from "../../specs/flowsheets/blank.toml?raw";
@@ -31,6 +31,7 @@ import { Workbook } from "./components/workbook/Workbook";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
 import { applyTheme, readTheme, type Theme } from "./state/theme";
+import { readUnitSet, rememberUnitSet, unitsOf } from "./state/units";
 import { door } from "./wire/door";
 import type { Door, Opened, Session } from "./wire/session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./wire/types";
@@ -52,6 +53,13 @@ export function App() {
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
   const [theme, setTheme] = useState<Theme>(readTheme);
+
+  /**
+   * The unit set a reader wants values in, which is remembered like the theme and for the same
+   * reason: it is a reader's choice and not a document fact, so reopening a flowsheet finds the
+   * units the person looking at it prefers.
+   */
+  const [unitSet, setUnitSet] = useState<string | null>(readUnitSet);
 
   /**
    * The dock's view state, which is the editor's and not the document's.
@@ -111,6 +119,20 @@ export function App() {
         }
       },
     );
+  }, []);
+
+  /**
+   * The library's units and sets, resolved against the catalogue and the remembered choice.
+   *
+   * **Derived and never stored**: the catalogue arrives asynchronously on both doors, and a set
+   * captured before it loaded would convert nothing for the rest of the session.
+   */
+  const units = useMemo(() => unitsOf(catalogue, unitSet), [catalogue, unitSet]);
+
+  /** Choose a set: in force at once, and remembered for the next visit. */
+  const chooseUnits = useCallback((id: string) => {
+    setUnitSet(id);
+    rememberUnitSet(id);
   }, []);
 
   /** The theme, in force and remembered. Dark is CSS's default; this only overrides it. */
@@ -215,8 +237,10 @@ export function App() {
         envelope={envelope}
         session={session !== null}
         theme={theme}
+        units={units}
         onOrder={setOrder}
         onTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+        onUnits={chooseUnits}
       />
 
       <div className="ribbon">
@@ -313,6 +337,7 @@ export function App() {
               catalogue={catalogue}
               envelope={envelope}
               selected={selected}
+              units={units}
               onSelect={setSelected}
               onCommand={send}
             />
@@ -327,6 +352,7 @@ export function App() {
               envelope={envelope}
               node={node}
               edge={edge}
+              units={units}
               onCommand={send}
               onSelect={setSelected}
             />
@@ -353,7 +379,7 @@ export function App() {
         {envelope === null ? (
           <p className="note">no document</p>
         ) : docked === "workbook" ? (
-          <Workbook envelope={envelope} onSelect={setSelected} />
+          <Workbook envelope={envelope} units={units} onSelect={setSelected} />
         ) : (
           <DiagnosticsPanel
             diagnostics={envelope.diagnostics}

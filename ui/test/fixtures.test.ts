@@ -99,6 +99,39 @@ describe("the catalogue", () => {
       "utility",
     ]);
   });
+
+  it("carries every declared unit with its factor, and the sets that choose between them", () => {
+    // **The one place a factor is stated to the front end**, and it is the library's own:
+    // `si_factor` runs the conversion a calculation runs, and `test_units_cross_library.py` holds
+    // every one of them to `pint`. A unit the catalogue omits would be one a display could not
+    // convert, so the count is asserted rather than a sample.
+    const units = catalogue.units ?? {};
+    expect(Object.keys(units)).toHaveLength(68);
+    expect(units["Pa"]).toEqual({ dimension: "pressure", factor: 1 });
+    expect(units["psi"]?.dimension).toBe("pressure");
+    expect(units["psi"]?.factor).toBeCloseTo(6894.757293168361, 6);
+    // The dimension a unit measures is the vocabulary's name for it, which is what a set keys on.
+    expect(units["kmol/h"]?.dimension).toBe("molar_flow");
+    expect(units["J/(mol*K)"]?.dimension).toBe("molar_heat_capacity");
+
+    const sets = catalogue.unit_sets ?? [];
+    expect(sets.map((set) => set.id)).toEqual(["si", "field"]);
+    expect(sets.map((set) => set.name)).toEqual(["SI", "Field"]);
+    for (const set of sets) {
+      expect(Object.keys(set.units)).toHaveLength(14);
+      // Every unit a set names is one this catalogue declares, and it measures the dimension it
+      // was filed under - otherwise the switcher would offer a unit the display cannot reach.
+      for (const [dimension, unit] of Object.entries(set.units)) {
+        expect(units[unit]?.dimension, `${set.id}.${dimension} names ${unit}`).toBe(dimension);
+      }
+    }
+    expect(sets[0]?.units["pressure"]).toBe("Pa");
+    expect(sets[1]?.units["pressure"]).toBe("psi");
+    expect(sets[1]?.units["molar_flow"]).toBe("kmol/h");
+    // And a dimension neither set names, which is how temperature stays in kelvin.
+    expect(sets[0]?.units["thermodynamic_temperature"]).toBeUndefined();
+    expect(sets[1]?.units["thermodynamic_temperature"]).toBeUndefined();
+  });
 });
 
 describe("the envelope", () => {

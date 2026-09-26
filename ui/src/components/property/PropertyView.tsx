@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { kindOf, tabFor, tabsFor, type Kind, type TabId } from "../../state/layout";
 import { resultOf, resultTabs } from "../../state/results";
+import type { Units } from "../../state/units";
 import type { EditorCommand } from "../../wire/commands";
 import type {
   Catalogue,
@@ -48,6 +49,7 @@ export function PropertyView({
   envelope,
   node,
   edge,
+  units,
   onCommand,
   onSelect,
 }: {
@@ -55,6 +57,8 @@ export function PropertyView({
   envelope: Envelope;
   node: GraphNode | null;
   edge: GraphEdge | null;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
   onCommand: (command: EditorCommand) => void;
   onSelect: (id: string | null) => void;
 }) {
@@ -92,7 +96,7 @@ export function PropertyView({
         tabs={available.map((id) => ({ id, label: LABELS[id] }))}
         onTab={(id) => setRemembered({ ...remembered, [kind]: id as TabId })}
       />
-      {sheet(active, { catalogue, envelope, node, edge, result, onCommand, onSelect })}
+      {sheet(active, { catalogue, envelope, node, edge, result, units, onCommand, onSelect })}
     </>
   );
 }
@@ -140,28 +144,33 @@ function sheet(
     node: GraphNode | null;
     edge: GraphEdge | null;
     result: UnitResult | undefined;
+    units: Units;
     onCommand: (command: EditorCommand) => void;
     onSelect: (id: string | null) => void;
   },
 ) {
-  const { catalogue, envelope, node, edge, result, onCommand, onSelect } = context;
+  const { catalogue, envelope, node, edge, result, units, onCommand, onSelect } = context;
   switch (active) {
     case "design":
       return node === null ? null : (
         <DesignSheet catalogue={catalogue} node={node} onCommand={onCommand} />
       );
     case "results":
-      return result === undefined ? null : <ResultsSheet result={result} />;
+      return result === undefined ? null : <ResultsSheet result={result} units={units} />;
     case "stages":
-      return result === undefined ? null : <StagesSheet result={result} />;
+      return result === undefined ? null : <StagesSheet result={result} units={units} />;
     case "conditions":
       return node === null ? null : (
-        <ConditionsSheet envelope={envelope} node={node} onCommand={onCommand} />
+        <ConditionsSheet envelope={envelope} node={node} units={units} onCommand={onCommand} />
       );
     case "composition":
-      return node === null ? null : <CompositionSheet envelope={envelope} node={node} />;
+      return node === null ? null : (
+        <CompositionSheet envelope={envelope} node={node} units={units} />
+      );
     case "worksheet":
-      return node === null ? null : <WorksheetSheet envelope={envelope} node={node} />;
+      return node === null ? null : (
+        <WorksheetSheet envelope={envelope} node={node} units={units} />
+      );
     case "convergence":
       return edge === null ? null : (
         <TearSheet catalogue={catalogue} edge={edge} onCommand={onCommand} />

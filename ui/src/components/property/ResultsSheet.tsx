@@ -1,4 +1,5 @@
 import { scalarsOf, warningsOf, type Scalar } from "../../state/results";
+import type { Units } from "../../state/units";
 import type { UnitResult } from "../../wire/types";
 
 /**
@@ -12,8 +13,15 @@ import type { UnitResult } from "../../wire/types";
  * The sheet is therefore the same one for a heater and for a distillation column, and a field added
  * to a model appears the next time that operation runs.
  */
-export function ResultsSheet({ result }: { result: UnitResult }) {
-  const scalars = scalarsOf(result);
+export function ResultsSheet({
+  result,
+  units,
+}: {
+  result: UnitResult;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
+}) {
+  const scalars = scalarsOf(result, units);
   const warnings = warningsOf(result);
 
   return (

@@ -25,6 +25,7 @@ import {
 import { useCallback, useEffect, useMemo } from "react";
 
 import type { EditorCommand } from "../wire/commands";
+import type { Units } from "../state/units";
 import { formatQuantity } from "../wire/field";
 import { removeCommandFor } from "../wire/nodes";
 import type { Catalogue, Envelope, GraphEdge, GraphNode } from "../wire/types";
@@ -34,11 +35,25 @@ export interface FlowsheetProps {
   catalogue: Catalogue | null;
   envelope: Envelope;
   selected: string | null;
+  /**
+   * The unit a reader wants a number in; a catalogue that has not loaded converts nothing.
+   *
+   * A readout is the one place a value is drawn *on* the drawing, so it converts like a table
+   * does and by the same factor - `formatQuantity`'s.
+   */
+  units: Units;
   onSelect: (id: string | null) => void;
   onCommand: (command: EditorCommand) => void;
 }
 
-export function Flowsheet({ catalogue, envelope, selected, onSelect, onCommand }: FlowsheetProps) {
+export function Flowsheet({
+  catalogue,
+  envelope,
+  selected,
+  units,
+  onSelect,
+  onCommand,
+}: FlowsheetProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -47,8 +62,8 @@ export function Flowsheet({ catalogue, envelope, selected, onSelect, onCommand }
   // would keep the values it computed before Solve was pressed, and the canvas would never show a
   // number. The envelope's identity changes on every call, which is exactly the right cadence.
   const derived = useMemo(
-    () => derive(envelope, catalogue, selected),
-    [envelope, catalogue, selected],
+    () => derive(envelope, catalogue, selected, units),
+    [envelope, catalogue, selected, units],
   );
 
   useEffect(() => {
@@ -138,6 +153,7 @@ function derive(
   envelope: Envelope,
   catalogue: Catalogue | null,
   selected: string | null,
+  units: Units,
 ): { nodes: Node[]; edges: Edge[] } {
   const streams = envelope.session?.streams ?? {};
   const forms = new Map((catalogue?.unit_ops ?? []).map((form) => [form.id, form]));
@@ -150,7 +166,7 @@ function derive(
     const payload: NodePayload = {
       graph: node,
       ...(form === undefined ? {} : { form }),
-      readout: readoutOf(node, envelope),
+      readout: readoutOf(node, envelope, units),
       bad: flagged.has(node.id),
     };
     return {
@@ -180,10 +196,11 @@ function derive(
       ...(stream === undefined
         ? {}
         : {
-            label: `${formatQuantity(stream.T.magnitude_si, stream.T.unit)} · ${formatQuantity(
+            label: `${formatQuantity(stream.T.magnitude_si, stream.T.unit, 4, units)} · ${formatQuantity(
               stream.P.magnitude_si,
               stream.P.unit,
               3,
+              units,
             )}`,
           }),
     };
@@ -193,7 +210,7 @@ function derive(
 }
 
 /** The lines a node shows: one per outlet the run has a value for. */
-function readoutOf(node: GraphNode, envelope: Envelope): NodePayload["readout"] {
+function readoutOf(node: GraphNode, envelope: Envelope, units: Units): NodePayload["readout"] {
   const streams = envelope.session?.streams ?? {};
   const ports = node.data.ports?.outlets ?? [];
   return ports
@@ -206,10 +223,11 @@ function readoutOf(node: GraphNode, envelope: Envelope): NodePayload["readout"] 
       return [
         {
           port: path,
-          text: `${path}  ${formatQuantity(stream.T.magnitude_si, stream.T.unit)}  ${formatQuantity(
+          text: `${path}  ${formatQuantity(stream.T.magnitude_si, stream.T.unit, 4, units)}  ${formatQuantity(
             stream.n.magnitude_si,
             stream.n.unit,
             3,
+            units,
           )}`,
         },
       ];

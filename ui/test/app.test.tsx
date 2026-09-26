@@ -357,4 +357,74 @@ describe("the editor", () => {
     expect(rowFor("sep1")?.getAttribute("aria-current")).toBe("true");
     expect(rowFor("hx1")?.getAttribute("aria-current")).toBeNull();
   });
+
+  /**
+   * **The unit set is a reading of the run and not a second run.** The sets come from the library's
+   * catalogue, the factors from the same conversions a calculation runs, and switching one converts
+   * what is drawn and nothing else — so a column's header and its cells move together, and a
+   * dimension no set names does not move at all.
+   */
+  it("reads the workbook in the set the reader chose, and remembers it", async () => {
+    stubFetch();
+    window.localStorage.clear();
+    const { container } = await open();
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+    fireEvent.click(screen.getByRole("tab", { name: "Workbook" }));
+
+    const chooser = () => container.querySelector<HTMLSelectElement>("select.units");
+    const headers = () =>
+      [...container.querySelectorAll(".dock .grid thead th")].map((th) => th.textContent);
+    // A quantity cell reads as a number *and* its unit - `formatQuantity`'s own shape - so a
+    // value is parsed off the front of it rather than the cell being read as a number.
+    const cell = (row: string, index: number) =>
+      Number.parseFloat(
+        container.querySelectorAll(`.dock .grid tbody tr[data-id="${row}"] td`)[index]
+          ?.textContent ?? "",
+      );
+
+    // The sets are the library's, in its own order, and SI is the one a document opens in.
+    expect([...(chooser()?.options ?? [])].map((option) => option.textContent)).toEqual([
+      "SI",
+      "Field",
+    ]);
+    expect(chooser()?.value).toBe("si");
+    expect(headers()).toEqual([
+      "flow mol/s",
+      "mass flow kg/s",
+      "M kg/mol",
+      "P Pa",
+      "T K",
+      "h J/mol",
+      "VF",
+    ]);
+    const pascals = cell("mix1.product", 3);
+
+    fireEvent.change(chooser() as HTMLSelectElement, { target: { value: "field" } });
+    await waitFor(() => expect(headers()[3]).toBe("P psi"));
+
+    // Four of the seven move, and the three that do not are the ones no set names: a molar mass
+    // in `lb/lbmol` would need a pound-mole, which the vocabulary does not carry, and `T` is in
+    // kelvin in both because an absolute °C is an offset unit the library does not convert.
+    expect(headers()).toEqual([
+      "flow kmol/h",
+      "mass flow lb/h",
+      "M kg/mol",
+      "P psi",
+      "T K",
+      "h kJ/mol",
+      "VF",
+    ]);
+    // And the number is the library's, in the unit the header names: one psi is 6894.757… Pa, so
+    // the same pressure read twice agrees to the four significant figures the column shows.
+    const pounds = cell("mix1.product", 3);
+    expect(pounds * 6894.757293168361).toBeGreaterThan(pascals * 0.99);
+    expect(pounds * 6894.757293168361).toBeLessThan(pascals * 1.01);
+
+    // A reader's choice, remembered the way the theme is - and not on the wire, because it is not
+    // a fact about the document.
+    expect(window.localStorage.getItem("azoth.units")).toBe("field");
+    // The run did not change: only what is drawn did. The workbook's rows are the same rows.
+    expect(container.querySelectorAll(".dock .grid tbody tr")).toHaveLength(7);
+  });
 });

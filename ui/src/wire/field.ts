@@ -8,6 +8,7 @@
  * cannot choose a widget says so rather than guessing at a number box.
  */
 
+import { displayOf, type Units } from "../state/units";
 import type { Catalogue, FormParameter, FormRange, Kind } from "./types";
 
 /** What a field renders as. */
@@ -132,10 +133,24 @@ export function fieldText(value: unknown): string {
   return String(value);
 }
 
-/** A scalar with a unit, shortened for a label: 2.00e+6 Pa, 477.96 K. */
-export function formatQuantity(magnitude: number, unit: string, digits = 4): string {
-  const rounded = Number(magnitude.toPrecision(digits));
-  return `${rounded} ${unit}`;
+/**
+ * A scalar with a unit, shortened for a label: 2.00e+6 Pa, 477.96 K.
+ *
+ * **This is the one place a quantity becomes text**, which is what makes the unit set a parameter
+ * rather than a second formatter: a caller with a set passes it and gets the number and the unit
+ * a reader asked for, and a caller with none - a bound's hint under a parameter, a value the
+ * reader cannot change - passes none and gets the library's own. Nothing here converts; the
+ * division is `state/units.ts`'s and the factor is the catalogue's.
+ */
+export function formatQuantity(
+  magnitude: number,
+  unit: string,
+  digits = 4,
+  units?: Units,
+): string {
+  const shown = units === undefined ? { unit, factor: 1 } : displayOf(units, unit);
+  const rounded = Number((magnitude / shown.factor).toPrecision(digits));
+  return `${rounded} ${shown.unit}`;
 }
 
 /**

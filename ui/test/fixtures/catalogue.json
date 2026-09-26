@@ -5500,5 +5500,321 @@
         "feed_t"
       ]
     }
-  ]
+  ],
+  "unit_sets": [
+    {
+      "id": "si",
+      "name": "SI",
+      "units": {
+        "amount": "mol",
+        "dynamic_viscosity": "Pa*s",
+        "energy": "J",
+        "length": "m",
+        "mass": "kg",
+        "mass_density": "kg/m**3",
+        "mass_rate": "kg/s",
+        "molar_energy": "J/mol",
+        "molar_flow": "mol/s",
+        "power": "W",
+        "pressure": "Pa",
+        "specific_heat_capacity": "J/(kg*K)",
+        "velocity": "m/s",
+        "volume_rate": "m**3/s"
+      }
+    },
+    {
+      "id": "field",
+      "name": "Field",
+      "units": {
+        "amount": "kmol",
+        "dynamic_viscosity": "cP",
+        "energy": "Btu",
+        "length": "ft",
+        "mass": "lb",
+        "mass_density": "lb/ft**3",
+        "mass_rate": "lb/h",
+        "molar_energy": "kJ/mol",
+        "molar_flow": "kmol/h",
+        "power": "hp",
+        "pressure": "psi",
+        "specific_heat_capacity": "Btu/(lb*degF)",
+        "velocity": "ft/s",
+        "volume_rate": "gpm"
+      }
+    }
+  ],
+  "units": {
+    "1/K": {
+      "dimension": "per_temperature",
+      "factor": 1.0
+    },
+    "1/K**2": {
+      "dimension": "per_temperature_squared",
+      "factor": 1.0
+    },
+    "1/K**3": {
+      "dimension": "per_temperature_cubed",
+      "factor": 1.0
+    },
+    "Btu": {
+      "dimension": "energy",
+      "factor": 1055.056
+    },
+    "Btu/(lb*degF)": {
+      "dimension": "specific_heat_capacity",
+      "factor": 4186.800584851107
+    },
+    "C": {
+      "dimension": "charge",
+      "factor": 1.0
+    },
+    "J": {
+      "dimension": "energy",
+      "factor": 1.0
+    },
+    "J/(kg*K)": {
+      "dimension": "specific_heat_capacity",
+      "factor": 1.0
+    },
+    "J/(mol*K)": {
+      "dimension": "molar_heat_capacity",
+      "factor": 1.0
+    },
+    "J/(mol*K**2)": {
+      "dimension": "molar_heat_capacity_coefficient_2",
+      "factor": 1.0
+    },
+    "J/(mol*K**3)": {
+      "dimension": "molar_heat_capacity_coefficient_3",
+      "factor": 1.0
+    },
+    "J/(mol*K**4)": {
+      "dimension": "molar_heat_capacity_coefficient_4",
+      "factor": 1.0
+    },
+    "J/(mol*K**5)": {
+      "dimension": "molar_heat_capacity_coefficient_5",
+      "factor": 1.0
+    },
+    "J/mol": {
+      "dimension": "molar_energy",
+      "factor": 1.0
+    },
+    "K": {
+      "dimension": "thermodynamic_temperature",
+      "factor": 1.0
+    },
+    "L/min": {
+      "dimension": "volume_rate",
+      "factor": 0.000016666666666666667
+    },
+    "MJ": {
+      "dimension": "energy",
+      "factor": 1000000.0
+    },
+    "MPa": {
+      "dimension": "pressure",
+      "factor": 1000000.0
+    },
+    "MW": {
+      "dimension": "power",
+      "factor": 1000000.0
+    },
+    "N/m": {
+      "dimension": "surface_tension",
+      "factor": 1.0
+    },
+    "Pa": {
+      "dimension": "pressure",
+      "factor": 1.0
+    },
+    "Pa*m**6/mol**2": {
+      "dimension": "attraction_parameter",
+      "factor": 1.0
+    },
+    "Pa*s": {
+      "dimension": "dynamic_viscosity",
+      "factor": 1.0
+    },
+    "W": {
+      "dimension": "power",
+      "factor": 1.0
+    },
+    "W/(m**2*K)": {
+      "dimension": "heat_transfer",
+      "factor": 1.0
+    },
+    "W/(m*K)": {
+      "dimension": "thermal_conductivity",
+      "factor": 1.0
+    },
+    "W/K": {
+      "dimension": "thermal_conductance",
+      "factor": 1.0
+    },
+    "angstrom": {
+      "dimension": "length",
+      "factor": 1e-10
+    },
+    "atm": {
+      "dimension": "pressure",
+      "factor": 101325.0
+    },
+    "bar": {
+      "dimension": "pressure",
+      "factor": 100000.0
+    },
+    "cP": {
+      "dimension": "dynamic_viscosity",
+      "factor": 0.001
+    },
+    "cm": {
+      "dimension": "length",
+      "factor": 0.01
+    },
+    "dimensionless": {
+      "dimension": "dimensionless",
+      "factor": 1.0
+    },
+    "ft": {
+      "dimension": "length",
+      "factor": 0.3048
+    },
+    "ft**3/min": {
+      "dimension": "volume_rate",
+      "factor": 0.0004719474432000001
+    },
+    "ft/s": {
+      "dimension": "velocity",
+      "factor": 0.3048
+    },
+    "gpm": {
+      "dimension": "volume_rate",
+      "factor": 0.00006309019639999999
+    },
+    "hp": {
+      "dimension": "power",
+      "factor": 745.6998715822704
+    },
+    "in": {
+      "dimension": "length",
+      "factor": 0.0254
+    },
+    "kJ": {
+      "dimension": "energy",
+      "factor": 1000.0
+    },
+    "kJ/(kg*K)": {
+      "dimension": "specific_heat_capacity",
+      "factor": 1000.0
+    },
+    "kJ/mol": {
+      "dimension": "molar_energy",
+      "factor": 1000.0
+    },
+    "kPa": {
+      "dimension": "pressure",
+      "factor": 1000.0
+    },
+    "kW": {
+      "dimension": "power",
+      "factor": 1000.0
+    },
+    "kg": {
+      "dimension": "mass",
+      "factor": 1.0
+    },
+    "kg/h": {
+      "dimension": "mass_rate",
+      "factor": 0.0002777777777777778
+    },
+    "kg/m**3": {
+      "dimension": "mass_density",
+      "factor": 1.0
+    },
+    "kg/mol": {
+      "dimension": "molar_mass",
+      "factor": 1.0
+    },
+    "kg/s": {
+      "dimension": "mass_rate",
+      "factor": 1.0
+    },
+    "kmol": {
+      "dimension": "amount",
+      "factor": 1000.0
+    },
+    "kmol/h": {
+      "dimension": "molar_flow",
+      "factor": 0.2777777777777778
+    },
+    "lb": {
+      "dimension": "mass",
+      "factor": 0.45359237
+    },
+    "lb/ft**3": {
+      "dimension": "mass_density",
+      "factor": 16.018463373960138
+    },
+    "lb/h": {
+      "dimension": "mass_rate",
+      "factor": 0.00012599788055555556
+    },
+    "m": {
+      "dimension": "length",
+      "factor": 1.0
+    },
+    "m**2": {
+      "dimension": "area",
+      "factor": 1.0
+    },
+    "m**2/s": {
+      "dimension": "diffusion_coefficient",
+      "factor": 1.0
+    },
+    "m**3/h": {
+      "dimension": "volume_rate",
+      "factor": 0.0002777777777777778
+    },
+    "m**3/mol": {
+      "dimension": "molar_volume",
+      "factor": 1.0
+    },
+    "m**3/s": {
+      "dimension": "volume_rate",
+      "factor": 1.0
+    },
+    "m/s": {
+      "dimension": "velocity",
+      "factor": 1.0
+    },
+    "mm": {
+      "dimension": "length",
+      "factor": 0.001
+    },
+    "mol": {
+      "dimension": "amount",
+      "factor": 1.0
+    },
+    "mol/kg": {
+      "dimension": "molality",
+      "factor": 1.0
+    },
+    "mol/s": {
+      "dimension": "molar_flow",
+      "factor": 1.0
+    },
+    "psi": {
+      "dimension": "pressure",
+      "factor": 6894.757293168361
+    },
+    "t": {
+      "dimension": "mass",
+      "factor": 1000.0
+    },
+    "t/h": {
+      "dimension": "mass_rate",
+      "factor": 0.2777777777777778
+    }
+  }
 }

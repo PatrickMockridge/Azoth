@@ -300,6 +300,23 @@ export interface Tool {
 
 export interface Catalogue {
   unit_ops: Form[];
+  /**
+   * Every canonical unit, keyed by the string a quantity carries: what it measures, and what one
+   * of it is worth in SI.
+   *
+   * **Computed by the library and not tabulated here.** `factor` is `si_factor`, which runs the
+   * same conversion a calculation runs, and `python/tests/test_units_cross_library.py` holds every
+   * one of them to `pint`. A front end converting with its own table would be a second answer to a
+   * question the library has answered, which is the defect the vocabulary's gate exists to refuse.
+   */
+  units?: Record<string, { dimension: string | null; factor: number | null }>;
+  /**
+   * The named unit sets a reader may switch between, as the vocabulary declares them.
+   *
+   * One unit per dimension per set, and a dimension no set names is read in the unit the library
+   * computed it in - most of the vocabulary has no engineering alternative.
+   */
+  unit_sets?: { id: string; name: string; units: Record<string, string> }[];
   tools?: Tool[];
 }
 

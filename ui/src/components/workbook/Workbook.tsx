@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { componentAxis, compositionRows, fraction, streamColumns, streamRows } from "../../state/columns";
+import { displayOf, type Units } from "../../state/units";
 import { formatQuantity } from "../../wire/field";
 import type { Envelope, Quantity, StreamRecord } from "../../wire/types";
 import { DockTabs } from "../property/DockTabs";
@@ -30,9 +31,12 @@ const LABELS: Record<Sheet, string> = {
  */
 export function Workbook({
   envelope,
+  units,
   onSelect,
 }: {
   envelope: Envelope;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
   onSelect: (id: string | null) => void;
 }) {
   const [sheet, setSheet] = useState<Sheet>("streams");
@@ -54,7 +58,7 @@ export function Workbook({
       />
       {sheet === "streams" ? (
         <WorkbookGrid
-          columns={streamColumns(rows[0]?.record)}
+          columns={streamColumns(rows[0]?.record, units)}
           stale={stale}
           empty="this document wires no streams"
           onSelect={(id) => {
@@ -64,7 +68,9 @@ export function Workbook({
           rows={rows.map((row) => ({
             id: row.path,
             head: row.path,
-            cells: streamColumns(row.record).map((column) => cell(row.record, column.key)),
+            cells: streamColumns(row.record, units).map((column) =>
+              cell(row.record, column.key, units),
+            ),
           }))}
         />
       ) : null}
@@ -76,17 +82,19 @@ export function Workbook({
               { key: "component", label: "component" },
               { key: "stream", label: "stream" },
               { key: "fraction", label: "mole fraction", numeric: true },
-              { key: "flow", label: "n · z mol/s", numeric: true },
+              // **The label names the unit the cells are in**, which is the set's: the sheet
+              // converts `n · z` with the same factor the workbook converts `n` with.
+              { key: "flow", label: `n · z ${flowUnit(units)}`, numeric: true },
             ]}
             stale={stale}
             empty="no stream in this document carries a composition yet"
             onSelect={(id) => {
-              const row = compositionRows(envelope).find(
+              const row = compositionRows(envelope, units).find(
                 (candidate) => `${candidate.path}:${candidate.component}` === id,
               );
               onSelect(row?.nodeId === undefined || row.nodeId === "" ? null : row.nodeId);
             }}
-            rows={compositionRows(envelope).map((row) => ({
+            rows={compositionRows(envelope, units).map((row) => ({
               id: `${row.path}:${row.component}`,
               head: row.component,
               cells: [
@@ -142,8 +150,13 @@ export function Workbook({
   );
 }
 
+/** The unit the composition sheet's derived column is read in. */
+function flowUnit(units: Units): string {
+  return displayOf(units, "mol/s").unit;
+}
+
 /** One cell: the record's value, or a dash where the run left none. */
-function cell(record: StreamRecord | undefined, key: string): string {
+function cell(record: StreamRecord | undefined, key: string, units: Units): string {
   const value = (record as Record<string, unknown> | undefined)?.[key];
   if (value === undefined || value === null) {
     return "—";
@@ -153,7 +166,7 @@ function cell(record: StreamRecord | undefined, key: string): string {
   }
   const quantity = value as Quantity;
   if (typeof quantity.magnitude_si === "number") {
-    return formatQuantity(quantity.magnitude_si, quantity.unit, 4);
+    return formatQuantity(quantity.magnitude_si, quantity.unit, 4, units);
   }
   return String(value);
 }

@@ -1,3 +1,4 @@
+import { displayOf, type Units } from "../../state/units";
 import { formatQuantity } from "../../wire/field";
 import type { Envelope, GraphNode } from "../../wire/types";
 
@@ -9,7 +10,16 @@ import type { Envelope, GraphNode } from "../../wire/types";
  * the same shape before and after Solve and a stream the run did not reach is a row of blanks
  * rather than a missing row.
  */
-export function WorksheetSheet({ envelope, node }: { envelope: Envelope; node: GraphNode }) {
+export function WorksheetSheet({
+  envelope,
+  node,
+  units,
+}: {
+  envelope: Envelope;
+  node: GraphNode;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
+}) {
   const ports = node.data.ports;
   const inlets = ports?.inlets.flatMap((port) => port.handles) ?? [];
   const outlets = ports?.outlets.flatMap((port) => port.handles) ?? [];
@@ -29,10 +39,10 @@ export function WorksheetSheet({ envelope, node }: { envelope: Envelope; node: G
             <tr>
               <th scope="col">stream</th>
               <th scope="col">side</th>
-              <th scope="col">n mol/s</th>
-              <th scope="col">T K</th>
-              <th scope="col">P Pa</th>
-              <th scope="col">h J/mol</th>
+              <th scope="col">{head(units, "n", "mol/s")}</th>
+              <th scope="col">{head(units, "T", "K")}</th>
+              <th scope="col">{head(units, "P", "Pa")}</th>
+              <th scope="col">{head(units, "h", "J/mol")}</th>
               <th scope="col">VF</th>
             </tr>
           </thead>
@@ -44,16 +54,16 @@ export function WorksheetSheet({ envelope, node }: { envelope: Envelope; node: G
                   <th scope="row">{path}</th>
                   <td>{side}</td>
                   <td data-num>
-                    {stream === undefined ? "—" : formatQuantity(stream.n.magnitude_si, stream.n.unit, 3)}
+                    {stream === undefined ? "—" : formatQuantity(stream.n.magnitude_si, stream.n.unit, 3, units)}
                   </td>
                   <td data-num>
-                    {stream === undefined ? "—" : formatQuantity(stream.T.magnitude_si, stream.T.unit, 4)}
+                    {stream === undefined ? "—" : formatQuantity(stream.T.magnitude_si, stream.T.unit, 4, units)}
                   </td>
                   <td data-num>
-                    {stream === undefined ? "—" : formatQuantity(stream.P.magnitude_si, stream.P.unit, 3)}
+                    {stream === undefined ? "—" : formatQuantity(stream.P.magnitude_si, stream.P.unit, 3, units)}
                   </td>
                   <td data-num>
-                    {stream === undefined ? "—" : formatQuantity(stream.h.magnitude_si, stream.h.unit, 4)}
+                    {stream === undefined ? "—" : formatQuantity(stream.h.magnitude_si, stream.h.unit, 4, units)}
                   </td>
                   <td data-num>
                     {stream?.vapour_fraction === null || stream?.vapour_fraction === undefined
@@ -68,4 +78,9 @@ export function WorksheetSheet({ envelope, node }: { envelope: Envelope; node: G
       )}
     </div>
   );
+}
+
+/** A column's heading: the field, and the unit its cells are in under the set in force. */
+function head(units: Units, field: string, unit: string): string {
+  return `${field} ${displayOf(units, unit).unit}`;
 }

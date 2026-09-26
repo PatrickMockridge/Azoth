@@ -10,8 +10,13 @@
  * added to the record years from now appear with a label rather than a blank: [`streamColumns`]
  * names the ones it knows and then draws any *unclaimed* key that is a quantity, labelled from its
  * own key. Nothing here computes a value a kernel computed.
+ *
+ * **A column's unit is the unit a reader will see**, which is the unit set's and not the record's:
+ * the cell is divided by the same factor the header names, so the two cannot disagree about which
+ * unit a column is in.
  */
 
+import { displayOf, type Units } from "./units";
 import type { Envelope, Quantity, StreamRecord } from "../wire/types";
 
 /** The substance axis a composition table is laid out over. */
@@ -95,18 +100,25 @@ export interface Column {
  * of - a column labelled from the key itself. That last part is the difference between a front end
  * that shows what arrived and one that shows what it was written to expect.
  */
-export function streamColumns(record: StreamRecord | undefined): Column[] {
+export function streamColumns(record: StreamRecord | undefined, units?: Units): Column[] {
   const declared: Column[] = [
     { key: "n", label: "flow", unit: "mol/s", digits: 4 },
     { key: "mass_flow", label: "mass flow", unit: "kg/s", digits: 5 },
     { key: "molar_mass", label: "M", unit: "kg/mol", digits: 5 },
-    { key: "P", label: "P", unit: "Pa", digits: 1 },
+    // **Four significant figures, and one would do for Pa alone.** A pressure in pascals is
+    // around 1e5, so one figure reads as the same number; the same quantity in psi is around
+    // 70, where one figure is 70 against 72.52. The unit set is what makes the coarse
+    // reading wrong, and the column carries one precision for every unit it may be read in.
+    { key: "P", label: "P", unit: "Pa", digits: 4 },
     { key: "T", label: "T", unit: "K", digits: 3 },
     { key: "h", label: "h", unit: "J/mol", digits: 3 },
     { key: "vapour_fraction", label: "VF", unit: null, digits: 4 },
   ];
+  const shown = (unit: string | null) =>
+    unit === null || units === undefined ? unit : displayOf(units, unit).unit;
+  const reading = declared.map((column) => ({ ...column, unit: shown(column.unit) }));
   if (record === undefined) {
-    return declared;
+    return reading;
   }
   const claimed = new Set([...declared.map((column) => column.key), "z"]);
   const extra = Object.entries(record)
@@ -114,10 +126,10 @@ export function streamColumns(record: StreamRecord | undefined): Column[] {
     .map(([key, value]) => ({
       key,
       label: key,
-      unit: (value as Quantity).unit,
+      unit: shown((value as Quantity).unit),
       digits: 4,
     }));
-  return [...declared, ...extra];
+  return [...reading, ...extra];
 }
 
 /** Whether a record's value is the codec's `{magnitude_si, unit}` shape. */
@@ -199,9 +211,17 @@ export interface CompositionRow {
   readonly flow: number | null;
 }
 
-/** Every stream's substances, one row per stream per substance. */
-export function compositionRows(envelope: Envelope): CompositionRow[] {
+/**
+ * Every stream's substances, one row per stream per substance.
+ *
+ * **The one derived cell is converted in the derived unit.** `n · z` is a molar flow, so it is read
+ * in the set's molar-flow unit and not in the record's - the multiplication happens in SI and the
+ * division is the same one `formatQuantity` would have done, which is what keeps the sheet's `n · z`
+ * column in the same unit as the workbook's `flow` column.
+ */
+export function compositionRows(envelope: Envelope, units?: Units): CompositionRow[] {
   const axis = componentAxis(envelope);
+  const perSecond = units === undefined ? 1 : displayOf(units, "mol/s").factor;
   const rows: CompositionRow[] = [];
   for (const row of streamRows(envelope)) {
     const z = row.record?.z;
@@ -214,7 +234,7 @@ export function compositionRows(envelope: Envelope): CompositionRow[] {
         path: row.path,
         nodeId: row.nodeId,
         fraction: value,
-        flow: row.record === undefined ? null : value * row.record.n.magnitude_si,
+        flow: row.record === undefined ? null : (value * row.record.n.magnitude_si) / perSecond,
       });
     });
   }

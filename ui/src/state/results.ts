@@ -12,6 +12,7 @@
  * *how many digits* a magnitude shows, which is a formatting choice and not arithmetic.
  */
 
+import { displayOf, type Units } from "./units";
 import type { TabId } from "./layout";
 import type { Envelope, Quantity, UnitResult } from "../wire/types";
 
@@ -51,7 +52,7 @@ export function resultOf(envelope: Envelope, instance: string): UnitResult | und
  * A `null` is a row with a dash rather than a missing row: a skipped solve has no residual, and a
  * reader comparing two runs needs to see that it is absent rather than not look for it.
  */
-export function scalarsOf(result: UnitResult): Scalar[] {
+export function scalarsOf(result: UnitResult, units?: Units): Scalar[] {
   const out: Scalar[] = [];
   for (const [key, value] of Object.entries(result)) {
     if (key === "warnings") {
@@ -66,10 +67,13 @@ export function scalarsOf(result: UnitResult): Scalar[] {
     } else if (value === null) {
       out.push({ key, text: "—", unit: null, numeric: false });
     } else if (isQuantity(value)) {
+      // The same division `formatQuantity` does, kept here as a number and a unit because a
+      // result sheet draws them in two cells.
+      const read = shown(units, value.unit);
       out.push({
         key,
-        text: value.magnitude_si.toFixed(6),
-        unit: value.unit,
+        text: (value.magnitude_si / read.factor).toFixed(6),
+        unit: read.unit,
         numeric: true,
       });
     }
@@ -78,7 +82,7 @@ export function scalarsOf(result: UnitResult): Scalar[] {
 }
 
 /** The vectors of a result - the profiles, tray columns and histories - with their units. */
-export function seriesOf(result: UnitResult): Series[] {
+export function seriesOf(result: UnitResult, units?: Units): Series[] {
   const out: Series[] = [];
   for (const [key, value] of Object.entries(result)) {
     if (isComposition(key) || !Array.isArray(value) || value.length === 0) {
@@ -88,10 +92,14 @@ export function seriesOf(result: UnitResult): Series[] {
       out.push({ key, values: value as number[], unit: null });
     } else if (value.every(isQuantity)) {
       const quantities = value as Quantity[];
+      // **One factor for the column**, taken from the first entry: a profile is one dimension, and
+      // a vector whose entries disagreed about theirs would be a defect the library cannot write.
+      const first = quantities[0];
+      const read = first === undefined ? { unit: null, factor: 1 } : shown(units, first.unit);
       out.push({
         key,
-        values: quantities.map((entry) => entry.magnitude_si),
-        unit: quantities[0]?.unit ?? null,
+        values: quantities.map((entry) => entry.magnitude_si / read.factor),
+        unit: read.unit,
       });
     }
   }
@@ -129,6 +137,17 @@ export function warningsOf(result: UnitResult): ResultWarning[] {
       },
     ];
   });
+}
+
+/**
+ * One quantity as it is read: its unit and the factor it is divided by.
+ *
+ * **A caller with no set gets the library's own unit and a factor of one**, which is what makes the
+ * unit set a reading of a result rather than a requirement on one: a caller that has no catalogue
+ * yet - the first render of either door - sees exactly what the run wrote.
+ */
+function shown(units: Units | undefined, unit: string): { unit: string; factor: number } {
+  return units === undefined ? { unit, factor: 1 } : displayOf(units, unit);
 }
 
 /** Whether a value is the codec's `{magnitude_si, unit}` shape. */

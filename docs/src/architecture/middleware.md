@@ -100,6 +100,8 @@ of a HYSYS/UniSim-style editor are these layers viewed one way:
 | workbook | every stream, by the endpoint that produced it | session + graph |
 | messages | the checker's diagnostics | the checker |
 | palette dropdown | the `UnitOpSpec` registry, grouped by the family its file sits in | the palette |
+| the objects in the document | the graph, selected through the same call the canvas uses | graph |
+| unit set | the vocabulary's named sets, and the factor of the unit each names | catalogue |
 | top-bar menu | new / open / save / solve | command model + quote/drop |
 
 **It holds no copy of the flowsheet.** Every gesture goes out as a command and comes back as the
@@ -131,6 +133,15 @@ two answers to one question. The window's result sheets read those names and enu
 field added to a model appears without a line of front-end code; a unit op whose whole answer is its
 streams publishes no entry at all, which is a statement about the arithmetic rather than a gap.
 
+**A unit set is a reading of a run, not a second run.** The vocabulary declares named sets — `si` and
+`field` — as one unit per dimension, and the catalogue carries them beside every declared unit's
+dimension and its `si_factor`, which is the same conversion a calculation runs. So the editor
+divides by a factor the library computed, and `ui/src/state/units.ts` holds no conversion table: a
+display switches unit, a document does not change, and Solve has no opinion about which set is in
+force. A dimension no set names is read in the unit the library computed it in — most of the
+vocabulary has no engineering alternative — and absolute temperature is deliberately one of them,
+because an offset unit is a different thing from a scale and this library converts scales.
+
 **The editor is one front-end over two of those doors.** `ui/src/wire/session.ts` is the seam — a
 palette and three calls, every one of them a promise, because a `fetch` cannot answer a synchronous
 call and one interface both doors implement is the only version where a panel does not have to know
@@ -142,9 +153,10 @@ answer is unreadable without the CORS header it earns.
 **What the served door cannot do is the server's shape, not an omission.** `azoth serve` holds one
 document for the life of its process and the route has no call that replaces it, so New, Open and
 Demo are refused there with the reason on the control, and a save still works because every envelope
-carries the document. The palette is the exception in the other direction: a form per unit op is on
-no envelope, so `/rpc` answers `{"catalogue": …}` as a *read* of the palette the process loaded —
-enough for a palette panel and a unit-op window, and not an opening of anything.
+carries the document. The catalogue is the exception in the other direction: a form per unit op, and
+the units with their factors and the sets that choose between them, are facts about the *library* and
+are on no envelope — so `/rpc` answers `{"catalogue": …}` as a *read* of the palette the process
+loaded, enough for a palette panel, a unit-op window and a unit set, and not an opening of anything.
 
 ### The stack
 

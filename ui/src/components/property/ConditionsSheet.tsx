@@ -1,4 +1,5 @@
 import type { EditorCommand } from "../../wire/commands";
+import { displayOf, type Units } from "../../state/units";
 import { formatQuantity } from "../../wire/field";
 import type { Envelope, GraphNode, StreamRecord } from "../../wire/types";
 
@@ -17,10 +18,13 @@ import type { Envelope, GraphNode, StreamRecord } from "../../wire/types";
 export function ConditionsSheet({
   envelope,
   node,
+  units,
   onCommand,
 }: {
   envelope: Envelope;
   node: GraphNode;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
   onCommand: (command: EditorCommand) => void;
 }) {
   const record = node.data.input;
@@ -105,8 +109,10 @@ export function ConditionsSheet({
                 quantity === undefined || quantity === null ? null : (
                   <tr key={label}>
                     <th scope="row">{label}</th>
-                    <td data-num>{formatQuantity(quantity.magnitude_si, quantity.unit, 6)}</td>
-                    <td className="unit">{quantity.unit}</td>
+                    <td data-num>
+                      {formatQuantity(quantity.magnitude_si, quantity.unit, 6, units)}
+                    </td>
+                    <td className="unit">{shownUnit(units, quantity.unit)}</td>
                   </tr>
                 ),
               )}
@@ -128,4 +134,9 @@ export function ConditionsSheet({
       )}
     </div>
   );
+}
+
+/** The unit a cell is in, which is the set's and not the record's. */
+function shownUnit(units: Units, unit: string): string {
+  return displayOf(units, unit).unit;
 }

@@ -13,10 +13,13 @@
 import { describe, expect, it } from "vitest";
 
 import { resultOf, resultTabs, scalarsOf, seriesOf, warningsOf } from "../src/state/results";
+import { unitsOf } from "../src/state/units";
+import catalogue from "./fixtures/catalogue.json";
 import fixture from "./fixtures/envelope.json";
-import type { Envelope, UnitResult } from "../src/wire/types";
+import type { Catalogue, Envelope, UnitResult } from "../src/wire/types";
 
 const envelope = fixture as unknown as Envelope;
+const field = unitsOf(catalogue as unknown as Catalogue, "field");
 const heater = resultOf(envelope, "hx1") as UnitResult;
 
 describe("the result reader", () => {
@@ -76,6 +79,20 @@ describe("the result reader", () => {
     ]);
     // A result with no warnings key at all, which is what a model without any publishes.
     expect(warningsOf({ outlet_n: 1 })).toEqual([]);
+  });
+
+  it("divides a scalar into the set's unit, and leaves the unit it cannot", () => {
+    // The heater's duty is a power in watts, and the field set reads a power in horsepower.
+    const watts = scalarsOf(heater).find((scalar) => scalar.key === "outlet_duty");
+    const horse = scalarsOf(heater, field).find((scalar) => scalar.key === "outlet_duty");
+    expect(watts?.unit).toBe("W");
+    expect(horse?.unit).toBe("hp");
+    // 745.6998715822702 W is one horsepower: the library's own number, and the same one
+    // `test_units_cross_library.py` holds to `pint` on the Rust side.
+    expect(Number(watts?.text) / Number(horse?.text)).toBeCloseTo(745.6998715822702, 4);
+    // And a field with no unit is not converted, because there is no unit to convert it to.
+    const flow = scalarsOf(heater, field).find((scalar) => scalar.key === "outlet_n");
+    expect(flow?.unit).toBeNull();
   });
 
   it("offers each sheet only where it has something to draw", () => {

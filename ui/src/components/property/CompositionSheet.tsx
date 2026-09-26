@@ -1,4 +1,5 @@
 import { componentAxis, fraction } from "../../state/columns";
+import { displayOf, type Units } from "../../state/units";
 import type { Envelope, GraphNode } from "../../wire/types";
 
 /**
@@ -11,12 +12,24 @@ import type { Envelope, GraphNode } from "../../wire/types";
  * of *one record* multiplied: no kernel's arithmetic is repeated here. A mass column would need
  * each substance's own molar mass, which no record carries, so it is absent rather than guessed.
  */
-export function CompositionSheet({ envelope, node }: { envelope: Envelope; node: GraphNode }) {
+export function CompositionSheet({
+  envelope,
+  node,
+  units,
+}: {
+  envelope: Envelope;
+  node: GraphNode;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
+}) {
   const axis = componentAxis(envelope);
   const record = node.data.input;
   const reached = envelope.session?.streams[node.data.name];
   const z = record?.z ?? reached?.z ?? [];
-  const n = record?.n ?? reached?.n.magnitude_si ?? 0;
+  // A feed's flow is stated in the document's own unit, which is the vocabulary's; a solved
+  // stream's is the run's. Both are SI magnitudes by the time they reach here, so one division
+  // covers the two - and `mol/s` is the dimension, not the feed's spelling.
+  const n = (record?.n ?? reached?.n.magnitude_si ?? 0) / flowFactor(units);
   const names = axis.names.length >= z.length ? axis.names : z.map((_, index) => `z[${index}]`);
 
   return (
@@ -30,7 +43,7 @@ export function CompositionSheet({ envelope, node }: { envelope: Envelope; node:
             <tr>
               <th scope="col">component</th>
               <th scope="col">mole fraction</th>
-              <th scope="col">mole flow mol/s</th>
+              <th scope="col">mole flow {flowUnit(units)}</th>
             </tr>
           </thead>
           <tbody>
@@ -50,4 +63,14 @@ export function CompositionSheet({ envelope, node }: { envelope: Envelope; node:
       </p>
     </div>
   );
+}
+
+/** The unit the derived mole-flow column is read in. */
+function flowUnit(units: Units): string {
+  return displayOf(units, "mol/s").unit;
+}
+
+/** The factor that column's cells are divided by, which is the same unit's. */
+function flowFactor(units: Units): number {
+  return displayOf(units, "mol/s").factor;
 }

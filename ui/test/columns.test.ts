@@ -10,10 +10,13 @@
 import { describe, expect, it } from "vitest";
 
 import { componentAxis, compositionRows, fraction, streamColumns, streamRows } from "../src/state/columns";
+import { unitsOf } from "../src/state/units";
+import catalogue from "./fixtures/catalogue.json";
 import fixture from "./fixtures/envelope.json";
-import type { Envelope, GraphNode } from "../src/wire/types";
+import type { Catalogue, Envelope, GraphNode } from "../src/wire/types";
 
 const envelope = fixture as unknown as Envelope;
+const field = unitsOf(catalogue as unknown as Catalogue, "field");
 
 /** A document whose feeds declare the given substance lists. */
 function withFeeds(lists: readonly (readonly string[])[]): Envelope {
@@ -125,5 +128,37 @@ describe("the workbook's rows", () => {
     // `n · z` is two fields of the record multiplied, and the flow is the run's own.
     const flow = envelope.session?.streams["sep1.vapour"]?.n.magnitude_si ?? 0;
     expect(vapour[0]?.flow).toBeCloseTo(flow * (vapour[0]?.fraction ?? 0), 10);
+
+    // **And the derived cell is read in the set's unit.** `n · z` is a molar flow, so the field
+    // set is the one that changes it - and it changes by the factor of `kmol/h`, not of `mol/s`.
+    const kmolPerHour = 1000 / 3600;
+    const inField = compositionRows(envelope, field).filter((row) => row.path === "sep1.vapour");
+    expect(inField[0]?.flow).toBeCloseTo((vapour[0]?.flow ?? 0) / kmolPerHour, 10);
+  });
+
+  it("renames a column to the unit it is read in, and leaves the rest alone", () => {
+    // **A column's unit is the unit its cells are in**, which is what keeps the header and the
+    // numbers from disagreeing. The four that change are the four the field set names; `M` and
+    // `VF` are not among them, because no set names their dimensions.
+    const inSi = streamColumns(envelope.session?.streams["sep1.vapour"], unitsOf(null, null));
+    const inField = streamColumns(envelope.session?.streams["sep1.vapour"], field);
+    expect(inSi.map((column) => `${column.label} ${String(column.unit)}`)).toEqual([
+      "flow mol/s",
+      "mass flow kg/s",
+      "M kg/mol",
+      "P Pa",
+      "T K",
+      "h J/mol",
+      "VF null",
+    ]);
+    expect(inField.map((column) => `${column.label} ${String(column.unit)}`)).toEqual([
+      "flow kmol/h",
+      "mass flow lb/h",
+      "M kg/mol",
+      "P psi",
+      "T K",
+      "h kJ/mol",
+      "VF null",
+    ]);
   });
 });

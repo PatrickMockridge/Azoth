@@ -1,4 +1,5 @@
 import { seriesOf } from "../../state/results";
+import type { Units } from "../../state/units";
 import type { UnitResult } from "../../wire/types";
 
 /** How many points a sparkline draws before it is no longer a glance. */
@@ -17,8 +18,15 @@ const MAX_POINTS = 64;
  * each series is scaled to its own range because two profiles of different magnitudes share a
  * sheet.
  */
-export function StagesSheet({ result }: { result: UnitResult }) {
-  const series = seriesOf(result);
+export function StagesSheet({
+  result,
+  units,
+}: {
+  result: UnitResult;
+  /** The unit a reader wants the values in; a catalogue that has not loaded converts nothing. */
+  units: Units;
+}) {
+  const series = seriesOf(result, units);
 
   if (series.length === 0) {
     return (
