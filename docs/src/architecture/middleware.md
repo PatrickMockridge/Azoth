@@ -87,22 +87,64 @@ command, is what that shared session exists to make impossible.
 
 ## The GUI
 
-`ui/` is the editor: vite, React and xyflow, one screen. The widgets of a HYSYS/UniSim-style
-editor are these layers viewed one way:
+`ui/` is the editor: vite, React and xyflow, a PFD between three docks and a status bar. The widgets
+of a HYSYS/UniSim-style editor are these layers viewed one way:
 
 | widget | calculus | fed by |
 |---|---|---|
 | flowsheet view | the quoted connection graph | session + command model |
+| the symbols | the machine each palette entry declares, drawn from its own leaf | the palette |
 | unit-op window | the adequacy declaration (ports + parameters) | form schema |
+| its result sheets | the operation's registered result, beside its outlet streams | `session.results` |
 | input/output fields | the field record, one field name to a dimension | form schema + units |
-| palette dropdown | the `UnitOpSpec` registry | the palette |
+| workbook | every stream, by the endpoint that produced it | session + graph |
+| messages | the checker's diagnostics | the checker |
+| palette dropdown | the `UnitOpSpec` registry, grouped by the family its file sits in | the palette |
 | top-bar menu | new / open / save / solve | command model + quote/drop |
 
 **It holds no copy of the flowsheet.** Every gesture goes out as a command and comes back as the
 whole envelope, so the canvas, the form and the diagnostics are three readings of one object. The
 drag is the one piece of local state: xyflow applies a position change every frame and the library
 is told once, on release — a `set_position` per frame would be a command and a re-projection for a
-figure that has not moved yet.
+figure that has not moved yet. `ui/test/app.test.tsx` drags a node through the real module and
+asserts the position the canvas draws is the position the document carries, which is the difference
+between a gesture that sent a command and one that only moved a figure.
+
+**A node is drawn as the machine it is.** `ui/src/state/glyphs.ts` maps each palette entry's leaf to
+a symbol — a pump is a circle with a discharge triangle, a compressor and an expander are opposed
+trapezoids, a column carries tray lines and a packed column a hatch — and to the side each declared
+port leaves from, because a column's distillate leaves the top and its bottoms the bottom whatever
+its direction says. Both tables are held to the catalogue in both directions by
+`ui/test/glyphs.test.ts`, which is the test that caught four entries whose port names in the side
+table did not exist: a handle on the wrong side of a vessel is a drawing of a different machine.
+
+**The workbook's rows come from the document and its values from the run.** They are the *producing*
+endpoints the graph declares — a unit op's `outlet` handle and the next one's `inlet` are one stream,
+so only the producer gets a row — which is what makes the grid the same shape before and after Solve
+and a stream the run did not reach a row of dashes rather than a missing row.
+
+**What a run computed is published beside its streams.** A kernel that solved a column or integrated
+a reactor reached numbers that are on no outlet stream, and `session.results` carries them per
+instance under the field names that operation's *model* declares — the same names a case uses and
+the same names the Python half publishes, since a result that differed between two doors would be
+two answers to one question. The window's result sheets read those names and enumerate nothing, so a
+field added to a model appears without a line of front-end code; a unit op whose whole answer is its
+streams publishes no entry at all, which is a statement about the arithmetic rather than a gap.
+
+**The editor is one front-end over two of those doors.** `ui/src/wire/session.ts` is the seam — a
+palette and three calls, every one of them a promise, because a `fetch` cannot answer a synchronous
+call and one interface both doors implement is the only version where a panel does not have to know
+which it is behind. `?serve=http://127.0.0.1:4000` on the page's URL is the served door and no
+parameter is the wasm module; the server has to be told the editor's origin
+(`--allow-origin`), because a `Content-Type: application/json` POST is not a simple request and the
+answer is unreadable without the CORS header it earns.
+
+**What the served door cannot do is the server's shape, not an omission.** `azoth serve` holds one
+document for the life of its process and the route has no call that replaces it, so New, Open and
+Demo are refused there with the reason on the control, and a save still works because every envelope
+carries the document. The palette is the exception in the other direction: a form per unit op is on
+no envelope, so `/rpc` answers `{"catalogue": …}` as a *read* of the palette the process loaded —
+enough for a palette panel and a unit-op window, and not an opening of anything.
 
 ### The stack
 
