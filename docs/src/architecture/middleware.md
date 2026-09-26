@@ -27,7 +27,7 @@ is named at the foot of this page.
 | an edit as one typed command | **yes** — `middleware::command`, fifteen variants, each a structure edit that leaves the checker to rule on the result |
 | a graph a canvas draws | **yes** — `middleware::graph`, in xyflow's own node/edge shape, with the layout in one `[layout]` table the document carries |
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
-| a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be |
+| a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be. **Every registered calculation and every registered model is run and its result serialised** by `python/tests/test_result_json.py` — the twenty-seven `process.*` models among them, so a `PumpResult` reads field by field with no codec of its own |
 | a tool schema for an agent | **yes** — `middleware::tools`, one tool per command, projected from the command model rather than written beside it, and **served over MCP** by `azoth mcp`, which is that schema's projection and not a second one |
 
 ## The layers
@@ -148,9 +148,6 @@ that reads as finished.
   requests arrive in, no TLS. It binds `127.0.0.1` and refuses every origin it was not told to
   allow, which is the posture a single-user local tool can defend — anything past that is a
   deployment, and a deployment is not built.
-- **The twenty-seven model result dataclasses as JSON**, so a notebook reads a `PumpResult` field
-  by field rather than through the envelope's streams. The codec exists to avoid a second writer
-  per model; until then the envelope is the JSON.
 - **A published distribution, and the two things only a person can do.** The wheel and the sdist
   are built, signed, verified and — by the `pypi` job, on a `v*` tag — uploaded to the index under
   the name **`azoth-engine`**, which Trusted Publishing exchanges this workflow's OIDC token for.
