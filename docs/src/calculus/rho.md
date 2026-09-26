@@ -98,3 +98,5 @@ The round trip is what makes a front-end a *reading* of one artifact instead of 
 translation of it, and it is why the three bindings were built on this operator
 rather than each inventing a serialiser. The claim this page exists for is the
 round trip, and the round trip is a theorem before it is a feature.
+
+*Enforcement: construction — `crates/azoth-process` carries the round trip: a document is the only thing that crosses a process boundary, so a value that did not survive quoting cannot be carried at all.*

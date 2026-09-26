@@ -100,6 +100,13 @@ INLINE_CODE = re.compile(r"`([^`\n]+)`")
 #: A glob or template is a pattern, not a path to resolve.
 IS_PATTERN = re.compile(r"[*?<>{}()\[\]]")
 
+#: The marker a calculus page carries once, after its last status.
+MARKER = re.compile(r"^\*Enforcement: (construction|check|nothing) — (.+)\*$", re.M)
+
+#: A calculus page's status line, and the words it holds in bold.
+STATUS = re.compile(r"^\*Status: .*$", re.M)
+BOLD = re.compile(r"\*\*([a-z]+)\*\*")
+
 
 def page_files() -> list[Path]:
     """Every page this check reads: the book, plus the root pages `check_links` guards."""
@@ -583,6 +590,85 @@ def sweep_paths(pages: list[Path]) -> tuple[int, list[str], list[str]]:
     return checked, failures, escapes
 
 
+# --- the calculus sweep -----------------------------------------------------
+
+
+def sweep_enforcement() -> tuple[int, list[str], list[str]]:
+    """Every calculus page states where its claim is enforced, and the kinds are legal.
+
+    Returns (checked, failures, nothing-claims).
+
+    `docs/src/calculus/` is normative for the types and states nine layers, each with a
+    Lean module and a status - **proved**, **specified** or **characterised**. What no
+    page said until now is whether the *implementation* half is enforced by a
+    construction, by a check, or by nothing - and that difference is the whole review: a
+    claim that is proved and enforced by nothing is one whose implementation half nobody
+    would notice breaking.
+
+    So each page carries one marker, after its last status:
+
+        *Enforcement: construction — `crates/azoth-core/src/unit_vocab_gen.rs`*
+
+    Three kinds, and the two that name something must name a path that resolves:
+
+    * `construction` - the types or the generated tables make the error impossible.
+    * `check` - code or a test fails when it happens. Production code that refuses at run
+      time and a test are one kind here; the path says which it is.
+    * `nothing` - nothing enforces it, **and that is legal only where no status claims a
+      proof**. A page with a proved claim and no enforcement is the defect this sweep
+      exists for; a page with no status line at all may not claim `nothing` either,
+      because nothing then says the absence is deliberate rather than unexamined.
+    """
+    failures: list[str] = []
+    nothing_claims: list[str] = []
+    checked = 0
+    pages = sorted((ROOT / "docs" / "src" / "calculus").glob("*.md"))
+    if not pages:
+        raise ProbeError("no calculus pages; this sweep is looking in the wrong place")
+    for page in pages:
+        where = str(page.relative_to(ROOT))
+        text = page.read_text(encoding="utf-8")
+        markers = MARKER.findall(text)
+        if len(markers) != 1:
+            failures.append(
+                f"{where}: {len(markers)} `*Enforcement:*` marker(s); every page states its "
+                f"enforcement exactly once"
+            )
+            continue
+        checked += 1
+        kind, reason = markers[0]
+        statuses = STATUS.findall(text)
+        if "*Status:" in text and text.index("*Enforcement:") < text.rindex("*Status:"):
+            failures.append(
+                f"{where}: the marker sits above the last `*Status:*`; it summarises the page's "
+                f"claims, so it goes after them"
+            )
+        if not statuses and kind == "nothing":
+            failures.append(
+                f"{where}: claims `nothing` and states no `*Status:*`, so nothing says the "
+                f"absence is deliberate rather than unexamined"
+            )
+        if kind == "nothing":
+            proved = [word for line in statuses for word in BOLD.findall(line) if word == "proved"]
+            if proved:
+                failures.append(
+                    f"{where}: claims `nothing` while a status says **proved**; a proved claim "
+                    f"whose implementation half enforces nothing is the finding this sweep is for"
+                )
+            nothing_claims.append(f"{where} - {reason}")
+            continue
+        named = [word.strip("`") for word in INLINE_CODE.findall(reason)]
+        resolved = [word for word in named if (ROOT / word.rstrip("/")).exists()]
+        if not named:
+            failures.append(f"{where}: `{kind}` names no path, so the claim is unreadable")
+        elif not resolved:
+            failures.append(
+                f"{where}: `{kind}` names {named}, and none of them exists - so the enforcement "
+                f"the page claims is not where the page says it is"
+            )
+    return checked, failures, nothing_claims
+
+
 def check_skips(skips: list[dict]) -> list[str]:
     """A skip must still quote text its page carries, so it goes stale rather than silent."""
     failures: list[str] = []
@@ -637,6 +723,8 @@ def main(argv: list[str] | None = None) -> int:
     failures += [f for claim in claims for f in claim.check()]
     checked, sweep_failures, escapes = sweep_paths(pages)
     failures += sweep_failures
+    layers, layer_failures, unenforced = sweep_enforcement()
+    failures += layer_failures
     failures += check_skips(skips)
 
     if failures:
@@ -651,8 +739,15 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"check_doc_claims: OK ({len(claims)} claim(s) across "
-        f"{len({c.page for c in claims})} page(s), {checked} path(s) checked)"
+        f"{len({c.page for c in claims})} page(s), {checked} path(s) checked, "
+        f"{layers} calculus layer(s))"
     )
+    if unenforced:
+        # Printed rather than passed over: a claim nothing enforces is a state to look at,
+        # and a number a reader can watch is the difference between a judgement and a habit.
+        print(f"  nothing enforces {len(unenforced)}:")
+        for entry in unenforced:
+            print(f"    {entry}")
     if escapes:
         print(f"  escapes: {len(escapes)}")
         for escape in escapes:

@@ -100,3 +100,5 @@ number written down in a third place is a number that can disagree with both.
 The table says what a unit *is*; the two units libraries say what it is *worth*;
 and a test compares them rather than trusting a restatement. See
 [The vocabulary table](./vocabulary.md).
+
+*Enforcement: check — the classification this page makes is what `tools/check_doc_claims.py` sweeps: every page under `docs/src/calculus/` states its enforcement once, and a claim whose status is **proved** may not be one that nothing enforces.*

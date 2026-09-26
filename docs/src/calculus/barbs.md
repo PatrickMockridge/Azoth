@@ -111,3 +111,5 @@ check without weakening anything.
 The counterpart in the other direction is [The keycard](./capability.md), whose two
 claims are also observational: authority is what a process can *do*, and
 non-amplification is a statement about which barbs a result can have.
+
+*Enforcement: nothing — both claims are specified: the general layer exists in `lean/Azoth/Barb.lean`, and the dimensional barb that would give these two claims something to be about is a later tranche.*

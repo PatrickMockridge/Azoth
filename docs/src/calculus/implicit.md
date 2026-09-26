@@ -58,3 +58,5 @@ what a solver needs is the derivative of a solution it already has. The only hyp
 beyond differentiability is that the state part of the residual's derivative **is** an
 equivalence — which is what makes `J⁻¹` a map rather than a formal inverse, and is the
 hypothesis a flash checks by refusing when its Jacobian is singular.
+
+*Enforcement: nothing — the second-order claim is specified, and the first-order one is a proof about `fderiv` rather than a check on the tree, so there is nothing in the implementation for a failure to appear against.*

@@ -171,3 +171,5 @@ Nothing else changes: the schema, the Rust list, the Python map and the keycard
 loader are all compiled from the one table, and `gen_vocabulary.py --check` runs in
 both the spec-validation and the drift jobs, so an edit that was not regenerated
 fails a build rather than a calculation.
+
+*Enforcement: construction — `crates/azoth-core/src/units.rs` holds the hand-written constructors and `crates/azoth-core/src/unit_vocab_gen.rs` the generated conversions, so a unit the table declares is a constructor that exists or the build fails.*

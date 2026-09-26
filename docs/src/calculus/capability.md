@@ -173,3 +173,5 @@ auditable.
 The shipped data already carries the `verify_status` column for the library's own
 statement about itself. What the capability adds is the *user's* half: which of
 their names, and which of the library's, an answer actually rested on.
+
+*Enforcement: construction — `crates/azoth-eos/src/card.rs` and `python/src/azoth/keycard.py` are the two readers, and a card is a value a caller holds and passes: no module scope, no `current`, no `clear`.*

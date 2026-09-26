@@ -177,3 +177,5 @@ favour of catching `Cp`-for-`S`, which is a real class of error and a silent one
 - **It does not re-derive any physics.** The dimension of a quantity is not a
   physical claim; it is a claim about which group element the unit names, and it
   is checked against the units libraries rather than against a standard.
+
+*Enforcement: construction — the exponent tuples are generated into `crates/azoth-core/src/unit_vocab_gen.rs`, whose ascriptions make a wrong exponent a compile error, and the units a spec may name are closed by `specs/schema/vocabulary.schema.json`.*

@@ -63,3 +63,5 @@ code". What the theorem removes is the question. It fixes the *statement*, so th
 is wrong rather than the mathematics, and a reader comparing an implementation against
 the claim is comparing against something that has been checked rather than against
 another implementation.
+
+*Enforcement: construction — `python/src/azoth/core/units.py` is the only place the raw and the normalised representation meet, so the conversion happens there or it does not happen.*

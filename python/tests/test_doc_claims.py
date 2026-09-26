@@ -298,6 +298,149 @@ def test_a_skip_goes_stale_when_its_sentence_leaves_the_page(
     assert "stale" in failures[0]
 
 
+# --- the calculus sweep -------------------------------------------------------
+#
+# The nine layers are `docs/src/calculus/`'s, and each page states once where its claim is
+# enforced. The rule worth testing is the one that makes the sweep a gate rather than a
+# formality: **a page may claim `nothing` only where no status claims a proof.** A proved
+# claim whose implementation half enforces nothing is the finding the sweep exists for.
+
+
+def calculus(*pages: str) -> list[str]:
+    """Synthetic calculus pages, each `name\\ntext`."""
+    return [f"docs/src/calculus/{entry}" for entry in pages]
+
+
+def test_a_proved_claim_with_nothing_enforcing_it_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The whole point: proved in Lean, enforced nowhere, and the page says so - a failure."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "dimensions.md\n*Status: **proved**.*\n\n*Enforcement: nothing — it is a proof.*"
+        ),
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "**proved**" in failures[0]
+
+
+def test_a_specified_claim_may_say_nothing_enforces_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """And the same page passes once the status says the layer is not there yet."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "barbs.md\n*Status: **specified**.*\n\n*Enforcement: nothing — the layer is specified.*"
+        ),
+    )
+    checked, failures, unenforced = tool.sweep_enforcement()
+    assert (checked, failures) == (1, [])
+    assert len(unenforced) == 1
+
+
+def test_a_page_with_no_status_may_not_claim_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nothing then says the absence is deliberate rather than unexamined."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus("numerics.md\n*Enforcement: nothing — nobody looked.*"),
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "deliberate" in failures[0]
+
+
+def test_an_enforcement_naming_a_path_that_does_not_resolve_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`construction` and `check` are claims about the tree, so they name where."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "process.md\n*Status: **proved**.*\n\n"
+            "*Enforcement: check — `crates/nowhere/src/check.rs`.*"
+        ),
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "none of them exists" in failures[0]
+
+
+def test_an_enforcement_naming_no_path_at_all_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Prose where a path belongs is a claim a reader cannot follow."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "rho.md\n*Status: **proved**.*\n\n*Enforcement: construction — everywhere, obviously.*"
+        ),
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "names no path" in failures[0]
+
+
+def test_a_page_with_no_marker_or_two_of_them_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tool = rooted(tmp_path, monkeypatch, *calculus("vocabulary.md\n*Status: **proved**.*"))
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "0 `*Enforcement:*` marker(s)" in failures[0]
+
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "vocabulary.md\n*Status: **proved**.*\n\n"
+            "*Enforcement: check — `tools/check_numerics.py`.*\n\n"
+            "*Enforcement: check — `tools/check_doc_claims.py`.*"
+        ),
+        "tools/check_numerics.py\n",
+        "tools/check_doc_claims.py\n",
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "2 `*Enforcement:*` marker(s)" in failures[0]
+
+
+def test_the_marker_goes_after_the_last_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """It summarises the page's claims, so one above a status is a marker about the wrong page."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "implicit.md\n*Enforcement: check — `tools/check_numerics.py`.*\n\n"
+            "*Status: **specified**.*"
+        ),
+        "tools/check_numerics.py\n",
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "above the last" in failures[0]
+
+
+def test_a_tree_with_no_calculus_pages_is_not_a_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The sweep would agree with itself at zero if the directory moved."""
+    tool = rooted(tmp_path, monkeypatch, "docs/page.md\nnothing here")
+    with pytest.raises(tool.ProbeError):
+        tool.sweep_enforcement()
+
+
 # --- and the tree this all runs against ---------------------------------------
 
 
