@@ -19,11 +19,13 @@
 
 pub mod block_tridiagonal;
 pub mod condenser;
+pub mod murphree;
 pub mod naphtali_sandholm;
 pub mod reboiler;
 pub mod tray;
 
 pub use condenser::{CondenserMode, CondenserOutcome, condenser};
+pub use murphree::{correct_vapour, corrects};
 pub use reboiler::{ReboilerMode, ReboilerOutcome, reboiler};
 pub use tray::{SideDraws, TrayOutcome, tray};
 

@@ -36,6 +36,7 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         condenser_temperature: Some(kelvins(253.15)),
         reboiler_temperature: Some(kelvins(373.15)),
         temperature_tolerance: tolerance,
+        murphree_efficiency: None,
         max_iterations: 200,
         top_specification: None,
         bottom_specification: None,
@@ -223,6 +224,214 @@ fn a_looser_gate_stops_sooner_at_the_same_answer() {
     );
 }
 
+/// **The Murphree correction, tray by tray, on the column the ideal row above already pins.**
+///
+/// The row is `binary_methane_butane_4_stages` with an efficiency of `0.6` stated - one of the
+/// two `DistillationSolverBenchmarkTest` uses - so the *difference* from the ideal profile is
+/// the correction and nothing else. It is a large difference rather than a perturbation: the
+/// distillate goes from `0.96591` to `0.97459` methane and the condenser duty from `-21323` W to
+/// `-18651`, and **the correction is reproduced to about `1e-6` on every quantity**: tray
+/// temperatures within `1.3e-4` K, traffic rates within `2.3e-6` relative, both products within
+/// `4e-8`, and both duties within `1.1` W of `18651` and `61658`.
+///
+/// **The two ends do not move at all**, which is the class's own two guards made visible: stage
+/// 0 is the reboiler and stage 5 the condenser, and `applyMurphreeCorrection` returns on both
+/// before it reads anything. Their temperatures are the pins.
+///
+/// **The ends' *traffic* is the product and not the flash**, because `finalizeSolve` writes the
+/// reconciled products back onto the end trays before anything can read them - so `tray0_liquid`
+/// is the bottoms and `tray5_gas` the distillate, which is what the capture prints.
+#[test]
+fn a_murphree_efficiency_reproduces_the_captured_corrected_profile() {
+    let mut setup = binary_column(1.0e-6);
+    setup.murphree_efficiency = Some(0.6);
+    let out = distillation_column(&setup).expect("the column converges");
+
+    let temperatures = [
+        373.15,
+        336.17610149619395,
+        303.1308245367222,
+        302.1846100734558,
+        296.56967983176895,
+        253.15,
+    ];
+    let gas = [
+        1.5935901648726694,
+        0.6104268433574532,
+        4.497779636973569,
+        3.904812548909508,
+        3.80082289353683,
+        3.7264760720867867,
+    ];
+    let liquid = [
+        3.764227964204178,
+        5.889255034047075,
+        4.906090702189604,
+        1.3027391363431713,
+        0.709771702362906,
+        0.6057817557197408,
+    ];
+    assert_eq!(out.trays.len(), 6);
+    for (i, tray) in out.trays.iter().enumerate() {
+        relative(
+            tray.temperature.value,
+            temperatures[i],
+            1.0e-5,
+            "tray temperature",
+        );
+        relative(tray.gas_n, gas[i], 1.0e-5, "tray vapour");
+        relative(tray.liquid_n, liquid[i], 1.0e-5, "tray liquid");
+    }
+
+    relative(out.distillate.n, 3.7264760720867867, 1.0e-6, "distillate");
+    relative(
+        out.distillate.z[0],
+        0.9745893826201694,
+        1.0e-6,
+        "the distillate's methane",
+    );
+    relative(out.bottoms.n, 3.764227964204178, 1.0e-6, "bottoms");
+    relative(
+        out.bottoms.z[1],
+        0.969829668983505,
+        1.0e-6,
+        "the bottoms' n-butane",
+    );
+
+    // The duties are enthalpy *differences* between two libraries whose absolute enthalpies
+    // differ, so they are held to a watt rather than to a relative band - measured at `0.37` W
+    // of `18651` and `1.02` W of `61658`.
+    absolute(
+        out.condenser_duty.value,
+        -18650.975463115934,
+        5.0,
+        "condenser duty",
+    );
+    absolute(
+        out.reboiler_duty.value,
+        61658.439796998275,
+        5.0,
+        "reboiler duty",
+    );
+}
+
+/// **A corrected column's products carry the feed exactly and its solve does not.**
+///
+/// `applyMurphreeCorrection` moves components between a stage's vapour and its liquid without
+/// moving its moles, so what a stage hands up is not what its own flash produced and the interior
+/// imbalances no longer cancel: on this row the tray terminals miss the feed's methane by
+/// `5.6e-2` relative. `updateProductsFromExternalComponentBalance` is the class's own answer -
+/// rescale the two products per component so they carry the feed - and it is on the run path, so
+/// this port publishes the same record.
+///
+/// **`mass_residual` is the solve's own number and is not the class's `getLastMassResidual`**,
+/// which compares a stage's inlets with the stage's own system and is therefore identically zero
+/// on every column. The port's is a measurement of the closure, and a corrected column does not
+/// close it; that is why it is reported here and gated only on a conserving column.
+#[test]
+fn a_corrected_columns_products_are_reconciled_against_its_feed() {
+    let mut setup = binary_column(1.0e-6);
+    setup.murphree_efficiency = Some(0.6);
+    let out = distillation_column(&setup).expect("the column converges");
+
+    let feed = binary_feed();
+    assert!(
+        out.mass_residual > 1.0e-2,
+        "the solve's own closure is the measurement: {}",
+        out.mass_residual
+    );
+    // The published pair carries the feed to the library's own digits.
+    for c in 0..2 {
+        let delivered = out.distillate.n * out.distillate.z[c] + out.bottoms.n * out.bottoms.z[c];
+        relative(delivered, feed.n * feed.z[c], 1.0e-9, "the reconciled feed");
+    }
+    relative(
+        out.distillate.n + out.bottoms.n,
+        feed.n,
+        1.0e-9,
+        "the reconciled mole balance",
+    );
+}
+
+/// **A high efficiency reaches a different fixed point here than in NeqSim, and that is
+/// measured rather than excused.**
+///
+/// The capture holds `binary_murphree_0_85` beside the `0.6` row, and beside *it* the same state
+/// at a gate of `1e-9` instead of `1e-6`: `binary_murphree_0_85_tight` takes 22 iterations
+/// against 15 and moves every tray by less than `8e-10` K, so **NeqSim's `0.85` row is a
+/// converged state and not a partial one**. This port finds a different one - nearer the ideal
+/// profile, and self-consistent to `1e-13` K - and the two differ by up to `7` K on tray 3.
+///
+/// **The correction makes the map's fixed point path-dependent at a high efficiency**, and the
+/// two implementations walk different paths: `solveSequential` relaxes the *streams* by its own
+/// `applyRelaxationFast` and gates on three residuals, where this port relaxes the temperature
+/// profile alone - the substitution `distillation_column`'s own doc states. At `0.6` the two
+/// paths land on the same state (the row above, to `1e-6`); at `0.85` they do not. This test
+/// holds the divergence to a *measurement* rather than to a tolerance: the shape of the port's
+/// answer, and the size of the disagreement.
+#[test]
+fn a_high_murphree_efficiency_reaches_this_ports_own_fixed_point() {
+    let mut setup = binary_column(1.0e-6);
+    setup.murphree_efficiency = Some(0.85);
+    let out = distillation_column(&setup).expect("the column converges");
+
+    // The port's own answer: a profile between the ideal one and the `0.6` one.
+    let temperatures = [
+        373.15,
+        336.1669805048,
+        303.1060154799,
+        302.1567710365,
+        296.7533017195,
+        253.15,
+    ];
+    for (i, tray) in out.trays.iter().enumerate() {
+        absolute(
+            tray.temperature.value,
+            temperatures[i],
+            1.0e-6,
+            "tray temperature",
+        );
+    }
+    // And the ends are still the pins, still untouched by the correction.
+    absolute(out.trays[0].temperature.value, 373.15, 1.0e-9, "reboiler");
+    absolute(out.trays[5].temperature.value, 253.15, 1.0e-9, "condenser");
+
+    // **The disagreement is the measurement, so it is asserted as one**: NeqSim's tray 3 is
+    // `313.37` K against this port's `302.16`, and a port that quietly drifted onto NeqSim's
+    // state without the relaxation path would fail here rather than pass unnoticed.
+    let disagreement = (out.trays[3].temperature.value - 313.36769810181676).abs();
+    assert!(
+        disagreement > 5.0,
+        "tray 3 is {disagreement} K from the capture, and this row exists to hold that gap"
+    );
+}
+
+/// **A gas side draw on a corrected stage is refused, and the class's own arithmetic is why.**
+/// `getGasOutStream` returns the corrected vapour from the cache without applying
+/// `gasSideDrawFraction`, while the draw's own stream is built from the uncorrected phase - so
+/// the two outlets together carry more vapour than the stage made. The port refuses the pair
+/// rather than reproducing a stage whose balance does not close.
+#[test]
+fn a_gas_draw_on_a_corrected_stage_is_refused() {
+    let mut setup = binary_column(1.0e-6);
+    setup.murphree_efficiency = Some(0.7);
+    setup.gas_side_draw_fractions = Some(vec![0.0, 0.0, 0.0, 0.2, 0.0, 0.0]);
+    let error = distillation_column(&setup).expect_err("the pair is refused");
+    assert!(
+        error.to_string().contains("getGasOutStream"),
+        "the refusal names the class: {error}"
+    );
+}
+
+/// The two ends draw nothing, so a fraction stated there is refused before the correction is
+/// ever consulted - which is what keeps the two refusals from overlapping.
+#[test]
+fn an_ideal_stage_still_draws_its_gas() {
+    let mut setup = binary_column(1.0e-6);
+    setup.gas_side_draw_fractions = Some(vec![0.0, 0.0, 0.0, 0.2, 0.0, 0.0]);
+    distillation_column(&setup).expect("an ideal column draws freely");
+}
+
 /// **NeqSim's own deethanizer does not converge on a Peng-Robinson fluid, and this port
 /// does.** That divergence is the row's finding, and it makes the row uncased: the capture
 /// holds the class's *partial* state as evidence, and the port's state is a different one.
@@ -271,6 +480,7 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         condenser_temperature: Some(kelvins(273.15)),
         reboiler_temperature: Some(kelvins(353.15)),
         temperature_tolerance: 1.0e-5,
+        murphree_efficiency: None,
         max_iterations: 80,
         top_specification: None,
         bottom_specification: None,

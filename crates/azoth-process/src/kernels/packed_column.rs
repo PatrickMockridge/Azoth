@@ -57,6 +57,9 @@ pub struct PackedSetup {
     pub reboiler_temperature: Option<ThermodynamicTemperature>,
     pub temperature_tolerance: f64,
     pub max_iterations: usize,
+    /// The column-wide Murphree tray efficiency, or `None` for the ideal stage - the base
+    /// column's own correction, which `PackedColumn` inherits.
+    pub murphree_efficiency: Option<f64>,
     pub top_specification: Option<Specification>,
     pub bottom_specification: Option<Specification>,
     pub solver_type: SolverType,
@@ -84,6 +87,7 @@ pub fn packed_column(setup: &PackedSetup) -> Result<ColumnOutcome> {
         reboiler_temperature: setup.reboiler_temperature,
         temperature_tolerance: setup.temperature_tolerance,
         max_iterations: setup.max_iterations,
+        murphree_efficiency: setup.murphree_efficiency,
         top_specification: setup.top_specification.clone(),
         bottom_specification: setup.bottom_specification.clone(),
         top_feed: None,

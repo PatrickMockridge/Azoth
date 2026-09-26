@@ -54,6 +54,7 @@ fn binary(solver_type: SolverType) -> ColumnSetup {
         condenser_temperature: Some(kelvins(253.15)),
         reboiler_temperature: Some(kelvins(373.15)),
         temperature_tolerance: 1.0e-6,
+        murphree_efficiency: None,
         max_iterations: 200,
         top_specification: None,
         bottom_specification: None,
@@ -96,6 +97,7 @@ fn deethanizer(solver_type: SolverType) -> ColumnSetup {
         condenser_temperature: Some(kelvins(273.15)),
         reboiler_temperature: Some(kelvins(353.15)),
         temperature_tolerance: 1.0e-5,
+        murphree_efficiency: None,
         max_iterations: 80,
         top_specification: None,
         bottom_specification: None,
@@ -395,14 +397,28 @@ fn an_unported_strategy_is_refused_by_its_class() {
     }
 }
 
-/// The Murphree efficiency is the palette's other declared-and-refused parameter.
+/// **The Murphree efficiency is ported on the sequential solve and refused on the mesh one.**
+///
+/// The two solves carry two different corrections, which is why the refusal is by solver rather
+/// than by parameter: `applyMurphreeCorrection` blends the vapour leaving a stage, and
+/// `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects the tray's K-values by an
+/// Edmister `K^eta` proxy instead. This model ports the first, so a stated efficiency reaches
+/// the sequential kernel and is refused where the mesh solve is asked for - naming the class
+/// that would close it rather than ignoring a parameter the class reads.
 #[test]
-fn a_murphree_efficiency_is_refused_by_name() {
-    let error = model(binary(SolverType::DirectSubstitution), None, Some(0.7))
-        .expect_err("the boundary refuses it");
+fn a_murphree_efficiency_reaches_the_sequential_solve_and_refuses_the_mesh_one() {
+    model(binary(SolverType::DirectSubstitution), None, Some(0.7))
+        .expect("the sequential solve carries the correction");
+
+    let error = model(
+        binary(SolverType::NaphtaliSandholm),
+        Some("naphtali_sandholm"),
+        Some(0.7),
+    )
+    .expect_err("the mesh solve carries a different one");
     assert!(
-        error.to_string().contains("setMurphreeEfficiency"),
-        "{error}"
+        error.to_string().contains("applyMurphreeEfficiencyToK"),
+        "the refusal names the class: {error}"
     );
 }
 

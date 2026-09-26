@@ -9,7 +9,7 @@ assumptions = [
     "**the products are the class's own getters**: `getGasOutStream` is the treated gas leaving the top stage and `getLiquidOutStream` the loaded solvent leaving the bottom, which is what the terminal trays publish when there are no ends.",
     "**both inlets carry the same substances in the same order.** The class indexes every tray's components by one list built from its first feed, so a solvent naming different substances is a different fluid rather than an inlet, and this refuses it.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "**`murphree_efficiency` and `component_murphree_efficiency` are declared and refused**, and so are the eight strategies of `solver_type` this port does not carry. Each refusal names the class that would close it.",
+    "**`murphree_efficiency` and `component_murphree_efficiency` are declared and refused**, as are the eight strategies of `solver_type` this port does not carry. Each refusal names the class that would close it. What is owed here is the override, which corrects both phases.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/absorber/AbsorptionColumn.java` is the port source; it extends `DistillationColumn` and overrides no `run`.",
@@ -77,13 +77,13 @@ description = "the iteration cap. A solve that reaches it without meeting the ga
 [inputs.murphree_efficiency]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: the column-wide Murphree tray efficiency. `SimpleTray.setMurphreeEfficiency` would close it, and `AbsorptionColumn.applyMurphreeCorrection` is the override an absorber adds. Omitted means the ideal stage.\n"
+description = "**not ported**: an absorber does not use the base's correction. `AbsorptionColumn.applyMurphreeCorrection` is an *override* that corrects **both phases** through a limiting-component allocator, and that arithmetic is the one owed here.\n"
 [inputs.component_murphree_efficiency]
 type = "vector"
 unit = "dimensionless"
 length = "one per component"
 optional = true
-description = "**not ported**: the per-component Murphree efficiency, which `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)` sets and `applyMurphreeCorrection` applies.\n"
+description = "**not ported**: the per-component Murphree efficiency, which `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)` sets and the `applyMurphreeCorrection` override applies - one efficiency per component, with the column-wide value as the fallback where a component states none.\n"
 [inputs.max_allowable_gas_load_factor]
 unit = "dimensionless"
 optional = true

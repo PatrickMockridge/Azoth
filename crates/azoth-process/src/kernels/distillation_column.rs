@@ -5,6 +5,7 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result};
 
+use crate::column::murphree::{correct_vapour, corrects};
 use crate::column::tray::{self as stage, SideDraws, TrayOutcome};
 use crate::stream::Stream;
 
@@ -65,6 +66,67 @@ fn refuse_end_draws(setup: &ColumnSetup, tray_count: usize) -> Result<()> {
     }
     Ok(())
 }
+
+/// **A gas side draw on a corrected stage is refused, and that is a measurement rather than a
+/// limitation of the port.** `setCachedGasOutStream` writes the corrected vapour into
+/// `cachedGasOutStream`, and `getGasOutStream` returns that cache *without* applying
+/// `gasSideDrawFraction` - where the draw's own stream is still built from the *uncorrected*
+/// phase at its own fraction. So on a stage that both draws vapour and is corrected, the two
+/// outlets together carry more vapour than the tray made, and the column's own balance does not
+/// close. Reproducing that would be reproducing a defect, and refusing it names the reason.
+///
+/// The draw vectors are already barred from the ends, so "a corrected stage that draws" and "a
+/// stage that draws" are the same set on every column this kernel solves.
+fn refuse_murphree_gas_draw(setup: &ColumnSetup, tray_count: usize) -> Result<()> {
+    let Some(efficiency) = setup.murphree_efficiency else {
+        return Ok(());
+    };
+    let Some(fractions) = setup.gas_side_draw_fractions.as_ref() else {
+        return Ok(());
+    };
+    for (index, fraction) in fractions.iter().enumerate() {
+        if *fraction != 0.0 && corrects(index, tray_count, setup.has_condenser, efficiency) {
+            return Err(AzothError::invalid_input(
+                "gas_side_draw_fractions",
+                format!(
+                    "tray {index} draws {fraction} of its vapour and the column states a \
+                     Murphree efficiency of {efficiency}: `DistillationColumn` returns the \
+                     corrected vapour from `getGasOutStream` and never applies the draw \
+                     fraction to it, so the stage would publish more vapour than it made. \
+                     Neither is dropped silently here"
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// **The mesh solve carries a different efficiency arithmetic**, refused by name rather than
+/// silently ignored: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` applies an *Edmister*
+/// `K^eta` proxy to a tray's K-values at two points in its own iteration, where the sequential
+/// core blends the outlet's composition against the vapour entering from below. The two are
+/// different corrections rather than two spellings of one, so a column asked for both gets the
+/// refusal and the class that would close it.
+///
+/// **It is checked before the mesh dispatch and not with the draws**, because the mesh solve
+/// returns before the sequential setup runs - so a check placed there would never see it.
+fn refuse_murphree_mesh(setup: &ColumnSetup) -> Result<()> {
+    let Some(efficiency) = setup.murphree_efficiency else {
+        return Ok(());
+    };
+    Err(AzothError::invalid_input(
+        "solver_type",
+        format!(
+            "a Murphree efficiency of {efficiency} is not ported on the `naphtali_sandholm` \
+             solve: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's \
+             K-values by an Edmister `K^eta` proxy, where the sequential core's \
+             `applyMurphreeCorrection` - the one this port carries - blends the vapour leaving \
+             a stage against the vapour entering it. The two are different corrections rather \
+             than two spellings of one"
+        ),
+    ))
+}
+
 /// The floor on the *temperature* update's step, which is a different clamp from the streams'.
 const MIN_TEMPERATURE_RELAXATION: f64 = 0.2;
 /// `DEFAULT_MASS_BALANCE_TOLERANCE`, the class's own.
@@ -191,6 +253,10 @@ pub struct ColumnSetup {
     pub reboiler_temperature: Option<ThermodynamicTemperature>,
     /// The convergence tolerance on the mean tray-temperature change.
     pub temperature_tolerance: f64,
+    /// **The column-wide Murphree tray efficiency**, or `None` for the ideal stage - which is
+    /// the class's own default of one. `DistillationColumn.setMurphreeEfficiency` states it,
+    /// and [`crate::column::murphree`] is the correction the sequential sweep applies.
+    pub murphree_efficiency: Option<f64>,
     /// The iteration cap.
     pub max_iterations: usize,
     /// The top product's specification, or `None` where the top is pinned by temperature.
@@ -376,12 +442,23 @@ struct Network {
     gas: Vec<Option<Stream>>,
     /// Each tray's liquid outlet.
     liquid: Vec<Option<Stream>>,
+    /// **What each tray's own flash found**, before either the draws or the Murphree correction
+    /// touched it: the vapour is the correction's `y_eq` and `y_in`, and the pair is the phase
+    /// count its two guards read. The class's correction compares against
+    /// `trays.get(i - 1).getThermoSystem().getPhase(0)` - the *system*, which
+    /// `setCachedGasOutStream` never writes - so the stage above receives the corrected vapour
+    /// while the correction sees the uncorrected one. Both are needed and they differ.
+    equilibrium: Vec<(Option<Stream>, Option<Stream>)>,
+    /// The column-wide Murphree tray efficiency, or `None` for the ideal stage.
+    murphree_efficiency: Option<f64>,
     /// The pressure of each tray.
     pressures: Vec<Pressure>,
     /// The tray the feed enters.
     feed_stage: usize,
     /// The tray count, which the ends are part of.
     tray_count: usize,
+    /// Whether the top stage is a condenser, which the Murphree correction never touches.
+    has_condenser: bool,
     /// The feed, which enters `feed_stage`.
     feed: Stream,
     /// The second inlet, which enters the top stage.
@@ -478,7 +555,7 @@ impl Network {
     fn run_with(&mut self, i: usize, inlets: &[Stream]) -> Result<TrayOutcome> {
         let pressure = Some(self.pressures[i]);
         let draws = self.draws_at(i);
-        let out = match self.modes[i] {
+        let mut out = match self.modes[i] {
             // The default: the tray's flash at the end's temperature, which the outer loop
             // moves while it searches. **A middle tray carries a NaN here and no pin**, so its
             // flash is at its own enthalpy - the same distinction the endpoints' temperatures
@@ -535,6 +612,20 @@ impl Network {
                 }
             }
         };
+        // **The flash's own two phases are recorded before anything replaces them.** The
+        // Murphree correction reads the stage below's from here rather than from `gas`, which
+        // is where the *corrected* vapour goes - the class's two are different objects.
+        self.equilibrium[i] = (out.gas.clone(), out.liquid.clone());
+        if let Some(efficiency) = self.murphree_efficiency {
+            if corrects(i, self.tray_count, self.has_condenser, efficiency) {
+                let below = self.equilibrium[i - 1].clone();
+                let here = (out.gas.as_ref(), out.liquid.as_ref());
+                let below_refs = (below.0.as_ref(), below.1.as_ref());
+                if let Some(corrected) = correct_vapour(here, below_refs, efficiency)? {
+                    out.gas = Some(corrected);
+                }
+            }
+        }
         self.drawn[0][i] = out.gas_side_draw.clone();
         self.drawn[1][i] = out.liquid_side_draw.clone();
         self.drawn[2][i] = out.pumparound.clone();
@@ -641,6 +732,7 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         .collect();
 
     if setup.solver_type == SolverType::NaphtaliSandholm {
+        refuse_murphree_mesh(setup)?;
         return crate::column::naphtali_sandholm::solve(setup, &pressures);
     }
     // **An end's mode, and a direct specification is what changes it.** `applyDirectSpecification`
@@ -718,6 +810,7 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         .collect();
 
     refuse_end_draws(setup, tray_count)?;
+    refuse_murphree_gas_draw(setup, tray_count)?;
     let mut net = Network {
         reactive,
         warnings: Vec::new(),
@@ -733,9 +826,12 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         ],
         gas: vec![None; tray_count],
         liquid: vec![None; tray_count],
+        equilibrium: vec![(None, None); tray_count],
+        murphree_efficiency: setup.murphree_efficiency,
         pressures,
         feed_stage: setup.feed_stage,
         tray_count,
+        has_condenser: setup.has_condenser,
         feed: setup.feed.clone(),
         top_feed: setup.top_feed.clone(),
         modes,
@@ -783,42 +879,29 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         0.0
     };
 
-    // The component closure: the worst component's imbalance against the feed, relative.
-    let mut mass_residual = 0.0_f64;
-    for (c, ci) in setup.feed.z.iter().enumerate() {
-        let supplied: f64 = feeds
-            .iter()
-            .map(|feed| feed.n * feed.z.get(c).copied().unwrap_or(*ci))
-            .sum();
-        let drawn: f64 = (0..3)
-            .flat_map(|which| net.drawn[which].iter())
-            .flatten()
-            .map(|draw| draw.n * fraction_of(draw, c))
-            .sum();
-        let delivered = distillate.n * fraction_of(&distillate, c)
-            + bottoms.n * fraction_of(&bottoms, c)
-            + drawn;
-        if supplied.abs() > 1.0e-12 {
-            mass_residual = mass_residual.max((supplied - delivered).abs() / supplied.abs());
-        }
-    }
+    // The component closure: the worst component's imbalance against the feed, relative. It is
+    // measured on the **tray terminals**, which is what the class's reconciliation rescales -
+    // so this is the number that says whether the solve closed, and the products below are the
+    // reconciled record rather than it.
+    let mass_residual = component_closure(setup, &net, &distillate, &bottoms);
 
-    let trays: Vec<TrayProfile> = (0..tray_count)
-        .map(|i| TrayProfile {
-            temperature: kelvins(net.temperature(i)),
-            pressure: net.pressures[i],
-            gas_n: net.gas[i].as_ref().map_or(0.0, |s| s.n),
-            liquid_n: net.liquid[i].as_ref().map_or(0.0, |s| s.n),
-            gas_z: net.gas[i].as_ref().map_or_else(Vec::new, |s| s.z.clone()),
-            liquid_z: net.liquid[i]
-                .as_ref()
-                .map_or_else(Vec::new, |s| s.z.clone()),
-        })
-        .collect();
-
+    // **The component closure gates a conserving column and is only reported on a corrected
+    // one.** `getMassBalanceError` - the quantity the class's own gate scales against
+    // `baseMassTolerance` - compares a stage's inlet streams with the stage's *system*, which
+    // `mixStream` has already made equal, so it is identically zero and never binds. A Murphree
+    // efficiency is what makes a column's products stop carrying the feed, and that is the
+    // class's own arithmetic rather than a failure of it: the correction moves components
+    // between a stage's vapour and its liquid without moving its moles, so what a stage hands up
+    // is not what its own flash produced and the interior imbalances do not cancel.
+    // `reconcile_products` below is what the class publishes in that state, and the residual it
+    // rescaled away is reported rather than refused.
+    // The enthalpy closure is the same statement with the same cause: what a corrected stage
+    // hands up carries the flash's *moles* at the blend's composition, so the duties read off the
+    // tray terminals do not close against the feed either.
+    let conserving = setup.murphree_efficiency.is_none();
     if temperature_residual > setup.temperature_tolerance
-        || mass_residual > MASS_BALANCE_TOLERANCE
-        || energy_residual > ENTHALPY_BALANCE_TOLERANCE
+        || (conserving && mass_residual > MASS_BALANCE_TOLERANCE)
+        || (conserving && energy_residual > ENTHALPY_BALANCE_TOLERANCE)
     {
         // A refusal, and the three residuals travel with it: a solve that stopped is a state
         // a caller has to be able to diagnose, and the mass and the energy closure are what
@@ -832,6 +915,47 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
                 .min(ENTHALPY_BALANCE_TOLERANCE),
         });
     }
+
+    // **And then the products are reconciled**, which is the class's own last act before it
+    // publishes: `mass_residual` above is the solve's, and what a caller reads below is the
+    // record the class would have handed it.
+    let (distillate, bottoms) = reconcile_products(setup, &net, &distillate, &bottoms)?;
+
+    // **`finalizeSolve` writes them back onto the end trays**, and the record has to show it:
+    // the capture's `tray0_liquid_n` and `tray5_gas_n` are the *products* and not the ends'
+    // flashes, because `finalizeSolve` runs after the solve and before a probe can read a tray.
+    // A profile that reported the flashes there would disagree with the products printed beside
+    // it on the very rows that carry them.
+    net.gas[tray_count - 1] = Some(distillate.clone());
+    net.liquid[0] = Some(bottoms.clone());
+    let (reboiler_duty, condenser_duty) = if setup.murphree_efficiency.is_some() {
+        let reboiler = if setup.has_reboiler {
+            net.outlet_enthalpy(0) - net.inlet_enthalpy(0)
+        } else {
+            0.0
+        };
+        let condenser = if setup.has_condenser {
+            net.outlet_enthalpy(tray_count - 1) - net.inlet_enthalpy(tray_count - 1)
+        } else {
+            0.0
+        };
+        (reboiler, condenser)
+    } else {
+        (reboiler_duty, condenser_duty)
+    };
+
+    let trays: Vec<TrayProfile> = (0..tray_count)
+        .map(|i| TrayProfile {
+            temperature: kelvins(net.temperature(i)),
+            pressure: net.pressures[i],
+            gas_n: net.gas[i].as_ref().map_or(0.0, |s| s.n),
+            liquid_n: net.liquid[i].as_ref().map_or(0.0, |s| s.n),
+            gas_z: net.gas[i].as_ref().map_or_else(Vec::new, |s| s.z.clone()),
+            liquid_z: net.liquid[i]
+                .as_ref()
+                .map_or_else(Vec::new, |s| s.z.clone()),
+        })
+        .collect();
 
     Ok(ColumnOutcome {
         trays,
@@ -889,6 +1013,82 @@ fn at_temperature(stream: &Stream, temperature: f64) -> Stream {
 /// A stream's mole fraction of one component.
 fn fraction_of(stream: &Stream, component: usize) -> f64 {
     stream.z.get(component).copied().unwrap_or(0.0)
+}
+
+/// **What each feed supplies and each draw carries away, per component, in mol/s** - the two
+/// sides `updateProductsFromExternalComponentBalance` reconciles against.
+fn supplied_and_drawn(setup: &ColumnSetup, net: &Network) -> (Vec<f64>, Vec<f64>) {
+    let mut supplied = vec![0.0; setup.feed.z.len()];
+    for feed in std::iter::once(&setup.feed).chain(setup.top_feed.iter()) {
+        for (c, amount) in supplied.iter_mut().enumerate() {
+            *amount += feed.n * fraction_of(feed, c);
+        }
+    }
+    let mut drawn = vec![0.0; setup.feed.z.len()];
+    for draw in (0..3).flat_map(|which| net.drawn[which].iter()).flatten() {
+        for (c, amount) in drawn.iter_mut().enumerate() {
+            *amount += draw.n * fraction_of(draw, c);
+        }
+    }
+    (supplied, drawn)
+}
+
+/// The products' worst component imbalance against the feed, relative - measured on whatever
+/// pair of streams it is handed, which is the tray terminals before the reconciliation and the
+/// reconciled record after it.
+fn component_closure(setup: &ColumnSetup, net: &Network, top: &Stream, bottom: &Stream) -> f64 {
+    let (supplied, drawn) = supplied_and_drawn(setup, net);
+    let mut worst = 0.0_f64;
+    for (c, supply) in supplied.iter().enumerate() {
+        if supply.abs() <= 1.0e-12 {
+            continue;
+        }
+        let delivered = top.n * fraction_of(top, c) + bottom.n * fraction_of(bottom, c) + drawn[c];
+        worst = worst.max((supply - delivered).abs() / supply.abs());
+    }
+    worst
+}
+
+/// **`updateProductsFromExternalComponentBalance`**: the two published products rescaled, per
+/// component, so that they carry the feed exactly.
+///
+/// **This is on the class's run path and not a caller's convenience**, and a column at a
+/// Murphree efficiency cannot be published without it. The correction moves components between
+/// a stage's vapour and its liquid without moving its moles, so an interior stage's outlets do
+/// not carry its inlets - and the residual of those interior stages does not cancel, because
+/// what a stage hands up is the *corrected* stream while what it hands down is the flash's.
+/// The column's overall closure therefore cannot close on its own; NeqSim rescales the products
+/// and reports the residual it rescaled away, and this does the same rather than refusing a
+/// state the class publishes or hiding the imbalance.
+///
+/// A component the two products do not between them carry is left alone, which is the class's
+/// own `currentComponentMoles > 1e-20` guard.
+fn reconcile_products(
+    setup: &ColumnSetup,
+    net: &Network,
+    top: &Stream,
+    bottom: &Stream,
+) -> Result<(Stream, Stream)> {
+    let (supplied, drawn) = supplied_and_drawn(setup, net);
+    let mut top_moles = vec![0.0; supplied.len()];
+    let mut bottom_moles = vec![0.0; supplied.len()];
+    for (c, supply) in supplied.iter().enumerate() {
+        let here = top.n * fraction_of(top, c);
+        let below = bottom.n * fraction_of(bottom, c);
+        let carried = here + below;
+        if carried <= 1.0e-20 {
+            continue;
+        }
+        let scale = (supply - drawn[c]).max(0.0) / carried;
+        top_moles[c] = here * scale;
+        bottom_moles[c] = below * scale;
+    }
+    let rebuild = |moles: Vec<f64>, source: &Stream| -> Result<Stream> {
+        let total: f64 = moles.iter().sum();
+        let z: Vec<f64> = moles.iter().map(|m| m / total).collect();
+        Stream::from_pt(source.components.clone(), z, total, source.p, source.t)
+    };
+    Ok((rebuild(top_moles, top)?, rebuild(bottom_moles, bottom)?))
 }
 
 /// `DistillationColumn.init`: the feed-stage flash, the linear temperature seed and the two
@@ -1045,6 +1245,16 @@ fn sweep(net: &mut Network, setup: &ColumnSetup, temperatures: &mut [f64]) -> Re
         }
         previous_combined = combined;
 
+        // **The class's gate is three residuals, and the other two do not bind here.**
+        // `withinBaseTolerance` is `err <= baseTempTolerance && massErr <= baseMassTolerance &&
+        // energyWithinBase`, but its mass residual is `getMassBalanceError` - a tray's inlet
+        // streams against the tray's own *system*, which `mixStream` has already made equal by
+        // construction - and its energy residual is the duties' closure. Neither is the
+        // products' component closure, which is what this port's `mass_residual` measures, and
+        // the two are not interchangeable: a corrected column's closure is *not* zero at its
+        // fixed point, because a Murphree efficiency moves components between a stage's vapour
+        // and its liquid without moving its moles. Gating on it would iterate forever. So the
+        // gate stays the class's effective one, the temperature, and the closure is reported.
         if temperature_residual <= setup.temperature_tolerance {
             break;
         }

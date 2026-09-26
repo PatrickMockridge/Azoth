@@ -35,8 +35,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `tray_temperatures` | K | *Optional.* one outlet-temperature pin per tray, `NaN` where a tray has none. **A pinned column stops after its first sweep**, because the gate is the tray-temperature change it has made zero. |
 | `temperature_tolerance` | K | the convergence gate on the mean tray-temperature change. Where a solve stops is what its answer is, so this is a measurement and not a knob. |
 | `max_iterations` | dimensionless | the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named. |
-| `murphree_efficiency` | dimensionless | *Optional.* **not ported**: the column-wide Murphree tray efficiency, which `SimpleTray.setMurphreeEfficiency` and `applyMurphreeCorrection` would close. Omitted means the ideal stage. |
-| `component_murphree_efficiency` | dimensionless | *Optional.* **not ported**: the per-component Murphree efficiency, which `setComponentMurphreeEfficiency` sets. |
+| `murphree_efficiency` | dimensionless | *Optional.* **not ported**: the column-wide Murphree tray efficiency. `StrippingColumn extends AbsorptionColumn`, so this is the same override `process.absorption_column` names: both phases corrected, through a limiting-component allocator. |
+| `component_murphree_efficiency` | dimensionless | *Optional.* **not ported**: the per-component Murphree efficiency, which the inherited `setComponentMurphreeEfficiency` sets and the override applies. |
 | `max_allowable_gas_load_factor` | dimensionless | *Optional.* the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does. |
 | `solver_type` | direct_substitution / damped_substitution / inside_out / matrix_inside_out / wegstein / sum_rates / newton / naphtali_sandholm / mesh_residual / auto | *Optional.* which of the base's ten solving strategies runs. **`direct_substitution` is the class's own default**; `naphtali_sandholm` refuses here, because a column with no pinned reboiler runs `solveBubblePointMethod`. |
 

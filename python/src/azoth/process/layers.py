@@ -601,6 +601,9 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
         str(inputs["solver_type"]) if "solver_type" in inputs else None,
         reactive=section,
         draws=draws,
+        murphree_efficiency=(
+            float(inputs["murphree_efficiency"]) if "murphree_efficiency" in inputs else None
+        ),
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -1351,6 +1354,19 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=17,
         identified_by=("#label", "side_draw_column_binary_gas_quarter"),
     ),
+    # **The Murphree rows, on the capture's last four blocks.** `0.6` is the oracle - the port
+    # reproduces its whole profile to about `1e-6` - and `0_85` is NeqSim's state that the port
+    # does *not* reproduce, because the correction makes the map's fixed point path-dependent at
+    # a high efficiency and `solveSequential` relaxes the streams where this port relaxes the
+    # temperature profile. The two `_tight` rows are the measurement that both are *converged*
+    # states rather than partial ones, and they are declared uncased in `UNCASED_ROWS`.
+    LayerCase(
+        model="process.distillation_column",
+        case="murphree_0_6",
+        capture="process_column.tsv",
+        block=19,
+        identified_by=("#label", "binary_murphree_0_6"),
+    ),
     # The packed column's two cases sit on blocks 12 and 13. **Its first block is the base
     # column's own `binary_rigorous` state**, because the packing does not change the separation:
     # NeqSim's `PackedColumn` at `2.0` m and its `DistillationColumn` at four stages report
@@ -1445,6 +1461,12 @@ UNCASED_ROWS: dict[str, int] = {
     # The column's own, one more: the reactive block's *standard* twin, which is the same state
     # at the same gate as the case two blocks above and is kept as the measurement the reactive
     # row is identical to.
+    # And the two Murphree rows at the *tighter* gate, `1e-9` rather than `1e-6`: they take 22
+    # and 86 iterations where their `1e-6` twins take 15 and 62, and move no tray by more than
+    # `8e-10` K. **That is the measurement the `0.85` divergence rests on** - it says NeqSim's
+    # `0.85` state is converged, so the port's disagreement with it is between two fixed points
+    # rather than between a converged and a partial one. They are evidence rather than oracles
+    # because the port needs no second copy of a state it already reaches at the looser gate.
     # And the side-draw capture's four: the class's own three one-tray columns, and the binary
     # column drawing liquid and a pumparound. **The three are the class's own states for this
     # mechanism** - `columnReportsSideDrawAsOutletStream` and `columnEnergyBalanceIncludes-
@@ -1463,7 +1485,7 @@ UNCASED_ROWS: dict[str, int] = {
     # net outlet, which is what `SimpleTray`'s own split does - a pumparound fraction *without* a
     # return. What the class's reconciliation restores is the pumparound's return, which is
     # `ColumnPumparound`'s subject and is named out of this tranche.
-    "process_column.tsv": 10,
+    "process_column.tsv": 13,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

@@ -20,7 +20,9 @@ assumptions = [
     "**nothing reports that gap**: a `DUTY` is not *adjusted*, so its residual is zero by construction - a zero that means \"not checked\" rather than \"satisfied\".",
     "**a reflux-ratio specification is not reproduced, and the reason is measured.** The end's `PVrefluxflash` searches for the state whose vapour fraction is `1/(1 + ratio)`; NeqSim lands on `402.24` K, past the dew point of the captured mixture.",
     "**this port's flash refuses to converge there** rather than landing on a state its own equations do not place.",
-    "**`murphree_efficiency` is declared and refused.** The palette declares it because it is the machine's; its arithmetic is not ported, and `SimpleTray.setMurphreeEfficiency` would close it. A refused parameter is refused by name rather than answered with the ideal stage.",
+    "**`murphree_efficiency` is ported for the sequential solve**: each interior stage's vapour is blended as `y_in + E(y_eq - y_in)`, clamped and renormalised. The ends and an ideal stage are never corrected, a gas draw on a corrected stage is refused, and the products are reconciled against the feed.",
+    "**`naphtali_sandholm` with an efficiency is refused by name.** `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's K-values by an Edmister `K^eta` proxy rather than blending the outlet, so the two solves carry two different corrections and this model ports the sequential one.",
+    "**Four corrected rows, and the port reproduces one exactly.** `binary_murphree_0_6` is the oracle; **`binary_murphree_0_85` it does not reach**, by up to `7` K on tray 3, because the fixed point is path-dependent. The two `_tight` rows at a `1e-9` gate say both NeqSim states are converged.",
     "**two of `solver_type`'s ten strategies are ported**: `direct_substitution`, the class's own default, and `naphtali_sandholm`, the simultaneous MESH correction. The other eight are refused by name.",
     "**the eight unported strategies are a measured non-port.** On the captured binary column all ten land within `2.5e-6` K of each other on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states - each one where a solve stopped.",
     "**four of them land on the substitution core's own state exactly**: `inside_out`, `matrix_inside_out`, `mesh_residual`, and `wegstein`, which reports `direct_substitution` because it fell back to it.",
@@ -105,7 +107,7 @@ description = "the condenser's temperature, which pins the top tray's flash. Abs
 [inputs.murphree_efficiency]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: the column-wide Murphree tray efficiency, which `SimpleTray.setMurphreeEfficiency` applies and this model refuses. Omitted means the ideal stage, which is the class's own default of one.\n"
+description = "the column-wide Murphree tray efficiency, applied to each interior stage's vapour. **Omitted means the ideal stage.** Refused with `solver_type = naphtali_sandholm`, whose solver carries a different correction.\n"
 [inputs.solver_type]
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]

@@ -88,6 +88,10 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         reboiler_temperature: None,
         temperature_tolerance: setup.temperature_tolerance,
         max_iterations: setup.max_iterations,
+        // **The absorber's correction is an override rather than this one**: `AbsorptionColumn
+        // .applyMurphreeCorrection` corrects both phases and takes a per-component efficiency,
+        // so its own two parameters are `AbsorberSetup`'s and this is the base's.
+        murphree_efficiency: None,
         top_specification: None,
         bottom_specification: None,
         top_feed: Some(setup.solvent.clone()),

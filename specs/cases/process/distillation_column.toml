@@ -345,3 +345,41 @@ liquid_side_draw_n = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 pumparound_n = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 condenser_duty = -15958.712451056435
 reboiler_duty = 45574.29525375976
+[[cases]]
+id = "murphree_0_6"
+tolerance = 0.0002
+source = "`binary_murphree_0_6`: the binary column with `murphree_efficiency = 0.6` - one of the two `DistillationSolverBenchmarkTest` uses - so the difference from `binary_rigorous` is the correction and nothing else. **This is the oracle.** The port reproduces the whole profile to about `1e-6`: tray temperatures within `1.3e-4` K, traffic rates within `2.3e-6` relative, both products within `4e-8`, and both duties within `1.1` W of `18651` and `61658`. The tolerance is set by the duties and the enthalpies, as the ideal row's is. **The three rows below this one in the capture are the measurement of where the port stops agreeing**: `binary_murphree_0_85` is a state it does not reach, and the two `_tight` rows at a `1e-9` gate are what say NeqSim's `0.6` and `0.85` states are both converged - see `UNCASED_ROWS` and this model's own notes.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1.0E-6
+max_iterations = 200
+murphree_efficiency = 0.6
+[cases.expected]
+tray_temperature = [373.15, 336.17610149619395, 303.1308245367222, 302.1846100734558, 296.56967983176895, 253.14999999999998]
+tray_pressure = [2000000.0, 1980000.0, 1960000.0000000002, 1939999.9999999998, 1920000.0, 1900000.0]
+tray_gas_n = [1.5935901648726694, 0.6104268433574532, 4.497779636973569, 3.904812548909508, 3.80082289353683, 3.7264760720867867]
+tray_liquid_n = [3.764227964204178, 5.889255034047075, 4.906090702189604, 1.3027391363431713, 0.709771702362906, 0.6057817557197408]
+distillate_n = 3.7264760720867867
+distillate_z = [0.9745893826201694, 0.025410617379830604]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+distillate_h = -1229.4669988295639
+bottoms_n = 3.764227964204178
+bottoms_z = [0.030170331016495015, 0.969829668983505]
+bottoms_p = 2000000.0
+bottoms_t = 373.15
+bottoms_h = -6132.476781201999
+condenser_duty = -18650.975463115934
+reboiler_duty = 61658.439796998275

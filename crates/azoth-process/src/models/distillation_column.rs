@@ -206,8 +206,6 @@ pub fn distillation_column(
     liquid_side_draw_fractions: Option<&[f64]>,
     pumparound_fractions: Option<&[f64]>,
 ) -> Result<DistillationColumnResult> {
-    refuse_unported(murphree_efficiency)?;
-
     // **The end is the parameter's name, not a value.** `ColumnSpecification` carries a
     // location - TOP or BOTTOM - and the class holds exactly two of them, so a declaration
     // that names its parameters `top_*` and `bottom_*` has already said which is which;
@@ -331,6 +329,7 @@ pub fn distillation_column(
         reboiler_temperature,
         temperature_tolerance,
         max_iterations,
+        murphree_efficiency,
         top_specification,
         bottom_specification,
         top_feed: None,
@@ -374,29 +373,6 @@ pub(crate) fn unported_class(strategy: &str) -> &'static str {
         "mesh_residual" => "MeshResidualSolver",
         _ => "AutoSolver",
     }
-}
-
-/// Refuse every parameter the palette declares and this tranche does not implement.
-///
-/// **Declared and refused, rather than withdrawn.** `unit_ops.distillation_column`'s palette
-/// entry declares these because they are the machine's own form fields - the same reason
-/// `unit_ops.throttling_valve`'s `valve_opening` was *withdrawn*, and the opposite conclusion:
-/// there nothing read it and nothing was coming, and here the class that reads each one is
-/// named and its stage is known. A form field that errors with the reason beats a form field
-/// that is silently absent, and beats one that answers with the ideal stage.
-fn refuse_unported(murphree_efficiency: Option<f64>) -> Result<()> {
-    if let Some(efficiency) = murphree_efficiency {
-        return Err(AzothError::invalid_input(
-            "murphree_efficiency",
-            format!(
-                "a Murphree efficiency of {efficiency} is not ported: \
-                 `SimpleTray.setMurphreeEfficiency` and the per-tray correction the column \
-                 solver applies after each run are the classes that would close it. Omitted \
-                 means the ideal stage, which is the class's own default of one"
-            ),
-        ));
-    }
-    Ok(())
 }
 
 /// One end's specification from its three declared parameters.

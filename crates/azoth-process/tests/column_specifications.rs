@@ -36,6 +36,7 @@ fn column(top: Option<Specification>, bottom: Option<Specification>, pin: bool) 
         condenser_temperature: if pin { Some(kelvins(253.15)) } else { None },
         reboiler_temperature: Some(kelvins(373.15)),
         temperature_tolerance: 1.0e-6,
+        murphree_efficiency: None,
         max_iterations: 200,
         top_specification: top,
         bottom_specification: bottom,

@@ -99,7 +99,7 @@ description = "the column's internal diameter. **It does not enter the solve**: 
 [inputs.murphree_efficiency]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: the column-wide Murphree tray efficiency, which `SimpleTray.setMurphreeEfficiency` applies and this model refuses. Omitted means the ideal stage, which is the class's own default of one.\n"
+description = "the column-wide Murphree tray efficiency, applied to each interior stage's vapour. **Omitted means the ideal stage.** Refused with `solver_type = naphtali_sandholm`, whose solver carries a different correction.\n"
 [inputs.solver_type]
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]

@@ -300,7 +300,7 @@ def distillation_column(
         >>> round(r.distillate_n.to("mol/s").magnitude, 4)
         3.7915
     """
-    _refuse_unported(murphree_efficiency, solver_type)
+    _refuse_unported(solver_type, murphree_efficiency)
 
     # **`setReactive`'s two forms, and neither states half a section** - the mirror of the Rust
     # model's own resolution.
@@ -433,6 +433,7 @@ def distillation_column(
         solver_type,
         reactive=section,
         draws=draws,
+        murphree_efficiency=murphree_efficiency,
     )
     warnings.extend(states.warnings)
 
@@ -488,6 +489,7 @@ def _states(
     reactive: tuple[int, int] | None = None,
     draws: tuple[tuple[float, ...] | None, tuple[float, ...] | None, tuple[float, ...] | None]
     | None = None,
+    murphree_efficiency: float | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
 
@@ -627,6 +629,13 @@ def _states(
 
     gas: list[StreamRecord | None] = [None] * tray_count
     liquid: list[StreamRecord | None] = [None] * tray_count
+    # **What each tray's own flash found**, before either the draws or the Murphree correction
+    # touched it: the vapour is the correction's `y_eq` and `y_in`, and the pair is the phase
+    # count its two guards read. The class's correction compares against
+    # `trays.get(i - 1).getThermoSystem().getPhase(0)` - the *system*, which
+    # `setCachedGasOutStream` never writes - so the stage above receives the corrected vapour
+    # while the correction sees the uncorrected one. Both are needed and they differ.
+    equilibrium: list[tuple[StreamRecord | None, StreamRecord | None]] = [(None, None)] * tray_count
 
     def present(stream: StreamRecord | None, what: str) -> StreamRecord:
         """A stream the seed needs, refused rather than carried as an absent phase.
@@ -690,6 +699,17 @@ def _states(
                 out["liquid_side_draw"],
                 out["pumparound"],
             ) = split_draws(out["gas"], out["liquid"], stated)
+        equilibrium[i] = (out["gas"], out["liquid"])
+        if murphree_efficiency is not None and _corrects(
+            i, tray_count, has_condenser, murphree_efficiency
+        ):
+            below_gas, below_liquid = equilibrium[i - 1]
+            if out["liquid"] is not None and below_liquid is not None:
+                out["gas"] = _correct_vapour(
+                    equilibrium=out["gas"],
+                    inlet=below_gas,
+                    efficiency=murphree_efficiency,
+                )
         gas[i], liquid[i] = out["gas"], out["liquid"]
         drawn[0][i] = out.get("gas_side_draw")
         drawn[1][i] = out.get("liquid_side_draw")
@@ -985,10 +1005,19 @@ def _states(
         if abs(supplied) > 1.0e-12:
             mass_residual = max(mass_residual, abs(supplied - delivered) / abs(supplied))
 
+    # **The two closures gate a conserving column and are only reported on a corrected one.**
+    # `getMassBalanceError` - the quantity the class's own gate scales against
+    # `baseMassTolerance` - compares a stage's inlet streams with the stage's *system*, which
+    # `mixStream` has already made equal, so it is identically zero and never binds. A Murphree
+    # efficiency is what makes a column's products stop carrying the feed, and that is the
+    # class's own arithmetic rather than a failure of it: what a stage hands up carries the
+    # flash's *moles* at the blend's composition, so the interior imbalances do not cancel.
+    # `_reconcile_products` below is what the class publishes in that state.
+    conserving = murphree_efficiency is None
     if (
         temperature_residual > temperature_tolerance
-        or mass_residual > MASS_BALANCE_TOLERANCE
-        or energy_residual > ENTHALPY_BALANCE_TOLERANCE
+        or (conserving and mass_residual > MASS_BALANCE_TOLERANCE)
+        or (conserving and energy_residual > ENTHALPY_BALANCE_TOLERANCE)
     ):
         from azoth.core.errors import SolverNotConvergedError
 
@@ -996,6 +1025,42 @@ def _states(
             iterations,
             max(temperature_residual, mass_residual, energy_residual),
             min(temperature_tolerance, MASS_BALANCE_TOLERANCE, ENTHALPY_BALANCE_TOLERANCE),
+        )
+
+    # **`updateProductsFromExternalComponentBalance`**: the two published products rescaled,
+    # per component, so that they carry the feed exactly. It is on the class's run path and a
+    # column at a Murphree efficiency cannot be published without it - the correction moves
+    # components between a stage's vapour and its liquid without moving its moles, so the
+    # column's overall closure cannot close on its own.
+    supplied_c = [
+        sum(float(feed["n"]) * float(feed["z"][c]) for feed in feeds) for c in range(len(feed_z))
+    ]
+    withdrawn_c = [sum(draw["n"] * draw["z"][c] for draw in held) for c in range(len(feed_z))]
+    top_moles = [0.0] * len(feed_z)
+    bottom_moles = [0.0] * len(feed_z)
+    for c in range(len(feed_z)):
+        here = distillate["n"] * distillate["z"][c]
+        below = bottoms["n"] * bottoms["z"][c]
+        carried = here + below
+        if carried <= 1.0e-20:
+            continue
+        scale = max(0.0, supplied_c[c] - withdrawn_c[c]) / carried
+        top_moles[c] = here * scale
+        bottom_moles[c] = below * scale
+    distillate = _rebuild(distillate, top_moles)
+    bottoms = _rebuild(bottoms, bottom_moles)
+
+    # **`finalizeSolve` writes them back onto the end trays**, and the record has to show it:
+    # the capture's `tray0_liquid_n` and `tray5_gas_n` are the *products* and not the ends'
+    # flashes, because `finalizeSolve` runs after the solve and before a probe can read a tray.
+    gas[tray_count - 1] = distillate
+    liquid[0] = bottoms
+    if murphree_efficiency is not None:
+        reboiler_duty = (outlet_enthalpy(0) - inlet_enthalpy(0)) if has_reboiler else 0.0
+        condenser_duty = (
+            outlet_enthalpy(tray_count - 1) - inlet_enthalpy(tray_count - 1)
+            if has_condenser
+            else 0.0
         )
 
     return _States(
@@ -1037,6 +1102,67 @@ def _states(
     )
 
 
+def _corrects(index: int, tray_count: int, has_condenser: bool, efficiency: float) -> bool:
+    """Whether `DistillationColumn.applyMurphreeCorrection` would correct the stage at ``index``.
+
+    The class's three tests, in its order: an ideal stage, the reboiler at zero, the condenser
+    when there is one. ``tray_count`` counts the ends.
+    """
+    return (
+        efficiency < 1.0 - 1.0e-10 and index > 0 and not (has_condenser and index >= tray_count - 1)
+    )
+
+
+def _correct_vapour(
+    equilibrium: StreamRecord | None, inlet: StreamRecord | None, efficiency: float
+) -> StreamRecord | None:
+    """`DistillationColumn.applyMurphreeCorrection`: the vapour leaving one stage, blended.
+
+    ``None`` where the class would return without touching anything. The two guards that are
+    *phases* - `getNumberOfPhases() < 2` on the stage and on the one below - are the caller's,
+    because an absent phase is the only way this library says a phase is not there.
+    """
+    if equilibrium is None or inlet is None:
+        return equilibrium
+    if list(equilibrium["components"]) != list(inlet["components"]):
+        raise InvalidInputError(
+            "murphree_efficiency",
+            "the stage and the stage below it do not carry the same substances in the same "
+            "order, so the correction has no basis for pairing one's components with the "
+            "other's: `DistillationColumn.applyMurphreeCorrection` indexes both by position",
+        )
+    actual = [
+        max(0.0, y_in + efficiency * (y_eq - y_in))
+        for y_eq, y_in in zip(equilibrium["z"], inlet["z"], strict=True)
+    ]
+    total = sum(actual)
+    if total > 1.0e-15:
+        actual = [value / total for value in actual]
+    # **The total moles are the flash's own and the composition is the blended one.** The class
+    # builds the corrected stream from `fluid.phaseToSystem(0)`, replaces every component's
+    # fraction and mole count, and re-initialises - so what the stage above *receives* is a
+    # stream whose overall composition is the blend, at the stage's own temperature and pressure.
+    return _stage.stream_at(
+        list(equilibrium["components"]),
+        equilibrium["n"],
+        actual,
+        float(equilibrium["t"]),
+        float(equilibrium["p"]),
+    )
+
+
+def _rebuild(source: StreamRecord, moles: list[float]) -> StreamRecord:
+    """A stream restated over stated component moles, at its own temperature and pressure."""
+    total = sum(moles)
+    return _stage.stream_at(
+        list(source["components"]),
+        total,
+        [value / total for value in moles],
+        float(source["t"]),
+        float(source["p"]),
+    )
+
+
 def secant_step(guess: tuple[float, float], error: tuple[float, float]) -> float:
     """`secantStep`, with its two guards: a step cap and a physically reasonable window."""
     denominator = error[1] - error[0]
@@ -1061,20 +1187,27 @@ def _restate(components: list[str], stream: StreamRecord, temperature: float) ->
     return _stage.stream_at(components, stream["n"], list(stream["z"]), temperature, stream["p"])
 
 
-def _refuse_unported(murphree_efficiency: float | None, solver_type: str | None) -> None:
+def _refuse_unported(solver_type: str | None, murphree_efficiency: float | None) -> None:
     """Refuse every parameter the palette declares and this tranche does not implement.
 
     **Declared and refused, rather than withdrawn.** The palette declares them because they
     are the machine's own form fields; each refusal names the class that would close it, so a
     reader learns what is owed rather than meeting an absence.
     """
-    if murphree_efficiency is not None:
+    # **The mesh solve carries a different efficiency arithmetic**, refused by name rather than
+    # silently ignored: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's
+    # K-values by an Edmister `K^eta` proxy, where the sequential core's
+    # `applyMurphreeCorrection` - the one this port carries - blends the vapour leaving a stage
+    # against the vapour entering it. The two are different corrections.
+    if solver_type == "naphtali_sandholm" and murphree_efficiency is not None:
         raise InvalidInputError(
-            "murphree_efficiency",
-            f"a Murphree efficiency of {murphree_efficiency} is not ported: "
-            f"`SimpleTray.setMurphreeEfficiency` and the per-tray correction the column solver "
-            f"applies after each run are the classes that would close it. Omitted means the "
-            f"ideal stage, which is the class's own default of one",
+            "solver_type",
+            f"a Murphree efficiency of {murphree_efficiency} is not ported on the "
+            f"`naphtali_sandholm` solve: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` "
+            f"corrects a tray's K-values by an Edmister `K^eta` proxy, where the sequential "
+            f"core's `applyMurphreeCorrection` - the one this port carries - blends the vapour "
+            f"leaving a stage against the vapour entering it. The two are different corrections "
+            f"rather than two spellings of one",
         )
     if solver_type is None or solver_type in ("direct_substitution", "naphtali_sandholm"):
         return

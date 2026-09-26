@@ -667,6 +667,37 @@ public class ProcessProbe {
 
     // The side-draw column rows, which live here for the same reason.
     sideDrawColumnRowsInColumnCapture();
+
+    // The Murphree rows, which live here for the same reason again.
+    murphreeRows();
+  }
+
+  /// **The Murphree efficiency, on the column the port is already held to.** Two efficiencies,
+  /// `0.6` and `0.85`, which are the two `DistillationSolverBenchmarkTest` states its own
+  /// product-split and multi-solver tests use - and the ideal reference is the
+  /// `binary_methane_butane_4_stages` row above, so a reader takes the difference from a state
+  /// both libraries already agree on.
+  ///
+  /// **The correction bites on four of the six trays**, which the profile shows: stage 0 is the
+  /// reboiler and stage 5 the condenser, and `applyMurphreeCorrection` returns immediately on
+  /// each. The two tray rows that move most are the ones whose vapour is furthest from the
+  /// tray below's, which is the definition of the correction rather than a second effect.
+  static void murphreeRows() {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.5, 0.5 };
+    murphreeRow("binary_murphree_0_6", names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0,
+        20.0, 1.0e-6, 200, true, false, 0.6);
+    murphreeRow("binary_murphree_0_85", names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0,
+        20.0, 1.0e-6, 200, true, false, 0.85);
+    // **The same state at a tighter gate**, which is the row that says whether the `1e-6` one is
+    // a *converged* state: the class stops when the mean tray-temperature change falls under the
+    // tolerance, and on a corrected column the temperatures settle while the compositions are
+    // still moving. If the profile below differs from the one above, the one above was a partial
+    // state on the way and not the column's answer.
+    murphreeRow("binary_murphree_0_85_tight", names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0,
+        19.0, 20.0, 1.0e-9, 2000, true, false, 0.85);
+    murphreeRow("binary_murphree_0_6_tight", names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0,
+        19.0, 20.0, 1.0e-9, 2000, true, false, 0.6);
   }
 
   /// **The side-draw column rows, and why they are in this capture rather than one of their own.**
@@ -1228,7 +1259,7 @@ public class ProcessProbe {
       boolean condenser, boolean totalCondenser) {
     runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
         condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
-        totalCondenser, null);
+        totalCondenser, null, null);
   }
 
   /// **The same column under a stated `SolverType`.** `setSolverType` is explicit rather than a
@@ -1240,13 +1271,33 @@ public class ProcessProbe {
       boolean condenser, boolean totalCondenser, String solver) {
     runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
         condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
-        totalCondenser, solver);
+        totalCondenser, solver, null);
+  }
+
+  /// **The column under a Murphree efficiency**, which is the same machine with the vapour
+  /// leaving each interior tray blended towards its inlet's - `DistillationColumn
+  /// .applyMurphreeCorrection`, applied after every tray's run on the sequential path.
+  ///
+  /// **The column is the port's own primary oracle and not the class's Murphree test column.**
+  /// `runBinaryMurphreeColumn` drives its two ends by *reflux ratio* (`getCondenser()
+  /// .setRefluxRatio(2.0)`), so its stated end temperatures are inert and its state is a
+  /// `PVrefluxflash` one - the route `process.distillation_column` measures as not reproduced.
+  /// A row on that column would put the correction and the unported solve in the same number.
+  /// So the state here is `binary_methane_butane_4_stages`, which the port already reproduces
+  /// exactly, and the *difference* from that row is the correction and nothing else.
+  static void murphreeRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
+      double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
+      boolean condenser, boolean totalCondenser, double efficiency) {
+    runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
+        condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
+        totalCondenser, "DIRECT_SUBSTITUTION", efficiency);
   }
 
   static void runColumn(String label, String[] names, double[] z, double feedTemperatureK,
       double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
       double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
-      boolean condenser, boolean totalCondenser, String solver) {
+      boolean condenser, boolean totalCondenser, String solver, Double murphreeEfficiency) {
     SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], z[i]);
@@ -1274,6 +1325,9 @@ public class ProcessProbe {
       column.setSolverType(
           neqsim.process.equipment.distillation.DistillationColumn.SolverType.valueOf(solver));
     }
+    if (murphreeEfficiency != null) {
+      column.setMurphreeEfficiency(murphreeEfficiency);
+    }
     column.run();
 
     System.out.println(label);
@@ -1281,6 +1335,9 @@ public class ProcessProbe {
     System.out.println("feed_tray=" + feedTray);
     System.out.println("temperature_tolerance=" + tolerance);
     System.out.println("total_condenser=" + totalCondenser);
+    if (murphreeEfficiency != null) {
+      System.out.println("murphree_efficiency=" + column.getMurphreeEfficiency());
+    }
     print("feed", inlet);
     System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
     System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
@@ -1305,6 +1362,55 @@ public class ProcessProbe {
     }
     print("distillate", column.getGasOutStream());
     print("bottoms", column.getLiquidOutStream());
+    // **The *tray terminals*, which are what the public products were reconciled from.**
+    // `DistillationColumn.run` ends in `updateProductsFromExternalComponentBalance`, which
+    // rescales the two public products per component so that they carry the feed exactly - so
+    // what `distillate` and `bottoms` above print is a *reconciled* record rather than the tray
+    // solve's own. The terminals are the solve's, and a reader comparing a port against this
+    // capture needs both to see which of the two a difference lives in.
+    if (murphreeEfficiency != null) {
+      print("terminal_top", column.getTray(column.getNumberOfTrays() - 1).getGasOutStream());
+      print("terminal_bottom", column.getTray(0).getLiquidOutStream());
+      // **What the correction actually produced on each corrected stage, and what it read.**
+      // `yEq` is the stage's own equilibrium vapour (`getThermoSystem().getPhase(0)`) and `yIn`
+      // the stage below's - so `y_out = y_in + E(y_eq - y_in)` can be checked by hand against a
+      // port's own arithmetic rather than inferred from a profile two solvers disagree on.
+      for (int i = 0; i < column.getNumberOfTrays(); i++) {
+        SystemInterface system = column.getTray(i).getThermoSystem();
+        StringBuilder eqZ = new StringBuilder();
+        for (int j = 0; j < system.getPhase(0).getNumberOfComponents(); j++) {
+          eqZ.append(system.getPhase(0).getComponent(j).getName()).append(':')
+              .append(system.getPhase(0).getComponent(j).getx()).append(' ');
+        }
+        System.out.println("tray" + i + "_eq_gas_z=" + eqZ.toString().trim());
+        if (i > 0) {
+          SystemInterface below = column.getTray(i - 1).getThermoSystem();
+          StringBuilder belowZ = new StringBuilder();
+          for (int j = 0; j < below.getPhase(0).getNumberOfComponents(); j++) {
+            belowZ.append(below.getPhase(0).getComponent(j).getName()).append(':')
+                .append(below.getPhase(0).getComponent(j).getx()).append(' ');
+          }
+          System.out.println("tray" + i + "_in_gas_z=" + belowZ.toString().trim());
+        }
+        SystemInterface outSystem = column.getTray(i).getGasOutStream().getThermoSystem();
+        // **The stream's *overall* composition, which is what the stage above receives.** The
+        // cached corrected system is `phaseToSystem(0)` with the composition replaced and then
+        // re-initialised, so its own phase 0 is the *equilibrium* vapour at its T and P again -
+        // reading that instead of the overall would report the correction as a no-op.
+        StringBuilder corrected = new StringBuilder();
+        double[] overall = outSystem.getMolarComposition();
+        for (int j = 0; j < overall.length; j++) {
+          corrected.append(outSystem.getComponent(j).getName()).append(':').append(overall[j])
+              .append(' ');
+        }
+        System.out.println("tray" + i + "_out_gas_z=" + corrected.toString().trim());
+        System.out.println("tray" + i + "_out_gas_phases=" + outSystem.getNumberOfPhases());
+        System.out.println("tray" + i + "_out_gas_n=" + outSystem.getTotalNumberOfMoles());
+        System.out.println("tray" + i + "_out_gas_T=" + outSystem.getTemperature());
+        System.out.println("tray" + i + "_out_gas_P=" + outSystem.getPressure());
+        System.out.println("tray" + i + "_out_gas_h=" + outSystem.getPhase(0).getEnthalpy("J/mol"));
+      }
+    }
     System.out.println("condenser_duty_W=" + column.getCondenser().getDuty());
     System.out.println("reboiler_duty_W=" + column.getReboiler().getDuty());
     System.out.println();
