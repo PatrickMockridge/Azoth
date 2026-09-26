@@ -176,9 +176,9 @@ process the same way). The agentic middleware is a **tool schema and a session**
 descriptions for the tools, derived from the command model (`list_unit_ops`, `run_calc`,
 `read_stream`, `set_parameter`, `add_instance`, `validate`, `load`, `save` in the page's own
 words — one tool per command, in the code), and an in-process runner that executes them against
-the same session a human edits. It is hosted twice — a Jupyter/Colab cell and a GUI side panel —
-and an MCP server is a projection of the same schema — `azoth mcp`, over stdio, for one document
-at a time. **The same projection is served over HTTP** at `POST /mcp` on `azoth serve`, which
+the same session a human edits. It is hosted twice — a Jupyter/Colab cell, through the notebook
+door, and an MCP server — and the latter is a projection of the same schema — `azoth mcp`, over
+stdio, for one document at a time. **The same projection is served over HTTP** at `POST /mcp` on `azoth serve`, which
 speaks the current protocol revision only: the handshake revisions are the stdio door's, one
 process away, and an HTTP client that asks for one is told so rather than left guessing.
 
@@ -199,8 +199,17 @@ that reads as finished.
   message both transports write to the definition for the revision that message belongs to — two
   schemas because the protocol has two lanes, since `2026-07-28` removed the handshake and
   `2025-11-25` has no discovery, and two transports because `POST /mcp` writes the same messages as
-  stdio. What that cannot see is a *new* revision: the vendored file is the pin, so upstream moving
-  is invisible until somebody re-fetches it.
+  stdio. **What that cannot see is a *new* revision, and the pin now has a reader on both halves of
+  it.** `tools/check_mcp_schema.py` holds the vendored bytes to the digests `NOTICE` records, in
+  `spec-validate` on every push; `--upstream` re-fetches the URLs `NOTICE` records, on the weekly
+  `.github/workflows/mcp-pin.yml`. The two are one command with a flag rather than one check because
+  they fail differently: an unreachable upstream is not a revision having moved, and only the
+  scheduled run can say which happened.
+- **The agent in the editor.** A GUI side panel that shows the tools and drives them is not built,
+  so an agent reaches a session the way a person does not: over `azoth mcp` or `azoth serve`. What it
+  would be made of is above rather than new — `middleware::tools` for what may be called, and the
+  envelope every call answers with — so it would close no layer, which is why the section on the
+  agent no longer reads as though it existed.
 - **Streaming, and the things that only exist to carry a stream.** `POST /mcp` answers with one
   JSON object, which the specification allows the server to choose; the other option is a
   request-scoped SSE stream, and its reason to exist is a `notifications/progress` while a long call
