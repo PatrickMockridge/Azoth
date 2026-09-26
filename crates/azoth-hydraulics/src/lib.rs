@@ -39,6 +39,8 @@ pub mod friction_factor_colebrook;
 pub mod friction_factor_haaland;
 pub mod friction_factor_swamee_jain;
 pub mod orifice_flow;
+pub mod packing;
+pub mod packing_hydraulics;
 pub mod provenance;
 pub mod pump_power;
 pub mod results;

@@ -1,0 +1,339 @@
+id = "hydraulics.packing_hydraulics"
+name = "A packed bed's flooding, load, pressure drop and film coefficients"
+equation = "The Eckert GPDC fit for the flooding velocity, `log10(Y) = -1.668 - 1.085 x - 0.297 x**2` with `x = log10(FLV)` and `FLV = (L/V) sqrt(rho_v/rho_l)` clamped to `[0.005, 5]`; Leva's dry pressure drop `dp/dz = Fp rho_v u_v**2 / eps**3 * 0.01`, corrected by `10**(C L)`; and Onda's three: the wetted area `a_w/a = 1 - exp(-1.45 (sigma_c/sigma)**0.75 Re_l**0.1 Fr_l**-0.05 We_l**0.2)` clamped to `[0.2, 1]`, `kGa = 5.23 (a D_G/dp**2) Re_v**0.7 Sc_v**(1/3)` and `kLa = 0.0051 Re_l2**(2/3) Sc_l**-0.5 (a dp)**0.4 / (rho_l/(mu_l g))**(1/3) * a_w`."
+latex = '''\frac{a_w}{a} = 1 - \exp\!\left[-1.45\left(\frac{\sigma_c}{\sigma}\right)^{0.75} Re_L^{0.1} Fr_L^{-0.05} We_L^{0.2}\right]'''
+assumptions = ["**the packing resolves by name and the file wins.** `PackingSpecificationLibrary` registers its 22 built-ins and *then* loads `Packing.csv`, so a row with the same key replaces one: `Pall-Ring-50` is the file's **plastic** row - 111.1 m**2/m**3, void 0.919, factor 180 - not the built-in's.\n", "**the normalisation is the class's**: lowercased with every non-alphanumeric removed, so `Pall-Ring-50`, `pallring 50` and `PALL_RING_50` are one key.\n", "**the four correlations are the class's own, with its constants**: the Eckert fit's three coefficients, Onda's `5.23` and `0.0051`, Leva's `0.01` scale and its `0.015` liquid-loading coefficient (`0.010` for structured) - written inline, not published.\n", "**the HETP is a two-resistance combination at a stripping factor of one, clamped twice**: never below `0.1` m and never above twice the empirical estimate - `0.12 + 0.012 dp` scaled by `1 + 0.1 (D - 1)` for random, `100/a + 0.1` for structured. Both captured rows take the upper clamp.\n", "**the wetting check and the design verdict are the class's own thresholds**: a minimum wetting rate of `5e-5` m**3/(m**2 s) for a random packing and `2.5e-5` for a structured one, and a design window of 40 to 80 per cent of flood. Both captured random rows fall below the minimum.\n", "the vapour film coefficient depends on the vapour side alone, so the two rows that differ only in liquid load answer the same `kGa` (\\(1966.158\\) against \\(1966.158\\)) while their `kLa` differ three-fold.\n"]
+references = ["Onda, K.; Takeuchi, H.; Okumoto, Y. (1968). \\\"Mass transfer coefficients between gas and liquid phases in packed columns.\\\" J. Chem. Eng. Japan 1(1), 56-62. DOI 10.1252/jcej.1.56. The wetted area and the two film coefficients.", "Leva, M. (1953). \\\" Tower packings and packed tower design.\\\" United States Stoneware Company. The bed's pressure drop and its liquid-loading correction.", "Eckert, J. S. (1975). \\\"How tower packings behave.\\\" Chem. Eng. 82(8), 70-76. The generalized pressure-drop correlation the flooding velocity is fitted from.", "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/internals/PackingHydraulicsCalculator.java` is the port source, and `PackingSpecificationLibrary` the table behind it.", "`validation/neqsim/captures/packing_probe.tsv` - four states driven through the calculator directly, each printing the packing it resolved, every input the correlations read, and all sixteen outputs.\n"]
+[source]
+standard = "NeqSim master `PackingHydraulicsCalculator`"
+edition = "`calculateFloodingVelocity`, `calculateActualVelocity`, `calculatePressureDrop`, `calculateMassTransfer`, `calculateHETP`, `calculateWettingCheck` and `assessDesign`, ported verbatim; the packing table is `PackingSpecificationLibrary`'s built-ins plus `designdata/Packing.csv`."
+doi = "10.1252/jcej.1.56"
+[inputs]
+[inputs.packing]
+type = "string"
+description = "the packing's name or an alias, which the library resolves; a name nothing matches is `Pall-Ring-50`.\n"
+[inputs.column_diameter]
+unit = "m"
+description = "the column's internal diameter, which every velocity is per unit area of.\n"
+[inputs.packed_height]
+unit = "m"
+description = "the packed height, which the total pressure drop and the theoretical-stage count read.\n"
+[inputs.vapor_mass_flow]
+unit = "kg/s"
+description = "the vapour's mass flow.\n"
+[inputs.liquid_mass_flow]
+unit = "kg/s"
+description = "the liquid's mass flow.\n"
+[inputs.vapor_density]
+unit = "kg/m**3"
+description = "the vapour's mass density.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid's mass density.\n"
+[inputs.vapor_viscosity]
+unit = "Pa*s"
+description = "the vapour's dynamic viscosity.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid's dynamic viscosity.\n"
+[inputs.surface_tension]
+unit = "N/m"
+description = "the interfacial surface tension, which the wetted area compares with the packing's critical one.\n"
+[inputs.vapor_diffusivity]
+unit = "m**2/s"
+description = "the vapour's diffusivity, which the gas film coefficient's Schmidt number takes.\n"
+[inputs.liquid_diffusivity]
+unit = "m**2/s"
+description = "the liquid's diffusivity, likewise.\n"
+[inputs.hydraulic_capacity_factor]
+unit = "dimensionless"
+description = "the packing's relative hydraulic capacity, which scales the flooding velocity. One is the class's default.\n"
+[outputs]
+[outputs.packing_name]
+type = "string"
+description = "the display name the name resolved to.\n"
+[outputs.packing_category]
+type = "string"
+description = "`random` or `structured`, which the pressure drop's coefficient, the HETP estimate and the wetting threshold all branch on.\n"
+[outputs.specific_surface_area]
+unit = "dimensionless"
+description = "the resolved specific surface area in m**2/m**3, declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.void_fraction]
+unit = "dimensionless"
+description = "the resolved void fraction.\n"
+[outputs.packing_factor]
+unit = "dimensionless"
+description = "the resolved packing factor in 1/m.\n"
+[outputs.flooding_velocity]
+unit = "m/s"
+description = "the velocity at which the bed floods.\n"
+[outputs.vapor_velocity]
+unit = "m/s"
+description = "the vapour's superficial velocity.\n"
+[outputs.liquid_velocity]
+unit = "m/s"
+description = "the liquid's superficial velocity.\n"
+[outputs.f_factor]
+unit = "dimensionless"
+description = "`u_v sqrt(rho_v)`, in Pa**0.5.\n"
+[outputs.percent_flood]
+unit = "dimensionless"
+description = "the vapour velocity as a percentage of the flooding velocity.\n"
+[outputs.pressure_drop_per_meter]
+unit = "Pa"
+description = "the bed's pressure drop per metre of packed height.\n"
+[outputs.total_pressure_drop]
+unit = "Pa"
+description = "the per-metre figure times the packed height.\n"
+[outputs.wetted_area]
+unit = "dimensionless"
+description = "the wetted area in m**2/m**3.\n"
+[outputs.k_ga]
+unit = "dimensionless"
+description = "the volumetric gas-film coefficient in 1/s, declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.k_la]
+unit = "dimensionless"
+description = "the volumetric liquid-film coefficient in 1/s, declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.htu_g]
+unit = "m"
+description = "the gas-side height of a transfer unit.\n"
+[outputs.htu_l]
+unit = "m"
+description = "the liquid-side height of a transfer unit.\n"
+[outputs.htu_og]
+unit = "m"
+description = "the overall height of a transfer unit, the two summed at a stripping factor of one.\n"
+[outputs.hetp]
+unit = "m"
+description = "the height equivalent to a theoretical plate, clamped to `[0.1, 2 estimate]`.\n"
+[outputs.theoretical_stages]
+unit = "dimensionless"
+description = "the packed height over the HETP.\n"
+[outputs.wetting_rate]
+unit = "m**3/s"
+description = "the liquid's wetting rate in m**3/(m**2 s), declared in the vocabulary's own volume rate.\n"
+[outputs.minimum_wetting_rate]
+unit = "m**3/s"
+description = "the minimum this packing's category needs.\n"
+[outputs.wetting_ok]
+type = "boolean"
+description = "whether the liquid rate reaches the minimum.\n"
+[outputs.design_ok]
+type = "boolean"
+description = "whether the bed is wetted and between 40 and 80 per cent of flood.\n"
+[[valid_range]]
+quantity = "column_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "every velocity divides by its cross-section\n"
+[[valid_range]]
+quantity = "packed_height"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a bed of no height has no pressure drop and no stages\n"
+[[valid_range]]
+quantity = "vapor_mass_flow"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flow parameter divides by it\n"
+[[valid_range]]
+quantity = "liquid_mass_flow"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the wetting check and the flow parameter both read it\n"
+[[valid_range]]
+quantity = "vapor_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flooding fit and both film coefficients divide by it\n"
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the density difference in the flooding fit is negative without it\n"
+[[valid_range]]
+quantity = "vapor_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the Schmidt number and the Reynolds number divide by it\n"
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "likewise, on the liquid side\n"
+[[valid_range]]
+quantity = "surface_tension"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the wetted area's exponent divides by it\n"
+[[valid_range]]
+quantity = "vapor_diffusivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the gas film coefficient is proportional to it\n"
+[[valid_range]]
+quantity = "liquid_diffusivity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the liquid film coefficient divides by it in its Schmidt number\n"
+[[valid_range]]
+quantity = "hydraulic_capacity_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a negative relative capacity would give a negative flooding velocity\n"
+[worked_example]
+source = "the capture's `pall_ring_50_absorber` row, which is the class's own default packing at an absorber's state\n"
+derivation = "a 1 m column, a 5 m bed, 0.35 kg/s of vapour at 45 kg/m**3 and 3.5 kg/s of liquid at 990 kg/m**3, with the vapour at 1.8e-5 Pa*s and the liquid at 6.5e-4, a surface tension of 0.072 N/m and diffusivities of 3.3e-7 and 1.9e-9 m**2/s.\n\nThe name resolves to the **file's** Pall-Ring-50 row - 111.1 m**2/m**3, void 0.919, factor 180 - and not the built-in's:\n\n  area = pi/4 = 0.7853981633974483 m**2\n  FLV  = (3.5/0.35) sqrt(45/990) = 10 sqrt(0.045454545454545456) = 2.1319599588345023, inside [0.005, 5]\n  x    = log10(FLV) = 0.3287474770297418\n  Y    = 10**(-1.668 - 1.085 x - 0.297 x*x) = 10**(-2.0537450855116917) = 0.008837...\n  u_fl = sqrt(Y / (180 * 45/(9.81 (990 - 45)) * (6.5e-4/0.001)**0.1)) = 0.10238615607703111 m/s\n  u_v  = (0.35/45)/0.7853981633974483 = 0.009901... m/s\n  flood = 9.672180904397324 per cent, F-factor = 0.06643117071893652 Pa**0.5\n  dp/dz = 180 * 45 * u_v**2 / 0.919**3 * 0.01 * 10**(0.015 L) = 0.01193754053378731 Pa/m\n  a_w   = 1 - exp(-1.45 (0.075/0.072)**0.75 Re_l**0.1 Fr_l**-0.05 We_l**0.2) = 47.63208581918636 m**2/m**3\n  kGa   = 5.23 (a D_G/dp**2) Re_v**0.7 Sc_v**(1/3) = 3.599419640508678 1/s\n  kLa   = 0.0051 Re_l2**(2/3) Sc_l**-0.5 (a dp)**0.4 / (rho_l/(mu_l g))**(1/3) a_w = 0.013258884318763363 1/s\n  HTU_G = 0.35/0.7853981633974483 / (3.599419640508678 * 45) = 0.0027512697117554018 m\n  HTU_L = 3.5/0.7853981633974483 / 0.013258884318763363 = 336.1020655611773 m\n  HETP  = min(HTU_G + HTU_L, 2 (0.12 + 0.012 * 50)) = 1.44 m\n  stages = 5/1.44 = 3.4722222222222223\n\nThe HETP is the **upper clamp** and not the HTU sum, which is `336` m: the class refuses to report a bed whose transfer units are that tall.\n"
+tolerance = 1e-9
+[worked_example.inputs]
+packing = "Pall-Ring-50"
+column_diameter = 1.0
+packed_height = 5.0
+vapor_mass_flow = 0.35
+liquid_mass_flow = 3.5
+vapor_density = 45.0
+liquid_density = 990.0
+vapor_viscosity = 1.8e-5
+liquid_viscosity = 6.5e-4
+surface_tension = 0.072
+vapor_diffusivity = 3.3e-7
+liquid_diffusivity = 1.9e-9
+hydraulic_capacity_factor = 1.0
+[worked_example.expected]
+flooding_velocity = 0.10238615607703111
+percent_flood = 9.672180904397324
+f_factor = 0.06643117071893652
+pressure_drop_per_meter = 0.01193754053378731
+wetted_area = 47.63208581918636
+k_ga = 3.599419640508678
+k_la = 0.013258884318763363
+htu_g = 0.0027512697117554018
+htu_l = 336.1020655611773
+hetp = 1.44
+theoretical_stages = 3.4722222222222223
+specific_surface_area = 111.1
+void_fraction = 0.919
+packing_factor = 180.0
+[implementations]
+python = "azoth.hydraulics.packing_hydraulics"
+rust = "azoth_hydraulics::packing_hydraulics"
+[[tests]]
+id = "pall_ring_50_absorber_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "the_file_row_replaces_the_built_in"
+type = "reference"
+status = "active"
+source = "The same state, as the capture's own row: the resolved geometry is the file's plastic Pall-Ring-50 - `111.1` m**2/m**3, void `0.919`, factor `180` - and every output follows from it. **The built-in's geometry is 120.0, 0.96 and 66**, so a port that registered the file first, or skipped it, would answer a different flood and a different HETP.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Pall-Ring-50"
+column_diameter = 1.0
+packed_height = 5.0
+vapor_mass_flow = 0.35
+liquid_mass_flow = 3.5
+vapor_density = 45.0
+liquid_density = 990.0
+vapor_viscosity = 1.8e-5
+liquid_viscosity = 6.5e-4
+surface_tension = 0.072
+vapor_diffusivity = 3.3e-7
+liquid_diffusivity = 1.9e-9
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+specific_surface_area = 111.1
+void_fraction = 0.919
+packing_factor = 180.0
+percent_flood = 9.672180904397324
+hetp = 1.44
+[[tests]]
+id = "a_structured_packing_takes_its_own_coefficients"
+type = "reference"
+status = "active"
+source = "The capture's `mellapak_250y_absorber` row, which is a **structured** packing: the pressure drop's liquid-loading coefficient is `0.010` rather than `0.015` and the HETP estimate is `100/a + 0.1` rather than the nominal-size rule, so both branch on the category. Its HETP is the upper clamp again, `1.0` m from an estimate of `0.5`.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Mellapak-250Y"
+column_diameter = 1.2
+packed_height = 8.0
+vapor_mass_flow = 0.28
+liquid_mass_flow = 4.0
+vapor_density = 30.0
+liquid_density = 1000.0
+vapor_viscosity = 1.7e-5
+liquid_viscosity = 5.5e-4
+surface_tension = 0.065
+vapor_diffusivity = 4.0e-7
+liquid_diffusivity = 2.2e-9
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.19205538362277813
+percent_flood = 4.296926425608468
+wetted_area = 137.2577211063569
+k_ga = 41.110602351183374
+k_la = 0.017428795645422906
+hetp = 1.0
+theoretical_stages = 8.0
+[[tests]]
+id = "more_liquid_moves_the_wetting_not_the_gas_film"
+type = "reference"
+status = "active"
+source = "The capture's `pall_ring_50_high_liquid` row: the same state with 12 kg/s of liquid instead of 3.5. **`kGa` is bit-identical** - `3.599419640508678` on both - because the gas film coefficient is the vapour's own Reynolds and Schmidt numbers, while `kLa` rises three-fold and the wetting verdict turns true. That is the measurement that says which of the two correlations reads the liquid.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Pall-Ring-50"
+column_diameter = 1.0
+packed_height = 5.0
+vapor_mass_flow = 0.35
+liquid_mass_flow = 12.0
+vapor_density = 45.0
+liquid_density = 990.0
+vapor_viscosity = 1.8e-5
+liquid_viscosity = 6.5e-4
+surface_tension = 0.072
+vapor_diffusivity = 3.3e-7
+liquid_diffusivity = 1.9e-9
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.05661349698882555
+wetted_area = 66.67120573769985
+k_ga = 3.599419640508678
+k_la = 0.03372319282719432
+[[tests]]
+id = "a_taller_bed_changes_only_the_stage_count"
+type = "reference"
+status = "active"
+source = "The capture's `pall_ring_50_tall` row: the same state at a 20 m bed instead of 5. Every rate is identical - the correlations read no height - while the total pressure drop and the theoretical-stage count are four-fold. It is the row that says `packed_height` reaches the answer through exactly two quantities.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Pall-Ring-50"
+column_diameter = 1.0
+packed_height = 20.0
+vapor_mass_flow = 0.35
+liquid_mass_flow = 3.5
+vapor_density = 45.0
+liquid_density = 990.0
+vapor_viscosity = 1.8e-5
+liquid_viscosity = 6.5e-4
+surface_tension = 0.072
+vapor_diffusivity = 3.3e-7
+liquid_diffusivity = 1.9e-9
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.10238615607703111
+percent_flood = 9.672180904397324
+total_pressure_drop = 0.2387508106757462
+theoretical_stages = 13.88888888888889

@@ -1671,6 +1671,62 @@ class WilkeChangDiffusivityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PackingHydraulicsResult(_HasWarnings):
+    """Result of ``hydraulics.packing_hydraulics``."""
+
+    #: The packing the name resolved to, which is ``Pall-Ring-50`` where nothing matched.
+    packing_name: str
+    #: ``random`` or ``structured``, which several coefficients branch on.
+    packing_category: str
+    #: The resolved specific surface area, in m**2/m**3.
+    specific_surface_area: float
+    #: The resolved void fraction.
+    void_fraction: float
+    #: The resolved packing factor, in 1/m.
+    packing_factor: float
+    #: The flooding velocity, in m/s.
+    flooding_velocity: float
+    #: The vapour's superficial velocity.
+    vapor_velocity: float
+    #: The liquid's superficial velocity.
+    liquid_velocity: float
+    #: The vapour's F-factor, in Pa**0.5.
+    f_factor: float
+    #: The load, in per cent of flood.
+    percent_flood: float
+    #: The bed's pressure drop per unit height.
+    pressure_drop_per_meter: Q
+    #: The bed's total pressure drop.
+    total_pressure_drop: Q
+    #: The wetted area, in m**2/m**3.
+    wetted_area: float
+    #: The volumetric gas-film coefficient, in 1/s.
+    k_ga: float
+    #: The volumetric liquid-film coefficient, in 1/s.
+    k_la: float
+    #: The gas-side height of a transfer unit.
+    htu_g: float
+    #: The liquid-side height of a transfer unit.
+    htu_l: float
+    #: The overall height of a transfer unit.
+    htu_og: float
+    #: The height equivalent to a theoretical plate.
+    hetp: Q
+    #: The packed height over the HETP.
+    theoretical_stages: float
+    #: The liquid's actual wetting rate, in m**3/(m**2 s).
+    wetting_rate: float
+    #: The minimum wetting rate this packing's category needs.
+    minimum_wetting_rate: float
+    #: Whether the liquid rate reaches the minimum.
+    wetting_ok: bool
+    #: Whether the bed is inside the design window.
+    design_ok: bool
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PhaseTransportResult(_HasWarnings):
     """Result of ``eos.phase_transport``."""
 

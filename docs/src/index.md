@@ -237,6 +237,7 @@ Five sections, and the difference between them is the point:
 - [`hydraulics.friction_factor_haaland`](./hydraulics/friction_factor_haaland.md)
 - [`hydraulics.friction_factor_swamee_jain`](./hydraulics/friction_factor_swamee_jain.md)
 - [`hydraulics.orifice_flow`](./hydraulics/orifice_flow.md)
+- [`hydraulics.packing_hydraulics`](./hydraulics/packing_hydraulics.md)
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
 

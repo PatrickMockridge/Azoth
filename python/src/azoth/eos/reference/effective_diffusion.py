@@ -48,7 +48,7 @@ from azoth.core.warnings import Warning
 
 
 def effective_diffusion(
-    binary_diffusion: Sequence[Sequence[float]],
+    binary_diffusion: Sequence[Sequence[Q]],
     x: Sequence[float],
 ) -> EffectiveDiffusionResult:
     """The effective diffusion coefficients of a phase.

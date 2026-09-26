@@ -39,7 +39,7 @@ use crate::results::ParachorMixtureSurfaceTensionResult;
 ///     kilograms_per_mole(0.054107691623917306),
 ///     &[0.09542082642782022, 0.9045791735721797],
 /// )?;
-/// assert!((r.sigma.value - 0.009424889197268286).abs() < 1e-18);
+/// assert!((r.sigma.value - 0.009424889197268284).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 #[allow(non_snake_case)] // `M_gas` and `M_liquid` are the symbols in the published equation

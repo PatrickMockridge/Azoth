@@ -118,6 +118,7 @@ from azoth.core.result import (
     NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     PackedColumnResult,
+    PackingHydraulicsResult,
     ParachorMixtureSurfaceTensionResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
@@ -330,6 +331,71 @@ def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
         components=tuple(
             KComponent(fitting_id=c.fitting_id, n_ld=c.n_ld, k=c.k) for c in result.components
         ),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def packing_hydraulics(
+    packing: str,
+    column_diameter: Q,
+    packed_height: Q,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    vapor_viscosity: Q,
+    liquid_viscosity: Q,
+    surface_tension: Q,
+    vapor_diffusivity: Q,
+    liquid_diffusivity: Q,
+    hydraulic_capacity_factor: float,
+) -> PackingHydraulicsResult:
+    """A packed bed's hydraulics, computed in Rust."""
+    spec = _spec_for("hydraulics.packing_hydraulics")
+    result = _core.packing_hydraulics(
+        packing,
+        input_to_si(spec, "column_diameter", column_diameter),
+        input_to_si(spec, "packed_height", packed_height),
+        input_to_si(spec, "vapor_mass_flow", vapor_mass_flow),
+        input_to_si(spec, "liquid_mass_flow", liquid_mass_flow),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "vapor_viscosity", vapor_viscosity),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "surface_tension", surface_tension),
+        input_to_si(spec, "vapor_diffusivity", vapor_diffusivity),
+        input_to_si(spec, "liquid_diffusivity", liquid_diffusivity),
+        hydraulic_capacity_factor,
+    )
+    return PackingHydraulicsResult(
+        packing_name=result.packing_name,
+        packing_category=result.packing_category,
+        specific_surface_area=result.specific_surface_area,
+        void_fraction=result.void_fraction,
+        packing_factor=result.packing_factor,
+        flooding_velocity=result.flooding_velocity,
+        vapor_velocity=result.vapor_velocity,
+        liquid_velocity=result.liquid_velocity,
+        f_factor=result.f_factor,
+        percent_flood=result.percent_flood,
+        pressure_drop_per_meter=from_si(
+            result.pressure_drop_per_meter.magnitude_si, result.pressure_drop_per_meter.unit
+        ),
+        total_pressure_drop=from_si(
+            result.total_pressure_drop.magnitude_si, result.total_pressure_drop.unit
+        ),
+        wetted_area=result.wetted_area,
+        k_ga=result.k_ga,
+        k_la=result.k_la,
+        htu_g=result.htu_g,
+        htu_l=result.htu_l,
+        htu_og=result.htu_og,
+        hetp=from_si(result.hetp.magnitude_si, result.hetp.unit),
+        theoretical_stages=result.theoretical_stages,
+        wetting_rate=result.wetting_rate,
+        minimum_wetting_rate=result.minimum_wetting_rate,
+        wetting_ok=result.wetting_ok,
+        design_ok=result.design_ok,
         warnings=_warnings(result.warnings),
     )
 

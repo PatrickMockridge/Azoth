@@ -1397,6 +1397,34 @@ class OrificeFlowResult:
     warnings: list[Warning]
 
 @final
+class PackingHydraulicsResult:
+    packing_name: str
+    packing_category: str
+    specific_surface_area: float
+    void_fraction: float
+    packing_factor: float
+    flooding_velocity: float
+    vapor_velocity: float
+    liquid_velocity: float
+    f_factor: float
+    percent_flood: float
+    pressure_drop_per_meter: Qty
+    total_pressure_drop: Qty
+    wetted_area: float
+    k_ga: float
+    k_la: float
+    htu_g: float
+    htu_l: float
+    htu_og: float
+    hetp: Qty
+    theoretical_stages: float
+    wetting_rate: float
+    minimum_wetting_rate: float
+    wetting_ok: bool
+    design_ok: bool
+    warnings: list[Warning]
+
+@final
 class PumpPowerResult:
     power: Qty
     warnings: list[Warning]
@@ -3013,6 +3041,21 @@ def friction_factor_colebrook(re: float, relative_roughness: float) -> Colebrook
 def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult: ...
 def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJainResult: ...
 def orifice_flow(d: float, dP: float, rho: float, Cd: float) -> OrificeFlowResult: ...
+def packing_hydraulics(
+    packing: str,
+    column_diameter: float,
+    packed_height: float,
+    vapor_mass_flow: float,
+    liquid_mass_flow: float,
+    vapor_density: float,
+    liquid_density: float,
+    vapor_viscosity: float,
+    liquid_viscosity: float,
+    surface_tension: float,
+    vapor_diffusivity: float,
+    liquid_diffusivity: float,
+    hydraulic_capacity_factor: float,
+) -> PackingHydraulicsResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
 def absorption_column(

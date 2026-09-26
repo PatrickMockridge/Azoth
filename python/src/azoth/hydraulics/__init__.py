@@ -50,6 +50,7 @@ from azoth.core.result import (
     HaalandResult,
     KFactorsResult,
     OrificeFlowResult,
+    PackingHydraulicsResult,
     PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
@@ -66,6 +67,7 @@ __all__ = [
     "friction_factor_haaland",
     "friction_factor_swamee_jain",
     "orifice_flow",
+    "packing_hydraulics",
     "pump_power",
     "reynolds_number",
 ]
@@ -76,6 +78,7 @@ _SWAMEE_JAIN = "hydraulics.friction_factor_swamee_jain"
 _HAALAND = "hydraulics.friction_factor_haaland"
 _CRANE_K = "hydraulics.crane_k_factors"
 _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
+_PACKING_HYDRAULICS = "hydraulics.packing_hydraulics"
 _PUMP_POWER = "hydraulics.pump_power"
 _ORIFICE_FLOW = "hydraulics.orifice_flow"
 _CONTROL_VALVE_CV = "hydraulics.control_valve_cv"
@@ -247,6 +250,51 @@ def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
     See :func:`azoth.hydraulics.reference.crane_k_factors`.
     """
     return resolve(_CRANE_K)(fittings=list(fittings), f_t=f_t)  # type: ignore[no-any-return]
+
+
+def packing_hydraulics(
+    packing: str,
+    column_diameter: Q,
+    packed_height: Q,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    vapor_viscosity: Q,
+    liquid_viscosity: Q,
+    surface_tension: Q,
+    vapor_diffusivity: Q,
+    liquid_diffusivity: Q,
+    hydraulic_capacity_factor: float,
+) -> PackingHydraulicsResult:
+    """A packed bed's flooding, load, pressure drop and film coefficients.
+
+    **Onda's three correlations for the films, Leva's for the pressure drop, Eckert's for the
+    flood**, and a HETP that is a two-resistance combination clamped to the empirical estimate's
+    own band. The packing resolves by name - a name nothing carries is ``Pall-Ring-50`` - and the
+    compiled table's rows replace the built-ins on a name collision.
+
+    Raises:
+        OutOfRangeError: if the diameter, either mass flow, either density or either viscosity is
+            not positive.
+
+    See :func:`azoth.hydraulics.reference.packing_hydraulics`.
+    """
+    return resolve(_PACKING_HYDRAULICS)(  # type: ignore[no-any-return]
+        packing=packing,
+        column_diameter=column_diameter,
+        packed_height=packed_height,
+        vapor_mass_flow=vapor_mass_flow,
+        liquid_mass_flow=liquid_mass_flow,
+        vapor_density=vapor_density,
+        liquid_density=liquid_density,
+        vapor_viscosity=vapor_viscosity,
+        liquid_viscosity=liquid_viscosity,
+        surface_tension=surface_tension,
+        vapor_diffusivity=vapor_diffusivity,
+        liquid_diffusivity=liquid_diffusivity,
+        hydraulic_capacity_factor=hydraulic_capacity_factor,
+    )
 
 
 def darcy_weisbach(

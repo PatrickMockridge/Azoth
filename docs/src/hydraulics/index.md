@@ -14,5 +14,6 @@ Every calculation in this section is generated from its specification. Each page
 | [`hydraulics.friction_factor_haaland`](./friction_factor_haaland.md) | $f = \left[-1.8\,\log_{10}\!\left[\left(\frac{\varepsilon/D}{3.7}\right)^{1.11} + \frac{6.9}{Re}\right]\right]^{-2}$ | Haaland, S. E. (1983) |
 | [`hydraulics.friction_factor_swamee_jain`](./friction_factor_swamee_jain.md) | $f = \frac{0.25}{\left[\log_{10}\!\left(\frac{\varepsilon/D}{3.7} + \frac{5.74}{Re^{0.9}}\right)\right]^{2}}$ | Swamee, P. K.; Jain, A. K. (1976) |
 | [`hydraulics.orifice_flow`](./orifice_flow.md) | $Q = C_d \frac{\pi d^{2}}{4} \sqrt{\frac{2\,\Delta P}{\rho}}$ | the orifice equation; ISO 5167 for the discharge coefficient, which this calc does not implement |
+| [`hydraulics.packing_hydraulics`](./packing_hydraulics.md) | $\frac{a_w}{a} = 1 - \exp\!\left[-1.45\left(\frac{\sigma_c}{\sigma}\right)^{0.75} Re_L^{0.1} Fr_L^{-0.05} We_L^{0.2}\right]$ | NeqSim master `PackingHydraulicsCalculator` |
 | [`hydraulics.pump_power`](./pump_power.md) | $P = \frac{\rho\,g\,Q\,H}{\eta}$ | standard pump hydraulics; the hydraulic-power relation in any fluids text |
 | [`hydraulics.reynolds_number`](./reynolds_number.md) | $Re = \frac{\rho v D}{\mu}$ | Crane TP-410 |

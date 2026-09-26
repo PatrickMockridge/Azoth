@@ -31,13 +31,13 @@ const MIN_PURE_CONDUCTIVITY: f64 = 1.0e-10;
 ///
 /// # Example
 /// ```
-/// use azoth_core::units::kelvins;
+/// use azoth_core::units::{kilograms_per_mole, kelvins};
 /// use azoth_eos::liquid_conductivity_polynom::liquid_conductivity_polynom;
 ///
 /// // The CO2 absorber's aqueous phase at 313.15 K.
-/// let r = liquid_conductivity_polynom::liquid_conductivity_polynom(
+/// let r = liquid_conductivity_polynom(
 ///     &[[0.251502, 0.0005238919, -3.82111e-6], [-0.384, 0.00525, -6.37e-6]],
-///     &[0.04401, 0.018015],
+///     &[kilograms_per_mole(0.04401), kilograms_per_mole(0.018015)],
 ///     &[0.0006691762234084198, 0.9993308237765915],
 ///     kelvins(313.15),
 /// )?;

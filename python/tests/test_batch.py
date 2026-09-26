@@ -219,6 +219,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `salt` names the `compsalt` row and the three overrides, like `form` and `eos`:
         # a categorical input with no float-array column shape.
         "eos.scale_saturation_ratio",
+        # `packing` names a row in the packing table, and the answer changes with which row it
+        # is: a categorical choice rather than a scale factor, like the others here.
+        "hydraulics.packing_hydraulics",
         # `eos` names the cubic the reference liquid is built from, the same categorical
         # input the other two carry.
         "eos.solid_fugacity",

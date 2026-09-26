@@ -135,6 +135,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(hydraulics::friction_factor_haaland, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::crane_k_factors, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::darcy_weisbach, m)?)?;
+    m.add_function(wrap_pyfunction!(hydraulics::packing_hydraulics, m)?)?;
 
     m.add_function(wrap_pyfunction!(hydraulics::pump_power, m)?)?;
     m.add_function(wrap_pyfunction!(hydraulics::orifice_flow, m)?)?;

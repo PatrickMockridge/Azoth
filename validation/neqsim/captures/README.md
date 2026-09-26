@@ -59,6 +59,15 @@ strategies and the deethanizer under `NAPHTALI_SANDHOLM`, which is the only one 
 it. Two of the ten are left out of the deethanizer rows on purpose, and the probe says which:
 `MESH_RESIDUAL` takes 594 s for the pair and `AUTO` had not returned after 900 s.
 
+**`PackingProbe` drives `PackingHydraulicsCalculator` directly, on states of its own.** The
+equilibrium packed column's capture prints the calculator's *outputs* and not the inputs it
+reads - the two mass flows, the four transport properties, the two diffusivities and the
+packing geometry - so this probe states them and prints both sides.
+
+```bash
+java -cp .:neqsim-f0c7436.jar PackingProbe > captures/packing_probe.tsv
+```
+
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
 output is what lets `tools/gen_neqsim_cases.py --check` be a build gate: it reads a capture

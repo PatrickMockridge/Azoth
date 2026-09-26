@@ -53,7 +53,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - **the two liquid kinds read different ladders for the pure viscosity the diffusivity divides by**: an oil's PFCT class inherits the common-phase one, whose LIQVISC model 2 branch is empty, and an aqueous phase's polynom class implements it - `eos.liquid_viscosity_pure`'s `form`.
 
-- **and a non-positive pure viscosity falls back to the phase's own**, which on an oil is the *normal* path rather than an edge: the empty branch answers zero, the class takes the phase's viscosity instead, and the clamp at `0.01` cP never fires. The captured oil phase measures it - `0.1347` cP, its own viscosity, where the ladder alone would give `0.01`.
+- **and a non-positive pure viscosity falls back to the phase's own**, which on an oil is the *normal* path: the empty branch answers zero, the clamp at `0.01` cP never fires, and the captured oil measures `0.1347` cP - its own. See `MIN_ETA_CP`.
 
 - the molar volume the liquid diffusivity takes per component is the normal-boiling-point one: `M/rho` from the table's `LIQDENS`, and where that is absent the Tyn-Calus estimate inverted, which is `databank::normal_boiling_molar_volume`.
 
@@ -74,5 +74,5 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `physicalproperties/system/PhysicalProperties.java` and its per-phase subclasses are the port source; the correlations behind them are the ids named in the assumptions.
-- `validation/neqsim/captures/phase_transport_probe.tsv` - four fluids, and per phase: T, P, density, molar mass, viscosity, conductivity, the composition, the default binary matrix and effective vector, the **model class behind each property**, the components' LIQVISC parameters and pure viscosities, and the value the explicitly selected `Chapman-Enskog` model answers.
+- `validation/neqsim/captures/phase_transport_probe.tsv` - four fluids, and per phase: T, P, density, molar mass, viscosity, conductivity, the composition, the default binary matrix and effective vector, the **model class behind each property**, and the LIQVISC parameters.
 

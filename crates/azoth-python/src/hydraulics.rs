@@ -18,7 +18,7 @@
 
 use azoth_core::units::{
     DynamicViscosity, cubic_meters_per_second, kilograms_per_cubic_meter, kilograms_per_second,
-    meters, meters_per_second, pascal_seconds, pascals,
+    meters, meters_per_second, newtons_per_meter, pascal_seconds, pascals,
 };
 use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
@@ -205,6 +205,50 @@ pub fn crane_k_factors(
 ///
 /// `mu` is optional: it is needed only to check the flow regime. Omit it and the
 /// result says the regime went unchecked rather than implying it passed.
+/// A packed bed's hydraulics, from the packing's name and the state it runs at.
+#[pyfunction]
+#[pyo3(signature = (packing, column_diameter, packed_height, vapor_mass_flow, liquid_mass_flow, vapor_density, liquid_density, vapor_viscosity, liquid_viscosity, surface_tension, vapor_diffusivity, liquid_diffusivity, hydraulic_capacity_factor))]
+#[pyo3(
+    text_signature = "(packing, column_diameter, packed_height, vapor_mass_flow, liquid_mass_flow, vapor_density, liquid_density, vapor_viscosity, liquid_viscosity, surface_tension, vapor_diffusivity, liquid_diffusivity, hydraulic_capacity_factor)"
+)]
+#[allow(clippy::too_many_arguments)] // One per declared input, and a bed reads many.
+pub fn packing_hydraulics(
+    py: Python<'_>,
+    packing: &str,
+    column_diameter: f64,
+    packed_height: f64,
+    vapor_mass_flow: f64,
+    liquid_mass_flow: f64,
+    vapor_density: f64,
+    liquid_density: f64,
+    vapor_viscosity: f64,
+    liquid_viscosity: f64,
+    surface_tension: f64,
+    vapor_diffusivity: f64,
+    liquid_diffusivity: f64,
+    hydraulic_capacity_factor: f64,
+) -> PyResult<crate::results::PyPackingHydraulicsResult> {
+    hyd::packing_hydraulics::packing_hydraulics(
+        packing,
+        hyd::packing_hydraulics::PackingState {
+            column_diameter: meters(column_diameter),
+            packed_height,
+            vapor_mass_flow: kilograms_per_second(vapor_mass_flow),
+            liquid_mass_flow: kilograms_per_second(liquid_mass_flow),
+            vapor_density: kilograms_per_cubic_meter(vapor_density),
+            liquid_density: kilograms_per_cubic_meter(liquid_density),
+            vapor_viscosity: pascal_seconds(vapor_viscosity),
+            liquid_viscosity: pascal_seconds(liquid_viscosity),
+            surface_tension: newtons_per_meter(surface_tension),
+            vapor_diffusivity,
+            liquid_diffusivity,
+            hydraulic_capacity_factor,
+        },
+    )
+    .map(|r| crate::results::PyPackingHydraulicsResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 #[pyfunction]
 #[pyo3(signature = (f, L, D, rho, v, mu=None))]
 #[pyo3(text_signature = "(f, L, D, rho, v, mu=None)")]

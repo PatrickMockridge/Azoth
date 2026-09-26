@@ -83,8 +83,8 @@ use azoth_thermal::results::ConductionPlaneWallResult;
 
 use azoth_hydraulics::results::{
     ChokedFlowAreaResult, ColebrookResult, ControlValveCvResult, DarcyWeisbachResult,
-    HaalandResult, KComponent, KFactorsResult, OrificeFlowResult, PumpPowerResult,
-    ReynoldsNumberResult, SwameeJainResult,
+    HaalandResult, KComponent, KFactorsResult, OrificeFlowResult, PackingHydraulicsResult,
+    PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
 };
 use pyo3::prelude::*;
 
@@ -9318,6 +9318,143 @@ impl From<&KFactorsResult> for PyKFactorsResult {
     }
 }
 
+/// Result of `hydraulics.packing_hydraulics`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PackingHydraulicsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPackingHydraulicsResult {
+    /// The packing the name resolved to.
+    #[pyo3(get)]
+    pub packing_name: String,
+    /// `random` or `structured`.
+    #[pyo3(get)]
+    pub packing_category: String,
+    /// The resolved specific surface area, in m**2/m**3.
+    #[pyo3(get)]
+    pub specific_surface_area: f64,
+    /// The resolved void fraction.
+    #[pyo3(get)]
+    pub void_fraction: f64,
+    /// The resolved packing factor, in 1/m.
+    #[pyo3(get)]
+    pub packing_factor: f64,
+    /// The flooding velocity, in m/s.
+    #[pyo3(get)]
+    pub flooding_velocity: f64,
+    /// The vapour's superficial velocity.
+    #[pyo3(get)]
+    pub vapor_velocity: f64,
+    /// The liquid's superficial velocity.
+    #[pyo3(get)]
+    pub liquid_velocity: f64,
+    /// The vapour's F-factor.
+    #[pyo3(get)]
+    pub f_factor: f64,
+    /// The load, in per cent of flood.
+    #[pyo3(get)]
+    pub percent_flood: f64,
+    /// The bed's pressure drop per unit height.
+    #[pyo3(get)]
+    pub pressure_drop_per_meter: PyQty,
+    /// The bed's total pressure drop.
+    #[pyo3(get)]
+    pub total_pressure_drop: PyQty,
+    /// The wetted area, in m**2/m**3.
+    #[pyo3(get)]
+    pub wetted_area: f64,
+    /// The volumetric gas-film coefficient.
+    #[pyo3(get)]
+    pub k_ga: f64,
+    /// The volumetric liquid-film coefficient.
+    #[pyo3(get)]
+    pub k_la: f64,
+    /// The gas-side height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_g: f64,
+    /// The liquid-side height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_l: f64,
+    /// The overall height of a transfer unit.
+    #[pyo3(get)]
+    pub htu_og: f64,
+    /// The height equivalent to a theoretical plate.
+    #[pyo3(get)]
+    pub hetp: PyQty,
+    /// The packed height over the HETP.
+    #[pyo3(get)]
+    pub theoretical_stages: f64,
+    /// The liquid's wetting rate.
+    #[pyo3(get)]
+    pub wetting_rate: f64,
+    /// The minimum wetting rate this category needs.
+    #[pyo3(get)]
+    pub minimum_wetting_rate: f64,
+    /// Whether the liquid rate reaches the minimum.
+    #[pyo3(get)]
+    pub wetting_ok: bool,
+    /// Whether the bed is inside the design window.
+    #[pyo3(get)]
+    pub design_ok: bool,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPackingHydraulicsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PackingHydraulicsResult(packing={} percent_flood={} hetp={} {})",
+            self.packing_name, self.percent_flood, self.hetp.magnitude_si, self.hetp.unit
+        )
+    }
+}
+
+impl From<&PackingHydraulicsResult> for PyPackingHydraulicsResult {
+    fn from(r: &PackingHydraulicsResult) -> Self {
+        Self {
+            packing_name: r.packing_name.clone(),
+            packing_category: r.packing_category.clone(),
+            specific_surface_area: r.specific_surface_area,
+            void_fraction: r.void_fraction,
+            packing_factor: r.packing_factor,
+            flooding_velocity: r.flooding_velocity,
+            vapor_velocity: r.vapor_velocity,
+            liquid_velocity: r.liquid_velocity,
+            f_factor: r.f_factor,
+            percent_flood: r.percent_flood,
+            pressure_drop_per_meter: PyQty {
+                magnitude_si: r.pressure_drop_per_meter.value,
+                unit: "Pa".to_string(),
+            },
+            total_pressure_drop: PyQty {
+                magnitude_si: r.total_pressure_drop.value,
+                unit: "Pa".to_string(),
+            },
+            wetted_area: r.wetted_area,
+            k_ga: r.k_ga,
+            k_la: r.k_la,
+            htu_g: r.htu_g,
+            htu_l: r.htu_l,
+            htu_og: r.htu_og,
+            hetp: PyQty {
+                magnitude_si: r.hetp.value,
+                unit: "m".to_string(),
+            },
+            theoretical_stages: r.theoretical_stages,
+            wetting_rate: r.wetting_rate,
+            minimum_wetting_rate: r.minimum_wetting_rate,
+            wetting_ok: r.wetting_ok,
+            design_ok: r.design_ok,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `hydraulics.darcy_weisbach`, transported.
 #[pyclass(
     frozen,
@@ -9776,6 +9913,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // Unit operations. In the same table for the same reason the models are: a
         // result's shape is a cross-language contract whether or not its spec calls it
         // a calculation.
+        PackingHydraulicsResult::CALC_ID => PackingHydraulicsResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -9796,6 +9934,7 @@ pub fn calc_ids() -> Vec<String> {
         SwameeJainResult::CALC_ID.to_string(),
         HaalandResult::CALC_ID.to_string(),
         OrificeFlowResult::CALC_ID.to_string(),
+        PackingHydraulicsResult::CALC_ID.to_string(),
         ControlValveCvResult::CALC_ID.to_string(),
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),

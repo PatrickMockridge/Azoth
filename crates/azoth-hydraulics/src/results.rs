@@ -23,7 +23,7 @@
 //! alternative would be to throw away information the caller wants.
 
 use azoth_core::{CalcResult, FlowRegime, Warning};
-use uom::si::f64::{Area, Power, Pressure, VolumeRate};
+use uom::si::f64::{Area, Length, Power, Pressure, VolumeRate};
 
 /// Result of `hydraulics.reynolds_number`.
 #[derive(Debug, Clone, PartialEq)]
@@ -40,6 +40,97 @@ pub struct ReynoldsNumberResult {
 impl CalcResult for ReynoldsNumberResult {
     const CALC_ID: &'static str = "hydraulics.reynolds_number";
     const FIELDS: &'static [&'static str] = &["re", "regime", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `hydraulics.packing_hydraulics`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PackingHydraulicsResult {
+    /// The packing the name resolved to, which is `Pall-Ring-50` where nothing matched.
+    pub packing_name: String,
+    /// `random` or `structured`, which several coefficients branch on.
+    pub packing_category: String,
+    /// The resolved specific surface area, in m**2/m**3.
+    pub specific_surface_area: f64,
+    /// The resolved void fraction.
+    pub void_fraction: f64,
+    /// The resolved packing factor, in 1/m.
+    pub packing_factor: f64,
+    /// The flooding velocity, in m/s.
+    pub flooding_velocity: f64,
+    /// The vapour's superficial velocity, in m/s.
+    pub vapor_velocity: f64,
+    /// The liquid's superficial velocity, in m/s.
+    pub liquid_velocity: f64,
+    /// The vapour's F-factor, in Pa**0.5.
+    pub f_factor: f64,
+    /// The load, in per cent of flood.
+    pub percent_flood: f64,
+    /// The bed's pressure drop per unit height.
+    pub pressure_drop_per_meter: Pressure,
+    /// The bed's total pressure drop, which is the per-metre figure times the height.
+    pub total_pressure_drop: Pressure,
+    /// The wetted area, in m**2/m**3.
+    pub wetted_area: f64,
+    /// The volumetric gas-film coefficient, in 1/s.
+    pub k_ga: f64,
+    /// The volumetric liquid-film coefficient, in 1/s.
+    pub k_la: f64,
+    /// The gas-side height of a transfer unit, in m.
+    pub htu_g: f64,
+    /// The liquid-side height of a transfer unit, in m.
+    pub htu_l: f64,
+    /// The overall height of a transfer unit, in m.
+    pub htu_og: f64,
+    /// The height equivalent to a theoretical plate, in m.
+    pub hetp: Length,
+    /// The packed height over the HETP.
+    pub theoretical_stages: f64,
+    /// The liquid's actual wetting rate, in m**3/(m**2 s).
+    pub wetting_rate: f64,
+    /// The minimum wetting rate this packing's category needs.
+    pub minimum_wetting_rate: f64,
+    /// Whether the liquid rate reaches the minimum.
+    pub wetting_ok: bool,
+    /// Whether the bed is inside the design window: wetted, and between 40 and 80 per cent of
+    /// flood.
+    pub design_ok: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PackingHydraulicsResult {
+    const CALC_ID: &'static str = "hydraulics.packing_hydraulics";
+    const FIELDS: &'static [&'static str] = &[
+        "packing_name",
+        "packing_category",
+        "specific_surface_area",
+        "void_fraction",
+        "packing_factor",
+        "flooding_velocity",
+        "vapor_velocity",
+        "liquid_velocity",
+        "f_factor",
+        "percent_flood",
+        "pressure_drop_per_meter",
+        "total_pressure_drop",
+        "wetted_area",
+        "k_ga",
+        "k_la",
+        "htu_g",
+        "htu_l",
+        "htu_og",
+        "hetp",
+        "theoretical_stages",
+        "wetting_rate",
+        "minimum_wetting_rate",
+        "wetting_ok",
+        "design_ok",
+        "warnings",
+    ];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
