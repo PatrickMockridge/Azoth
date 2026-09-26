@@ -18,7 +18,11 @@ import pytest
 
 from azoth import _core, keycard
 from azoth.core._units_gen import CANONICAL_UNITS
-from azoth.core.errors import InvalidInputError, KeycardError
+from azoth.core.errors import (
+    InvalidInputError,
+    KeycardError,
+    PropertyUnavailableError,
+)
 from azoth.eos import components
 
 pytestmark = pytest.mark.requires_rust
@@ -457,6 +461,42 @@ def test_both_readers_refuse_a_coefficient_no_spec_declares() -> None:
         python_card(mistyped)
     with pytest.raises(InvalidInputError, match="not a quantity input"):
         _core.card_coefficients(mistyped)
+
+
+#: A card declaring a *model*: the section that names a fluid rather than a value.
+A_MODEL_CARD = """\
+schema_version = 2
+[models.vendor_gas]
+kind = "cubic_eos"
+shape = "peng_robinson"
+alpha = "peng_robinson"
+mixing_rule = "classical_kij"
+components = ["methane", "n-butane"]
+"""
+
+
+def test_both_readers_build_the_same_fluid_from_a_model_definition() -> None:
+    """A `models` entry names a fluid, and both readers now build the same one.
+
+    **The section was read by nothing in Rust.** `Card::model()` was a public accessor with no
+    caller while `azoth.eos.components.from_model` built the mixture in Python - so one reader
+    could use a card's model definition and the other could only hold it, which is the shape of
+    the coefficient gap closed beside this one. `Card::model_mixture` is the reader it was owed,
+    and this compares what the two produce: the substances, because the parameters each one
+    resolved to are what `test_the_two_readers_resolve_the_same_components` already compares.
+
+    A name no model declares is refused by both, in the class Python raises for it - a card that
+    declares a definition and a caller who misspells one are told which it does carry.
+    """
+    card = python_card(A_MODEL_CARD)
+    mine = list(components.from_model("vendor_gas", card=card).names or ())
+    theirs = list(_core.card_model_components(A_MODEL_CARD, "vendor_gas"))
+    assert mine == theirs == ["methane", "n-butane"]
+
+    with pytest.raises(PropertyUnavailableError):
+        components.from_model("nonesuch", card=card)
+    with pytest.raises(PropertyUnavailableError):
+        _core.card_model_components(A_MODEL_CARD, "nonesuch")
 
 
 def test_a_card_stating_a_zero_pair_keeps_it_on_both_sides() -> None:

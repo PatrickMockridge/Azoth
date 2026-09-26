@@ -278,6 +278,7 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
         "card_coefficients(text: str)",
         "list[tuple[str, str, str, int, int, list[float]]]",
     ),
+    ("card_model_components(text: str, name: str)", "list[str]"),
     ("overlay_entry_row(name: str, overlay: Overlay)", "ComponentRow"),
     ("overlay_component_rows(overlay: Overlay)", "list[ComponentRow]"),
     ("overlay_kij_rows(overlay: Overlay)", "list[tuple[str, str, float]]"),

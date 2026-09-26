@@ -37,6 +37,45 @@ fn a_card(body: &str) -> String {
     format!("schema_version = {SCHEMA_VERSION}\n{body}")
 }
 
+/// **A model definition is a fluid, and it builds one.**
+///
+/// The `models` section was parsed, validated against the four vocabularies and read by nothing in
+/// this crate until `Card::model_mixture` - so a Rust caller holding a card with a definition had
+/// no way to reach the fluid it named, while `azoth.eos.components.from_model` reached it in
+/// Python. The substances are the whole of what a definition declares, because every other choice
+/// it makes has exactly one member this build runs.
+#[test]
+fn a_model_definition_builds_the_mixture_it_declares() {
+    let card = Card::from_toml(&a_card(
+        "[models.vendor_gas]\nkind = \"cubic_eos\"\nshape = \"peng_robinson\"\n\
+         alpha = \"peng_robinson\"\nmixing_rule = \"classical_kij\"\n\
+         components = [\"methane\", \"n-butane\"]\n",
+    ))
+    .expect("a valid card");
+
+    let (mixture, _) = card
+        .model_mixture("vendor_gas")
+        .expect("the card declares it");
+    assert_eq!(
+        mixture
+            .names()
+            .expect("a mixture resolved from names carries them"),
+        ["methane", "n-butane"]
+    );
+
+    // A name no model declares is refused, in the class Python raises for the same state - a
+    // card that declares a definition and a caller who misspells it are different from a card
+    // that declares none, and both are told which models it does carry.
+    let err = card.model_mixture("nonesuch").expect_err("no such model");
+    let message = format!("{err}");
+    assert!(
+        message.contains("vendor_gas") && message.contains("model definition"),
+        "{message}"
+    );
+}
+
+/// The four vocabularies a model definition is checked against are the ones this build runs, and
+/// a card naming a variant it does not is refused when the card is read.
 #[test]
 fn the_shipped_template_loads() {
     let card = template();

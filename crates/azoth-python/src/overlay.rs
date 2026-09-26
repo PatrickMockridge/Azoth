@@ -320,3 +320,29 @@ pub fn card_overlay(py: Python<'_>, text: &str) -> PyResult<PyOverlay> {
         inner: card.overlay().clone(),
     })
 }
+
+/// The substances a card's model definition names, by the **Rust** reader.
+///
+/// The `models` section's parity surface: Python resolves a definition through
+/// `azoth.eos.components.from_model` and Rust through `Card::model_mixture`, and this is what lets
+/// one card be put through both and the two fluids compared. Names rather than the mixture itself,
+/// because the mixture is a Rust value with no wire shape and the question the comparison asks is
+/// *which fluid* - the parameters each substance resolved to are already compared by
+/// `overlay_entry_row`.
+///
+/// # Errors
+/// * `PropertyUnavailableError` if the card declares no model of that name, which is the class
+///   Python's `from_model` raises for the same state.
+/// * Whatever the mixture refuses - an unknown substance, an ion, a component a card cannot
+///   complete - as the class that refusal has on either side.
+#[pyfunction]
+pub fn card_model_components(py: Python<'_>, text: &str, name: &str) -> PyResult<Vec<String>> {
+    let card = azoth_eos::card::Card::from_toml(text)
+        .map_err(|error| crate::errors::to_pyerr(py, error))?;
+    let (mixture, _) = card
+        .model_mixture(name)
+        .map_err(|error| crate::errors::to_pyerr(py, error))?;
+    // A `Component` carries critical constants and no name, so the names are read from the
+    // mixture's own list - which is the same list Python's `from_names` builds its fluid from.
+    Ok(mixture.names().map(<[String]>::to_vec).unwrap_or_default())
+}

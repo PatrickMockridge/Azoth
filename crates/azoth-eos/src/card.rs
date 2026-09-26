@@ -5,9 +5,17 @@
 //!
 //! Every section is marked `runtime` or `compiled` in the schema, and that annotation is
 //! what this reader is organised around. `components`, `kij` and `associations` become an
-//! [`Overlay`], which is what the databank resolves a name against. `coefficients`,
-//! `models`, `keyholder`, `fittings` and `fluids` are carried as the data they are;
-//! nothing in this crate interprets them.
+//! [`Overlay`], which is what the databank resolves a name against; `coefficients` are
+//! checked against the spec that declares each argument and offered to the caller that
+//! asks for one; `models` are read by [`Card::model_mixture`], which is what a
+//! declarative fluid definition is for. `keyholder`, `fittings` and `fluids` are carried
+//! as the data they are - the first is disclosure and the last two are `compiled`-stage,
+//! read by `tools/gen_user_data.py` when the CSVs are built.
+//!
+//! **A section this crate carries and never reads is a defect rather than a design**, and
+//! the line above used to say five sections were carried that way. Two of them have since
+//! been given the reader they were owed: `coefficients` by the dimension check and
+//! `models` by the mixture accessor.
 //!
 //! An unknown section, parameter or unit is refused rather than skipped: a value nothing
 //! reads is data that looks in use and is not.
@@ -19,8 +27,11 @@ use azoth_core::unit_vocab_gen::{dimension, si_factor};
 use azoth_core::{AzothError, Result};
 use serde::Deserialize;
 
+use crate::Cubic;
 use crate::association::{AssociationCubic, SiteScheme};
 use crate::databank::{AssociationOverride, ComponentOverride, Overlay};
+use crate::mixture::Mixture;
+use crate::molar_enthalpy_entropy::IdealGasModel;
 
 /// The keycard format version this reader understands. A card declaring anything else
 /// is refused rather than guessed at.
@@ -461,6 +472,36 @@ impl Card {
     #[must_use]
     pub fn model(&self, name: &str) -> Option<&Model> {
         self.models.get(name)
+    }
+
+    /// The mixture a model definition declares, by name: the fluid that definition is for.
+    ///
+    /// **This is what a `models` section is *for*, and until it existed the section was parsed,
+    /// validated and read by nothing on this side.** A definition names its substances and the one
+    /// cubic variant this build runs, so building the mixture is the whole of what it declares -
+    /// and a Rust caller holding a card with one had no way to reach it, while
+    /// `azoth.eos.components.from_model` reached it in Python. Refusing the section was the other
+    /// candidate; it would have made a card readable by one reader and refusable by the other,
+    /// which is the defect the coefficient check closed in the same week.
+    ///
+    /// # Errors
+    /// [`AzothError::PropertyUnavailable`] if the card declares no model of that name - the same
+    /// class and the same shape as the Python side's `PropertyUnavailableError` - and whatever
+    /// the mixture refuses: an unknown substance, an ion, or a component a card cannot complete.
+    pub fn model_mixture(&self, name: &str) -> Result<(Mixture, IdealGasModel)> {
+        let model = self.model(name).ok_or_else(|| {
+            let known: Vec<&str> = self.models.keys().map(String::as_str).collect();
+            AzothError::property_unavailable(
+                name,
+                "model definition",
+                format!(
+                    "not declared in this card. Declared models: {known:?}. A model is a \
+                     declarative fluid definition, not a calculation."
+                ),
+            )
+        })?;
+        let names: Vec<&str> = model.components.iter().map(String::as_str).collect();
+        crate::databank::mixture_of(&names, Cubic::Pr, Some(&self.overlay))
     }
 }
 
