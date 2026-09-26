@@ -444,10 +444,22 @@ is the source of, beside the column itself, and so has `gibbs_reactor`:
   class takes separate two runs by the class's own `cond(J) = 6.12e6`. What is owed is the
   pseudo-inverse its singular-Jacobian row needs.
 
-**And one entry belongs to a tranche of its own rather than to this one.**
-`unit_ops.rate_based_packed_column` is a second physics - 4,081 lines of segment model with gas
-and liquid film coefficients and an interphase heat balance, no `src/main` caller - so it is
-carried by the distillation workstream that added it beside the column, and not by P11.
+**And the one that was a second physics is ported.** `unit_ops.rate_based_packed_column` is
+4,081 lines of segment model - axial slices through the packing, each with gas and liquid film
+coefficients, an interface equilibrium and an interphase heat balance, coupled counter-currently
+by a profile solver - and no `src/main` caller. It is `process.rate_based_packed_column` now,
+and its **packing is inside the equations** rather than a report read after a solve, which is
+why it needed `hydraulics.packing_hydraulics` and the phase-level transport dispatch before it
+could be a model at all. On the class's own absorber state re-cased on PR it converges in
+fifteen passes at a residual of `6.02e-10` mol/s where NeqSim's own row says fifteen and
+`6.009670053264138e-10`, and the products, the segment temperatures, `kGa`, `kLa`, the wetted
+area, the flood and the pressure drop agree inside `1e-4`. **Three of the class's own fallbacks
+are taken on its own states, and that is measured**: the effective-diffusivity vector is never
+populated upstream, so the reference is the constant while the pair matrix is real; and a
+gas-and-aqueous interface answers a surface tension of `0.0`, so the constant stands in there.
+What stays owed is named with its class: the equation-oriented column solver with its homotopy
+continuation, the simultaneous-residual segment solve whose own test NeqSim disables, and the
+second mass-transfer correlation, which is a constant multiplier rather than a correlation.
 `unit_ops.simple_absorber` stays refused, as above.
 
 **The third is refused for a defect in its own declaration, and it is the sharper case.**
