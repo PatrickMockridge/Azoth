@@ -137,6 +137,8 @@ Model Context Protocol - the specification's JSON Schema
              specification contributions to the project are licensed under Apache-2.0" - these two
              revisions are specification contributions, and the licence file states it directly.
   Vendored:  python/tests/validation/vendor/mcp/, unmodified
+  Source:    schema-2026-07-28.json https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/271ecc9/schema/2026-07-28/schema.json
+             schema-2025-11-25.json https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/c4c367f/schema/2025-11-25/schema.json
   Digest:    schema-2026-07-28.json sha256 ef70b61f99b6d2e5e3b46863822eab08dff6a45bedc7a08914e0e5b133f40203
              schema-2025-11-25.json sha256 268a5f82ba70fd7e4b6dc4aa1e64f116f74b4d0edcb69dc046829c79dd4e97e7
 
@@ -162,3 +164,9 @@ Nothing is changed: the two files are copied byte for byte from the URLs above. 
 recorded because neither file names its own revision - neither carries an `$id` - so the URL and
 the digest above are the whole of what pins them. They were checked against upstream `main` on
 2026-09-26, and they matched.
+
+**Both halves of the pin are read back by `tools/check_mcp_schema.py`.** The digests are held to the
+vendored bytes on every push, in CI's `spec-validate` job; the URLs are re-fetched by a scheduled
+workflow, where a fetch that fails is reported as *undecided* rather than as a revision having
+moved. Without the second half the sentence above ages: a new revision upstream would leave this
+repository conformant to a specification that had moved on, with every gate green.

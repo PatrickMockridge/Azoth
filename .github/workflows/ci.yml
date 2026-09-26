@@ -52,6 +52,12 @@ jobs:
       # written in, so nothing in the build notices a release that bumped one and not the
       # other: it ships a wheel whose own MCP server names a different number.
       - run: python tools/check_versions.py
+      # The vendored MCP schemas against the digests `NOTICE` pins for them - the half of that
+      # pin a push can check. The other half, re-fetching the URLs, needs the network and runs
+      # on a schedule (`.github/workflows/mcp-pin.yml`), because a fetch that failed there has
+      # to be told apart from a specification revision that moved: this tool exits 1 for drift
+      # and 2 for "could not decide", and only the scheduled caller can act on the difference.
+      - run: python tools/check_mcp_schema.py
       # The numbers and paths the normative pages state, against the tree that produces
       # them. `check_links.py` says a link resolves and `prose_lint.py` says a page is
       # written well; neither says a page is *true*, and `prose_lint.py` excludes

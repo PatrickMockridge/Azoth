@@ -1,0 +1,36 @@
+name: MCP pin
+
+# The half of the pin `NOTICE` records that needs the network, and the reason it is not in CI.
+#
+# **The exit code is the contract.** `tools/check_mcp_schema.py` reports a revision whose bytes
+# moved as 1 and an upstream it could not reach as 2, so this run can say which happened. A push
+# gate cannot afford that distinction: a check that fails whenever GitHub is unreachable is a check
+# somebody eventually deletes, and the one it protects - "the vendored schema is still the revision
+# the port claims to follow" - is not urgent by the hour.
+#
+# The digest half runs in `spec-validate` on every push. This half runs weekly, because the events
+# it exists to notice are a new specification revision and a corrected old one.
+on:
+  schedule:
+    # Mondays at 06:17 UTC. Off the hour deliberately: every workflow that asks for "weekly, in the
+    # morning" lands on the same round number, and the scheduler sheds load by delaying them.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upstream:
+    name: the vendored schema is still what upstream publishes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # A failure here is one of two facts and the log says which: a mismatch is a revision that
+      # moved, and a fetch error is this run having learned nothing. Neither is silenced by
+      # editing `NOTICE` - the digests there are the pin, and re-pinning without reading the new
+      # revision would claim conformance to something nobody has read.
+      - run: python tools/check_mcp_schema.py --upstream
