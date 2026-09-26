@@ -241,6 +241,37 @@ describe("the editor", () => {
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
   });
 
+  it("lists every stream the document wires, and Solve changes the values and not the rows", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    // The workbook is not the tab the dock opens on - messages are, because a document that does
+    // not check is the state a person most needs told about.
+    fireEvent.click(screen.getByRole("tab", { name: "Workbook" }));
+    const rowIds = () =>
+      [...container.querySelectorAll(".dock .grid tbody tr")].map((row) =>
+        row.getAttribute("data-id"),
+      );
+
+    // **The rows are the *producing* endpoints**, so no stream is listed twice: `mix1.product` and
+    // `p1.inlet` are one stream, and only the producer carries its value.
+    const before = rowIds();
+    expect(before).toEqual([
+      "mix1.product",
+      "p1.outlet",
+      "hx1.outlet",
+      "sep1.vapour",
+      "sep1.liquid",
+      "feed_1",
+      "vapour_product",
+    ]);
+
+    // And a run fills the cells rather than adding rows, which is what makes it a worksheet.
+    fireEvent.click(screen.getByRole("button", { name: "Solve" }));
+    await waitFor(() => expect(pill(container)).toBe("solved"));
+    expect(rowIds()).toEqual(before);
+  });
+
   it("groups the palette by the family the library filed each entry under", async () => {
     stubFetch();
     const { container } = await open();

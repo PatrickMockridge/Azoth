@@ -19,12 +19,14 @@ import blankDocument from "../../specs/flowsheets/blank.toml?raw";
 import demoDocument from "../../specs/flowsheets/demo.toml?raw";
 import { BoundaryPanel } from "./components/BoundaryPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
+import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
 import { Palette } from "./components/Palette";
 import { PropertyView } from "./components/property/PropertyView";
 import { RibbonGroup } from "./components/RibbonGroup";
 import { StatusBar } from "./components/StatusBar";
 import { TitleStrip } from "./components/TitleStrip";
+import { Workbook } from "./components/workbook/Workbook";
 import { saveDocument } from "./save";
 import { selectedEdge, selectedNode, targetNodeId } from "./state/selection";
 import { applyTheme, readTheme, type Theme } from "./state/theme";
@@ -49,6 +51,15 @@ export function App() {
   const [fault, setFault] = useState<string | null>(null);
   const [openable, setOpenable] = useState(false);
   const [theme, setTheme] = useState<Theme>(readTheme);
+
+  /**
+   * The dock's view state, which is the editor's and not the document's.
+   *
+   * **Messages is the tab it opens on**, because a document that does not check is the state a
+   * person most needs told about and the dock is where the telling happens.
+   */
+  const [docked, setDocked] = useState<"workbook" | "messages">("messages");
+  const [dockSize, setDockSize] = useState(200);
 
   const middleware = useRef<Door | null>(null);
 
@@ -307,15 +318,37 @@ export function App() {
               onSelect={setSelected}
             />
           )}
-          {envelope !== null ? (
-            <DiagnosticsPanel
-              diagnostics={envelope.diagnostics}
-              runError={envelope.run_error}
-              onSelect={(target) => setSelected(targetNodeId(target, envelope))}
-            />
-          ) : null}
         </aside>
       </div>
+
+      {/* **The two panels read one envelope from two sides**: the workbook is what the run reached,
+          the messages are what the document is. Neither holds a copy of either. */}
+      <Dock
+        tabs={[
+          { id: "workbook", label: "Workbook" },
+          {
+            id: "messages",
+            label: "Messages",
+            count: envelope?.diagnostics.length ?? 0,
+          },
+        ]}
+        active={docked}
+        onTab={(id) => setDocked(id === "workbook" ? "workbook" : "messages")}
+        size={dockSize}
+        onSize={setDockSize}
+      >
+        {envelope === null ? (
+          <p className="note">no document</p>
+        ) : docked === "workbook" ? (
+          <Workbook envelope={envelope} onSelect={setSelected} />
+        ) : (
+          <DiagnosticsPanel
+            diagnostics={envelope.diagnostics}
+            runError={envelope.run_error}
+            onSelect={(target) => setSelected(targetNodeId(target, envelope))}
+          />
+        )}
+      </Dock>
 
       <StatusBar envelope={envelope} />
     </div>

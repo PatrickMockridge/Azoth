@@ -7,9 +7,9 @@
  * answer is a position rather than a name.
  */
 
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { componentAxis, fraction } from "../src/state/columns";
+import { componentAxis, compositionRows, fraction, streamColumns, streamRows } from "../src/state/columns";
 import fixture from "./fixtures/envelope.json";
 import type { Envelope, GraphNode } from "../src/wire/types";
 
@@ -71,4 +71,59 @@ it("says so where no feed declares a fluid", () => {
 it("writes a fraction to four places", () => {
   expect(fraction(0.123456)).toBe("0.1235");
   expect(fraction(0)).toBe("0.0000");
+});
+
+describe("the workbook's rows", () => {
+  it("comes from the document's ports, in the graph's own order", () => {
+    const rows = streamRows(envelope);
+    // **The rule that makes it a workbook and not a run log.** These are the ports the *document*
+    // declares, so the grid has this shape before a run as well as after one.
+    expect(rows.map((row) => row.path)).toEqual([
+      // **One row per stream and not one per port**: a producing outlet and the inlet it feeds are
+      // the same stream, and only the producer's endpoint carries the value.
+      "mix1.product",
+      "p1.outlet",
+      "hx1.outlet",
+      "sep1.vapour",
+      "sep1.liquid",
+      "feed_1",
+      "vapour_product",
+    ]);
+    // Every row is a path, the object it belongs to, and the record the run reached.
+    expect(rows[0]?.from).toBe("mix1");
+    expect(rows.every((row) => row.record !== undefined)).toBe(true);
+  });
+
+  it("has the same rows with no run at all, and the values are what is missing", () => {
+    const unrun: Envelope = { ...envelope, session: null, dirty: true };
+    const before = streamRows(unrun);
+    const after = streamRows(envelope);
+    expect(before.map((row) => row.path)).toEqual(after.map((row) => row.path));
+    expect(before.every((row) => row.record === undefined)).toBe(true);
+    expect(after.some((row) => row.record !== undefined)).toBe(true);
+  });
+
+  it("draws a column for a quantity it has never heard of", () => {
+    // **The forward-compatibility claim, tested rather than asserted.** A field added to the record
+    // after this file was written appears with its own key as its label - which is the difference
+    // between a table that shows what arrived and one that shows what it expected.
+    const record = {
+      ...(envelope.session?.streams["sep1.vapour"] as object),
+      entropy: { magnitude_si: -26.9, unit: "J/(mol*K)" },
+    } as never;
+    const columns = streamColumns(record);
+    expect(columns.map((column) => column.key)).toContain("entropy");
+    expect(columns.find((column) => column.key === "entropy")?.unit).toBe("J/(mol*K)");
+    // And a composition is never a column of its own: it has a sheet.
+    expect(columns.map((column) => column.key)).not.toContain("z");
+  });
+
+  it("reads every stream's substances against the feed's axis", () => {
+    const rows = compositionRows(envelope);
+    const vapour = rows.filter((row) => row.path === "sep1.vapour");
+    expect(vapour.map((row) => row.component)).toEqual(["methane", "n-butane"]);
+    // `n · z` is two fields of the record multiplied, and the flow is the run's own.
+    const flow = envelope.session?.streams["sep1.vapour"]?.n.magnitude_si ?? 0;
+    expect(vapour[0]?.flow).toBeCloseTo(flow * (vapour[0]?.fraction ?? 0), 10);
+  });
 });

@@ -58,7 +58,13 @@ export function DockTabs({
           onClick={() => onTab(tab.id)}
         >
           {tab.label}
-          {tab.count === undefined ? null : <span className="count">{tab.count}</span>}
+          {/* **Out of the accessible name.** A tab is found by its label - `getByRole("tab", {
+              name: "Messages" })` - and a count inside the button would make the name "Messages 3". */}
+          {tab.count === undefined ? null : (
+            <span className="count" aria-hidden="true">
+              {tab.count}
+            </span>
+          )}
         </button>
       ))}
     </div>

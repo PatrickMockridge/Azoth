@@ -190,6 +190,8 @@ export interface SessionReport {
    * `condenser_duty` without a table per unit operation.
    */
   results: Record<string, UnitResult>;
+  /** Every declared tear, in declaration order. */
+  tears: TearRecord[];
 }
 
 /**
