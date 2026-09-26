@@ -49,6 +49,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `cold_out_p` | Pa | the cold outlet's pressure, which is `cold_in_p`. |
 | `cold_out_t` | K | the cold outlet's temperature. |
 | `cold_out_h` | J/mol | the cold outlet's molar enthalpy: the inlet's plus the duty it gained, which is the hot side's to the flash's own arithmetic. |
+| `duty` | W | the heat the hot side released, W: positive when the hot side cools, which is what the cold side's gain balances. The one figure that means the same thing in both modes, and it is on no outlet stream. |
+| `ntu` | dimensionless | `UA / C_min`, the number of transfer units the rating sized the exchanger by, or null where one outlet was pinned instead of rated. With `effectiveness` it is what says whether the machine is area-limited or capacity-limited. |
+| `effectiveness` | dimensionless | the fraction of the capacity-limited side's possible swing the rating reached, or null where one outlet was pinned. One is the infinite-area limit, which is the state the rating's own branch keeps. |
+| `c_min` | W/K | the smaller of the two capacities the rating estimated - each side flashed at the *other's* inlet temperature - or null where one outlet was pinned. |
+| `c_max` | W/K | the larger of them, or null where one outlet was pinned. |
+| `capacity_ratio` | dimensionless | `C_min / C_max`, which is the shape of the effectiveness relation, or null where one outlet was pinned. |
 
 | Bound | On violation | Why |
 |---|---|---|

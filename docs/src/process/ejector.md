@@ -45,6 +45,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `outlet_p` | Pa | the outlet's pressure, which is the stated discharge pressure. |
 | `outlet_t` | K | the outlet's temperature, which the final flash solves for. |
 | `outlet_h` | J/mol | the outlet's molar enthalpy at its own state. |
+| `mixing_pressure` | Pa | the pressure the two streams meet at: `estimateDefaultMixingPressure`, clamped to the suction pressure. **Not an input** - `setMixingPressure` exists and the palette does not declare it - and it is what fixes the two nozzle steps. |
+| `motive_nozzle_velocity` | m/s | the motive nozzle's exit velocity, `sqrt(2 dh)` at its own isentropic efficiency. |
+| `suction_nozzle_velocity` | m/s | the suction nozzle's: the larger of its own `sqrt(2 dh)` and the class's blended empirical estimate. |
+| `mixing_velocity` | m/s | the mixed stream's, from the momentum balance, scaled by the mixing chamber's efficiency. |
+| `diffuser_velocity` | m/s | the diffuser's design velocity: the class's own estimate, which takes one more `v^2/2` off before the discharge flash. |
 
 | Bound | On violation | Why |
 |---|---|---|

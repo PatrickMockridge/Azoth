@@ -265,6 +265,7 @@ Five sections, and the difference between them is the point:
 - [`process.pipe`](./process/pipe.md) — Pipe
 - [`process.plug_flow_reactor`](./process/plug_flow_reactor.md) — Plug-flow reactor
 - [`process.pump`](./process/pump.md) — Pump
+- [`process.rate_based_packed_column`](./process/rate_based_packed_column.md) — Rate-based packed column
 - [`process.separator`](./process/separator.md) — Separator
 - [`process.shortcut_distillation_column`](./process/shortcut_distillation_column.md) — Shortcut distillation column
 - [`process.splitter`](./process/splitter.md) — Splitter
