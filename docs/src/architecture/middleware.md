@@ -71,8 +71,8 @@ only.
 | a browser | `crates/azoth-wasm`, compiled with `wasm-bindgen` and carrying its own palette and databank — no fetch, no filesystem | a Node driver over the built module, in the crate |
 | a notebook | `azoth.process.Session`, which is the same `Workspace` as a Python object, with `forms()` and `tools()` beside it | `python/tests/test_process.py` |
 | a shell | `azoth forms` and `azoth edit --flowsheet F --command JSON [--run] [--json]` | `crates/azoth-cli/tests/wire.rs` |
-| an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope — and the same messages again at `POST /mcp` on `azoth serve`, for a client that cannot start a process | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field, and `tests/mcp_http.rs` for the HTTP lane |
-| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope — it hosts the editor's `POST /rpc` and the agent's `POST /mcp` over **one** `Session` | `crates/azoth-cli/tests/serve.rs`, and `tests/mcp_http.rs` for the MCP endpoint |
+| an agent | `azoth mcp --flowsheet F [--no-run]`: the same tools over stdio, one session held across calls, every answer the envelope — and the same messages again at `POST /mcp` on `azoth serve`, for a client that cannot start a process | `crates/azoth-cli/tests/mcp.rs`, which asserts the served tools equal `middleware::tools` field by field, and `crates/azoth-cli/tests/mcp_http.rs` for the HTTP lane |
+| a client that cannot run the kernels | `azoth serve --flowsheet F [--port N] [--allow-origin ORIGIN]`: one document over HTTP, the same calls, the same envelope — it hosts the editor's `POST /rpc` and the agent's `POST /mcp` over **one** `Session` | `crates/azoth-cli/tests/serve.rs`, and `crates/azoth-cli/tests/mcp_http.rs` for the MCP endpoint |
 
 `--json` prints the envelope, which is byte for byte the object a browser is handed — so the CLI
 is a way to look at the wire without a front-end, and a way to capture a fixture for one.

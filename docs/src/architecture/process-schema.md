@@ -68,7 +68,7 @@ carried no word for until P12's close-out. It is held to two sources that agree:
 when a caller may leave it out, and the shim in
 `crates/azoth-process/src/executor/dispatch.rs`, which reads a required parameter with
 `Parameters::si`/`number`/`flag`/`text`/`vector` and an optional one with the `optional_*`
-family. `tests/palette.rs` re-checks the agreement on every run.
+family. `crates/azoth-process/tests/palette.rs` re-checks the agreement on every run.
 
 The palette is grouped by family under `specs/unit_ops/`: two-port machines, separators,
 mixer/splitter, the heat exchanger, columns, reactors and utility units. Two kinds of
