@@ -298,6 +298,40 @@ fn a_substance_paired_with_itself_is_refused() {
     );
 }
 
+/// **A pair no mixture can carry is refused, and one this card adds is not.**
+///
+/// `kij` is read by the mixing rule of a mixture being assembled, so a row whose two names
+/// never meet in one is stored, resolved to nothing and reported by nothing - the defect
+/// every other refusal in this reader exists for. The set a name may come from is the
+/// databank plus this card's own `components` section, which is what makes the second half
+/// of this test the interesting one: a card may name a substance the databank has never
+/// heard of and pair it, because the same card is what puts it in a mixture.
+#[test]
+fn a_kij_row_naming_a_substance_nothing_can_carry_is_refused() {
+    let error = Card::from_toml(&a_card(
+        "[[kij]]\ncomponent_a = \"methane\"\ncomponent_b = \"methanol-ish\"\nvalue = 0.0135\n",
+    ))
+    .expect_err("no mixture carries `methanol-ish`");
+
+    let message = error.to_string();
+    assert!(
+        message.contains("methanol-ish") && message.contains("components` section"),
+        "{message}"
+    );
+
+    // The same row, with the substance added by the same card.
+    let card = Card::from_toml(&a_card(
+        "[components.methanol-ish.Tc]\nvalue = 512.6\nunit = \"K\"\n\
+         [components.methanol-ish.Pc]\nvalue = 8.096e6\nunit = \"Pa\"\n\
+         [components.methanol-ish.omega]\nvalue = 0.565\nunit = \"dimensionless\"\n\
+         [[kij]]\ncomponent_a = \"methane\"\ncomponent_b = \"methanol-ish\"\nvalue = 0.0135\n",
+    ))
+    .expect("the card states the substance and its pair");
+
+    assert_eq!(card.kij_for("methane", "methanol-ish"), Some(0.0135));
+    assert_eq!(card.overlay().kij("methanol-ish", "methane"), Some(0.0135));
+}
+
 #[test]
 fn a_version_this_build_does_not_read_is_refused() {
     let error =

@@ -20,7 +20,7 @@
 //! An unknown section, parameter or unit is refused rather than skipped: a value nothing
 //! reads is data that looks in use and is not.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use azoth_core::unit_vocab_gen::{dimension, si_factor};
@@ -392,7 +392,11 @@ impl Card {
         let mut overlay = Overlay::new();
         resolve_components(&mut overlay, document.components.as_ref())?;
         let associations = resolve_associations(&mut overlay, document.associations.as_ref())?;
-        resolve_kij(&mut overlay, document.kij.as_ref())?;
+        resolve_kij(
+            &mut overlay,
+            document.kij.as_ref(),
+            document.components.as_ref(),
+        )?;
         check_coefficients(document.coefficients.as_ref())?;
         check_models(document.models.as_ref())?;
 
@@ -696,12 +700,33 @@ fn resolve_associations(
     Ok(resolved)
 }
 
-/// Add every interaction pair the document states to the overlay, which refuses a pair
-/// naming one substance twice.
-fn resolve_kij(overlay: &mut Overlay, kij: Option<&Vec<KijRow>>) -> Result<()> {
+/// Add every interaction pair the document states to the overlay.
+///
+/// Two refusals. A pair naming one substance twice is refused by [`Overlay::set_kij`] - it
+/// would silently rescale that substance's attraction. A pair naming a substance **nothing
+/// can carry**, which is a name neither the databank nor this card's own `components`
+/// section has, is refused here: `kij` is read by the mixing rule of a mixture being
+/// assembled, so a row whose names never meet in one is stored, resolved to nothing and
+/// reported by nothing - the class this reader refuses everywhere else, in the words it
+/// already uses for a parameter nothing reads.
+///
+/// **`associations` does not count towards that set.** It states a site scheme and the
+/// fitted parameters beside it, not the critical constants a cubic reads, so a substance it
+/// names and `components` does not is one [`crate::databank::entry`] refuses - it can never
+/// be in a mixture for the pair to be about.
+fn resolve_kij(
+    overlay: &mut Overlay,
+    kij: Option<&Vec<KijRow>>,
+    stated: Option<&BTreeMap<String, ComponentBody>>,
+) -> Result<()> {
     let Some(kij) = kij else {
         return Ok(());
     };
+
+    let mut known: BTreeSet<String> = crate::databank::names(None).into_iter().collect();
+    if let Some(stated) = stated {
+        known.extend(stated.keys().map(|name| name.trim().to_lowercase()));
+    }
 
     for (index, row) in kij.iter().enumerate() {
         let field = format!("kij[{index}]");
@@ -710,6 +735,20 @@ fn resolve_kij(overlay: &mut Overlay, kij: Option<&Vec<KijRow>>) -> Result<()> {
                 field,
                 "needs a non-empty `component_a` and `component_b`",
             ));
+        }
+        for name in [&row.component_a, &row.component_b] {
+            if !known.contains(&name.trim().to_lowercase()) {
+                return Err(AzothError::invalid_input(
+                    &field,
+                    format!(
+                        "names `{}`, which is neither in the databank nor in this card's \
+                         `components` section, so no mixture carries both ends of the pair. \
+                         Refused rather than stored: a pair nothing assembles is data that \
+                         looks in use and is not.",
+                        name.trim()
+                    ),
+                ));
+            }
         }
         overlay.set_kij(&row.component_a, &row.component_b, row.value)?;
         for (value, cubic) in [

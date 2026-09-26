@@ -64,7 +64,9 @@ citation = "EXAMPLE - not the accepted value."
 # value = 1.4515e-5
 # unit = "m**3/mol"
 
-# Overrides or extends `data/components/kij.csv`. A pair is unordered.
+# Overrides or extends `data/components/kij.csv`. A pair is unordered, and both names must
+# be in the databank or in the `components` section above: `kij` is read by the mixing rule
+# of a mixture being assembled, so a pair naming anything else is refused rather than stored.
 #
 # `value` is the classical parameter a cubic's rule reads. The two `cpa_value_*` are the
 # associating columns, one per cubic family, and are optional: they are separate fits of

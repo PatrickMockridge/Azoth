@@ -82,7 +82,7 @@
     },
     "kij": {
       "x-azoth-stage": "runtime",
-      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair*. A row states one to three parameters, because an associating mixture mixes with a different column of the same table: `value` is `KIJPR`, which a cubic's classical rule reads, and the two `cpa_value_*` are `cpakij_SRK`/`cpakij_PR`, which an associating one reads. They are separate columns with separate fits - water/methanol is -0.153 against -0.0789 - so stating one is not stating the other.",
+      "description": "Binary interaction parameters, overriding or extending `data/components/kij.csv`. An array of rows rather than a map, because the key is a *pair*. A row states one to three parameters, because an associating mixture mixes with a different column of the same table: `value` is `KIJPR`, which a cubic's classical rule reads, and the two `cpa_value_*` are `cpakij_SRK`/`cpakij_PR`, which an associating one reads. They are separate columns with separate fits - water/methanol is -0.153 against -0.0789 - so stating one is not stating the other. Both names of a row must be in the databank or in the card's own `components` section: `kij` is read by the mixing rule of a mixture being assembled, so a pair naming anything else is stored and never read, and the readers refuse it at load rather than storing it.",
       "type": "array",
       "minItems": 1,
       "items": {

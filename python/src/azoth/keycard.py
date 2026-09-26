@@ -321,7 +321,14 @@ def use(document: Any, *, path: Path | None = None) -> Keycard:
             f"is data that looks in use and is not.",
         )
 
-    kij, cpa_kij = _kij(document.get("kij"), where)
+    # Read before the sections are, because a `kij` row is checked as it arrives and this is
+    # half of the set its names may come from: the section that states critical constants,
+    # not the one that states a site scheme.
+    declared = document.get("components")
+    stated = (
+        {str(name).strip().lower() for name in declared} if isinstance(declared, Mapping) else set()
+    )
+    kij, cpa_kij = _kij(document.get("kij"), where, stated=stated)
     return Keycard(
         keyholder=_keyholder(document, where),
         licence=_licence(document),
@@ -508,8 +515,20 @@ def _associations(raw: Any, where: str) -> dict[str, Association]:
     return out
 
 
+def _carryable(stated: set[str]) -> set[str]:
+    """The substances a `kij` row's names may be: the databank, plus what this card adds.
+
+    The import is deferred because ``azoth.eos.components`` imports this module, which is
+    the one thing that makes the dependency one-way - the card format does not depend on the
+    databank, only this check does.
+    """
+    from azoth.eos import components as _components
+
+    return set(_components.available()) | stated
+
+
 def _kij(
-    raw: Any, where: str
+    raw: Any, where: str, *, stated: set[str]
 ) -> tuple[dict[tuple[str, str], float], dict[tuple[str, str, str], float]]:
     """The interaction rows, as the classical parameter and the associating pair.
 
@@ -518,6 +537,14 @@ def _kij(
     separate columns with separate fits - water/methanol is ``-0.153`` against
     ``-0.0789`` - so neither may stand in for the other, and the family is part of the
     second map's key rather than a pair carrying one value.
+
+    A row naming a substance **nothing can carry** is refused: the name must be in the
+    databank or in this card's own ``components`` section, and ``stated`` is that second set,
+    read before this section is so a pair can be checked as it arrives. `kij` is read by the
+    mixing rule of a mixture being assembled, so a row whose two names never meet in one is
+    stored and read by nothing - the class every other refusal here exists for. A substance
+    named only in ``associations`` does not count: that section states a site scheme, not the
+    critical constants a cubic reads, so it cannot be in a mixture for the pair to be about.
     """
     classical: dict[tuple[str, str], float] = {}
     associating: dict[tuple[str, str, str], float] = {}
@@ -525,7 +552,10 @@ def _kij(
         return classical, associating
     if not isinstance(raw, list):
         raise KeycardError(where, "`kij` must be a list of rows")
+    if not raw:
+        return classical, associating
 
+    known = _carryable(stated)
     for index, row in enumerate(raw):
         field_name = f"kij[{index}]"
         if not isinstance(row, Mapping):
@@ -543,15 +573,24 @@ def _kij(
                 f"`{field_name}` pairs {a!r} with itself. A component does not interact "
                 f"with itself, and a self-pair would silently rescale its attraction.",
             )
+        for name in (a.strip(), b.strip()):
+            if name.lower() not in known:
+                raise KeycardError(
+                    where,
+                    f"`{field_name}` names {name!r}, which is neither in the databank nor in "
+                    f"this card's `components` section, so no mixture carries both ends of the "
+                    f"pair. Refused rather than stored: a pair nothing assembles is data that "
+                    f"looks in use and is not.",
+                )
         first, second = sorted((a.strip().lower(), b.strip().lower()))
         classical[(first, second)] = float(value)
         for key, family in (("cpa_value_srk", "srk"), ("cpa_value_pr", "pr")):
-            stated = row.get(key)
-            if stated is None:
+            given = row.get(key)
+            if given is None:
                 continue
-            if not isinstance(stated, int | float) or isinstance(stated, bool):
+            if not isinstance(given, int | float) or isinstance(given, bool):
                 raise KeycardError(where, f"`{field_name}` needs a numeric `{key}`")
-            associating[(first, second, family)] = float(stated)
+            associating[(first, second, family)] = float(given)
     return classical, associating
 
 

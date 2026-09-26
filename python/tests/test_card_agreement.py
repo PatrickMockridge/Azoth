@@ -284,6 +284,49 @@ def test_the_two_readers_agree_about_a_self_pair() -> None:
         rust_card(text)
 
 
+#: A pair naming a substance nothing can carry - a near miss of a name the table has, which
+#: is the shape a real card has when this bites.
+UNKNOWN_PARTNER = "methanol-ish"
+
+
+def test_the_two_readers_refuse_the_same_unusable_pair() -> None:
+    """A `kij` row whose two names never meet in a mixture, refused by both readers.
+
+    `kij` is read by the mixing rule of a mixture being assembled, so a row naming a substance
+    neither the databank nor this card's own `components` section has is stored, resolved to
+    nothing and reported by nothing. Neither reader has anywhere to put that refusal *later* -
+    the row never matches a pair - so both refuse it when the card is read, and a rule that
+    lived on one side only would be a card that works until the language changes.
+
+    The second half is the bound on the rule: a card may name a substance the databank has
+    never heard of, because the same card is what puts it in a mixture. A check that ignored
+    the card's own section would be the opposite defect, so both readers take this card.
+    """
+    unusable = (
+        'schema_version = 2\n[[kij]]\ncomponent_a = "methane"\n'
+        f'component_b = "{UNKNOWN_PARTNER}"\nvalue = 0.0135\n'
+    )
+    with pytest.raises(KeycardError, match=UNKNOWN_PARTNER):
+        python_card(unusable)
+    with pytest.raises(InvalidInputError, match=UNKNOWN_PARTNER):
+        rust_card(unusable)
+
+    declared = (
+        "schema_version = 2\n"
+        '[components.methanol-ish.Tc]\nvalue = 512.6\nunit = "K"\n'
+        '[components.methanol-ish.Pc]\nvalue = 8.096e6\nunit = "Pa"\n'
+        '[components.methanol-ish.omega]\nvalue = 0.565\nunit = "dimensionless"\n'
+        f'[[kij]]\ncomponent_a = "methane"\ncomponent_b = "{UNKNOWN_PARTNER}"\nvalue = 0.0135\n'
+    )
+    mine = python_card(declared).kij_for("methane", UNKNOWN_PARTNER)
+    assert mine == pytest.approx(0.0135), "the card states the substance and its pair"
+
+    (first, second, value), *rest = _core.overlay_kij_rows(rust_card(declared))
+    assert not rest, "the card states one pair"
+    assert {first, second} == {"methane", UNKNOWN_PARTNER}
+    assert value == pytest.approx(0.0135)
+
+
 A_MATRIX_CARD = """\
 schema_version = 2
 keyholder.name = "Example Engineering Ltd"
