@@ -270,6 +270,80 @@
   text-decoration: line-through;
 }
 
+/* --- the navigator --------------------------------------------------------- */
+
+/*
+ * Every object in the document, above the palette in the same column.
+ *
+ * **Capped and scrolled on its own**, because a plant with forty objects would otherwise push the
+ * palette off the bottom of the column - and the palette is what a person reaches for *after*
+ * reading where they are.
+ */
+.tree {
+  flex: 0 1 auto;
+  max-height: 45%;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tree .tree-group {
+  padding: var(--s2) 0 var(--s3);
+}
+
+.tree .tree-label {
+  padding: var(--s2) var(--s5);
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+}
+
+.tree-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s1) var(--s5) var(--s1) var(--s7);
+  /* The rule is on the left and always there, so the label does not shift when it lights. */
+  border: 0;
+  border-left: 2px solid transparent;
+  color: var(--text);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-row:hover {
+  background: var(--bg-hover);
+}
+
+.tree-row[aria-current] {
+  border-left-color: var(--accent);
+  background: var(--bg-selected);
+  color: var(--text-strong);
+}
+
+.tree-row .name {
+  flex: 1;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-row .tag {
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-label);
+}
+
+/* A tear is a stream the solver iterates, and it is drawn in the hue the canvas draws it in. */
+.tree-row .tag[data-tag="recycle"] {
+  color: var(--edge-recycle);
+}
+
 /* --- the property view ----------------------------------------------------- */
 
 .prop-header {

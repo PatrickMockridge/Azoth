@@ -21,6 +21,7 @@ import { BoundaryPanel } from "./components/BoundaryPanel";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { Dock } from "./components/dock/Dock";
 import { Flowsheet } from "./components/Flowsheet";
+import { Navigation } from "./components/Navigation";
 import { Palette } from "./components/Palette";
 import { PropertyView } from "./components/property/PropertyView";
 import { RibbonGroup } from "./components/RibbonGroup";
@@ -276,21 +277,33 @@ export function App() {
       </div>
 
       <div className="body">
-        <Palette
-          forms={catalogue?.unit_ops ?? []}
-          onAdd={(unit) =>
-            send({
-              command: "add_instance",
-              id: nextId(unit, envelope),
-              unit,
-              parameters: {},
-            })
-          }
-        >
+        {/* **Three readings of one document, in one column.** The navigator lists what this
+            flowsheet *has*, the palette what can be added, and the boundary what it is between —
+            and each selects or commands through the one envelope the app holds. */}
+        <aside className="side">
+          {envelope === null ? null : (
+            <Navigation
+              catalogue={catalogue}
+              envelope={envelope}
+              selected={selected}
+              onSelect={setSelected}
+            />
+          )}
+          <Palette
+            forms={catalogue?.unit_ops ?? []}
+            onAdd={(unit) =>
+              send({
+                command: "add_instance",
+                id: nextId(unit, envelope),
+                unit,
+                parameters: {},
+              })
+            }
+          />
           {envelope === null ? null : (
             <BoundaryPanel envelope={envelope} onCommand={send} />
           )}
-        </Palette>
+        </aside>
 
         <div className="canvas">
           {envelope === null ? (

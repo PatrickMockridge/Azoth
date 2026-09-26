@@ -13,47 +13,33 @@
  * An entry the executor refuses is listed and not offered: it is part of the palette, its refusal
  * is a measurement rather than an absence, and hiding it would make the palette look smaller than
  * the declaration it is generated from.
+ *
+ * **The column is the app's and this is a section of it.** The navigator sits above, this in the
+ * middle and the boundary below, and all three are one `<aside>`: they are the readings of a
+ * document that are neither the drawing nor the selected object's own window.
  */
 
+import { familyLabel, familyOfForm } from "../state/navigation";
 import type { Form } from "../wire/types";
 
 export interface PaletteProps {
   forms: Form[];
   onAdd: (unit: string) => void;
-  /**
-   * What else belongs in this column.
-   *
-   * **The boundary sits under the palette** rather than in a column of its own: feeds and products
-   * are what a flowsheet is *between*, and a fourth panel would be a fourth place to look for
-   * something a user adds once. The palette owns the `<aside>`, so this is how it is handed one.
-   */
-  children?: React.ReactNode;
 }
 
-/**
- * The family an entry is filed under, or `unfiled` where the catalogue did not say.
- *
- * **`unfiled` is a visible group rather than a silent merge into `other`**: a palette entry that
- * arrives without its family is a wire that stopped carrying it, and a person should see that as
- * its own heading rather than as one more entry in a group that looks like a family.
- */
-function family(form: Form): string {
-  return form.family ?? "unfiled";
-}
-
-export function Palette({ forms, onAdd, children }: PaletteProps) {
+export function Palette({ forms, onAdd }: PaletteProps) {
   const families = new Map<string, Form[]>();
   for (const form of forms) {
-    const key = family(form);
+    const key = familyOfForm(form);
     families.set(key, [...(families.get(key) ?? []), form]);
   }
 
   return (
-    <aside className="side">
+    <>
       <h2>Palette</h2>
       {[...families.entries()].map(([name, entries]) => (
         <div className="group" key={name}>
-          <div className="label">{name.replace("_", " ")}</div>
+          <div className="label">{familyLabel(name)}</div>
           {entries.map((form) => (
             <button
               key={form.id}
@@ -69,7 +55,6 @@ export function Palette({ forms, onAdd, children }: PaletteProps) {
           ))}
         </div>
       ))}
-      {children}
-    </aside>
+    </>
   );
 }

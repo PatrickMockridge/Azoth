@@ -323,4 +323,38 @@ describe("the editor", () => {
     const grouped = container.querySelectorAll("aside.side .group .entry");
     expect(grouped.length).toBeGreaterThanOrEqual(29);
   });
+
+  /**
+   * **The navigator and the canvas are one selection**, because both call the app's own
+   * `setSelected`. So the proof is the object's window opening — which nothing but the selection
+   * can produce — and then the same thing in the other direction: a click on the drawing moves the
+   * row rather than lighting a second one.
+   */
+  it("selects from the navigator what the canvas selects, in both directions", async () => {
+    stubFetch();
+    const { container } = await open();
+
+    const rows = () => [...container.querySelectorAll<HTMLElement>(".tree .tree-row")];
+    const rowFor = (label: string) =>
+      rows().find((row) => row.querySelector(".name")?.textContent === label);
+    const opened = () => container.querySelector(".prop-header .note")?.textContent;
+
+    // One row per object: the four unit operations, the six streams the edges carry, and the two
+    // boundary names — with the recycle among the streams, said as a tear.
+    expect(rows()).toHaveLength(12);
+    expect(rowFor("recycle_1")?.querySelector(".tag")?.textContent).toBe("recycle");
+    expect(rowFor("mix1.product")?.querySelector(".tag")).toBeNull();
+
+    fireEvent.click(rowFor("hx1") as HTMLElement);
+    await waitFor(() => expect(opened()).toBe("hx1"));
+    expect(rowFor("hx1")?.getAttribute("aria-current")).toBe("true");
+
+    // The drawing is the same selection, so this click moves the mark instead of adding one.
+    fireEvent.click(
+      container.querySelector<HTMLElement>('[data-id="instance:sep1"]') as HTMLElement,
+    );
+    await waitFor(() => expect(opened()).toBe("sep1"));
+    expect(rowFor("sep1")?.getAttribute("aria-current")).toBe("true");
+    expect(rowFor("hx1")?.getAttribute("aria-current")).toBeNull();
+  });
 });
