@@ -35,10 +35,36 @@ pub struct Stream {
     /// three, but the accessor that would compute it *refuses* a two-phase stream rather than
     /// answering ([`Stream::single_phase_root`]), and a two-phase stream is exactly the one whose
     /// vapour fraction a reader wants. So whichever constructor already ran the flash keeps its
-    /// answer: [`Stream::from_pt`] and [`Stream::from_ph`] take it from the flash and
-    /// [`Stream::from_side`] reports the side it was given. `None` means nothing computed one, and
-    /// it is not a `0.5` by default.
+    /// answer: [`Stream::from_pt`] and [`Stream::from_ph`] take [`vapour_fraction`] of the flash and
+    /// [`Stream::from_side`] reports the side it was given. `None` means the state is not known to
+    /// be one phase and no split was solved, and it is not a `0.5` by default.
     pub vapour_fraction: Option<f64>,
+}
+
+/// The vapour fraction a flash established, from its phase and its `beta`.
+///
+/// **`beta` outside `[0, 1]` is not a vapour fraction and is not published.** A flash at a state
+/// that is not two-phase converges a Rachford-Rice root that does not lie in the interval, and
+/// `PtFlashResult` carries it with a warning rather than withholding it - its own doc says `None` is
+/// the honest answer, "the flash extrapolates a split that does not exist, and reporting it would
+/// invite a caller to use it". This is that policy at the boundary where the number becomes a
+/// stream's field, and the shipped demo is where it was found: a subcooled methane feed flashed to
+/// `1.9847` and a heater's outlet to `1.2878`, both of which a front end would have drawn as a
+/// vapour fraction.
+///
+/// **Where the state *is* one phase the endpoint is a fact and is reported**: a separator's vapour
+/// outlet is all vapour whatever its composition would settle on by itself, and a reader comparing
+/// two streams wants that `1` rather than a blank.
+#[must_use]
+pub fn vapour_fraction(phase: Phase, beta: Option<f64>) -> Option<f64> {
+    match phase {
+        Phase::AllVapour => Some(1.0),
+        Phase::AllLiquid => Some(0.0),
+        Phase::TwoPhase => beta.filter(|fraction| (0.0..=1.0).contains(fraction)),
+        // The solution is trivial: the same composition on both sides, so there is no split to
+        // report and no phase to point at.
+        Phase::Trivial => None,
+    }
 }
 
 impl Stream {
@@ -69,7 +95,7 @@ impl Stream {
             p,
             t,
             h: joules_per_mole(h),
-            vapour_fraction: flash.beta,
+            vapour_fraction: vapour_fraction(flash.phase, flash.beta),
         })
     }
 
@@ -261,7 +287,7 @@ impl Stream {
             p,
             t: r.temperature,
             h,
-            vapour_fraction: r.beta,
+            vapour_fraction: vapour_fraction(r.phase, r.beta),
         })
     }
 }

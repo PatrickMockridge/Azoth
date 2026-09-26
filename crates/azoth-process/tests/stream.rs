@@ -171,6 +171,31 @@ fn a_two_phase_stream_refuses_a_density() {
     close(s.entropy().unwrap(), -26.962728758469062, "entropy");
 }
 
+/// **A vapour fraction is between nought and one, and the flash's extrapolation is not one.**
+///
+/// A `TP` flash at a state that is not two-phase converges a Rachford-Rice root outside `[0, 1]`
+/// and returns it with a warning - `PtFlashResult::beta` says so itself. The shipped demo is where
+/// this was found: its subcooled methane feed reported `1.9847` and a heater's outlet `1.2878`,
+/// because the constructor took the flash's number and published it. A front end drawing that as a
+/// vapour fraction is the failure this holds shut.
+#[test]
+fn a_vapour_fraction_is_a_fraction_and_a_single_phase_says_which_one() {
+    // **The demo's own feed state, and the number this test exists for.** A methane-rich mixture at
+    // 300 K and 5 bar is a gas, and the flash converges a Rachford-Rice root of `1.9847` for it -
+    // out of the interval, carried with a warning, and what the constructor used to publish. A gas
+    // reports `1`, because that is the fact the flash established.
+    let gas = stream(&["methane", "n-butane"], &[0.9, 0.1], 300.0, 5.0e5, 1.0);
+    assert_eq!(gas.vapour_fraction, Some(1.0), "a gas is all vapour");
+
+    // The other endpoint, on a state that really is liquid.
+    let liquid = stream(&["n-butane"], &[1.0], 300.0, 1.0e6, 1.0);
+    assert_eq!(
+        liquid.vapour_fraction,
+        Some(0.0),
+        "subcooled butane is liquid"
+    );
+}
+
 /// **The measurement the module doc rests on, asserted so it cannot go stale.**
 ///
 /// `eos.viscosity` is the PFCT heavy-oil correlation and returns `5.302926524345695e-4` Pa·s
