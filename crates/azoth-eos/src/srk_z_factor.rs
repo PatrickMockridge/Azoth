@@ -83,6 +83,8 @@ pub fn srk_z_factor(a_reduced: f64, b_reduced: f64) -> Result<SrkZFactorResult> 
         "no admissible root for B = {b_reduced}, which the bounds should have refused"
     );
 
+    // numerics-ok: a paired `min`/`max` fold seed - the idiom for "no value yet",
+    // and the one shape where `f64::MAX` is not a bound anybody means.
     let (z_min, z_max) = admissible
         .iter()
         .fold((f64::MAX, f64::MIN), |(lo, hi), z| (lo.min(*z), hi.max(*z)));

@@ -173,3 +173,21 @@ def test_the_reexported_helpers_still_answer_the_two_original_rules(tmp_path: Pa
     scanned = scan(tmp_path, "a.rs", "let y = x.powf(2.0);\n")
     assert scanned.messages == offenders(tmp_path, "a.rs", "let y = x.powf(2.0);\n")
     assert scanned.excused == {}
+
+
+def test_the_largest_float_outside_a_seed_is_reported(tmp_path: Path) -> None:
+    """The fourth rule: a bound, a ceiling and a seed are one spelling."""
+    messages = offenders(tmp_path, "a.rs", "const CEILING: f64 = f64::MAX;\n")
+    assert len(messages) == 1, messages
+    assert "largest finite float" in messages[0]
+
+    # The seed itself is not a finding: `let mut final_error = f64::MAX` is the idiom for
+    # "no value yet" and is what the plan left alone.
+    assert offenders(tmp_path, "a.rs", "let mut final_error = f64::MAX;\n") == []
+
+    # A paired `min`/`max` fold is not that shape, so it is looked at - and marked where it
+    # is the idiom, which the tree's two `z_factor` modules do.
+    fold = "let (lo, hi) = v.iter().fold((f64::MAX, f64::MIN), |a, z| a);\n"
+    assert len(offenders(tmp_path, "a.rs", fold)) == 1
+    marked = "// numerics-ok: a paired min/max seed\n" + fold
+    assert offenders(tmp_path, "a.rs", marked) == []

@@ -19,6 +19,10 @@ gives a missing critical temperature the value zero, which is a number every mod
 computes with - so a card that omits one is a state the arithmetic runs on rather than
 refuses.
 
+**A `f64::MAX` outside a `let mut` seed.** The largest finite float is three things a
+reader cannot tell apart from the line: a bound somebody meant, a ceiling that saturates
+an infinity, and a `min` fold's seed.
+
 # What it checks, and what it does not
 
 Syntactic rules over `crates/**/*.rs` and `python/src/**/*.py`, and nothing else. A rule
@@ -75,6 +79,10 @@ GENERATED = "GENERATED FILE - DO NOT EDIT BY HAND"
 #: `x.powf(0.3333)`, and the same in Python as `x ** 0.3333`.
 POWF = re.compile(r"\.powf\(\s*(?P<literal>-?\d+\.\d+)\s*\)")
 PY_POW = re.compile(r"\*\*\s*(?P<literal>-?\d+\.\d+)(?![\d.eE])")
+
+#: `f64::MAX`, and the one shape where it is unambiguously a fold's seed.
+F64_MAX = re.compile(r"\bf64::MAX\b")
+SEED = re.compile(r"^\s*let mut \w+ = f64::MAX;\s*$")
 
 #: How a line says its number is deliberate.
 EXEMPT = "numerics-ok:"
@@ -141,7 +149,7 @@ class Rule:
     #: differently and a `.py` file's docstring quotes the Rust it mirrors - so a pattern
     #: applied to both would report prose.
     patterns: dict[str, re.Pattern[str]]
-    explain: Callable[[re.Match[str], str, str], str | None]
+    explain: Callable[[re.Match[str], str, str, str], str | None]
 
     def messages(self, path: Path, line: str, number: int) -> list[str]:
         """Every finding this rule makes on one line of one file."""
@@ -152,12 +160,13 @@ class Rule:
         return [
             message
             for match in pattern.finditer(line)
-            if (message := self.explain(match, where, path.suffix)) is not None
+            if (message := self.explain(match, line, where, path.suffix)) is not None
         ]
 
 
-def exponent_is_integral(match: re.Match[str], where: str, suffix: str) -> str | None:
+def exponent_is_integral(match: re.Match[str], line: str, where: str, suffix: str) -> str | None:
     """`powf(2.0)`, which is `exp (2 log x)`."""
+    _ = line
     literal = match.group("literal")
     value = float(literal)
     if value != math.trunc(value):
@@ -176,9 +185,11 @@ def exponent_is_integral(match: re.Match[str], where: str, suffix: str) -> str |
     )
 
 
-def exponent_approximates_a_rational(match: re.Match[str], where: str, suffix: str) -> str | None:
+def exponent_approximates_a_rational(
+    match: re.Match[str], line: str, where: str, suffix: str
+) -> str | None:
     """`powf(0.3333)`, which is not `x^(1/3)`."""
-    _ = suffix
+    _ = (line, suffix)
     literal = match.group("literal")
     rational = approximates_a_rational(float(literal))
     if rational is None:
@@ -192,15 +203,33 @@ def exponent_approximates_a_rational(match: re.Match[str], where: str, suffix: s
     )
 
 
-def physical_field_defaulted(match: re.Match[str], where: str, suffix: str) -> str | None:
+def physical_field_defaulted(
+    match: re.Match[str], line: str, where: str, suffix: str
+) -> str | None:
     """`over.tc.unwrap_or_default()`, which is a missing critical temperature as zero."""
-    _ = suffix
+    _ = (line, suffix)
     parameter = match.group("field")
     return (
         f"{where}: `{parameter}.unwrap_or_default()` gives an absent {parameter} the value "
         f"zero, and zero is a number every model computes with rather than an absence. "
         f"Refuse it, or mark it `{EXEMPT} <reason>` where zero is the deliberate statement - "
         f"an ion's missing critical constants are the case in this tree."
+    )
+
+
+def maximum_float_outside_a_seed(
+    match: re.Match[str], line: str, where: str, suffix: str
+) -> str | None:
+    """`f64::MAX` where it is not a `min` fold's seed."""
+    _ = (match, suffix)
+    if SEED.match(line):
+        return None
+    return (
+        f"{where}: `f64::MAX` is the largest finite float, and a reader cannot tell a bound "
+        f'somebody meant from "no bound" - nor a *ceiling*, which it also is: an infinite '
+        f"norm against it scales to zero. Say which it is: a named constant where the class "
+        f"writes it, a refusal where the region is unreachable, or mark it `{EXEMPT} <reason>` "
+        f"where it seeds a paired `min`/`max`."
     )
 
 
@@ -227,6 +256,7 @@ def build_rules() -> tuple[Rule, ...]:
             exponent_approximates_a_rational,
         ),
         Rule("physical-field-defaulted-to-zero", {".rs": defaults}, physical_field_defaulted),
+        Rule("maximum-float-outside-a-seed", {".rs": F64_MAX}, maximum_float_outside_a_seed),
     )
 
 
@@ -304,9 +334,10 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    print("check_numerics: OK (no absence written as a number: no integral exponent as a")
-    print("                float, no unmarked decimal exponent that approximates a")
-    print("                rational, no component field defaulted to zero)")
+    print(
+        f"check_numerics: OK ({len(names)} rule(s), {sum(excused.values())} exemption(s) "
+        f"marked, no unmarked finding)"
+    )
     return 0
 
 

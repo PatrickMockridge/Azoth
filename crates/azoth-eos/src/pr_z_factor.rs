@@ -99,6 +99,8 @@ pub fn pr_z_factor(a_reduced: f64, b_reduced: f64) -> Result<PrZFactorResult> {
     // `f64::min`/`max` rather than `first()`/`last()`: the roots come back sorted,
     // but relying on that here would make the admissibility filter's correctness
     // depend on an ordering the solver happens to guarantee.
+    // numerics-ok: a paired `min`/`max` fold seed - the idiom for "no value yet",
+    // and the one shape where `f64::MAX` is not a bound anybody means.
     let (z_min, z_max) = admissible
         .iter()
         .fold((f64::MAX, f64::MIN), |(lo, hi), z| (lo.min(*z), hi.max(*z)));

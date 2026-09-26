@@ -464,6 +464,8 @@ impl Default for BroydenAccelerator {
 /// down, so the largest finite float is a real ceiling here - one an infinite norm reaches:
 /// `MAX / inf` rounds the scale to zero, and the step becomes `0 * inf`, which is `NaN`.
 /// Stated rather than replaced, because a port does not invent a bound the class does not have.
+///
+/// numerics-ok: `BroydenAccelerator`'s own constructor, read from the pin's bytecode.
 const CLASS_MAX_STEP_SIZE: f64 = f64::MAX;
 
 /// The smallest `delta_x` norm and Sherman-Morrison denominator the update survives.
