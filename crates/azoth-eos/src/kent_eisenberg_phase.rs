@@ -27,19 +27,14 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::henry::Insoluble;
 use crate::results::KentEisenbergPhaseResult;
-
-/// The fugacity coefficient an ion gets, dimensionless: `ComponentKentEisenberg.fugcoef`.
-///
-/// A constant and not a correlation - an ion is treated as insoluble rather than as a
-/// dissolved species, so its `phi` says "not in the vapour" rather than "poorly in it".
-pub const INSOLUBLE_ION: f64 = 1.0e8;
 
 /// The fugacity coefficients of a Kent-Eisenberg phase.
 ///
 /// `gamma_i = 1` for every component, so `phi_i` is the component's reference state and
 /// nothing else: `P0_i(T) / P` for a `solvent`, `H_i(T) / P` for a neutral solute, and
-/// [`INSOLUBLE_ION`] for an ion. `P0_i` is `eos.antoine_vapor_pressure` and `H_i` is the
+/// [`Insoluble::KentEisenberg`] for an ion. `P0_i` is `eos.antoine_vapor_pressure` and `H_i` is the
 /// Henry correlation under `crate::henry`, so neither is recomputed here.
 ///
 /// # Errors
@@ -121,7 +116,7 @@ pub fn kent_eisenberg_phase(
             // is here rather than in the correlation - which is NeqSim's own scale.
             crate::henry::effective_coefficient(&entry, T)? * 1.0e5 / P
         } else {
-            INSOLUBLE_ION
+            Insoluble::KentEisenberg.value()
         };
         if coefficient <= 0.0 || !coefficient.is_finite() {
             return Err(AzothError::property_unavailable(

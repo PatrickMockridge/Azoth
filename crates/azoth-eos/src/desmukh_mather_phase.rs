@@ -38,6 +38,7 @@
 
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::henry::Insoluble;
 use crate::results::DesmukhMatherPhaseResult;
 
 /// The Debye-Huckel `A` of the expression, dimensionless.
@@ -58,14 +59,6 @@ pub const B: f64 = 3.32384e9;
 /// reads nothing for that pair, so the one value the model's own author fitted is in the
 /// code and not in the data.
 pub const MDEA_DIAGONAL: f64 = -0.0828487;
-
-/// The fugacity coefficient an ion gets, dimensionless: `ComponentDesmukhMather.fugcoef`.
-///
-/// The third of the tranche's three insoluble-ion constants and the smallest: NeqSim gives
-/// `1e12` in `ComponentGePitzer` and `1e8` in `ComponentKentEisenberg`. A `1e-15` says the
-/// ion is *absent* from the vapour rather than sparingly present, which is a different
-/// claim from the other two.
-pub const INSOLUBLE_ION: f64 = 1.0e-15;
 
 /// The activity coefficients and fugacity coefficients of a Desmukh-Mather phase.
 ///
@@ -216,7 +209,7 @@ pub fn desmukh_mather_phase(
             crate::henry::effective_coefficient(entry, T)? * 1.0e5 / P
                 * (ln_gamma[i] - infinite).exp()
         } else {
-            INSOLUBLE_ION
+            Insoluble::DesmukhMather.value()
         };
         if coefficient <= 0.0 || !coefficient.is_finite() {
             return Err(AzothError::property_unavailable(

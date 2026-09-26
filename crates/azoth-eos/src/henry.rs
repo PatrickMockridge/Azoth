@@ -11,9 +11,10 @@
 //! | `ComponentKentEisenberg` | `H / P`, with `gamma = 1` | `1e8`, a constant of its own |
 //! | `ComponentDesmukhMather` | `(gamma / gamma_inf) H / P` | `1e-15`, a constant of its own |
 //!
-//! What they share is `H(T)` and the cap, and that is what this module is. The four
-//! constants an insoluble ion gets are three different numbers - `1e12`, `1e8` and `1e-15`
-//! - and each belongs to the model that chose it rather than to a rule here.
+//! What they share is `H(T)` and the cap, and that is what this module is. The three
+//! constants an insoluble ion gets are [`Insoluble`] - three numbers, each belonging to the
+//! model that chose it rather than to a rule here - and keeping them under one name is what
+//! stops a `use` choosing between `1e8` and `1e-15` by accident.
 //!
 //! # The data behind it is thin, and that is a finding
 //!
@@ -37,12 +38,43 @@ use azoth_core::{AzothError, Result};
 
 use crate::databank::{Entry, ION};
 
-/// The Henry coefficient a model uses for a substance with no usable correlation.
+/// What a model gives an ion it has no data for, by model.
 ///
-/// `ComponentGE.INSOLUBLE_HENRY_COEFFICIENT`, in bar. Effectively insoluble: the
-/// coefficient enters as `H / P`, so `1e12 bar` at a process pressure gives a fugacity
-/// coefficient of order `1e7` and a mole fraction of order `1e-7`.
-pub const INSOLUBLE_HENRY_COEFFICIENT: f64 = 1.0e12;
+/// **Three numbers, and none of them a rule.** `ComponentGE` and `ComponentGePitzer` give
+/// an insoluble ion the capped Henry coefficient - `1e12` bar, which is also the number
+/// `exp(900)` overflows to, so the cap and the sentinel are one constant in two roles - and
+/// the other two models each carry a fugacity coefficient of their own. `ComponentKentEisenberg`'s
+/// `1e8` says "sparingly present" and `ComponentDesmukhMather`'s `1e-15` says "absent",
+/// which are different claims about the same ion.
+///
+/// **They were three loose `f64`s under two names, both spelled `INSOLUBLE_ION`**, in a
+/// crate where `use` decides which one a caller gets: 1e8 against 1e-15 is a factor of
+/// 1e23, it changes a vapour composition rather than crashing, and nothing compared the two
+/// modules that each defined the name. A model now names the one it takes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Insoluble {
+    /// The Henry coefficient an ion is capped to, **in bar** - and the cap itself, which
+    /// [`is_capped`] compares against. `ComponentGE.INSOLUBLE_HENRY_COEFFICIENT`.
+    HenryCoefficient,
+    /// `ComponentKentEisenberg.fugcoef`'s constant, **dimensionless**: the fugacity
+    /// coefficient that model gives an ion.
+    KentEisenberg,
+    /// `ComponentDesmukhMather.fugcoef`'s constant, **dimensionless**, and the smallest of
+    /// the three.
+    DesmukhMather,
+}
+
+impl Insoluble {
+    /// The value the model uses.
+    #[must_use]
+    pub fn value(self) -> f64 {
+        match self {
+            Self::HenryCoefficient => 1.0e12,
+            Self::KentEisenberg => 1.0e8,
+            Self::DesmukhMather => 1.0e-15,
+        }
+    }
+}
 
 /// The four coefficients of NeqSim's Henry correlation, dimensionless, in bar.
 ///
@@ -88,7 +120,7 @@ impl HenryRecord {
 ///
 /// A `900` constant overflows `exp` to infinity, which is the table's sentinel for a
 /// substance it lists and does not fit. That is not an error here: the cap turns it into
-/// [`INSOLUBLE_HENRY_COEFFICIENT`], and refusing it would refuse 40 rows NeqSim evaluates.
+/// [`Insoluble::HenryCoefficient`], and refusing it would refuse 40 rows NeqSim evaluates.
 #[must_use]
 pub fn coefficient(entry: &Entry, t: f64) -> f64 {
     let HenryRecord { h0, h1, h2, h3 } = entry.henry;
@@ -115,7 +147,10 @@ pub fn coefficient_dt(entry: &Entry, t: f64) -> f64 {
 /// sentinel, and 62 more through their class.
 #[must_use]
 pub fn is_capped(entry: &Entry, value: f64) -> bool {
-    !value.is_finite() || value <= 0.0 || value > INSOLUBLE_HENRY_COEFFICIENT || entry.class == ION
+    !value.is_finite()
+        || value <= 0.0
+        || value > Insoluble::HenryCoefficient.value()
+        || entry.class == ION
 }
 
 /// The Henry coefficient a model takes: `ComponentGE.getEffectiveHenryCoefficient`.
@@ -142,7 +177,7 @@ pub fn effective_coefficient(entry: &Entry, t: f64) -> Result<f64> {
     }
     let value = coefficient(entry, t);
     Ok(if is_capped(entry, value) {
-        INSOLUBLE_HENRY_COEFFICIENT
+        Insoluble::HenryCoefficient.value()
     } else {
         value
     })
@@ -191,7 +226,7 @@ mod tests {
         );
         assert_eq!(
             effective_coefficient(&methane, 298.15).expect("capped"),
-            INSOLUBLE_HENRY_COEFFICIENT
+            Insoluble::HenryCoefficient.value()
         );
 
         // An ion is capped whatever its row says, which is the clause that made the cap a

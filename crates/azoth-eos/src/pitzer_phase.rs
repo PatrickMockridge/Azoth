@@ -1670,7 +1670,7 @@ pub fn pitzer_phase(
             gamma_inf[i] = reference;
             let raw = crate::henry::coefficient(entry, T);
             let h = if crate::henry::is_capped(entry, raw) {
-                crate::henry::INSOLUBLE_HENRY_COEFFICIENT
+                crate::henry::Insoluble::HenryCoefficient.value()
             } else {
                 raw
             };
@@ -1923,14 +1923,14 @@ fn neutral_henry(
     if table.status == crate::results::HenryStatus::GuidelineExtrapolation {
         // `isUsable` fails outside the row's fitted window and the guideline's own
         // consumer fails closed to the insoluble limit rather than extrapolating.
-        return Ok(crate::henry::INSOLUBLE_HENRY_COEFFICIENT);
+        return Ok(crate::henry::Insoluble::HenryCoefficient.value());
     }
     // The table is on the mole-fraction scale and the activity is on the molality scale,
     // so the constant is converted by water's molar mass - which is the whole content of
     // `getEffectiveHenryCoefficient`'s override.
     let value = table.henry.value / BAR_TO_PA * crate::iapws_henry_law::WATER_MOLAR_MASS_KG_PER_MOL;
     Ok(if crate::henry::is_capped(entry, value) {
-        crate::henry::INSOLUBLE_HENRY_COEFFICIENT
+        crate::henry::Insoluble::HenryCoefficient.value()
     } else {
         value
     })
@@ -1952,7 +1952,7 @@ fn neutral_henry(
 fn database_henry(entry: &crate::databank::Entry, t: f64) -> azoth_core::Result<f64> {
     let raw = crate::henry::coefficient(entry, t);
     if crate::henry::is_capped(entry, raw) || is_pitzer_insoluble(entry) {
-        return Ok(crate::henry::INSOLUBLE_HENRY_COEFFICIENT);
+        return Ok(crate::henry::Insoluble::HenryCoefficient.value());
     }
     if !entry.henry.is_fitted() {
         return Err(crate::AzothError::property_unavailable(

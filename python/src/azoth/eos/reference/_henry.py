@@ -31,6 +31,7 @@ shared with ``co`` and ``cos`` (3).
 
 from __future__ import annotations
 
+import enum
 import math
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -39,12 +40,34 @@ from azoth.core.errors import PropertyUnavailableError
 if TYPE_CHECKING:
     from azoth.eos.components import DatabankEntry
 
-#: The Henry coefficient a model uses for a substance with no usable correlation.
-#:
-#: ``ComponentGE.INSOLUBLE_HENRY_COEFFICIENT``, in bar. Effectively insoluble: the
-#: coefficient enters as ``H / P``, so ``1e12 bar`` at a process pressure gives a
-#: fugacity coefficient of order ``1e7`` and a mole fraction of order ``1e-7``.
-INSOLUBLE_HENRY_COEFFICIENT = 1.0e12
+
+class Insoluble(enum.Enum):
+    """What a model gives an ion it has no data for, by model.
+
+    **Three numbers, and none of them a rule.** ``ComponentGE`` and ``ComponentGePitzer``
+    give an insoluble ion the capped Henry coefficient - ``1e12`` bar, which is also the
+    number ``exp(900)`` overflows to, so the cap and the sentinel are one constant in two
+    roles - and the other two models each carry a fugacity coefficient of their own.
+    ``ComponentKentEisenberg``'s ``1e8`` says "sparingly present" and
+    ``ComponentDesmukhMather``'s ``1e-15`` says "absent", which are different claims about
+    the same ion.
+
+    They were three loose floats under two names, both spelled ``INSOLUBLE_ION``, in a
+    package where a ``from ... import`` decides which one a caller gets: ``1e8`` against
+    ``1e-15`` is a factor of ``1e23``, it changes a vapour composition rather than raising,
+    and nothing compared the two modules that each defined the name. A model now names the
+    one it takes, and this module is where the three are stated.
+    """
+
+    #: The Henry coefficient an ion is capped to, **in bar** - and the cap itself, which
+    #: :func:`is_capped` compares against. ``ComponentGE.INSOLUBLE_HENRY_COEFFICIENT``.
+    HENRY_COEFFICIENT = 1.0e12
+    #: ``ComponentKentEisenberg.fugcoef``'s constant, **dimensionless**.
+    KENT_EISENBERG = 1.0e8
+    #: ``ComponentDesmukhMather.fugcoef``'s constant, **dimensionless**, the smallest of
+    #: the three.
+    DESMUKH_MATHER = 1.0e-15
+
 
 #: NeqSim's own two factors, kept unmultiplied: water's molar mass in kg/mol and the
 #: `100` beside it (`Component.java:2214`). Folded to `1.802` they would be one number
@@ -85,7 +108,7 @@ def coefficient(record: HenryRecord, temperature_k: float) -> float:
     The value is **not** capped - see :func:`effective_coefficient`, which is what a
     model takes. A ``900`` constant overflows ``exp`` to infinity, which is the table's
     sentinel for a substance it lists and does not fit; that is not an error here,
-    because the cap turns it into :data:`INSOLUBLE_HENRY_COEFFICIENT`.
+    because the cap turns it into :attr:`Insoluble.HENRY_COEFFICIENT`.
     """
     exponent = (
         record.h0
@@ -126,7 +149,7 @@ def is_capped(entry: DatabankEntry, value: float) -> bool:
     return (
         not math.isfinite(value)
         or value <= 0.0
-        or value > INSOLUBLE_HENRY_COEFFICIENT
+        or value > Insoluble.HENRY_COEFFICIENT.value
         or entry.component_type == ION
     )
 
@@ -154,4 +177,4 @@ def effective_coefficient(entry: DatabankEntry, temperature_k: float) -> float:
             "number rather than an absence",
         )
     value = coefficient(entry.henry, temperature_k)
-    return INSOLUBLE_HENRY_COEFFICIENT if is_capped(entry, value) else value
+    return Insoluble.HENRY_COEFFICIENT.value if is_capped(entry, value) else value

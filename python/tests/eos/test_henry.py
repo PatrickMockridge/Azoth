@@ -46,7 +46,7 @@ def test_the_sentinel_rows_cap_rather_than_overflow() -> None:
     methane = components.entry("methane")
     assert methane.henry.is_fitted(), "the row lists a correlation"
     assert not math.isfinite(henry.coefficient(methane.henry, 298.15))
-    assert henry.effective_coefficient(methane, 298.15) == henry.INSOLUBLE_HENRY_COEFFICIENT
+    assert henry.effective_coefficient(methane, 298.15) == henry.Insoluble.HENRY_COEFFICIENT.value
 
     # An ion is capped whatever its row says, which is what made the cap a model
     # statement rather than a numerical guard.

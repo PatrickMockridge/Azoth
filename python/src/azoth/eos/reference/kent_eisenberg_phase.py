@@ -22,15 +22,10 @@ from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import _henry
+from azoth.eos.reference._henry import Insoluble
 from azoth.eos.reference.antoine_vapor_pressure import saturation_pressure
 
 MODEL_ID = "eos.kent_eisenberg_phase"
-
-#: The fugacity coefficient an ion gets: ``ComponentKentEisenberg.fugcoef``'s constant.
-#:
-#: **This model's own**, not a shared one: NeqSim gives `1e12` in `ComponentGePitzer` and
-#: `1e-15` in `ComponentDesmukhMather`.
-INSOLUBLE_ION = 1.0e8
 
 
 def kent_eisenberg_phase(
@@ -44,7 +39,7 @@ def kent_eisenberg_phase(
     ``PhaseKentEisenberg`` overrides ``getActivityCoefficient`` to return ``1.0`` for every
     component, so this model's whole content is the branch ``ComponentKentEisenberg.fugcoef``
     takes: a ``solvent`` reference state gets ``P0_i(T)/P``, a neutral with any other
-    reference state gets ``H_i(T)/P``, and an ion gets :data:`INSOLUBLE_ION`.
+    reference state gets ``H_i(T)/P``, and an ion gets :attr:`Insoluble.KENT_EISENBERG`.
 
     Args:
         components: the substances the phase is made of, by name.
@@ -108,7 +103,7 @@ def kent_eisenberg_phase(
             # conversion is here rather than in the correlation.
             coefficient = _henry.effective_coefficient(entry, t_si) * 1.0e5 / p_si
         else:
-            coefficient = INSOLUBLE_ION
+            coefficient = Insoluble.KENT_EISENBERG.value
         if not coefficient > 0.0 or not math.isfinite(coefficient):
             raise PropertyUnavailableError(
                 entry.name,

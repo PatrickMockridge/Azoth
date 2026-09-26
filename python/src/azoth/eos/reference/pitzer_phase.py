@@ -26,7 +26,7 @@ from azoth.eos.reference import _electrolyte as electrolyte
 from azoth.eos.reference import _pitzer_catalog as catalog
 from azoth.eos.reference import iapws_henry_law as _iapws
 from azoth.eos.reference._henry import (
-    INSOLUBLE_HENRY_COEFFICIENT,
+    Insoluble,
     coefficient,
     effective_coefficient,
     is_capped,
@@ -325,7 +325,7 @@ def pitzer_phase(
         else:
             reference = _reference_phase_gamma(components, i, activity.solvent, t_si)
             raw = coefficient(record.henry, t_si)
-            h = INSOLUBLE_HENRY_COEFFICIENT if is_capped(record, raw) else raw
+            h = Insoluble.HENRY_COEFFICIENT.value if is_capped(record, raw) else raw
             henry.append(from_si(h, "Pa"))
             gamma_inf.append(reference)
             ln_phi.append(math.log(activity.gamma[i] / reference * h / bar))
@@ -368,11 +368,11 @@ def _neutral_henry(
     if table.status is HenryStatus.GUIDELINE_EXTRAPOLATION:
         # `isUsable` fails outside the row's fitted window, and the guideline's own
         # consumer fails closed to the insoluble limit rather than extrapolating.
-        return INSOLUBLE_HENRY_COEFFICIENT
+        return Insoluble.HENRY_COEFFICIENT.value
     # The table is on the mole-fraction scale and the activity on the molality scale, so
     # the constant is converted by water's molar mass.
     value = table.henry.to_base_units().magnitude / _BAR_TO_PA * _iapws.WATER_MOLAR_MASS_KG_PER_MOL
-    return INSOLUBLE_HENRY_COEFFICIENT if is_capped(entry, value) else value
+    return Insoluble.HENRY_COEFFICIENT.value if is_capped(entry, value) else value
 
 
 def _database_henry(entry: Any, temperature_k: float) -> float:
@@ -391,7 +391,7 @@ def _database_henry(entry: Any, temperature_k: float) -> float:
     """
     raw = coefficient(entry.henry, temperature_k)
     if is_capped(entry, raw) or _is_pitzer_insoluble(entry):
-        return INSOLUBLE_HENRY_COEFFICIENT
+        return Insoluble.HENRY_COEFFICIENT.value
     return effective_coefficient(entry, temperature_k)
 
 

@@ -23,6 +23,7 @@ from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import _henry
+from azoth.eos.reference._henry import Insoluble
 from azoth.eos.reference.antoine_vapor_pressure import saturation_pressure
 
 MODEL_ID = "eos.desmukh_mather_phase"
@@ -38,9 +39,6 @@ R = 8.314462618
 
 #: The ``aij`` of the ``MDEA``/``MDEA`` diagonal, which is **not in the interaction table**.
 MDEA_DIAGONAL = -0.0828487
-
-#: The fugacity coefficient an ion gets. The smallest of the tranche's three constants.
-INSOLUBLE_ION = 1.0e-15
 
 
 def desmukh_mather_phase(
@@ -168,7 +166,7 @@ def desmukh_mather_phase(
                 * math.exp(ln_gamma[i] - infinite)
             )
         else:
-            coefficient = INSOLUBLE_ION
+            coefficient = Insoluble.DESMUKH_MATHER.value
         if not coefficient > 0.0 or not math.isfinite(coefficient):
             raise PropertyUnavailableError(
                 entry.name,
