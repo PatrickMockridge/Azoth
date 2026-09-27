@@ -904,7 +904,18 @@ fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::Column
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
-        pumparound_returns: Vec::new(),
+        pumparound_returns: crate::models::distillation_column::build_pumparound_returns(
+            p.optional_number("pumparound_return_tray")?
+                .map(|v| v as usize),
+            p.optional_number("pumparound_draw_tray")?
+                .map(|v| v as usize),
+            p.optional_number("pumparound_draw_fraction")?,
+            p.optional_si("pumparound_temperature_drop")?,
+            p.optional_number("pumparound_tolerance")?,
+            p.optional_number("pumparound_max_iterations")?
+                .map(|v| v as usize),
+        )?
+        .0,
         pumparound_inlets: Vec::new(),
         pumparound_tolerance: None,
         pumparound_max_iterations: None,

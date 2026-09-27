@@ -61,6 +61,8 @@ _Draws = tuple[_DrawVector, _DrawVector, _DrawVector] | None
 DrawVector = tuple[float, ...] | None
 #: The three draw kinds, in `DRAW_FIELDS`' order - what `_states` takes.
 Draws = tuple[DrawVector, DrawVector, DrawVector] | None
+#: The pumparound returns the last outer pass carried, one entry per tray.
+PumparoundInlets = tuple[StreamRecord | None, ...]
 #: One side-draw flow specification, as the helper returns it: tray, phase, target, tolerance,
 #: cap.
 SideDrawSpecification = tuple[int, str, float, float, int]
@@ -250,6 +252,12 @@ def distillation_column(
     side_draw_flow_target: Q | None = None,
     side_draw_flow_tolerance: float | None = None,
     side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: Q | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -411,8 +419,11 @@ def distillation_column(
 
     # **A specified draw flow is an outer search over whole column solves**, so the tear owns
     # the call and the block below is its inner solve - see `_side_draw_flows`.
-    def solve_once(active_draws: Draws) -> _States:
-        """One inner solve at one set of draws, which is what the tear iterates."""
+    def solve_once(
+        active_draws: Draws, active_returns: tuple[StreamRecord | None, ...] | None = None
+    ) -> _States:
+        """One inner solve at one set of draws and returns, which is what both outer loops
+        iterate: the tear moves the draws and the pumparound return moves the returns."""
         return _states(
             components,
             n,
@@ -435,6 +446,7 @@ def distillation_column(
             reactive=section,
             draws=active_draws,
             murphree_efficiency=murphree_efficiency,
+            pumparound_inlets=active_returns,
         )
 
     flows = _side_draw_flow_specification(
@@ -448,13 +460,39 @@ def distillation_column(
         side_draw_flow_tolerance,
         side_draw_flow_max_iterations,
     )
-    states = (
-        solve_once(draws)
-        if flows is None
-        else _side_draw_flow_tear(
-            solve_once, list(components), draws, flows, stages, has_reboiler, has_condenser
-        )
+    returns = _pumparound_return_specification(
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        None
+        if pumparound_temperature_drop is None
+        else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
     )
+    if returns is not None:
+        if flows is not None:
+            raise InvalidInputError(
+                "pumparound_return_tray",
+                "a pumparound with a return is stated beside a side-draw flow specification: "
+                "`solveWithColumnTearVariables` solves the two as coordinated tear variables, and "
+                "this port carries the pumparound's own fixed point alone",
+            )
+        states = _pumparound_returns_tear(
+            solve_once,
+            list(components),
+            draws,
+            returns,
+            _tray_count(stages, has_reboiler, has_condenser),
+            1.0e-4 if pumparound_tolerance is None else float(pumparound_tolerance),
+            12 if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        )
+    else:
+        states = (
+            solve_once(draws)
+            if flows is None
+            else _side_draw_flow_tear(
+                solve_once, list(components), draws, flows, stages, has_reboiler, has_condenser
+            )
+        )
     warnings.extend(states.warnings)
 
     return DistillationColumnResult(
@@ -536,9 +574,9 @@ def _states(
     top_feed: StreamRecord | None = None,
     tray_temperatures: tuple[float, ...] | None = None,
     reactive: tuple[int, int] | None = None,
-    draws: tuple[tuple[float, ...] | None, tuple[float, ...] | None, tuple[float, ...] | None]
-    | None = None,
+    draws: Draws = None,
     murphree_efficiency: float | None = None,
+    pumparound_inlets: PumparoundInlets | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
 
@@ -678,6 +716,11 @@ def _states(
 
     gas: list[StreamRecord | None] = [None] * tray_count
     liquid: list[StreamRecord | None] = [None] * tray_count
+    # **A returning pumparound is an inlet like any other**, which is what makes the recycle a
+    # recycle: the tray the liquid comes back to mixes it with the rest of its inlets.
+    returns: list[StreamRecord | None] = (
+        list(pumparound_inlets) if pumparound_inlets is not None else [None] * tray_count
+    )
     # **What each tray's own flash found**, before either the draws or the Murphree correction
     # touched it: the vapour is the correction's `y_eq` and `y_in`, and the pair is the phase
     # count its two guards read. The class's correction compares against
@@ -812,6 +855,9 @@ def _states(
             inlets.append(_feed(components, feed_n, feed_z, feed_t, feed_p))
         if top_feed is not None and i == tray_count - 1:
             inlets.append(top_feed)
+        returned = returns[i]
+        if returned is not None:
+            inlets.append(returned)
         return inlets
 
     def temperature(i: int) -> float:
@@ -1029,6 +1075,13 @@ def _states(
     if top_feed is not None:
         feeds.append(top_feed)
     feed_enthalpy = sum(float(feed["n"]) * float(feed["h"]) for feed in feeds)
+    # **A pumparound's return is an inlet and its draw is an outlet**, so the two appear on
+    # opposite sides of both closures and cancel - the column's inlets are its feeds *and*
+    # whatever comes back to it. The cooler's duty is the enthalpy between them and is not an
+    # imbalance.
+    returned_enthalpy = sum(
+        float(returned["n"]) * float(returned["h"]) for returned in returns if returned is not None
+    )
     # **The draws are a third route out of the column**, exactly as they are in the kernel's own
     # closure: a feed leaves as the two products *and* whatever the trays withdrew, so a residual
     # that ignored them would report an imbalance that is not there. Measured on the binary column
@@ -1039,7 +1092,8 @@ def _states(
         distillate["n"] * distillate["h"] + bottoms["n"] * bottoms["h"] + drawn_enthalpy
     )
     energy_residual = (
-        abs(feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy) / abs(feed_enthalpy)
+        abs(feed_enthalpy + returned_enthalpy + reboiler_duty + condenser_duty - products_enthalpy)
+        / abs(feed_enthalpy)
         if abs(feed_enthalpy) > 0.0
         else 0.0
     )
@@ -1047,6 +1101,11 @@ def _states(
     mass_residual = 0.0
     for c in range(len(feed_z)):
         supplied = sum(float(feed["n"]) * float(feed["z"][c]) for feed in feeds)
+        supplied += sum(
+            float(returned["n"]) * float(returned["z"][c])
+            for returned in returns
+            if returned is not None
+        )
         withdrawn = sum(draw["n"] * draw["z"][c] for draw in held)
         delivered = (
             distillate["n"] * distillate["z"][c] + bottoms["n"] * bottoms["z"][c] + withdrawn
@@ -1082,7 +1141,17 @@ def _states(
     # components between a stage's vapour and its liquid without moving its moles, so the
     # column's overall closure cannot close on its own.
     supplied_c = [
-        sum(float(feed["n"]) * float(feed["z"][c]) for feed in feeds) for c in range(len(feed_z))
+        # **The returns join the supply here**, because this function's withdrawal is the draw:
+        # the recycled liquid leaves as a draw and comes back, so a reconciliation that
+        # subtracted the draw without adding the return would shrink the bottoms by exactly the
+        # draw - which is what it did, by `0.516` against the class's unchanged `3.699`.
+        sum(float(feed["n"]) * float(feed["z"][c]) for feed in feeds)
+        + sum(
+            float(returned["n"]) * float(returned["z"][c])
+            for returned in returns
+            if returned is not None
+        )
+        for c in range(len(feed_z))
     ]
     withdrawn_c = [sum(draw["n"] * draw["z"][c] for draw in held) for c in range(len(feed_z))]
     top_moles = [0.0] * len(feed_z)
@@ -1311,6 +1380,148 @@ _SIDE_DRAW_SCAN_STEP = 5.0e-3
 _SIDE_DRAW_SEED_FRACTION = 0.05
 #: `wasSideDrawFractionAttempted`'s identity tolerance.
 _SIDE_DRAW_IDENTITY = 1.0e-12
+
+
+def _pumparound_return_specification(
+    return_tray: int | None,
+    draw_tray: int | None,
+    draw_fraction: float | None,
+    temperature_drop: float | None,
+) -> tuple[int, int, float, float] | None:
+    """**One pumparound with a return**, from its four declared scalars.
+
+    One and not a list, for the reason the side-draw flow specification gives:
+    `addLiquidPumparound` owns one draw tray each and refuses a second pumparound on the same
+    tray. A partial statement is refused, which is the judgement the end specifications make.
+    """
+    if (
+        return_tray is None
+        or draw_tray is None
+        or draw_fraction is None
+        or temperature_drop is None
+    ):
+        if (
+            return_tray is not None
+            or draw_tray is not None
+            or draw_fraction is not None
+            or temperature_drop is not None
+        ):
+            raise InvalidInputError(
+                "pumparound_return_tray",
+                "a pumparound with a return is stated by its draw tray, its return tray, its "
+                "fraction and its temperature drop together: `addLiquidPumparound(name, "
+                "drawTray, returnTray, fraction, drop)` takes all four, and a declaration that "
+                "states some of "
+                "them says nothing",
+            )
+        return None
+    return (
+        int(draw_tray),
+        int(return_tray),
+        float(draw_fraction),
+        float(temperature_drop),
+    )
+
+
+def _pumparound_returns_tear(
+    solve: Callable[[Draws, tuple[StreamRecord | None, ...] | None], _States],
+    components: list[str],
+    draws: Draws,
+    specification: tuple[int, int, float, float],
+    tray_count: int,
+    tolerance: float,
+    max_iterations: int,
+) -> _States:
+    """`ColumnPumparound`'s return, iterated to a fixed point on its own flow.
+
+    **The class's own loop and not a search**: each pass runs the whole column, rebuilds every
+    return from the draw it has just produced - `updateReturnStream`'s own clone, restate at
+    `T - drop`, re-flash - and stops when the return's *flow* stops moving. There are no
+    candidates here and no acceptance rule, because a return is a stream the column already
+    knows how to take.
+    """
+    draw_tray, return_tray, fraction, temperature_drop = specification
+    for name, tray in (
+        ("pumparound_draw_tray", draw_tray),
+        ("pumparound_return_tray", return_tray),
+    ):
+        if tray >= tray_count:
+            raise InvalidInputError(
+                name,
+                f"tray {tray} of a column with {tray_count} tray(s), which is not a tray it has",
+            )
+    if not 0.0 <= fraction <= 1.0:
+        raise InvalidInputError(
+            "pumparound_draw_fraction",
+            f"a draw fraction of {fraction} is outside [0, 1], which `addLiquidPumparound` refuses",
+        )
+
+    # **The draw fraction is stated on the tray**, which is the half this model already carries.
+    active_draws = _pumparound_with_fraction(draws, draw_tray, fraction, tray_count)
+    returns: list[StreamRecord | None] = [None] * tray_count
+    outcome = solve(active_draws, None)
+    for _ in range(max_iterations):
+        drawn = outcome.pumparound_n[draw_tray]
+        if drawn <= 0.0:
+            raise InvalidInputError(
+                "pumparound_draw_tray",
+                f"the pumparound drawing from tray {draw_tray} withdrew nothing, so its return "
+                f"has no stream to carry to tray {return_tray}",
+            )
+        returned = _cooled_pumparound(components, outcome, draw_tray, temperature_drop)
+        change = _return_flow_change(returns[return_tray], returned)
+        returns[return_tray] = returned
+        outcome = solve(active_draws, tuple(returns))
+        if change <= tolerance:
+            break
+    return outcome
+
+
+def _pumparound_with_fraction(
+    draws: Draws, draw_tray: int, fraction: float, tray_count: int
+) -> Draws:
+    """The same draws with one tray's pumparound fraction stated."""
+    gas, liquid, pumparound = draws if draws is not None else (None, None, None)
+    vector: list[float] = [0.0] * tray_count if pumparound is None else list(pumparound)
+    if len(vector) < tray_count:
+        vector = vector + [0.0] * (tray_count - len(vector))
+    vector[draw_tray] = fraction
+    stated: tuple[float, ...] = tuple(vector)
+    return (gas, liquid, stated)
+
+
+def _cooled_pumparound(
+    components: list[str], states: _States, draw_tray: int, temperature_drop: float
+) -> StreamRecord:
+    """**`updateReturnStream`**: the draw, cooled by the stated drop and re-flashed.
+
+    The draw is the tray's own liquid phase scaled by the fraction, so its composition is the
+    tray's liquid composition and its flow is `pumparound_n` - which is the whole of what
+    `getLiquidPumparoundDrawStream` carries.
+    """
+    moles = float(states.pumparound_n[draw_tray])
+    composition = list(states.tray_liquid_z[draw_tray])
+    temperature = float(states.tray_temperature[draw_tray]) - temperature_drop
+    if not temperature > 0.0:
+        raise InvalidInputError(
+            "pumparound_temperature_drop",
+            f"cooling the draw by {temperature_drop} K puts the return at {temperature} K, "
+            f"which is not a temperature: `updateReturnStream` raises on the same state",
+        )
+    return _stage.stream_at(
+        list(components),
+        moles,
+        composition,
+        temperature,
+        float(states.tray_pressure[draw_tray]),
+    )
+
+
+def _return_flow_change(previous: StreamRecord | None, current: StreamRecord) -> float:
+    """`updateReturnStream`'s own relative change: the two flows against the larger of them."""
+    prior = 0.0 if previous is None else float(previous["n"])
+    current_n = float(current["n"])
+    return abs(prior - current_n) / max(prior, current_n, 1.0e-12)
 
 
 def _side_draw_flow_specification(

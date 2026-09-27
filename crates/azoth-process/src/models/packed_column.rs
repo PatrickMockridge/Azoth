@@ -247,6 +247,14 @@ pub fn packed_column(
         None,
         None,
         None,
+        // **This entry declares no pumparound with a return either**, for the reason it declares
+        // no draw fractions: the packing's parameters are a report on the far side of the solve.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )?;
 
     Ok(out.into())

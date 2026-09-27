@@ -24,6 +24,19 @@ description = "the relative residual the search stops at; the class defaults it 
 [parameters.side_draw_flow_max_iterations]
 description = "the candidate cap; the class defaults it to 12, and the tear's own cap is the largest of it and `maxColumnTearIterations`"
 
+[parameters.pumparound_return_tray]
+description = "the tray a pumparound's liquid comes back to; stated with the draw tray, the fraction and the drop or not at all"
+[parameters.pumparound_draw_tray]
+description = "the tray a pumparound's liquid leaves, which must be a middle tray - the ends here are `column::reboiler` and `column::condenser` rather than stages"
+[parameters.pumparound_draw_fraction]
+description = "the fraction of the draw tray's liquid withdrawn, the same vector `pumparound_fractions` writes"
+[parameters.pumparound_temperature_drop]
+description = "the drop from the draw to the return; the cooler's duty is the enthalpy between the two streams"
+[parameters.pumparound_tolerance]
+description = "the relative return-flow change the outer loop stops at; the class defaults it to 1e-4"
+[parameters.pumparound_max_iterations]
+description = "the outer loop's cap; the class defaults it to 12"
+
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
 [parameters.number_of_stages]

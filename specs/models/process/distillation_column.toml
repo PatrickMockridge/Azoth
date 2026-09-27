@@ -191,6 +191,31 @@ unit = "dimensionless"
 optional = true
 description = "the candidate cap for this specification. **Omitted means `12`**, the class's own field initialiser; the tear's own cap is the largest of it and `maxColumnTearIterations`.\n"
 
+[inputs.pumparound_return_tray]
+unit = "dimensionless"
+optional = true
+description = "**the tray the pumparound's liquid comes back to**, which `addLiquidPumparound(name, drawTray, returnTray, fraction, drop)` takes. **Stated with the draw tray, the fraction and the drop or not at all.**\n"
+[inputs.pumparound_draw_tray]
+unit = "dimensionless"
+optional = true
+description = "the tray the pumparound's liquid leaves. It must be a middle tray: the ends here are `column::reboiler` and `column::condenser` rather than stages.\n"
+[inputs.pumparound_draw_fraction]
+unit = "dimensionless"
+optional = true
+description = "the fraction of the draw tray's liquid withdrawn, which `setLiquidPumparoundDrawFraction` states on the tray - the same vector `pumparound_fractions` writes.\n"
+[inputs.pumparound_temperature_drop]
+unit = "K"
+optional = true
+description = "the drop from the draw to the return, which `updateReturnStream` subtracts before re-flashing. **The cooler's duty is the enthalpy between the two streams.**\n"
+[inputs.pumparound_tolerance]
+unit = "dimensionless"
+optional = true
+description = "the relative return-flow change the outer loop stops at. **Omitted means `1e-4`**, which is `pumparoundTolerance`'s own field initialiser.\n"
+[inputs.pumparound_max_iterations]
+unit = "dimensionless"
+optional = true
+description = "the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser.\n"
+
 [outputs]
 [outputs.tray_temperature]
 type = "vector"
