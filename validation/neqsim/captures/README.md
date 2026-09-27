@@ -68,6 +68,19 @@ packing geometry - so this probe states them and prints both sides.
 java -cp .:neqsim-f0c7436.jar PackingProbe > captures/packing_probe.tsv
 ```
 
+**`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
+gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
+`devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are
+substances other than water. This drives one single-component `SystemSrkEos` per name in the
+table and compares `getCp0` against water's **exactly**, because two different molecules cannot
+share an ideal-gas heat capacity: an exact match is not a tolerance question, and a near one
+would be evidence of nothing. It parses the `NAME` column quote-aware, since names carry commas
+inside them, and its capture is the sorted list of the names that match.
+
+```bash
+java -cp .:neqsim-f0c7436.jar WaterCpSentinel > captures/water_cp_sentinel.tsv
+```
+
 **`ProcessProbe rate_based` runs every state on two cubics.** `RateBasedPackedColumnTest` uses
 SRK and this library's process layer resolves PR, so each state is run on both and the pair
 measures what the cubic moved; the PR rows are the ones the port is held to. `teg_dehydration`

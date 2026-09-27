@@ -17,13 +17,18 @@ path = "src/main.rs"
 
 [dependencies]
 azoth-core.workspace = true
+# `crosscheck` is the first subcommand that resolves a substance and runs a kernel directly
+# rather than through a flowsheet, so the EoS crate is a dependency of the binary now and not
+# only of the executor behind it.
+azoth-eos.workspace = true
 azoth-hydraulics.workspace = true
 azoth-process.workspace = true
 toml.workspace = true
 uom.workspace = true
 clap.workspace = true
 # The two middleware commands print JSON, so this is the library's dependency now and not only
-# the tests'.
+# the tests'. `crosscheck` reads its requests and writes its verdicts as JSON too.
+serde.workspace = true
 serde_json.workspace = true
 
 [lints]

@@ -210,7 +210,21 @@ pub fn distillation_column(
     side_draw_flow_target: Option<f64>,
     side_draw_flow_tolerance: Option<f64>,
     side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
 ) -> Result<DistillationColumnResult> {
+    let pumparounds = build_pumparound_returns(
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
+    )?;
     let side_draw_flows = build_side_draw_flow(
         side_draw_flow_tray,
         side_draw_flow_phase,
@@ -323,10 +337,10 @@ pub fn distillation_column(
         solver_type: solver,
         gas_side_draw_fractions: gas_side_draw_fractions.map(|v| v.to_vec()),
         side_draw_flows,
-        pumparound_returns: Vec::new(),
+        pumparound_returns: pumparounds.0,
         pumparound_inlets: Vec::new(),
-        pumparound_tolerance: None,
-        pumparound_max_iterations: None,
+        pumparound_tolerance: pumparounds.1,
+        pumparound_max_iterations: pumparounds.2,
         liquid_side_draw_fractions: liquid_side_draw_fractions.map(|v| v.to_vec()),
         pumparound_fractions: pumparound_fractions.map(|v| v.to_vec()),
         reactive,
@@ -428,6 +442,58 @@ pub fn build_side_draw_flow(
         tolerance: tolerance.unwrap_or(1.0e-4),
         max_iterations: max_iterations.unwrap_or(12),
     }])
+}
+
+/// **The one pumparound with a return this model declares**, or nothing.
+///
+/// **One and not a list**, for the reason the side-draw flow specification gives:
+/// `addLiquidPumparound` owns one draw tray each and refuses a second pumparound on the same
+/// tray, so the case this port carries is one pumparound stated as scalars. A partial statement
+/// is refused, which is the judgement the end specifications make.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a partial statement; the kernel checks the trays, the
+/// fraction and the drop again, by tray, because that is where `addLiquidPumparound` does.
+pub fn build_pumparound_returns(
+    return_tray: Option<usize>,
+    draw_tray: Option<usize>,
+    draw_fraction: Option<f64>,
+    temperature_drop: Option<f64>,
+    tolerance: Option<f64>,
+    max_iterations: Option<usize>,
+) -> Result<(
+    Vec<crate::column::pumparound::PumparoundReturn>,
+    Option<f64>,
+    Option<usize>,
+)> {
+    let (Some(return_tray), Some(draw_tray), Some(draw_fraction), Some(temperature_drop)) =
+        (return_tray, draw_tray, draw_fraction, temperature_drop)
+    else {
+        let none_stated = return_tray.is_none()
+            && draw_tray.is_none()
+            && draw_fraction.is_none()
+            && temperature_drop.is_none();
+        if none_stated {
+            return Ok((Vec::new(), tolerance, max_iterations));
+        }
+        return Err(AzothError::invalid_input(
+            "pumparound_return_tray",
+            "a pumparound with a return is stated by its draw tray, its return tray, its \
+             fraction and its temperature drop together: `addLiquidPumparound(name, drawTray, \
+             returnTray, fraction, drop)` takes all four, and a declaration that states some of \
+             them says nothing",
+        ));
+    };
+    Ok((
+        vec![crate::column::pumparound::PumparoundReturn {
+            draw_tray,
+            return_tray,
+            fraction: draw_fraction,
+            temperature_drop,
+        }],
+        tolerance,
+        max_iterations,
+    ))
 }
 
 /// One end's specification from its three declared parameters.

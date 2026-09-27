@@ -63,9 +63,11 @@ name = "azoth-cli"
 version = "0.1.0"
 dependencies = [
  "azoth-core",
+ "azoth-eos",
  "azoth-hydraulics",
  "azoth-process",
  "clap",
+ "serde",
  "serde_json",
  "toml",
  "uom",

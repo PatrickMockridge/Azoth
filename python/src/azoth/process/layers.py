@@ -548,8 +548,11 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     fixed point one iteration apart, so the profile is compared directly rather than with a
     declared band.
     """
+    from azoth.process.reference.distillation_column import PumparoundInlets as Inlets
     from azoth.process.reference.distillation_column import _Draws as Draws
     from azoth.process.reference.distillation_column import (
+        _pumparound_return_specification,
+        _pumparound_returns_tear,
         _side_draw_flow_specification,
         _side_draw_flow_tear,
         _states,
@@ -591,7 +594,7 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     reboiler = bool(inputs["has_reboiler"])
     condenser = bool(inputs["has_condenser"])
 
-    def solve_once(active_draws: Draws) -> States:
+    def solve_once(active_draws: Draws, active_returns: Inlets | None = None) -> States:
         """One inner solve at one set of draws - the same call, tear or no tear."""
         return _states(
             components,
@@ -614,11 +617,18 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
             str(inputs["solver_type"]) if "solver_type" in inputs else None,
             reactive=section,
             draws=active_draws,
+            pumparound_inlets=active_returns,
             murphree_efficiency=(
                 float(inputs["murphree_efficiency"]) if "murphree_efficiency" in inputs else None
             ),
         )
 
+    returns = _pumparound_return_specification(
+        inputs.get("pumparound_return_tray"),
+        inputs.get("pumparound_draw_tray"),
+        inputs.get("pumparound_draw_fraction"),
+        inputs.get("pumparound_temperature_drop"),
+    )
     flows = _side_draw_flow_specification(
         inputs.get("side_draw_flow_tray"),
         inputs.get("side_draw_flow_phase"),
@@ -628,11 +638,24 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
         inputs.get("side_draw_flow_tolerance"),
         inputs.get("side_draw_flow_max_iterations"),
     )
-    states = (
-        solve_once(draws)
-        if flows is None
-        else _side_draw_flow_tear(solve_once, components, draws, flows, stages, reboiler, condenser)
-    )
+    if returns is not None:
+        states = _pumparound_returns_tear(
+            solve_once,
+            components,
+            draws,
+            returns,
+            stages + int(reboiler) + int(condenser),
+            float(inputs.get("pumparound_tolerance", 1.0e-4)),
+            int(inputs.get("pumparound_max_iterations", 12)),
+        )
+    else:
+        states = (
+            solve_once(draws)
+            if flows is None
+            else _side_draw_flow_tear(
+                solve_once, components, draws, flows, stages, reboiler, condenser
+            )
+        )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
         layers[f"tray{i}_temperature_K"] = states.tray_temperature[i]
@@ -1463,10 +1486,12 @@ LAYER_CASES: tuple[LayerCase, ...] = (
     ),
     # **The Murphree rows, on the capture's last four blocks.** `0.6` is the oracle - the port
     # reproduces its whole profile to about `1e-6` - and `0_85` is NeqSim's state that the port
-    # does *not* reproduce, because the correction makes the map's fixed point path-dependent at
-    # a high efficiency and `solveSequential` relaxes the streams where this port relaxes the
-    # temperature profile. The two `_tight` rows are the measurement that both are *converged*
-    # states rather than partial ones, and they are declared uncased in `UNCASED_ROWS`.
+    # does *not* reproduce, by up to `7` K on tray 3. **The cause is not established**:
+    # `applyRelaxationFast` - the obvious guess, since the class relaxes the streams and this
+    # port does not - was implemented and measured on both rows, and it moves neither, so the
+    # difference is in the maps rather than in the paths and it is not localised. The two
+    # `_tight` rows are the measurement that both are *converged* states rather than partial
+    # ones, and they are declared uncased in `UNCASED_ROWS`.
     LayerCase(
         model="process.distillation_column",
         case="murphree_0_6",
@@ -1480,6 +1505,18 @@ LAYER_CASES: tuple[LayerCase, ...] = (
     # bit-identical answers on all twenty-two captured quantities. The second is the same feed at
     # `2.3` m, where `ceil(4.6)` makes it a five-stage column instead - so it is the row that
     # fails if the height stops moving the stage count. See `UNCASED_ROWS` for the other thirteen.
+    # **The pumparound's return**, a labelled substitution: the class's own pumparound state
+    # lives on a column that also carries a reflux ratio, a boilup ratio, a `MESH_RESIDUAL`
+    # solve and a side draw, so the recycle cannot be separated from them there - and the
+    # binary column with `addLiquidPumparound("PA", 1, 3, 0.10, 5.0)` on it is what the port is
+    # held to instead.
+    LayerCase(
+        model="process.distillation_column",
+        case="pumparound_return_recycles_until_its_flow_settles",
+        capture="process_column.tsv",
+        block=23,
+        identified_by=("#label", "side_draw_pumparound_return_binary"),
+    ),
     # **The side-draw flow tear**, whose oracle is the substitution described in
     # `UNCASED_ROWS`: one tray, no ends, a gas draw specified at 25 kg/hr, and the class's own
     # candidate search landing on it in two passes.
@@ -1487,7 +1524,7 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         model="process.distillation_column",
         case="side_draw_flow_one_tray_gas_binary",
         capture="process_column.tsv",
-        block=24,
+        block=25,
         identified_by=("#label", "side_draw_flow_one_tray_gas_binary"),
     ),
     LayerCase(
@@ -1709,7 +1746,7 @@ UNCASED_ROWS: dict[str, int] = {
     # measured, the return is the draw at exactly `T - 5 K` (`334.5849` -> `329.5849`), its flow
     # settles to a `2.8e-5` relative change in 19 iterations, the cooler takes `-438.78` W, and
     # the profile moves - tray 1 lands at `334.58` K against the ideal column's `336.15`.
-    "process_column.tsv": 16,
+    "process_column.tsv": 15,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

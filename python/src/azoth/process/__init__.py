@@ -220,6 +220,12 @@ def distillation_column(
     side_draw_flow_target: Q | None = None,
     side_draw_flow_tolerance: float | None = None,
     side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: Q | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -280,6 +286,12 @@ def distillation_column(
         side_draw_flow_target=side_draw_flow_target,
         side_draw_flow_tolerance=side_draw_flow_tolerance,
         side_draw_flow_max_iterations=side_draw_flow_max_iterations,
+        pumparound_return_tray=pumparound_return_tray,
+        pumparound_draw_tray=pumparound_draw_tray,
+        pumparound_draw_fraction=pumparound_draw_fraction,
+        pumparound_temperature_drop=pumparound_temperature_drop,
+        pumparound_tolerance=pumparound_tolerance,
+        pumparound_max_iterations=pumparound_max_iterations,
     )
 
 

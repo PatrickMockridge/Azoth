@@ -1916,6 +1916,7 @@ public class ProcessProbe {
     System.out.println("pumparound_duty_W=" + pumparound.getDuty());
     for (int i = 0; i < column.getNumberOfTrays(); i++) {
       System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
       System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
       System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
     }

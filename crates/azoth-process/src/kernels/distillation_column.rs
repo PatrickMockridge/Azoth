@@ -1215,16 +1215,10 @@ fn supplied_and_drawn(setup: &ColumnSetup, net: &Network) -> (Vec<f64>, Vec<f64>
             *amount += feed.n * fraction_of(feed, c);
         }
     }
-    // **A pumparound's return is an inlet and its draw is an outlet**, so the two appear on
-    // opposite sides of the closure and cancel - which is the correct boundary and not a
-    // circular one: the column's inlets are its feeds *and* whatever comes back to it, and its
-    // outlets are its products *and* whatever leaves it. The cooler's duty is the enthalpy
-    // between them and is not an imbalance.
-    for returned in net.returns.iter().flatten() {
-        for (c, amount) in supplied.iter_mut().enumerate() {
-            *amount += returned.n * fraction_of(returned, c);
-        }
-    }
+    // **The returns are deliberately absent here.** This is the pair the class's own
+    // reconciliation works from - `getFeedComponentMoles` and `getSideDrawComponentMoles`, the
+    // external feeds and the draws - and a return is neither. It joins the *closure* below,
+    // where a pumparound's return is an inlet and its draw is an outlet and the two cancel.
     let mut drawn = vec![0.0; setup.feed.z.len()];
     for draw in (0..3).flat_map(|which| net.drawn[which].iter()).flatten() {
         for (c, amount) in drawn.iter_mut().enumerate() {
@@ -1238,7 +1232,18 @@ fn supplied_and_drawn(setup: &ColumnSetup, net: &Network) -> (Vec<f64>, Vec<f64>
 /// pair of streams it is handed, which is the tray terminals before the reconciliation and the
 /// reconciled record after it.
 fn component_closure(setup: &ColumnSetup, net: &Network, top: &Stream, bottom: &Stream) -> f64 {
-    let (supplied, drawn) = supplied_and_drawn(setup, net);
+    // **A pumparound's return is an inlet and its draw is an outlet**, so the closure counts
+    // them and the two cancel - which is the correct boundary and not a circular one: the
+    // column's inlets are its feeds *and* whatever comes back to it, and its outlets are its
+    // products *and* whatever leaves it. **The reconciliation does not count them**, because
+    // the class reconciles against the feeds and the draws, so the two are split here rather
+    // than shared.
+    let (mut supplied, drawn) = supplied_and_drawn(setup, net);
+    for returned in net.returns.iter().flatten() {
+        for (c, amount) in supplied.iter_mut().enumerate() {
+            *amount += returned.n * fraction_of(returned, c);
+        }
+    }
     let mut worst = 0.0_f64;
     for (c, supply) in supplied.iter().enumerate() {
         if supply.abs() <= 1.0e-12 {
@@ -1270,7 +1275,18 @@ fn reconcile_products(
     top: &Stream,
     bottom: &Stream,
 ) -> Result<(Stream, Stream)> {
-    let (supplied, drawn) = supplied_and_drawn(setup, net);
+    // **The returns are on the supply side here even though `supplied_and_drawn` leaves them
+    // out**, because this function's *withdrawal* is the draw: the recycled liquid leaves as a
+    // draw and comes back, so a reconciliation that subtracted the draw without adding the
+    // return would shrink the bottoms by exactly the draw - which is what it did, by `0.516`
+    // against the class's unchanged `3.699`, on the captured row.
+    let mut supplied = supplied_and_drawn(setup, net).0;
+    for returned in net.returns.iter().flatten() {
+        for (c, amount) in supplied.iter_mut().enumerate() {
+            *amount += returned.n * fraction_of(returned, c);
+        }
+    }
+    let drawn = supplied_and_drawn(setup, net).1;
     let mut top_moles = vec![0.0; supplied.len()];
     let mut bottom_moles = vec![0.0; supplied.len()];
     for (c, supply) in supplied.iter().enumerate() {

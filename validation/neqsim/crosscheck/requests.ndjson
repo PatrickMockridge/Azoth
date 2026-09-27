@@ -1,0 +1,3 @@
+{"model":"PR","temperature":{"value":330.0,"unit":"K"},"pressure":{"value":25.0,"unit":"bara"},"flashType":"TP","components":{"methane":0.6,"n-butane":0.4},"mixingRule":"classic","reported":{"vapourFraction":0.842205547583653}}
+{"model":"CPA","temperature":{"value":330.0,"unit":"K"},"pressure":{"value":25.0,"unit":"bara"},"flashType":"TP","components":{"methane":0.85,"ethane":0.10,"propane":0.05},"mixingRule":"classic"}
+{"model":"PR","temperature":{"value":400.0,"unit":"K"},"pressure":{"value":20.0,"unit":"bara"},"flashType":"TP","components":{"m-cymene":1.0},"mixingRule":"classic"}

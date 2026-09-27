@@ -3,9 +3,11 @@
 //! Here rather than in `main.rs` because a binary's items are not reachable from an
 //! integration test, and what a user types is the part of a CLI that breaks first.
 //!
-//! There is no `--keycard`: neither subcommand resolves a substance, so a card passed to
-//! one would change no answer. The sections that could feed them, `fluids` and
-//! `fittings`, are `compiled`-stage and nothing reads them at run time.
+//! `pipe` and `fittings` take no `--keycard`: neither resolves a substance the way the card
+//! addresses them, so a card passed to one would change no answer. The sections that could feed
+//! them, `fluids` and `fittings`, are `compiled`-stage and nothing reads them at run time.
+//! [`CrosscheckArgs`] does take one, because it is the only subcommand that resolves a
+//! substance by name and would therefore read a card's `components`, `kij` or `models`.
 
 use clap::{Parser, Subcommand};
 
@@ -43,6 +45,22 @@ pub enum Command {
     /// Serve one flowsheet over HTTP, for clients that cannot run the kernels themselves: the
     /// editor's calls at `POST /rpc`, and the MCP tools at `POST /mcp` over the same document.
     Serve(ServeArgs),
+
+    /// Cross-check a NeqSim flash request: one `runFlash` document per line in, one verdict per
+    /// line out.
+    Crosscheck(CrosscheckArgs),
+}
+
+#[derive(Debug, clap::Args)]
+pub struct CrosscheckArgs {
+    /// A keycard of overrides, for substances or parameters azoth's databank does not carry.
+    ///
+    /// Optional, and usually unnecessary: the databank is generated from NeqSim's own `COMP.csv`
+    /// and `INTER.csv`, so a fluid of ordinary components resolves by name alone. The card is for
+    /// the case where the caller's data differs from NeqSim's shipped table, which is exactly the
+    /// case where their own input carries the difference.
+    #[arg(long)]
+    pub keycard: Option<std::path::PathBuf>,
 }
 
 #[derive(Debug, clap::Args)]

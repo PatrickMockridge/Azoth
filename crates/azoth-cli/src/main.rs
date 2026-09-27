@@ -16,9 +16,10 @@
 //! wiring, which is the part an integration test against the built binary covers.
 
 use azoth_cli::cli::{
-    CheckArgs, Cli, Command, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs, ServeArgs,
+    CheckArgs, Cli, Command, CrosscheckArgs, EditArgs, FormsArgs, McpArgs, PipeArgs, RunArgs,
+    ServeArgs,
 };
-use azoth_cli::{check, edit, forms, mcp, pipe, report, run, serve};
+use azoth_cli::{check, crosscheck, edit, forms, mcp, pipe, report, run, serve};
 use clap::Parser;
 
 fn main() -> std::process::ExitCode {
@@ -35,6 +36,21 @@ fn main() -> std::process::ExitCode {
         Command::Edit(args) => run_edit(args),
         Command::Mcp(args) => run_mcp(args),
         Command::Serve(args) => run_serve(args),
+        Command::Crosscheck(args) => run_crosscheck(args),
+    }
+}
+
+fn run_crosscheck(args: CrosscheckArgs) -> std::process::ExitCode {
+    // stdout is the wire here as it is for `mcp`: every diagnostic goes to stderr, and a line
+    // that is not an answer never appears on stdout.
+    let stdin = std::io::stdin();
+    let stdout = std::io::stdout();
+    match crosscheck::serve(args.keycard.as_deref(), stdin.lock(), stdout.lock()) {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(message) => {
+            eprintln!("azoth: {message}");
+            std::process::ExitCode::from(2)
+        }
     }
 }
 
