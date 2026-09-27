@@ -548,7 +548,13 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     fixed point one iteration apart, so the profile is compared directly rather than with a
     declared band.
     """
-    from azoth.process.reference.distillation_column import _states
+    from azoth.process.reference.distillation_column import _Draws as Draws
+    from azoth.process.reference.distillation_column import (
+        _side_draw_flow_specification,
+        _side_draw_flow_tear,
+        _states,
+    )
+    from azoth.process.reference.distillation_column import _States as States
 
     # **Every declared input the case states is passed on, the section and the draws included.**
     # A dump that dropped one would compare a different column's profile against the capture and
@@ -580,30 +586,52 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
             vector("pumparound_fractions"),
         )
 
-    states = _states(
-        [str(name) for name in inputs["components"]],
-        float(inputs["feed_n"]),
-        [float(v) for v in inputs["feed_z"]],
-        float(inputs["feed_t"]),
-        float(inputs["feed_p"]),
-        int(inputs["number_of_stages"]),
-        int(inputs["feed_stage"]),
-        bool(inputs["has_reboiler"]),
-        bool(inputs["has_condenser"]),
-        float(inputs["top_pressure"]),
-        float(inputs["bottom_pressure"]),
-        float(inputs["reboiler_temperature"]) if "reboiler_temperature" in inputs else None,
-        float(inputs["condenser_temperature"]) if "condenser_temperature" in inputs else None,
-        float(inputs["temperature_tolerance"]),
-        int(inputs["max_iterations"]),
-        _spec_of(inputs, "top"),
-        _spec_of(inputs, "bottom"),
-        str(inputs["solver_type"]) if "solver_type" in inputs else None,
-        reactive=section,
-        draws=draws,
-        murphree_efficiency=(
-            float(inputs["murphree_efficiency"]) if "murphree_efficiency" in inputs else None
-        ),
+    components = [str(name) for name in inputs["components"]]
+    stages = int(inputs["number_of_stages"])
+    reboiler = bool(inputs["has_reboiler"])
+    condenser = bool(inputs["has_condenser"])
+
+    def solve_once(active_draws: Draws) -> States:
+        """One inner solve at one set of draws - the same call, tear or no tear."""
+        return _states(
+            components,
+            float(inputs["feed_n"]),
+            [float(v) for v in inputs["feed_z"]],
+            float(inputs["feed_t"]),
+            float(inputs["feed_p"]),
+            stages,
+            int(inputs["feed_stage"]),
+            reboiler,
+            condenser,
+            float(inputs["top_pressure"]),
+            float(inputs["bottom_pressure"]),
+            float(inputs["reboiler_temperature"]) if "reboiler_temperature" in inputs else None,
+            float(inputs["condenser_temperature"]) if "condenser_temperature" in inputs else None,
+            float(inputs["temperature_tolerance"]),
+            int(inputs["max_iterations"]),
+            _spec_of(inputs, "top"),
+            _spec_of(inputs, "bottom"),
+            str(inputs["solver_type"]) if "solver_type" in inputs else None,
+            reactive=section,
+            draws=active_draws,
+            murphree_efficiency=(
+                float(inputs["murphree_efficiency"]) if "murphree_efficiency" in inputs else None
+            ),
+        )
+
+    flows = _side_draw_flow_specification(
+        inputs.get("side_draw_flow_tray"),
+        inputs.get("side_draw_flow_phase"),
+        None
+        if inputs.get("side_draw_flow_target") is None
+        else float(inputs["side_draw_flow_target"]),
+        inputs.get("side_draw_flow_tolerance"),
+        inputs.get("side_draw_flow_max_iterations"),
+    )
+    states = (
+        solve_once(draws)
+        if flows is None
+        else _side_draw_flow_tear(solve_once, components, draws, flows, stages, reboiler, condenser)
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -1373,6 +1401,16 @@ LAYER_CASES: tuple[LayerCase, ...] = (
     # bit-identical answers on all twenty-two captured quantities. The second is the same feed at
     # `2.3` m, where `ceil(4.6)` makes it a five-stage column instead - so it is the row that
     # fails if the height stops moving the stage count. See `UNCASED_ROWS` for the other thirteen.
+    # **The side-draw flow tear**, whose oracle is the substitution described in
+    # `UNCASED_ROWS`: one tray, no ends, a gas draw specified at 25 kg/hr, and the class's own
+    # candidate search landing on it in two passes.
+    LayerCase(
+        model="process.distillation_column",
+        case="side_draw_flow_one_tray_gas_binary",
+        capture="process_column.tsv",
+        block=24,
+        identified_by=("#label", "side_draw_flow_one_tray_gas_binary"),
+    ),
     LayerCase(
         model="process.packed_column",
         case="packed_binary_2m",
@@ -1507,7 +1545,13 @@ UNCASED_ROWS: dict[str, int] = {
     # held to - the same shape on a fluid that *does* have a liquid - and
     # `..._five_tray_liquid_fractionator` is the class's own multistage state re-cased, where the
     # class rejects 18 of 30 candidates and never converges.
-    "process_column.tsv": 16,
+    # **And two of the three side-draw *flow* tear rows.** The first is the class's own state,
+    # where its one-tray pure-methane column has no bottom product at all and NeqSim publishes a
+    # zero flow with a `-Infinity` enthalpy that this port declines to fabricate. The third is the
+    # class's own multistage state re-cased, where the class rejects 18 of 30 candidates and never
+    # converges. The middle one is a case: the same one-tray shape on a fluid that does have a
+    # liquid, which is the substitution this port is held to.
+    "process_column.tsv": 15,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

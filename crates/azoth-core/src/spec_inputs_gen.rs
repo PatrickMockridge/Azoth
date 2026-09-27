@@ -1227,6 +1227,26 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pumparound_fractions",
         "dimensionless",
     ),
+    (
+        "process.distillation_column",
+        "side_draw_flow_tray",
+        "dimensionless",
+    ),
+    (
+        "process.distillation_column",
+        "side_draw_flow_target",
+        "mass_rate",
+    ),
+    (
+        "process.distillation_column",
+        "side_draw_flow_tolerance",
+        "dimensionless",
+    ),
+    (
+        "process.distillation_column",
+        "side_draw_flow_max_iterations",
+        "dimensionless",
+    ),
     ("process.ejector", "motive_n", "molar_flow"),
     ("process.ejector", "motive_z", "dimensionless"),
     ("process.ejector", "motive_p", "pressure"),

@@ -239,6 +239,14 @@ pub fn packed_column(
         None,
         None,
         None,
+        // **This entry declares no side-draw flow specification.** It declares none of the three
+        // draw-fraction vectors either - the packing's own parameters are a report on the far
+        // side of the solve - so a specified draw has nothing here to move.
+        None,
+        None,
+        None,
+        None,
+        None,
     )?;
 
     Ok(out.into())

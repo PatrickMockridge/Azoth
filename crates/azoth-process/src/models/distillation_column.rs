@@ -205,7 +205,19 @@ pub fn distillation_column(
     gas_side_draw_fractions: Option<&[f64]>,
     liquid_side_draw_fractions: Option<&[f64]>,
     pumparound_fractions: Option<&[f64]>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
 ) -> Result<DistillationColumnResult> {
+    let side_draw_flows = build_side_draw_flow(
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+    )?;
     // **The end is the parameter's name, not a value.** `ColumnSpecification` carries a
     // location - TOP or BOTTOM - and the class holds exactly two of them, so a declaration
     // that names its parameters `top_*` and `bottom_*` has already said which is which;
@@ -310,7 +322,7 @@ pub fn distillation_column(
         tray_temperatures: None,
         solver_type: solver,
         gas_side_draw_fractions: gas_side_draw_fractions.map(|v| v.to_vec()),
-        side_draw_flows: Vec::new(),
+        side_draw_flows,
         liquid_side_draw_fractions: liquid_side_draw_fractions.map(|v| v.to_vec()),
         pumparound_fractions: pumparound_fractions.map(|v| v.to_vec()),
         reactive,
@@ -348,6 +360,70 @@ pub(crate) fn unported_class(strategy: &str) -> &'static str {
         "mesh_residual" => "MeshResidualSolver",
         _ => "AutoSolver",
     }
+}
+
+/// **The one side-draw flow specification this model declares**, or an empty vector.
+///
+/// **One and not a list, because one is what the port implements.** `addSideDrawFlowSpecification`
+/// appends to a list and the class solves a list of them as *coordinated* tear variables - a
+/// different search, refused by name. So the declaration here is the single-specification case
+/// the kernel carries, expressed as five scalars rather than as a record the spec schema has no
+/// input type for.
+///
+/// **A target without a tray or a phase is refused**, the same judgement the two end
+/// specifications make: a declaration that cannot be read is not a default worth guessing.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a partial specification, for a phase the enum does not
+/// carry, and for a target that is not finite and non-negative - the class's own
+/// `ColumnSideDrawSpecification` constructor checks.
+pub fn build_side_draw_flow(
+    tray: Option<usize>,
+    phase: Option<&str>,
+    target: Option<f64>,
+    tolerance: Option<f64>,
+    max_iterations: Option<usize>,
+) -> Result<Vec<kernel::SideDrawFlow>> {
+    let (Some(tray), Some(phase), Some(target)) = (tray, phase, target) else {
+        if tray.is_some() || phase.is_some() || target.is_some() {
+            return Err(AzothError::invalid_input(
+                "side_draw_flow_tray",
+                "a side-draw flow specification is stated by its tray, its phase and its target \
+                 together: `addSideDrawFlowSpecification(tray, phase, flow, unit)` takes all \
+                 three, and a declaration that states one or two of them says nothing",
+            ));
+        }
+        return Ok(Vec::new());
+    };
+    if !target.is_finite() || target < 0.0 {
+        return Err(AzothError::invalid_input(
+            "side_draw_flow_target",
+            format!(
+                "a side-draw target flow of {target} is not finite and non-negative, which \
+                 `ColumnSideDrawSpecification`'s own constructor refuses"
+            ),
+        ));
+    }
+    let phase = match phase {
+        "gas" => kernel::SideDrawPhase::Gas,
+        "liquid" => kernel::SideDrawPhase::Liquid,
+        other => {
+            return Err(AzothError::invalid_input(
+                "side_draw_flow_phase",
+                format!(
+                    "`{other}` is not a side-draw phase: `SideDrawPhase` carries `gas` and \
+                     `liquid`"
+                ),
+            ));
+        }
+    };
+    Ok(vec![kernel::SideDrawFlow {
+        tray,
+        phase,
+        target,
+        tolerance: tolerance.unwrap_or(1.0e-4),
+        max_iterations: max_iterations.unwrap_or(12),
+    }])
 }
 
 /// One end's specification from its three declared parameters.

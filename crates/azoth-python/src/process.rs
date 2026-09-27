@@ -444,10 +444,10 @@ pub fn pump(
 /// business rather than the kernel's.
 #[pyfunction]
 #[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance = 1e-6, max_iterations = 200, reboiler_temperature = None, condenser_temperature = None, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None)
+    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance = 1e-6, max_iterations = 200, reboiler_temperature = None, condenser_temperature = None, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None)
 )]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
@@ -482,6 +482,11 @@ pub fn distillation_column(
     gas_side_draw_fractions: Option<Vec<f64>>,
     liquid_side_draw_fractions: Option<Vec<f64>>,
     pumparound_fractions: Option<Vec<f64>>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<String>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
 ) -> PyResult<crate::results::PyDistillationColumnResult> {
     azoth_process::distillation_column(
         &components,
@@ -513,6 +518,11 @@ pub fn distillation_column(
         gas_side_draw_fractions.as_deref(),
         liquid_side_draw_fractions.as_deref(),
         pumparound_fractions.as_deref(),
+        side_draw_flow_tray,
+        side_draw_flow_phase.as_deref(),
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
     )
     .map(|r| crate::results::PyDistillationColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

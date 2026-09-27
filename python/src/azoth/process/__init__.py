@@ -215,6 +215,11 @@ def distillation_column(
     gas_side_draw_fractions: list[float] | None = None,
     liquid_side_draw_fractions: list[float] | None = None,
     pumparound_fractions: list[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: Q | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -270,6 +275,11 @@ def distillation_column(
         gas_side_draw_fractions=gas_side_draw_fractions,
         liquid_side_draw_fractions=liquid_side_draw_fractions,
         pumparound_fractions=pumparound_fractions,
+        side_draw_flow_tray=side_draw_flow_tray,
+        side_draw_flow_phase=side_draw_flow_phase,
+        side_draw_flow_target=side_draw_flow_target,
+        side_draw_flow_tolerance=side_draw_flow_tolerance,
+        side_draw_flow_max_iterations=side_draw_flow_max_iterations,
     )
 
 
