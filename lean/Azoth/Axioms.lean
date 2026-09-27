@@ -28,6 +28,7 @@ import Azoth.Capability
 import Azoth.Implicit
 import Azoth.Normalisation
 import Azoth.Pow
+import Azoth.View
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
@@ -92,3 +93,23 @@ import Azoth.Pow
 #print axioms Azoth.Process.barb_declaration
 #print axioms Azoth.Process.unit_op_is_extensional
 #print axioms Azoth.Process.swapped_declarations_are_congruent_not_equal
+
+-- The rendering, `docs/src/calculus/view.md`'s claims. Three groups: the editor's ticket
+-- discipline (`keep` and its fold), the gesture that is the one piece of local state, and the
+-- display unit's conversion. `keep_keeps_the_newer` and `one_point_does_not_determine_a_shift`
+-- are the witnesses beside them - the first says `keep` is not a projection, the second says a
+-- single point cannot tell a scale from a shifted one, which is why the units test asks twice.
+#print axioms Azoth.View.keep_ticket
+#print axioms Azoth.View.keep_mem
+#print axioms Azoth.View.keep_keeps_newest
+#print axioms Azoth.View.foldr_keep_ticket
+#print axioms Azoth.View.foldr_keep_mem
+#print axioms Azoth.View.keep_keeps_the_newer
+#print axioms Azoth.View.drawn_after_release
+#print axioms Azoth.View.a_drag_moves_one_node
+#print axioms Azoth.View.a_drag_in_flight_is_not_the_document
+#print axioms Azoth.View.Shift.fromSi_toSi
+#print axioms Azoth.View.Shift.toSi_fromSi
+#print axioms Azoth.View.celsius_is_not_kelvin
+#print axioms Azoth.View.one_point_does_not_determine_a_shift
+#print axioms Azoth.View.two_points_determine_a_shift

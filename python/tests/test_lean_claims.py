@@ -40,8 +40,11 @@ LEAN_SOURCE = LEAN_DIR / "Azoth"
 _PRINTED = re.compile(r"^\s*#print axioms\s+(?P<name>[A-Za-z0-9_.]+)\s*$", re.MULTILINE)
 
 #: `theorem ofExponents_nil`, `def exponents`, and the same inside a namespace.
+#: A declaration's name, **dot included**: `def Shift.toSi` declares `Shift.toSi`, which is
+#: the namespace a structure's own name opens, and a pattern without the dot reads it as
+#: `Shift` and then reports the gate as naming a theorem that does not exist.
 _DECLARED = re.compile(
-    r"^\s*(?:theorem|lemma|def|abbrev)\s+(?P<name>[A-Za-z0-9_'À-ÿ]+)",
+    r"^\s*(?:theorem|lemma|def|abbrev)\s+(?P<name>[A-Za-z0-9_'À-ÿ.]+)",
     re.MULTILINE,
 )
 

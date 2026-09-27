@@ -105,7 +105,9 @@ of a HYSYS/UniSim-style editor are these layers viewed one way:
 | top-bar menu | new / open / save / solve | command model + quote/drop |
 
 **It holds no copy of the flowsheet.** Every gesture goes out as a command and comes back as the
-whole envelope, so the canvas, the form and the diagnostics are three readings of one object. The
+whole envelope, so the canvas, the form and the diagnostics are three readings of one object —
+and what that sentence is *worth* is [the rendering](../calculus/view.md)'s, which proves the
+editor's ticket discipline, the drag, and the display conversion rather than stating them. The
 drag is the one piece of local state: xyflow applies a position change every frame and the library
 is told once, on release — a `set_position` per frame would be a command and a re-projection for a
 figure that has not moved yet. `ui/test/app.test.tsx` drags a node through the real module and

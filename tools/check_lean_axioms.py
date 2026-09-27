@@ -73,6 +73,11 @@ _EMPTY = re.compile(r"^'?(?P<name>[A-Za-z0-9_.«»]+)'? does not depend on any a
 _PRINTED = re.compile(r"^\s*#print axioms\s+(?P<name>[A-Za-z0-9_.]+)\s*$", re.MULTILINE)
 
 
+def module_name(gate: Path) -> str:
+    """`Azoth/Gate.lean` as the module name `lake build` takes."""
+    return ".".join(gate.relative_to(LEAN_DIR).with_suffix("").parts)
+
+
 def fail(message: str) -> None:
     print(f"check_lean_axioms: {message}", file=sys.stderr)
 
@@ -81,6 +86,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--quiet", action="store_true", help="only report problems")
     args = parser.parse_args()
+
+    modules = [module_name(gate) for gate in GATES]
+    # **Build the gates before checking them, because `lake build` does not.** The two gate
+    # files are the checker's subject and not a module anything imports, so they are outside
+    # the library's default target - and so is anything only they import, which `Azoth.Inputs`
+    # is. `lake build` therefore leaves it unbuilt and `lake env lean Azoth/Gate.lean` fails on
+    # a missing `.olean`, which is what a fresh checkout did until this line existed.
+    built = subprocess.run(
+        ["lake", "build", *modules],
+        cwd=LEAN_DIR,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if built.returncode != 0:
+        fail(f"`lake build {' '.join(modules)}` failed:\n{built.stdout}{built.stderr}")
+        return 1
 
     claimed: list[str] = []
     reported: dict[str, list[str]] = {}

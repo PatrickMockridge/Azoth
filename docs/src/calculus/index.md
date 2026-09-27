@@ -18,7 +18,7 @@ inlet and an outlet, and "the mole balance closes" is either a consequence of ho
 its channels are used or it is a sentence in a specification that nothing checks.
 That is the second thing.
 
-Nine layers, each a page here and the Lean module it is stated against:
+Ten layers, each a page here and the Lean module it is stated against:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
@@ -31,10 +31,11 @@ Nine layers, each a page here and the Lean module it is stated against:
 | The keycard as a capability | authority a process holds rather than a global it reads | `Azoth/Capability.lean` ✅ | [The keycard as a capability](./capability.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (general barbs) | [Barbs](./barbs.md) |
 | Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (the extensionality claim) | [Processes and channels](./process.md) |
+| The rendering | a rendering is a function of the document, and what the editor holds | `Azoth/View.lean` ✅ | [The rendering](./view.md) |
 
 Two further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
 `#print axioms` line for each general theorem and for the witness theorems beside some of
-them, and the generated `Azoth/Gate.lean` the one per canonical unit. Twelve modules in all,
+them, and the generated `Azoth/Gate.lean` the one per canonical unit. Thirteen modules in all,
 and every layer the calculus states has one.
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
@@ -45,7 +46,7 @@ authority is a generator rather than a proof.
 ## Status: what the gate covers, and what is still specified
 
 **The axiom gate is what makes a proof count.** `tools/check_lean_axioms.py` refuses a
-theorem resting on anything outside the three axioms Lean permits — **44** `#print axioms`
+theorem resting on anything outside the three axioms Lean permits — **58** `#print axioms`
 lines in `Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, and **69** in the generated
 `Azoth/Gate.lean` - one per canonical unit, checking that the table's exponents name the
 dimension `lean-units` calls by that name, plus one for `Azoth.Inputs`, which holds the
@@ -55,7 +56,7 @@ names the witness theorems beside the claims they keep from being vacuous, and s
 the line count is what the gate holds, and the claims are fewer than the lines. Both numbers
 are the files' own, and a reader can count them.
 
-Most of the nine are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
+Most of the ten are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
 [Raw and normalised variables](./normalisation.md) and [Reflection and
 feedback](./rho.md) are complete, and [The keycard as a capability](./capability.md) is
 proved against the grant a caller holds and passes (`crates/azoth-eos/src/card.rs`).
@@ -108,4 +109,4 @@ The table says what a unit *is*; the two units libraries say what it is *worth*;
 and a test compares them rather than trusting a restatement. See
 [The vocabulary table](./vocabulary.md).
 
-*Enforcement: check — the classification this page makes is what `tools/check_doc_claims.py` sweeps: every page under `docs/src/calculus/` states its enforcement once, and a claim whose status is **proved** may not be one that nothing enforces.*
+*Enforcement: check — the classification this page makes is what `tools/check_doc_claims.py` sweeps: every page under the calculus and the architecture tree states its enforcement once, and a claim whose status is **proved** may not be one that nothing enforces.*
