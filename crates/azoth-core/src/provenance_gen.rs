@@ -2373,7 +2373,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "process.distillation_column",
         name: "Distillation column",
         spec_path: "specs/models/process/distillation_column.toml",
-        spec_sha256: "4509f011b09e0b94cbcbb9e4856ec004039713fc9ab2b5e6220c25f359389fee",
+        spec_sha256: "31e2b118af49bd91381063e1a8cc25ace383f3d7acd4afc94b4b6c781e7d396c",
         python_path: "python/src/azoth/process/reference/distillation_column.py",
         python_sha256: "12605cbdace74455d9169092b1a4751b766bf37e74e68da4234673d8328f33a8",
         rust_path: "crates/azoth-process/src/models/distillation_column.rs",
