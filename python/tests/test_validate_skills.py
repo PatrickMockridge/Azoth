@@ -40,7 +40,11 @@ def problems(basis: str, body: str, tmp_path: Path, **extra: Any) -> list[str]:
     page = tmp_path / "SKILL.md"
     page.write_text(body, encoding="utf-8")
     entry = {"name": "azoth-something", "calculation_basis": basis, **extra}
-    return validator()._basis_problems(entry, page, "skills.toml skill[0]", IDS)
+    # Annotated rather than returned directly: the tool is outside mypy's `files`, so reaching
+    # it by name resolves to `Any`, and returning that from a typed function is the implicit
+    # `Any` mypy's strict mode refuses at exactly the boundary worth keeping typed.
+    found: list[str] = validator()._basis_problems(entry, page, "skills.toml skill[0]", IDS)
+    return found
 
 
 def test_a_screening_skill_citing_a_calculation_is_reported(tmp_path: Path) -> None:

@@ -124,7 +124,9 @@ def _id_pattern(ids: list[str]) -> re.Pattern[str]:
     return re.compile(r"(?<!\w)(?:" + "|".join(re.escape(item) for item in ids) + r")(?![\w.])")
 
 
-def _basis_problems(entry: dict[str, object], resolved: Path, where: str, ids: list[str]) -> list[str]:
+def _basis_problems(
+    entry: dict[str, object], resolved: Path, where: str, ids: list[str]
+) -> list[str]:
     """A skill's prose and its declared basis must agree about whether it computes.
 
     The catalog says how a skill's numbers are produced and the `SKILL.md` says it in prose,

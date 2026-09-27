@@ -20,9 +20,9 @@ evaluate:
 r = azoth.hydraulics.darcy_weisbach(
     0.02, q(100.0, "m"), q(0.1, "m"), q(998.0, "kg/m**3"), q(1.5, "m/s")
 )
-r.provenance.verification     # 'source_needed' - a source was sought and not found
-r.provenance.skipped_checks   # ('re',) - the Reynolds bound was never reached
-r.provenance.rust_sha256      # the bytes of the kernel that produced this number
+r.provenance.verification  # 'source_needed' - a source was sought and not found
+r.provenance.skipped_checks  # ('re',) - the Reynolds bound was never reached
+r.provenance.rust_sha256  # the bytes of the kernel that produced this number
 ```
 
 The last line is the one that changes what is possible. It is not a claim in a manual; it is
