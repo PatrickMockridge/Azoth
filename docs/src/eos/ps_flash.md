@@ -57,7 +57,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `T` | K | the temperature that satisfies the entropy. This is the answer. |
-| `beta` | dimensionless | the vapour fraction at that temperature. Absent for a single-phase feed, where the flash reports an extrapolated split rather than a physical one - see the notes. |
+| `vapour_fraction` | dimensionless | the vapour fraction at that temperature. Absent for a single-phase feed, where the flash reports an extrapolated split rather than a physical one - see the notes. |
 | `x` | dimensionless | liquid-phase mole fractions at the answer |
 | `y` | dimensionless | vapour-phase mole fractions at the answer |
 | `k` | dimensionless | `K_i = y_i / x_i` at the answer, reported because the flash is one |

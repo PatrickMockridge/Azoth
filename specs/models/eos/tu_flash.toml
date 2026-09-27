@@ -50,7 +50,7 @@ description = "the feed's mole fractions. Checked rather than renormalised."
 [outputs.P]
 unit = "Pa"
 description = "the pressure that satisfies the internal energy. This is the answer."
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 description = "the vapour fraction at the answer. Absent for a single-phase feed."
 [outputs.x]

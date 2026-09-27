@@ -49,7 +49,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | *Optional.* The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction. |
+| `vapour_fraction` | dimensionless | *Optional.* The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction. |
 | `x` | dimensionless | liquid-phase mole fractions |
 | `y` | dimensionless | vapour-phase mole fractions |
 | `k` | dimensionless | K-values, `K_i = y_i / x_i = phi_i^L / phi_i^V`, the iterate the loop converges on. |
@@ -57,7 +57,7 @@ not an equation, and both implementations read it from here.
 | `ln_phi_vapour` | dimensionless | the vapour's fugacity coefficients as logarithms, from the cubic at the vapour composition. |
 | `z_vapour` | dimensionless | the vapour root of the cubic at the vapour composition, the largest admissible one. There is no liquid root: the liquid is not a cubic and has no compressibility factor. |
 | `min_t_over_tc` | dimensionless | the smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point. A cubic's vapour is what it is reading. |
-| `phase` | two_phase / all_liquid / all_vapour / trivial | What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`). |
+| `phase` | two_phase / all_liquid / all_vapour / trivial | What the converged state is: `two_phase` (`vapour_fraction` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`). |
 | `iterations` | dimensionless | successive-substitution steps taken, including the final evaluation of the converged state. |
 | `residual` | dimensionless | `rms_i |ln K_i - ln K_i_previous|` at the last step the loop completed. NaN when no step completed. |
 

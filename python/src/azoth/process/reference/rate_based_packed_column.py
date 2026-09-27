@@ -195,9 +195,9 @@ def _phase_view(
     if len(labelled) == 1:
         share = 1.0
     elif label == GAS:
-        share = flash.beta if flash.beta is not None else 1.0
+        share = flash.vapour_fraction if flash.vapour_fraction is not None else 1.0
     else:
-        share = 1.0 - (flash.beta if flash.beta is not None else 0.0)
+        share = 1.0 - (flash.vapour_fraction if flash.vapour_fraction is not None else 0.0)
 
     molar_mass = sum(
         (component.molar_mass.to("kg/mol").magnitude if component.molar_mass else 0.0) * fraction

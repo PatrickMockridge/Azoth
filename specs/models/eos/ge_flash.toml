@@ -58,7 +58,7 @@ type = "enum"
 values = ["pr", "srk", "rk", "tst"]
 description = "the cubic the vapour is. **A gamma-phi flash is defined by the pair**, so the cubic is an input rather than the caller's convenience: the vapour's `Tc`, `Pc`, `omega` and `kij` resolve from the same names through the databank, and another member is a different vapour from the same liquid.\n"
 [outputs]
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 optional = true
 description = "The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction.\n"
@@ -96,7 +96,7 @@ description = "the smallest `T / Tc_i` over the components - how close the mixtu
 [outputs.phase]
 type = "enum"
 values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
-description = "What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`).\n"
+description = "What the converged state is: `two_phase` (`vapour_fraction` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`).\n"
 [outputs.iterations]
 unit = "dimensionless"
 description = "successive-substitution steps taken, including the final evaluation of the converged state.\n"

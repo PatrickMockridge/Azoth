@@ -76,12 +76,12 @@ fn every_case_in_the_spec() {
                 );
             }
         }
-        for name in ["beta", "z_vapour"] {
+        for name in ["vapour_fraction", "z_vapour"] {
             let expected = case
                 .expected_value(name)
                 .unwrap_or_else(|| panic!("the case declares {name}"));
-            let got = if name == "beta" {
-                result.beta.expect("a two-phase case has a vapour fraction")
+            let got = if name == "vapour_fraction" {
+                result.vapour_fraction.expect("a two-phase case has a vapour fraction")
             } else {
                 result.z_vapour
             };
@@ -110,7 +110,7 @@ fn the_flash_equations_hold_at_the_reported_state() {
     let (t, p) = (350.0, 1.0e5);
     let z = [0.5, 0.5];
     let r = ge_nrtl_flash(&params, &mixture, kelvins(t), pascals(p), &z).unwrap();
-    let beta = r.beta.expect("a two-phase case has a vapour fraction");
+    let beta = r.vapour_fraction.expect("a two-phase case has a vapour fraction");
 
     // `x_i = z_i / (1 + beta (K_i - 1))` and `y_i = K_i x_i`, and the material balance
     // those two imply.
@@ -184,7 +184,7 @@ fn a_subcooled_feed_has_no_vapour_fraction_at_all() {
     )
     .unwrap();
     assert_eq!(r.phase, Phase::AllLiquid);
-    assert_eq!(r.beta, None, "no root exists, so `beta` is absent");
+    assert_eq!(r.vapour_fraction, None, "no root exists, so `beta` is absent");
     assert_eq!(r.x, vec![0.5, 0.5], "a single-phase feed is the feed");
     assert_eq!(
         r.iterations, 1,
@@ -213,7 +213,7 @@ fn a_negative_flash_reports_its_vapour_fraction() {
     .unwrap();
     assert_eq!(r.phase, Phase::AllLiquid);
     let beta = r
-        .beta
+        .vapour_fraction
         .expect("a negative flash reports its vapour fraction");
     assert!(
         beta < 0.0,
@@ -242,7 +242,7 @@ fn the_vapour_fraction_grows_with_temperature() {
     for t in [345.0_f64, 348.0, 350.0, 352.0, 355.0] {
         let r = ge_nrtl_flash(&params, &mixture, kelvins(t), pascals(1.0e5), &[0.5, 0.5]).unwrap();
         assert_eq!(r.phase, Phase::TwoPhase, "at {t} K");
-        let beta = r.beta.expect("a split has a vapour fraction");
+        let beta = r.vapour_fraction.expect("a split has a vapour fraction");
         assert!(
             beta > previous,
             "beta at {t} K is {beta}, not above {previous}"

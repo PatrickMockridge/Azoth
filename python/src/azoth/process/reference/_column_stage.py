@@ -94,7 +94,7 @@ def stage(
     else:
         flash = pt_flash(mixture, quantity(out_temperature, "K"), quantity(pressure, "Pa"), z)
         temperature = out_temperature
-    x, y, phase, beta = list(flash.x), list(flash.y), flash.phase, flash.beta
+    x, y, phase, beta = list(flash.x), list(flash.y), flash.phase, flash.vapour_fraction
 
     gas_share, liquid_share = _phase_fractions(phase, beta)
     # A single phase has the tray's composition, and the flash's trial `x` or `y` is not it.
@@ -205,8 +205,8 @@ def reflux_end(
     flash = pv_reflux_flash(mixture, quantity(pressure, "Pa"), ratio, phase, mixed.T, z)
     temperature = flash.T.to("K").magnitude
 
-    if flash.beta is not None:
-        vapour_share = float(flash.beta)
+    if flash.vapour_fraction is not None:
+        vapour_share = float(flash.vapour_fraction)
     else:
         # No split to report, so the ratio itself is the share: `1/(1 + R)` for a vapour-ratio
         # search and `R/(1 + R)` for a liquid one.

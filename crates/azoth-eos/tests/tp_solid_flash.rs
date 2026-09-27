@@ -48,7 +48,7 @@ fn every_case_in_the_spec() {
         // stopped on - `eos.tp_solid_flash`'s `algorithm.tolerance`, `1e-8` - so the sum
         // carries that and nothing finer. NeqSim's own states carry the same: `2e-11` at
         // 273.15 K, `4e-9` at the carbon-dioxide state.
-        let total: f64 = result.beta.iter().sum();
+        let total: f64 = result.phase_fractions.iter().sum();
         common::assert_close(
             total,
             1.0,

@@ -130,7 +130,7 @@ fn phases_of(flash: &crate::results::PtFlashResult) -> Vec<(f64, Vec<f64>, f64)>
             // **Vapour first, which is NeqSim's own order** and the order the probe prints.
             // This model does not care - it looks for the aqueous one - but a capture is read
             // side by side with it, and an unstated order is one more thing to check.
-            let beta = flash.beta.unwrap_or(0.0);
+            let beta = flash.vapour_fraction.unwrap_or(0.0);
             vec![
                 (beta, flash.y.clone(), flash.z_vapour),
                 (1.0 - beta, flash.x.clone(), flash.z_liquid),

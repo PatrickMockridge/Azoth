@@ -175,7 +175,7 @@ pub fn tp_flash_saft_of(
 
     if converged {
         return Ok(SaftFlashResult {
-            beta: Some(beta),
+            vapour_fraction: Some(beta),
             x: liquid,
             y: vapour,
             k,
@@ -198,7 +198,7 @@ pub fn tp_flash_saft_of(
         |ln_phi: &[f64]| -> f64 { z.iter().zip(ln_phi).map(|(zi, p)| zi * p).sum::<f64>() };
     let gas_is_lower = residual_gibbs(&gas_ln_phi) <= residual_gibbs(&liquid_ln_phi);
     Ok(SaftFlashResult {
-        beta: None,
+        vapour_fraction: None,
         x: z.to_vec(),
         y: z.to_vec(),
         k,

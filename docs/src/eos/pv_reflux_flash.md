@@ -60,7 +60,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `T` | K | the temperature at which the phase ratio is the one asked for - the model's answer. |
-| `beta` | dimensionless | *Optional.* the vapour fraction at the answer, or absent for a single-phase feed |
+| `vapour_fraction` | dimensionless | *Optional.* the vapour fraction at the answer, or absent for a single-phase feed |
 | `phase` | two_phase / all_liquid / all_vapour / trivial | which phase the feed is in at the answer |
 | `x` | dimensionless | liquid-phase mole fractions at the answer |
 | `y` | dimensionless | vapour-phase mole fractions at the answer |

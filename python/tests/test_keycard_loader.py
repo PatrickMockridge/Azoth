@@ -686,14 +686,14 @@ def test_a_card_reaches_the_physics() -> None:
     shifted_mixture, shifted_gas = eos.components.mixture_of(names, card=card)
     shifted = eos.pt_flash(shifted_mixture, T, P, feed)
 
-    assert shifted.beta != pytest.approx(baseline.beta), (
+    assert shifted.vapour_fraction != pytest.approx(baseline.vapour_fraction), (
         "a card that shifts methane's critical temperature by 110 K left the vapour "
         "fraction where it was, so the card is not reaching the calculation"
     )
 
     # The card is not sticky: the same call without it answers as it did before.
     again = eos.pt_flash(eos.components.mixture_of(names)[0], T, P, feed)
-    assert again.beta == pytest.approx(baseline.beta)
+    assert again.vapour_fraction == pytest.approx(baseline.vapour_fraction)
 
     # And the ideal-gas model came from the same card, so an enthalpy would move too.
     assert shifted_gas.cp_a == shipped_gas.cp_a

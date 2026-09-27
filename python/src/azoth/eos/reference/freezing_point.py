@@ -233,7 +233,7 @@ def _tabulated_residual(
     # then read a different phase's coefficient.
     terms: list[float] = []
     if flash.phase is Phase.TWO_PHASE:
-        raw = flash.beta if flash.beta is not None else 0.0
+        raw = flash.vapour_fraction if flash.vapour_fraction is not None else 0.0
         terms.append(_log(1.0 - raw) + ln_phi_solid - flash.ln_phi_liquid[index])
         terms.append(_log(raw) + ln_phi_solid - flash.ln_phi_vapour[index])
     elif flash.phase is Phase.ALL_LIQUID:

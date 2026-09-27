@@ -9,7 +9,7 @@ S = -33.37924808318274
 z = [0.6, 0.4]
 [cases.expected]
 T = 300.00000000000006
-beta = 0.6824887179287709
+vapour_fraction = 0.6824887179287709
 [[cases]]
 id = "single_phase_vapour_round_trip"
 tolerance = 1e-07

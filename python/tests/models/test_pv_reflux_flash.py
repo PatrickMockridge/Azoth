@@ -57,8 +57,8 @@ def test_the_phase_named_decides_the_answer() -> None:
     half_vapour = pv_reflux_flash(fluid, p, 1.0, "vapour", Q(330.0, "K"), z)
     half_liquid = pv_reflux_flash(fluid, p, 1.0, "liquid", Q(330.0, "K"), z)
     h.assert_close(half_vapour.T.to("K").magnitude, half_liquid.T.to("K").magnitude, 1e-4, "half")
-    assert half_vapour.beta is not None
-    h.assert_close(half_vapour.beta, 0.5, 1e-6, "half beta")
+    assert half_vapour.vapour_fraction is not None
+    h.assert_close(half_vapour.vapour_fraction, 0.5, 1e-6, "half beta")
 
 
 def test_the_two_backends_agree_on_every_spec_case() -> None:

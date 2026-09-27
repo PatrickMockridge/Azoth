@@ -50,7 +50,7 @@ unit = "mol"
 length = "one per component"
 description = "the feed's mole numbers. **Moles and not mole fractions**: the material balance and the ionic inventory are both mole sums, and a normalised feed would have to be renormalised back before either could be computed."
 [outputs]
-[outputs.beta]
+[outputs.phase_fractions]
 type = "vector"
 unit = "dimensionless"
 length = "one per role"

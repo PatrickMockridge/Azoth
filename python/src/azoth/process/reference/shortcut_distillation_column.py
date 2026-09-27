@@ -267,7 +267,7 @@ def _states(
         k_values = [
             flash.y[i] / flash.x[i] if flash.x[i] > 1.0e-20 else 1.0e10 for i in range(count)
         ]
-        q_quality = 1.0 - (0.0 if flash.beta is None else float(flash.beta))
+        q_quality = 1.0 - (0.0 if flash.vapour_fraction is None else float(flash.vapour_fraction))
     elif flash.phase in (Phase.ALL_VAPOUR, Phase.ALL_LIQUID):
         k_values = wilson_k(mixture, feed_t, feed_p)
         q_quality = 0.0 if flash.phase == Phase.ALL_VAPOUR else 1.0

@@ -41,8 +41,8 @@ fn every_case_in_the_spec() {
             "worked_example" | "reference" => {
                 let result = call(case);
                 common::assert_close(
-                    result.beta,
-                    common::expected(case, "beta"),
+                    result.vapour_fraction,
+                    common::expected(case, "vapour_fraction"),
                     case.tolerance,
                     &format!("{}::{} (beta)", spec.id, case.id),
                 );
@@ -54,7 +54,7 @@ fn every_case_in_the_spec() {
                         "z1" => Some(common::input(case, "z1")),
                         "K1" => Some(common::input(case, "K1")),
                         "K2" => Some(common::input(case, "K2")),
-                        "beta" => Some(result.beta),
+                        "vapour_fraction" => Some(result.vapour_fraction),
                         _ => None,
                     },
                     &format!("{}::{}", spec.id, case.id),
@@ -92,13 +92,13 @@ fn the_returned_beta_solves_the_equation() {
             for k2 in [0.02, 0.2, 0.5, 0.8, 0.95] {
                 let z1 = f64::from(z1_step) / 10.0;
                 let r = rachford_rice_binary(z1, k1, k2).unwrap();
-                let residual = rachford_rice_sum(z1, k1, k2, r.beta);
+                let residual = rachford_rice_sum(z1, k1, k2, r.vapour_fraction);
                 assert!(
                     residual.abs() < 1e-12,
                     "z1 = {z1}, K1 = {k1}, K2 = {k2}: beta = {} leaves a residual of {residual:e}",
-                    r.beta
+                    r.vapour_fraction
                 );
-                if !(0.0..=1.0).contains(&r.beta) {
+                if !(0.0..=1.0).contains(&r.vapour_fraction) {
                     outside += 1;
                 }
                 checked += 1;
@@ -125,18 +125,18 @@ fn the_returned_beta_solves_the_equation() {
 fn a_feed_that_does_not_split_carries_a_warning() {
     let r = rachford_rice_binary(0.5, 2.0, 1.5).unwrap();
     assert!(
-        r.beta < 0.0,
+        r.vapour_fraction < 0.0,
         "both K > 1 should give a negative beta, got {}",
-        r.beta
+        r.vapour_fraction
     );
     assert!(!r.is_clean(), "a beta outside [0, 1] must be visible");
 
     // And the mirror image: both K < 1 gives beta > 1, the superheated-vapour case.
     let vapour = rachford_rice_binary(0.5, 0.8, 0.5).unwrap();
     assert!(
-        vapour.beta > 1.0,
+        vapour.vapour_fraction > 1.0,
         "both K < 1 should give beta > 1, got {}",
-        vapour.beta
+        vapour.vapour_fraction
     );
     assert!(!vapour.is_clean());
 }
@@ -147,7 +147,7 @@ fn a_two_phase_feed_carries_no_warning() {
     for (z1, k1, k2) in [(0.6, 4.0, 0.25), (0.3, 5.0, 0.2), (0.5, 3.0, 0.3)] {
         let r = rachford_rice_binary(z1, k1, k2).unwrap();
         assert!(
-            (0.0..=1.0).contains(&r.beta),
+            (0.0..=1.0).contains(&r.vapour_fraction),
             "expected a two-phase feed for z1 = {z1}, K1 = {k1}, K2 = {k2}"
         );
         assert!(r.is_clean(), "unexpected warnings: {:?}", r.warnings);

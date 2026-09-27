@@ -121,7 +121,7 @@ def reactive_hybrid_eos_ge_flash(
         ...     q(50.0e5, "Pa"),
         ...     [5.0, 0.05, 55.5, 6.0e-4, 2.0e-4, 1.0e-3, 1.0e-10, 1.0e-10, 1.0e-10],
         ... )
-        >>> round(result.beta[0], 6)
+        >>> round(result.phase_fractions[0], 6)
         0.083462
     """
     spec = _spec()
@@ -150,7 +150,7 @@ def reactive_hybrid_eos_ge_flash(
     )
 
     return ReactiveHybridEosGeFlashResult(
-        beta=tuple(outcome["beta"]),
+        phase_fractions=tuple(outcome["beta"]),
         x=tuple(tuple(row) for row in outcome["x"]),
         coupled_moles=tuple(quantity(value, "mol") for value in outcome["coupled_moles"]),
         aqueous_moles=tuple(quantity(value, "mol") for value in outcome["aqueous_moles"]),

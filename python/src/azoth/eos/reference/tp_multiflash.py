@@ -123,10 +123,10 @@ def _is_liquid(reduced: ReducedParameters, kij: Any, x: list[float]) -> bool:
 
 def _phases_of(flash: Any, reduced: ReducedParameters, kij: Any, z: list[float]) -> list[_Phase]:
     """The phases a two-phase flash reported, as a starting set for the fraction solve."""
-    if flash.beta is not None:
+    if flash.vapour_fraction is not None:
         return [
-            _Phase(1.0 - flash.beta, list(flash.x), liquid=True),
-            _Phase(flash.beta, list(flash.y), liquid=False),
+            _Phase(1.0 - flash.vapour_fraction, list(flash.x), liquid=True),
+            _Phase(flash.vapour_fraction, list(flash.y), liquid=False),
         ]
     # No fraction: either every K-value was on one side, or the iteration reached `x = y = z`.
     # The first names the phase; the second does not, so the feed goes on whichever root has
@@ -442,7 +442,7 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
 
     return TpMultiflashResult(
         phase_count=len(kept),
-        beta=tuple(phase.fraction for phase in kept),
+        phase_fractions=tuple(phase.fraction for phase in kept),
         x=tuple(tuple(phase.composition) for phase in kept),
         z_factor=tuple(state.z for state in geometry),
         ln_phi=tuple(tuple(state.ln_phi) for state in geometry),

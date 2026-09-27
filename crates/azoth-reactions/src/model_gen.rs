@@ -729,7 +729,7 @@ static REACTIVE_HYBRID_EOS_GE_FLASH_CASES: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[
             (
-                "beta",
+                "phase_fractions",
                 &[
                     0.07289352057955786,
                     0.039906308796565454,

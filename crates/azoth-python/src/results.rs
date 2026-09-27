@@ -2578,7 +2578,7 @@ impl From<&ReactivePhFlashResult> for PyReactivePhFlashResult {
 pub struct PyReactiveHybridEosGeFlashResult {
     /// Each role's mole fraction of the feed, in `[gas, oil, aqueous]` order.
     #[pyo3(get)]
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// Each role's composition, one row per role and one column per component.
     #[pyo3(get)]
     pub x: Vec<Vec<f64>>,
@@ -2637,7 +2637,7 @@ fn moles(values: &[f64]) -> Vec<PyQty> {
 impl From<&ReactiveHybridEosGeFlashResult> for PyReactiveHybridEosGeFlashResult {
     fn from(r: &ReactiveHybridEosGeFlashResult) -> Self {
         Self {
-            beta: r.beta.clone(),
+            phase_fractions: r.phase_fractions.clone(),
             x: r.x.clone(),
             coupled_moles: moles(&r.coupled_moles),
             aqueous_moles: moles(&r.aqueous_moles),
@@ -4882,7 +4882,7 @@ impl From<&GeNrtlPhaseResult> for PyGeNrtlPhaseResult {
 pub struct PyGeNrtlFlashResult {
     /// The vapour fraction, or `None` when there is none to report.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -4923,7 +4923,7 @@ impl PyGeNrtlFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "GeNrtlFlashResult(phase={}, beta={:?}, x={:?}, y={:?})",
-            self.phase, self.beta, self.x, self.y
+            self.phase, self.vapour_fraction, self.x, self.y
         )
     }
 }
@@ -4931,7 +4931,7 @@ impl PyGeNrtlFlashResult {
 impl From<&GeNrtlFlashResult> for PyGeNrtlFlashResult {
     fn from(r: &GeNrtlFlashResult) -> Self {
         Self {
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -5962,7 +5962,7 @@ pub struct PyRachfordRiceBinaryResult {
     /// The vapour fraction. Dimensionless, and outside `[0, 1]` when the feed is
     /// single phase - in which case the result carries a warning.
     #[pyo3(get)]
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -5973,7 +5973,7 @@ impl PyRachfordRiceBinaryResult {
     fn __repr__(&self) -> String {
         format!(
             "RachfordRiceBinaryResult(beta={}, {} warning(s))",
-            self.beta,
+            self.vapour_fraction,
             self.warnings.len()
         )
     }
@@ -5982,7 +5982,7 @@ impl PyRachfordRiceBinaryResult {
 impl From<&RachfordRiceBinaryResult> for PyRachfordRiceBinaryResult {
     fn from(r: &RachfordRiceBinaryResult) -> Self {
         Self {
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             warnings: transport(&r.warnings),
         }
     }
@@ -6003,7 +6003,7 @@ impl From<&RachfordRiceBinaryResult> for PyRachfordRiceBinaryResult {
 pub struct PyRachfordRiceResult {
     /// The vapour fraction. Dimensionless.
     #[pyo3(get)]
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -6014,7 +6014,7 @@ impl PyRachfordRiceResult {
     fn __repr__(&self) -> String {
         format!(
             "RachfordRiceResult(beta={}, {} warning(s))",
-            self.beta,
+            self.vapour_fraction,
             self.warnings.len()
         )
     }
@@ -6023,7 +6023,7 @@ impl PyRachfordRiceResult {
 impl From<&RachfordRiceResult> for PyRachfordRiceResult {
     fn from(r: &RachfordRiceResult) -> Self {
         Self {
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             warnings: transport(&r.warnings),
         }
     }
@@ -6168,7 +6168,7 @@ impl From<&PureSaturationResult> for PyPureSaturationResult {
 pub struct PyPtFlashResult {
     /// The vapour fraction, or `None` when there is none to report.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -6210,7 +6210,7 @@ pub struct PyPtFlashResult {
 #[pymethods]
 impl PyPtFlashResult {
     fn __repr__(&self) -> String {
-        match self.beta {
+        match self.vapour_fraction {
             Some(beta) => format!(
                 "PtFlashResult(phase={}, beta={beta}, z_liquid={}, z_vapour={})",
                 self.phase, self.z_liquid, self.z_vapour
@@ -6707,7 +6707,7 @@ pub struct PyTpMultiflashWaxResult {
     pub phase_count: u32,
     /// The mole fraction of the feed in each phase, the wax last.
     #[pyo3(get)]
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each phase, one vector per phase.
     #[pyo3(get)]
     pub x: Vec<Vec<f64>>,
@@ -6740,7 +6740,7 @@ impl From<&TpMultiflashWaxResult> for PyTpMultiflashWaxResult {
         Self {
             wax_fraction: r.wax_fraction,
             phase_count: r.phase_count,
-            beta: r.beta.clone(),
+            phase_fractions: r.phase_fractions.clone(),
             x: r.x.clone(),
             iterations: r.iterations,
             residual: r.residual,
@@ -6768,7 +6768,7 @@ pub struct PyTpSolidFlashResult {
     pub phase_count: u32,
     /// The mole fraction of the feed in each phase, the solid last.
     #[pyo3(get)]
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each phase, one vector per phase.
     #[pyo3(get)]
     pub x: Vec<Vec<f64>>,
@@ -6808,7 +6808,7 @@ impl From<&TpSolidFlashResult> for PyTpSolidFlashResult {
         Self {
             solid_fraction: r.solid_fraction,
             phase_count: r.phase_count,
-            beta: r.beta.clone(),
+            phase_fractions: r.phase_fractions.clone(),
             x: r.x.clone(),
             solid_fugacity_coefficient: r.solid_fugacity_coefficient,
             iterations: r.iterations,
@@ -7263,7 +7263,7 @@ impl From<&HydrateEquilibriumLineResult> for PyHydrateEquilibriumLineResult {
 pub struct PyHydrateFractionResult {
     /// The fraction of the feed's moles that is hydrate.
     #[pyo3(get)]
-    pub beta: f64,
+    pub hydrate_fraction: f64,
     /// The stable structure, as its spec spelling.
     #[pyo3(get)]
     pub structure: String,
@@ -7286,7 +7286,7 @@ impl PyHydrateFractionResult {
     fn __repr__(&self) -> String {
         format!(
             "HydrateFractionResult(beta={}, structure={}, balance_error={:.3e}, {} iteration(s))",
-            self.beta, self.structure, self.balance_error, self.iterations
+            self.hydrate_fraction, self.structure, self.balance_error, self.iterations
         )
     }
 }
@@ -7294,7 +7294,7 @@ impl PyHydrateFractionResult {
 impl From<&HydrateFractionResult> for PyHydrateFractionResult {
     fn from(r: &HydrateFractionResult) -> Self {
         Self {
-            beta: r.beta,
+            hydrate_fraction: r.hydrate_fraction,
             structure: r.structure.as_str().to_string(),
             balance_error: r.balance_error,
             iterations: r.iterations,
@@ -7612,7 +7612,7 @@ impl From<&HeliumPhaseResult> for PyHeliumPhaseResult {
 pub struct PyHybridEosGeFlashResult {
     /// The mole fraction of the feed in each role.
     #[pyo3(get)]
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each role, one row per role.
     #[pyo3(get)]
     pub x: Vec<Vec<f64>>,
@@ -7644,7 +7644,7 @@ impl PyHybridEosGeFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "HybridEosGeFlashResult(beta={:?}, iterations={})",
-            self.beta, self.iterations
+            self.phase_fractions, self.iterations
         )
     }
 }
@@ -7652,7 +7652,7 @@ impl PyHybridEosGeFlashResult {
 impl From<&HybridEosGeFlashResult> for PyHybridEosGeFlashResult {
     fn from(r: &HybridEosGeFlashResult) -> Self {
         Self {
-            beta: r.beta.clone(),
+            phase_fractions: r.phase_fractions.clone(),
             x: r.x.clone(),
             ln_phi: r.ln_phi.clone(),
             iterations: r.iterations,
@@ -8045,7 +8045,7 @@ impl From<&CapillaryDewPointResult> for PyCapillaryDewPointResult {
 impl From<&PtFlashResult> for PyPtFlashResult {
     fn from(r: &PtFlashResult) -> Self {
         Self {
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8081,7 +8081,7 @@ pub struct PyPhFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8114,7 +8114,7 @@ pub struct PyPhFlashResult {
 #[pymethods]
 impl PyPhFlashResult {
     fn __repr__(&self) -> String {
-        match self.beta {
+        match self.vapour_fraction {
             Some(beta) => format!(
                 "PhFlashResult(T={} K, phase={}, beta={beta})",
                 self.T.magnitude_si, self.phase
@@ -8134,7 +8134,7 @@ impl From<&PhFlashResult> for PyPhFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8167,7 +8167,7 @@ pub struct PyPsFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8200,7 +8200,7 @@ pub struct PyPsFlashResult {
 #[pymethods]
 impl PyPsFlashResult {
     fn __repr__(&self) -> String {
-        match self.beta {
+        match self.vapour_fraction {
             Some(beta) => format!(
                 "PsFlashResult(T={} K, phase={}, beta={beta})",
                 self.T.magnitude_si, self.phase
@@ -8220,7 +8220,7 @@ impl From<&PsFlashResult> for PyPsFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8249,7 +8249,7 @@ pub struct PyTvFlashResult {
     pub P: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8284,7 +8284,7 @@ impl PyTvFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "TvFlashResult(P={} Pa, phase={}, beta={:?})",
-            self.P.magnitude_si, self.phase, self.beta
+            self.P.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -8296,7 +8296,7 @@ impl From<&TvFlashResult> for PyTvFlashResult {
                 magnitude_si: r.pressure.value,
                 unit: "Pa".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8325,7 +8325,7 @@ pub struct PyPvFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8360,7 +8360,7 @@ impl PyPvFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "PvFlashResult(T={} K, phase={}, beta={:?})",
-            self.T.magnitude_si, self.phase, self.beta
+            self.T.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -8372,7 +8372,7 @@ impl From<&PvFlashResult> for PyPvFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8410,7 +8410,7 @@ macro_rules! py_pressure_flash_result {
             pub P: PyQty,
             /// The vapour fraction, or `None` for a single-phase feed.
             #[pyo3(get)]
-            pub beta: Option<f64>,
+            pub vapour_fraction: Option<f64>,
             /// Liquid-phase mole fractions.
             #[pyo3(get)]
             pub x: Vec<f64>,
@@ -8445,7 +8445,7 @@ macro_rules! py_pressure_flash_result {
             fn __repr__(&self) -> String {
                 format!(
                     concat!($py_name, "(P={} Pa, phase={}, beta={:?})"),
-                    self.P.magnitude_si, self.phase, self.beta
+                    self.P.magnitude_si, self.phase, self.vapour_fraction
                 )
             }
         }
@@ -8465,7 +8465,7 @@ macro_rules! py_pressure_flash_from {
                         magnitude_si: r.pressure.value,
                         unit: "Pa".to_string(),
                     },
-                    beta: r.beta,
+                    vapour_fraction: r.vapour_fraction,
                     x: r.x.clone(),
                     y: r.y.clone(),
                     k: r.k.clone(),
@@ -8500,7 +8500,7 @@ pub struct PyPuFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8535,7 +8535,7 @@ impl PyPuFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "PuFlashResult(T={} K, phase={}, beta={:?})",
-            self.T.magnitude_si, self.phase, self.beta
+            self.T.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -8547,7 +8547,7 @@ impl From<&PuFlashResult> for PyPuFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8576,7 +8576,7 @@ pub struct PyVuFlashSingleCompResult {
     pub T: PyQty,
     /// The vapour fraction, from the lever rule.
     #[pyo3(get)]
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// The molar volume the split implies.
     #[pyo3(get)]
     pub V: PyQty,
@@ -8593,7 +8593,7 @@ impl PyVuFlashSingleCompResult {
     fn __repr__(&self) -> String {
         format!(
             "VuFlashSingleCompResult(T={} K, beta={}, phase={})",
-            self.T.magnitude_si, self.beta, self.phase
+            self.T.magnitude_si, self.vapour_fraction, self.phase
         )
     }
 }
@@ -8605,7 +8605,7 @@ impl From<&VuFlashSingleCompResult> for PyVuFlashSingleCompResult {
                 magnitude_si: r.t.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             V: PyQty {
                 magnitude_si: r.v.value,
                 unit: "m**3/mol".to_string(),
@@ -8631,7 +8631,7 @@ pub struct PyPvRefluxFlashResult {
     pub T: PyQty,
     /// The vapour fraction at the answer, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// The spec's spelling of the phase.
     #[pyo3(get)]
     pub phase: String,
@@ -8666,7 +8666,7 @@ impl PyPvRefluxFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "PvRefluxFlashResult(T={} K, beta={:?}, phase={})",
-            self.T.magnitude_si, self.beta, self.phase
+            self.T.magnitude_si, self.vapour_fraction, self.phase
         )
     }
 }
@@ -8678,7 +8678,7 @@ impl From<&PvRefluxFlashResult> for PyPvRefluxFlashResult {
                 magnitude_si: r.t.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             phase: r.phase.as_str().to_string(),
             x: r.x.clone(),
             y: r.y.clone(),
@@ -8707,7 +8707,7 @@ pub struct PyPvfFlashResult {
     pub T: PyQty,
     /// The vapour fraction at the answer.
     #[pyo3(get)]
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// The spec's spelling of the phase.
     #[pyo3(get)]
     pub phase: String,
@@ -8742,7 +8742,7 @@ impl PyPvfFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "PvfFlashResult(T={} K, beta={}, phase={})",
-            self.T.magnitude_si, self.beta, self.phase
+            self.T.magnitude_si, self.vapour_fraction, self.phase
         )
     }
 }
@@ -8754,7 +8754,7 @@ impl From<&PvfFlashResult> for PyPvfFlashResult {
                 magnitude_si: r.t.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             phase: r.phase.as_str().to_string(),
             x: r.x.clone(),
             y: r.y.clone(),
@@ -8786,7 +8786,7 @@ pub struct PyVsFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8821,7 +8821,7 @@ impl PyVsFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "VsFlashResult(P={} Pa, T={} K, phase={}, beta={:?})",
-            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.beta
+            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -8837,7 +8837,7 @@ impl From<&VsFlashResult> for PyVsFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8869,7 +8869,7 @@ pub struct PyVhFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -8904,7 +8904,7 @@ impl PyVhFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "VhFlashResult(P={} Pa, T={} K, phase={}, beta={:?})",
-            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.beta
+            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -8920,7 +8920,7 @@ impl From<&VhFlashResult> for PyVhFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -8952,7 +8952,7 @@ pub struct PyTvFractionFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// The gas phase's volume share at the answer.
     #[pyo3(get)]
     pub volume_fraction: f64,
@@ -8990,7 +8990,7 @@ impl PyTvFractionFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "TvFractionFlashResult(P={} Pa, T={} K, phase={}, beta={:?})",
-            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.beta
+            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -9006,7 +9006,7 @@ impl From<&TvFractionFlashResult> for PyTvFractionFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             volume_fraction: r.volume_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
@@ -9039,7 +9039,7 @@ pub struct PyVuFlashResult {
     pub T: PyQty,
     /// The vapour fraction, or `None` for a single-phase feed.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -9074,7 +9074,7 @@ impl PyVuFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "VuFlashResult(P={} Pa, T={} K, phase={}, beta={:?})",
-            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.beta
+            self.P.magnitude_si, self.T.magnitude_si, self.phase, self.vapour_fraction
         )
     }
 }
@@ -9090,7 +9090,7 @@ impl From<&VuFlashResult> for PyVuFlashResult {
                 magnitude_si: r.temperature.value,
                 unit: "K".to_string(),
             },
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -9186,7 +9186,7 @@ pub struct PyTpMultiflashResult {
     pub phase_count: u32,
     /// The mole fraction of the feed in each phase.
     #[pyo3(get)]
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each phase, one row per phase.
     #[pyo3(get)]
     pub x: Vec<Vec<f64>>,
@@ -9221,7 +9221,7 @@ impl PyTpMultiflashResult {
     fn __repr__(&self) -> String {
         format!(
             "TpMultiflashResult({} phase(s), {}, beta={:?})",
-            self.phase_count, self.seeded, self.beta
+            self.phase_count, self.seeded, self.phase_fractions
         )
     }
 }
@@ -9230,7 +9230,7 @@ impl From<&TpMultiflashResult> for PyTpMultiflashResult {
     fn from(r: &TpMultiflashResult) -> Self {
         Self {
             phase_count: r.phase_count,
-            beta: r.beta.clone(),
+            phase_fractions: r.phase_fractions.clone(),
             x: r.x.clone(),
             z_factor: r.z_factor.clone(),
             ln_phi: r.ln_phi.clone(),
@@ -10231,7 +10231,7 @@ mod transport_tests {
     fn ps_flash() -> PsFlashResult {
         PsFlashResult {
             temperature: kelvins(311.0),
-            beta: Some(0.5),
+            vapour_fraction: Some(0.5),
             x: vec![0.31, 0.32],
             y: vec![0.41, 0.42],
             k: vec![1.51, 1.52],
@@ -10252,7 +10252,7 @@ mod transport_tests {
 
             assert_exposes_all_fields::<PsFlashResult>(result);
             assert_eq!(magnitude(result, "T"), 311.0);
-            assert_eq!(number(result, "beta"), 0.5);
+            assert_eq!(number(result, "vapour_fraction"), 0.5);
             assert_eq!(numbers(result, "x"), vec![0.31, 0.32]);
             assert_eq!(numbers(result, "y"), vec![0.41, 0.42]);
             assert_eq!(numbers(result, "k"), vec![1.51, 1.52]);
@@ -10327,7 +10327,7 @@ impl From<&azoth_eos::results::SrkCpaPhaseResult> for PySrkCpaPhaseResult {
 pub struct PyTpFlashSaftResult {
     /// The vapour fraction, absent when the flash reports one phase.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -10368,7 +10368,7 @@ impl PyTpFlashSaftResult {
     fn __repr__(&self) -> String {
         format!(
             "TpFlashSaftResult(phase={}, beta={:?})",
-            self.phase, self.beta
+            self.phase, self.vapour_fraction
         )
     }
 }
@@ -10376,7 +10376,7 @@ impl PyTpFlashSaftResult {
 impl From<&azoth_eos::results::SaftFlashResult> for PyTpFlashSaftResult {
     fn from(r: &azoth_eos::results::SaftFlashResult) -> Self {
         Self {
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),
@@ -10869,7 +10869,7 @@ impl From<&azoth_eos::EffectiveDiffusionResult> for PyEffectiveDiffusionResult {
 pub struct PyGeFlashResult {
     /// The vapour fraction, or `None` when there is none to report.
     #[pyo3(get)]
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     #[pyo3(get)]
     pub x: Vec<f64>,
@@ -10910,7 +10910,7 @@ impl PyGeFlashResult {
     fn __repr__(&self) -> String {
         format!(
             "GeFlashResult(phase={}, beta={:?}, x={:?}, y={:?})",
-            self.phase, self.beta, self.x, self.y
+            self.phase, self.vapour_fraction, self.x, self.y
         )
     }
 }
@@ -10918,7 +10918,7 @@ impl PyGeFlashResult {
 impl From<&azoth_eos::GeFlashResult> for PyGeFlashResult {
     fn from(r: &azoth_eos::GeFlashResult) -> Self {
         Self {
-            beta: r.beta,
+            vapour_fraction: r.vapour_fraction,
             x: r.x.clone(),
             y: r.y.clone(),
             k: r.k.clone(),

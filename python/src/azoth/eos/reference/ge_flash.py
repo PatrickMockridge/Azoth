@@ -248,7 +248,7 @@ def ge_flash(
     vapour = phase_state(reduced, kij, y, liquid=False)
 
     return GeFlashResult(
-        beta=beta_out,
+        vapour_fraction=beta_out,
         x=tuple(x),
         y=tuple(y),
         k=tuple(k),

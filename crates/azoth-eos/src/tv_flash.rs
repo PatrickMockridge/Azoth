@@ -85,7 +85,7 @@ pub fn tv_flash(
 
     Ok(TvFlashResult {
         pressure: pascals(solved.pressure),
-        beta: solved.flash.beta,
+        vapour_fraction: solved.flash.vapour_fraction,
         x: solved.flash.x,
         y: solved.flash.y,
         k: solved.flash.k,

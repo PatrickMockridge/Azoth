@@ -44,7 +44,7 @@ def test_spec_case(case: dict[str, Any]) -> None:
     """Run one case declared in the spec."""
     result = call(case)
     h.assert_close(
-        result.beta,
+        result.vapour_fraction,
         h.expected(case, "beta"),
         case.get("tolerance", 1e-12),
         f"{case['id']} (beta)",
@@ -53,7 +53,7 @@ def test_spec_case(case: dict[str, Any]) -> None:
 
     def resolve(quantity: str, _case: dict[str, Any] = case) -> float | None:
         if quantity == "beta":
-            return result.beta
+            return result.vapour_fraction
         return h.input_(_case, quantity) if quantity in _case["inputs"] else None
 
     h.assert_warnings_agree_with_spec(SPEC, result.warnings, resolve, case["id"])
@@ -84,11 +84,11 @@ def test_consistency_with() -> None:
             for k2 in (0.02, 0.2, 0.5, 0.8, 0.95):
                 z1 = z1_step / 10.0
                 result = rachford_rice_binary(z1, k1, k2)
-                residual = rachford_rice_sum(z1, k1, k2, result.beta)
+                residual = rachford_rice_sum(z1, k1, k2, result.vapour_fraction)
                 assert abs(residual) < 1e-12, (
-                    f"z1={z1}, K1={k1}, K2={k2}: beta={result.beta} leaves {residual:e}"
+                    f"z1={z1}, K1={k1}, K2={k2}: beta={result.vapour_fraction} leaves {residual:e}"
                 )
-                if not 0.0 <= result.beta <= 1.0:
+                if not 0.0 <= result.vapour_fraction <= 1.0:
                     outside += 1
                 checked += 1
 
@@ -105,18 +105,18 @@ def test_a_feed_that_does_not_split_carries_a_warning() -> None:
     subcooled liquid rather than merely not-split.
     """
     result = rachford_rice_binary(0.5, 2.0, 1.5)
-    assert result.beta < 0.0
+    assert result.vapour_fraction < 0.0
     assert not result.is_clean
 
     vapour = rachford_rice_binary(0.5, 0.8, 0.5)
-    assert vapour.beta > 1.0
+    assert vapour.vapour_fraction > 1.0
     assert not vapour.is_clean
 
 
 def test_a_two_phase_feed_carries_no_warning() -> None:
     for z1, k1, k2 in ((0.6, 4.0, 0.25), (0.3, 5.0, 0.2), (0.5, 3.0, 0.3)):
         result = rachford_rice_binary(z1, k1, k2)
-        assert 0.0 <= result.beta <= 1.0, f"expected two-phase for {z1}, {k1}, {k2}"
+        assert 0.0 <= result.vapour_fraction <= 1.0, f"expected two-phase for {z1}, {k1}, {k2}"
         assert result.is_clean, f"unexpected warnings: {result.warnings}"
 
 

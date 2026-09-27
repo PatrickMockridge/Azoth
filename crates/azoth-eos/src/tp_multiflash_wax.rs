@@ -105,11 +105,11 @@ pub fn tp_multiflash_wax(
     // **The two-phase flash seeds it**, and is also the answer if the wax does not survive.
     let flash = pt_flash(mixture, T, P, z)?;
     warnings.extend(flash.warnings.iter().cloned());
-    let split_of_flash = flash.beta.unwrap_or(0.0);
+    let split_of_flash = flash.vapour_fraction.unwrap_or(0.0);
     let two_phase = |iterations: u32, residual: f64, converged: bool| TpMultiflashWaxResult {
         wax_fraction: 0.0,
         phase_count: 2,
-        beta: vec![1.0 - split_of_flash, split_of_flash],
+        phase_fractions: vec![1.0 - split_of_flash, split_of_flash],
         x: vec![flash.x.clone(), flash.y.clone()],
         iterations,
         residual,
@@ -153,7 +153,7 @@ pub fn tp_multiflash_wax(
     Ok(TpMultiflashWaxResult {
         wax_fraction: wax,
         phase_count: split.fractions.len() as u32,
-        beta: split.fractions.clone(),
+        phase_fractions: split.fractions.clone(),
         x: split.compositions.clone(),
         iterations: split.iterations,
         residual: split.residual,

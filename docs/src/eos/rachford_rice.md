@@ -38,7 +38,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | the vapour fraction. Inside `[0, 1]` it is the split; outside it is the negative flash, and the caller decides what that means. A feed whose K-values do not straddle one returns `1e-12` at the end it lies towards. |
+| `vapour_fraction` | dimensionless | the vapour fraction. Inside `[0, 1]` it is the split; outside it is the negative flash, and the caller decides what that means. A feed whose K-values do not straddle one returns `1e-12` at the end it lies towards. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -54,7 +54,7 @@ not an equation, and both implementations read it from here.
 - NeqSim's `calcBeta` clamps its answer to `[1e-12, 1 - 1e-12]` and declines to iterate when the root would fall outside `[0, 1]`. Neither is ported: the root comes back as the equation gives it, so the negative flash stays visible, and `1e-12` is the answer only where no root exists.
 - a K-value of exactly one contributes nothing: `z_i (K_i - 1)` is zero in every term, and the solver drops it through the same denominator floor NeqSim uses. A feed of nothing but such components is the trivial solution `x = y = z`, and this answers it with the lower clamp.
 - `z` and `K` are checked for length and for a positive `K` rather than adjusted: a K-value of zero or below makes the reciprocal in the solver meaningless.
-- azoth's flashes do not call this. NeqSim stops at `1e-10` on its two rescaled residuals, about `1e-11` in `beta`; `eos.pt_flash` asserts the residual of every answer at `1e-12` and so keeps its own bisection. Two procedures for one equation, standing side by side.
+- azoth's flashes do not call this. NeqSim stops at `1e-10` on its two rescaled residuals, about `1e-11` in `vapour_fraction`; `eos.pt_flash` asserts the residual of every answer at `1e-12` and so keeps its own bisection. Two procedures for one equation, standing side by side.
 
 ## Cases
 

@@ -241,7 +241,7 @@ fn tabulated_residual(
     let mut phases: Vec<(f64, f64)> = Vec::new();
     match flash.phase {
         crate::results::Phase::TwoPhase => {
-            let beta = flash.beta.unwrap_or(0.0);
+            let beta = flash.vapour_fraction.unwrap_or(0.0);
             phases.push((1.0 - beta, flash.ln_phi_liquid[index]));
             phases.push((beta, flash.ln_phi_vapour[index]));
         }

@@ -339,7 +339,7 @@ fn split(mixture: &Mixture, t: f64, p_out: Pressure, z: &[f64]) -> Result<Phases
         let phase = Split {
             amounts: flash.x[index]
                 .iter()
-                .map(|fraction| fraction * flash.beta[index])
+                .map(|fraction| fraction * flash.phase_fractions[index])
                 .collect(),
             z_factor: flash.z_factor[index],
             slot,
@@ -379,7 +379,7 @@ fn solve_temperature(
                 &flash.x[index],
                 flash.z_factor[index],
             )?;
-            total += flash.beta[index] * state.h.value;
+            total += flash.phase_fractions[index] * state.h.value;
         }
         Ok(total)
     };

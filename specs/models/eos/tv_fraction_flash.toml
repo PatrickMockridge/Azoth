@@ -58,7 +58,7 @@ description = "the pressure at which the volume fraction is the one asked for - 
 [outputs.T]
 unit = "K"
 description = "the temperature the flash was taken at, echoed."
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 optional = true
 description = "the vapour fraction at the answer, or absent for a single-phase feed"

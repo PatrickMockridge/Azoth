@@ -116,7 +116,7 @@ const AQUEOUS_ROLE: usize = 2;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ReactiveHybridEosGeFlashResult {
     /// Each role's mole fraction of the feed, in `[gas, oil, aqueous]` order, summing to one.
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// Each role's composition, one row per role and one column per component.
     pub x: Vec<Vec<f64>>,
     /// The reaction-adjusted overall inventory at the answer, one entry per component. **Not the
@@ -150,7 +150,7 @@ pub struct ReactiveHybridEosGeFlashResult {
 impl CalcResult for ReactiveHybridEosGeFlashResult {
     const CALC_ID: &'static str = "reactions.reactive_hybrid_eos_ge_flash";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "phase_fractions",
         "x",
         "coupled_moles",
         "aqueous_moles",
@@ -367,7 +367,7 @@ pub fn solve_coupled(
     warnings.extend(last.warnings.iter().cloned());
 
     Ok(ReactiveHybridEosGeFlashResult {
-        beta: last.beta,
+        phase_fractions: last.phase_fractions,
         x: last.x,
         coupled_moles: coupled,
         aqueous_moles,

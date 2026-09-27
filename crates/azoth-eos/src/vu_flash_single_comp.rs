@@ -149,7 +149,7 @@ fn saturation_temperature(
 ///     cubic_meters_per_mole(0.001_059_848_052_516),
 ///     joules_per_mole(-7797.318_485_008),
 /// )?;
-/// assert!((r.beta - 0.5).abs() < 1e-6);
+/// assert!((r.vapour_fraction - 0.5).abs() < 1e-6);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn vu_flash_single_comp(
@@ -217,7 +217,7 @@ pub fn vu_flash_single_comp(
 
     Ok(VuFlashSingleCompResult {
         t: kelvins(temperature),
-        beta,
+        vapour_fraction: beta,
         v: cubic_meters_per_mole(implied),
         phase: crate::results::Phase::TwoPhase,
         warnings,

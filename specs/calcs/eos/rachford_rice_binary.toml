@@ -8,7 +8,7 @@ assumptions = ["""\
     both K-values are for the same temperature and pressure. They are the caller's, and this \
     calc has no way to know they describe one state.""", "the K-values are consistent with each other in the thermodynamic sense - derived from fugacity coefficients for the same mixture.\n", """\
     the feed is a single overall composition `(z1, 1 - z1)`. A three-phase problem has no \
-    single `beta`, and a feed with a non-condensable component is not describable this way.""", "no stability test is performed; a `beta` inside `[0, 1]` says the equation has a solution there, not that the feed should split.\n"]
+    single `vapour_fraction`, and a feed with a non-condensable component is not describable this way.""", "no stability test is performed; a `vapour_fraction` inside `[0, 1]` says the equation has a solution there, not that the feed should split.\n"]
 references = ["Rachford, H. H.; Rice, J. D. (1952). \\\"Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium.\\\" J. Pet. Technol. 4(10), 19-3. DOI 10.2118/952327-G"]
 [source]
 standard = "Rachford, H. H.; Rice, J. D. (1952)"
@@ -30,9 +30,9 @@ description = """\
 unit = "dimensionless"
 description = "the K-value of component 2"
 [outputs]
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
-description = "The vapour fraction that solves the Rachford-Rice equation, named `beta` because that is what every source calls it; outside `[0, 1]` it describes no two-phase mixture.\n"
+description = "The vapour fraction that solves the Rachford-Rice equation, which every source writes as the symbol `beta`; outside `[0, 1]` it describes no two-phase mixture.\n"
 [[valid_range]]
 quantity = "z1"
 min = 0
@@ -64,7 +64,7 @@ equals = 1
 severity = "error"
 rationale = "as for `K1`"
 [[valid_range]]
-quantity = "beta"
+quantity = "vapour_fraction"
 min = 0
 max = 1
 severity = "warning"
@@ -78,7 +78,7 @@ z1 = 0.6
 K1 = 4.0
 K2 = 0.25
 [worked_example.expected]
-beta = 0.6666666666666665
+vapour_fraction = 0.6666666666666665
 [implementations]
 python = "azoth.eos.rachford_rice_binary"
 rust = "azoth_eos::rachford_rice_binary"
@@ -97,7 +97,7 @@ z1 = 0.5
 K1 = 2.0
 K2 = 1.5
 [tests.expected]
-beta = -1.5
+vapour_fraction = -1.5
 [[tests]]
 id = "a_second_two_phase_case"
 type = "reference"
@@ -109,7 +109,7 @@ z1 = 0.3
 K1 = 5.0
 K2 = 0.2
 [tests.expected]
-beta = 0.19999999999999998
+vapour_fraction = 0.19999999999999998
 [[tests]]
 id = "the_returned_beta_solves_the_equation"
 type = "property"

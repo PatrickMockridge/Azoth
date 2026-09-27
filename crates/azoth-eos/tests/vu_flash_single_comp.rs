@@ -39,8 +39,8 @@ fn every_case_in_the_spec() {
             &format!("{context} (T)"),
         );
         common::assert_close(
-            result.beta,
-            common::expected(case, "beta"),
+            result.vapour_fraction,
+            common::expected(case, "vapour_fraction"),
             case.tolerance,
             &format!("{context} (beta)"),
         );
@@ -78,8 +78,8 @@ fn the_split_is_the_fraction_of_the_span_the_energy_is() {
     // Two probes, well inside, from which the span follows.
     let (u_a, u_b) = (-10_000.0, -5_000.0);
     let (a, b) = (at(u_a), at(u_b));
-    let slope = (u_b - u_a) / (b.beta - a.beta);
-    let u_liq = u_a - a.beta * slope;
+    let slope = (u_b - u_a) / (b.vapour_fraction - a.vapour_fraction);
+    let u_liq = u_a - a.vapour_fraction * slope;
     let u_vap = u_liq + slope;
 
     // *Just* inside each end, which is as close as the model may be asked: exactly at
@@ -90,9 +90,9 @@ fn the_split_is_the_fraction_of_the_span_the_energy_is() {
     for (u, wanted) in [(u_liq + inset, 1.0e-6), (u_vap - inset, 1.0 - 1.0e-6)] {
         let result = at(u);
         assert!(
-            (result.beta - wanted).abs() < 1e-5,
+            (result.vapour_fraction - wanted).abs() < 1e-5,
             "at U = {u} the split is {} rather than {wanted}",
-            result.beta
+            result.vapour_fraction
         );
     }
     let (v_liq, v_vap) = (at(u_liq + inset).v.value, at(u_vap - inset).v.value);
@@ -101,9 +101,9 @@ fn the_split_is_the_fraction_of_the_span_the_energy_is() {
         let u = u_liq + fraction * (u_vap - u_liq);
         let result = at(u);
         assert!(
-            (result.beta - fraction).abs() < 1e-9,
+            (result.vapour_fraction - fraction).abs() < 1e-9,
             "U is {fraction} of the span but the split is {}",
-            result.beta
+            result.vapour_fraction
         );
         let wanted = (1.0 - fraction) * v_liq + fraction * v_vap;
         // The endpoints themselves were recovered from probes at `1e-6` of the span,

@@ -39,7 +39,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `phase_count` | dimensionless | How many phases the feed splits into: one, two or three. |
-| `beta` | dimensionless | The mole fraction of the feed in each phase, summing to one. |
+| `phase_fractions` | dimensionless | The mole fraction of the feed in each phase, summing to one. |
 | `x` | dimensionless | The composition of each phase. Every row sums to one; rows are in the solve's order and no order is promised. |
 | `z_factor` | dimensionless | The root of the cubic each phase sits on, as `Z = PV/RT`. This is what tells two liquid phases apart: they share the lower branch and differ in composition, so a type alone would call them one phase. |
 | `ln_phi` | dimensionless | `ln phi_i` in each phase. A row is empty where the cubic cannot evaluate that phase's composition, which the merge can leave behind; `z_factor` is `NaN` there for the same reason. |

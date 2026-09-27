@@ -878,7 +878,7 @@ def vdw1f_mix_binary(
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult:
     """The vapour fraction that solves the Rachford-Rice equation for two components.
 
-    A ``beta`` outside ``[0, 1]`` comes back carrying ``OUT_OF_VALID_RANGE`` rather
+    A ``vapour_fraction`` outside ``[0, 1]`` comes back carrying ``OUT_OF_VALID_RANGE`` rather
     than raising: it says the feed is single phase, which is a real answer.
 
     Raises:
@@ -894,7 +894,7 @@ def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
     """The vapour fraction that solves the Rachford-Rice equation.
 
     ``z`` is the overall composition and ``K`` the K-values at the same temperature and
-    pressure. The root comes back as the equation gives it, so a ``beta`` outside
+    pressure. The root comes back as the equation gives it, so a ``vapour_fraction`` outside
     ``[0, 1]`` is the negative flash rather than a clamp - ``eos.pt_flash`` is the model
     that says what a negative one means. A feed whose K-values do not straddle one has no
     root at all, and comes back as NeqSim's ``1e-12`` clamp at the end it lies towards.
@@ -3027,7 +3027,7 @@ def ge_nrtl_flash(
     :func:`azoth.eos.components.ge_nrtl_phase_parameters`, which must name the same
     components as ``mixture``.
 
-    ``beta`` is ``None`` where there is genuinely no vapour fraction to report - a feed
+    ``vapour_fraction`` is ``None`` where there is genuinely no vapour fraction to report - a feed
     whose K-values are all on one side of one - and read ``phase`` rather than
     guessing from the number's size.
 
@@ -3139,13 +3139,13 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
             [propane, butane], kij={(0, 1): 0.0}
         )
         r = azoth.eos.pt_flash(fluid, T=q(330, "K"), P=q(2.5e6, "Pa"), z=[0.6, 0.4])
-        r.beta, r.x, r.y, r.phase
+        r.vapour_fraction, r.x, r.y, r.phase
 
     ``z`` is **checked rather than renormalised** - a composition that does not sum
     to one is a mistake, and silently correcting it would make it invisible in every
     number downstream.
 
-    **Read ``phase``, not ``beta``.** ``beta`` is ``None`` where there is no vapour
+    **Read ``phase``, not ``vapour_fraction``.** ``vapour_fraction`` is ``None`` where there is no vapour
     fraction to report, which is one of two things: the feed has no two-phase
     solution at all (every K-value on the same side of one, and the result says
     ``all_liquid`` or ``all_vapour``), or the iteration converged to ``x = y = z``
@@ -3223,7 +3223,7 @@ def ph_flash(
     at it::
 
         r = azoth.eos.ph_flash(fluid, ig, P=q(20, "bar"), H=q(-6723.0, "J/mol"), z=[0.6, 0.4])
-        r.T, r.phase, r.beta
+        r.T, r.phase, r.vapour_fraction
 
     **``H`` is a difference from the datum ``ideal_gas`` carries**, not an absolute
     quantity. Two calls with different reference values are not comparable, and their
@@ -3258,7 +3258,7 @@ def ps_flash(
     rather than energy: a compressor or an expander assumed ideal, a turbine, a nozzle::
 
         r = azoth.eos.ps_flash(fluid, ig, P=q(20, "bar"), S=q(-39.078, "J/(mol*K)"), z=[0.6, 0.4])
-        r.T, r.phase, r.beta
+        r.T, r.phase, r.vapour_fraction
 
     **``S`` is a difference from the datum ``ideal_gas`` carries**, not an absolute
     quantity - the same caveat :func:`molar_enthalpy_entropy` carries, for the same
@@ -3308,27 +3308,27 @@ def tv_flash(
 
 
 def pvf_flash(
-    mixture: Mixture, P: Q, beta: float, temperature: Q, z: list[float]
+    mixture: Mixture, P: Q, vapour_fraction: float, temperature: Q, z: list[float]
 ) -> PvfFlashResult:
-    """The temperature at which a feed's vapour fraction at a pressure is ``beta``.
+    """The temperature at which a feed's vapour fraction at a pressure is ``vapour_fraction``.
 
     At a fixed pressure the vapour fraction rises monotonically through the two-phase
     region, from zero at the bubble point to one at the dew point, so a specified
     fraction is a temperature. ``temperature`` centres the bracket - NeqSim searches the
     feed's own temperature span - and is not an initial guess at the answer.
 
-    A ``beta`` of exactly zero or one is refused: those are the bubble and dew points,
+    A ``vapour_fraction`` of exactly zero or one is refused: those are the bubble and dew points,
     and :func:`bubble_temperature` and :func:`dew_temperature` are the models for them.
 
     Raises:
-        InvalidInputError: if ``beta`` is exactly an endpoint.
-        OutOfRangeError: if ``P`` is not positive, or ``beta`` outside ``(0, 1)``.
+        InvalidInputError: if ``vapour_fraction`` is exactly an endpoint.
+        OutOfRangeError: if ``P`` is not positive, or ``vapour_fraction`` outside ``(0, 1)``.
         SolverNotConvergedError: if the search brackets nothing, or reaches its cap.
 
     See :func:`azoth.eos.reference.pvf_flash`.
     """
     return resolve(_PVF_FLASH)(  # type: ignore[no-any-return]
-        mixture=mixture, P=P, beta=beta, temperature=temperature, z=z
+        mixture=mixture, P=P, vapour_fraction=vapour_fraction, temperature=temperature, z=z
     )
 
 
@@ -3429,7 +3429,7 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
     phase the flash has not found::
 
         r = azoth.eos.tp_multiflash(fluid, T=q(200, "K"), P=q(10, "bar"), z=[0.4, 0.3, 0.3])
-        r.phase_count, r.beta, r.z_factor
+        r.phase_count, r.phase_fractions, r.z_factor
 
     **Up to three phases, and never four.** Upstream raises the system's phase ceiling to
     three before the flash runs, so three is the model's own bound rather than a convergence

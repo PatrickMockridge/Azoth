@@ -37,7 +37,7 @@ const HOTTEST: f64 = 2000.0;
 fn beta_at(mixture: &Mixture, p: Pressure, feed: &[f64], t: f64) -> Result<(f64, PtFlashResult)> {
     let flash = pt_flash(mixture, kelvins(t), p, feed)?;
     let beta = match flash.phase {
-        Phase::TwoPhase => flash.beta.unwrap_or(0.0),
+        Phase::TwoPhase => flash.vapour_fraction.unwrap_or(0.0),
         Phase::AllVapour | Phase::Trivial => 1.0,
         Phase::AllLiquid => 0.0,
     };
@@ -75,25 +75,25 @@ fn beta_at(mixture: &Mixture, p: Pressure, feed: &[f64], t: f64) -> Result<(f64,
 pub fn pvf_flash(
     mixture: &Mixture,
     p: Pressure,
-    beta: f64,
+    vapour_fraction: f64,
     feed_temperature: ThermodynamicTemperature,
     feed: &[f64],
 ) -> Result<PvfFlashResult> {
     let spec = &model_gen::PVF_FLASH_SPEC;
     let mut warnings = Vec::new();
 
-    // Checked before the range checks, because the spec's own bound on `beta` is the
+    // Checked before the range checks, because the spec's own bound on `vapour_fraction` is the
     // same interval and would answer first with a message that names a bound rather
     // than the two models whose job the endpoints are.
-    if beta <= 0.0 || beta >= 1.0 {
+    if vapour_fraction <= 0.0 || vapour_fraction >= 1.0 {
         return Err(AzothError::InvalidInput {
-            field: "beta".to_string(),
+            field: "vapour_fraction".to_string(),
             reason: format!(
-                "a vapour fraction of {beta} is the {} point, and those are \
+                "a vapour fraction of {vapour_fraction} is the {} point, and those are \
                  `eos.bubble_temperature` and `eos.dew_temperature` - calculations with \
                  their own procedures. This model solves the interior of the two-phase \
                  region, which is the part they do not",
-                if beta <= 0.0 { "bubble" } else { "dew" }
+                if vapour_fraction <= 0.0 { "bubble" } else { "dew" }
             ),
         });
     }
@@ -101,7 +101,7 @@ pub fn pvf_flash(
         spec.input_checks(),
         |quantity| match quantity {
             "P" => Some(p.value),
-            "beta" => Some(beta),
+            "vapour_fraction" => Some(vapour_fraction),
             _ => None,
         },
         &mut warnings,
@@ -125,21 +125,21 @@ pub fn pvf_flash(
     // Widen until the specification is inside, which is what makes the search a
     // bracketing one rather than a descent from a guess.
     let mut attempts = 0;
-    while cold_beta > beta && attempts < WIDEN_LIMIT {
+    while cold_beta > vapour_fraction && attempts < WIDEN_LIMIT {
         cold = (cold - WIDEN_STEP).max(COLDEST);
         cold_beta = beta_at(mixture, p, feed, cold)?.0;
         attempts += 1;
     }
     attempts = 0;
-    while hot_beta < beta && attempts < WIDEN_LIMIT {
+    while hot_beta < vapour_fraction && attempts < WIDEN_LIMIT {
         hot = (hot + WIDEN_STEP).min(HOTTEST);
         hot_beta = beta_at(mixture, p, feed, hot)?.0;
         attempts += 1;
     }
-    if !(cold_beta <= beta && beta <= hot_beta) {
+    if !(cold_beta <= vapour_fraction && vapour_fraction <= hot_beta) {
         return Err(AzothError::SolverNotConverged {
             iterations: 0,
-            residual: beta - cold_beta.min(hot_beta),
+            residual: vapour_fraction - cold_beta.min(hot_beta),
             tolerance: algorithm.tolerance,
         });
     }
@@ -149,7 +149,7 @@ pub fn pvf_flash(
     // function is curved; halving the stale end restores the bisection's guarantee
     // without giving up the secant's speed.
     let (mut t_a, mut t_b) = (cold, hot);
-    let (mut f_a, mut f_b) = (cold_beta - beta, hot_beta - beta);
+    let (mut f_a, mut f_b) = (cold_beta - vapour_fraction, hot_beta - vapour_fraction);
     let mut iterations = 0;
     let mut residual = f64::NAN;
     let mut answer = f64::NAN;
@@ -157,7 +157,7 @@ pub fn pvf_flash(
     for step in 1..=algorithm.max_iterations {
         iterations = step;
         let t_c = (t_a - f_a * (t_b - t_a) / (f_b - f_a)).clamp(COLDEST, HOTTEST);
-        let f_c = beta_at(mixture, p, feed, t_c)?.0 - beta;
+        let f_c = beta_at(mixture, p, feed, t_c)?.0 - vapour_fraction;
         residual = f_c.abs();
         if residual < algorithm.tolerance {
             answer = t_c;
@@ -188,7 +188,7 @@ pub fn pvf_flash(
     warnings.extend(flash.warnings.iter().cloned());
     Ok(PvfFlashResult {
         t: kelvins(answer),
-        beta: found,
+        vapour_fraction: found,
         phase: flash.phase,
         x: flash.x,
         y: flash.y,
@@ -196,7 +196,7 @@ pub fn pvf_flash(
         z_liquid: flash.z_liquid,
         z_vapour: flash.z_vapour,
         iterations,
-        residual: (found - beta).abs(),
+        residual: (found - vapour_fraction).abs(),
         warnings,
     })
 }

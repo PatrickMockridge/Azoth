@@ -40,7 +40,7 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
 
     Example:
         >>> r = rachford_rice_binary(0.6, 4.0, 0.25)
-        >>> round(r.beta, 16)
+        >>> round(r.vapour_fraction, 16)
         0.6666666666666665
         >>> r.is_clean
         True
@@ -60,6 +60,6 @@ def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryR
     # Guarded by the `equals: 1` bounds above, so neither divisor is zero.
     beta = -(z1 * a + (1.0 - z1) * b) / (a * b)
 
-    apply_checks(checks.derived, lambda name: beta if name == "beta" else None, warnings)
+    apply_checks(checks.derived, lambda name: beta if name == "vapour_fraction" else None, warnings)
 
-    return RachfordRiceBinaryResult(beta=beta, warnings=tuple(warnings))
+    return RachfordRiceBinaryResult(vapour_fraction=beta, warnings=tuple(warnings))

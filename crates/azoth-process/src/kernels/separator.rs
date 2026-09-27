@@ -68,7 +68,7 @@ pub fn separator(
                 flash.temperature,
                 flash.x,
                 flash.y,
-                vapour_fraction(flash.phase, flash.beta),
+                vapour_fraction(flash.phase, flash.vapour_fraction),
             )
         }
         None => {
@@ -77,7 +77,7 @@ pub fn separator(
                 feed.t,
                 flash.x,
                 flash.y,
-                vapour_fraction(flash.phase, flash.beta),
+                vapour_fraction(flash.phase, flash.vapour_fraction),
             )
         }
     };

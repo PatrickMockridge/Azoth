@@ -6,7 +6,7 @@ source = "The state `eos.pt_flash`'s own case converges to - methane/n-butane 0.
 [cases.inputs]
 components = ["methane", "n-butane"]
 P = 2500000.0
-beta = 0.8422055475803881
+vapour_fraction = 0.8422055475803881
 temperature = 330.0
 z = [0.6, 0.4]
 [cases.expected]
@@ -18,7 +18,7 @@ source = "As the first: the 350 K, 50 bar state of `eos.pt_flash`'s `methane_pro
 [cases.inputs]
 components = ["methane", "propane", "n-butane"]
 P = 5000000.0
-beta = 0.993505628186177
+vapour_fraction = 0.993505628186177
 temperature = 350.0
 z = [0.5, 0.3, 0.2]
 [cases.expected]

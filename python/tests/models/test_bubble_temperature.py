@@ -91,8 +91,8 @@ def test_the_flash_agrees_at_the_returned_temperature() -> None:
             P=Q(p, "Pa"),
             z=held,
         )
-        assert flash.beta is not None, f"P={p}: the flash found no split"
-        assert abs(flash.beta) < 1e-8, f"P={p}: beta is {flash.beta}, not zero"
+        assert flash.vapour_fraction is not None, f"P={p}: the flash found no split"
+        assert abs(flash.vapour_fraction) < 1e-8, f"P={p}: beta is {flash.vapour_fraction}, not zero"
         for i, xi in enumerate(held):
             h.assert_close(flash.x[i], xi, 1e-8, f"P={p}: liquid {i}")
             # The incipient composition is a successive-substitution estimate from

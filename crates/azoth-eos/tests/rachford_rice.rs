@@ -67,8 +67,8 @@ fn every_case_in_the_spec() {
         )
         .unwrap_or_else(|e| panic!("{context} should compute but failed: {e}"));
         common::assert_close(
-            result.beta,
-            common::expected(case, "beta"),
+            result.vapour_fraction,
+            common::expected(case, "vapour_fraction"),
             case.tolerance,
             &format!("{context} (beta)"),
         );
@@ -107,7 +107,7 @@ fn the_root_agrees_with_the_bisection_wherever_both_are_defined() {
         };
         let got = rachford_rice(&z, &k)
             .expect("a bracketed feed computes")
-            .beta;
+            .vapour_fraction;
         assert!(
             (got - expected).abs() <= 1.0e-10,
             "z={z:?}, K={k:?}: the model gives {got} and the bisection {expected}"
@@ -137,14 +137,14 @@ fn the_root_matches_the_bisection_on_every_flash_case() {
         };
         let got = rachford_rice(z, k)
             .unwrap_or_else(|e| panic!("{context} should compute but failed: {e}"))
-            .beta;
+            .vapour_fraction;
         assert!(
             (got - expected).abs() <= 1.0e-10,
             "{context}: the model gives {got} and the flash's bisection {expected}"
         );
         common::assert_close(
             got,
-            common::expected(case, "beta"),
+            common::expected(case, "vapour_fraction"),
             case.tolerance,
             &format!("{context} (beta)"),
         );
@@ -165,9 +165,9 @@ fn a_feed_that_cannot_split_comes_back_clamped() {
     ] {
         let got = rachford_rice(&z, &k).expect("a single-phase feed is not an error");
         assert!(
-            (got.beta - expected).abs() < 1.0e-15,
+            (got.vapour_fraction - expected).abs() < 1.0e-15,
             "z={z:?}, K={k:?}: expected the clamp {expected}, got {}",
-            got.beta
+            got.vapour_fraction
         );
         assert!(
             bracket(&k).is_none(),
@@ -191,7 +191,7 @@ fn a_root_outside_the_unit_interval_is_reported_not_clamped() {
     let k = [5.799172708809655, 0.14913889826410245];
     let below = rachford_rice(&z, &k)
         .expect("a bracketed feed computes")
-        .beta;
+        .vapour_fraction;
     assert!(
         below < -0.06 && below > -0.08,
         "the negative flash should be near -0.07, got {below}"
@@ -205,7 +205,7 @@ fn a_root_outside_the_unit_interval_is_reported_not_clamped() {
     // `0.5(K1-1)/(1+3b) + 0.5(K2-1)/(1-0.1b) = 0` rearranges to `b = 4`.
     let above = rachford_rice(&[0.5, 0.5], &[1.5, 0.9])
         .expect("a bracketed feed computes")
-        .beta;
+        .vapour_fraction;
     assert!(
         (above - 4.0).abs() <= 1.0e-10,
         "the superheated root should be four, got {above}"
@@ -226,7 +226,7 @@ fn an_ion_is_skipped() {
         &[1.0e-40, 7.304244305324782, 0.33749596785762953],
     )
     .expect("an ion does not stop the split")
-    .beta;
+    .vapour_fraction;
     assert!(
         (with_ion - 0.6754007405823642).abs() <= 1.0e-12,
         "the ion case gives {with_ion}"
@@ -236,7 +236,7 @@ fn an_ion_is_skipped() {
     // the clamp rather than by dividing by zero.
     let none = rachford_rice(&[0.5, 0.5], &[1.0e-40, 1.0e-50])
         .expect("a feed of ions is not an error")
-        .beta;
+        .vapour_fraction;
     assert!((none - 1.0e-12).abs() < 1.0e-15, "got {none}");
 }
 

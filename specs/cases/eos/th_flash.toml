@@ -9,4 +9,4 @@ H = -2217.9839518894687
 z = [0.6, 0.4]
 [cases.expected]
 P = 1000000.0
-beta = 0.8356955
+vapour_fraction = 0.8356955

@@ -61,7 +61,7 @@ pub fn vh_flash(
     Ok(VhFlashResult {
         pressure: pascals(solved.pressure),
         temperature: kelvins(solved.temperature),
-        beta: solved.flash.beta,
+        vapour_fraction: solved.flash.vapour_fraction,
         x: solved.flash.x,
         y: solved.flash.y,
         k: solved.flash.k,

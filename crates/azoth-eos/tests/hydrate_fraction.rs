@@ -61,8 +61,8 @@ fn every_case_in_the_spec() {
 
         let context = &format!("{}::{}", spec.id, case.id);
         common::assert_close(
-            result.beta,
-            common::expected(case, "beta"),
+            result.hydrate_fraction,
+            common::expected(case, "hydrate_fraction"),
             case.tolerance,
             context,
         );
@@ -133,9 +133,9 @@ fn the_two_models_are_one_equilibrium() {
     let on = hydrate_fraction(&mixture, kelvins(at), pascals(1.0e7), &Z).expect("computes");
 
     assert_eq!(
-        above.beta, 0.0,
+        above.hydrate_fraction, 0.0,
         "a kelvin above the formation temperature the fraction is {}, and it is not a hydrate",
-        above.beta
+        above.hydrate_fraction
     );
     assert!(
         above.residual > 0.0 && below.residual < 0.0,
@@ -145,9 +145,9 @@ fn the_two_models_are_one_equilibrium() {
         below.residual
     );
     assert!(
-        below.beta > 0.05,
+        below.hydrate_fraction > 0.05,
         "five kelvin below the formation temperature the fraction is only {}",
-        below.beta
+        below.hydrate_fraction
     );
     assert!(
         on.residual.abs() < 1.0e-6,
@@ -160,11 +160,11 @@ fn the_two_models_are_one_equilibrium() {
     // fraction goes from zero to the bound as the temperature crosses. Exactly at the crossing
     // the residual's sign is round-off, so either branch is the honest answer there.
     assert!(
-        on.beta == 0.0 || (on.beta - below.beta).abs() < 1.0e-3,
+        on.hydrate_fraction == 0.0 || (on.hydrate_fraction - below.hydrate_fraction).abs() < 1.0e-3,
         "at the formation temperature the fraction is {}, which is neither zero nor the {} \
          below it",
-        on.beta,
-        below.beta
+        on.hydrate_fraction,
+        below.hydrate_fraction
     );
 }
 
@@ -196,10 +196,10 @@ fn the_cages_move_the_fraction_and_not_the_fluid() {
     let moved =
         hydrate_fraction(&sabotaged, kelvins(288.15), pascals(1.0e7), &Z).expect("computes");
     assert!(
-        (sound.beta - moved.beta).abs() > 1.0e-4,
+        (sound.hydrate_fraction - moved.hydrate_fraction).abs() > 1.0e-4,
         "halving methane's Langmuir constant moved the fraction only from {} to {}",
-        sound.beta,
-        moved.beta
+        sound.hydrate_fraction,
+        moved.hydrate_fraction
     );
 
     let sound_fluid = pt_flash(&mixture, kelvins(288.15), pascals(1.0e7), &Z).expect("flashes");

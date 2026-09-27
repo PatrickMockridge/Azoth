@@ -193,7 +193,7 @@ fn evaluate(
                 molar_enthalpy_entropy(mixture, ideal_gas, t, p, &flash.y, flash.z_vapour)?;
             let liquid_p = PhaseProperties::of(&liquid, flash.z_liquid, tk, pk);
             let vapour_p = PhaseProperties::of(&vapour, flash.z_vapour, tk, pk);
-            let beta = flash.beta.unwrap_or(0.0);
+            let beta = flash.vapour_fraction.unwrap_or(0.0);
             (
                 (1.0 - beta) * liquid_p.value(which, pk) + beta * vapour_p.value(which, pk),
                 (1.0 - beta) * liquid_p.cp + beta * vapour_p.cp,

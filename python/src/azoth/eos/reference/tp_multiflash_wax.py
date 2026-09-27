@@ -126,13 +126,13 @@ def tp_multiflash_wax(
 
     # **The two-phase flash seeds it**, and is also the answer if the wax does not survive.
     flash = pt_flash(mixture, T, P, z)
-    split_of_flash = flash.beta if flash.beta is not None else 0.0
+    split_of_flash = flash.vapour_fraction if flash.vapour_fraction is not None else 0.0
 
     def two_phase(iterations: int, residual: float, converged: bool) -> TpMultiflashWaxResult:
         return TpMultiflashWaxResult(
             wax_fraction=0.0,
             phase_count=2,
-            beta=(1.0 - split_of_flash, split_of_flash),
+            phase_fractions=(1.0 - split_of_flash, split_of_flash),
             x=(tuple(flash.x), tuple(flash.y)),
             iterations=iterations,
             residual=residual,
@@ -162,7 +162,7 @@ def tp_multiflash_wax(
     return TpMultiflashWaxResult(
         wax_fraction=wax,
         phase_count=len(solved),
-        beta=tuple(phase.fraction for phase in solved),
+        phase_fractions=tuple(phase.fraction for phase in solved),
         x=tuple(tuple(phase.composition) for phase in solved),
         iterations=iterations,
         residual=residual,

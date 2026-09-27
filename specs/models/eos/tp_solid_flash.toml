@@ -59,7 +59,7 @@ description = "the fraction of the feed's moles in the pure solid, and zero wher
 [outputs.phase_count]
 unit = "dimensionless"
 description = "how many phases the feed splits into, the solid counted when it is there"
-[outputs.beta]
+[outputs.phase_fractions]
 type = "vector"
 unit = "dimensionless"
 length = "one per phase"

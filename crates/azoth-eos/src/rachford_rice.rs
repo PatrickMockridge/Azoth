@@ -132,11 +132,11 @@ fn residual(z: &[f64], k: &[f64], beta: f64) -> f64 {
 /// use azoth_eos::rachford_rice::rachford_rice;
 ///
 /// let r = rachford_rice(&[0.6, 0.4], &[7.304244305324782, 0.33749596785762953])?;
-/// assert!((r.beta - 0.8422055475803871).abs() < 1e-12);
+/// assert!((r.vapour_fraction - 0.8422055475803871).abs() < 1e-12);
 ///
 /// // Every K below one: no root, so NeqSim's clamp comes back rather than an error.
 /// let single = rachford_rice(&[0.5, 0.5], &[0.2, 0.3])?;
-/// assert!((single.beta - 1e-12).abs() < 1e-15);
+/// assert!((single.vapour_fraction - 1e-12).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn rachford_rice(z: &[f64], k: &[f64]) -> Result<RachfordRiceResult> {
@@ -183,7 +183,7 @@ pub fn rachford_rice(z: &[f64], k: &[f64]) -> Result<RachfordRiceResult> {
         });
     }
 
-    Ok(RachfordRiceResult { beta, warnings })
+    Ok(RachfordRiceResult { vapour_fraction: beta, warnings })
 }
 
 /// NeqSim's `calcBetaNielsen2023`: the same equation solved in Nielsen & Lia's rescaled

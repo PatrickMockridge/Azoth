@@ -103,7 +103,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
         ...     kij={(0, 1): 0.05},
         ... )
         >>> r = azoth.eos.pt_flash(fluid, T=q(330.0, "K"), P=q(2.5e6, "Pa"), z=[0.6, 0.4])
-        >>> round(r.beta, 9)
+        >>> round(r.vapour_fraction, 9)
         0.844722027
         >>> r.phase.value
         'two_phase'
@@ -296,7 +296,7 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     vapour_state = phase_state(reduced, kij, y, liquid=False)
 
     return PtFlashResult(
-        beta=beta_out,
+        vapour_fraction=beta_out,
         x=tuple(x),
         y=tuple(y),
         k=tuple(k),

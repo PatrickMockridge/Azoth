@@ -155,7 +155,7 @@ pub fn tray(
     let (temperature, phase, x, y, gas_fraction, liquid_fraction) = match out_temperature {
         Some(t) => {
             let flash = pt_flash(&mixture, t, mixed.p, &mixed.z)?;
-            let (gas, liquid) = phase_fractions(flash.phase, flash.beta)?;
+            let (gas, liquid) = phase_fractions(flash.phase, flash.vapour_fraction)?;
             (t, flash.phase, flash.x, flash.y, gas, liquid)
         }
         None => {
@@ -169,7 +169,7 @@ pub fn tray(
                 joules_per_mole(target),
                 &mixed.z,
             )?;
-            let (gas, liquid) = phase_fractions(flash.phase, flash.beta)?;
+            let (gas, liquid) = phase_fractions(flash.phase, flash.vapour_fraction)?;
             (
                 flash.temperature,
                 flash.phase,

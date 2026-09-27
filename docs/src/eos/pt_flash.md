@@ -49,7 +49,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | *Optional.* The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction. |
+| `vapour_fraction` | dimensionless | *Optional.* The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction. |
 | `x` | dimensionless | liquid-phase mole fractions |
 | `y` | dimensionless | vapour-phase mole fractions |
 | `k` | dimensionless | K-values, `K_i = y_i / x_i = phi_i^L / phi_i^V`. Reported because they are the iterate the loop converges on, so a caller can see the convergence rather than inferring it from `residual`. |
@@ -58,7 +58,7 @@ not an equation, and both implementations read it from here.
 | `z_liquid` | dimensionless | the liquid root of the cubic at the liquid composition. The *smallest* admissible root, selected by ordering and never by an initial guess. |
 | `z_vapour` | dimensionless | the vapour root at the vapour composition, the largest admissible one |
 | `min_t_over_tc` | dimensionless | the smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point. |
-| `phase` | two_phase / all_liquid / all_vapour / trivial | What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`). |
+| `phase` | two_phase / all_liquid / all_vapour / trivial | What the converged state is: `two_phase` (`vapour_fraction` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`). |
 | `iterations` | dimensionless | outer steps taken, including the final evaluation of the converged state. Each is either a successive-substitution step or, past `algorithm.fallback.after`, one step of the second-order scheme. |
 | `residual` | dimensionless | the last step's own measure: `rms_i |ln K_i - ln K_i_previous|` for successive substitution, or the isofugacity residual `max_i |ln(y_i phi_i^V) - ln(x_i phi_i^L)|` for the second-order one, which stops on that rather than on a step so the two stop in the same place. |
 

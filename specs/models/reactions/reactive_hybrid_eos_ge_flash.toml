@@ -53,7 +53,7 @@ unit = "mol"
 length = "one per component"
 description = "the feed's mole numbers. **The inventory the passes hand each other is not this vector**: a reaction changes the number of species moles, so the coupled inventory moves off the feed and the answer reports it."
 [outputs]
-[outputs.beta]
+[outputs.phase_fractions]
 type = "vector"
 unit = "dimensionless"
 length = "one per role"

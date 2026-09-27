@@ -173,7 +173,7 @@ def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
 
     Example:
         >>> r = rachford_rice([0.6, 0.4], [7.304244305324782, 0.33749596785762953])
-        >>> round(r.beta, 12)
+        >>> round(r.vapour_fraction, 12)
         0.84220554758
         >>> r.is_clean
         True
@@ -207,4 +207,4 @@ def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
     else:
         beta = _PHASE_FRACTION_MINIMUM_LIMIT
 
-    return RachfordRiceResult(beta=beta, warnings=tuple(warnings))
+    return RachfordRiceResult(vapour_fraction=beta, warnings=tuple(warnings))

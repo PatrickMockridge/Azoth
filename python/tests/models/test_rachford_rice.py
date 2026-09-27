@@ -39,7 +39,7 @@ def residual(z: list[float], k: list[float], beta: float) -> float:
 def test_spec_case(case: dict[str, Any]) -> None:
     """Run one case declared in the model spec."""
     result = call(case)
-    h.assert_close(result.beta, case["expected"]["beta"], case["tolerance"], f"{case['id']} (beta)")
+    h.assert_close(result.vapour_fraction, case["expected"]["beta"], case["tolerance"], f"{case['id']} (beta)")
     h.assert_consistent(result, case["id"])
 
 
@@ -60,7 +60,7 @@ def test_the_reported_root_solves_the_equation() -> None:
         z, k = case["inputs"]["z"], case["inputs"]["K"]
         if not (any(v > 1.0 for v in k) and any(v < 1.0 for v in k)):
             continue
-        beta = call(case).beta
+        beta = call(case).vapour_fraction
         assert abs(residual(z, k, beta)) <= SPEC["algorithm"]["tolerance"], (
             f"{case['id']}: g({beta}) = {residual(z, k, beta):e}, beyond the declared tolerance"
         )
@@ -79,11 +79,11 @@ def test_a_root_outside_the_unit_interval_is_reported_not_clamped() -> None:
     """
     subcooled_k = [5.799172708809655, 0.14913889826410245]
     negative = rachford_rice([0.1, 0.9], subcooled_k)
-    assert negative.beta < -0.06, f"the subcooled state's root is below zero; got {negative.beta}"
-    assert abs(residual([0.1, 0.9], subcooled_k, negative.beta)) <= 1e-10
+    assert negative.vapour_fraction < -0.06, f"the subcooled state's root is below zero; got {negative.vapour_fraction}"
+    assert abs(residual([0.1, 0.9], subcooled_k, negative.vapour_fraction)) <= 1e-10
 
     superheated = rachford_rice([0.5, 0.5], [1.5, 0.9])
-    h.assert_close(superheated.beta, 4.0, 1e-10, "the superheated root")
+    h.assert_close(superheated.vapour_fraction, 4.0, 1e-10, "the superheated root")
 
 
 @pytest.mark.parametrize(
@@ -99,13 +99,13 @@ def test_a_feed_that_cannot_split_comes_back_clamped(
 ) -> None:
     """A feed with no root is NeqSim's clamp, not an error."""
     result = rachford_rice(z, k)
-    h.assert_close(result.beta, expected, 1e-15, "the clamp")
+    h.assert_close(result.vapour_fraction, expected, 1e-15, "the clamp")
 
 
 def test_an_ion_is_skipped() -> None:
     """A K-value below NeqSim's threshold takes no part in the sum."""
     with_ion = rachford_rice([0.1, 0.45, 0.45], [1e-40, 7.304244305324782, 0.33749596785762953])
-    h.assert_close(with_ion.beta, 0.6754007405823642, 1e-12, "the ion case")
+    h.assert_close(with_ion.vapour_fraction, 0.6754007405823642, 1e-12, "the ion case")
 
 
 @pytest.mark.parametrize("bad", [0.0, -0.5])

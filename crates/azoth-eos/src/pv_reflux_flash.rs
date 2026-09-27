@@ -135,7 +135,7 @@ pub fn pv_reflux_flash(
         f_old = f;
         t_older = t_old;
         t_old = current;
-        f = reflux - phase_of.ratio(flash.beta);
+        f = reflux - phase_of.ratio(flash.vapour_fraction);
 
         let measured = t_old - t_older;
         let slope = if measured.abs() > 1.0e-12 {
@@ -175,10 +175,10 @@ pub fn pv_reflux_flash(
     }
 
     warnings.extend(flash.warnings.iter().cloned());
-    let residual = (reflux - phase_of.ratio(flash.beta)).abs();
+    let residual = (reflux - phase_of.ratio(flash.vapour_fraction)).abs();
     Ok(PvRefluxFlashResult {
         t: kelvins(current),
-        beta: flash.beta,
+        vapour_fraction: flash.vapour_fraction,
         phase: flash.phase,
         x: flash.x,
         y: flash.y,

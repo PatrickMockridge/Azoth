@@ -31,12 +31,12 @@ use crate::spec_gen;
 /// use azoth_eos::rachford_rice_binary;
 ///
 /// let r = rachford_rice_binary(0.6, 4.0, 0.25)?;
-/// assert!((r.beta - 0.6666666666666665).abs() < 1e-15);
+/// assert!((r.vapour_fraction - 0.6666666666666665).abs() < 1e-15);
 /// assert!(r.warnings.is_empty());
 ///
 /// // A feed that does not split: both K-values exceed 1.
 /// let single = rachford_rice_binary(0.5, 2.0, 1.5)?;
-/// assert!((single.beta + 1.5).abs() < 1e-15);
+/// assert!((single.vapour_fraction + 1.5).abs() < 1e-15);
 /// assert!(!single.warnings.is_empty());
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
@@ -66,11 +66,11 @@ pub fn rachford_rice_binary(z1: f64, K1: f64, K2: f64) -> Result<RachfordRiceBin
     apply_checks(
         spec.derived_checks(),
         |quantity| match quantity {
-            "beta" => Some(beta),
+            "vapour_fraction" => Some(beta),
             _ => None,
         },
         &mut warnings,
     )?;
 
-    Ok(RachfordRiceBinaryResult { beta, warnings })
+    Ok(RachfordRiceBinaryResult { vapour_fraction: beta, warnings })
 }

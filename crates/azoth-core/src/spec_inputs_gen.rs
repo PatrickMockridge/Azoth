@@ -687,7 +687,7 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("eos.pv_reflux_flash", "z", "dimensionless"),
     ("eos.pvf_flash", "P", "pressure"),
-    ("eos.pvf_flash", "beta", "dimensionless"),
+    ("eos.pvf_flash", "vapour_fraction", "dimensionless"),
     ("eos.pvf_flash", "temperature", "thermodynamic_temperature"),
     ("eos.pvf_flash", "z", "dimensionless"),
     ("eos.rachford_rice", "z", "dimensionless"),

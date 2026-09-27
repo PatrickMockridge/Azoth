@@ -95,7 +95,7 @@ impl Stream {
             p,
             t,
             h: joules_per_mole(h),
-            vapour_fraction: vapour_fraction(flash.phase, flash.beta),
+            vapour_fraction: vapour_fraction(flash.phase, flash.vapour_fraction),
         })
     }
 
@@ -287,7 +287,7 @@ impl Stream {
             p,
             t: r.temperature,
             h,
-            vapour_fraction: vapour_fraction(r.phase, r.beta),
+            vapour_fraction: vapour_fraction(r.phase, r.vapour_fraction),
         })
     }
 }

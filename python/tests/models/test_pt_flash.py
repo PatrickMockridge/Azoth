@@ -91,8 +91,8 @@ def test_spec_case(case: dict[str, Any]) -> None:
     )
     assert result.iterations == expected["iterations"], f"{case['id']}: iteration count"
 
-    assert result.beta is not None, f"{case['id']}: every spec case is a split"
-    h.assert_close(result.beta, expected["beta"], tolerance, f"{case['id']} (beta)")
+    assert result.vapour_fraction is not None, f"{case['id']}: every spec case is a split"
+    h.assert_close(result.vapour_fraction, expected["beta"], tolerance, f"{case['id']} (beta)")
 
     for name in ("x", "y", "k", "ln_phi_liquid", "ln_phi_vapour"):
         actual = getattr(result, name)
@@ -118,7 +118,7 @@ def test_the_five_identities_hold_at_every_returned_answer() -> None:
     for case in CASES:
         result = call(case)
         z = case["inputs"]["z"]
-        beta = result.beta
+        beta = result.vapour_fraction
         assert beta is not None
 
         for i, zi in enumerate(z):
@@ -146,7 +146,7 @@ def test_the_answer_is_a_gibbs_minimum() -> None:
     fluid = methane_butane()
     z = [0.1, 0.9]
     result = pt_flash(fluid, T=Q(300.0, "K"), P=Q(3.0e6, "Pa"), z=z)
-    beta = result.beta
+    beta = result.vapour_fraction
     assert beta is not None
 
     def g(beta: float) -> float:
@@ -247,16 +247,16 @@ def test_the_mixture_parameters_and_vapour_fraction_reduce_to_the_binary_kernels
 
     for t_c, p_pa, z in ((330.0, 2.5e6, [0.6, 0.4]), (300.0, 3.0e6, [0.1, 0.9])):
         result = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=z)
-        assert result.beta is not None
+        assert result.vapour_fraction is not None
         bounds = rachford_rice_bounds(list(result.k))
         assert bounds is not None
         beta = rachford_rice(list(z), list(result.k), bounds, 1e-14, 200)
         closed_form = rachford_rice_binary(z[0], result.k[0], result.k[1])
-        h.assert_close(beta, closed_form.beta, 1e-12, f"beta at T={t_c}")
+        h.assert_close(beta, closed_form.vapour_fraction, 1e-12, f"beta at T={t_c}")
 
         # And the same reduction through the public API, which is the one a caller
         # would actually be relying on.
-        h.assert_close(result.beta, closed_form.beta, 1e-12, f"reported beta at T={t_c}")
+        h.assert_close(result.vapour_fraction, closed_form.vapour_fraction, 1e-12, f"reported beta at T={t_c}")
 
 
 def test_a_feed_with_no_rachford_rice_root_is_single_phase() -> None:
@@ -277,7 +277,7 @@ def test_a_feed_with_no_rachford_rice_root_is_single_phase() -> None:
         z = [0.6, 0.4]
         result = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=z)
         assert result.phase is expected, f"T={t_c}, P={p_pa}"
-        assert result.beta is None, f"T={t_c}: no root means no vapour fraction"
+        assert result.vapour_fraction is None, f"T={t_c}: no root means no vapour fraction"
         assert result.iterations == 1, f"T={t_c}: a no-root diagnosis settles at once"
         assert _is_nan(result.residual), f"T={t_c}: no step completed"
         assert any(w.code == "TRIVIAL_SOLUTION" for w in result.warnings), f"T={t_c}"
@@ -302,12 +302,12 @@ def test_a_negative_flash_reports_its_vapour_fraction() -> None:
     result = pt_flash(fluid, T=Q(330.0, "K"), P=Q(1.0e6, "Pa"), z=z)
 
     assert result.phase is Phase.ALL_VAPOUR
-    assert result.beta is not None and result.beta > 1.0
+    assert result.vapour_fraction is not None and result.vapour_fraction > 1.0
     assert result.iterations == 9, "the iteration ran, so this is not a proof"
     assert any(w.code == "OUT_OF_VALID_RANGE" for w in result.warnings)
 
     for i, zi in enumerate(z):
-        material = (1.0 - result.beta) * result.x[i] + result.beta * result.y[i]
+        material = (1.0 - result.vapour_fraction) * result.x[i] + result.vapour_fraction * result.y[i]
         assert abs(material - zi) <= 1e-12, f"the negative flash breaks the balance at {i}"
         assert result.x[i] > 0.0 and result.y[i] > 0.0
 
@@ -340,13 +340,13 @@ def test_the_phase_label_and_the_vapour_fraction_agree() -> None:
             where = f"T={temperature} K, P={pressure} Pa"
             seen.add(result.phase)
             if result.phase is Phase.TWO_PHASE:
-                assert result.beta is not None, f"{where}: a split with no vapour fraction"
-                assert 0.0 <= result.beta <= 1.0, (
-                    f"{where}: `two_phase` with beta = {result.beta}, which is not a "
+                assert result.vapour_fraction is not None, f"{where}: a split with no vapour fraction"
+                assert 0.0 <= result.vapour_fraction <= 1.0, (
+                    f"{where}: `two_phase` with beta = {result.vapour_fraction}, which is not a "
                     f"split and not a number a caller can use as one"
                 )
             elif result.phase is Phase.TRIVIAL:
-                assert result.beta is None, f"{where}: a trivial solution with a beta"
+                assert result.vapour_fraction is None, f"{where}: a trivial solution with a beta"
 
     assert seen == set(Phase), f"the sweep reached only {seen}, so it proved little"
 
@@ -366,7 +366,7 @@ def test_a_feed_that_converges_to_the_trivial_solution_says_so() -> None:
     for t_c in (280.0, 300.0, 330.0):
         result = pt_flash(fluid, T=Q(t_c, "K"), P=Q(20.0e6, "Pa"), z=z)
         assert result.phase is Phase.TRIVIAL, f"T={t_c}"
-        assert result.beta is None, f"T={t_c}: a trivial solution has no vapour fraction"
+        assert result.vapour_fraction is None, f"T={t_c}: a trivial solution has no vapour fraction"
         assert result.iterations > 1, f"T={t_c}: this is an iteration, not a proof"
         assert any(w.code == "TRIVIAL_SOLUTION" for w in result.warnings), f"T={t_c}"
         # Stated exactly, rather than as the last iterate that approached it.
@@ -529,8 +529,8 @@ def test_the_two_backends_agree_on_every_spec_case() -> None:
 
         assert py.iterations == rs.iterations, f"{case['id']}: iteration count"
         assert py.phase is rs.phase, f"{case['id']}: phase"
-        assert py.beta is not None and rs.beta is not None, f"{case['id']}: a split"
-        h.assert_close(py.beta, rs.beta, 1e-12, f"{case['id']} (beta)")
+        assert py.vapour_fraction is not None and rs.vapour_fraction is not None, f"{case['id']}: a split"
+        h.assert_close(py.vapour_fraction, rs.vapour_fraction, 1e-12, f"{case['id']} (beta)")
         h.assert_close(py.z_liquid, rs.z_liquid, 1e-12, f"{case['id']} (z_liquid)")
         h.assert_close(py.z_vapour, rs.z_vapour, 1e-12, f"{case['id']} (z_vapour)")
         for name in ("x", "y", "k", "ln_phi_liquid", "ln_phi_vapour"):
@@ -567,7 +567,7 @@ def test_the_single_phase_diagnosis_reaches_both_backends() -> None:
         with use_backend("rust"):
             rs = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=z)
 
-        assert py.beta is None and rs.beta is None, f"T={t_c}, P={p_pa}"
+        assert py.vapour_fraction is None and rs.vapour_fraction is None, f"T={t_c}, P={p_pa}"
         assert py.phase is rs.phase, f"T={t_c}, P={p_pa}"
         assert py.k == rs.k, f"T={t_c}, P={p_pa}: the trivial K-values"
         assert [w.code for w in py.warnings] == [w.code for w in rs.warnings]
@@ -611,7 +611,7 @@ def test_the_second_order_fallback_converges_where_successive_substitution_crawl
     ):
         r = pt_flash(fluid, T=Q(t_c, "K"), P=Q(p_pa, "Pa"), z=[0.6, 0.4])
         assert r.phase is Phase.TWO_PHASE, f"{t_c}, {p_pa}"
-        assert r.beta is not None, f"{t_c}, {p_pa}: a split has a vapour fraction"
+        assert r.vapour_fraction is not None, f"{t_c}, {p_pa}: a split has a vapour fraction"
         # Two steps of slack: the count is where the Newton's own path stops, and a
         # one-ulp change in the fugacity coefficient moves it by a step or two. The
         # sabotage detector is the distance to the scheme it replaced - 244 against
@@ -620,7 +620,7 @@ def test_the_second_order_fallback_converges_where_successive_substitution_crawl
             f"{t_c}, {p_pa}: {r.iterations} steps, and the fallback should reach it in at "
             f"most {hybrid} (successive substitution alone needs {ss_only})"
         )
-        h.assert_close(r.beta, beta, 1e-7, f"{t_c}, {p_pa} (beta)")
+        h.assert_close(r.vapour_fraction, beta, 1e-7, f"{t_c}, {p_pa} (beta)")
 
 
 def test_the_fallback_converges_a_state_the_outer_scheme_abandons() -> None:
@@ -631,7 +631,7 @@ def test_the_fallback_converges_a_state_the_outer_scheme_abandons() -> None:
     """
     r = pt_flash(methane_butane(), T=Q(355.0, "K"), P=Q(1.2e7, "Pa"), z=[0.6, 0.4])
     assert r.phase is Phase.TRIVIAL
-    assert r.beta is None, "a trivial solution has no vapour fraction"
+    assert r.vapour_fraction is None, "a trivial solution has no vapour fraction"
 
 
 def water_methanol() -> Any:
@@ -691,15 +691,15 @@ def test_an_associating_flash_answers_the_lowest_gibbs_energy() -> None:
                 answers.append(pt_flash(fluid, T=Q(T, "K"), P=Q(1.0e5, "Pa"), z=[0.6, 0.4]))
         for r in answers:
             assert r.phase is Phase.TWO_PHASE, f"{T} K: {r.phase}"
-            assert r.beta is not None
-            h.assert_close(r.beta, expected, 1e-8, f"{T} K, vapour fraction")
-            h.assert_close(r.beta, neqsim, 1e-8, f"{T} K, against NeqSim")
+            assert r.vapour_fraction is not None
+            h.assert_close(r.vapour_fraction, expected, 1e-8, f"{T} K, vapour fraction")
+            h.assert_close(r.vapour_fraction, neqsim, 1e-8, f"{T} K, against NeqSim")
 
         # The answer is the lowest of the candidates: the split, the feed as each of its
         # two single-phase roots, and the other kernel's answer.
         answer = answers[0]
-        assert answer.beta is not None
-        split = gibbs_energy(T, 1.0e5, answer.beta, list(answer.x), list(answer.y))
+        assert answer.vapour_fraction is not None
+        split = gibbs_energy(T, 1.0e5, answer.vapour_fraction, list(answer.x), list(answer.y))
         for root in ("liquid", "vapour"):
             from azoth.eos import srk_cpa_phase
 
@@ -716,9 +716,9 @@ def test_an_associating_flash_answers_the_lowest_gibbs_energy() -> None:
         # convergence, so the comparison carries that scale rather than demanding an
         # exact ordering of two numbers equal to sixteen digits.
         other = answers[1]
-        assert other.beta is not None and answer.beta is not None
-        h.assert_close(other.beta, answer.beta, 1e-12, f"{T} K, the two kernels")
-        other_split = gibbs_energy(T, 1.0e5, other.beta, list(other.x), list(other.y))
+        assert other.vapour_fraction is not None and answer.vapour_fraction is not None
+        h.assert_close(other.vapour_fraction, answer.vapour_fraction, 1e-12, f"{T} K, the two kernels")
+        other_split = gibbs_energy(T, 1.0e5, other.vapour_fraction, list(other.x), list(other.y))
         h.assert_close(
             other_split,
             split,

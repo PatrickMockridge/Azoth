@@ -44,7 +44,7 @@ description = "the substances the mixture is made of, by name, resolved against 
 [inputs.P]
 unit = "Pa"
 description = "absolute pressure. Held fixed; the temperature is what is solved for."
-[inputs.beta]
+[inputs.vapour_fraction]
 unit = "dimensionless"
 description = "the vapour fraction asked for, strictly between zero and one. The endpoints are `eos.bubble_temperature` and `eos.dew_temperature`."
 [inputs.temperature]
@@ -59,7 +59,7 @@ description = "overall mole fractions"
 [outputs.T]
 unit = "K"
 description = "the temperature at which the feed's vapour fraction is the one asked for - the model's answer."
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 description = "the vapour fraction at the answer. Reported rather than echoed: it is what the iteration measured there, and the residual is its distance from the specification."
 [outputs.phase]
@@ -100,7 +100,7 @@ min_inclusive = false
 severity = "error"
 rationale = "an absolute pressure; zero and below are not states"
 [[valid_range]]
-quantity = "beta"
+quantity = "vapour_fraction"
 min = 0
 max = 1
 min_inclusive = false

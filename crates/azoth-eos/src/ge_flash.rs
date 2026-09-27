@@ -339,7 +339,7 @@ pub fn ge_flash_with(
     let vapour = mixture.phase_state(&reduced, &y, RootSide::Vapour)?;
 
     Ok(GeFlashResult {
-        beta,
+        vapour_fraction: beta,
         x,
         y,
         k,

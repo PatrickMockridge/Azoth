@@ -267,21 +267,21 @@ def tp_solid_flash(
     phi_solid = _tabulated_solid_fugacity(mixture, index, solid, t_si, p_si, T, P, eos)
 
     flash = pt_flash(mixture, T, P, z)
-    if flash.beta is not None:
+    if flash.vapour_fraction is not None:
         phases = [
-            _FluidPhase(1.0 - flash.beta, list(flash.x), True),
-            _FluidPhase(flash.beta, list(flash.y), False),
+            _FluidPhase(1.0 - flash.vapour_fraction, list(flash.x), True),
+            _FluidPhase(flash.vapour_fraction, list(flash.y), False),
         ]
     else:
         liquid = flash.phase.name == "ALL_LIQUID"
         phases = [_FluidPhase(1.0, list(z), liquid)]
 
     def fluid_only(iterations: int, residual: float, converged: bool) -> TpSolidFlashResult:
-        split = flash.beta if flash.beta is not None else 0.0
+        split = flash.vapour_fraction if flash.vapour_fraction is not None else 0.0
         return TpSolidFlashResult(
             solid_fraction=0.0,
             phase_count=2,
-            beta=(1.0 - split, split),
+            phase_fractions=(1.0 - split, split),
             x=(tuple(flash.x), tuple(flash.y)),
             solid_fugacity_coefficient=phi_solid,
             iterations=iterations,
@@ -402,7 +402,7 @@ def tp_solid_flash(
     return TpSolidFlashResult(
         solid_fraction=solid_fraction if solid_present else 0.0,
         phase_count=len(keep),
-        beta=tuple(beta[k] for k in keep),
+        phase_fractions=tuple(beta[k] for k in keep),
         x=tuple(tuple(x[k]) for k in keep),
         solid_fugacity_coefficient=phi_solid,
         iterations=iterations,

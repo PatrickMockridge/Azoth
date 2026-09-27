@@ -63,7 +63,7 @@ fn settled_tolerance(algorithm: &azoth_core::ModelAlgorithm, from_newton: bool) 
 ///     .0;
 /// let r = pt_flash(&mixture, kelvins(330.0), pascals(2_500_000.0), &[0.6, 0.4])?;
 /// assert_eq!(r.phase, azoth_eos::Phase::TwoPhase);
-/// assert!((r.beta.expect("a split has a vapour fraction") - 0.8422055475803881).abs() < 1e-9);
+/// assert!((r.vapour_fraction.expect("a split has a vapour fraction") - 0.8422055475803881).abs() < 1e-9);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn pt_flash(
@@ -317,7 +317,7 @@ pub fn pt_flash(
     let vapour = mixture.phase_state(&reduced, &y, RootSide::Vapour)?;
 
     Ok(PtFlashResult {
-        beta,
+        vapour_fraction: beta,
         x,
         y,
         k,

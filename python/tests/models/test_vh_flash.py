@@ -59,6 +59,6 @@ def test_the_two_backends_agree_on_every_spec_case() -> None:
         h.assert_close(py.P.to("Pa").magnitude, rs.P.to("Pa").magnitude, 1e-9, case["id"])
         h.assert_close(py.T.to("K").magnitude, rs.T.to("K").magnitude, 1e-9, case["id"])
         assert py.phase is rs.phase, f"{case['id']}: phase"
-        assert py.beta == rs.beta or (
-            py.beta is not None and rs.beta is not None and abs(py.beta - rs.beta) < 1e-9
+        assert py.vapour_fraction == rs.vapour_fraction or (
+            py.vapour_fraction is not None and rs.vapour_fraction is not None and abs(py.vapour_fraction - rs.vapour_fraction) < 1e-9
         ), f"{case['id']}: beta"

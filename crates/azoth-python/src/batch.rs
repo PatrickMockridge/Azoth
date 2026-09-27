@@ -1054,9 +1054,9 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
                     eos::rachford_rice_binary(z1[i], k1[i], k2[i]),
                     &mut warnings,
                 )?;
-                beta.push(r.beta);
+                beta.push(r.vapour_fraction);
             }
-            push_values(&mut columns, "beta", "dimensionless", beta);
+            push_values(&mut columns, "vapour_fraction", "dimensionless", beta);
         }
 
         "eos.pr_molar_volume" => {

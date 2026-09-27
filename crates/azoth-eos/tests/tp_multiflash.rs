@@ -18,7 +18,7 @@ use azoth_eos::tp_multiflash;
 /// One phase of an oracle state: the fraction, the cubic root and the composition.
 #[derive(Debug)]
 struct Expected {
-    beta: f64,
+    phase_fractions: f64,
     z_factor: f64,
     x: &'static [f64],
 }
@@ -40,12 +40,12 @@ fn check(got: &azoth_eos::results::TpMultiflashResult, expected: &[Expected], la
         "{label}: {} phases where NeqSim reports {}; betas {:?}",
         got.phase_count,
         expected.len(),
-        got.beta
+        got.phase_fractions
     );
     assert!(
-        (got.beta.iter().sum::<f64>() - 1.0).abs() < 1e-12,
+        (got.phase_fractions.iter().sum::<f64>() - 1.0).abs() < 1e-12,
         "{label}: the fractions sum to {}",
-        got.beta.iter().sum::<f64>()
+        got.phase_fractions.iter().sum::<f64>()
     );
     for want in expected {
         // The phase whose composition is nearest, by the same sum-absolute distance the merge
@@ -77,10 +77,10 @@ fn check(got: &azoth_eos::results::TpMultiflashResult, expected: &[Expected], la
             got.x[index]
         );
         assert!(
-            (got.beta[index] - want.beta).abs() < 1e-6,
+            (got.phase_fractions[index] - want.phase_fractions).abs() < 1e-6,
             "{label}: phase {index} is at beta {:.17}, NeqSim at {:.17}",
-            got.beta[index],
-            want.beta
+            got.phase_fractions[index],
+            want.phase_fractions
         );
         assert!(
             (got.z_factor[index] - want.z_factor).abs() < 1e-6,
@@ -100,7 +100,7 @@ fn co2_methane_decane_splits_three_ways_at_200_k_10_bar() {
         &got,
         &[
             Expected {
-                beta: 0.31913160557766135,
+                phase_fractions: 0.31913160557766135,
                 z_factor: 0.9060977631578389,
                 x: &[
                     0.25606636477632466,
@@ -109,12 +109,12 @@ fn co2_methane_decane_splits_three_ways_at_200_k_10_bar() {
                 ],
             },
             Expected {
-                beta: 0.4986239551745936,
+                phase_fractions: 0.4986239551745936,
                 z_factor: 0.08159861613379736,
                 x: &[0.28770596245992525, 0.11069399567275835, 0.6016000418673164],
             },
             Expected {
-                beta: 0.18224443924774514,
+                phase_fractions: 0.18224443924774514,
                 z_factor: 0.02068639206922768,
                 x: &[
                     0.9592832882420675,
@@ -135,7 +135,7 @@ fn co2_methane_decane_splits_three_ways_at_180_k_2_bar() {
         &got,
         &[
             Expected {
-                beta: 0.45978707915172495,
+                phase_fractions: 0.45978707915172495,
                 z_factor: 0.9734657991299046,
                 x: &[
                     0.37523965788038316,
@@ -144,7 +144,7 @@ fn co2_methane_decane_splits_three_ways_at_180_k_2_bar() {
                 ],
             },
             Expected {
-                beta: 0.39004930226638107,
+                phase_fractions: 0.39004930226638107,
                 z_factor: 0.021530403096495943,
                 x: &[
                     0.20104204002401013,
@@ -153,7 +153,7 @@ fn co2_methane_decane_splits_three_ways_at_180_k_2_bar() {
                 ],
             },
             Expected {
-                beta: 0.15016361858189392,
+                phase_fractions: 0.15016361858189392,
                 z_factor: 0.004339193940160941,
                 x: &[
                     0.9926062497118069,
@@ -195,7 +195,7 @@ fn n2_co2_octane_third_phase_is_not_reached_without_the_pure_component_trials() 
         "NeqSim reports 3 here and this library reported {}. If this now passes with 3, the \
          pure-component seeding has been ported and this test should become the three-phase \
          check beside it. Betas {:?}",
-        got.phase_count, got.beta
+        got.phase_count, got.phase_fractions
     );
     // The two phases it does report are the two-phase flash's, and they are right: NeqSim
     // reports the same pair with the multiphase flag *off*.
@@ -203,12 +203,12 @@ fn n2_co2_octane_third_phase_is_not_reached_without_the_pure_component_trials() 
         &got,
         &[
             Expected {
-                beta: 0.9165691336463065,
+                phase_fractions: 0.9165691336463065,
                 z_factor: 0.06779885045276167,
                 x: &[0.02767335316398553, 0.42681406115096726, 0.5455125856850472],
             },
             Expected {
-                beta: 0.08343086635369346,
+                phase_fractions: 0.08343086635369346,
                 z_factor: 0.9468497822815427,
                 x: &[
                     0.8945784926813769,
@@ -240,18 +240,18 @@ fn n2_co2_octane_stays_two_phase_at_190_k_1_bar() {
     assert_eq!(
         got.phase_count, 2,
         "NeqSim reports two phases here; this found {}: {:?}",
-        got.phase_count, got.beta
+        got.phase_count, got.phase_fractions
     );
     check(
         &got,
         &[
             Expected {
-                beta: 0.39215551375730107,
+                phase_fractions: 0.39215551375730107,
                 z_factor: 0.9856288252087966,
                 x: &[0.25394363833827993, 0.746055607642126, 7.540195941670215e-7],
             },
             Expected {
-                beta: 0.6078444862426989,
+                phase_fractions: 0.6078444862426989,
                 z_factor: 0.00860682835745079,
                 x: &[
                     0.0006820857231110191,
@@ -287,12 +287,12 @@ fn methane_butane_dense_liquid_at_370_k_40_bar() {
         &got,
         &[
             Expected {
-                beta: 0.9901437619923031,
+                phase_fractions: 0.9901437619923031,
                 z_factor: 0.7452177737328194,
                 x: &[0.5037526098332724, 0.49624739016672753],
             },
             Expected {
-                beta: 0.009856238007696907,
+                phase_fractions: 0.009856238007696907,
                 z_factor: 0.1588137538319941,
                 x: &[0.12301811150419444, 0.8769818884958055],
             },
@@ -311,12 +311,12 @@ fn the_seeding_is_silent_when_the_two_phase_flash_already_split() {
         &got,
         &[
             Expected {
-                beta: 0.8139457129518551,
+                phase_fractions: 0.8139457129518551,
                 z_factor: 0.7784548921212494,
                 x: &[0.5834844933560103, 0.4165155066439898],
             },
             Expected {
-                beta: 0.18605428704814486,
+                phase_fractions: 0.18605428704814486,
                 z_factor: 0.15404179516968172,
                 x: &[0.13477409446900623, 0.8652259055309938],
             },
@@ -336,12 +336,12 @@ fn methane_butane_two_phase_at_250_k_50_bar() {
         &got,
         &[
             Expected {
-                beta: 0.21848944858961394,
+                phase_fractions: 0.21848944858961394,
                 z_factor: 0.7871775377076164,
                 x: &[0.9778100274811522, 0.0221899725188478],
             },
             Expected {
-                beta: 0.7815105514103861,
+                phase_fractions: 0.7815105514103861,
                 z_factor: 0.1786351934671386,
                 x: &[0.3664170953974433, 0.6335829046025567],
             },
@@ -393,9 +393,9 @@ fn the_answer_never_exceeds_the_three_phase_ceiling() {
             got.phase_count
         );
         assert!(
-            got.beta.iter().all(|beta| *beta >= 0.0 && *beta <= 1.0),
+            got.phase_fractions.iter().all(|beta| *beta >= 0.0 && *beta <= 1.0),
             "{names:?} at {t} K / {p} Pa: betas {:?}",
-            got.beta
+            got.phase_fractions
         );
     }
 }

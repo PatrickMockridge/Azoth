@@ -54,7 +54,7 @@ description = "the pressure that satisfies the volume and entropy"
 [outputs.T]
 unit = "K"
 description = "the temperature that satisfies the volume and entropy"
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 optional = true
 description = "the vapour fraction at the answer, or absent for a single-phase feed"

@@ -263,7 +263,7 @@ def _split(mixture: Any, t_si: float, p_out: float, feed_z: list[float]) -> dict
     phases: dict[str, list[float]] = {}
     for index in range(flash.phase_count):
         label = phase_label(mixture, reduced, list(flash.x[index]), flash.z_factor[index])
-        phases[label] = [fraction * flash.beta[index] for fraction in flash.x[index]]
+        phases[label] = [fraction * flash.phase_fractions[index] for fraction in flash.x[index]]
     return phases
 
 
@@ -375,7 +375,7 @@ def _solve_temperature(
                 list(flash.x[index]),
                 flash.z_factor[index],
             )
-            total += flash.beta[index] * float(state.h.to_base_units().magnitude)
+            total += flash.phase_fractions[index] * float(state.h.to_base_units().magnitude)
         return total
 
     seed = ph_flash_solve(mixture, ideal_gas, from_si(p_out, "Pa"), from_si(target, "J/mol"), z)

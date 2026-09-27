@@ -889,7 +889,7 @@ impl Mesh {
         let flash = azoth_eos::pt_flash::pt_flash(&mixture, feed.t, feed.p, &feed.z)?;
         let (n_vap, z_vap, n_liq, z_liq) = match flash.phase {
             azoth_eos::Phase::TwoPhase => {
-                let beta = flash.beta.ok_or_else(|| {
+                let beta = flash.vapour_fraction.ok_or_else(|| {
                     AzothError::invalid_input(
                         "feed",
                         "the feed's flash is two-phase with no vapour fraction",

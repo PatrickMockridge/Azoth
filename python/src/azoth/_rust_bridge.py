@@ -808,13 +808,13 @@ def vdw1f_mix_binary(
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult:
     """The binary Rachford-Rice vapour fraction, computed in Rust."""
     result = _core.rachford_rice_binary(z1, K1, K2)
-    return RachfordRiceBinaryResult(beta=result.beta, warnings=_warnings(result.warnings))
+    return RachfordRiceBinaryResult(vapour_fraction=result.vapour_fraction, warnings=_warnings(result.warnings))
 
 
 def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
     """The Rachford-Rice vapour fraction, computed in Rust."""
     result = _core.rachford_rice(list(z), list(K))
-    return RachfordRiceResult(beta=result.beta, warnings=_warnings(result.warnings))
+    return RachfordRiceResult(vapour_fraction=result.vapour_fraction, warnings=_warnings(result.warnings))
 
 
 def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
@@ -1775,7 +1775,7 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
         [list(c.alpha_params) for c in mixture.components],
     )
     return PtFlashResult(
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -1861,7 +1861,7 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
     )
     return PhFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -1901,7 +1901,7 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
     )
     return PsFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -1937,7 +1937,7 @@ def tv_flash(mixture: Any, ideal_gas: Any, T: Q, V: Q, z: Sequence[float]) -> Tv
     )
     return TvFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -1951,7 +1951,7 @@ def tv_flash(mixture: Any, ideal_gas: Any, T: Q, V: Q, z: Sequence[float]) -> Tv
 
 
 def pvf_flash(
-    mixture: Any, P: Q, beta: float, temperature: Q, z: Sequence[float]
+    mixture: Any, P: Q, vapour_fraction: float, temperature: Q, z: Sequence[float]
 ) -> PvfFlashResult:
     """The pressure/vapour-fraction flash, solved in Rust.
 
@@ -1967,7 +1967,7 @@ def pvf_flash(
         mixture.flattened_kij(),
         _association_spec(mixture),
         input_to_si(spec, "P", P),
-        float(beta),
+        float(vapour_fraction),
         input_to_si(spec, "temperature", temperature),
         list(z),
         mixture.cubic.name,
@@ -1976,7 +1976,7 @@ def pvf_flash(
     )
     return PvfFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         phase=_Phase(result.phase),
         x=tuple(result.x),
         y=tuple(result.y),
@@ -2014,7 +2014,7 @@ def pv_reflux_flash(
     )
     return PvRefluxFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         phase=_Phase(result.phase),
         x=tuple(result.x),
         y=tuple(result.y),
@@ -2050,7 +2050,7 @@ def pv_flash(mixture: Any, ideal_gas: Any, P: Q, V: Q, z: Sequence[float]) -> Pv
     )
     return PvFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2086,7 +2086,7 @@ def tp_multiflash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> TpMultiflashR
     )
     return TpMultiflashResult(
         phase_count=result.phase_count,
-        beta=tuple(result.beta),
+        phase_fractions=tuple(result.phase_fractions),
         x=tuple(tuple(row) for row in result.x),
         z_factor=tuple(result.z_factor),
         ln_phi=tuple(tuple(row) for row in result.ln_phi),
@@ -2158,7 +2158,7 @@ def th_flash(mixture: Any, ideal_gas: Any, T: Q, H: Q, z: Sequence[float]) -> Th
     )
     return ThFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2194,7 +2194,7 @@ def ts_flash(mixture: Any, ideal_gas: Any, T: Q, S: Q, z: Sequence[float]) -> Ts
     )
     return TsFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2230,7 +2230,7 @@ def tu_flash(mixture: Any, ideal_gas: Any, T: Q, U: Q, z: Sequence[float]) -> Tu
     )
     return TuFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2266,7 +2266,7 @@ def pu_flash(mixture: Any, ideal_gas: Any, P: Q, U: Q, z: Sequence[float]) -> Pu
     )
     return PuFlashResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2301,7 +2301,7 @@ def tv_fraction_flash(
     return TvFractionFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         volume_fraction=result.volume_fraction,
         phase=_Phase(result.phase),
         x=tuple(result.x),
@@ -2339,7 +2339,7 @@ def vu_flash(mixture: Any, ideal_gas: Any, V: Q, U: Q, z: Sequence[float]) -> Vu
     return VuFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2376,7 +2376,7 @@ def vs_flash(mixture: Any, ideal_gas: Any, V: Q, S: Q, z: Sequence[float]) -> Vs
     return VsFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2413,7 +2413,7 @@ def vh_flash(mixture: Any, ideal_gas: Any, V: Q, H: Q, z: Sequence[float]) -> Vh
     return VhFlashResult(
         P=from_si(result.P.magnitude_si, result.P.unit),
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -2449,7 +2449,7 @@ def vu_flash_single_comp(mixture: Any, ideal_gas: Any, P: Q, V: Q, U: Q) -> VuFl
     )
     return VuFlashSingleCompResult(
         T=from_si(result.T.magnitude_si, result.T.unit),
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         V=from_si(result.V.magnitude_si, result.V.unit),
         phase=_Phase(result.phase),
         warnings=_warnings(result.warnings),
@@ -3108,7 +3108,7 @@ def ge_nrtl_flash(params: Any, mixture: Any, T: Q, P: Q, z: Sequence[float]) -> 
         [list(c.alpha_params) for c in mixture.components],
     )
     return GeNrtlFlashResult(
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -3193,7 +3193,7 @@ def hydrate_fraction(
         hydrate_model,
     )
     return HydrateFractionResult(
-        beta=result.beta,
+        hydrate_fraction=result.hydrate_fraction,
         structure=HydrateStructure(result.structure),
         balance_error=result.balance_error,
         iterations=result.iterations,
@@ -3397,7 +3397,7 @@ def tp_multiflash_wax(
     return TpMultiflashWaxResult(
         wax_fraction=result.wax_fraction,
         phase_count=result.phase_count,
-        beta=tuple(result.beta),
+        phase_fractions=tuple(result.phase_fractions),
         x=tuple(tuple(row) for row in result.x),
         iterations=result.iterations,
         residual=result.residual,
@@ -3426,7 +3426,7 @@ def tp_solid_flash(
     return TpSolidFlashResult(
         solid_fraction=result.solid_fraction,
         phase_count=result.phase_count,
-        beta=tuple(result.beta),
+        phase_fractions=tuple(result.phase_fractions),
         x=tuple(tuple(row) for row in result.x),
         solid_fugacity_coefficient=result.solid_fugacity_coefficient,
         iterations=result.iterations,
@@ -3572,7 +3572,7 @@ def hybrid_eos_ge_flash(
         [_si(spec, "moles", value) for value in moles],
     )
     return HybridEosGeFlashResult(
-        beta=tuple(result.beta),
+        phase_fractions=tuple(result.phase_fractions),
         x=tuple(tuple(row) for row in result.x),
         ln_phi=tuple(tuple(row) for row in result.ln_phi),
         iterations=result.iterations,
@@ -3724,7 +3724,7 @@ def tp_flash_saft(components: Sequence[str], T: Q, P: Q, z: Sequence[float]) -> 
         list(z),
     )
     return TpFlashSaftResult(
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),
@@ -5474,7 +5474,7 @@ def reactive_hybrid_eos_ge_flash(
         [_si(spec, "moles", value) for value in moles],
     )
     return ReactiveHybridEosGeFlashResult(
-        beta=tuple(result.beta),
+        phase_fractions=tuple(result.phase_fractions),
         x=tuple(tuple(row) for row in result.x),
         coupled_moles=tuple(
             from_si(value.magnitude_si, value.unit) for value in result.coupled_moles
@@ -5716,7 +5716,7 @@ def ge_flash(
         cubic,
     )
     return GeFlashResult(
-        beta=result.beta,
+        vapour_fraction=result.vapour_fraction,
         x=tuple(result.x),
         y=tuple(result.y),
         k=tuple(result.k),

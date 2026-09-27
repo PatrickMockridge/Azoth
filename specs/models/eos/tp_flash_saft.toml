@@ -48,7 +48,7 @@ unit = "dimensionless"
 length = "one per component"
 description = "the feed's mole fractions, checked rather than renormalised"
 [outputs]
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 optional = true
 description = "the vapour fraction, present only when the flash found a split. A single-phase answer has no vapour fraction rather than a zero one."

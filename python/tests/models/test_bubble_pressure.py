@@ -101,8 +101,8 @@ def test_the_flash_agrees_at_the_returned_pressure() -> None:
         flash = pt_flash(
             fluid, T=Q(t_c, "K"), P=Q(boundary.pressure.to("Pa").magnitude, "Pa"), z=held
         )
-        assert flash.beta is not None, f"T={t_c}: the flash found no split"
-        assert abs(flash.beta) < 1e-9, f"T={t_c}: beta is {flash.beta}, not zero"
+        assert flash.vapour_fraction is not None, f"T={t_c}: the flash found no split"
+        assert abs(flash.vapour_fraction) < 1e-9, f"T={t_c}: beta is {flash.vapour_fraction}, not zero"
         for i, xi in enumerate(held):
             h.assert_close(flash.x[i], xi, 1e-9, f"T={t_c}: liquid {i}")
             h.assert_close(flash.y[i], boundary.incipient[i], 1e-9, f"T={t_c}: vapour {i}")

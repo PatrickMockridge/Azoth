@@ -9,4 +9,4 @@ U = -4179.034516413562
 z = [0.6, 0.4]
 [cases.expected]
 T = 300.0
-beta = 0.8356955
+vapour_fraction = 0.8356955

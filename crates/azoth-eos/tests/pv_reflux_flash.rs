@@ -105,5 +105,5 @@ fn the_phase_named_decides_the_answer() {
         half_vapour.t.value,
         half_liquid.t.value
     );
-    assert!((half_vapour.beta.expect("a split") - 0.5).abs() < 1.0e-6);
+    assert!((half_vapour.vapour_fraction.expect("a split") - 0.5).abs() < 1.0e-6);
 }

@@ -85,7 +85,7 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
             flash.z_liquid,
         )],
         Phase::TwoPhase => {
-            if flash.beta.is_none() {
+            if flash.vapour_fraction.is_none() {
                 return Err(AzothError::invalid_input(
                     "flash",
                     "a two-phase answer with no vapour fraction, so neither phase's share is known",
@@ -135,9 +135,9 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
     let share = if labelled.len() == 1 {
         1.0
     } else if kind == PhaseLabel::Gas {
-        flash.beta.unwrap_or(1.0)
+        flash.vapour_fraction.unwrap_or(1.0)
     } else {
-        1.0 - flash.beta.unwrap_or(0.0)
+        1.0 - flash.vapour_fraction.unwrap_or(0.0)
     };
 
     let count = mixture.components().len();

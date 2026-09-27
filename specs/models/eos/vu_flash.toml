@@ -56,7 +56,7 @@ description = "the pressure that satisfies the volume and internal energy. This 
 [outputs.T]
 unit = "K"
 description = "the temperature that satisfies the volume and internal energy. This is the other answer."
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 description = "the vapour fraction at the answer. Absent for a single-phase feed."
 [outputs.x]

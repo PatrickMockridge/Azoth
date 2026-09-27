@@ -27,7 +27,7 @@ z = [
     0.09886307464162135,
 ]
 [cases.expected]
-beta = 0.1151303722044179
+hydrate_fraction = 0.1151303722044179
 structure = "structure_ii"
 balance_error = 0.0
 [[cases]]
@@ -51,7 +51,7 @@ z = [
     0.09886307464162135,
 ]
 [cases.expected]
-beta = 0.1153041888231433
+hydrate_fraction = 0.1153041888231433
 structure = "structure_ii"
 balance_error = 0.0
 [[cases]]
@@ -72,6 +72,6 @@ z = [
     0.09886307464162135,
 ]
 [cases.expected]
-beta = 0.1154586779476380
+hydrate_fraction = 0.1154586779476380
 structure = "structure_ii"
 balance_error = 0.0

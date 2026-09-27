@@ -92,7 +92,7 @@ def ge_nrtl_flash(
         >>> r = ge_nrtl_flash(
         ...     ge_nrtl_phase_parameters(names), fluid, q(350.0, "K"), q(1e5, "Pa"), [0.5, 0.5]
         ... )
-        >>> round(r.beta, 9)
+        >>> round(r.vapour_fraction, 9)
         0.738378827
     """
     spec = _models_gen.model(MODEL_ID)
@@ -214,7 +214,7 @@ def ge_nrtl_flash(
     vapour = phase_state(reduced, kij, y, liquid=False)
 
     return GeNrtlFlashResult(
-        beta=beta_out,
+        vapour_fraction=beta_out,
         x=tuple(x),
         y=tuple(y),
         k=tuple(k),

@@ -108,7 +108,7 @@ def _evaluate(
     phase = str(flash.phase)
 
     if phase == TWO_PHASE:
-        beta = flash.beta
+        beta = flash.vapour_fraction
         if beta is None:
             # Unreachable: the flash reports a vapour fraction in exactly the two-phase
             # case. Checked rather than asserted away because a `float | None`

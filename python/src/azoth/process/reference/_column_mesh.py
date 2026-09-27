@@ -663,7 +663,7 @@ def mesh_states(
 
     flash = pt_flash(mixture, quantity(feed_t, "K"), quantity(feed_p, "Pa"), list(feed_z))
     if flash.phase == Phase.TWO_PHASE:
-        beta = flash.beta
+        beta = flash.vapour_fraction
         if beta is None:
             raise InvalidInputError("feed", "the feed's flash is two-phase with no vapour fraction")
         n_vap, z_vap = feed_n * beta, list(flash.y)

@@ -315,7 +315,7 @@ pub fn solve_fixed_topology_from(
         .fold(f64::INFINITY, |smallest, value| smallest.min(*value));
 
     Ok(HybridEosGeFlashResult {
-        beta,
+        phase_fractions: beta,
         x: composition,
         ln_phi,
         iterations,

@@ -2456,7 +2456,7 @@ static GE_FLASH_CASES: &[TestCase] = &[
         )],
         matrices: &[],
         expected: &[
-            ("beta", 0.9101615466858757),
+            ("vapour_fraction", 0.9101615466858757),
             ("z_vapour", 0.993446874971783),
         ],
         expected_vectors: &[
@@ -2611,7 +2611,7 @@ static GE_NRTL_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.5, 0.5])],
         matrices: &[],
         expected: &[
-            ("beta", 0.7383788272348035),
+            ("vapour_fraction", 0.7383788272348035),
             ("z_vapour", 0.9861438898397017),
         ],
         expected_vectors: &[
@@ -2640,7 +2640,7 @@ static GE_NRTL_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.4, 0.6])],
         matrices: &[],
         expected: &[
-            ("beta", 0.6463992350060533),
+            ("vapour_fraction", 0.6463992350060533),
             ("z_vapour", 0.986817566574521),
         ],
         expected_vectors: &[
@@ -2669,7 +2669,7 @@ static GE_NRTL_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.3, 0.7])],
         matrices: &[],
         expected: &[
-            ("beta", 0.2030182294468199),
+            ("vapour_fraction", 0.2030182294468199),
             ("z_vapour", 0.986420223948831),
         ],
         expected_vectors: &[
@@ -3570,7 +3570,7 @@ static HYBRID_EOS_GE_FLASH_CASES: &[TestCase] = &[TestCase {
     matrices: &[],
     expected: &[],
     expected_vectors: &[(
-        "beta",
+        "phase_fractions",
         &[
             0.07008764819933958,
             0.038592834945752996,
@@ -4033,7 +4033,10 @@ static HYDRATE_FRACTION_CASES: &[TestCase] = &[
             ],
         )],
         matrices: &[],
-        expected: &[("beta", 0.1151303722044179), ("balance_error", 0.0)],
+        expected: &[
+            ("hydrate_fraction", 0.1151303722044179),
+            ("balance_error", 0.0),
+        ],
         expected_vectors: &[],
         expected_strings: &[("structure", "structure_ii")],
     },
@@ -4058,7 +4061,10 @@ static HYDRATE_FRACTION_CASES: &[TestCase] = &[
             ],
         )],
         matrices: &[],
-        expected: &[("beta", 0.1153041888231433), ("balance_error", 0.0)],
+        expected: &[
+            ("hydrate_fraction", 0.1153041888231433),
+            ("balance_error", 0.0),
+        ],
         expected_vectors: &[],
         expected_strings: &[("structure", "structure_ii")],
     },
@@ -4083,7 +4089,10 @@ static HYDRATE_FRACTION_CASES: &[TestCase] = &[
             ],
         )],
         matrices: &[],
-        expected: &[("beta", 0.115458677947638), ("balance_error", 0.0)],
+        expected: &[
+            ("hydrate_fraction", 0.115458677947638),
+            ("balance_error", 0.0),
+        ],
         expected_vectors: &[],
         expected_strings: &[("structure", "structure_ii")],
     },
@@ -5357,7 +5366,7 @@ static PH_FLASH_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
-        expected: &[("T", 300.0), ("beta", 0.6824887179287704)],
+        expected: &[("T", 300.0), ("vapour_fraction", 0.6824887179287704)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -6101,7 +6110,10 @@ static PS_FLASH_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
-        expected: &[("T", 300.00000000000006), ("beta", 0.6824887179287709)],
+        expected: &[
+            ("T", 300.00000000000006),
+            ("vapour_fraction", 0.6824887179287709),
+        ],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -6220,7 +6232,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[
-            ("beta", 0.8422055475803881),
+            ("vapour_fraction", 0.8422055475803881),
             ("z_liquid", 0.0931504946389822),
             ("z_vapour", 0.8686112597077746),
             ("min_t_over_tc", 0.7762514113662025),
@@ -6252,7 +6264,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.5, 0.3, 0.2])],
         matrices: &[],
         expected: &[
-            ("beta", 0.993505628186177),
+            ("vapour_fraction", 0.993505628186177),
             ("z_liquid", 0.19245285846480745),
             ("z_vapour", 0.6977279915738982),
             ("min_t_over_tc", 0.8232969514490026),
@@ -6296,7 +6308,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.1, 0.9])],
         matrices: &[],
         expected: &[
-            ("beta", -0.07000432582249205),
+            ("vapour_fraction", -0.07000432582249205),
             ("z_liquid", 0.11033733769989125),
             ("z_vapour", 0.8875314607526533),
             ("min_t_over_tc", 0.7056831012420023),
@@ -6328,7 +6340,7 @@ static PT_FLASH_CASES: &[TestCase] = &[
         vectors: &[("z", &[0.6, 0.4])],
         matrices: &[],
         expected: &[
-            ("beta", 0.208383589004737),
+            ("vapour_fraction", 0.208383589004737),
             ("z_liquid", 0.000876327166634292),
             ("z_vapour", 0.941152554938007),
             ("min_t_over_tc", 0.5499768268190948),
@@ -6514,7 +6526,7 @@ static PU_FLASH_CASES: &[TestCase] = &[TestCase {
     strings: &[],
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
-    expected: &[("T", 300.0), ("beta", 0.8356955)],
+    expected: &[("T", 300.0), ("vapour_fraction", 0.8356955)],
     expected_vectors: &[],
     expected_strings: &[],
 }];
@@ -6694,7 +6706,7 @@ static PV_FLASH_CASES: &[TestCase] = &[TestCase {
     strings: &[],
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
-    expected: &[("T", 300.0), ("beta", 0.8356955)],
+    expected: &[("T", 300.0), ("vapour_fraction", 0.8356955)],
     expected_vectors: &[],
     expected_strings: &[],
 }];
@@ -6879,7 +6891,7 @@ static PVF_FLASH_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
         check: RangeCheck {
-            quantity: "beta",
+            quantity: "vapour_fraction",
             min: Some(0.0),
             min_inclusive: false,
             max: Some(1.0),
@@ -6903,7 +6915,7 @@ static PVF_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-07,
         numbers: &[
             ("P", 2500000.0),
-            ("beta", 0.8422055475803881),
+            ("vapour_fraction", 0.8422055475803881),
             ("temperature", 330.0),
         ],
         flags: &[],
@@ -6924,7 +6936,7 @@ static PVF_FLASH_CASES: &[TestCase] = &[
         tolerance: 1e-07,
         numbers: &[
             ("P", 5000000.0),
-            ("beta", 0.993505628186177),
+            ("vapour_fraction", 0.993505628186177),
             ("temperature", 350.0),
         ],
         flags: &[],
@@ -7009,7 +7021,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
             ("K", &[7.304244305324782, 0.33749596785762953]),
         ],
         matrices: &[],
-        expected: &[("beta", 0.8422055475803871)],
+        expected: &[("vapour_fraction", 0.8422055475803871)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7029,7 +7041,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
             ("K", &[5.799172708809654, 0.14913889826410118]),
         ],
         matrices: &[],
-        expected: &[("beta", 0.6218202763585349)],
+        expected: &[("vapour_fraction", 0.6218202763585349)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7046,7 +7058,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[0.5, 0.5]), ("K", &[0.2, 0.3])],
         matrices: &[],
-        expected: &[("beta", 1e-12)],
+        expected: &[("vapour_fraction", 1e-12)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7063,7 +7075,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[0.5, 0.5]), ("K", &[3.0, 5.0])],
         matrices: &[],
-        expected: &[("beta", 0.999999999999)],
+        expected: &[("vapour_fraction", 0.999999999999)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7080,7 +7092,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[0.3, 0.7]), ("K", &[1000000.0, 1e-06])],
         matrices: &[],
-        expected: &[("beta", 0.29999959999960013)],
+        expected: &[("vapour_fraction", 0.29999959999960013)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7100,7 +7112,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
             ("K", &[5.799172708809655, 0.14913889826410245]),
         ],
         matrices: &[],
-        expected: &[("beta", -0.0700043258053189)],
+        expected: &[("vapour_fraction", -0.0700043258053189)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7117,7 +7129,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[("z", &[0.5, 0.5]), ("K", &[1.5, 0.9])],
         matrices: &[],
-        expected: &[("beta", 3.9999999999999916)],
+        expected: &[("vapour_fraction", 3.9999999999999916)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7137,7 +7149,7 @@ static RACHFORD_RICE_CASES: &[TestCase] = &[
             ("K", &[1e-40, 7.304244305324782, 0.33749596785762953]),
         ],
         matrices: &[],
-        expected: &[("beta", 0.6754007405823642)],
+        expected: &[("vapour_fraction", 0.6754007405823642)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -7689,7 +7701,7 @@ static TH_FLASH_CASES: &[TestCase] = &[TestCase {
     strings: &[],
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
-    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected: &[("P", 1000000.0), ("vapour_fraction", 0.8356955)],
     expected_vectors: &[],
     expected_strings: &[],
 }];
@@ -7834,7 +7846,7 @@ static TP_FLASH_SAFT_CASES: &[TestCase] = &[TestCase {
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
     expected: &[
-        ("beta", 0.5358099100649695),
+        ("vapour_fraction", 0.5358099100649695),
         ("z_liquid", 0.12428945085670298),
         ("z_vapour", 0.8971134509509505),
     ],
@@ -7959,7 +7971,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         expected: &[("phase_count", 3.0)],
         expected_vectors: &[
             (
-                "beta",
+                "phase_fractions",
                 &[0.31913160557766135, 0.4986239551745936, 0.18224443924774514],
             ),
             (
@@ -7985,7 +7997,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         expected: &[("phase_count", 3.0)],
         expected_vectors: &[
             (
-                "beta",
+                "phase_fractions",
                 &[
                     0.45978707915172495,
                     0.39004930226638107,
@@ -8019,7 +8031,7 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         expected: &[("phase_count", 3.0)],
         expected_vectors: &[
             (
-                "beta",
+                "phase_fractions",
                 &[0.08437940065407534, 0.7563697015044588, 0.1592508978414658],
             ),
             (
@@ -8044,7 +8056,10 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("phase_count", 2.0)],
         expected_vectors: &[
-            ("beta", &[0.39215551375730107, 0.6078444862426989]),
+            (
+                "phase_fractions",
+                &[0.39215551375730107, 0.6078444862426989],
+            ),
             ("z_factor", &[0.9856288252087966, 0.00860682835745079]),
         ],
         expected_strings: &[("seeded", "two_phase_flash")],
@@ -8064,7 +8079,10 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("phase_count", 2.0)],
         expected_vectors: &[
-            ("beta", &[0.9901437619923031, 0.009856238007696907]),
+            (
+                "phase_fractions",
+                &[0.9901437619923031, 0.009856238007696907],
+            ),
             ("z_factor", &[0.7452177737328194, 0.1588137538319941]),
         ],
         expected_strings: &[("seeded", "two_phase_flash")],
@@ -8084,7 +8102,10 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("phase_count", 2.0)],
         expected_vectors: &[
-            ("beta", &[0.8139457129518551, 0.18605428704814486]),
+            (
+                "phase_fractions",
+                &[0.8139457129518551, 0.18605428704814486],
+            ),
             ("z_factor", &[0.7784548921212494, 0.15404179516968172]),
         ],
         expected_strings: &[("seeded", "two_phase_flash")],
@@ -8104,7 +8125,10 @@ static TP_MULTIFLASH_CASES: &[TestCase] = &[
         matrices: &[],
         expected: &[("phase_count", 2.0)],
         expected_vectors: &[
-            ("beta", &[0.21848944858961394, 0.7815105514103861]),
+            (
+                "phase_fractions",
+                &[0.21848944858961394, 0.7815105514103861],
+            ),
             ("z_factor", &[0.7871775377076164, 0.1786351934671386]),
         ],
         expected_strings: &[("seeded", "two_phase_flash")],
@@ -8428,7 +8452,7 @@ static TS_FLASH_CASES: &[TestCase] = &[TestCase {
     strings: &[],
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
-    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected: &[("P", 1000000.0), ("vapour_fraction", 0.8356955)],
     expected_vectors: &[],
     expected_strings: &[],
 }];
@@ -8495,7 +8519,7 @@ static TU_FLASH_CASES: &[TestCase] = &[TestCase {
     strings: &[],
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
-    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected: &[("P", 1000000.0), ("vapour_fraction", 0.8356955)],
     expected_vectors: &[],
     expected_strings: &[],
 }];
@@ -8579,7 +8603,7 @@ static TV_FLASH_CASES: &[TestCase] = &[TestCase {
     strings: &[],
     vectors: &[("z", &[0.6, 0.4])],
     matrices: &[],
-    expected: &[("P", 1000000.0), ("beta", 0.8356955)],
+    expected: &[("P", 1000000.0), ("vapour_fraction", 0.8356955)],
     expected_vectors: &[],
     expected_strings: &[],
 }];
@@ -9638,7 +9662,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[],
         matrices: &[],
-        expected: &[("T", 300.082995991047), ("beta", 0.5)],
+        expected: &[("T", 300.082995991047), ("vapour_fraction", 0.5)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -9659,7 +9683,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[],
         matrices: &[],
-        expected: &[("T", 300.082995991047), ("beta", 0.25)],
+        expected: &[("T", 300.082995991047), ("vapour_fraction", 0.25)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -9680,7 +9704,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[],
         matrices: &[],
-        expected: &[("T", 330.189683051239), ("beta", 0.5)],
+        expected: &[("T", 330.189683051239), ("vapour_fraction", 0.5)],
         expected_vectors: &[],
         expected_strings: &[],
     },
@@ -9701,7 +9725,7 @@ static VU_FLASH_SINGLE_COMP_CASES: &[TestCase] = &[
         strings: &[],
         vectors: &[],
         matrices: &[],
-        expected: &[("T", 292.041483332711), ("beta", 0.5)],
+        expected: &[("T", 292.041483332711), ("vapour_fraction", 0.5)],
         expected_vectors: &[],
         expected_strings: &[],
     },

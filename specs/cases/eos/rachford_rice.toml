@@ -7,7 +7,7 @@ source = "NeqSim master `RachfordRice.calcBetaNielsen2023`, run from validation/
 z = [0.6, 0.4]
 K = [7.304244305324782, 0.33749596785762953]
 [cases.expected]
-beta = 0.8422055475803871
+vapour_fraction = 0.8422055475803871
 [[cases]]
 id = "methane_butane_at_300_k_30_bar"
 tolerance = 1e-12
@@ -16,7 +16,7 @@ source = "NeqSim master, as the first case: validation/neqsim/RachfordRiceProbe.
 z = [0.6, 0.4]
 K = [5.799172708809654, 0.14913889826410118]
 [cases.expected]
-beta = 0.6218202763585349
+vapour_fraction = 0.6218202763585349
 [[cases]]
 id = "all_liquid_returns_the_lower_clamp"
 tolerance = 1e-15
@@ -25,7 +25,7 @@ source = "NeqSim master, as the first case: validation/neqsim/RachfordRiceProbe.
 z = [0.5, 0.5]
 K = [0.2, 0.3]
 [cases.expected]
-beta = 1e-12
+vapour_fraction = 1e-12
 [[cases]]
 id = "all_vapour_returns_the_upper_clamp"
 tolerance = 1e-15
@@ -34,7 +34,7 @@ source = "NeqSim master, as the first case: validation/neqsim/RachfordRiceProbe.
 z = [0.5, 0.5]
 K = [3.0, 5.0]
 [cases.expected]
-beta = 0.999999999999
+vapour_fraction = 0.999999999999
 [[cases]]
 id = "a_wide_k_range_keeps_its_precision"
 tolerance = 1e-12
@@ -43,7 +43,7 @@ source = "NeqSim master, as the first case: validation/neqsim/RachfordRiceProbe.
 z = [0.3, 0.7]
 K = [1.0e6, 1.0e-6]
 [cases.expected]
-beta = 0.29999959999960013
+vapour_fraction = 0.29999959999960013
 [[cases]]
 id = "a_negative_flash_is_reported_rather_than_clamped"
 tolerance = 1e-12
@@ -52,7 +52,7 @@ source = "The methane/n-butane 300 K state of `eos.pt_flash`'s `a_subcooled_liqu
 z = [0.1, 0.9]
 K = [5.799172708809655, 0.14913889826410245]
 [cases.expected]
-beta = -0.0700043258053189
+vapour_fraction = -0.0700043258053189
 [[cases]]
 id = "a_superheated_feed_is_reported_rather_than_clamped"
 tolerance = 1e-11
@@ -61,7 +61,7 @@ source = "A second root outside the interval, at the other end, and an exactly-k
 z = [0.5, 0.5]
 K = [1.5, 0.9]
 [cases.expected]
-beta = 3.9999999999999916
+vapour_fraction = 3.9999999999999916
 [[cases]]
 id = "an_ion_is_skipped"
 tolerance = 1e-12
@@ -70,4 +70,4 @@ source = "NeqSim master, from validation/neqsim/RachfordRiceProbe.java, which re
 z = [0.1, 0.45, 0.45]
 K = [1.0e-40, 7.304244305324782, 0.33749596785762953]
 [cases.expected]
-beta = 0.6754007405823642
+vapour_fraction = 0.6754007405823642

@@ -61,7 +61,7 @@ def _volume_fraction(mixture: Mixture, t: float, p: float, feed: list[float]) ->
     wires a translation onto a databank-built mixture on either side.
     """
     flash = pt_flash(mixture, T=from_si(t, "K"), P=from_si(p, "Pa"), z=feed)
-    if flash.beta is None:
+    if flash.vapour_fraction is None:
         # A single-phase feed has no gas to take a share of. Upstream reads the phase
         # fraction as one or zero there, and so does this: the residual is then a
         # constant, which is what tells the iteration the outlet is single phase.
@@ -72,8 +72,8 @@ def _volume_fraction(mixture: Mixture, t: float, p: float, feed: list[float]) ->
     y = list(flash.y)
     v_liquid = phase_state(reduced, mixture.kij, x, liquid=True).z * MOLAR_GAS_CONSTANT * t / p
     v_vapour = phase_state(reduced, mixture.kij, y, liquid=False).z * MOLAR_GAS_CONSTANT * t / p
-    total = (1.0 - flash.beta) * v_liquid + flash.beta * v_vapour
-    return flash.beta * v_vapour / total, flash
+    total = (1.0 - flash.vapour_fraction) * v_liquid + flash.vapour_fraction * v_vapour
+    return flash.vapour_fraction * v_vapour / total, flash
 
 
 def tv_fraction_flash(
@@ -120,11 +120,11 @@ def tv_fraction_flash(
     # The preamble: a feed that is single phase at the starting pressure has no gas to
     # take a share of, so the pressure is walked down until one appears.
     attempts = 0
-    while flash.beta is None and attempts < WALK_LIMIT:
+    while flash.vapour_fraction is None and attempts < WALK_LIMIT:
         pressure *= WALK_FACTOR
         attempts += 1
         found, flash = _volume_fraction(mixture, t_si, pressure, feed)
-    if flash.beta is None:
+    if flash.vapour_fraction is None:
         raise OutOfRangeError(
             "fraction",
             fraction,
@@ -190,7 +190,7 @@ def tv_fraction_flash(
     return TvFractionFlashResult(
         P=from_si(pressure, "Pa"),
         T=from_si(t_si, "K"),
-        beta=flash.beta,
+        vapour_fraction=flash.vapour_fraction,
         volume_fraction=found,
         phase=flash.phase,
         x=tuple(flash.x),

@@ -53,7 +53,7 @@ description = """\
 [outputs.phase_count]
 unit = "dimensionless"
 description = "How many phases the feed splits into: one, two or three."
-[outputs.beta]
+[outputs.phase_fractions]
 type = "vector"
 unit = "dimensionless"
 length = "one per phase"

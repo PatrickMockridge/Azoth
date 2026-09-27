@@ -119,7 +119,7 @@ def gas_scrubber(
         flash = pt_flash(mixture, feed_t, from_si(p_out, "Pa"), feed_z)
         temperature = feed_t
         x, y = list(flash.x), list(flash.y)
-        beta = _vapour_fraction(flash.phase, flash.beta)
+        beta = _vapour_fraction(flash.phase, flash.vapour_fraction)
     else:
         # W over (mol/s) is J/mol, for the reason `Heater.run` gives.
         h_in, _ = enthalpy_at(mixture, ideal_gas, t, p, feed_z)
@@ -133,7 +133,7 @@ def gas_scrubber(
         )
         temperature = moved.T
         x, y = list(moved.x), list(moved.y)
-        beta = _vapour_fraction(moved.phase, moved.beta)
+        beta = _vapour_fraction(moved.phase, moved.vapour_fraction)
 
     n_vapour = n * beta
     n_liquid = n * (1.0 - beta)

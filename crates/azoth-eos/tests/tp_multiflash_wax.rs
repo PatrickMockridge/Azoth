@@ -62,7 +62,7 @@ fn the_state_balances() {
         let mut worst: f64 = 0.0;
         for (i, &total) in z.iter().enumerate() {
             let mut counted = 0.0;
-            for (phase, &beta) in result.beta.iter().enumerate() {
+            for (phase, &beta) in result.phase_fractions.iter().enumerate() {
                 counted += beta * result.x[phase][i];
             }
             worst = worst.max((counted - total).abs());
@@ -73,7 +73,7 @@ fn the_state_balances() {
             result.phase_count
         );
         // And the fractions are a split of the feed, not a set of unrelated numbers.
-        let total: f64 = result.beta.iter().sum();
+        let total: f64 = result.phase_fractions.iter().sum();
         assert!(
             (total - 1.0).abs() < 1.0e-08,
             "T = {t_k}: beta sums to {total}"

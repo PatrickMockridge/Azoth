@@ -57,7 +57,7 @@ def tv_flash(
 
     return TvFlashResult(
         P=from_si(solved["P"], "Pa"),
-        beta=flash.beta,
+        vapour_fraction=flash.vapour_fraction,
         x=tuple(flash.x),
         y=tuple(flash.y),
         k=tuple(flash.k),

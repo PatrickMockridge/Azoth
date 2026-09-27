@@ -114,7 +114,7 @@ def vu_flash_single_comp(
         >>> r = vu_flash_single_comp(mix, ig, q(1.0e6, "Pa"),
         ...                          q(0.001059848052516, "m**3/mol"),
         ...                          q(-7797.318485008, "J/mol"))
-        >>> round(r.beta, 6)
+        >>> round(r.vapour_fraction, 6)
         0.5
     """
     spec = _models_gen.model(MODEL_ID)
@@ -164,7 +164,7 @@ def vu_flash_single_comp(
 
     return VuFlashSingleCompResult(
         T=from_si(temperature, "K"),
-        beta=beta,
+        vapour_fraction=beta,
         V=from_si(implied, "m**3/mol"),
         phase=Phase.TWO_PHASE,
         warnings=tuple(warnings),

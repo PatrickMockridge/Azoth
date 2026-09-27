@@ -55,7 +55,7 @@ unit = "dimensionless"
 length = "one per component"
 description = "overall mole fractions. Checked rather than renormalised: the entries must be non-negative and sum to one to within a tolerance."
 [outputs]
-[outputs.beta]
+[outputs.vapour_fraction]
 unit = "dimensionless"
 optional = true
 description = "The vapour fraction, in `[0, 1]` for a two-phase split; outside that it is the negative-flash value and the feed is single phase. Absent where there is genuinely no vapour fraction."
@@ -103,7 +103,7 @@ description = "the smallest `T / Tc_i` over the components - how close the mixtu
 [outputs.phase]
 type = "enum"
 values = ["two_phase", "all_liquid", "all_vapour", "trivial"]
-description = "What the converged state is: `two_phase` (`beta` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`)."
+description = "What the converged state is: `two_phase` (`vapour_fraction` in `[0, 1]`), `all_liquid`, `all_vapour`, or `trivial` (the iteration converged to `x = y = z`)."
 [outputs.iterations]
 unit = "dimensionless"
 description = "outer steps taken, including the final evaluation of the converged state. Each is either a successive-substitution step or, past `algorithm.fallback.after`, one step of the second-order scheme."

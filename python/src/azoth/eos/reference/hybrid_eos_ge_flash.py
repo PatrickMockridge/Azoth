@@ -378,7 +378,7 @@ def hybrid_eos_ge_flash(
         ...     q(50.0e5, "Pa"),
         ...     [5.0, 2.0, 55.5, 1.0, 1.0],
         ... )
-        >>> [round(beta, 6) for beta in r.beta]
+        >>> [round(beta, 6) for beta in r.vapour_fraction]
         [0.070088, 0.038593, 0.89132]
     """
     spec = _models_gen.model(MODEL_ID)
@@ -442,7 +442,7 @@ def hybrid_eos_ge_flash(
     min_t_over_tc = min(reduced.reduced_temperatures)
 
     return HybridEosGeFlashResult(
-        beta=tuple(beta),
+        phase_fractions=tuple(beta),
         x=tuple(tuple(row) for row in composition),
         ln_phi=tuple(tuple(row) for row in ln_phi),
         iterations=iterations,

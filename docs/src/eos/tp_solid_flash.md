@@ -42,7 +42,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `solid_fraction` | dimensionless | the fraction of the feed's moles in the pure solid, and zero where none forms |
 | `phase_count` | dimensionless | how many phases the feed splits into, the solid counted when it is there |
-| `beta` | dimensionless | the mole fraction of the feed in each phase, summing to one. The solid is last when it is there. |
+| `phase_fractions` | dimensionless | the mole fraction of the feed in each phase, summing to one. The solid is last when it is there. |
 | `x` | dimensionless | the composition of each phase, each row summing to one |
 | `solid_fugacity_coefficient` | dimensionless | the pure solid's fugacity coefficient, the number the phase exists at all is answered from |
 | `iterations` | dimensionless | fraction-solve steps taken by the last solve |

@@ -192,7 +192,7 @@ def _finish(
     """The answer, with the material balance it exists to keep measured and reported."""
     fluid = _fluid_at(z, composition, beta)
     flash = pt_flash(mixture, from_si(t_si, "K"), from_si(p_si, "Pa"), fluid)
-    split = flash.beta if flash.beta is not None else 0.0
+    split = flash.vapour_fraction if flash.vapour_fraction is not None else 0.0
     if flash.phase == "two_phase":
         x, y = flash.x, flash.y
     else:
@@ -203,7 +203,7 @@ def _finish(
         balance_error = max(balance_error, abs(beta * composition[i] + left - total))
 
     return HydrateFractionResult(
-        beta=beta,
+        hydrate_fraction=beta,
         structure=(
             HydrateStructure.STRUCTURE_I if structure == 0 else HydrateStructure.STRUCTURE_II
         ),

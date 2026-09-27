@@ -39,7 +39,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | the mole fraction of the feed in each of `[gas, oil, aqueous]`, summing to one. |
+| `phase_fractions` | dimensionless | the mole fraction of the feed in each of `[gas, oil, aqueous]`, summing to one. |
 | `x` | dimensionless | the composition of each role, each row summing to one. An ion's entry is `1e-50` in the two EoS roles and its whole feed share over the aqueous fraction in the brine. |
 | `ln_phi` | dimensionless | `ln phi_i` in each role: the cubic's for the gas and the oil, `eos.pitzer_phase`'s for the brine. |
 | `iterations` | dimensionless | Newton steps taken, summed over the fixed-topology passes and not counting the convergence re-evaluation. |

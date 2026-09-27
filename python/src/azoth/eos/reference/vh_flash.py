@@ -61,7 +61,7 @@ def vh_flash(
     return VhFlashResult(
         P=from_si(solved["P"], "Pa"),
         T=from_si(solved["T"], "K"),
-        beta=flash.beta,
+        vapour_fraction=flash.vapour_fraction,
         x=tuple(flash.x),
         y=tuple(flash.y),
         k=tuple(flash.k),

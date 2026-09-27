@@ -44,25 +44,25 @@ def _beta_at(mixture: Mixture, p: float, feed: list[float], t: float) -> tuple[f
     """
     flash = pt_flash(mixture, T=from_si(t, "K"), P=from_si(p, "Pa"), z=feed)
     if flash.phase is Phase.TWO_PHASE:
-        beta = flash.beta if flash.beta is not None else 0.0
+        vapour_fraction = flash.vapour_fraction if flash.vapour_fraction is not None else 0.0
     elif flash.phase is Phase.ALL_LIQUID:
-        beta = 0.0
+        vapour_fraction = 0.0
     else:
-        beta = 1.0
-    return beta, flash
+        vapour_fraction = 1.0
+    return vapour_fraction, flash
 
 
 def pvf_flash(
-    mixture: Mixture, P: Q, beta: float, temperature: Q, z: list[float]
+    mixture: Mixture, P: Q, vapour_fraction: float, temperature: Q, z: list[float]
 ) -> PvfFlashResult:
-    """The temperature at which a feed's vapour fraction at a pressure is ``beta``.
+    """The temperature at which a feed's vapour fraction at a pressure is ``vapour_fraction``.
 
     ``temperature`` centres the bracket - upstream searches the feed's own temperature
     span - and is not an initial guess at the answer.
 
     Raises:
-        OutOfRangeError: if ``P`` is not positive, or ``beta`` outside ``(0, 1)``.
-        InvalidInputError: if ``beta`` is exactly an endpoint, which is the bubble or
+        OutOfRangeError: if ``P`` is not positive, or ``vapour_fraction`` outside ``(0, 1)``.
+        InvalidInputError: if ``vapour_fraction`` is exactly an endpoint, which is the bubble or
             dew point and belongs to ``eos.bubble_temperature`` / ``eos.dew_temperature``.
         SolverNotConvergedError: if the search brackets nothing, or reaches its cap.
 
@@ -81,19 +81,19 @@ def pvf_flash(
 
     p_si = input_to_si(spec, "P", P)
     feed_temperature = input_to_si(spec, "temperature", temperature)
-    # Checked before the range checks, because the spec's own bound on `beta` is the
+    # Checked before the range checks, because the spec's own bound on `vapour_fraction` is the
     # same interval and would answer first with a message that names a bound rather
     # than the two models whose job the endpoints are.
-    if beta <= 0.0 or beta >= 1.0:
-        which = "bubble" if beta <= 0.0 else "dew"
+    if vapour_fraction <= 0.0 or vapour_fraction >= 1.0:
+        which = "bubble" if vapour_fraction <= 0.0 else "dew"
         raise InvalidInputError(
-            "beta",
-            f"a vapour fraction of {beta} is the {which} point, and those are "
+            "vapour_fraction",
+            f"a vapour fraction of {vapour_fraction} is the {which} point, and those are "
             f"`eos.bubble_temperature` and `eos.dew_temperature` - calculations with "
             f"their own procedures. This model solves the interior of the two-phase "
             f"region, which is the part they do not",
         )
-    apply_checks(checks.on_input, {"P": p_si, "beta": beta}.get, warnings)
+    apply_checks(checks.on_input, {"P": p_si, "vapour_fraction": vapour_fraction}.get, warnings)
 
     algorithm = spec["algorithm"]
     tolerance = float(algorithm["tolerance"])
@@ -107,24 +107,24 @@ def pvf_flash(
     # Widen until the specification is inside, which is what makes the search a
     # bracketing one rather than a descent from a guess.
     attempts = 0
-    while cold_beta > beta and attempts < WIDEN_LIMIT:
+    while cold_beta > vapour_fraction and attempts < WIDEN_LIMIT:
         cold = max(cold - WIDEN_STEP, COLDEST)
         cold_beta = _beta_at(mixture, p_si, list(z), cold)[0]
         attempts += 1
     attempts = 0
-    while hot_beta < beta and attempts < WIDEN_LIMIT:
+    while hot_beta < vapour_fraction and attempts < WIDEN_LIMIT:
         hot = min(hot + WIDEN_STEP, HOTTEST)
         hot_beta = _beta_at(mixture, p_si, list(z), hot)[0]
         attempts += 1
-    if not (cold_beta <= beta <= hot_beta):
-        raise SolverNotConvergedError(0, beta - min(cold_beta, hot_beta), tolerance)
+    if not (cold_beta <= vapour_fraction <= hot_beta):
+        raise SolverNotConvergedError(0, vapour_fraction - min(cold_beta, hot_beta), tolerance)
 
     # Illinois' method: regula falsi, with the end that has not moved halved before the
     # next step. Plain regula falsi converges from one side only and crawls when the
     # function is curved; halving the stale end restores the bisection's guarantee
     # without giving up the secant's speed.
     t_a, t_b = cold, hot
-    f_a, f_b = cold_beta - beta, hot_beta - beta
+    f_a, f_b = cold_beta - vapour_fraction, hot_beta - vapour_fraction
     iterations = 0
     residual = float("nan")
     answer = float("nan")
@@ -132,7 +132,7 @@ def pvf_flash(
     for step in range(1, int(algorithm["max_iterations"]) + 1):
         iterations = step
         t_c = min(max(t_a - f_a * (t_b - t_a) / (f_b - f_a), COLDEST), HOTTEST)
-        f_c = _beta_at(mixture, p_si, list(z), t_c)[0] - beta
+        f_c = _beta_at(mixture, p_si, list(z), t_c)[0] - vapour_fraction
         residual = abs(f_c)
         if residual < tolerance:
             answer = t_c
@@ -152,7 +152,7 @@ def pvf_flash(
     warnings.extend(flash.warnings)
     return PvfFlashResult(
         T=from_si(answer, "K"),
-        beta=found,
+        vapour_fraction=found,
         phase=flash.phase,
         x=tuple(flash.x),
         y=tuple(flash.y),
@@ -160,6 +160,6 @@ def pvf_flash(
         z_liquid=flash.z_liquid,
         z_vapour=flash.z_vapour,
         iterations=iterations,
-        residual=abs(found - beta),
+        residual=abs(found - vapour_fraction),
         warnings=tuple(warnings),
     )

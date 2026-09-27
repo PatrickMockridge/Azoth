@@ -23,7 +23,7 @@ fn every_case_in_the_spec() {
         let result = pvf_flash(
             &mixture,
             pascals(common::input(case, "P")),
-            common::input(case, "beta"),
+            common::input(case, "vapour_fraction"),
             kelvins(common::input(case, "temperature")),
             case.vector("z").expect("z"),
         )
@@ -35,8 +35,8 @@ fn every_case_in_the_spec() {
             &format!("{context} (T)"),
         );
         common::assert_close(
-            result.beta,
-            common::input(case, "beta"),
+            result.vapour_fraction,
+            common::input(case, "vapour_fraction"),
             case.tolerance,
             &format!("{context} (beta)"),
         );
@@ -82,9 +82,9 @@ fn the_answer_reproduces_the_fraction_it_was_asked_for() {
         )
         .unwrap_or_else(|e| panic!("a fraction of {fraction} should have a temperature: {e}"));
         assert!(
-            (result.beta - fraction).abs() < 1e-7,
+            (result.vapour_fraction - fraction).abs() < 1e-7,
             "asked for {fraction}, the answer's own fraction is {}",
-            result.beta
+            result.vapour_fraction
         );
         assert_eq!(result.phase, azoth_eos::Phase::TwoPhase);
     }

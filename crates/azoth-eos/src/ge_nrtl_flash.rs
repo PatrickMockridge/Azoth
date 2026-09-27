@@ -263,7 +263,7 @@ pub fn ge_nrtl_flash(
     let vapour = mixture.phase_state(&reduced, &y, RootSide::Vapour)?;
 
     Ok(GeNrtlFlashResult {
-        beta,
+        vapour_fraction: beta,
         x,
         y,
         k,

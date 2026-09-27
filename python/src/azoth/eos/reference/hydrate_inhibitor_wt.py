@@ -92,7 +92,7 @@ def _phases_of(flash: PtFlashResult) -> list[tuple[float, list[float], float]]:
     **Vapour first, which is NeqSim's own order** and the order the probe prints.
     """
     if flash.phase is Phase.TWO_PHASE:
-        beta = flash.beta or 0.0
+        beta = flash.vapour_fraction or 0.0
         return [
             (beta, list(flash.y), flash.z_vapour),
             (1.0 - beta, list(flash.x), flash.z_liquid),

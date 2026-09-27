@@ -1313,7 +1313,7 @@ class TpSolidFlashResult(_HasWarnings):
     #: How many phases the feed splits into, the solid counted when it is there.
     phase_count: int
     #: The mole fraction of the feed in each phase, summing to one, the solid last.
-    beta: tuple[float, ...]
+    phase_fractions: tuple[float, ...]
     #: The composition of each phase, one tuple per phase.
     x: tuple[tuple[float, ...], ...]
     #: The pure solid's fugacity coefficient, the number the phase exists at all is answered
@@ -1338,7 +1338,7 @@ class TpMultiflashWaxResult(_HasWarnings):
     #: How many phases the feed splits into: two, or three where the wax survives.
     phase_count: int
     #: The mole fraction of the feed in each phase, summing to one, the wax last.
-    beta: tuple[float, ...]
+    phase_fractions: tuple[float, ...]
     #: The composition of each phase, one tuple per phase.
     x: tuple[tuple[float, ...], ...]
     #: Fraction-solve steps taken.
@@ -1501,7 +1501,7 @@ class HydrateFractionResult(_HasWarnings):
     """Result of ``eos.hydrate_fraction``."""
 
     #: The fraction of the feed's moles that is hydrate, on the feed's own basis.
-    beta: float
+    hydrate_fraction: float
     #: The structure the cages at the answer are.
     structure: HydrateStructure
     #: The largest ``|sum_p beta_p x_ip - z_i|`` over the components at the answer.
@@ -2061,7 +2061,7 @@ class VuFlashSingleCompResult(_HasWarnings):
     #: The saturation temperature at the pressure asked for - the state's temperature.
     T: Q
     #: The vapour fraction, from the lever rule on the two saturated internal energies.
-    beta: float
+    vapour_fraction: float
     #: The molar volume the split implies.
     V: Q
     #: Always ``TWO_PHASE``; the other values are reachable only as a refusal's diagnosis.
@@ -2077,7 +2077,7 @@ class PvfFlashResult(_HasWarnings):
     #: The temperature at which the feed's vapour fraction is the one asked for.
     T: Q
     #: The vapour fraction at the answer, as the iteration measured it.
-    beta: float
+    vapour_fraction: float
     #: Which phase the feed is in at the answer.
     phase: Phase
     #: Liquid-phase composition at the answer.
@@ -2111,7 +2111,7 @@ class VsFlashResult(_HasWarnings):
     #: The temperature that satisfies the volume and entropy.
     T: Q
     #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2141,7 +2141,7 @@ class TvFractionFlashResult(_HasWarnings):
     #: The temperature the flash was taken at, echoed.
     T: Q
     #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: The gas phase's volume share at the answer.
     volume_fraction: float
     #: Which phase the feed is in at the answer.
@@ -2177,7 +2177,7 @@ class VuFlashResult(_HasWarnings):
     #: The temperature that satisfies the volume and internal energy.
     T: Q
     #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2205,7 +2205,7 @@ class PvRefluxFlashResult(_HasWarnings):
     #: The temperature at which the phase ratio is the one asked for.
     T: Q
     #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Which phase the feed is in at the answer.
     phase: Phase
     #: Liquid-phase composition at the answer.
@@ -2239,7 +2239,7 @@ class VhFlashResult(_HasWarnings):
     #: The temperature that satisfies the volume and enthalpy.
     T: Q
     #: The vapour fraction at the answer, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2285,7 +2285,7 @@ class RachfordRiceResult(_HasWarnings):
     #: outside ``[0, 1]`` it is the negative flash rather than a phase split, and the
     #: caller decides what that means. A feed whose K-values do not straddle one has no
     #: root, and comes back as NeqSim's ``1e-12`` clamp at the end it lies towards.
-    beta: float
+    vapour_fraction: float
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -2298,7 +2298,7 @@ class RachfordRiceBinaryResult(_HasWarnings):
     #: the feed is single phase and this is the tangent-plane value rather than a
     #: phase split; the result carries ``OUT_OF_VALID_RANGE`` when so. ``beta < 0``
     #: means subcooled liquid and ``beta > 1`` superheated vapour.
-    beta: float
+    vapour_fraction: float
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -2663,7 +2663,7 @@ class PtFlashResult(_HasWarnings):
     """
 
     #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase mole fractions.
     x: tuple[float, ...]
     #: Vapour-phase mole fractions.
@@ -2707,7 +2707,7 @@ class GeNrtlFlashResult(_HasWarnings):
     """
 
     #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase mole fractions.
     x: tuple[float, ...]
     #: Vapour-phase mole fractions.
@@ -2788,7 +2788,7 @@ class PhFlashResult(_HasWarnings):
     #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
     #: ``None`` rather than a number outside ``[0, 1]``: the flash extrapolates a
     #: split that does not exist, and reporting it would invite a caller to use it.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2822,7 +2822,7 @@ class PsFlashResult(_HasWarnings):
     #: The temperature that satisfies the entropy. This is the model's answer.
     T: Q
     #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2854,7 +2854,7 @@ class TvFlashResult(_HasWarnings):
     #: The pressure that satisfies the volume. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2886,7 +2886,7 @@ class PvFlashResult(_HasWarnings):
     #: The temperature that satisfies the volume. This is the model's answer.
     T: Q
     #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2932,7 +2932,7 @@ class ThFlashResult(_HasWarnings):
     #: The pressure that satisfies the property. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2963,7 +2963,7 @@ class TsFlashResult(_HasWarnings):
     #: The pressure that satisfies the property. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -2994,7 +2994,7 @@ class TuFlashResult(_HasWarnings):
     #: The pressure that satisfies the property. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -3025,7 +3025,7 @@ class PuFlashResult(_HasWarnings):
     #: The temperature that satisfies the property. This is the model's answer.
     T: Q
     #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase composition at the answer.
     x: tuple[float, ...]
     #: Vapour-phase composition.
@@ -3096,7 +3096,7 @@ class TpMultiflashResult(_HasWarnings):
     #: How many phases the feed splits into: 1, 2 or 3.
     phase_count: int
     #: The mole fraction of the feed in each phase, summing to one.
-    beta: tuple[float, ...]
+    phase_fractions: tuple[float, ...]
     #: The composition of each phase, one tuple per phase, each summing to one.
     x: tuple[tuple[float, ...], ...]
     #: The root of the cubic each phase sits on, as the compressibility ``Z = PV/RT``.
@@ -3264,7 +3264,7 @@ class HybridEosGeFlashResult(_HasWarnings):
     """
 
     #: The mole fraction of the feed in each role, in ``[gas, oil, aqueous]`` order.
-    beta: tuple[float, ...]
+    phase_fractions: tuple[float, ...]
     #: The composition of each role, one row per role, each summing to one.
     x: tuple[tuple[float, ...], ...]
     #: ``ln phi_i`` in each role, from the cubic for the first two and ``eos.pitzer_phase``
@@ -3296,7 +3296,7 @@ class ReactiveHybridEosGeFlashResult(_HasWarnings):
 
     #: The mole fraction of the feed in each of ``[gas, oil, aqueous]``, summing to one. A
     #: role the solve drove to nothing carries the solver's floor rather than zero.
-    beta: tuple[float, ...]
+    phase_fractions: tuple[float, ...]
     #: Each role's composition at the coupled state, one row per role and one column per
     #: component. An ion's entry is ``1e-50`` in the two EoS roles.
     x: tuple[tuple[float, ...], ...]
@@ -3486,7 +3486,7 @@ class TpFlashSaftResult(_HasWarnings):
     """
 
     #: The vapour fraction, present only when the flash found a split.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase mole fractions, the feed itself when there is one phase.
     x: tuple[float, ...]
     #: Vapour-phase mole fractions, the feed itself when there is one phase.
@@ -4108,7 +4108,7 @@ class GeFlashResult(_HasWarnings):
     """
 
     #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
-    beta: float | None
+    vapour_fraction: float | None
     #: Liquid-phase mole fractions.
     x: tuple[float, ...]
     #: Vapour-phase mole fractions.

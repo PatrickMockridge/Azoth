@@ -41,7 +41,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `wax_fraction` | dimensionless | the fraction of the feed's moles in the wax phase, and zero where none forms |
 | `phase_count` | dimensionless | how many phases the feed splits into: two, or three where the wax survives |
-| `beta` | dimensionless | the mole fraction of the feed in each phase, summing to one. The wax phase is last when it is there. |
+| `phase_fractions` | dimensionless | the mole fraction of the feed in each phase, summing to one. The wax phase is last when it is there. |
 | `x` | dimensionless | the composition of each phase, each row summing to one |
 | `iterations` | dimensionless | fraction-solve steps taken |
 | `residual` | dimensionless | the norm of the last fraction correction |

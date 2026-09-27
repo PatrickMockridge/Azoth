@@ -60,7 +60,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `P` | Pa | the pressure at which the volume fraction is the one asked for - the model's answer. |
 | `T` | K | the temperature the flash was taken at, echoed. |
-| `beta` | dimensionless | *Optional.* the vapour fraction at the answer, or absent for a single-phase feed |
+| `vapour_fraction` | dimensionless | *Optional.* the vapour fraction at the answer, or absent for a single-phase feed |
 | `volume_fraction` | dimensionless | the gas phase's volume share at the answer, as the iteration measured it |
 | `phase` | two_phase / all_liquid / all_vapour / trivial | which phase the feed is in at the answer |
 | `x` | dimensionless | liquid-phase mole fractions at the answer |

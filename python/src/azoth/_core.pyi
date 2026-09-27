@@ -384,7 +384,7 @@ class FurstElectrolytePhaseResult:
 
 @final
 class GeFlashResult:
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -399,7 +399,7 @@ class GeFlashResult:
 
 @final
 class GeNrtlFlashResult:
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -486,7 +486,7 @@ class HeliumPhaseResult:
 
 @final
 class HybridEosGeFlashResult:
-    beta: list[float]
+    phase_fractions: list[float]
     x: list[list[float]]
     ln_phi: list[list[float]]
     iterations: int
@@ -520,7 +520,7 @@ class HydrateFormationTemperatureResult:
 
 @final
 class HydrateFractionResult:
-    beta: float
+    hydrate_fraction: float
     structure: str
     balance_error: float
     iterations: int
@@ -687,7 +687,7 @@ class PcsaftRahmatPhaseResult:
 @final
 class PhFlashResult:
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -806,7 +806,7 @@ class PrsvKappaResult:
 @final
 class PsFlashResult:
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -819,7 +819,7 @@ class PsFlashResult:
 
 @final
 class PtFlashResult:
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -852,7 +852,7 @@ class PtPhaseEnvelopeResult:
 @final
 class PuFlashResult:
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -874,7 +874,7 @@ class PureSaturationResult:
 @final
 class PvFlashResult:
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -888,7 +888,7 @@ class PvFlashResult:
 @final
 class PvRefluxFlashResult:
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     phase: str
     x: list[float]
     y: list[float]
@@ -902,7 +902,7 @@ class PvRefluxFlashResult:
 @final
 class PvfFlashResult:
     T: Qty
-    beta: float
+    vapour_fraction: float
     phase: str
     x: list[float]
     y: list[float]
@@ -915,12 +915,12 @@ class PvfFlashResult:
 
 @final
 class RachfordRiceResult:
-    beta: float
+    vapour_fraction: float
     warnings: list[Warning]
 
 @final
 class RachfordRiceBinaryResult:
-    beta: float
+    vapour_fraction: float
     warnings: list[Warning]
 
 @final
@@ -1058,7 +1058,7 @@ class TbpFractionPropertiesResult:
 @final
 class ThFlashResult:
     P: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1076,7 +1076,7 @@ class ThermalConductivityResult:
 
 @final
 class TpFlashSaftResult:
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1092,7 +1092,7 @@ class TpFlashSaftResult:
 @final
 class TpMultiflashResult:
     phase_count: int
-    beta: list[float]
+    phase_fractions: list[float]
     x: list[list[float]]
     z_factor: list[float]
     ln_phi: list[list[float]]
@@ -1107,7 +1107,7 @@ class TpMultiflashResult:
 class TpMultiflashWaxResult:
     wax_fraction: float
     phase_count: int
-    beta: list[float]
+    phase_fractions: list[float]
     x: list[list[float]]
     iterations: int
     residual: float
@@ -1118,7 +1118,7 @@ class TpMultiflashWaxResult:
 class TpSolidFlashResult:
     solid_fraction: float
     phase_count: int
-    beta: list[float]
+    phase_fractions: list[float]
     x: list[list[float]]
     solid_fugacity_coefficient: float
     iterations: int
@@ -1129,7 +1129,7 @@ class TpSolidFlashResult:
 @final
 class TsFlashResult:
     P: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1143,7 +1143,7 @@ class TsFlashResult:
 @final
 class TuFlashResult:
     P: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1157,7 +1157,7 @@ class TuFlashResult:
 @final
 class TvFlashResult:
     P: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1172,7 +1172,7 @@ class TvFlashResult:
 class TvFractionFlashResult:
     P: Qty
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     volume_fraction: float
     phase: str
     x: list[float]
@@ -1262,7 +1262,7 @@ class Vdw1fMixBinaryResult:
 class VhFlashResult:
     P: Qty
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1282,7 +1282,7 @@ class ViscosityResult:
 class VsFlashResult:
     P: Qty
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1297,7 +1297,7 @@ class VsFlashResult:
 class VuFlashResult:
     P: Qty
     T: Qty
-    beta: float | None
+    vapour_fraction: float | None
     x: list[float]
     y: list[float]
     k: list[float]
@@ -1311,7 +1311,7 @@ class VuFlashResult:
 @final
 class VuFlashSingleCompResult:
     T: Qty
-    beta: float
+    vapour_fraction: float
     V: Qty
     phase: str
     warnings: list[Warning]
@@ -1896,7 +1896,7 @@ class KineticsResult:
 
 @final
 class ReactiveHybridEosGeFlashResult:
-    beta: list[float]
+    phase_fractions: list[float]
     x: list[list[float]]
     coupled_moles: list[Qty]
     aqueous_moles: list[Qty]
@@ -2638,7 +2638,6 @@ def pvf_flash(
     kij: list[float],
     association: AssociationSpec,
     P: float,
-    beta: float,
     temperature: float,
     z: list[float],
     eos: str = "pr",

@@ -2436,12 +2436,12 @@ pub fn pv_reflux_flash(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// The pressure/vapour-fraction flash of a mixture (P,beta -> T).
+/// The pressure/vapour-fraction flash of a mixture (P,vapour_fraction -> T).
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, beta, temperature, z,
+#[pyo3(signature = (Tc, Pc, omega, kij, association, P, vapour_fraction, temperature, z,
     eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, beta, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, kij, association, P, vapour_fraction, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)]
 #[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
@@ -2453,7 +2453,7 @@ pub fn pvf_flash(
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
-    beta: f64,
+    vapour_fraction: f64,
     temperature: f64,
     z: Vec<f64>,
     eos: &str,
@@ -2471,7 +2471,7 @@ pub fn pvf_flash(
         alpha,
         alpha_params.as_deref(),
     )?;
-    azoth_eos::pvf_flash::pvf_flash(&mixture, pascals(P), beta, kelvins(temperature), &z)
+    azoth_eos::pvf_flash::pvf_flash(&mixture, pascals(P), vapour_fraction, kelvins(temperature), &z)
         .map(|r| PyPvfFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

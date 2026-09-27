@@ -114,7 +114,7 @@ fn the_flash_agrees_at_the_returned_pressure() {
         .unwrap();
 
         let beta = flash
-            .beta
+            .vapour_fraction
             .unwrap_or_else(|| panic!("T={t}: the flash found no split at the dew point"));
         assert!(
             (beta - 1.0).abs() < 1e-9,

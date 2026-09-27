@@ -343,7 +343,7 @@ pub fn tp_solid_flash(
     // **The fluid-only flash seeds it**, and is the answer where nothing precipitates.
     let flash = pt_flash(&mixture, T, P, z)?;
     warnings.extend(flash.warnings.iter().cloned());
-    let mut phases: Vec<FluidPhase> = match flash.beta {
+    let mut phases: Vec<FluidPhase> = match flash.vapour_fraction {
         Some(split) => vec![
             FluidPhase {
                 fraction: 1.0 - split,
@@ -377,11 +377,11 @@ pub fn tp_solid_flash(
         candidate -= phase.fraction * phi_solid / start[k][index];
     }
     if candidate <= 1.0e-20 {
-        let split = flash.beta.unwrap_or(0.0);
+        let split = flash.vapour_fraction.unwrap_or(0.0);
         return Ok(TpSolidFlashResult {
             solid_fraction: 0.0,
             phase_count: 2,
-            beta: vec![1.0 - split, split],
+            phase_fractions: vec![1.0 - split, split],
             x: vec![flash.x.clone(), flash.y.clone()],
             solid_fugacity_coefficient: phi_solid,
             iterations: 0,
@@ -454,7 +454,7 @@ pub fn tp_solid_flash(
     Ok(TpSolidFlashResult {
         solid_fraction: if solid_present { solid_fraction } else { 0.0 },
         phase_count: keep.len() as u32,
-        beta: keep.iter().map(|&k| beta[k]).collect(),
+        phase_fractions: keep.iter().map(|&k| beta[k]).collect(),
         x: keep.iter().map(|&k| x[k].clone()).collect(),
         solid_fugacity_coefficient: phi_solid,
         iterations,

@@ -161,7 +161,7 @@ def _with_bracket(
     flash = solved["state"]["flash"]
     return PhFlashResult(
         T=from_si(solved["T"], "K"),
-        beta=flash.beta,
+        beta=flash.vapour_fraction,
         x=tuple(flash.x),
         y=tuple(flash.y),
         k=tuple(flash.k),
@@ -212,7 +212,7 @@ def test_a_single_phase_feed_reports_no_vapour_fraction() -> None:
     result = azoth.eos.ph_flash(fluid, ideal_gas, Q(20.0, "bar"), Q(enthalpy, "J/mol"), [0.6, 0.4])
 
     assert result.phase == "all_vapour"
-    assert result.beta is None, "a single-phase feed has no vapour fraction to report"
+    assert result.vapour_fraction is None, "a single-phase feed has no vapour fraction to report"
     h.assert_close(result.T.to("K").magnitude, 450.0, TOLERANCE, "single-phase round trip")
 
 

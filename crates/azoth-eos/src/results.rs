@@ -365,7 +365,7 @@ impl CalcResult for BwrsPhaseResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SaftFlashResult {
     /// The vapour fraction, or `None` when the flash reports a single phase.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions - the feed itself when there is one phase.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions - the feed itself when there is one phase.
@@ -393,7 +393,7 @@ pub struct SaftFlashResult {
 impl CalcResult for SaftFlashResult {
     const CALC_ID: &'static str = "eos.tp_flash_saft";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -595,7 +595,7 @@ impl HydrateStructure {
 #[derive(Debug, Clone, PartialEq)]
 pub struct HydrateFractionResult {
     /// The fraction of the feed's moles that is hydrate.
-    pub beta: f64,
+    pub hydrate_fraction: f64,
     /// The stable structure.
     pub structure: HydrateStructure,
     /// The largest `|sum_p beta_p x_ip - z_i|` over the components at the answer.
@@ -611,7 +611,7 @@ pub struct HydrateFractionResult {
 impl CalcResult for HydrateFractionResult {
     const CALC_ID: &'static str = "eos.hydrate_fraction";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "hydrate_fraction",
         "structure",
         "balance_error",
         "iterations",
@@ -680,7 +680,7 @@ pub struct TpSolidFlashResult {
     /// How many phases the feed splits into, the solid counted when it is there.
     pub phase_count: u32,
     /// The mole fraction of the feed in each phase, summing to one, the solid last.
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each phase, one vector per phase, each summing to one.
     pub x: Vec<Vec<f64>>,
     /// The pure solid's fugacity coefficient - the number the phase exists at all is
@@ -701,7 +701,7 @@ impl CalcResult for TpSolidFlashResult {
     const FIELDS: &'static [&'static str] = &[
         "solid_fraction",
         "phase_count",
-        "beta",
+        "phase_fractions",
         "x",
         "solid_fugacity_coefficient",
         "iterations",
@@ -723,7 +723,7 @@ pub struct TpMultiflashWaxResult {
     /// How many phases the feed splits into: two, or three where the wax survives.
     pub phase_count: u32,
     /// The mole fraction of the feed in each phase, summing to one, the wax last.
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each phase, one vector per phase.
     pub x: Vec<Vec<f64>>,
     /// Fraction-solve steps taken.
@@ -742,7 +742,7 @@ impl CalcResult for TpMultiflashWaxResult {
     const FIELDS: &'static [&'static str] = &[
         "wax_fraction",
         "phase_count",
-        "beta",
+        "phase_fractions",
         "x",
         "iterations",
         "residual",
@@ -1109,7 +1109,7 @@ impl Phase {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PtFlashResult {
     /// The vapour fraction, or `None` when the solution is trivial.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions.
@@ -1139,7 +1139,7 @@ pub struct PtFlashResult {
 impl CalcResult for PtFlashResult {
     const CALC_ID: &'static str = "eos.pt_flash";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1174,7 +1174,7 @@ pub struct PhFlashResult {
     ///
     /// `None` rather than a number outside `[0, 1]`: the flash extrapolates a split
     /// that does not exist, and reporting it would invite a caller to use it.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1203,7 +1203,7 @@ impl CalcResult for PhFlashResult {
     const CALC_ID: &'static str = "eos.ph_flash";
     const FIELDS: &'static [&'static str] = &[
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1231,7 +1231,7 @@ pub struct PsFlashResult {
     /// The temperature that satisfies the entropy. This is the model's answer.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at that temperature, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1256,7 +1256,7 @@ impl CalcResult for PsFlashResult {
     const CALC_ID: &'static str = "eos.ps_flash";
     const FIELDS: &'static [&'static str] = &[
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1279,7 +1279,7 @@ pub struct TvFlashResult {
     /// The pressure that satisfies the volume. This is the model's answer.
     pub pressure: Pressure,
     /// The vapour fraction at that pressure, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1304,7 +1304,7 @@ impl CalcResult for TvFlashResult {
     const CALC_ID: &'static str = "eos.tv_flash";
     const FIELDS: &'static [&'static str] = &[
         "P",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1327,7 +1327,7 @@ pub struct PvFlashResult {
     /// The temperature that satisfies the volume. This is the model's answer.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at that temperature, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1352,7 +1352,7 @@ impl CalcResult for PvFlashResult {
     const CALC_ID: &'static str = "eos.pv_flash";
     const FIELDS: &'static [&'static str] = &[
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1378,7 +1378,7 @@ macro_rules! pressure_flash_result {
             /// The pressure that satisfies the property. This is the model's answer.
             pub pressure: Pressure,
             /// The vapour fraction at that pressure, or `None` for a single-phase feed.
-            pub beta: Option<f64>,
+            pub vapour_fraction: Option<f64>,
             /// Liquid-phase mole fractions at the answer.
             pub x: Vec<f64>,
             /// Vapour-phase mole fractions at the answer.
@@ -1403,7 +1403,7 @@ macro_rules! pressure_flash_result {
             const CALC_ID: &'static str = $id;
             const FIELDS: &'static [&'static str] = &[
                 "P",
-                "beta",
+                "vapour_fraction",
                 "x",
                 "y",
                 "k",
@@ -1432,7 +1432,7 @@ pub struct PuFlashResult {
     /// The temperature that satisfies the internal energy. This is the model's answer.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at that temperature, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1457,7 +1457,7 @@ impl CalcResult for PuFlashResult {
     const CALC_ID: &'static str = "eos.pu_flash";
     const FIELDS: &'static [&'static str] = &[
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1618,7 +1618,7 @@ pub struct VuFlashSingleCompResult {
     /// The saturation temperature at the pressure asked for - the state's temperature.
     pub t: ThermodynamicTemperature,
     /// The vapour fraction, from the lever rule on the two saturated internal energies.
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// The molar volume the split implies.
     pub v: MolarVolume,
     /// Always `two_phase`; the other values are reachable only as a refusal's diagnosis.
@@ -1629,7 +1629,7 @@ pub struct VuFlashSingleCompResult {
 
 impl CalcResult for VuFlashSingleCompResult {
     const CALC_ID: &'static str = "eos.vu_flash_single_comp";
-    const FIELDS: &'static [&'static str] = &["T", "beta", "V", "phase", "warnings"];
+    const FIELDS: &'static [&'static str] = &["T", "vapour_fraction", "V", "phase", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
@@ -1644,7 +1644,7 @@ pub struct VsFlashResult {
     /// The temperature that satisfies the volume and entropy.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at the answer, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1670,7 +1670,7 @@ impl CalcResult for VsFlashResult {
     const FIELDS: &'static [&'static str] = &[
         "P",
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1693,7 +1693,7 @@ pub struct VhFlashResult {
     /// The temperature that satisfies the volume and enthalpy.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at the answer, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1719,7 +1719,7 @@ impl CalcResult for VhFlashResult {
     const FIELDS: &'static [&'static str] = &[
         "P",
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -1742,7 +1742,7 @@ pub struct PvfFlashResult {
     /// The temperature at which the feed's vapour fraction is the one asked for.
     pub t: ThermodynamicTemperature,
     /// The vapour fraction at the answer, as the iteration measured it.
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// Which phase the feed is in at the answer.
     pub phase: Phase,
     /// Liquid-phase mole fractions at the answer.
@@ -1767,7 +1767,7 @@ impl CalcResult for PvfFlashResult {
     const CALC_ID: &'static str = "eos.pvf_flash";
     const FIELDS: &'static [&'static str] = &[
         "T",
-        "beta",
+        "vapour_fraction",
         "phase",
         "x",
         "y",
@@ -1790,7 +1790,7 @@ pub struct PvRefluxFlashResult {
     /// The temperature at which the phase ratio is the one asked for.
     pub t: ThermodynamicTemperature,
     /// The vapour fraction at the answer, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Which phase the feed is in at the answer.
     pub phase: Phase,
     /// Liquid-phase mole fractions at the answer.
@@ -1815,7 +1815,7 @@ impl CalcResult for PvRefluxFlashResult {
     const CALC_ID: &'static str = "eos.pv_reflux_flash";
     const FIELDS: &'static [&'static str] = &[
         "T",
-        "beta",
+        "vapour_fraction",
         "phase",
         "x",
         "y",
@@ -1840,7 +1840,7 @@ pub struct TvFractionFlashResult {
     /// The temperature the flash was taken at, echoed.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at the answer, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// The gas phase's volume share at the answer.
     pub volume_fraction: f64,
     /// Which phase the feed is in at the answer.
@@ -1868,7 +1868,7 @@ impl CalcResult for TvFractionFlashResult {
     const FIELDS: &'static [&'static str] = &[
         "P",
         "T",
-        "beta",
+        "vapour_fraction",
         "volume_fraction",
         "phase",
         "x",
@@ -1894,7 +1894,7 @@ pub struct VuFlashResult {
     /// The temperature that satisfies the volume and internal energy.
     pub temperature: ThermodynamicTemperature,
     /// The vapour fraction at the answer, or `None` for a single-phase feed.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions at the answer.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions at the answer.
@@ -1920,7 +1920,7 @@ impl CalcResult for VuFlashResult {
     const FIELDS: &'static [&'static str] = &[
         "P",
         "T",
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -2043,7 +2043,7 @@ pub struct TpMultiflashResult {
     /// How many phases the feed splits into: 1, 2 or 3.
     pub phase_count: u32,
     /// The mole fraction of the feed in each phase, summing to one.
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each phase, one vector per phase, each summing to one.
     pub x: Vec<Vec<f64>>,
     /// The root of the cubic each phase sits on, as the compressibility `Z = PV/RT`.
@@ -2076,7 +2076,7 @@ impl CalcResult for TpMultiflashResult {
     const CALC_ID: &'static str = "eos.tp_multiflash";
     const FIELDS: &'static [&'static str] = &[
         "phase_count",
-        "beta",
+        "phase_fractions",
         "x",
         "z_factor",
         "ln_phi",
@@ -2300,7 +2300,7 @@ impl CalcResult for IapwsHenryLawResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct HybridEosGeFlashResult {
     /// The mole fraction of the feed in each role, in `[gas, oil, aqueous]` order.
-    pub beta: Vec<f64>,
+    pub phase_fractions: Vec<f64>,
     /// The composition of each role, one vector per role, each summing to one.
     pub x: Vec<Vec<f64>>,
     /// `ln phi_i` in each role, one vector per role.
@@ -2324,7 +2324,7 @@ pub struct HybridEosGeFlashResult {
 impl CalcResult for HybridEosGeFlashResult {
     const CALC_ID: &'static str = "eos.hybrid_eos_ge_flash";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "phase_fractions",
         "x",
         "ln_phi",
         "iterations",
@@ -2463,7 +2463,7 @@ pub struct RachfordRiceBinaryResult {
     /// The vapour fraction that solves the Rachford-Rice equation. Outside `[0, 1]`
     /// the feed is single phase and this is the tangent-plane value rather than a
     /// phase split; the result carries `OutOfValidRange` when so.
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -2475,14 +2475,14 @@ pub struct RachfordRiceResult {
     /// outside `[0, 1]` it is the negative flash rather than a phase split, and the
     /// caller decides what that means. A feed whose K-values do not straddle one has
     /// no root, and comes back as NeqSim's `1e-12` clamp at the end it lies towards.
-    pub beta: f64,
+    pub vapour_fraction: f64,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
 
 impl CalcResult for RachfordRiceResult {
     const CALC_ID: &'static str = "eos.rachford_rice";
-    const FIELDS: &'static [&'static str] = &["beta", "warnings"];
+    const FIELDS: &'static [&'static str] = &["vapour_fraction", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
@@ -2491,7 +2491,7 @@ impl CalcResult for RachfordRiceResult {
 
 impl CalcResult for RachfordRiceBinaryResult {
     const CALC_ID: &'static str = "eos.rachford_rice_binary";
-    const FIELDS: &'static [&'static str] = &["beta", "warnings"];
+    const FIELDS: &'static [&'static str] = &["vapour_fraction", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
@@ -2776,7 +2776,7 @@ impl CalcResult for GeNrtlPhaseResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeNrtlFlashResult {
     /// The vapour fraction, or `None` when the solution is trivial.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions.
@@ -2804,7 +2804,7 @@ pub struct GeNrtlFlashResult {
 impl CalcResult for GeNrtlFlashResult {
     const CALC_ID: &'static str = "eos.ge_nrtl_flash";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",
@@ -4185,7 +4185,7 @@ impl CalcResult for EffectiveDiffusionResult {
 #[derive(Debug, Clone, PartialEq)]
 pub struct GeFlashResult {
     /// The vapour fraction, or `None` when the solution is trivial.
-    pub beta: Option<f64>,
+    pub vapour_fraction: Option<f64>,
     /// Liquid-phase mole fractions.
     pub x: Vec<f64>,
     /// Vapour-phase mole fractions.
@@ -4213,7 +4213,7 @@ pub struct GeFlashResult {
 impl CalcResult for GeFlashResult {
     const CALC_ID: &'static str = "eos.ge_flash";
     const FIELDS: &'static [&'static str] = &[
-        "beta",
+        "vapour_fraction",
         "x",
         "y",
         "k",

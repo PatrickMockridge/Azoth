@@ -37,7 +37,7 @@ DOI: [10.2118/952327-G](https://doi.org/10.2118/952327-G)
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | The vapour fraction that solves the Rachford-Rice equation, named `beta` because that is what every source calls it; outside `[0, 1]` it describes no two-phase mixture. |
+| `vapour_fraction` | dimensionless | The vapour fraction that solves the Rachford-Rice equation, which every source writes as the symbol `beta`; outside `[0, 1]` it describes no two-phase mixture. |
 
 
 ## Valid range
@@ -61,8 +61,8 @@ satisfy for the result to mean what it says.
 - both K-values are for the same temperature and pressure. They are the caller's, and this calc has no way to know they describe one state.
 - the K-values are consistent with each other in the thermodynamic sense - derived from fugacity coefficients for the same mixture.
 
-- the feed is a single overall composition `(z1, 1 - z1)`. A three-phase problem has no single `beta`, and a feed with a non-condensable component is not describable this way.
-- no stability test is performed; a `beta` inside `[0, 1]` says the equation has a solution there, not that the feed should split.
+- the feed is a single overall composition `(z1, 1 - z1)`. A three-phase problem has no single `vapour_fraction`, and a feed with a non-condensable component is not describable this way.
+- no stability test is performed; a `vapour_fraction` inside `[0, 1]` says the equation has a solution there, not that the feed should split.
 
 
 

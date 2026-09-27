@@ -39,7 +39,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | the mole fraction of the feed in each of `[gas, oil, aqueous]`, summing to one. A role the solve drove to nothing carries the solver's own floor rather than zero. |
+| `phase_fractions` | dimensionless | the mole fraction of the feed in each of `[gas, oil, aqueous]`, summing to one. A role the solve drove to nothing carries the solver's own floor rather than zero. |
 | `x` | dimensionless | each role's composition at the coupled state, each row summing to one. An ion's entry is `1e-50` in the two EoS roles. |
 | `coupled_moles` | mol | the reaction-adjusted overall inventory the last pass solved at, one entry per component. **It is not the feed** wherever the chemistry moved a species, and a spectator's entry is the feed's. |
 | `aqueous_moles` | mol | the brine's species amounts at the answer, in the order `reactive_components` reports. This is the state a scale potential is computed from. |

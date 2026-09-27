@@ -108,7 +108,7 @@ pub fn ps_flash(
 
     Ok(PsFlashResult {
         temperature: kelvins(solved.temperature),
-        beta: solved.flash.beta,
+        vapour_fraction: solved.flash.vapour_fraction,
         x: solved.flash.x,
         y: solved.flash.y,
         k: solved.flash.k,

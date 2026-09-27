@@ -200,7 +200,7 @@ def tp_flash_saft(
 
     if converged:
         return TpFlashSaftResult(
-            beta=beta,
+            vapour_fraction=beta,
             x=tuple(liquid),
             y=tuple(vapour),
             k=tuple(k),
@@ -221,7 +221,7 @@ def tp_flash_saft(
     gas_gibbs = sum(zi * p for zi, p in zip(z, gas_coefficients, strict=True))
     liquid_gibbs = sum(zi * p for zi, p in zip(z, liquid_coefficients, strict=True))
     return TpFlashSaftResult(
-        beta=None,
+        vapour_fraction=None,
         x=tuple(z),
         y=tuple(z),
         k=tuple(k),

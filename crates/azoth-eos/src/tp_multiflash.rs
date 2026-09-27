@@ -79,7 +79,7 @@ fn phases_of(
     reduced: &ReducedParameters,
     z: &[f64],
 ) -> Result<Vec<MultiphasePhase>> {
-    match flash.beta {
+    match flash.vapour_fraction {
         Some(beta) => Ok(vec![
             MultiphasePhase {
                 fraction: 1.0 - beta,
@@ -333,7 +333,7 @@ pub fn tp_multiflash(
 
     Ok(TpMultiflashResult {
         phase_count: kept.len() as u32,
-        beta: kept.iter().map(|phase| phase.fraction).collect(),
+        phase_fractions: kept.iter().map(|phase| phase.fraction).collect(),
         x: kept.iter().map(|phase| phase.composition.clone()).collect(),
         z_factor: geometry
             .iter()

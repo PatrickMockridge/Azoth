@@ -49,7 +49,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | *Optional.* the vapour fraction, present only when the flash found a split. A single-phase answer has no vapour fraction rather than a zero one. |
+| `vapour_fraction` | dimensionless | *Optional.* the vapour fraction, present only when the flash found a split. A single-phase answer has no vapour fraction rather than a zero one. |
 | `x` | dimensionless | liquid-phase mole fractions, the feed itself when there is one phase |
 | `y` | dimensionless | vapour-phase mole fractions, the feed itself when there is one phase |
 | `k` | dimensionless | K-values, `K_i = phi_i^L / phi_i^V`, the iterate the loop converges on |

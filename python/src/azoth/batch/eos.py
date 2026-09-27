@@ -879,7 +879,7 @@ def _build_rachford_rice(
     return RachfordRiceBinaryBatch(
         warnings=warnings,
         units=units,
-        beta=columns["beta"],  # type: ignore[arg-type]
+        vapour_fraction=columns["beta"],  # type: ignore[arg-type]
     )
 
 

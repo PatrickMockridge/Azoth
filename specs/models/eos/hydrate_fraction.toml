@@ -56,7 +56,7 @@ values = ["pvtsim", "guo_finch"]
 optional = true
 description = "which of NeqSim's two fitted component models fills the cages. `pvtsim` is its default; `guo_finch` is what it selects for a `CPA-SRK-EOS`-named system, and the two differ in their reference term."
 [outputs]
-[outputs.beta]
+[outputs.hydrate_fraction]
 unit = "dimensionless"
 description = "the fraction of the feed's moles that is hydrate, on the feed's own basis."
 [outputs.structure]

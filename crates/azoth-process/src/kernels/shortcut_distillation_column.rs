@@ -153,7 +153,7 @@ pub fn shortcut_distillation_column(
     // The class's `computeFeedQuality`: one phase is 0 for a gas and 1 for anything else, two
     // phases are the liquid's share of the moles, which on a molar flash is `1 - beta`.
     let q = match flash.phase {
-        Phase::TwoPhase => 1.0 - flash.beta.unwrap_or(0.0),
+        Phase::TwoPhase => 1.0 - flash.vapour_fraction.unwrap_or(0.0),
         Phase::AllVapour => 0.0,
         Phase::AllLiquid => 1.0,
         Phase::Trivial => unreachable!("refused above"),

@@ -59,7 +59,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `P` | Pa | the pressure that satisfies the volume and internal energy. This is one of the two answers. |
 | `T` | K | the temperature that satisfies the volume and internal energy. This is the other answer. |
-| `beta` | dimensionless | the vapour fraction at the answer. Absent for a single-phase feed. |
+| `vapour_fraction` | dimensionless | the vapour fraction at the answer. Absent for a single-phase feed. |
 | `x` | dimensionless | liquid-phase mole fractions at the answer |
 | `y` | dimensionless | vapour-phase mole fractions at the answer |
 | `k` | dimensionless | `K_i = y_i / x_i` at the answer |

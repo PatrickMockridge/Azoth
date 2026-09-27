@@ -52,7 +52,7 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `components` | - | the substances the mixture is made of, by name, resolved against the component databank (`data/components/`, from NeqSim's COMP.csv and INTER.csv) with the keycard's overrides applied |
 | `P` | Pa | absolute pressure. Held fixed; the temperature is what is solved for. |
-| `beta` | dimensionless | the vapour fraction asked for, strictly between zero and one. The endpoints are `eos.bubble_temperature` and `eos.dew_temperature`. |
+| `vapour_fraction` | dimensionless | the vapour fraction asked for, strictly between zero and one. The endpoints are `eos.bubble_temperature` and `eos.dew_temperature`. |
 | `temperature` | K | where the bracket is centred: the feed's own temperature, whose span upstream searches. Not an initial guess at the answer. |
 | `z` | dimensionless | overall mole fractions |
 
@@ -62,7 +62,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `T` | K | the temperature at which the feed's vapour fraction is the one asked for - the model's answer. |
-| `beta` | dimensionless | the vapour fraction at the answer. Reported rather than echoed: it is what the iteration measured there, and the residual is its distance from the specification. |
+| `vapour_fraction` | dimensionless | the vapour fraction at the answer. Reported rather than echoed: it is what the iteration measured there, and the residual is its distance from the specification. |
 | `phase` | two_phase / all_liquid / all_vapour / trivial | which phase the feed is in at the answer |
 | `x` | dimensionless | liquid-phase mole fractions at the answer |
 | `y` | dimensionless | vapour-phase mole fractions at the answer |

@@ -10,7 +10,7 @@ V = 0.001059848052516
 U = -7797.318485008
 [cases.expected]
 T = 300.082995991047
-beta = 0.5
+vapour_fraction = 0.5
 [[cases]]
 id = "propane_at_10_bar_a_quarter_vapour"
 tolerance = 1e-07
@@ -22,7 +22,7 @@ V = 0.000573324022829
 U = -10997.919357422
 [cases.expected]
 T = 300.082995991047
-beta = 0.25
+vapour_fraction = 0.25
 [[cases]]
 id = "propane_at_20_bar_half_vapour"
 tolerance = 1e-07
@@ -34,7 +34,7 @@ V = 0.000523070028446
 U = -5192.179547873
 [cases.expected]
 T = 330.189683051239
-beta = 0.5
+vapour_fraction = 0.5
 [[cases]]
 id = "n_butane_at_2_bar_half_vapour"
 tolerance = 1e-07
@@ -46,4 +46,4 @@ V = 0.005751905323641
 U = -10484.245165447
 [cases.expected]
 T = 292.041483332711
-beta = 0.5
+vapour_fraction = 0.5

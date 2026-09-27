@@ -109,7 +109,7 @@ def pv_reflux_flash(
         f_old = f
         t_older = t_old
         t_old = current
-        f = reflux - _ratio(flash.beta, phase)
+        f = reflux - _ratio(flash.vapour_fraction, phase)
 
         measured = t_old - t_older
         slope = (f - f_old) / measured if abs(measured) > 1.0e-12 else 0.0
@@ -131,10 +131,10 @@ def pv_reflux_flash(
         flash = at(current)
 
     warnings.extend(flash.warnings)
-    residual = abs(reflux - _ratio(flash.beta, phase))
+    residual = abs(reflux - _ratio(flash.vapour_fraction, phase))
     return PvRefluxFlashResult(
         T=from_si(current, "K"),
-        beta=flash.beta,
+        vapour_fraction=flash.vapour_fraction,
         phase=flash.phase,
         x=tuple(flash.x),
         y=tuple(flash.y),

@@ -119,7 +119,7 @@ fn every_case_in_the_spec() {
             result.residual
         );
         common::assert_close(
-            result.beta.iter().sum::<f64>(),
+            result.phase_fractions.iter().sum::<f64>(),
             1.0,
             1.0e-12,
             &format!("{context} (beta sum)"),
@@ -133,14 +133,14 @@ fn every_case_in_the_spec() {
                 &format!("{context} (passes)"),
             );
         }
-        for name in ["coupled_moles", "aqueous_moles", "beta"] {
+        for name in ["coupled_moles", "aqueous_moles", "phase_fractions"] {
             let Some(expected) = case.expected_vector(name) else {
                 continue;
             };
             let got = match name {
                 "coupled_moles" => &result.coupled_moles,
                 "aqueous_moles" => &result.aqueous_moles,
-                _ => &result.beta,
+                _ => &result.phase_fractions,
             };
             assert_eq!(got.len(), expected.len(), "{context}: {name} length");
             for (index, (value, want)) in got.iter().zip(expected).enumerate() {
@@ -165,10 +165,10 @@ fn the_two_phase_reactive_flash_reproduces_the_capture() {
     let result = run(&TWO_PHASE, &TWO_PHASE_MOLES);
 
     assert_eq!(result.passes, 3);
-    assert!(relative(result.beta[0], 0.08346174755576197).abs() < BAND);
-    assert!(relative(result.beta[2], 0.916538252444238).abs() < BAND);
+    assert!(relative(result.phase_fractions[0], 0.08346174755576197).abs() < BAND);
+    assert!(relative(result.phase_fractions[2], 0.916538252444238).abs() < BAND);
     // The oil role is the one the solver drove to nothing; it carries the fraction floor.
-    assert!(result.beta[1] < 1.0e-9);
+    assert!(result.phase_fractions[1] < 1.0e-9);
 
     // The brine, component by component, in the capture's own order.
     let captured = [
@@ -250,7 +250,7 @@ fn the_three_phase_reactive_flash_reproduces_the_capture() {
         0.8872001706238768,
     ];
     for (role, expected) in captured_beta.iter().enumerate() {
-        let value = result.beta[role];
+        let value = result.phase_fractions[role];
         assert!(
             relative(value, *expected).abs() < BAND,
             "role {role}: {value} against the capture's {expected}"

@@ -142,7 +142,7 @@ def test_the_two_phase_entropy_carries_the_entropy_of_mixing() -> None:
         .s.to("J/(mol*K)")
         .magnitude
     )
-    beta = flash.beta
+    beta = flash.vapour_fraction
     assert beta is not None, "a two-phase flash reports a vapour fraction"
     naive = (1.0 - beta) * naive_l + beta * naive_v
 
@@ -163,7 +163,7 @@ def test_a_single_phase_feed_reports_no_vapour_fraction() -> None:
     )
 
     assert result.phase == "all_vapour"
-    assert result.beta is None
+    assert result.vapour_fraction is None
 
 
 def test_an_entropy_no_temperature_produces_is_a_solver_failure() -> None:

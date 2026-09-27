@@ -39,20 +39,20 @@ fn every_case_in_the_spec() {
         let context = &format!("{}::{}", spec.id, case.id);
 
         common::assert_close(
-            result.beta.iter().sum::<f64>(),
+            result.phase_fractions.iter().sum::<f64>(),
             1.0,
             1.0e-09,
             &format!("{context} (beta sum)"),
         );
         let expected_beta = case
-            .expected_vector("beta")
+            .expected_vector("phase_fractions")
             .unwrap_or_else(|| panic!("the case declares beta"));
         assert_eq!(
-            result.beta.len(),
+            result.phase_fractions.len(),
             expected_beta.len(),
             "{context}: beta length"
         );
-        for (index, (&got, &want)) in result.beta.iter().zip(expected_beta).enumerate() {
+        for (index, (&got, &want)) in result.phase_fractions.iter().zip(expected_beta).enumerate() {
             common::assert_close(
                 got,
                 want,
@@ -68,8 +68,8 @@ fn every_case_in_the_spec() {
         // values are pinned in `the_acceptance_contract_holds_on_the_captured_fluid` below
         // against the capture's own.
         let columns = case.list("components").expect("components").len();
-        assert_eq!(result.x.len(), result.beta.len());
-        assert_eq!(result.ln_phi.len(), result.beta.len());
+        assert_eq!(result.x.len(), result.phase_fractions.len());
+        assert_eq!(result.ln_phi.len(), result.phase_fractions.len());
         for (role, row) in result.x.iter().enumerate() {
             assert_eq!(row.len(), columns, "{context}: x[{role}] width");
             common::assert_close(
@@ -113,9 +113,9 @@ fn the_acceptance_contract_holds_on_the_captured_fluid() {
         .expect("the captured fluid");
 
     assert!(
-        (result.beta.iter().sum::<f64>() - 1.0).abs() < 1.0e-09,
+        (result.phase_fractions.iter().sum::<f64>() - 1.0).abs() < 1.0e-09,
         "beta sums to {}",
-        result.beta.iter().sum::<f64>()
+        result.phase_fractions.iter().sum::<f64>()
     );
     assert!(
         result.max_material_balance_residual < 1.0e-07,
@@ -156,7 +156,7 @@ fn the_acceptance_contract_holds_on_the_captured_fluid() {
         result.ln_phi[aqueous][heptane].exp()
     );
     // And the roles really are three, with the oil heavier in heptane than the gas is.
-    assert!(result.beta.iter().all(|beta| *beta > 0.0));
+    assert!(result.phase_fractions.iter().all(|beta| *beta > 0.0));
     assert!(result.x[1][heptane] > result.x[0][heptane]);
     assert!(result.x[aqueous][2] > 0.9, "the brine is mostly water");
 }
@@ -179,5 +179,5 @@ fn a_fluid_without_an_ion_is_the_same_solve() {
         "the log fugacity spread is {:e} without an ion to confine",
         result.max_log_fugacity_residual
     );
-    assert!((result.beta.iter().sum::<f64>() - 1.0).abs() < 1.0e-09);
+    assert!((result.phase_fractions.iter().sum::<f64>() - 1.0).abs() < 1.0e-09);
 }

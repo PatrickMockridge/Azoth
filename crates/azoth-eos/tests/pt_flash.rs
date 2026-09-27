@@ -121,11 +121,11 @@ fn every_case_in_the_spec() {
         // exists - a trivial solution is a *behaviour* and is tested as one below,
         // not pinned as a value.
         let beta = result
-            .beta
+            .vapour_fraction
             .unwrap_or_else(|| panic!("{}::{}: expected a vapour fraction", spec.id, case.id));
         common::assert_close(
             beta,
-            common::expected(case, "beta"),
+            common::expected(case, "vapour_fraction"),
             case.tolerance,
             &format!("{}::{} (beta)", spec.id, case.id),
         );
@@ -164,7 +164,7 @@ fn the_identities_hold_at_every_returned_answer() {
     for case in spec.cases {
         let result = flash_case(case);
         let z = case.vector("z").expect("the case declares z");
-        let beta = result.beta.expect("the spec's cases are all splits");
+        let beta = result.vapour_fraction.expect("the spec's cases are all splits");
         let context = &format!("{}::{}", spec.id, case.id);
 
         for (i, &zi) in z.iter().enumerate() {
@@ -212,7 +212,7 @@ fn the_answer_is_a_gibbs_minimum() {
     let z = [0.1, 0.9];
     let (t, p) = (kelvins(300.0), pascals(3_000_000.0));
     let result = pt_flash(&mixture, t, p, &z).unwrap();
-    let beta = result.beta.expect("a split");
+    let beta = result.vapour_fraction.expect("a split");
 
     let reduced = mixture.reduced_parameters(t, p).unwrap();
     let total = |beta: f64| -> f64 {
@@ -364,10 +364,10 @@ fn the_vapour_fraction_reduces_to_the_binary_kernel() {
         let result = pt_flash(&mixture, kelvins(t), pascals(p), &z).unwrap();
         let kernel = azoth_eos::rachford_rice_binary(z[0], result.k[0], result.k[1]).unwrap();
         assert!(
-            (result.beta.unwrap() - kernel.beta).abs() <= 1e-12,
+            (result.vapour_fraction.unwrap() - kernel.vapour_fraction).abs() <= 1e-12,
             "T={t}, P={p}, z={z:?}: the bisection gives {} and the closed form {}",
-            result.beta.unwrap(),
-            kernel.beta
+            result.vapour_fraction.unwrap(),
+            kernel.vapour_fraction
         );
     }
 }
@@ -399,9 +399,9 @@ fn a_feed_with_no_rachford_rice_root_is_single_phase() {
 
         assert_eq!(result.phase, expected, "T={t}, P={p}");
         assert!(
-            result.beta.is_none(),
+            result.vapour_fraction.is_none(),
             "T={t}, P={p}: no root means no vapour fraction, but {} was reported",
-            result.beta.unwrap()
+            result.vapour_fraction.unwrap()
         );
         assert_eq!(
             result.iterations, 1,
@@ -439,7 +439,7 @@ fn a_negative_flash_reports_its_vapour_fraction() {
 
     assert_eq!(result.phase, Phase::AllVapour);
     let beta = result
-        .beta
+        .vapour_fraction
         .expect("a negative flash still has a vapour fraction");
     assert!(beta > 1.0, "expected beta above one, got {beta}");
     assert_eq!(
@@ -496,9 +496,9 @@ fn a_feed_that_converges_to_the_trivial_solution_says_so() {
 
         assert_eq!(result.phase, Phase::Trivial, "T={t}");
         assert!(
-            result.beta.is_none(),
+            result.vapour_fraction.is_none(),
             "T={t}: a trivial solution has no vapour fraction, but {} was reported",
-            result.beta.unwrap()
+            result.vapour_fraction.unwrap()
         );
         assert!(
             result.iterations > 1,
@@ -835,9 +835,9 @@ fn the_second_order_fallback_converges_where_successive_substitution_crawls() {
             r.iterations
         );
         assert!(
-            (r.beta.expect("a split") - beta).abs() < 1e-7,
+            (r.vapour_fraction.expect("a split") - beta).abs() < 1e-7,
             "T={t}, P={p_pa}: beta is {:?} but the state's is {beta}",
-            r.beta
+            r.vapour_fraction
         );
     }
 }
@@ -855,7 +855,7 @@ fn the_fallback_converges_a_state_the_outer_scheme_abandons() {
         .expect("the fallback should converge where successive substitution does not");
     assert_eq!(r.phase, azoth_eos::Phase::Trivial);
     assert!(
-        r.beta.is_none(),
+        r.vapour_fraction.is_none(),
         "a trivial solution has no vapour fraction"
     );
 }

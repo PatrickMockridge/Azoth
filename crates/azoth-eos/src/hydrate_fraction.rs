@@ -280,7 +280,7 @@ fn finish(
     // `(1 - split) x + split y`. At the answer the fluid is the water-free one the hydrate
     // leaves, which flashes single phase, so this split is the general form rather than the
     // one the bound is read at.
-    let split = flash.beta.unwrap_or(0.0);
+    let split = flash.vapour_fraction.unwrap_or(0.0);
     let (x, y) = match flash.phase {
         Phase::TwoPhase => (flash.x.clone(), flash.y.clone()),
         _ => (fluid.clone(), fluid.clone()),
@@ -293,7 +293,7 @@ fn finish(
     }
 
     Ok(HydrateFractionResult {
-        beta,
+        hydrate_fraction: beta,
         structure: if hydrated.structure == 1 {
             HydrateStructure::StructureIi
         } else {

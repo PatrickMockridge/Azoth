@@ -67,7 +67,7 @@ fn volume_fraction(
     feed: &[f64],
 ) -> Result<(f64, PtFlashResult)> {
     let flash = pt_flash(mixture, t, p, feed)?;
-    let (beta, x, y) = match flash.beta {
+    let (beta, x, y) = match flash.vapour_fraction {
         Some(beta) => (beta, flash.x.clone(), flash.y.clone()),
         // A single-phase feed has no gas to take a share of. Upstream reads the phase
         // fraction as one or zero there, and so does this: the residual is then a
@@ -165,12 +165,12 @@ pub fn tv_fraction_flash(
     // twenty times and gives up; giving up here is an error naming the state rather than
     // an answer at whatever the last pressure was.
     let mut attempts = 0;
-    while flash.beta.is_none() && attempts < WALK_LIMIT {
+    while flash.vapour_fraction.is_none() && attempts < WALK_LIMIT {
         pressure *= WALK_FACTOR;
         attempts += 1;
         (found, flash) = volume_fraction(mixture, t, pascals(pressure), feed)?;
     }
-    if flash.beta.is_none() {
+    if flash.vapour_fraction.is_none() {
         return Err(AzothError::OutOfRange {
             field: "fraction".to_string(),
             value: fraction,
@@ -255,7 +255,7 @@ pub fn tv_fraction_flash(
     Ok(TvFractionFlashResult {
         pressure: pascals(pressure),
         temperature: t,
-        beta: flash.beta,
+        vapour_fraction: flash.vapour_fraction,
         volume_fraction: found,
         phase: flash.phase,
         x: flash.x,

@@ -43,7 +43,7 @@ not an equation, and both implementations read it from here.
 | Name | Unit | Description |
 |---|---|---|
 | `T` | K | the saturation temperature at `P` - the state's temperature, and the model's answer. |
-| `beta` | dimensionless | the vapour fraction, `(U - u_liq)/(u_gas - u_liq)` on the two saturated internal energies. |
+| `vapour_fraction` | dimensionless | the vapour fraction, `(U - u_liq)/(u_gas - u_liq)` on the two saturated internal energies. |
 | `V` | m**3/mol | the molar volume the two phases imply, `(1 - beta) v_liq + beta v_gas`. Reported so a caller can see what the split came to, and compared with the input. |
 | `phase` | two_phase / all_liquid / all_vapour | `two_phase` for every answer this model gives; the other two are reachable only as the diagnosis of a feed it refuses. |
 

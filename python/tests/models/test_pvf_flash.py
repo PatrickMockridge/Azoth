@@ -36,7 +36,7 @@ def test_spec_case(case: dict[str, Any]) -> None:
     h.assert_close(
         result.T.to("K").magnitude, case["expected"]["T"], case["tolerance"], f"{case['id']} (T)"
     )
-    h.assert_close(result.beta, case["inputs"]["beta"], case["tolerance"], f"{case['id']} (beta)")
+    h.assert_close(result.vapour_fraction, case["inputs"]["beta"], case["tolerance"], f"{case['id']} (beta)")
     h.assert_consistent(result, case["id"])
 
 
@@ -48,7 +48,7 @@ def test_the_answer_reproduces_the_fraction_it_was_asked_for() -> None:
     fluid, _ = components.mixture_of(["methane", "n-butane"])
     for fraction in (0.05, 0.2, 0.5, 0.8, 0.95):
         result = pvf_flash(fluid, Q(2.5e6, "Pa"), fraction, Q(330.0, "K"), [0.6, 0.4])
-        h.assert_close(result.beta, fraction, 1e-7, f"the fraction at {fraction}")
+        h.assert_close(result.vapour_fraction, fraction, 1e-7, f"the fraction at {fraction}")
         assert result.phase is Phase.TWO_PHASE
 
 
@@ -70,5 +70,5 @@ def test_the_two_backends_agree_on_every_spec_case() -> None:
         with use_backend("rust"):
             rs = call(case)
         h.assert_close(py.T.to("K").magnitude, rs.T.to("K").magnitude, 1e-9, case["id"])
-        h.assert_close(py.beta, rs.beta, 1e-9, case["id"])
+        h.assert_close(py.vapour_fraction, rs.vapour_fraction, 1e-9, case["id"])
         assert py.phase is rs.phase, f"{case['id']}: phase"

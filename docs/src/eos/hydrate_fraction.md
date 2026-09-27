@@ -40,7 +40,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `beta` | dimensionless | the fraction of the feed's moles that is hydrate, on the feed's own basis. |
+| `hydrate_fraction` | dimensionless | the fraction of the feed's moles that is hydrate, on the feed's own basis. |
 | `structure` | structure_i / structure_ii | the stable structure, from the same comparison of the two coefficients that `eos.hydrate_formation_temperature` makes. |
 | `balance_error` | dimensionless | The largest `|sum_p beta_p x_ip - z_i|` over the components at the answer, which is the invariant this model exists to keep: NeqSim's is `0.0874` at the states its own probe drives. |
 | `iterations` | dimensionless | flash evaluations taken, counting the feed's, the fixed point's and the answer's own. |
