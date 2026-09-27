@@ -109,6 +109,10 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         side_draw_flows: Vec::new(),
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     })?;
 
     Ok(AbsorberOutcome {

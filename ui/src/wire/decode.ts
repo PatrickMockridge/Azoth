@@ -43,6 +43,7 @@ import type {
   NodeData,
   Ports,
   Position,
+  ProvenanceRecord,
   Quantity,
   RecycleSettings,
   Residuals,
@@ -52,6 +53,7 @@ import type {
   StreamRecord,
   Target,
   TearRecord,
+  UnitProvenance,
 } from "./types";
 
 /** What crossed was not the shape the declaration says, and this says which path was wrong. */
@@ -439,6 +441,34 @@ function sessionReport(value: unknown, path: string): SessionReport {
   };
 }
 
+function unitProvenance(value: unknown, path: string): UnitProvenance {
+  const raw = obj(value, path);
+  // **Every key read, and none of them optional.** The library writes `null` where it has
+  // nothing to say rather than leaving the key out, so a decoder that accepted a missing one
+  // would be accepting a shape this server does not emit - and a front end switching on
+  // `verification` would then be reading `undefined` where the schema promises a value.
+  return {
+    instance: str(raw.instance, `${path}.instance`),
+    unit: str(raw.unit, `${path}.unit`),
+    model: nullable(raw.model, `${path}.model`, str),
+    source: nullable(raw.source, `${path}.source`, str),
+    runnable: bool(raw.runnable, `${path}.runnable`),
+    refusal: nullable(raw.refusal, `${path}.refusal`, str),
+    spec_sha256: nullable(raw.spec_sha256, `${path}.spec_sha256`, str),
+    rust_sha256: nullable(raw.rust_sha256, `${path}.rust_sha256`, str),
+    verification: nullable(raw.verification, `${path}.verification`, str),
+  };
+}
+
+function provenance(value: unknown, path: string): ProvenanceRecord {
+  const raw = obj(value, path);
+  return {
+    library: str(raw.library, `${path}.library`),
+    version: str(raw.version, `${path}.version`),
+    units: list(raw.units, `${path}.units`, unitProvenance),
+  };
+}
+
 /** Everything one call answers with. The parse `client.ts` and `http.ts` both end at. */
 export function decodeEnvelope(value: unknown): Envelope {
   const path = "the envelope";
@@ -462,6 +492,7 @@ export function decodeEnvelope(value: unknown): Envelope {
     paths: list(raw.paths, `${path}.paths`, str),
     session: nullable(raw.session, `${path}.session`, sessionReport),
     run_error: nullable(raw.run_error, `${path}.run_error`, str),
+    provenance: provenance(raw.provenance, `${path}.provenance`),
   };
 }
 

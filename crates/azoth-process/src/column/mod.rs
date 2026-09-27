@@ -21,6 +21,7 @@ pub mod block_tridiagonal;
 pub mod condenser;
 pub mod murphree;
 pub mod naphtali_sandholm;
+pub mod pumparound;
 pub mod reboiler;
 pub mod tear;
 pub mod tray;

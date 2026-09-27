@@ -50,6 +50,10 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: Vec::new(),
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     }
 }
 
@@ -495,6 +499,10 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: Vec::new(),
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     });
 
     let out = out.expect(
@@ -760,6 +768,10 @@ fn a_specified_side_draw_flow_is_torn_until_the_draw_delivers_it() {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: Vec::new(),
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     };
     setup.side_draw_flows = vec![SideDrawFlow {
         tray: 0,
@@ -864,6 +876,10 @@ fn a_coordinated_side_draw_tear_is_refused_by_name() {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: vec![single.clone(), single.clone()],
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     };
     let error = distillation_column(&setup).expect_err("several tear variables are coordinated");
     assert!(
@@ -875,4 +891,93 @@ fn a_coordinated_side_draw_tear_is_refused_by_name() {
     setup.pumparound_fractions = Some(vec![0.05]);
     let error = distillation_column(&setup).expect_err("a pumparound is coordinated too");
     assert!(error.to_string().contains("pumparound"), "{error}");
+}
+
+/// **The pumparound's return: a liquid draw that comes back to another tray.**
+///
+/// The draw alone this port already carried - `pumparound_fractions` is one of the three
+/// fraction vectors - and what it did not carry is the *return*: `addLiquidPumparound("PA", 1,
+/// 3, 0.10, 5.0)` withdraws a tenth of tray 1's liquid, cools it by five kelvin, and feeds it in
+/// at tray 3. The class converges it as an ordinary fixed point on the return's own flow, and
+/// NeqSim's captured row is this port's own binary column with that one mechanism added, so the
+/// difference from `a_column_solves_the_captured_binary_profile` is the recycle and nothing else.
+///
+/// **The mechanism is legible in what it produces.** The return is the draw at exactly
+/// `T - 5 K`, its flow settles to `2.8e-5` relative change against the class's own `1e-4`
+/// tolerance, the cooler takes `-438.78` W, and the recycle moves the profile: tray 1 lands at
+/// `334.58` K against the ideal column's `336.15`, and tray 3 at `304.82` against `302.12`.
+#[test]
+fn a_pumparound_return_is_recycled_until_its_flow_settles() {
+    use azoth_process::column::pumparound::PumparoundReturn;
+
+    let mut setup = binary_column(1.0e-6);
+    setup.pumparound_returns = vec![PumparoundReturn {
+        draw_tray: 1,
+        return_tray: 3,
+        fraction: 0.10,
+        temperature_drop: 5.0,
+    }];
+    setup.pumparound_tolerance = Some(1.0e-4);
+    setup.pumparound_max_iterations = Some(12);
+    let out = distillation_column(&setup).expect("the recycle converges");
+
+    let pumparound = out
+        .pumparound
+        .as_ref()
+        .expect("a pumparound with a return leaves a trace");
+    assert!(
+        pumparound.converged,
+        "relative change {}",
+        pumparound.relative_change
+    );
+    assert!(
+        pumparound.relative_change <= 1.0e-4,
+        "the class's own tolerance: {}",
+        pumparound.relative_change
+    );
+
+    // **The return is the draw at `T - drop`**, which is `updateReturnStream`'s own clone,
+    // restate and re-flash: the captured draw is `0.571186834474117` mol/s at
+    // `334.5849285970497` K and the return is the same flow at `329.5849285970497`.
+    relative(
+        pumparound.return_n[0],
+        0.571186834474117,
+        1.0e-4,
+        "the return's flow",
+    );
+    absolute(
+        pumparound.duty[0],
+        -438.78378433523903,
+        1.0,
+        "the cooler's duty",
+    );
+
+    // And the recycle moved the column, which is what makes it worth carrying: measured, NeqSim
+    // reports `334.5849285970497` on tray 1 and `304.82237776677346` on tray 3.
+    absolute(
+        out.trays[1].temperature.value,
+        334.5849285970497,
+        1.0e-3,
+        "the draw tray's temperature",
+    );
+    absolute(
+        out.trays[3].temperature.value,
+        304.82237776677346,
+        1.0e-3,
+        "the return tray's temperature",
+    );
+    // **The draw is the tenth of the tray's own liquid *phase*, not of its outlet**, which is
+    // the half that already existed: `getLiquidOutStream` is the liquid scaled by
+    // `1 - liquid - pumparound`, so the outlet is nine tenths of the phase and the draw is the
+    // tenth that left it. NeqSim's own row is `0.571186834474117` mol/s.
+    let draw = out.pumparounds[1]
+        .as_ref()
+        .expect("tray 1 draws a pumparound");
+    relative(
+        draw.n,
+        0.10 * (draw.n + out.trays[1].liquid_n),
+        1.0e-9,
+        "the draw's share",
+    );
+    relative(draw.n, 0.571186834474117, 1.0e-4, "the draw's own flow");
 }

@@ -2386,6 +2386,59 @@
           "values": []
         },
         {
+          "description": "the candidate cap; the class defaults it to 12, and the tear's own cap is the largest of it and `maxColumnTearIterations`",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "side_draw_flow_max_iterations",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "which of the stage's two phases the specification controls - gas or liquid - `SideDrawPhase`",
+          "dimension": null,
+          "kind": "enum",
+          "name": "side_draw_flow_phase",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "gas",
+            "liquid"
+          ]
+        },
+        {
+          "description": "the **mass** flow the draw must deliver; the column moves the draw's fraction until it does",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "side_draw_flow_target",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the relative residual the search stops at; the class defaults it to 1e-4",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "side_draw_flow_tolerance",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the tray whose draw flow is specified, which `addSideDrawFlowSpecification` takes; omitted means every draw stays a fraction of its stage's own phase",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "side_draw_flow_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
           "description": "which of the class's ten solving strategies runs - direct_substitution, damped_substitution, inside_out, matrix_inside_out, wegstein, sum_rates, newton, naphtali_sandholm, mesh_residual or auto - where auto is a ladder and not one method",
           "dimension": null,
           "kind": "enum",
