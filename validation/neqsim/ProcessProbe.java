@@ -1447,6 +1447,16 @@ public class ProcessProbe {
     // solve's own. The terminals are the solve's, and a reader comparing a port against this
     // capture needs both to see which of the two a difference lives in.
     if (murphreeEfficiency != null) {
+      // **What the correction's two phase guards actually see**, per stage, beside the
+      // compositions it reads: `getNumberOfPhases() < 2` skips a stage, and a stage whose flash
+      // found one phase is a stage this port's own `(Some, Some)` guard also skips - unless the
+      // two disagree, which is what a divergence would have to come from.
+      for (int i = 0; i < column.getNumberOfTrays(); i++) {
+        neqsim.thermo.system.SystemInterface system = column.getTray(i).getThermoSystem();
+        System.out.println("tray" + i + "_phases=" + system.getNumberOfPhases() + " phase0type="
+            + (system.getNumberOfPhases() > 0 ? system.getPhase(0).getType() : "none") + " beta="
+            + system.getBeta());
+      }
       print("terminal_top", column.getTray(column.getNumberOfTrays() - 1).getGasOutStream());
       print("terminal_bottom", column.getTray(0).getLiquidOutStream());
       // **What the correction actually produced on each corrected stage, and what it read.**
