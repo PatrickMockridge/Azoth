@@ -28,6 +28,11 @@
  * the module `npm run wasm` just built for the same three documents and compares. It was already
  * stale when that test was written — the catalogue fixture named `mol/s` where the shipped column
  * spec had been corrected to `mol/hr` — and nothing in the tree could see it.
+ *
+ * **`python tools/gen_ui_fixtures.py` is the recapture**, and it runs the three commands above:
+ * the gate can say a fixture is stale and cannot say what to write in its place. `--check` is
+ * the same comparison without writing, and `rust-test` runs it so that the job which builds the
+ * CLI is the job that says the fixtures are still what it would write.
  */
 
 import { describe, expect, it } from "vitest";

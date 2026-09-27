@@ -114,6 +114,12 @@ jobs:
       # Two steps because `--doc` cannot be combined with `--all-targets`.
       - run: cargo test --workspace --all-targets
       - run: cargo test --workspace --doc
+      # **The front end's fixtures are the library's own output, and this is what says so.**
+      # The check lives in this job rather than in `ui` for one reason: it runs the CLI, so it
+      # needs a cargo build, and this job has just made one. The `ui` job's own gate is
+      # `test/currency.test.ts`, which asks the module that job builds for the same three
+      # documents - a stale fixture fails there whether or not this ran.
+      - run: python tools/gen_ui_fixtures.py --check
 
   rust-lint:
     name: rust-lint
