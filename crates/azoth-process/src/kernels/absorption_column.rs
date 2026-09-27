@@ -106,6 +106,7 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         reactive: setup.reactive,
         // The absorber's own fractions are the class's too, and its model does not declare them.
         gas_side_draw_fractions: None,
+        side_draw_flows: Vec::new(),
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
     })?;

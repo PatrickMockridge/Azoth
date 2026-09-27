@@ -670,6 +670,12 @@ public class ProcessProbe {
 
     // The Murphree rows, which live here for the same reason again.
     murphreeRows();
+
+    // **The draw's *flow* specification, which is a tear loop and not a split.** Every row above
+    // states a fraction; `addSideDrawFlowSpecification` states a target *flow* and lets the column
+    // move that fraction until the draw delivers it. It is last so that the blocks the cases
+    // already name keep their positions.
+    sideDrawFlowRows();
   }
 
   /// **The Murphree efficiency, on the column the port is already held to.** Two efficiencies,
@@ -1835,6 +1841,121 @@ public class ProcessProbe {
     sideDrawColumnRow("side_draw_column_binary_liquid_and_pumparound",
         new String[] { "methane", "n-butane" }, new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4,
         2, true, true, -20.0, 100.0, 19.0, 20.0, 1.0e-6, SIDE_DRAW_TRAY, 0.0, 0.10, 0.05);
+
+  }
+
+  /// **The side-draw flow specification, on the class's own two states.**
+  ///
+  /// NeqSim's `solveSingleSideDrawFlowSpecification` is not an outer loop over the column: it is a
+  /// **search over cold candidates**, each a deep copy of the whole column at a proposed fraction
+  /// and solved from scratch, with only an accepted inner solve allowed to update the controller.
+  /// These rows print enough of that mechanism to hold a port to it: the draw's flow and the
+  /// specification's own residual, the tear iteration count and its residual, the accepted and
+  /// rejected candidate counts, the inner-iteration total, and the candidate history itself.
+  static void sideDrawFlowRows() {
+    // The class's own `sideDrawFlowSpecificationClosesProductFlow`: a pure-methane feed into a
+    // one-tray column with no ends, drawing 25 kg/hr of vapour from tray 0.
+    sideDrawFlowRow("side_draw_flow_one_tray_gas_methane", new String[] { "methane" },
+        new double[] { 1.0 }, 300.0, 10.0, 100.0, 1, 0, false, false, 0.0, 0.0, 10.0, 10.0,
+        "GAS", 25.0, "kg/hr", 1.0e-5, 12);
+    // **The same structure on a fluid that flashes to two phases, which the class's own row
+    // does not.** A pure-methane feed at 300 K and 10 bara is all vapour, so its one-tray column
+    // has no bottom product at all: NeqSim publishes a *zero-flow* liquid with an enthalpy of
+    // `-Infinity`, and this port declines to fabricate that state - a stream's molar enthalpy is
+    // finite by construction. So the oracle is this substitution: the same one-tray, no-ends,
+    // gas-draw shape on the binary feed this model is already held to, which does have a liquid.
+    sideDrawFlowRow("side_draw_flow_one_tray_gas_binary", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 1, 0, false, false, 0.0, 0.0, 20.0,
+        20.0, "GAS", 25.0, "kg/hr", 1.0e-5, 12);
+    // **The class's own multistage state, re-cased to PR and with one substitution.** Its
+    // `createFractionatorColumn` drives both ends by *reflux ratio*, which this port measures as
+    // not reproduced - the end's `PVrefluxflash` searches for a state past the mixture's dew point
+    // - so the two end pins are stated instead and the draw's target is the flow the class's own
+    // test asks for. **That is a substitution and it is labelled as one**: the tear structure is
+    // the class's, the state it runs on is not.
+    sideDrawFlowRow("side_draw_flow_five_tray_liquid_fractionator",
+        new String[] { "propane", "n-butane", "n-pentane", "n-hexane" },
+        new double[] { 0.20, 0.35, 0.30, 0.15 }, 333.15, 8.0, 250.0, 5, 3, true, true, 30.0,
+        110.0, 8.0, 8.3, "LIQUID", 20.160854543137464, "kg/hr", 1.0e-5, 30);
+  }
+
+  static void sideDrawFlowRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, boolean condenser,
+      boolean reboiler, double condenserC, double reboilerC, double topBara, double bottomBara,
+      String phase, double targetFlow, String flowUnit, double specificationTolerance,
+      int tearIterations) {
+    SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("flow spec feed", fluid);
+    inlet.setFlowRate(kgPerHour, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn(label, stages, reboiler,
+            condenser);
+    column.addFeedStream(inlet, feedTray);
+    column.setTopPressure(topBara);
+    column.setBottomPressure(bottomBara);
+    if (condenser) {
+      column.setCondenserTemperature(condenserC, "C");
+    }
+    if (reboiler) {
+      column.setReboilerTemperature(reboilerC, "C");
+    }
+    neqsim.process.equipment.distillation.DistillationColumn.SideDrawPhase sideDrawPhase =
+        neqsim.process.equipment.distillation.DistillationColumn.SideDrawPhase.valueOf(phase);
+    neqsim.process.equipment.distillation.DistillationColumn.ColumnSideDrawSpecification spec =
+        column.addSideDrawFlowSpecification(SIDE_DRAW_TRAY_OF(column, stages, feedTray), sideDrawPhase,
+            targetFlow, flowUnit);
+    spec.setTolerance(specificationTolerance);
+    column.setMaxColumnTearIterations(tearIterations);
+    column.run();
+
+    System.out.println(label);
+    System.out.println("cubic=pr");
+    System.out.println("stages=" + stages);
+    System.out.println("feed_tray=" + feedTray);
+    System.out.println("has_condenser=" + condenser);
+    System.out.println("has_reboiler=" + reboiler);
+    System.out.println("side_draw_tray=" + spec.getTrayNumber());
+    System.out.println("side_draw_phase=" + spec.getPhase());
+    System.out.println("side_draw_target=" + spec.getTargetFlowRate());
+    System.out.println("side_draw_unit=" + spec.getFlowUnit());
+    System.out.println("specification_tolerance=" + spec.getTolerance());
+    System.out.println("tear_iteration_limit=" + tearIterations);
+    System.out.println("solved=" + column.solved());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("tear_iterations=" + column.getLastColumnTearIterationCount());
+    System.out.println("tear_residual=" + column.getLastColumnTearResidual());
+    System.out.println("tear_converged=" + column.isLastColumnTearConverged());
+    System.out.println("tear_rejected_candidates=" + column.getLastColumnTearRejectedCandidateCount());
+    System.out.println("tear_rollbacks=" + column.getLastColumnTearRollbackCount());
+    System.out.println("tear_inner_iterations=" + column.getLastColumnTearInnerIterationCount());
+    System.out.println("tear_candidate_history=" + column.getLastColumnTearCandidateHistory());
+    System.out.println("draw_fraction="
+        + column.getTray(spec.getTrayNumber()).getGasSideDrawFraction());
+    System.out.println("spec_last_actual=" + spec.getLastActualFlowRate());
+    System.out.println("spec_last_residual=" + spec.getLastRelativeResidual());
+    System.out.println("mass_balance_kg_per_hour=" + column.getMassBalance("kg/hr"));
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    System.out.println();
+  }
+
+  /// The tray the flow specification is placed on, as this probe's own rows state it.
+  static int SIDE_DRAW_TRAY_OF(
+      neqsim.process.equipment.distillation.DistillationColumn column, int stages, int feedTray) {
+    return stages > 1 ? 3 : feedTray;
   }
 
   static void sideDrawColumnRow(String label, String[] names, double[] z, double feedTemperatureK,

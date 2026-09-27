@@ -1496,7 +1496,18 @@ UNCASED_ROWS: dict[str, int] = {
     # net outlet, which is what `SimpleTray`'s own split does - a pumparound fraction *without* a
     # return. What the class's reconciliation restores is the pumparound's return, which is
     # `ColumnPumparound`'s subject and is named out of this tranche.
-    "process_column.tsv": 13,
+    # **And the three side-draw *flow* tear rows**, which are the one group here with no case
+    # behind them yet: the tear's own oracle is asserted by
+    # `crates/azoth-process/tests/column.rs`, because the *declaration* the model needs is not
+    # decided - a flow specification is a tray, a phase, a target, a tolerance and a cap, and no
+    # input shape in the spec schema carries that record yet. The three say three different
+    # things: `..._one_tray_gas_methane` is the class's own state, where its one-tray column has
+    # no bottom product at all and NeqSim publishes a zero flow with a `-Infinity` enthalpy that
+    # this port declines to fabricate; `..._one_tray_gas_binary` is the substitution the port is
+    # held to - the same shape on a fluid that *does* have a liquid - and
+    # `..._five_tray_liquid_fractionator` is the class's own multistage state re-cased, where the
+    # class rejects 18 of 30 candidates and never converges.
+    "process_column.tsv": 16,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

@@ -65,6 +65,7 @@ fn binary(solver_type: SolverType) -> ColumnSetup {
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
+        side_draw_flows: Vec::new(),
     }
 }
 
@@ -108,6 +109,7 @@ fn deethanizer(solver_type: SolverType) -> ColumnSetup {
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
+        side_draw_flows: Vec::new(),
     }
 }
 

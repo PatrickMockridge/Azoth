@@ -99,6 +99,7 @@ pub fn packed_column(setup: &PackedSetup) -> Result<ColumnOutcome> {
         reactive: setup.reactive,
         // The draws are the base column's too, and this entry declares none of them.
         gas_side_draw_fractions: None,
+        side_draw_flows: Vec::new(),
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
     })

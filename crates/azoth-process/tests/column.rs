@@ -9,7 +9,9 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
-use azoth_process::kernels::distillation_column::{ColumnSetup, SolverType, distillation_column};
+use azoth_process::kernels::distillation_column::{
+    ColumnSetup, SideDrawFlow, SideDrawPhase, SolverType, distillation_column,
+};
 
 fn binary_feed() -> Stream {
     Stream::from_pt(
@@ -47,6 +49,7 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
+        side_draw_flows: Vec::new(),
     }
 }
 
@@ -491,6 +494,7 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
+        side_draw_flows: Vec::new(),
     });
 
     let out = out.expect(
@@ -709,4 +713,166 @@ fn a_fraction_on_an_end_is_refused_by_name() {
     let error = distillation_column(&drawn_column((Some(vec![0.1, 0.2]), None, None)))
         .expect_err("six trays need six fractions");
     assert!(error.to_string().contains("2 fraction(s)"), "{error}");
+}
+
+/// **The side-draw *flow* specification: a draw's mass flow as a tear over the whole solve.**
+///
+/// Every other draw this port carries is a fraction of a stage's own phase, decided once.
+/// `addSideDrawFlowSpecification` states the mass flow a draw must deliver and moves its
+/// fraction until it does - so the fraction is a *controlled variable* and the column is solved
+/// repeatedly.
+///
+/// **The oracle is a substitution, and the row it substitutes for is in the capture beside it.**
+/// The class's own state is a one-tray column fed pure methane, and on it the vapour *is* the
+/// whole feed: NeqSim publishes a bottom product of `0.0` mol/s whose enthalpy is
+/// `-Infinity`, and this port declines to fabricate that - a `Stream`'s molar enthalpy is
+/// finite by construction, which is `TrayOutcome`'s own documented judgement. The row is kept
+/// as the evidence for that refusal. What is reproduced here is the same one-tray, no-ends,
+/// gas-draw shape on the binary feed this model is already held to, which does have a liquid.
+///
+/// **The search is the class's own and it is legible.** The class seeds an uncontrolled draw at
+/// `0.05`, so the first candidate is `0.05` of the tray's vapour; the second is the
+/// multiplicative proposal `0.05 x target/actual`; and on this state that is the answer - **two
+/// candidates, the flow on target to the digit, and no rejection at all**. The fraction the
+/// search lands on is `0.07362063713783379` and the flow is `25.0` kg/hr exactly.
+#[test]
+fn a_specified_side_draw_flow_is_torn_until_the_draw_delivers_it() {
+    let mut setup = ColumnSetup {
+        feed: binary_feed(),
+        feed_stage: 0,
+        number_of_stages: 1,
+        has_reboiler: false,
+        has_condenser: false,
+        top_pressure: pascals(20.0e5),
+        bottom_pressure: pascals(20.0e5),
+        condenser_temperature: None,
+        reboiler_temperature: None,
+        temperature_tolerance: 1.0e-6,
+        max_iterations: 200,
+        murphree_efficiency: None,
+        top_specification: None,
+        bottom_specification: None,
+        top_feed: None,
+        tray_temperatures: None,
+        solver_type: SolverType::DirectSubstitution,
+        reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
+        side_draw_flows: Vec::new(),
+    };
+    setup.side_draw_flows = vec![SideDrawFlow {
+        tray: 0,
+        phase: SideDrawPhase::Gas,
+        target: 25.0 / 3600.0,
+        tolerance: 1.0e-5,
+        max_iterations: 12,
+    }];
+    let out = distillation_column(&setup).expect("the tear finds the fraction");
+
+    let tear = out
+        .tear
+        .as_ref()
+        .expect("a flow specification leaves a trace");
+    assert_eq!(
+        tear.iterations, 2,
+        "the seed and the multiplicative proposal"
+    );
+    assert!(tear.converged, "the residual is {} ", tear.residual);
+    absolute(tear.residual, 0.0, 1.0e-15, "the residual");
+    assert_eq!(tear.rejected_candidates, 0);
+    assert_eq!(tear.rollbacks, 0);
+    assert_eq!(tear.inner_iterations, 2, "one inner solve per candidate");
+    relative(
+        tear.fraction,
+        0.07362063713783379,
+        1.0e-12,
+        "the fraction the search lands on",
+    );
+    relative(
+        tear.actual_flow * 3600.0,
+        25.0,
+        1.0e-15,
+        "the draw's own flow, kg/hr",
+    );
+    assert!(
+        tear.history.starts_with("#1 fraction=0.05"),
+        "the class seeds an uncontrolled draw at five per cent: {}",
+        tear.history
+    );
+
+    // And the column the tear published is a two-phase one-tray column, as the capture's is.
+    relative(
+        out.trays[0].gas_n,
+        3.7940693256162255,
+        1.0e-6,
+        "the tray's vapour",
+    );
+    relative(
+        out.trays[0].liquid_n,
+        3.395114823364233,
+        1.0e-6,
+        "the tray's liquid",
+    );
+    let draw = out.gas_side_draws[0]
+        .as_ref()
+        .expect("the tray withdraws vapour");
+    relative(
+        draw.mass_flow().expect("a mass flow") * 3600.0,
+        25.0,
+        1.0e-6,
+        "the draw",
+    );
+}
+
+/// **Two of the tear's three neighbours are refused rather than reduced**, each by name.
+///
+/// `solveWithColumnTearVariables` is the class's *coordinated* problem - several tear variables
+/// updated together under one convergence test - and this port carries the independent
+/// single-variable search. So a second specification, and a specification beside a pumparound,
+/// are refused with that reason; and a specification on an end is refused because the ends here
+/// are `column::reboiler` and `column::condenser` rather than stages.
+#[test]
+fn a_coordinated_side_draw_tear_is_refused_by_name() {
+    let single = SideDrawFlow {
+        tray: 0,
+        phase: SideDrawPhase::Gas,
+        target: 25.0 / 3600.0,
+        tolerance: 1.0e-5,
+        max_iterations: 12,
+    };
+    let mut setup = ColumnSetup {
+        feed: binary_feed(),
+        feed_stage: 0,
+        number_of_stages: 1,
+        has_reboiler: false,
+        has_condenser: false,
+        top_pressure: pascals(20.0e5),
+        bottom_pressure: pascals(20.0e5),
+        condenser_temperature: None,
+        reboiler_temperature: None,
+        temperature_tolerance: 1.0e-6,
+        max_iterations: 200,
+        murphree_efficiency: None,
+        top_specification: None,
+        bottom_specification: None,
+        top_feed: None,
+        tray_temperatures: None,
+        solver_type: SolverType::DirectSubstitution,
+        reactive: azoth_process::kernels::ReactiveSection::None,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
+        side_draw_flows: vec![single.clone(), single.clone()],
+    };
+    let error = distillation_column(&setup).expect_err("several tear variables are coordinated");
+    assert!(
+        error.to_string().contains("solveWithColumnTearVariables"),
+        "{error}"
+    );
+
+    setup.side_draw_flows = vec![single];
+    setup.pumparound_fractions = Some(vec![0.05]);
+    let error = distillation_column(&setup).expect_err("a pumparound is coordinated too");
+    assert!(error.to_string().contains("pumparound"), "{error}");
 }

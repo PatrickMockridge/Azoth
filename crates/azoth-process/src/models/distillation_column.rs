@@ -310,6 +310,7 @@ pub fn distillation_column(
         tray_temperatures: None,
         solver_type: solver,
         gas_side_draw_fractions: gas_side_draw_fractions.map(|v| v.to_vec()),
+        side_draw_flows: Vec::new(),
         liquid_side_draw_fractions: liquid_side_draw_fractions.map(|v| v.to_vec()),
         pumparound_fractions: pumparound_fractions.map(|v| v.to_vec()),
         reactive,

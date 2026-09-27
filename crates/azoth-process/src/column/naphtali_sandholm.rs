@@ -1138,6 +1138,7 @@ impl Mesh {
             // mixture, where the class's trays take them from the tray's own flash - so a
             // reactive section here could only be silently non-reactive.
             warnings: Vec::new(),
+            tear: None,
             // **The mesh solve carries no side draws**, and the model refuses the pair rather
             // than ignoring the fractions: these equations take their fugacities from the mesh's
             // own mixture, so a draw has no tray outlet here to split.

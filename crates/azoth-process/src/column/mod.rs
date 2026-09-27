@@ -22,6 +22,7 @@ pub mod condenser;
 pub mod murphree;
 pub mod naphtali_sandholm;
 pub mod reboiler;
+pub mod tear;
 pub mod tray;
 
 pub use condenser::{CondenserMode, CondenserOutcome, condenser};

@@ -190,6 +190,8 @@ pub struct ColumnOutcome {
     /// is reported here rather than taken silently. Deduplicated by code, because a column runs
     /// its trays hundreds of times and a caller needs the kind rather than the count.
     pub warnings: Vec<azoth_core::warning::Warning>,
+    /// **What the side-draw flow tear did**, or `None` where no draw's flow was specified.
+    pub tear: Option<TearDiagnostics>,
 }
 
 /// Which of the class's ten solving strategies the column runs.
@@ -288,6 +290,75 @@ pub struct ColumnSetup {
     pub solver_type: SolverType,
     /// **Which trays flash reactively**, over middle-tray indices, as the class states it.
     pub reactive: ReactiveSection,
+    /// **The draws whose *flow* is specified rather than their fraction**, which
+    /// `addSideDrawFlowSpecification` states and [`crate::column::tear`] solves.
+    pub side_draw_flows: Vec<SideDrawFlow>,
+}
+
+/// The phase a side-draw flow specification controls: `ColumnSideDrawSpecification.SideDrawPhase`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SideDrawPhase {
+    /// The vapour leaving the stage.
+    Gas,
+    /// The liquid leaving it.
+    Liquid,
+}
+
+impl SideDrawPhase {
+    /// The class's own spelling.
+    #[must_use]
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Gas => "GAS",
+            Self::Liquid => "LIQUID",
+        }
+    }
+}
+
+/// **One side-draw flow target**: `ColumnSideDrawSpecification`, whose five fields these are.
+///
+/// **The target is a *mass* flow in SI**, where the class carries a number and a unit string:
+/// `getSideDrawStream(tray, phase).getFlowRate(unit)` is a mass rate, so the two are the same
+/// quantity in the unit this library works in.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SideDrawFlow {
+    /// The tray the draw is on, 0-based including the ends - `addSideDrawFlowSpecification`'s
+    /// own index, which it validates.
+    pub tray: usize,
+    /// Which of the stage's two phases the draw takes.
+    pub phase: SideDrawPhase,
+    /// The mass flow the draw must deliver, kg/s.
+    pub target: f64,
+    /// The relative residual the search stops at - the class's own `1e-4` default.
+    pub tolerance: f64,
+    /// The candidate cap - the class's own `12` default, and its `maxIterations`.
+    pub max_iterations: usize,
+}
+
+/// **What the side-draw flow tear did**, which is the class's tear diagnostics.
+///
+/// **Separate from the three residuals**, because they answer a different question: `iterations`
+/// and `temperature_residual` are the *inner* solve's, and these are the outer search's.
+#[derive(Debug, Clone)]
+pub struct TearDiagnostics {
+    /// Candidates tried, `getLastColumnTearIterationCount`.
+    pub iterations: usize,
+    /// The best accepted candidate's relative residual, `getLastColumnTearResidual`.
+    pub residual: f64,
+    /// Whether the residual reached the specification's tolerance.
+    pub converged: bool,
+    /// Candidates the inner solve refused, `getLastColumnTearRejectedCandidateCount`.
+    pub rejected_candidates: usize,
+    /// Rejections that came after an accepted state existed, `getLastColumnTearRollbackCount`.
+    pub rollbacks: usize,
+    /// The inner solves' iterations added up, `getLastColumnTearInnerIterationCount`.
+    pub inner_iterations: u32,
+    /// The candidate trace, `getLastColumnTearCandidateHistory`.
+    pub history: String,
+    /// The published draw's mass flow, kg/s.
+    pub actual_flow: f64,
+    /// The fraction that flow was met at.
+    pub fraction: f64,
 }
 
 /// **`DistillationColumn.setReactive`'s two forms, resolved from the three declared inputs.**
@@ -719,6 +790,19 @@ impl Network {
 /// column, and [`azoth_core::AzothError::SolverNotConverged`] when the gate is missed - with
 /// the residuals in the message, because a column that stopped is not a column that solved.
 pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
+    // **A specified draw flow is an outer search over whole column solves**, so the tear owns
+    // the call and the body below is its inner solve - see [`crate::column::tear`].
+    if let Some(specification) = setup.side_draw_flows.first() {
+        return crate::column::tear::solve_single_flow(setup, specification, &solve_once);
+    }
+    solve_once(setup)
+}
+
+/// One column solve, with no tear: `solveConfiguredColumn`.
+///
+/// # Errors
+/// As [`distillation_column`], which this is the whole of.
+fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     let tray_count =
         setup.number_of_stages + usize::from(setup.has_reboiler) + usize::from(setup.has_condenser);
     if setup.number_of_stages == 0 {
@@ -1001,6 +1085,7 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         mass_residual,
         energy_residual,
         warnings: net.warnings.clone(),
+        tear: None,
         gas_side_draws: net.drawn[0].clone(),
         liquid_side_draws: net.drawn[1].clone(),
         pumparounds: net.drawn[2].clone(),

@@ -889,6 +889,7 @@ fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome>
 /// The column a distillation, packed or stripping entry configures.
 fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::ColumnSetup> {
     Ok(kernels::ColumnSetup {
+        side_draw_flows: Vec::new(),
         reactive: kernels::ReactiveSection::None,
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,

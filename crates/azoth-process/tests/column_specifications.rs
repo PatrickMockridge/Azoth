@@ -44,6 +44,7 @@ fn column(top: Option<Specification>, bottom: Option<Specification>, pin: bool) 
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
+        side_draw_flows: Vec::new(),
         top_feed: None,
         tray_temperatures: None,
         solver_type: SolverType::DirectSubstitution,
