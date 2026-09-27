@@ -29,6 +29,8 @@ import Azoth.Implicit
 import Azoth.Normalisation
 import Azoth.Pow
 import Azoth.View
+import Azoth.Graph
+import Azoth.Session
 
 #print axioms Azoth.Dim.ofExponentsOn_nil
 #print axioms Azoth.Dim.ofExponents_nil
@@ -113,3 +115,23 @@ import Azoth.View
 #print axioms Azoth.View.celsius_is_not_kelvin
 #print axioms Azoth.View.one_point_does_not_determine_a_shift
 #print axioms Azoth.View.two_points_determine_a_shift
+
+-- The connection judgment, `docs/src/calculus/session.md`'s first claim. `check_sound` is the
+-- claim; `check_refuses_a_missing_field` and `compatibility_is_not_equality` are the witnesses
+-- beside it - the first says the judgment can refuse, so soundness is not a sentence about a
+-- function that always accepts, and the second says two records that differ in order pass and
+-- are not equal, so it is not reflexivity in disguise.
+#print axioms Azoth.Graph.check_refl
+#print axioms Azoth.Graph.check_sound
+#print axioms Azoth.Graph.check_refuses_a_missing_field
+#print axioms Azoth.Graph.compatibility_is_not_equality
+
+-- The session, `docs/src/calculus/session.md`'s other three. The door table is data and the
+-- lemma reads it; the two witnesses are that its rows differ in their status and that an edit
+-- really does break the invariant `dirty` marks.
+#print axioms Azoth.Session.every_door_uses_the_shared_transition
+#print axioms Azoth.Session.the_doors_do_not_agree_on_a_status
+#print axioms Azoth.Session.a_run_restores_it
+#print axioms Azoth.Session.an_edit_leaves_the_values_behind
+#print axioms Azoth.Session.a_failed_run_keeps_none
+#print axioms Azoth.Session.reading_leaves_the_state_alone

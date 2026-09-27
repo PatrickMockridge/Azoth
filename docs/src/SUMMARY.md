@@ -18,6 +18,7 @@
   - [The sensitivity of a solution](./calculus/implicit.md)
   - [The vocabulary table](./calculus/vocabulary.md)
   - [The rendering](./calculus/view.md)
+  - [The session](./calculus/session.md)
 <!-- BEGIN GENERATED: calcs -->
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
