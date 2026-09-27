@@ -1334,11 +1334,22 @@ fn seed_network(net: &mut Network, setup: &ColumnSetup) -> Result<Vec<f64>> {
     // end. The condenser's step divides by the trays above the feed and the reboiler's by the
     // trays below it, which is the class's own arithmetic and is why the two steps differ.
     let feed_temperature = net.temperature(first_feed);
-    let pin_of = |mode: EndMode| match mode {
-        EndMode::Temperature(t) if t.is_finite() => Some(t),
-        _ => None,
-    };
-    let condenser_temperature = pin_of(net.modes[tray_count - 1]).unwrap_or(feed_temperature - 1.0);
+    // **The top tray's temperature is the *feed's* and not the condenser's pin**, which is the
+    // class's own branch and it is subtle. `init` computes this **before** the upward link, so
+    // the top tray has no internal inlet yet and `getNumberOfInputStreams() > 0` is false for
+    // every column whose feed is not at the top - which is what makes `feedTrayTemperature -
+    // 1.0` the branch a distillation column takes. The other branch is for a tray that carries
+    // an *external* feed of its own - an absorber's solvent at the top stage - and there the
+    // temperature is that feed's, because the tray has not run.
+    //
+    // **Reading the pin here was a defect, and it is worth naming.** It seeded a step of
+    // `(feed - pin) / n` where the class seeds `1 / n` - `15.6` K against `0.333` on the binary
+    // column - and a seed that far out is how an iteration lands in a different basin of a map
+    // the two implementations otherwise share.
+    let condenser_temperature = net
+        .feeds_at(tray_count - 1)
+        .first()
+        .map_or(feed_temperature - 1.0, |feed| feed.t.value);
     let reboiler_temperature = net
         .liquid
         .first()
@@ -1359,6 +1370,10 @@ fn seed_network(net: &mut Network, setup: &ColumnSetup) -> Result<Vec<f64>> {
         delta += delta_down;
         *temperature = feed_temperature + delta;
     }
+    let pin_of = |mode: EndMode| match mode {
+        EndMode::Temperature(t) if t.is_finite() => Some(t),
+        _ => None,
+    };
     for (i, mode) in net.modes.iter().enumerate() {
         if let Some(t) = pin_of(*mode) {
             temperatures[i] = t;

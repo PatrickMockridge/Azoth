@@ -873,9 +873,21 @@ def _states(
         )
 
     feed_temperature = temperature(feed_stage)
-    cond_temperature = end_temperature(tray_count - 1)
-    if cond_temperature is None:
-        cond_temperature = feed_temperature - 1.0
+    # **The top tray's temperature is the *feed's* and not the condenser's pin**, which is the
+    # class's own branch and it is subtle. `init` computes this **before** the upward link, so
+    # the top tray has no internal inlet yet and `getNumberOfInputStreams() > 0` is false for
+    # every column whose feed is not at the top - which is what makes `feedTrayTemperature -
+    # 1.0` the branch a distillation column takes. The other branch is for a tray that carries
+    # an *external* feed of its own - an absorber's solvent at the top stage - and there the
+    # temperature is that feed's, because the tray has not run.
+    # Either external feed the top tray carries, which is the class's
+    # `getNumberOfInputStreams() > 0` in this port's terms.
+    at_top: StreamRecord | None = None
+    if feed_stage == tray_count - 1:
+        at_top = _feed(components, feed_n, feed_z, feed_t, feed_p)
+    if top_feed is not None:
+        at_top = top_feed
+    cond_temperature = at_top["t"] if at_top is not None else feed_temperature - 1.0
     reb_temperature = liquid[0]["t"] if liquid[0] is not None else feed_temperature
     temperatures = [float("nan")] * tray_count
     temperatures[feed_stage] = feed_temperature
