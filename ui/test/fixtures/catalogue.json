@@ -2336,10 +2336,70 @@
           "values": []
         },
         {
+          "description": "the fraction of the draw tray's liquid withdrawn, the same vector `pumparound_fractions` writes",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "pumparound_draw_fraction",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the tray a pumparound's liquid leaves, which must be a middle tray - the ends here are `column::reboiler` and `column::condenser` rather than stages",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "pumparound_draw_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
           "description": "the same for a pumparound; its **return** to another tray is a recycle the class iterates and this port does not carry",
           "dimension": null,
           "kind": "vector",
           "name": "pumparound_fractions",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the outer loop's cap; the class defaults it to 12",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "pumparound_max_iterations",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the tray a pumparound's liquid comes back to; stated with the draw tray, the fraction and the drop or not at all",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "pumparound_return_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the drop from the draw to the return; the cooler's duty is the enthalpy between the two streams",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "pumparound_temperature_drop",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the relative return-flow change the outer loop stops at; the class defaults it to 1e-4",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "pumparound_tolerance",
           "range": [],
           "required": false,
           "unit": null,
