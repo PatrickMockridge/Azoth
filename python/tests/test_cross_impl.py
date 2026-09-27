@@ -28,6 +28,7 @@ import _helpers as h
 from azoth import _models_gen
 from azoth._dispatch import resolve
 from azoth._registry_gen import CALCS
+from azoth.core.warnings import WarningCode
 
 pytestmark = pytest.mark.requires_rust
 
@@ -208,6 +209,125 @@ def test_calc_ids_agree_across_languages() -> None:
             f"{calc_id}: Rust declares it, Python's {types[calc_id].__name__} claims "
             f"{types[calc_id].CALC_ID!r}"
         )
+
+
+#: Every warning code this build declares, from the vocabulary rather than listed.
+_ALL_WARNING_CODES = tuple(code.value for code in WarningCode)
+
+#: An id to probe the merge with. Any registered id does; this one is chosen because a real
+#: call to it skips a check, which the case below relies on.
+_PROBE_ID = "hydraulics.darcy_weisbach"
+
+#: Warning shapes the two merges are compared over.
+#:
+#: The merge is a pure function of the warnings, so the divergence worth catching is in its
+#: arithmetic rather than in any one calculation's physics: a repeat that must collapse, a
+#: skipped check that names no field, a code that is not a skipped check at all, and both
+#: orderings that have to come out independent of the order they arrived in. Driving real
+#: calculations instead would exercise one shape per case and cost a run of both backends
+#: for each.
+_MERGE_SHAPES: tuple[tuple[str, tuple[tuple[str, str | None], ...]], ...] = (
+    ("no warnings", ()),
+    ("one skipped check", (("RANGE_CHECK_SKIPPED", "re"),)),
+    ("a skipped check naming no field", (("RANGE_CHECK_SKIPPED", None),)),
+    ("the same field twice", (("RANGE_CHECK_SKIPPED", "re"), ("RANGE_CHECK_SKIPPED", "re"))),
+    (
+        "two fields, declared out of order",
+        (("RANGE_CHECK_SKIPPED", "v"), ("RANGE_CHECK_SKIPPED", "D")),
+    ),
+    ("a code that is not a skipped check", (("OUT_OF_VALID_RANGE", "L"),)),
+    (
+        "both kinds, out of vocabulary order",
+        (("TRANSITIONAL_FLOW", None), ("RANGE_CHECK_SKIPPED", "re")),
+    ),
+    ("every code at once", tuple((code, "x") for code in _ALL_WARNING_CODES)),
+)
+
+
+@pytest.mark.parametrize(
+    ("shape", "warnings"), _MERGE_SHAPES, ids=[name for name, _ in _MERGE_SHAPES]
+)
+def test_the_provenance_merge_agrees_across_languages(
+    shape: str, warnings: tuple[tuple[str, str | None], ...]
+) -> None:
+    """Rust's merge and Python's, on the same warnings, must produce the same block.
+
+    **Both languages decide independently what a block says**: which checks were skipped and
+    in what order, which warning codes were raised and in what order, whether the call was
+    clean. The tables they read are held equal by id - and the static half of the block is
+    compared separately - but the arithmetic over them was compared by nothing, and arithmetic
+    written twice is arithmetic that can disagree. A block that disagreed would be worse than
+    no block: a caller would believe the two implementations agreed about how far the answer
+    can be trusted when they did not.
+
+    Python's side is the reference's own `Provenance.of`; Rust's is its `Provenance::of`,
+    reached through the extension.
+    """
+    from azoth.core.provenance import Provenance
+    from azoth.core.warnings import Warning, WarningCode
+
+    python_warnings = [
+        Warning(code=WarningCode(code), message="a message", field=field)
+        for code, field in warnings
+    ]
+    block = Provenance.of(static_for_probe(), python_warnings)
+    rust = _extension().provenance_block(_PROBE_ID, list(warnings))
+
+    assert rust is not None, f"{_PROBE_ID} has no block in the generated table"
+    assert (rust[0], rust[1], rust[2], rust[3]) == (
+        block.calc_id,
+        list(block.skipped_checks),
+        list(block.warning_codes),
+        block.clean,
+    ), shape
+
+
+def static_for_probe() -> dict[str, Any]:
+    """The generated static half for the probe id, so the merge has something to fill in."""
+    from azoth._provenance_gen import PROVENANCE
+
+    return PROVENANCE[_PROBE_ID]
+
+
+def test_a_real_call_produces_the_same_block_on_both_backends() -> None:
+    """One case that actually skips a check, so the comparison is not only synthetic.
+
+    `darcy_weisbach` with no viscosity cannot evaluate its Reynolds-number bound, so it
+    reports `RANGE_CHECK_SKIPPED` against `re` - the shape the block exists to carry.
+    """
+    import azoth
+    from azoth._dispatch import use_backend
+
+    calc_id = "hydraulics.darcy_weisbach"
+    q = azoth.ureg.Quantity
+    kwargs = dict(f=0.02, L=q(100.0, "m"), D=q(0.1, "m"), rho=q(998.0, "kg/m**3"), v=q(1.5, "m/s"))
+
+    with use_backend("python"):
+        py = resolve(calc_id)(**kwargs)
+    with use_backend("rust"):
+        rs = resolve(calc_id)(**kwargs)
+
+    rust = _extension().provenance_block(calc_id, [(w.code.value, w.field) for w in rs.warnings])
+    assert rust is not None
+    assert (rust[1], rust[2], rust[3]) == (
+        list(py.provenance.skipped_checks),
+        list(py.provenance.warning_codes),
+        py.provenance.clean,
+    )
+    assert py.provenance.skipped_checks == ("re",), "the probe no longer skips a check"
+
+
+def test_an_unknown_warning_code_is_refused_rather_than_dropped() -> None:
+    """A code Rust cannot name must not resolve to something plausible.
+
+    Silently dropping it would make a block that reports fewer caveats than the call raised,
+    which is the direction that matters: a caller reads a block to find out what is wrong
+    with a number.
+    """
+    import pytest as _pytest
+
+    with _pytest.raises(ValueError, match="not a warning code"):
+        _extension().provenance_block(_PROBE_ID, [("NOT_A_CODE", None)])
 
 
 def test_errors_are_the_same_class_object() -> None:

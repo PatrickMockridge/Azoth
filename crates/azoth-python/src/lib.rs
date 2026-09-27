@@ -38,6 +38,7 @@ mod errors;
 mod hydraulics;
 mod overlay;
 mod process;
+mod provenance;
 mod reactions;
 mod results;
 mod standards;
@@ -345,6 +346,7 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::model_kind, m)?)?;
     m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;
     m.add_function(wrap_pyfunction!(results::calc_ids, m)?)?;
+    m.add_function(wrap_pyfunction!(provenance::provenance_block, m)?)?;
     m.add_function(wrap_pyfunction!(results::version, m)?)?;
 
     // The process layer: a stream value and the unit-operation kernels, plus the

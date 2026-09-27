@@ -65,6 +65,21 @@ impl WarningCode {
             Self::TrivialSolution,
         ]
     }
+
+    /// Parse a spelling back to a variant.
+    ///
+    /// `None` rather than a default, for the reason
+    /// [`crate::provenance::VerificationStatus::parse`] gives: a warning code that resolved
+    /// to some other code would be a caveat reported under the wrong name, and the caller
+    /// here - the binding that lets the two languages' provenance merges be compared - would
+    /// have no way to notice.
+    #[must_use]
+    pub fn parse(value: &str) -> Option<Self> {
+        Self::all()
+            .iter()
+            .copied()
+            .find(|code| code.as_str() == value)
+    }
 }
 
 impl std::fmt::Display for WarningCode {
@@ -130,6 +145,23 @@ mod tests {
         for code in WarningCode::all() {
             assert!(seen.insert(code.as_str()), "duplicate warning code {code}");
         }
+    }
+
+    #[test]
+    fn every_spelling_parses_back_and_an_unknown_one_is_refused() {
+        // The binding that compares the two languages' provenance merges parses a code from
+        // a string, so a spelling that did not round-trip would make the comparison fail for
+        // a reason that has nothing to do with the merge.
+        for code in WarningCode::all() {
+            assert_eq!(WarningCode::parse(code.as_str()), Some(*code));
+        }
+        assert_eq!(WarningCode::parse("NOT_A_CODE"), None);
+        assert_eq!(WarningCode::parse(""), None);
+        assert_eq!(
+            WarningCode::parse("range_check_skipped"),
+            None,
+            "the case is a contract"
+        );
     }
 
     #[test]

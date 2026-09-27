@@ -295,6 +295,10 @@ INTROSPECTION: tuple[tuple[str, str], ...] = (
     ("model_kind(model_id: str)", "str"),
     ("result_fields(calc_id: str)", "list[str]"),
     ("calc_ids()", "list[str]"),
+    (
+        "provenance_block(calc_id: str, warnings: list[tuple[str, str | None]])",
+        "tuple[str, list[str], list[str], bool] | None",
+    ),
     ("version()", "str"),
     # The process layer: a stream value and the Stream-level unit-operation kernels,
     # plus the flowsheet checker.
