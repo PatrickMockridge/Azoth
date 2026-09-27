@@ -211,6 +211,35 @@ def git(*args: str) -> str | None:
     return result.stdout.strip() or None
 
 
+def rust_kernel_path(namespace: str, name: str) -> str:
+    """Repo-relative path to a calc's or model's Rust kernel.
+
+    **A naming convention is not enough here, and assuming one was a defect.** The
+    unit-operation models live under `crates/azoth-process/src/models/`, so the
+    obvious `crates/azoth-<namespace>/src/<name>.rs` does not exist for any of the
+    28 `process.*` ids. `describe` records a missing file rather than failing - which
+    is right for a test file, whose absence is a fact - so every one of those ids
+    recorded its Rust implementation as `present: false` in a record that is signed
+    and shipped. The spec is not at fault: it declares `azoth_process::mixer`, and
+    `crates/azoth-process/src/lib.rs` re-exports it, so the *module* path is correct
+    and only the file's location was guessed.
+
+    Resolution is by looking, in the order the tree is actually laid out: beside the
+    crate's other kernels, then under `models/`, then anywhere in the crate. A
+    search matching more than one file is left to fall through to the convention, so
+    `describe` records it missing - two kernels for one id is a defect a reader needs
+    to see rather than a coin to flip.
+    """
+    crate = ROOT / f"crates/azoth-{namespace}"
+    for candidate in (crate / "src" / f"{name}.rs", crate / "src" / "models" / f"{name}.rs"):
+        if candidate.is_file():
+            return str(candidate.relative_to(ROOT))
+    found = [p for p in (crate / "src").rglob(f"{name}.rs") if p.is_file()]
+    if len(found) == 1:
+        return str(found[0].relative_to(ROOT))
+    return f"crates/azoth-{namespace}/src/{name}.rs"
+
+
 def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
     """Provenance for one calculation."""
     name = spec["id"].split(".")[-1]
@@ -227,7 +256,7 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
         "spec": describe(f"specs/calcs/{namespace}/{name}.toml"),
         "code": [
             describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
-            describe(f"crates/azoth-{namespace}/src/{name}.rs"),
+            describe(rust_kernel_path(namespace, name)),
         ],
         "tests": tests,
     }
@@ -249,7 +278,7 @@ def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
         "spec": describe(f"specs/models/{namespace}/{name}.toml"),
         "code": [
             describe(f"python/src/azoth/{namespace}/reference/{name}.py"),
-            describe(f"crates/azoth-{namespace}/src/{name}.rs"),
+            describe(rust_kernel_path(namespace, name)),
         ],
         "tests": [
             describe(f"python/tests/models/test_{name}.py"),

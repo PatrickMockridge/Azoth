@@ -17,6 +17,7 @@ import importlib
 import json
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -223,3 +224,48 @@ def test_provenance_records_a_verifiable_shape(tmp_path: Path) -> None:
         check=False,
     )
     assert verified.returncode == 0, f"{verified.stdout}{verified.stderr}"
+
+
+def provenance_tool() -> ModuleType:
+    """`tools/provenance.py`, imported by name, for the same reason as the link checker."""
+    sys.path.insert(0, str(TOOLS))
+    try:
+        return importlib.import_module("provenance")
+    finally:
+        sys.path.pop(0)
+
+
+def test_every_registered_id_resolves_to_its_spec_and_kernels() -> None:
+    """The record's paths are real, for every id.
+
+    `describe` records a missing file rather than failing, which is right for a test
+    file whose absence is a fact - but it also means a *derivation* that is wrong
+    reads as an absence rather than as a defect. One was: the Rust kernel was assumed
+    to sit beside the crate's other kernels, and the 28 unit-operation models live
+    under `crates/azoth-process/src/models/`, so every `process.*` id recorded its
+    Rust implementation as `present: false` in a record that is signed and shipped.
+    Nothing caught it, because nothing asserted that a path resolves.
+    """
+    provenance = provenance_tool()
+    entries = (("specs/calcs", provenance.calc_entry), ("specs/models", provenance.model_entry))
+    checked = 0
+    for tree, entry in entries:
+        for path in sorted((REPO_ROOT / tree).rglob("*.toml")):
+            spec = tomllib.loads(path.read_text(encoding="utf-8"))
+            record = entry(spec)
+            checked += 1
+            assert record["spec"]["present"], (
+                f"{record['id']}: the record names a spec that is not there: "
+                f"{record['spec']['path']}"
+            )
+            missing = [code["path"] for code in record["code"] if not code["present"]]
+            assert not missing, f"{record['id']}: the record names no kernel at {missing}"
+    # Non-vacuity: a walk that found nothing would pass every assertion above without
+    # having checked anything, which is the failure this file exists to catch. Held to
+    # the registry rather than to a number typed here, so it cannot go stale.
+    from azoth._models_gen import MODELS
+    from azoth._registry_gen import CALCS
+
+    assert checked == len(CALCS) + len(MODELS), (
+        f"walked {checked} specs but the registry names {len(CALCS) + len(MODELS)}"
+    )
