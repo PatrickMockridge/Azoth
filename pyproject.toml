@@ -67,6 +67,13 @@ features = ["pyo3/extension-module"]
 # redirect that - so the wheel carries `data/...` at the distribution root rather
 # than inside the `azoth` package. `azoth/_data.py` searches both, because the two
 # ways of shipping data land in different places.
+#
+# `specs/unit_ops/` is not data and is here for a different reason:
+# `crates/azoth-process/src/palette_gen.rs` embeds those 29 TOMLs with `include_str!`,
+# so an sdist without them is a tree nothing can compile. maturin 1.15 reads one
+# `include` list for both artifacts - `sdist-include` is not a key it knows - so the
+# only way into the sdist is through the wheel as well. 180 KB of the declaration the
+# palette is generated from.
 include = [
   "data/fittings/*.csv",
   "data/fluids/*.csv",
@@ -74,6 +81,8 @@ include = [
   "data/packing/*.csv",
   "data/reactors/*.csv",
   "data/reactions/*.csv",
+  "data/standards/*.csv",
+  "specs/unit_ops/**/*.toml",
 ]
 
 [tool.pytest.ini_options]

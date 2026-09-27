@@ -26,9 +26,9 @@ for that path.
 
 ## Set up the team runtime (DeepSeek Harness)
 
-1. **Prerequisites** — Python 3.12, and azoth (`pip install azoth-engine`, or clone this
-   repository).
-2. **Install the runtime** — `pip install 'azoth-engine[agent]'` pulls
+1. **Prerequisites** — Python 3.12, and azoth: clone this repository. The distribution
+   name `azoth-engine` is what 0.1 will publish under, and it is not on PyPI yet.
+2. **Install the runtime** — `pip install '.[agent]'` from the checkout pulls
    `deepseek-harness-sdk` and its bundled `dsh` runtime binary.
 3. **Export the skills** — `python tools/export_skills.py --target dsh` writes the
    catalog into `.dsh/skills/`, which DeepSeek Harness discovers at project rank.

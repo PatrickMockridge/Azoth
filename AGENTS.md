@@ -9,11 +9,12 @@ azoth is a chemical-engineering calculation library with an agentic layer on top
   HAZOP team of four roles, defined in `agents/hazop/README.md` and exported to
   `.claude/agents/` and `.opencode/agents/`; run `/hazop` to start a study.
 
-Setup:
+Setup, from a checkout - `azoth-engine` is not on PyPI yet, so the `agent` extra is
+installed from the tree rather than from an index:
 
 ```bash
-pip install 'azoth-engine[agent]'  # DeepSeek Harness SDK + runtime binary (team runtime)
-python tools/export_skills.py       # write the skills into each tool's directory
+pip install '.[agent]'         # DeepSeek Harness SDK + runtime binary (team runtime)
+python tools/export_skills.py  # write the skills into each tool's directory
 ```
 
 See [`agents/README.md`](agents/README.md) for the full setup and caveats.

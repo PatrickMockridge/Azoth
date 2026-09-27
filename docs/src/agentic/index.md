@@ -21,9 +21,12 @@ is [Orchestration](./orchestration.md).
 ## Run it
 
 ```bash
-pip install 'azoth-engine[agent]'  # DeepSeek Harness SDK + runtime
-python tools/export_skills.py       # write the skills into each tool's directory
+pip install '.[agent]'         # DeepSeek Harness SDK + runtime, from the checkout
+python tools/export_skills.py  # write the skills into each tool's directory
 ```
+
+The distribution name `azoth-engine` is what 0.1 will publish under; it is not on PyPI
+yet, so this runs from a clone.
 
 `python/azoth/agents` is the one place that imports the DeepSeek Harness SDK; the skills
 themselves need no runtime. [`agents/README.md`](../../../agents/README.md) has the full

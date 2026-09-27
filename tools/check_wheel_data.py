@@ -29,12 +29,17 @@ tables from an *installed* distribution.
 5. The *artifacts* contain what they are for and nothing else. A wheel is the Python
    package; an sdist is a tree someone rebuilds from, so it carries the Rust sources
    and must still not carry the editor.
+6. Every file the crate sources embed with ``include_str!`` is a member of the sdist.
+   A ``[tool.maturin] include`` list is a second, independent statement of that set, and
+   the two had already disagreed: 29 ``specs/unit_ops/`` TOMLs and one ``data/standards/``
+   CSV were missing, which made the published sdist a tree nothing could compile.
 
 Exit status is non-zero if any of those fails.
 """
 
 from __future__ import annotations
 
+import re
 import sys
 import tarfile
 import zipfile
@@ -58,6 +63,14 @@ FORBIDDEN_IN_ARTIFACTS: tuple[str, ...] = (
     "target/",
 )
 
+#: The one repository tree that is a *build input* rather than a copy of the repository.
+#:
+#: **`crates/azoth-process/src/palette_gen.rs` embeds these TOMLs with `include_str!`**, so an
+#: sdist without them is a tree nothing can compile - and maturin 1.15 reads one `include` list
+#: for both artifacts, which is what puts them in the wheel as well. `check_compile_inputs` is the
+#: measurement; this tuple is only the permission. Every other file under `specs/` still fails.
+ALLOWED_IN_ARTIFACTS: tuple[str, ...] = ("specs/unit_ops/",)
+
 #: A wheel is the Python package, so it carries no Rust source either.
 FORBIDDEN_IN_WHEEL: tuple[str, ...] = ("crates/",)
 
@@ -65,7 +78,9 @@ FORBIDDEN_IN_WHEEL: tuple[str, ...] = ("crates/",)
 FORBIDDEN_SUBSTRING = "azoth_wasm"
 
 #: What a wheel of this project must carry: the package, the extension, and the data the two
-#: middleware commands and every calc read from the databank.
+#: middleware commands and every calc read from the databank. `data/standards/` was the missing
+#: one - read by `azoth/standards/reference/iso6976.py` and named by nothing here, which is why
+#: every gate in this repository was green while the installed package could not run ISO 6976.
 REQUIRED_IN_WHEEL: tuple[str, ...] = (
     "azoth/__init__.py",
     "azoth/_core",
@@ -75,7 +90,20 @@ REQUIRED_IN_WHEEL: tuple[str, ...] = (
     "data/reactors/",
     "data/fittings/",
     "data/fluids/",
+    "data/standards/",
 )
+
+#: What an sdist needs and a wheel does not: the sources, and the declaration they embed.
+REQUIRED_IN_SDIST: tuple[str, ...] = (
+    "Cargo.toml",
+    "pyproject.toml",
+    "crates/",
+    "specs/unit_ops/",
+    "data/standards/",
+)
+
+#: An `include_str!` or `include_bytes!` call and the path it embeds.
+EMBEDDED_FILE = re.compile(r'include_(?:str|bytes)!\s*\(\s*"([^"]+)"')
 
 
 def fail(message: str) -> None:
@@ -169,6 +197,8 @@ def check_artifacts(dist: Path) -> None:
         forbidden = FORBIDDEN_IN_ARTIFACTS + (FORBIDDEN_IN_WHEEL if is_wheel else ())
 
         for member in members:
+            if allowed(member):
+                continue
             for prefix in forbidden:
                 if member.startswith(prefix) or f"/{prefix}" in member:
                     fail(
@@ -188,11 +218,53 @@ def check_artifacts(dist: Path) -> None:
         else:
             # **An sdist is the tree someone rebuilds from**, so it carries the Rust sources and
             # the manifests - and that is the assertion, not an absence of one.
-            for required in ("Cargo.toml", "pyproject.toml", "crates/"):
+            for required in REQUIRED_IN_SDIST:
                 if not carried(members, required):
                     fail(f"{artifact.name} carries nothing under `{required}`, which it needs")
+            # Only the sdist: a wheel is what `cargo build` already ran against, so what it needs
+            # from the tree is the compiled result and not the inputs to it.
+            check_compile_inputs(members, artifact)
 
         print(f"  {artifact.name}: {len(members)} member(s), none of them the repository")
+
+
+def allowed(member: str) -> bool:
+    """Whether a member is under a tree that is a build input rather than a copy.
+
+    The `/`-prefixed form is tried as well, for the reason `carried` gives: an sdist's members
+    carry the archive's root directory in front of their path and a wheel's do not.
+    """
+    return any(member.startswith(a) or f"/{a}" in member for a in ALLOWED_IN_ARTIFACTS)
+
+
+def check_compile_inputs(members: list[str], artifact: Path) -> None:
+    """Every file a crate source embeds is a member of the sdist.
+
+    **Derived from the sources rather than from `[tool.maturin]`'s `include`**, which is the whole
+    point: the include list is a second statement of the same set, and a check that read it would
+    agree with it. Reading the `include_str!` calls instead makes the two able to disagree, which
+    is how the 29 TOMLs and one CSV this function exists for were found - the include list was
+    simply never updated when the palette and ISO 6976 landed.
+    """
+    found = 0
+    for source in sorted((REPO_ROOT / "crates").glob("*/src/**/*.rs")):
+        for match in EMBEDDED_FILE.finditer(source.read_text(encoding="utf-8")):
+            target = (source.parent / match.group(1)).resolve()
+            try:
+                relative = target.relative_to(REPO_ROOT).as_posix()
+            except ValueError:
+                fail(
+                    f"{source.relative_to(REPO_ROOT)} embeds `{match.group(1)}`, which resolves "
+                    f"outside the repository - no sdist can carry it"
+                )
+            if not any(member == relative or member.endswith(f"/{relative}") for member in members):
+                fail(
+                    f"{artifact.name} does not carry `{relative}`, which "
+                    f"{source.relative_to(REPO_ROOT)} embeds with `include_str!` - a tree built "
+                    f"from it does not compile"
+                )
+            found += 1
+    print(f"  {artifact.name}: {found} embedded file(s), every one of them a member")
 
 
 if __name__ == "__main__":
