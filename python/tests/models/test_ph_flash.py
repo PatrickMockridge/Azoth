@@ -10,8 +10,8 @@ went in.
 Two further properties matter and each has its own test below. The answer must not
 depend on the *bracket* - bisection converges to the root, so a scan over 2000 points
 and a scan over 40 must agree - and the single-phase branch must be reachable and must
-report no ``beta``, because the flash's own value there is an extrapolation rather
-than a vapour fraction.
+report no ``vapour_fraction``, because the flash's own value there is an extrapolation
+rather than a split.
 """
 
 from __future__ import annotations
@@ -161,7 +161,7 @@ def _with_bracket(
     flash = solved["state"]["flash"]
     return PhFlashResult(
         T=from_si(solved["T"], "K"),
-        beta=flash.vapour_fraction,
+        vapour_fraction=flash.vapour_fraction,
         x=tuple(flash.x),
         y=tuple(flash.y),
         k=tuple(flash.k),
@@ -197,7 +197,7 @@ def test_the_round_trip_returns_the_temperature_that_went_in(temperature: float)
 
 
 def test_a_single_phase_feed_reports_no_vapour_fraction() -> None:
-    """`beta` is absent above the dew point, and the answer is still the temperature.
+    """`vapour_fraction` is absent above the dew point, and the answer is still the temperature.
 
     The branch this pins is the one that is easy to get wrong and impossible to see:
     the flash *does* return a split for a single-phase feed, and it is an

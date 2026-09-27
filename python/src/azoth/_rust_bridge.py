@@ -808,13 +808,17 @@ def vdw1f_mix_binary(
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult:
     """The binary Rachford-Rice vapour fraction, computed in Rust."""
     result = _core.rachford_rice_binary(z1, K1, K2)
-    return RachfordRiceBinaryResult(vapour_fraction=result.vapour_fraction, warnings=_warnings(result.warnings))
+    return RachfordRiceBinaryResult(
+        vapour_fraction=result.vapour_fraction, warnings=_warnings(result.warnings)
+    )
 
 
 def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
     """The Rachford-Rice vapour fraction, computed in Rust."""
     result = _core.rachford_rice(list(z), list(K))
-    return RachfordRiceResult(vapour_fraction=result.vapour_fraction, warnings=_warnings(result.warnings))
+    return RachfordRiceResult(
+        vapour_fraction=result.vapour_fraction, warnings=_warnings(result.warnings)
+    )
 
 
 def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
@@ -1755,7 +1759,7 @@ def pt_flash(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> PtFlashResult:
     sides have to agree about, and it is the caller's - both implementations are
     handed the same order and produce the same order back.
 
-    `beta` crosses as `Option<f64>` and becomes `None`, not a sentinel. That is the
+    `vapour_fraction` crosses as `Option<f64>` and becomes `None`, not a sentinel. That is the
     design, and flattening it here would undo it one layer above where it was made.
     """
     spec = _models_gen.model("eos.pt_flash")
@@ -1836,7 +1840,7 @@ def ph_flash(mixture: Any, ideal_gas: Any, P: Q, H: Q, z: Sequence[float]) -> Ph
     not a thermodynamic model - which is why they are required here even though this
     model uses only four of the six.
 
-    `beta` crosses as `Option<f64>` and becomes `None`, not a sentinel: a single-phase
+    `vapour_fraction` crosses as `Option<f64>` and becomes `None`, not a sentinel: a single-phase
     feed has no vapour fraction, and the flash's own extrapolated value would be a
     number a caller could use by mistake.
     """
@@ -3085,7 +3089,7 @@ def ge_nrtl_flash(params: Any, mixture: Any, T: Q, P: Q, z: Sequence[float]) -> 
     record's own fields. The record's first field is NRTL's ``alpha`` matrix, so the
     cubic's alpha *correlation* crosses beside it as ``cubic_alpha``.
 
-    `beta` crosses as `Option<f64>` and becomes `None`, not a sentinel.
+    `vapour_fraction` crosses as `Option<f64>` and becomes `None`, not a sentinel.
     """
     spec = _models_gen.model("eos.ge_nrtl_flash")
     result = _core.ge_nrtl_flash(

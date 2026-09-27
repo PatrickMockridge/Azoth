@@ -868,7 +868,7 @@ class RachfordRiceBinaryBatch(BatchResult):
 
     #: The vapour fraction per element. Dimensionless, and outside ``[0, 1]`` for
     #: elements whose feed is single phase - each of which carries its own warning.
-    beta: array[float]
+    vapour_fraction: array[float]
 
 
 def _build_rachford_rice(
@@ -879,7 +879,7 @@ def _build_rachford_rice(
     return RachfordRiceBinaryBatch(
         warnings=warnings,
         units=units,
-        vapour_fraction=columns["beta"],  # type: ignore[arg-type]
+        vapour_fraction=columns["vapour_fraction"],  # type: ignore[arg-type]
     )
 
 
