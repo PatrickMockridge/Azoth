@@ -211,6 +211,108 @@ def git(*args: str) -> str | None:
     return result.stdout.strip() or None
 
 
+#: The verification vocabulary, most-checked first. The spellings are the ones a
+#: `validation/*.json` case already uses, so a status here and a status there read the
+#: same way rather than being two dialects for one idea.
+VERIFICATION_STATUSES = ("verified", "partially_verified", "source_needed", "unverified")
+
+VALIDATION_DIR = ROOT / "validation"
+
+#: A model's instances, one file per model id. A calc keeps its tests in its own spec;
+#: a model's live here, which is the asymmetry `model_cases` exists to absorb.
+CASE_DIR = ROOT / "specs" / "cases"
+
+
+def validation_cases() -> dict[str, list[dict[str, Any]]]:
+    """Every validation case, grouped by the id its `calc` key names.
+
+    Walked rather than listed. The cases live under two directories today
+    (`validation/eos/` and `validation/crane_tp410/`), and a listing that named one of
+    them would silently drop the other's contribution to a status - which is the
+    failure mode a hand-kept index has and a walk does not.
+    """
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for path in sorted(VALIDATION_DIR.rglob("*.json")):
+        case = json.loads(path.read_text(encoding="utf-8"))
+        calc = case.get("calc")
+        if calc:
+            grouped.setdefault(calc, []).append(case)
+    return grouped
+
+
+def derive_verification(
+    cases: list[dict[str, Any]], tests: list[dict[str, Any]]
+) -> tuple[str, int, int, int]:
+    """`(status, validation_cases, tests_active, tests_skipped)`.
+
+    **Derived rather than declared, and the spec schema is why.** A calc carries no
+    status field - it refuses one - so the honest answer has to be measured from the
+    two records that already exist: the tests the spec ships, and the external cases
+    in `validation/`. A declared status is a status that can be wrong; this one cannot
+    disagree with the evidence it is drawn from.
+
+    `tests` is a calc spec's `[[tests]]` or a model's `[[cases]]`, which is why the
+    rule reads `status` leniently: a calc's test declares `active` or `skipped`, and a
+    model's case declares neither because it is always run. **A record with no status
+    is active**, so the two trees are one rule rather than two that must agree.
+
+    The cascade, first match wins:
+
+    1. **No active test** - nothing exercises it, so nothing can be claimed.
+    2. **A source was sought and not found** - a case marked `source_needed`, or a
+       test skipped with that reason. This outranks good evidence on purpose:
+       `hydraulics.darcy_weisbach` has a `source_needed` case beside two skipped tests
+       citing Crane TP-410 Example 3-5 and Perry's Eq. 6-42, and its other evidence
+       being sound does not make those attributions resolve. The counts travel beside
+       the status so a reader sees which is which.
+    3. **Every case verified** - and there is at least one, which is what keeps this
+       branch from firing on an empty list.
+    4. **Otherwise** - `partially_verified`, which is the normal case rather than a
+       defect. Those ids are exercised by both kernels against expectations pinned in
+       their own tree, and their `source.standard` is required by the schema, but no
+       *independent* oracle is recorded for them. It is not `verified`, because
+       nothing outside the spec checks them; and it is not `unverified`, because that
+       would be false.
+    """
+    active = sum(1 for test in tests if test.get("status") != "skipped")
+    skipped = sum(1 for test in tests if test.get("status") == "skipped")
+
+    if active == 0:
+        return "unverified", len(cases), active, skipped
+
+    sought = any(
+        (case.get("source") or {}).get("verification") == "source_needed" for case in cases
+    ) or any(
+        str(test.get("skip_reason", "")).startswith("source_needed")
+        for test in tests
+        if test.get("status") == "skipped"
+    )
+    if sought:
+        return "source_needed", len(cases), active, skipped
+
+    verdicts = [(case.get("source") or {}).get("verification") for case in cases]
+    if verdicts and all(verdict == "verified" for verdict in verdicts):
+        return "verified", len(cases), active, skipped
+
+    return "partially_verified", len(cases), active, skipped
+
+
+def model_cases(namespace: str, name: str) -> list[dict[str, Any]]:
+    """A model's cases, from `specs/cases/`.
+
+    **Not from the model's own spec**, which is where a calc keeps its tests. A model
+    is a *procedure* and its spec declares the procedure; the instances it is held to
+    are a separate tree, one file per model id, and `tools/gen_models.py` refuses a
+    model with none. Reading the wrong tree is silent - it yields an empty list, and
+    an empty list reads as "nothing exercises this", which would have been false for
+    all 121 models.
+    """
+    path = CASE_DIR / namespace / f"{name}.toml"
+    if not path.is_file():
+        return []
+    return tomllib.loads(path.read_text(encoding="utf-8")).get("cases", [])
+
+
 def rust_kernel_path(namespace: str, name: str) -> str:
     """Repo-relative path to a calc's or model's Rust kernel.
 
@@ -240,10 +342,17 @@ def rust_kernel_path(namespace: str, name: str) -> str:
     return f"crates/azoth-{namespace}/src/{name}.rs"
 
 
-def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
-    """Provenance for one calculation."""
+def calc_entry(spec: dict[str, Any], cases: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    """Provenance for one calculation.
+
+    `cases` is the whole index rather than this id's slice, because a caller building
+    the record walks every spec and would otherwise re-walk `validation/` 192 times.
+    """
     name = spec["id"].split(".")[-1]
     namespace = spec["id"].split(".")[0]
+    status, case_count, active, skipped = derive_verification(
+        cases.get(spec["id"], []), spec.get("tests", [])
+    )
 
     tests = [
         describe(f"python/tests/{namespace}/test_{name}.py"),
@@ -259,10 +368,14 @@ def calc_entry(spec: dict[str, Any]) -> dict[str, Any]:
             describe(rust_kernel_path(namespace, name)),
         ],
         "tests": tests,
+        "verification": status,
+        "validation_cases": case_count,
+        "tests_active": active,
+        "tests_skipped": skipped,
     }
 
 
-def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
+def model_entry(spec: dict[str, Any], cases: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
     """Provenance for one model.
 
     The same fields a calc entry carries, from a different spec tree. A model's spec
@@ -272,6 +385,9 @@ def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
     """
     name = spec["id"].split(".")[-1]
     namespace = spec["id"].split(".")[0]
+    status, case_count, active, skipped = derive_verification(
+        cases.get(spec["id"], []), model_cases(namespace, name)
+    )
     return {
         "id": spec["id"],
         "name": spec["name"],
@@ -284,6 +400,10 @@ def model_entry(spec: dict[str, Any]) -> dict[str, Any]:
             describe(f"python/tests/models/test_{name}.py"),
             describe(f"crates/azoth-{namespace}/tests/{name}.rs"),
         ],
+        "verification": status,
+        "validation_cases": case_count,
+        "tests_active": active,
+        "tests_skipped": skipped,
     }
 
 
@@ -299,6 +419,7 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
 
     status = git("status", "--porcelain")
     resolved_tag = tag if tag is not None else git("describe", "--tags", "--exact-match")
+    index = validation_cases()
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -310,8 +431,8 @@ def build(artifacts: list[str], tag: str | None) -> dict[str, Any]:
             # nobody else can reproduce, and the reader deserves to know.
             "dirty": bool(status),
         },
-        "calcs": [calc_entry(c) for c in calcs],
-        "models": [model_entry(m) for m in models],
+        "calcs": [calc_entry(c, index) for c in calcs],
+        "models": [model_entry(m, index) for m in models],
         "shared": [describe(p) for p in SHARED],
         "namespaces": [
             {"namespace": ns, "files": [describe(p) for p in files]}

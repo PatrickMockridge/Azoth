@@ -247,12 +247,13 @@ def test_every_registered_id_resolves_to_its_spec_and_kernels() -> None:
     Nothing caught it, because nothing asserted that a path resolves.
     """
     provenance = provenance_tool()
+    index = provenance.validation_cases()
     entries = (("specs/calcs", provenance.calc_entry), ("specs/models", provenance.model_entry))
     checked = 0
     for tree, entry in entries:
         for path in sorted((REPO_ROOT / tree).rglob("*.toml")):
             spec = tomllib.loads(path.read_text(encoding="utf-8"))
-            record = entry(spec)
+            record = entry(spec, index)
             checked += 1
             assert record["spec"]["present"], (
                 f"{record['id']}: the record names a spec that is not there: "
@@ -269,3 +270,51 @@ def test_every_registered_id_resolves_to_its_spec_and_kernels() -> None:
     assert checked == len(CALCS) + len(MODELS), (
         f"walked {checked} specs but the registry names {len(CALCS) + len(MODELS)}"
     )
+
+
+def test_the_derived_status_follows_the_evidence() -> None:
+    """The four branches of the cascade, each from its own evidence.
+
+    A pure function, so it is worth pinning directly rather than only through the
+    tree: the interesting failures are the branches, and a tree walk exercises one
+    path per id.
+
+    The leniency of `status` is part of the contract, not an accident of the data. A
+    calc's test declares `active` or `skipped`; a model's case declares neither,
+    because it is always run. Reading that wrong is silent - it yields "no active
+    test" for all 121 models, which is what the first version of this did.
+    """
+    provenance = provenance_tool()
+    derive = provenance.derive_verification
+    verified = [{"source": {"verification": "verified"}}]
+
+    assert derive([], [])[0] == "unverified"
+    assert derive(verified, [{"id": "a", "status": "skipped"}])[0] == "unverified"
+
+    # A model's case carries no status and is therefore run.
+    assert derive([], [{"id": "a"}])[:1] == ("partially_verified",)
+    assert derive(verified, [{"id": "a"}])[0] == "verified"
+
+    # `source_needed` outranks good evidence, from either tree. An active test is
+    # present in both, so rule 1 does not decide it first.
+    assert derive([{"source": {"verification": "source_needed"}}], verified)[0] == "source_needed"
+    assert derive(
+        verified,
+        [
+            {"id": "a"},
+            {"id": "b", "status": "skipped", "skip_reason": "source_needed: not located"},
+        ],
+    )[0] == ("source_needed")
+
+    # And an unrelated skip reason is not evidence of a missing source.
+    assert (
+        derive(
+            verified,
+            [{"id": "a"}, {"id": "b", "status": "skipped", "skip_reason": "dimension mismatch"}],
+        )[0]
+        == "verified"
+    )
+
+    # The counts travel with the status.
+    both = [{"id": "a"}, {"id": "b", "status": "skipped"}]
+    assert derive(verified, both) == ("verified", 1, 1, 1)
