@@ -27,6 +27,7 @@ is named at the foot of this page.
 | an edit as one typed command | **yes** — `middleware::command`, fifteen variants, each a structure edit that leaves the checker to rule on the result |
 | a graph a canvas draws | **yes** — `middleware::graph`, in xyflow's own node/edge shape, with the layout in one `[layout]` table the document carries |
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
+| what a document rests on | **yes** — `middleware::provenance`, one entry per instantiated unit operation: the palette entry, the registered model, the source line the palette carries, whether the executor runs it, and the spec and kernel digests behind the answer. It rides on the **envelope** rather than inside the session report, because what a document rests on is a fact about the *run* and not about any stream |
 | a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be. **Every registered calculation and every registered model is run and its result serialised** by `python/tests/test_result_json.py` — the twenty-eight `process.*` models among them, so a `PumpResult` reads field by field with no codec of its own |
 | a tool schema for an agent | **yes** — `middleware::tools`, one tool per command, projected from the command model rather than written beside it, and **served over MCP** by `azoth mcp`, which is that schema's projection and not a second one |
 | a resource a client may read | **yes** — `middleware::resources`, four of them (`azoth://document`, `azoth://diagnostics`, `azoth://report`, `azoth://catalogue`), served by `resources/list` and `resources/read` on both MCP transports. **A read and not an edit**: the call takes `&Session` where a tool call takes `&mut Session`, and every read carries the `dirty` stamp that tells a client whether its cache is still true |
@@ -57,6 +58,15 @@ Each is a consequence of the calculus, named here because a front-end has to add
   inspectable — a unit-op window *is* its port declaration.
 - **structured diagnostics** — a severity, a location and a target, not a `Debug` line.
 - **dispatch** — the `unit_ops.*` id → kernel mapping, with typed parameter coercion.
+- **what a document rests on** — one entry per instantiated unit operation, written beside the
+  envelope: the palette entry it was added as, the model it dispatches to, the source line the
+  palette carries (the NeqSim class the port names), whether the executor has a kernel and why not
+  where it does not, and the SHA-256 of the spec and of the Rust kernel. **Its own status word is
+  the library's** — `partially_verified` appears as `partially_verified` — and the editor draws it
+  on a **Provenance** sheet, last of a unit operation's tabs, because where an answer came from is
+  what a reader checks after the design and the wiring. It is on the envelope and not in the
+  session report: the report's published bytes are pinned, and what code a document rests on is a
+  fact about the run rather than about any stream.
 - **the graph** — a flowsheet's connection graph, in xyflow's node/edge shape. A node's id is
   `{role}:{name}` and **a handle's id is the stream's own path**, so an edge's handle, a session
   key and an edge's `data.path` are one string rather than three that have to be reconciled.
