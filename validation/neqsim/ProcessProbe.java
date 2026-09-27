@@ -52,6 +52,8 @@
 //       > captures/process_rate_based_packed_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
 //       > captures/process_rate_based_billet.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe column_efficiency \
+//       > captures/process_column_efficiency.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -190,6 +192,9 @@ public class ProcessProbe {
         break;
       case "rate_based_billet":
         rateBasedBilletRows();
+        break;
+      case "column_efficiency":
+        murphreeStageRows();
         break;
       case "shortcut_column":
         shortcutColumnRows();
@@ -712,6 +717,39 @@ public class ProcessProbe {
         19.0, 20.0, 1.0e-9, 2000, true, false, 0.85);
     murphreeRow("binary_murphree_0_6_tight", names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0,
         19.0, 20.0, 1.0e-9, 2000, true, false, 0.6);
+  }
+
+  /// **The per-stage efficiency vector, on that same column.** `getEffectiveMurphreeEfficiency`
+  /// resolves two fields - `perStageMurphreeEfficiency[stage]` when it is present and not `NaN`,
+  /// `murphreeEfficiency` otherwise - and three rows measure the whole rule: the column-wide
+  /// value alone, the same value with one stage overridden through the single-stage setter, and
+  /// the same override again spelled as the array. **The second and third have to be one state**
+  /// or `NaN` is not the fall-through its javadoc says it is, and both have to differ from the
+  /// first or the override did nothing.
+  ///
+  /// **The array does not carry the column-wide value.** `setMurphreeEfficiencies` writes only
+  /// `perStageMurphreeEfficiency`, so both override rows state `0.6` first and then the
+  /// override - which is the mixed case: one stage off the default, the rest on it.
+  static void murphreeStageRows() {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.5, 0.5 };
+    murphreeRow("efficiency_column_wide", names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0,
+        19.0, 20.0, 1.0e-6, 200, true, false, 0.6);
+    // `setMurphreeEfficiency(3, 0.85)` after the column-wide `0.6`.
+    murphreeStageRow("efficiency_one_stage", names, z, 3, 0.85, null);
+    // The same override as the array `setMurphreeEfficiencies` takes, `NaN` elsewhere - which is
+    // the shape the model's own `tray_murphree_efficiency` declares.
+    murphreeStageRow("efficiency_one_stage_array", names, z, 3, 0.85,
+        new double[] { Double.NaN, Double.NaN, Double.NaN, 0.85, Double.NaN, Double.NaN });
+  }
+
+  /// One row of [`murphreeStageRows`]: `0.6` column-wide, then the override through whichever
+  /// setter `array` names - the single-stage one when it is `null`, and `setMurphreeEfficiencies`
+  /// with `stage` and `efficiency` left unread when it is not.
+  static void murphreeStageRow(String label, String[] names, double[] z, int stage,
+      double efficiency, double[] array) {
+    runColumn(label, names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200,
+        true, false, "DIRECT_SUBSTITUTION", 0.6, stage, efficiency, array);
   }
 
   /// **The side-draw column rows, and why they are in this capture rather than one of their own.**
@@ -1381,6 +1419,18 @@ public class ProcessProbe {
       double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
       double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
       boolean condenser, boolean totalCondenser, String solver, Double murphreeEfficiency) {
+    runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
+        condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
+        totalCondenser, solver, murphreeEfficiency, -1, 0.0, null);
+  }
+
+  /// The same, with the per-stage override: `array` when it is not `null` and the single-stage
+  /// setter otherwise, applied after the column-wide value.
+  static void runColumn(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
+      double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
+      boolean condenser, boolean totalCondenser, String solver, Double murphreeEfficiency,
+      int overrideStage, double overrideEfficiency, double[] overrideArray) {
     SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], z[i]);
@@ -1411,6 +1461,11 @@ public class ProcessProbe {
     if (murphreeEfficiency != null) {
       column.setMurphreeEfficiency(murphreeEfficiency);
     }
+    if (overrideArray != null) {
+      column.setMurphreeEfficiencies(overrideArray);
+    } else if (overrideStage >= 0) {
+      column.setMurphreeEfficiency(overrideStage, overrideEfficiency);
+    }
     column.run();
 
     System.out.println(label);
@@ -1420,6 +1475,20 @@ public class ProcessProbe {
     System.out.println("total_condenser=" + totalCondenser);
     if (murphreeEfficiency != null) {
       System.out.println("murphree_efficiency=" + column.getMurphreeEfficiency());
+    }
+    // **The resolved per-stage vector is printed, not the request.** `getMurphreeEfficiency(stage)`
+    // is `getEffectiveMurphreeEfficiency`, so this line is the class's own answer for every stage
+    // - the `murphree_efficiency=` line above is only the column-wide field and says nothing
+    // about an override.
+    if (overrideArray != null || overrideStage >= 0) {
+      StringBuilder resolved = new StringBuilder("tray_murphree_efficiency=");
+      for (int stage = 0; stage < column.getNumberOfTrays(); stage++) {
+        resolved.append(column.getMurphreeEfficiency(stage));
+        if (stage + 1 < column.getNumberOfTrays()) {
+          resolved.append(' ');
+        }
+      }
+      System.out.println(resolved);
     }
     print("feed", inlet);
     System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));

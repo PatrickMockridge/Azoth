@@ -3183,6 +3183,7 @@ def distillation_column(
     reboiler_temperature: float | None = None,
     condenser_temperature: float | None = None,
     murphree_efficiency: float | None = None,
+    tray_murphree_efficiency: list[float] | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
     top_specification_target: float | None = None,

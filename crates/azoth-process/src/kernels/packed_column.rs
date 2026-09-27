@@ -11,6 +11,7 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use super::distillation_column::{
     ColumnOutcome, ColumnSetup, ReactiveSection, SolverType, Specification, distillation_column,
 };
+use crate::column::murphree::Murphree;
 use crate::stream::Stream;
 
 /// The HETP guess `PackedColumn`'s constructors divide a packed height by.
@@ -57,9 +58,9 @@ pub struct PackedSetup {
     pub reboiler_temperature: Option<ThermodynamicTemperature>,
     pub temperature_tolerance: f64,
     pub max_iterations: usize,
-    /// The column-wide Murphree tray efficiency, or `None` for the ideal stage - the base
-    /// column's own correction, which `PackedColumn` inherits.
-    pub murphree_efficiency: Option<f64>,
+    /// The Murphree efficiency, or `None` for no correction - the base column's own
+    /// correction, which `PackedColumn` inherits and overrides no part of.
+    pub murphree_efficiency: Option<Murphree>,
     /// **Which trays flash reactively**, which `PackedColumn` inherits from the base and does
     /// not override: its middle trays are the ones the packing's height derives.
     pub reactive: ReactiveSection,
@@ -90,7 +91,7 @@ pub fn packed_column(setup: &PackedSetup) -> Result<ColumnOutcome> {
         reboiler_temperature: setup.reboiler_temperature,
         temperature_tolerance: setup.temperature_tolerance,
         max_iterations: setup.max_iterations,
-        murphree_efficiency: setup.murphree_efficiency,
+        murphree_efficiency: setup.murphree_efficiency.clone(),
         top_specification: setup.top_specification.clone(),
         bottom_specification: setup.bottom_specification.clone(),
         top_feed: None,

@@ -9,6 +9,7 @@ use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, 
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
 
+use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::distillation_column as kernel;
 use crate::kernels::distillation_column::{Specification, SpecificationKind};
@@ -165,6 +166,31 @@ impl CalcResult for DistillationColumnResult {
     }
 }
 
+/// **The two efficiency fields, resolved and clamped, or `None` where neither is stated.**
+///
+/// `DistillationColumn` clamps rather than refusing - `clampMurphreeEfficiency` is
+/// `max(0, min(1, x))` on both setters, so a request outside `[0, 1]` arrives at the solve as its
+/// nearest end. The per-stage vector's *length* is the one thing refused rather than clamped,
+/// because a length is a statement about the column and not a value.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for a per-stage vector whose length is not the stage count, which
+/// `DistillationColumn.setMurphreeEfficiencies` refuses in its own words.
+pub fn build_murphree(
+    column_wide: Option<f64>,
+    per_stage: Option<&[f64]>,
+    number_of_stages: usize,
+) -> Result<Option<Murphree>> {
+    if column_wide.is_none() && per_stage.is_none() {
+        return Ok(None);
+    }
+    let efficiency = Murphree {
+        column_wide: Murphree::clamp(column_wide.unwrap_or(1.0)),
+        per_stage: per_stage.map(|values| values.iter().copied().map(Murphree::clamp).collect()),
+    };
+    Ok(Some(efficiency.checked(number_of_stages)?.clone()))
+}
+
 /// Solve a distillation column.
 ///
 /// # Errors
@@ -192,6 +218,7 @@ pub fn distillation_column(
     temperature_tolerance: f64,
     max_iterations: usize,
     murphree_efficiency: Option<f64>,
+    tray_murphree_efficiency: Option<&[f64]>,
     solver_type: Option<&str>,
     top_specification_type: Option<&str>,
     top_specification_target: Option<f64>,
@@ -231,6 +258,11 @@ pub fn distillation_column(
         side_draw_flow_target,
         side_draw_flow_tolerance,
         side_draw_flow_max_iterations,
+    )?;
+    let murphree_efficiency = build_murphree(
+        murphree_efficiency,
+        tray_murphree_efficiency,
+        number_of_stages,
     )?;
     // **The end is the parameter's name, not a value.** `ColumnSpecification` carries a
     // location - TOP or BOTTOM - and the class holds exactly two of them, so a declaration
@@ -329,7 +361,7 @@ pub fn distillation_column(
         reboiler_temperature,
         temperature_tolerance,
         max_iterations,
-        murphree_efficiency,
+        murphree_efficiency: murphree_efficiency.clone(),
         top_specification,
         bottom_specification,
         top_feed: None,

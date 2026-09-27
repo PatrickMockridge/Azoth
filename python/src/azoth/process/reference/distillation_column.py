@@ -37,7 +37,8 @@ on converges here and not there.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import math
+from collections.abc import Callable, Sequence
 from typing import NamedTuple
 
 from azoth.core.errors import InvalidInputError
@@ -234,6 +235,7 @@ def distillation_column(
     reboiler_temperature: Q | None = None,
     condenser_temperature: Q | None = None,
     murphree_efficiency: float | None = None,
+    tray_murphree_efficiency: list[float] | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
     top_specification_target: float | None = None,
@@ -282,7 +284,11 @@ def distillation_column(
             tests its stated outlet temperature before it reads a heat input.
         temperature_tolerance: the gate on the mean tray-temperature change.
         max_iterations: the iteration cap.
-        murphree_efficiency: **not ported**; omitted is the ideal stage.
+        murphree_efficiency: the column-wide Murphree tray efficiency; omitted is the ideal
+            stage. Refused with ``solver_type="naphtali_sandholm"``, whose solver carries a
+            different correction.
+        tray_murphree_efficiency: one override per stage, ``NaN`` where a stage falls through
+            to ``murphree_efficiency``; a length that is not ``number_of_stages`` is refused.
         solver_type: **only ``direct_substitution`` is ported**, which is the class's default.
         top_specification_type: the top product's degree of freedom, one of
             :data:`SPECIFICATION_KINDS`; omitted, the top is pinned by temperature instead.
@@ -325,7 +331,8 @@ def distillation_column(
         >>> round(r.distillate_n.to("mol/s").magnitude, 4)
         3.7915
     """
-    _refuse_unported(solver_type, murphree_efficiency)
+    efficiency = _murphree(murphree_efficiency, tray_murphree_efficiency, number_of_stages)
+    _refuse_unported(solver_type, efficiency)
 
     section = reactive_section(reactive, reactive_start_tray, reactive_end_tray)
     if section is not None and solver_type == "naphtali_sandholm":
@@ -445,7 +452,7 @@ def distillation_column(
             solver_type,
             reactive=section,
             draws=active_draws,
-            murphree_efficiency=murphree_efficiency,
+            murphree_efficiency=efficiency,
             pumparound_inlets=active_returns,
         )
 
@@ -575,7 +582,7 @@ def _states(
     tray_temperatures: tuple[float, ...] | None = None,
     reactive: tuple[int, int] | None = None,
     draws: Draws = None,
-    murphree_efficiency: float | None = None,
+    murphree_efficiency: _Murphree | None = None,
     pumparound_inlets: PumparoundInlets | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
@@ -792,15 +799,16 @@ def _states(
                 out["pumparound"],
             ) = split_draws(out["gas"], out["liquid"], stated)
         equilibrium[i] = (out["gas"], out["liquid"])
-        if murphree_efficiency is not None and _corrects(
-            i, tray_count, has_condenser, murphree_efficiency
-        ):
+        effective = (
+            None if murphree_efficiency is None else murphree_efficiency.resolve(i)
+        )
+        if effective is not None and _corrects(i, tray_count, has_condenser, effective):
             below_gas, below_liquid = equilibrium[i - 1]
             if out["liquid"] is not None and below_liquid is not None:
                 out["gas"] = _correct_vapour(
                     equilibrium=out["gas"],
                     inlet=below_gas,
-                    efficiency=murphree_efficiency,
+                    efficiency=effective,
                 )
         gas[i], liquid[i] = out["gas"], out["liquid"]
         drawn[0][i] = out.get("gas_side_draw")
@@ -1232,6 +1240,61 @@ def _states(
     )
 
 
+class _Murphree(NamedTuple):
+    """`DistillationColumn`'s two efficiency fields and the resolution between them.
+
+    The class carries ``murphreeEfficiency``, a column-wide scalar defaulting to ``1.0``, and
+    ``perStageMurphreeEfficiency``, a nullable array; ``getEffectiveMurphreeEfficiency(stage)``
+    is the whole rule. **Two levels, not four** - the per-component ones are
+    ``AbsorptionColumn``'s. ``NaN`` is the fall-through sentinel rather than an absence.
+    """
+
+    column_wide: float
+    per_stage: tuple[float, ...] | None = None
+
+    def resolve(self, index: int) -> float:
+        """`getEffectiveMurphreeEfficiency`: the override, else the column-wide value."""
+        if self.per_stage is not None and index < len(self.per_stage):
+            value = self.per_stage[index]
+            if not math.isnan(value):
+                return value
+        return self.column_wide
+
+    @staticmethod
+    def clamp(efficiency: float) -> float:
+        """`clampMurphreeEfficiency`: the class clamps a request into ``[0, 1]``."""
+        return max(0.0, min(1.0, efficiency))
+
+
+def _murphree(
+    column_wide: float | None,
+    per_stage: Sequence[float] | None,
+    tray_count: int,
+) -> _Murphree | None:
+    """The two fields resolved and clamped, or ``None`` where neither is stated.
+
+    The per-stage **length** is the one thing refused rather than clamped, because a length is
+    a statement about the column and not a value - `setMurphreeEfficiencies` refuses it in its
+    own words.
+    """
+    if column_wide is None and per_stage is None:
+        return None
+    if per_stage is not None and len(per_stage) != tray_count:
+        raise InvalidInputError(
+            "tray_murphree_efficiency",
+            f"{len(per_stage)} override(s) for a column of {tray_count} stage(s): "
+            "`DistillationColumn.setMurphreeEfficiencies` refuses an array whose length is not "
+            "the stage count, and a stage that states no override is written `NaN` rather than "
+            "left out",
+        )
+    return _Murphree(
+        column_wide=_Murphree.clamp(1.0 if column_wide is None else column_wide),
+        per_stage=None
+        if per_stage is None
+        else tuple(_Murphree.clamp(value) for value in per_stage),
+    )
+
+
 def _corrects(index: int, tray_count: int, has_condenser: bool, efficiency: float) -> bool:
     """Whether `DistillationColumn.applyMurphreeCorrection` would correct the stage at ``index``.
 
@@ -1317,7 +1380,7 @@ def _restate(components: list[str], stream: StreamRecord, temperature: float) ->
     return _stage.stream_at(components, stream["n"], list(stream["z"]), temperature, stream["p"])
 
 
-def _refuse_unported(solver_type: str | None, murphree_efficiency: float | None) -> None:
+def _refuse_unported(solver_type: str | None, murphree_efficiency: _Murphree | None) -> None:
     """Refuse every parameter the palette declares and this tranche does not implement.
 
     **Declared and refused, rather than withdrawn.** The palette declares them because they
@@ -1332,7 +1395,7 @@ def _refuse_unported(solver_type: str | None, murphree_efficiency: float | None)
     if solver_type == "naphtali_sandholm" and murphree_efficiency is not None:
         raise InvalidInputError(
             "solver_type",
-            f"a Murphree efficiency of {murphree_efficiency} is not ported on the "
+            f"a Murphree efficiency of {murphree_efficiency.column_wide} is not ported on the "
             f"`naphtali_sandholm` solve: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` "
             f"corrects a tray's K-values by an Edmister `K^eta` proxy, where the sequential "
             f"core's `applyMurphreeCorrection` - the one this port carries - blends the vapour "

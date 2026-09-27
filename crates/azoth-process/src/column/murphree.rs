@@ -36,6 +36,98 @@ const IDEAL_TOLERANCE: f64 = 1.0e-10;
 /// The floor below which the class does not renormalise the corrected composition.
 const RENORMALISE_FLOOR: f64 = 1.0e-15;
 
+/// **`DistillationColumn`'s two efficiency fields and the resolution between them.**
+///
+/// The class carries `murphreeEfficiency`, a column-wide scalar defaulting to `1.0`, and
+/// `perStageMurphreeEfficiency`, a nullable array. `getEffectiveMurphreeEfficiency(stage)` is the
+/// whole of the rule: an in-range entry that is not `NaN` wins, and everything else falls through
+/// to the scalar. So **two levels, not four** - the per-component ones are
+/// `AbsorptionColumn`'s, and arrive with its own correction.
+///
+/// `NaN` is the fall-through sentinel rather than an absence, which is why a per-stage vector
+/// cannot simply be shorter than the column: a stage is either overridden or it is not, and
+/// `[0.6, NaN, 0.9]` says so. `specs/models/process/absorption_column.toml`'s `tray_temperatures`
+/// already spells one property this way.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Murphree {
+    /// `murphreeEfficiency`, which `setMurphreeEfficiency(double)` sets. The class clamps a
+    /// request into `[0, 1]` rather than refusing it.
+    pub column_wide: f64,
+    /// `perStageMurphreeEfficiency`, which `setMurphreeEfficiency(int, double)` allocates and
+    /// `setMurphreeEfficiencies(double[])` fills. `None` is the class's own initialiser.
+    pub per_stage: Option<Vec<f64>>,
+}
+
+impl Murphree {
+    /// The class's own initialiser: an ideal stage, column-wide, with no overrides.
+    #[must_use]
+    pub fn ideal() -> Self {
+        Self {
+            column_wide: 1.0,
+            per_stage: None,
+        }
+    }
+
+    /// The column-wide value alone, with no overrides - what a palette form can state.
+    #[must_use]
+    pub fn from_column_wide(efficiency: f64) -> Self {
+        Self {
+            column_wide: Self::clamp(efficiency),
+            per_stage: None,
+        }
+    }
+
+    /// `clampMurphreeEfficiency`: `max(0.0, min(1.0, efficiency))`.
+    ///
+    /// **The class clamps a request and does not refuse it**, which is the opposite of this
+    /// library's rule for a fraction - so the clamp is a transcription to name, and the one place
+    /// it is applied is at the declaration's edge.
+    #[must_use]
+    pub fn clamp(efficiency: f64) -> f64 {
+        efficiency.clamp(0.0, 1.0) // numerics-ok: DistillationColumn.java:14661
+    }
+
+    /// `getEffectiveMurphreeEfficiency(stage)`: the override when the stage has a finite one,
+    /// otherwise the column-wide value.
+    #[must_use]
+    pub fn resolve(&self, index: usize) -> f64 {
+        if let Some(per_stage) = self.per_stage.as_ref() {
+            if let Some(value) = per_stage.get(index) {
+                if !value.is_nan() {
+                    return *value;
+                }
+            }
+        }
+        self.column_wide
+    }
+
+    /// The stage count every override is stated over, or `None` where none is.
+    ///
+    /// `setMurphreeEfficiencies(double[])` refuses an array whose length is not the column's
+    /// stage count, and so does this - a caller who meant one stage has `NaN` for the rest.
+    ///
+    /// # Errors
+    /// [`azoth_core::AzothError::InvalidInput`] for a length the stage count does not match.
+    pub fn checked(&self, tray_count: usize) -> Result<&Self> {
+        if let Some(per_stage) = self.per_stage.as_ref() {
+            if per_stage.len() != tray_count {
+                return Err(azoth_core::AzothError::invalid_input(
+                    "tray_murphree_efficiency",
+                    format!(
+                        "{} override(s) for a column of {} stage(s): \
+                         `DistillationColumn.setMurphreeEfficiencies` refuses an array whose \
+                         length is not the stage count, and a stage that states no override is \
+                         written `NaN` rather than left out",
+                        per_stage.len(),
+                        tray_count
+                    ),
+                ));
+            }
+        }
+        Ok(self)
+    }
+}
+
 /// Whether `DistillationColumn.applyMurphreeCorrection` would correct the stage at `index`.
 ///
 /// The three tests are the class's, in its order: an ideal stage returns first, then the
@@ -105,4 +197,30 @@ pub fn correct_vapour(
         equilibrium.p,
         equilibrium.t,
     )?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Murphree;
+
+    #[test]
+    fn the_override_wins_where_it_is_finite() {
+        let efficiency = Murphree {
+            column_wide: 0.6,
+            per_stage: Some(vec![f64::NAN, f64::NAN, f64::NAN, 0.85, f64::NAN, f64::NAN]),
+        };
+        assert_eq!(efficiency.resolve(3), 0.85);
+        assert_eq!(efficiency.resolve(1), 0.6);
+        assert_eq!(efficiency.resolve(5), 0.6);
+        // An index past the array falls through rather than panicking, which is the class's own
+        // `stage < length` test.
+        assert_eq!(efficiency.resolve(9), 0.6);
+    }
+
+    #[test]
+    fn the_class_clamps_a_request_rather_than_refusing_it() {
+        assert_eq!(Murphree::clamp(1.4), 1.0);
+        assert_eq!(Murphree::clamp(-0.2), 0.0);
+        assert_eq!(Murphree::clamp(0.6), 0.6);
+    }
 }

@@ -551,6 +551,7 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     from azoth.process.reference.distillation_column import PumparoundInlets as Inlets
     from azoth.process.reference.distillation_column import _Draws as Draws
     from azoth.process.reference.distillation_column import (
+        _murphree,
         _pumparound_return_specification,
         _pumparound_returns_tear,
         _side_draw_flow_specification,
@@ -618,8 +619,12 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
             reactive=section,
             draws=active_draws,
             pumparound_inlets=active_returns,
-            murphree_efficiency=(
-                float(inputs["murphree_efficiency"]) if "murphree_efficiency" in inputs else None
+            murphree_efficiency=_murphree(
+                float(inputs["murphree_efficiency"])
+                if "murphree_efficiency" in inputs
+                else None,
+                inputs.get("tray_murphree_efficiency"),
+                int(inputs["number_of_stages"]),
             ),
         )
 

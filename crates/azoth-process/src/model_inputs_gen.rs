@@ -529,6 +529,13 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "tray_murphree_efficiency",
+                kind: "vector",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
                 name: "solver_type",
                 kind: "enum",
                 values: &[

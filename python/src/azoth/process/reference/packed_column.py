@@ -159,6 +159,9 @@ def packed_column(
         reboiler_temperature,
         condenser_temperature,
         murphree_efficiency,
+        # **The packed column declares no per-stage vector**, so the base column's overrides are
+        # absent and every stage takes the column-wide value.
+        None,
         solver_type,
         top_specification_type,
         top_specification_target,

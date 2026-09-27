@@ -9,6 +9,7 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
+use azoth_process::column::murphree::Murphree;
 use azoth_process::kernels::distillation_column::{
     ColumnSetup, SideDrawFlow, SideDrawPhase, SolverType, distillation_column,
 };
@@ -255,7 +256,7 @@ fn a_looser_gate_stops_sooner_at_the_same_answer() {
 #[test]
 fn a_murphree_efficiency_reproduces_the_captured_corrected_profile() {
     let mut setup = binary_column(1.0e-6);
-    setup.murphree_efficiency = Some(0.6);
+    setup.murphree_efficiency = Some(Murphree::from_column_wide(0.6));
     let out = distillation_column(&setup).expect("the column converges");
 
     let temperatures = [
@@ -342,7 +343,7 @@ fn a_murphree_efficiency_reproduces_the_captured_corrected_profile() {
 #[test]
 fn a_corrected_columns_products_are_reconciled_against_its_feed() {
     let mut setup = binary_column(1.0e-6);
-    setup.murphree_efficiency = Some(0.6);
+    setup.murphree_efficiency = Some(Murphree::from_column_wide(0.6));
     let out = distillation_column(&setup).expect("the column converges");
 
     let feed = binary_feed();
@@ -397,7 +398,7 @@ fn a_corrected_columns_products_are_reconciled_against_its_feed() {
 #[test]
 fn a_high_murphree_efficiency_reaches_this_ports_own_fixed_point() {
     let mut setup = binary_column(1.0e-6);
-    setup.murphree_efficiency = Some(0.85);
+    setup.murphree_efficiency = Some(Murphree::from_column_wide(0.85));
     let out = distillation_column(&setup).expect("the column converges");
 
     // The port's own answer: a profile between the ideal one and the `0.6` one.
@@ -439,7 +440,7 @@ fn a_high_murphree_efficiency_reaches_this_ports_own_fixed_point() {
 #[test]
 fn a_gas_draw_on_a_corrected_stage_is_refused() {
     let mut setup = binary_column(1.0e-6);
-    setup.murphree_efficiency = Some(0.7);
+    setup.murphree_efficiency = Some(Murphree::from_column_wide(0.7));
     setup.gas_side_draw_fractions = Some(vec![0.0, 0.0, 0.0, 0.2, 0.0, 0.0]);
     let error = distillation_column(&setup).expect_err("the pair is refused");
     assert!(
@@ -998,4 +999,73 @@ fn a_pumparound_return_is_recycled_until_its_flow_settles() {
         "the draw's share",
     );
     relative(draw.n, 0.571186834474117, 1.0e-4, "the draw's own flow");
+}
+
+/// **The per-stage override resolves where the class resolves it, and `NaN` is the
+/// fall-through.** `validation/neqsim/captures/process_column_efficiency.tsv` runs this same
+/// binary column three times: at `0.6` column-wide, at `0.6` with stage 3 overridden to `0.85`,
+/// and at `0.6` with the same override spelled as an array of `NaN`s elsewhere. NeqSim's second
+/// and third blocks are **identical apart from their label**, so the array *is* the override and
+/// `NaN` *is* `getEffectiveMurphreeEfficiency`'s fall-through.
+///
+/// **The first half is exact and is the resolution.** An all-`NaN` vector over a column-wide
+/// `0.6` has to give the column-wide row's own profile to the last digit - every stage falls
+/// through, so the two states are one - and that is what separates a resolution from a
+/// per-stage clamp or an off-by-one.
+///
+/// **The second half is a divergence, and it is the same one the `0.85` column-wide row has.**
+/// NeqSim's overridden state sits at `321.44` K on tray 3; this port reaches `302.19`, which is
+/// the *column-wide* state to `1.3e-3` K. The override is applied - the kernel resolves stage 3
+/// to `0.85` and `corrects` admits it - so this is not a dropped parameter but a second fixed
+/// point the port's map does not reach, which is item 5's open question rather than this
+/// item's. It is asserted as a *size* here for that reason, the same way
+/// [`a_high_murphree_efficiency_reaches_this_ports_own_fixed_point`] holds its 7 K.
+#[test]
+fn a_per_stage_override_resolves_where_the_class_resolves_it() {
+    let mut plain = binary_column(1.0e-6);
+    plain.murphree_efficiency = Some(Murphree::from_column_wide(0.6));
+    let column_wide = distillation_column(&plain).expect("the column converges");
+
+    // Every stage falls through, so this is the same state spelled the declared way.
+    let mut all_nan = binary_column(1.0e-6);
+    all_nan.murphree_efficiency = Some(Murphree {
+        column_wide: 0.6,
+        per_stage: Some(vec![f64::NAN; 6]),
+    });
+    let fallen_through = distillation_column(&all_nan).expect("the column converges");
+    for (index, (a, b)) in column_wide
+        .trays
+        .iter()
+        .zip(&fallen_through.trays)
+        .enumerate()
+    {
+        absolute(
+            a.temperature.value,
+            b.temperature.value,
+            0.0,
+            &format!("tray {index} of an all-NaN vector and the column-wide value"),
+        );
+    }
+
+    // The column-wide state, against the capture's own row.
+    absolute(
+        column_wide.trays[3].temperature.value,
+        302.1846100734558,
+        1.0e-3,
+        "the column-wide tray 3",
+    );
+
+    // And the override, which the port applies and which lands near that same state rather than
+    // on NeqSim's. The gap is the measurement.
+    let mut overridden = binary_column(1.0e-6);
+    overridden.murphree_efficiency = Some(Murphree {
+        column_wide: 0.6,
+        per_stage: Some(vec![f64::NAN, f64::NAN, f64::NAN, 0.85, f64::NAN, f64::NAN]),
+    });
+    let out = distillation_column(&overridden).expect("the column converges");
+    let disagreement = (out.trays[3].temperature.value - 321.4369463103764).abs();
+    assert!(
+        disagreement > 19.0,
+        "tray 3 is {disagreement} K from the capture, and this row exists to hold that gap"
+    );
 }

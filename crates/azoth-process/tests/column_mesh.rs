@@ -455,6 +455,8 @@ fn model(
         setup.temperature_tolerance,
         setup.max_iterations,
         murphree_efficiency,
+        // No per-stage overrides: the mesh ladder's states state the column-wide value only.
+        None,
         solver_type,
         None,
         None,

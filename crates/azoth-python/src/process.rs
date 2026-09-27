@@ -444,10 +444,10 @@ pub fn pump(
 /// business rather than the kernel's.
 #[pyfunction]
 #[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance = 1e-6, max_iterations = 200, reboiler_temperature = None, condenser_temperature = None, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)
+    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance = 1e-6, max_iterations = 200, reboiler_temperature = None, condenser_temperature = None, murphree_efficiency = None, tray_murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)
 )]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, murphree_efficiency=None, tray_murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
@@ -469,6 +469,7 @@ pub fn distillation_column(
     reboiler_temperature: Option<f64>,
     condenser_temperature: Option<f64>,
     murphree_efficiency: Option<f64>,
+    tray_murphree_efficiency: Option<Vec<f64>>,
     solver_type: Option<&str>,
     top_specification_type: Option<&str>,
     top_specification_target: Option<f64>,
@@ -511,6 +512,7 @@ pub fn distillation_column(
         temperature_tolerance,
         max_iterations,
         murphree_efficiency,
+        tray_murphree_efficiency.as_deref(),
         solver_type,
         top_specification_type,
         top_specification_target,

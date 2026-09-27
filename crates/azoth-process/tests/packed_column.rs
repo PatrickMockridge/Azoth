@@ -111,6 +111,8 @@ fn the_packed_column_is_the_base_column_at_the_heights_stage_count() {
         200,
         None,
         None,
+        // No per-stage efficiency overrides: this state states neither field.
+        None,
         None,
         None,
         None,

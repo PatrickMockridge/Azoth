@@ -5,7 +5,7 @@ use azoth_core::units::{
 };
 use azoth_core::{AzothError, Result};
 
-use crate::column::murphree::{correct_vapour, corrects};
+use crate::column::murphree::{Murphree, correct_vapour, corrects};
 use crate::column::tray::{self as stage, SideDraws, TrayOutcome};
 use crate::stream::Stream;
 
@@ -78,22 +78,30 @@ fn refuse_end_draws(setup: &ColumnSetup, tray_count: usize) -> Result<()> {
 /// The draw vectors are already barred from the ends, so "a corrected stage that draws" and "a
 /// stage that draws" are the same set on every column this kernel solves.
 fn refuse_murphree_gas_draw(setup: &ColumnSetup, tray_count: usize) -> Result<()> {
-    let Some(efficiency) = setup.murphree_efficiency else {
+    let Some(efficiency) = setup.murphree_efficiency.as_ref() else {
         return Ok(());
     };
     let Some(fractions) = setup.gas_side_draw_fractions.as_ref() else {
         return Ok(());
     };
     for (index, fraction) in fractions.iter().enumerate() {
-        if *fraction != 0.0 && corrects(index, tray_count, setup.has_condenser, efficiency) {
+        if *fraction != 0.0
+            && corrects(
+                index,
+                tray_count,
+                setup.has_condenser,
+                efficiency.resolve(index),
+            )
+        {
             return Err(AzothError::invalid_input(
                 "gas_side_draw_fractions",
                 format!(
                     "tray {index} draws {fraction} of its vapour and the column states a \
-                     Murphree efficiency of {efficiency}: `DistillationColumn` returns the \
+                     Murphree efficiency of {}: `DistillationColumn` returns the \
                      corrected vapour from `getGasOutStream` and never applies the draw \
                      fraction to it, so the stage would publish more vapour than it made. \
-                     Neither is dropped silently here"
+                     Neither is dropped silently here",
+                    efficiency.resolve(index)
                 ),
             ));
         }
@@ -111,18 +119,19 @@ fn refuse_murphree_gas_draw(setup: &ColumnSetup, tray_count: usize) -> Result<()
 /// **It is checked before the mesh dispatch and not with the draws**, because the mesh solve
 /// returns before the sequential setup runs - so a check placed there would never see it.
 fn refuse_murphree_mesh(setup: &ColumnSetup) -> Result<()> {
-    let Some(efficiency) = setup.murphree_efficiency else {
+    let Some(efficiency) = setup.murphree_efficiency.as_ref() else {
         return Ok(());
     };
     Err(AzothError::invalid_input(
         "solver_type",
         format!(
-            "a Murphree efficiency of {efficiency} is not ported on the `naphtali_sandholm` \
+            "a Murphree efficiency of {} is not ported on the `naphtali_sandholm` \
              solve: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's \
              K-values by an Edmister `K^eta` proxy, where the sequential core's \
              `applyMurphreeCorrection` - the one this port carries - blends the vapour leaving \
              a stage against the vapour entering it. The two are different corrections rather \
-             than two spellings of one"
+             than two spellings of one",
+            efficiency.column_wide
         ),
     ))
 }
@@ -277,10 +286,11 @@ pub struct ColumnSetup {
     pub reboiler_temperature: Option<ThermodynamicTemperature>,
     /// The convergence tolerance on the mean tray-temperature change.
     pub temperature_tolerance: f64,
-    /// **The column-wide Murphree tray efficiency**, or `None` for the ideal stage - which is
-    /// the class's own default of one. `DistillationColumn.setMurphreeEfficiency` states it,
-    /// and [`crate::column::murphree`] is the correction the sequential sweep applies.
-    pub murphree_efficiency: Option<f64>,
+    /// **The Murphree efficiency, or `None` for no correction at all** - which is what the
+    /// class's own default of an ideal stage amounts to. `DistillationColumn.setMurphreeEfficiency`
+    /// states the column-wide value and its per-stage overrides, and [`crate::column::murphree`]
+    /// is the correction the sequential sweep applies.
+    pub murphree_efficiency: Option<Murphree>,
     /// The iteration cap.
     pub max_iterations: usize,
     /// The top product's specification, or `None` where the top is pinned by temperature.
@@ -586,8 +596,8 @@ struct Network {
     /// `setCachedGasOutStream` never writes - so the stage above receives the corrected vapour
     /// while the correction sees the uncorrected one. Both are needed and they differ.
     equilibrium: Vec<(Option<Stream>, Option<Stream>)>,
-    /// The column-wide Murphree tray efficiency, or `None` for the ideal stage.
-    murphree_efficiency: Option<f64>,
+    /// The Murphree efficiency, or `None` for no correction at all.
+    murphree_efficiency: Option<Murphree>,
     /// The pressure of each tray.
     pressures: Vec<Pressure>,
     /// The tray the feed enters.
@@ -764,12 +774,13 @@ impl Network {
         // Murphree correction reads the stage below's from here rather than from `gas`, which
         // is where the *corrected* vapour goes - the class's two are different objects.
         self.equilibrium[i] = (out.gas.clone(), out.liquid.clone());
-        if let Some(efficiency) = self.murphree_efficiency {
-            if corrects(i, self.tray_count, self.has_condenser, efficiency) {
+        if let Some(efficiency) = self.murphree_efficiency.as_ref() {
+            let effective = efficiency.resolve(i);
+            if corrects(i, self.tray_count, self.has_condenser, effective) {
                 let below = self.equilibrium[i - 1].clone();
                 let here = (out.gas.as_ref(), out.liquid.as_ref());
                 let below_refs = (below.0.as_ref(), below.1.as_ref());
-                if let Some(corrected) = correct_vapour(here, below_refs, efficiency)? {
+                if let Some(corrected) = correct_vapour(here, below_refs, effective)? {
                     out.gas = Some(corrected);
                 }
             }
@@ -1008,7 +1019,7 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         gas: vec![None; tray_count],
         liquid: vec![None; tray_count],
         equilibrium: vec![(None, None); tray_count],
-        murphree_efficiency: setup.murphree_efficiency,
+        murphree_efficiency: setup.murphree_efficiency.clone(),
         pressures,
         feed_stage: setup.feed_stage,
         tray_count,

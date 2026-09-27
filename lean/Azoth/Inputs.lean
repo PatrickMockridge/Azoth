@@ -76,6 +76,7 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.distillation_column", "reboiler_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.distillation_column", "condenser_temperature", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.distillation_column", "murphree_efficiency", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.distillation_column", "tray_murphree_efficiency", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.distillation_column", "top_specification_target", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.distillation_column", "bottom_specification_target", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
     ("unit_ops.distillation_column", "reactive_start_tray", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),

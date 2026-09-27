@@ -23,6 +23,8 @@ assumptions = [
     "**`murphree_efficiency` is ported for the sequential solve**: each interior stage's vapour is blended as `y_in + E(y_eq - y_in)`, clamped and renormalised. The ends and an ideal stage are never corrected, a gas draw on a corrected stage is refused, and the products are reconciled against the feed.",
     "**`naphtali_sandholm` with an efficiency is refused by name.** `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's K-values by an Edmister `K^eta` proxy rather than blending the outlet, so the two solves carry two different corrections and this model ports the sequential one.",
     "**Four corrected rows, and the port reproduces one exactly.** `binary_murphree_0_6` is the oracle; **`0_85` it does not reach**, by up to `7` K on tray 3, and **the cause is not established**: `applyRelaxationFast` was measured on both rows and moves neither, and every stage is two-phase on both.",
+    "**`tray_murphree_efficiency` is the per-stage override, and the resolution is exact.** `getEffectiveMurphreeEfficiency` reads `perStageMurphreeEfficiency[stage]` when it is present and not `NaN` and `murphreeEfficiency` otherwise, so an all-`NaN` vector is the column-wide state to the last digit - which is what the capture's first block is for.",
+    "**the override's own endpoint is the `0_85` divergence again.** `process_column_efficiency.tsv` puts `0.6` everywhere with stage 3 at `0.85`: NeqSim lands `321.44` K on tray 3 and this port `302.19`, the column-wide state to `1.3e-3` K. The override *is* resolved and applied, so this is the second fixed point rather than a dropped input.",
     "**two of `solver_type`'s ten strategies are ported**: `direct_substitution`, the class's own default, and `naphtali_sandholm`, the simultaneous MESH correction. The other eight are refused by name.",
     "**the eight unported strategies are a measured non-port.** On the captured binary column all ten land within `2.5e-6` K of each other on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states - each one where a solve stopped.",
     "**four of them land on the substitution core's own state exactly**: `inside_out`, `matrix_inside_out`, `mesh_residual`, and `wegstein`, which reports `direct_substitution` because it fell back to it.",
@@ -108,6 +110,12 @@ description = "the condenser's temperature, which pins the top tray's flash. Abs
 unit = "dimensionless"
 optional = true
 description = "the column-wide Murphree tray efficiency, applied to each interior stage's vapour. **Omitted means the ideal stage.** Refused with `solver_type = naphtali_sandholm`, whose solver carries a different correction.\n"
+[inputs.tray_murphree_efficiency]
+type = "vector"
+unit = "dimensionless"
+length = "one per stage, the reboiler at index 0"
+optional = true
+description = "one override per stage, `NaN` where a stage falls through to `murphree_efficiency` - `DistillationColumn.setMurphreeEfficiencies`, whose own resolution is `getEffectiveMurphreeEfficiency`. A length that is not the stage count is refused, and a value outside `[0, 1]` is clamped rather than refused.\n"
 [inputs.solver_type]
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]

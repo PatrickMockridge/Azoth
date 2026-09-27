@@ -50,7 +50,18 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe heat_exchanger > captures/process_hea
 java -cp .:neqsim-f0c7436.jar ProcessProbe stream > captures/process_stream_properties.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe column_solvers > captures/process_column_solvers.tsv
+java -cp .:neqsim-f0c7436.jar ProcessProbe column_efficiency \
+  > captures/process_column_efficiency.tsv
 ```
+
+**`ProcessProbe column_efficiency` measures the per-stage efficiency rule.** It runs the
+Murphree binary column three times: at `0.6` column-wide, at `0.6` with stage 3 overridden to
+`0.85` through `setMurphreeEfficiency(3, 0.85)`, and at `0.6` with the same override spelled as
+the array `setMurphreeEfficiencies` takes with `NaN` everywhere else. **The second and third
+blocks are identical apart from their label**, which is what makes `NaN` the fall-through
+`getEffectiveMurphreeEfficiency` documents rather than an absence. Each override block carries a
+`tray_murphree_efficiency=` line, which is the class's *resolved* vector over all six stages -
+and the first block has none, because it has no override to resolve.
 
 **`ProcessProbe column_solvers` takes a solver's name after the subcommand** to run one
 strategy alone, which is how a slow rung is measured without paying for the others. The

@@ -4178,6 +4178,7 @@ def distillation_column(
     reboiler_temperature: Q | None = None,
     condenser_temperature: Q | None = None,
     murphree_efficiency: float | None = None,
+    tray_murphree_efficiency: Sequence[float] | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
     top_specification_target: float | None = None,
@@ -4235,6 +4236,9 @@ def distillation_column(
         if condenser_temperature is None
         else input_to_si(spec, "condenser_temperature", condenser_temperature),
         murphree_efficiency,
+        None
+        if tray_murphree_efficiency is None
+        else [float(v) for v in tray_murphree_efficiency],
         solver_type,
         top_specification_type,
         top_specification_target,

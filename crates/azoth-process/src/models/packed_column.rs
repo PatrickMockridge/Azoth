@@ -223,6 +223,9 @@ pub fn packed_column(
         temperature_tolerance,
         max_iterations,
         murphree_efficiency,
+        // **The packed column declares no per-stage efficiency**, so the base column's vector is
+        // absent and every stage takes the column-wide value.
+        None,
         solver_type,
         top_specification_type,
         top_specification_target,

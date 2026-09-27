@@ -1194,6 +1194,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     (
         "process.distillation_column",
+        "tray_murphree_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.distillation_column",
         "top_specification_target",
         "dimensionless",
     ),

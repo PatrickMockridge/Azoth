@@ -862,7 +862,11 @@ fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome>
         reboiler_temperature: p.optional_si("reboiler_temperature")?.map(kelvins),
         temperature_tolerance: algorithm_limits(&model_gen::PACKED_COLUMN_SPEC).0,
         max_iterations: algorithm_limits(&model_gen::PACKED_COLUMN_SPEC).1,
-        murphree_efficiency: p.optional_number("murphree_efficiency")?,
+        // **A form states the column-wide value only**: the per-stage overrides are a vector a
+        // palette entry does not carry, so they reach the model's own flat signature instead.
+        murphree_efficiency: p
+            .optional_number("murphree_efficiency")?
+            .map(crate::column::murphree::Murphree::from_column_wide),
         top_specification: None,
         bottom_specification: None,
         solver_type: solver,
@@ -926,7 +930,11 @@ fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::Column
         reboiler_temperature: p.optional_si("reboiler_temperature")?.map(kelvins),
         temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
         max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
-        murphree_efficiency: p.optional_number("murphree_efficiency")?,
+        // **A form states the column-wide value only**: the per-stage overrides are a vector a
+        // palette entry does not carry, so they reach the model's own flat signature instead.
+        murphree_efficiency: p
+            .optional_number("murphree_efficiency")?
+            .map(crate::column::murphree::Murphree::from_column_wide),
         top_specification: None,
         bottom_specification: None,
         top_feed: None,
