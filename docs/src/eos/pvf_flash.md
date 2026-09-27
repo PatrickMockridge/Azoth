@@ -75,7 +75,7 @@ not an equation, and both implementations read it from here.
 | Bound | On violation | Why |
 |---|---|---|
 | `P > 0` | raises | an absolute pressure; zero and below are not states |
-| `beta > 0 and beta < 1` | raises | the endpoints are the bubble and dew points, which are other calculations with their own procedures |
+| `vapour_fraction > 0 and vapour_fraction < 1` | raises | the endpoints are the bubble and dew points, which are other calculations with their own procedures |
 
 ## Assumptions
 
@@ -89,8 +89,8 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_state_pt_flash_settles_on` | components = ['methane', 'n-butane'], P = 2500000.0, beta = 0.8422055475803881, temperature = 330.0, z = [0.6, 0.4] | T = 330.0 |
-| `a_second_state` | components = ['methane', 'propane', 'n-butane'], P = 5000000.0, beta = 0.993505628186177, temperature = 350.0, z = [0.5, 0.3, 0.2] | T = 350.0 |
+| `the_state_pt_flash_settles_on` | components = ['methane', 'n-butane'], P = 2500000.0, vapour_fraction = 0.8422055475803881, temperature = 330.0, z = [0.6, 0.4] | T = 330.0 |
+| `a_second_state` | components = ['methane', 'propane', 'n-butane'], P = 5000000.0, vapour_fraction = 0.993505628186177, temperature = 350.0, z = [0.5, 0.3, 0.2] | T = 350.0 |
 
 ## References
 

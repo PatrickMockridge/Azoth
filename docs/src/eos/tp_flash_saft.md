@@ -81,7 +81,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_butane_two_phase_against_neqsim` | components = ['methane', 'n-butane'], T = 250.0, P = 3000000.0, z = [0.6, 0.4] | beta = 0.5358099100649695, x = [0.1631945070550116, 0.8368054929449847], y = [0.9784192439248908, 0.021580756075112423], k = [5.995400724282181, 0.025789345710502048], z_liquid = 0.12428945085670298, z_vapour = 0.8971134509509505, phase = two_phase |
+| `methane_butane_two_phase_against_neqsim` | components = ['methane', 'n-butane'], T = 250.0, P = 3000000.0, z = [0.6, 0.4] | vapour_fraction = 0.5358099100649695, x = [0.1631945070550116, 0.8368054929449847], y = [0.9784192439248908, 0.021580756075112423], k = [5.995400724282181, 0.025789345710502048], z_liquid = 0.12428945085670298, z_vapour = 0.8971134509509505, phase = two_phase |
 
 ## References
 

@@ -49,7 +49,7 @@ DOI: [10.2118/952327-G](https://doi.org/10.2118/952327-G)
 | `K2 > 0` | raises | as for `K1` |
 | `K1 == 1` | raises | `K1 - 1` is a divisor in the closed form, and with `K1 = 1` component 1 drops out of the sum entirely. |
 | `K2 == 1` | raises | as for `K1` |
-| `beta >= 0 and beta <= 1` | warns `OUT_OF_VALID_RANGE` | Outside `[0, 1]` the feed is single phase and the value is the *tangent-plane* solution rather than a phase split, but it is still returned as a warning. |
+| `vapour_fraction >= 0 and vapour_fraction <= 1` | warns `OUT_OF_VALID_RANGE` | Outside `[0, 1]` the feed is single phase and the value is the *tangent-plane* solution rather than a phase split, but it is still returned as a warning. |
 
 
 ## Assumptions
@@ -79,7 +79,7 @@ Source: derived from the equation above
 
 | Output | Expected |
 |---|---|
-| `beta` | 0.6666666666666665 |
+| `vapour_fraction` | 0.6666666666666665 |
 
 Relative tolerance: `1e-12`
 

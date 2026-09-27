@@ -63,10 +63,10 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `propane_at_10_bar_half_vapour` | components = ['propane'], P = 1000000.0, V = 0.001059848052516, U = -7797.318485008 | T = 300.082995991047, beta = 0.5 |
-| `propane_at_10_bar_a_quarter_vapour` | components = ['propane'], P = 1000000.0, V = 0.000573324022829, U = -10997.919357422 | T = 300.082995991047, beta = 0.25 |
-| `propane_at_20_bar_half_vapour` | components = ['propane'], P = 2000000.0, V = 0.000523070028446, U = -5192.179547873 | T = 330.189683051239, beta = 0.5 |
-| `n_butane_at_2_bar_half_vapour` | components = ['n-butane'], P = 200000.0, V = 0.005751905323641, U = -10484.245165447 | T = 292.041483332711, beta = 0.5 |
+| `propane_at_10_bar_half_vapour` | components = ['propane'], P = 1000000.0, V = 0.001059848052516, U = -7797.318485008 | T = 300.082995991047, vapour_fraction = 0.5 |
+| `propane_at_10_bar_a_quarter_vapour` | components = ['propane'], P = 1000000.0, V = 0.000573324022829, U = -10997.919357422 | T = 300.082995991047, vapour_fraction = 0.25 |
+| `propane_at_20_bar_half_vapour` | components = ['propane'], P = 2000000.0, V = 0.000523070028446, U = -5192.179547873 | T = 330.189683051239, vapour_fraction = 0.5 |
+| `n_butane_at_2_bar_half_vapour` | components = ['n-butane'], P = 200000.0, V = 0.005751905323641, U = -10484.245165447 | T = 292.041483332711, vapour_fraction = 0.5 |
 
 ## References
 

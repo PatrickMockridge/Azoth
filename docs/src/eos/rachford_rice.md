@@ -60,14 +60,14 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `methane_butane_at_330_k_25_bar` | z = [0.6, 0.4], K = [7.304244305324782, 0.33749596785762953] | beta = 0.8422055475803871 |
-| `methane_butane_at_300_k_30_bar` | z = [0.6, 0.4], K = [5.799172708809654, 0.14913889826410118] | beta = 0.6218202763585349 |
-| `all_liquid_returns_the_lower_clamp` | z = [0.5, 0.5], K = [0.2, 0.3] | beta = 1e-12 |
-| `all_vapour_returns_the_upper_clamp` | z = [0.5, 0.5], K = [3.0, 5.0] | beta = 0.999999999999 |
-| `a_wide_k_range_keeps_its_precision` | z = [0.3, 0.7], K = [1000000.0, 1e-06] | beta = 0.29999959999960013 |
-| `a_negative_flash_is_reported_rather_than_clamped` | z = [0.1, 0.9], K = [5.799172708809655, 0.14913889826410245] | beta = -0.0700043258053189 |
-| `a_superheated_feed_is_reported_rather_than_clamped` | z = [0.5, 0.5], K = [1.5, 0.9] | beta = 3.9999999999999916 |
-| `an_ion_is_skipped` | z = [0.1, 0.45, 0.45], K = [1e-40, 7.304244305324782, 0.33749596785762953] | beta = 0.6754007405823642 |
+| `methane_butane_at_330_k_25_bar` | z = [0.6, 0.4], K = [7.304244305324782, 0.33749596785762953] | vapour_fraction = 0.8422055475803871 |
+| `methane_butane_at_300_k_30_bar` | z = [0.6, 0.4], K = [5.799172708809654, 0.14913889826410118] | vapour_fraction = 0.6218202763585349 |
+| `all_liquid_returns_the_lower_clamp` | z = [0.5, 0.5], K = [0.2, 0.3] | vapour_fraction = 1e-12 |
+| `all_vapour_returns_the_upper_clamp` | z = [0.5, 0.5], K = [3.0, 5.0] | vapour_fraction = 0.999999999999 |
+| `a_wide_k_range_keeps_its_precision` | z = [0.3, 0.7], K = [1000000.0, 1e-06] | vapour_fraction = 0.29999959999960013 |
+| `a_negative_flash_is_reported_rather_than_clamped` | z = [0.1, 0.9], K = [5.799172708809655, 0.14913889826410245] | vapour_fraction = -0.0700043258053189 |
+| `a_superheated_feed_is_reported_rather_than_clamped` | z = [0.5, 0.5], K = [1.5, 0.9] | vapour_fraction = 3.9999999999999916 |
+| `an_ion_is_skipped` | z = [0.1, 0.45, 0.45], K = [1e-40, 7.304244305324782, 0.33749596785762953] | vapour_fraction = 0.6754007405823642 |
 
 ## References
 
