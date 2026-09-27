@@ -79,13 +79,13 @@ description = "the iteration cap. A solve that reaches it without meeting the ga
 [inputs.murphree_efficiency]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: an absorber does not use the base's correction. `AbsorptionColumn.applyMurphreeCorrection` is an *override* that corrects **both phases** through a limiting-component allocator, and that arithmetic is the one owed here.\n"
+description = "the column-wide Murphree tray efficiency. **`AbsorptionColumn.applyMurphreeCorrection` is an override**, not the base's: both phases are blended and the flash's vapour moles are re-allocated across the components.\n"
 [inputs.component_murphree_efficiency]
 type = "vector"
 unit = "dimensionless"
 length = "one per component"
 optional = true
-description = "**not ported**: the per-component Murphree efficiency, which `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)` sets and the `applyMurphreeCorrection` override applies - one efficiency per component, with the column-wide value as the fallback where a component states none.\n"
+description = "one efficiency per component, which `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair - the per-tray-per-component map the class's other overload writes has no palette spelling and is not carried.\n"
 [inputs.max_allowable_gas_load_factor]
 unit = "dimensionless"
 optional = true

@@ -81,13 +81,13 @@ description = "the iteration cap. A solve that reaches it without meeting the ga
 [inputs.murphree_efficiency]
 unit = "dimensionless"
 optional = true
-description = "**not ported**: the column-wide Murphree tray efficiency. `StrippingColumn extends AbsorptionColumn`, so this is the same override `process.absorption_column` names: both phases corrected, through a limiting-component allocator.\n"
+description = "the column-wide Murphree tray efficiency. `StrippingColumn extends AbsorptionColumn`, so this is the same override: both phases corrected, through a limiting-component allocator.\n"
 [inputs.component_murphree_efficiency]
 type = "vector"
 unit = "dimensionless"
 length = "one per component"
 optional = true
-description = "**not ported**: the per-component Murphree efficiency, which the inherited `setComponentMurphreeEfficiency` sets and the override applies.\n"
+description = "one efficiency per component, which the inherited `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair.\n"
 [inputs.max_allowable_gas_load_factor]
 unit = "dimensionless"
 optional = true

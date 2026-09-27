@@ -17,6 +17,7 @@
 //! prints both of its outlets. That is what lets D2 pin a stage's arithmetic before a column
 //! exists to contain it.
 
+pub mod absorber_murphree;
 pub mod block_tridiagonal;
 pub mod condenser;
 pub mod murphree;
@@ -26,6 +27,7 @@ pub mod reboiler;
 pub mod tear;
 pub mod tray;
 
+pub use absorber_murphree::AbsorberMurphree;
 pub use condenser::{CondenserMode, CondenserOutcome, condenser};
 pub use murphree::{correct_vapour, corrects};
 pub use reboiler::{ReboilerMode, ReboilerOutcome, reboiler};

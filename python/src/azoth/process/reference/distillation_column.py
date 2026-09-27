@@ -583,6 +583,7 @@ def _states(
     reactive: tuple[int, int] | None = None,
     draws: Draws = None,
     murphree_efficiency: _Murphree | None = None,
+    absorber_murphree: _AbsorberMurphree | None = None,
     pumparound_inlets: PumparoundInlets | None = None,
 ) -> _States:
     """The whole solve, in SI magnitudes: the one arithmetic the kernel and a dump share.
@@ -799,10 +800,23 @@ def _states(
                 out["pumparound"],
             ) = split_draws(out["gas"], out["liquid"], stated)
         equilibrium[i] = (out["gas"], out["liquid"])
-        effective = (
-            None if murphree_efficiency is None else murphree_efficiency.resolve(i)
-        )
-        if effective is not None and _corrects(i, tray_count, has_condenser, effective):
+        if absorber_murphree is not None:
+            # **`AbsorptionColumn`'s override**, whose ``below`` is the tray's *gas inlet*:
+            # ``gasInStream`` at stage 0 and the stage below's flash above it.
+            inlet = (
+                _feed(components, feed_n, feed_z, feed_t, feed_p)
+                if i == 0
+                else equilibrium[i - 1][0]
+            )
+            corrected = _correct_absorber(out["gas"], out["liquid"], inlet, absorber_murphree, i)
+            if corrected is not None:
+                out["gas"], out["liquid"] = corrected
+        effective = None if murphree_efficiency is None else murphree_efficiency.resolve(i)
+        if (
+            absorber_murphree is None
+            and effective is not None
+            and _corrects(i, tray_count, has_condenser, effective)
+        ):
             below_gas, below_liquid = equilibrium[i - 1]
             if out["liquid"] is not None and below_liquid is not None:
                 out["gas"] = _correct_vapour(
@@ -1237,6 +1251,170 @@ def _states(
         temperature_residual=temperature_residual,
         mass_residual=mass_residual,
         energy_residual=energy_residual,
+    )
+
+
+class _AbsorberMurphree(NamedTuple):
+    """`AbsorptionColumn`'s two efficiency maps over the base's two levels.
+
+    `getComponentMurphreeEfficiency(tray, component)` reads
+    ``componentMurphreeEfficiencies[component]``, then the base's per-tray and column-wide pair -
+    the four levels, of which the per-tray-per-component map the class's other overload writes
+    has no palette spelling and is not carried.
+    """
+
+    base: _Murphree
+    per_component: tuple[float, ...] | None = None
+
+    def resolve(self, tray: int, component: int) -> float:
+        """`getComponentMurphreeEfficiency`: the component's own value, else the base's two."""
+        if self.per_component is not None and component < len(self.per_component):
+            value = self.per_component[component]
+            if not math.isnan(value):
+                return value
+        return self.base.resolve(tray)
+
+    def checked(self, components: int) -> _AbsorberMurphree:
+        """The component vector's length held to the components the column carries."""
+        if self.per_component is not None and len(self.per_component) != components:
+            raise InvalidInputError(
+                "component_murphree_efficiency",
+                f"{len(self.per_component)} component efficiency(ies) against {components} "
+                f"component(s): the vector is one entry per component in the column's own "
+                f"order, and a component that states none is written `NaN` rather than left out",
+            )
+        return self
+
+
+MOLE_TOLERANCE = 1.0e-15
+
+
+def _allocate_vapour_moles(
+    mole_fraction: Sequence[float], available_moles: Sequence[float], vapour_moles: float
+) -> list[float]:
+    """`AbsorptionColumn.allocateVaporMoles`: the flash's vapour moles across the components.
+
+    The loop is the class's, including its two fallbacks: while a component's trial share is
+    more than the moles available to it, that component is fixed at its availability and the
+    remainder is redistributed. The ``remainingWeight`` branch divides by the *available* moles
+    instead, reached only when every unfixed component's corrected fraction has collapsed.
+    """
+    count = len(mole_fraction)
+    allocated = [0.0] * count
+    fixed = [False] * count
+    remaining = vapour_moles
+    for _ in range(count):
+        if remaining <= MOLE_TOLERANCE:
+            break
+        weight = sum(
+            fraction for fraction, held in zip(mole_fraction, fixed, strict=True) if not held
+        )
+        limited = False
+        for component in range(count):
+            if fixed[component]:
+                continue
+            trial = (
+                remaining * mole_fraction[component] / weight
+                if weight > MOLE_TOLERANCE
+                else remaining
+                * available_moles[component]
+                / max(
+                    sum(
+                        moles
+                        for moles, held in zip(available_moles, fixed, strict=True)
+                        if not held
+                    ),
+                    MOLE_TOLERANCE,
+                )
+            )
+            if trial > available_moles[component] + MOLE_TOLERANCE:
+                allocated[component] = available_moles[component]
+                remaining -= allocated[component]
+                fixed[component] = True
+                limited = True
+        if not limited:
+            for component in range(count):
+                if not fixed[component]:
+                    allocated[component] = (
+                        remaining * mole_fraction[component] / weight
+                        if weight > MOLE_TOLERANCE
+                        else remaining
+                        * available_moles[component]
+                        / max(
+                            sum(
+                                moles
+                                for moles, held in zip(available_moles, fixed, strict=True)
+                                if not held
+                            ),
+                            MOLE_TOLERANCE,
+                        )
+                    )
+            remaining = 0.0
+    return allocated
+
+
+def _correct_absorber(
+    equilibrium_gas: StreamRecord | None,
+    equilibrium_liquid: StreamRecord | None,
+    inlet: StreamRecord | None,
+    efficiency: _AbsorberMurphree,
+    tray: int,
+) -> tuple[StreamRecord, StreamRecord] | None:
+    """`AbsorptionColumn.applyMurphreeCorrection`, which replaces the base column's.
+
+    The base blends one phase; this blends **both** and re-allocates the flash's vapour moles
+    across the components, so what a stage hands up carries a different composition at the same
+    total moles.
+    """
+    if equilibrium_gas is None or equilibrium_liquid is None or inlet is None:
+        return None
+    count = len(equilibrium_gas["z"])
+    corrected = [0.0] * count
+    total = [0.0] * count
+    required = False
+    total_fraction = 0.0
+    for component in range(count):
+        density = efficiency.resolve(tray, component)
+        required |= density < 1.0 - 1.0e-10
+        equilibrium_fraction = equilibrium_gas["z"][component]
+        inlet_fraction = inlet["z"][component]
+        blended = max(0.0, inlet_fraction + density * (equilibrium_fraction - inlet_fraction))
+        corrected[component] = blended
+        total_fraction += blended
+        total[component] = max(
+            0.0,
+            equilibrium_gas["z"][component] * equilibrium_gas["n"]
+            + equilibrium_liquid["z"][component] * equilibrium_liquid["n"],
+        )
+    if not required or total_fraction <= MOLE_TOLERANCE:
+        return None
+    corrected = [value / total_fraction for value in corrected]
+
+    vapour_moles = equilibrium_gas["n"]
+    liquid_moles = equilibrium_liquid["n"]
+    allocated = _allocate_vapour_moles(corrected, total, vapour_moles)
+    gas_z = tuple(
+        moles / vapour_moles if vapour_moles > MOLE_TOLERANCE else 0.0 for moles in allocated
+    )
+    liquid_z = tuple(
+        (max(0.0, available - gas) / liquid_moles) if liquid_moles > MOLE_TOLERANCE else 0.0
+        for gas, available in zip(allocated, total, strict=True)
+    )
+    return (
+        _stage.stream_at(
+            list(equilibrium_gas["components"]),
+            vapour_moles,
+            list(gas_z),
+            float(equilibrium_gas["t"]),
+            float(equilibrium_gas["p"]),
+        ),
+        _stage.stream_at(
+            list(equilibrium_liquid["components"]),
+            liquid_moles,
+            list(liquid_z),
+            float(equilibrium_liquid["t"]),
+            float(equilibrium_liquid["p"]),
+        ),
     )
 
 

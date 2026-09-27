@@ -54,6 +54,8 @@
 //       > captures/process_rate_based_billet.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column_efficiency \
 //       > captures/process_column_efficiency.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe absorber_efficiency \
+//       > captures/process_absorber_efficiency.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -170,6 +172,9 @@ public class ProcessProbe {
         break;
       case "absorber":
         absorberRows();
+        break;
+      case "absorber_efficiency":
+        absorberEfficiencyRows();
         break;
       case "packed_column":
         packedColumnRows();
@@ -1021,6 +1026,34 @@ public class ProcessProbe {
         solventKgPerHour, solventC, trays, bara, stageC, tolerance, solver, false);
   }
 
+  /// **The same machine with a Murphree efficiency**, which `AbsorptionColumn` corrects through
+  /// its own override rather than the base's: both phases are blended and the flash's vapour
+  /// moles are re-allocated across the components. `componentName` is null for the column-wide
+  /// row and names one component for the per-component row, which is the level
+  /// `setComponentMurphreeEfficiency(String, double)` writes.
+  static void absorberEfficiencyRow(String label, String[] gasNames, double[] gasZ,
+      double gasKgPerHour, double gasC, String[] solventNames, double[] solventZ,
+      double solventKgPerHour, double solventC, int trays, double bara, double stageC,
+      double tolerance, double murphree, String componentName, double componentEfficiency) {
+    absorberRow(label, gasNames, gasZ, gasKgPerHour, gasC, solventNames, solventZ,
+        solventKgPerHour, solventC, trays, bara, stageC, tolerance, "DIRECT_SUBSTITUTION", false,
+        murphree, componentName, componentEfficiency);
+  }
+
+  /// **The Murphree rows, on the lean-oil absorber the capture already holds.** Three of them:
+  /// the column-wide value, one component overridden, and that override reapplied - which is
+  /// what separates the two resolution levels from one another.
+  static void absorberEfficiencyRows() {
+    String[] gas = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
+        "n-heptane" };
+    double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
+    double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    absorberEfficiencyRow("absorber_murphree_column_wide", gas, gasZ, 2000.0, 30.0, gas,
+        pureHeptane, 600.0, 20.0, 5, 15.0, 0.0, 1.0e-2, 0.6, null, 0.0);
+    absorberEfficiencyRow("absorber_murphree_one_component", gas, gasZ, 2000.0, 30.0, gas,
+        pureHeptane, 600.0, 20.0, 5, 15.0, 0.0, 1.0e-2, 1.0, "methane", 0.6);
+  }
+
   /// **The same machine with `setReactive(true)`.** `AbsorptionColumn` inherits the base's
   /// `setReactive` and overrides no `run`, so its middle trays are the base's middle trays - and
   /// an absorber has no ends at all, so `replaceMiddleTrays` walks *every* stage. The flag's
@@ -1030,6 +1063,17 @@ public class ProcessProbe {
       double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
       double solventC, int trays, double bara, double stageC, double tolerance, String solver,
       boolean reactive) {
+    absorberRow(label, gasNames, gasZ, gasKgPerHour, gasC, solventNames, solventZ,
+        solventKgPerHour, solventC, trays, bara, stageC, tolerance, solver, reactive, null, null,
+        0.0);
+  }
+
+  /// The full row, with the Murphree pair the efficiency rows carry and every other row leaves
+  /// null.
+  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
+      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
+      double solventC, int trays, double bara, double stageC, double tolerance, String solver,
+      boolean reactive, Double murphree, String componentName, double componentEfficiency) {
     Stream gas = feedMass("gas", gasNames, gasZ, gasC + 273.15, bara, gasKgPerHour);
     Stream solvent = feedMass("solvent", solventNames, solventZ, solventC + 273.15, bara,
         solventKgPerHour);
@@ -1069,6 +1113,14 @@ public class ProcessProbe {
     column.setMaxNumberOfIterations(80, true);
     column.setSolverType(
         neqsim.process.equipment.distillation.DistillationColumn.SolverType.valueOf(solver));
+    // **Before the solve**, which is what `setDoInitializion`'s effect requires - the efficiencies
+    // are read by `applyMurphreeCorrection` on every sweep.
+    if (murphree != null) {
+      column.setMurphreeEfficiency(murphree);
+    }
+    if (componentName != null) {
+      column.setComponentMurphreeEfficiency(componentName, componentEfficiency);
+    }
     // **Through a `ProcessSystem`, which is how the class's own tests drive it**: the two feeds
     // are units in the flowsheet and the column runs after them, where a direct `column.run()`
     // leaves the tray inlets in a state the tests never see.
@@ -1100,6 +1152,30 @@ public class ProcessProbe {
         flags.append(column.getTray(i).isUseReactiveFlash() ? "1" : "0");
       }
       System.out.println(flags);
+    }
+    // **The resolved efficiency, per stage and per component.** `getMurphreeEfficiency(stage)`
+    // is the base's two-step resolution and `getComponentMurphreeEfficiency(stage, name)` the
+    // absorber's third, so these two lines are what the override actually reads - the request
+    // the row stated is not, once a component has its own value.
+    if (murphree != null || componentName != null) {
+      StringBuilder resolved = new StringBuilder("tray_murphree_efficiency=");
+      for (int i = 0; i < column.getNumberOfTrays(); i++) {
+        if (i > 0) {
+          resolved.append(' ');
+        }
+        resolved.append(column.getMurphreeEfficiency(i));
+      }
+      System.out.println(resolved);
+      if (componentName != null) {
+        StringBuilder byComponent = new StringBuilder("component_murphree_efficiency=");
+        for (int i = 0; i < column.getNumberOfTrays(); i++) {
+          if (i > 0) {
+            byComponent.append(' ');
+          }
+          byComponent.append(column.getComponentMurphreeEfficiency(i, componentName));
+        }
+        System.out.println(byComponent);
+      }
     }
     System.out.println("gas_in_mol_per_sec=" + gas.getFlowRate("mol/sec"));
     System.out.println("solvent_in_mol_per_sec=" + solvent.getFlowRate("mol/sec"));

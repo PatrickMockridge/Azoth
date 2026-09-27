@@ -423,9 +423,38 @@ def _absorption_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     rather than a scalar - and the capture prints the same four keys per tray, so the first tray
     that moved is the layer the diff names.
     """
-    from azoth.process.reference.distillation_column import _feed, _states
+    from azoth.process.reference.distillation_column import (
+        _AbsorberMurphree,
+        _feed,
+        _Murphree,
+        _states,
+    )
 
     components = [str(name) for name in inputs["gas_components"]]
+    # **The absorber's own correction**, which replaces the base's when either efficiency is
+    # stated - the dispatch's rule, mirrored here so a case that states one reaches the same
+    # arithmetic through either door.
+    murphree = (
+        None
+        if "murphree_efficiency" not in inputs and "component_murphree_efficiency" not in inputs
+        else _AbsorberMurphree(
+            base=_Murphree(
+                column_wide=_Murphree.clamp(
+                    1.0
+                    if "murphree_efficiency" not in inputs
+                    else float(inputs["murphree_efficiency"])
+                ),
+                per_stage=None,
+            ),
+            per_component=(
+                None
+                if "component_murphree_efficiency" not in inputs
+                else tuple(
+                    _Murphree.clamp(float(v)) for v in inputs["component_murphree_efficiency"]
+                )
+            ),
+        ).checked(len(components))
+    )
     states = _states(
         components,
         float(inputs["gas_n"]),
@@ -457,6 +486,7 @@ def _absorption_column(inputs: Mapping[str, Any]) -> dict[str, float]:
             if "tray_temperatures" not in inputs
             else tuple(float(v) for v in inputs["tray_temperatures"])
         ),
+        absorber_murphree=murphree,
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -473,9 +503,36 @@ def _stripping_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     The same layer as the absorber's, because the class is the same machine: `StrippingColumn`
     renames the two inlets and the two products and adds no equations.
     """
-    from azoth.process.reference.distillation_column import _feed, _states
+    from azoth.process.reference.distillation_column import (
+        _AbsorberMurphree,
+        _feed,
+        _Murphree,
+        _states,
+    )
 
     components = [str(name) for name in inputs["stripping_gas_components"]]
+    # The inherited override, exactly as the absorber's own is built.
+    murphree = (
+        None
+        if "murphree_efficiency" not in inputs and "component_murphree_efficiency" not in inputs
+        else _AbsorberMurphree(
+            base=_Murphree(
+                column_wide=_Murphree.clamp(
+                    1.0
+                    if "murphree_efficiency" not in inputs
+                    else float(inputs["murphree_efficiency"])
+                ),
+                per_stage=None,
+            ),
+            per_component=(
+                None
+                if "component_murphree_efficiency" not in inputs
+                else tuple(
+                    _Murphree.clamp(float(v)) for v in inputs["component_murphree_efficiency"]
+                )
+            ),
+        ).checked(len(components))
+    )
     states = _states(
         components,
         float(inputs["stripping_gas_n"]),
@@ -507,6 +564,7 @@ def _stripping_column(inputs: Mapping[str, Any]) -> dict[str, float]:
             if "tray_temperatures" not in inputs
             else tuple(float(v) for v in inputs["tray_temperatures"])
         ),
+        absorber_murphree=murphree,
     )
     layers: dict[str, float] = {}
     for i in range(len(states.tray_temperature)):
@@ -620,9 +678,7 @@ def _distillation_column(inputs: Mapping[str, Any]) -> dict[str, float]:
             draws=active_draws,
             pumparound_inlets=active_returns,
             murphree_efficiency=_murphree(
-                float(inputs["murphree_efficiency"])
-                if "murphree_efficiency" in inputs
-                else None,
+                float(inputs["murphree_efficiency"]) if "murphree_efficiency" in inputs else None,
                 inputs.get("tray_murphree_efficiency"),
                 int(inputs["number_of_stages"]),
             ),

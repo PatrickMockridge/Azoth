@@ -352,6 +352,10 @@ pub struct ColumnSetup {
     /// states the column-wide value and its per-stage overrides, and [`crate::column::murphree`]
     /// is the correction the sequential sweep applies.
     pub murphree_efficiency: Option<Murphree>,
+    /// **`AbsorptionColumn`'s own correction, which replaces the base's.** The class overrides
+    /// `applyMurphreeCorrection` to blend both phases and re-allocate the vapour moles, so a
+    /// setup carries one or the other and never both.
+    pub absorber_murphree: Option<crate::column::absorber_murphree::AbsorberMurphree>,
     /// **Where the solve starts**, or `None` for the class's own cold seed. A [`ColumnState`]
     /// installs every tray's vapour, liquid and temperature instead of [`seed_network`]'s
     /// linear profile.
@@ -663,6 +667,8 @@ struct Network {
     equilibrium: Vec<(Option<Stream>, Option<Stream>)>,
     /// The Murphree efficiency, or `None` for no correction at all.
     murphree_efficiency: Option<Murphree>,
+    /// The absorber's own correction, which replaces the base's when it is present.
+    absorber_murphree: Option<crate::column::absorber_murphree::AbsorberMurphree>,
     /// The pressure of each tray.
     pressures: Vec<Pressure>,
     /// The tray the feed enters.
@@ -839,7 +845,23 @@ impl Network {
         // Murphree correction reads the stage below's from here rather than from `gas`, which
         // is where the *corrected* vapour goes - the class's two are different objects.
         self.equilibrium[i] = (out.gas.clone(), out.liquid.clone());
-        if let Some(efficiency) = self.murphree_efficiency.as_ref() {
+        if let Some(efficiency) = self.absorber_murphree.as_ref() {
+            // **`AbsorptionColumn`'s override, and its `below` is the tray's *gas* inlet**:
+            // `gasInStream` at stage 0 and `getTray(trayIndex - 1).getThermoSystem()` above it -
+            // the stage below's flash, not its corrected outlet.
+            let below = if i == 0 {
+                Some(self.feed.clone())
+            } else {
+                self.equilibrium[i - 1].0.clone()
+            };
+            let here = (out.gas.as_ref(), out.liquid.as_ref());
+            if let Some((gas, liquid)) =
+                crate::column::absorber_murphree::correct(here, below.as_ref(), efficiency, i)?
+            {
+                out.gas = Some(gas);
+                out.liquid = Some(liquid);
+            }
+        } else if let Some(efficiency) = self.murphree_efficiency.as_ref() {
             let effective = efficiency.resolve(i);
             if corrects(i, self.tray_count, self.has_condenser, effective) {
                 let below = self.equilibrium[i - 1].clone();
@@ -1085,6 +1107,7 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         liquid: vec![None; tray_count],
         equilibrium: vec![(None, None); tray_count],
         murphree_efficiency: setup.murphree_efficiency.clone(),
+        absorber_murphree: setup.absorber_murphree.clone(),
         pressures,
         feed_stage: setup.feed_stage,
         tray_count,
@@ -1166,7 +1189,7 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     // The enthalpy closure is the same statement with the same cause: what a corrected stage
     // hands up carries the flash's *moles* at the blend's composition, so the duties read off the
     // tray terminals do not close against the feed either.
-    let conserving = setup.murphree_efficiency.is_none();
+    let conserving = setup.murphree_efficiency.is_none() && setup.absorber_murphree.is_none();
     if temperature_residual > setup.temperature_tolerance
         || (conserving && mass_residual > MASS_BALANCE_TOLERANCE)
         || (conserving && energy_residual > ENTHALPY_BALANCE_TOLERANCE)
@@ -1196,21 +1219,22 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     // it on the very rows that carry them.
     net.gas[tray_count - 1] = Some(distillate.clone());
     net.liquid[0] = Some(bottoms.clone());
-    let (reboiler_duty, condenser_duty) = if setup.murphree_efficiency.is_some() {
-        let reboiler = if setup.has_reboiler {
-            net.outlet_enthalpy(0) - net.inlet_enthalpy(0)
+    let (reboiler_duty, condenser_duty) =
+        if setup.murphree_efficiency.is_some() || setup.absorber_murphree.is_some() {
+            let reboiler = if setup.has_reboiler {
+                net.outlet_enthalpy(0) - net.inlet_enthalpy(0)
+            } else {
+                0.0
+            };
+            let condenser = if setup.has_condenser {
+                net.outlet_enthalpy(tray_count - 1) - net.inlet_enthalpy(tray_count - 1)
+            } else {
+                0.0
+            };
+            (reboiler, condenser)
         } else {
-            0.0
+            (reboiler_duty, condenser_duty)
         };
-        let condenser = if setup.has_condenser {
-            net.outlet_enthalpy(tray_count - 1) - net.inlet_enthalpy(tray_count - 1)
-        } else {
-            0.0
-        };
-        (reboiler, condenser)
-    } else {
-        (reboiler_duty, condenser_duty)
-    };
 
     let trays: Vec<TrayProfile> = (0..tray_count)
         .map(|i| TrayProfile {

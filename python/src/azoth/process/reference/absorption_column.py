@@ -22,7 +22,9 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.process.reference.distillation_column import (
     UNPORTED_SOLVERS,
+    _AbsorberMurphree,
     _feed,
+    _Murphree,
     _si,
     _states,
     reactive_section,
@@ -95,8 +97,27 @@ def absorption_column(
 
     See :func:`azoth.process.reference.distillation_column._states`.
     """
-    _refuse_unported(
-        murphree_efficiency, component_murphree_efficiency, max_allowable_gas_load_factor
+    _refuse_unported(max_allowable_gas_load_factor)
+    # **The two efficiency fields, resolved and clamped.** `AbsorptionColumn` inherits the
+    # base's two setters and adds `setComponentMurphreeEfficiency`'s map, so the correction reads
+    # component, then per-tray, then column-wide; the per-tray-per-component map the class's
+    # other overload writes has no palette spelling and is not carried.
+    murphree = (
+        None
+        if murphree_efficiency is None and component_murphree_efficiency is None
+        else _AbsorberMurphree(
+            base=_Murphree(
+                column_wide=_Murphree.clamp(
+                    1.0 if murphree_efficiency is None else murphree_efficiency
+                ),
+                per_stage=None,
+            ),
+            per_component=(
+                None
+                if component_murphree_efficiency is None
+                else tuple(_Murphree.clamp(v) for v in component_murphree_efficiency)
+            ),
+        ).checked(len(gas_components))
     )
     if solver_type is not None and solver_type not in ("direct_substitution", "naphtali_sandholm"):
         raise InvalidInputError(
@@ -174,6 +195,7 @@ def absorption_column(
         ),
         tray_temperatures=None if tray_temperatures is None else tuple(tray_temperatures),
         reactive=reactive_section(reactive, reactive_start_tray, reactive_end_tray),
+        absorber_murphree=murphree,
     )
 
     return AbsorptionColumnResult(
@@ -206,31 +228,14 @@ def _spec() -> dict[str, object]:
     return models.model("process.absorption_column")
 
 
-def _refuse_unported(
-    murphree_efficiency: float | None,
-    component_murphree_efficiency: list[float] | None,
-    max_allowable_gas_load_factor: float | None,
-) -> None:
-    """Refuse every parameter the palette declares and this stage does not implement."""
-    if murphree_efficiency is not None:
-        raise InvalidInputError(
-            "murphree_efficiency",
-            f"a Murphree efficiency of {murphree_efficiency} is not ported: "
-            f"`SimpleTray.setMurphreeEfficiency` and the per-tray correction "
-            f"`applyMurphreeCorrection` applies are the classes that would close it. Omitted "
-            f"means the ideal stage, which is the class's own default of one",
-        )
-    if component_murphree_efficiency is not None:
-        raise InvalidInputError(
-            "component_murphree_efficiency",
-            f"{len(component_murphree_efficiency)} component Murphree efficiencies are not "
-            f"ported: `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)` "
-            f"and the `applyMurphreeCorrection` override it feeds are the classes that would "
-            f"close them",
-        )
-    # The design limit: read by `isGasLoadFactorWithinDesignLimit`,
-    # `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit`, and by nothing on
-    # the run path - so it is accepted and the separation is indifferent to it.
+def _refuse_unported(max_allowable_gas_load_factor: float | None) -> None:
+    """The one parameter still declared and refused: the gas-load factor.
+
+    The class *accepts* it and no part of ``run`` reads it - read by
+    ``isGasLoadFactorWithinDesignLimit``, ``getGasLoadFactorUtilization`` and
+    ``getMinimumDiameterForGasLoadLimit`` alone - so the model carries it as a declaration the
+    solve is indifferent to.
+    """
     _ = max_allowable_gas_load_factor
 
 

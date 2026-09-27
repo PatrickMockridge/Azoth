@@ -9,6 +9,8 @@ use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
 
+use crate::column::absorber_murphree::AbsorberMurphree;
+use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::kernels::absorption_column::AbsorberSetup;
@@ -165,11 +167,28 @@ pub fn absorption_column(
     reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
 ) -> Result<AbsorptionColumnResult> {
-    refuse_unported(
-        murphree_efficiency,
-        component_murphree_efficiency,
-        max_allowable_gas_load_factor,
-    )?;
+    refuse_unported(max_allowable_gas_load_factor)?;
+    // **The two efficiency fields, resolved and clamped.** `AbsorptionColumn` inherits the
+    // base's two setters and adds `setComponentMurphreeEfficiency`'s map, so the correction
+    // reads component → per-tray → column-wide in that order; the per-tray-per-component map
+    // `setComponentMurphreeEfficiency(int, String, double)` writes has no palette spelling and
+    // is not carried.
+    let murphree = if murphree_efficiency.is_none() && component_murphree_efficiency.is_none() {
+        None
+    } else {
+        Some(
+            AbsorberMurphree {
+                base: Murphree {
+                    column_wide: Murphree::clamp(murphree_efficiency.unwrap_or(1.0)),
+                    per_stage: None,
+                },
+                per_component: component_murphree_efficiency
+                    .map(|values| values.iter().copied().map(Murphree::clamp).collect()),
+            }
+            .checked(gas_components.len())?
+            .clone(),
+        )
+    };
     let solver = match solver_type.unwrap_or("direct_substitution") {
         "direct_substitution" => SolverType::DirectSubstitution,
         "naphtali_sandholm" => SolverType::NaphtaliSandholm,
@@ -228,6 +247,7 @@ pub fn absorption_column(
         top_pressure,
         bottom_pressure,
         tray_temperatures: tray_temperatures.map(<[f64]>::to_vec),
+        murphree,
         temperature_tolerance,
         max_iterations,
         solver_type: solver,
@@ -245,41 +265,15 @@ pub fn absorption_column(
 
 /// Refuse every parameter the palette declares and this stage does not implement.
 ///
-/// **Declared and refused, rather than withdrawn**, as `process.distillation_column`'s own
-/// refusals are: a form field that errors with the class that would close it beats one that is
-/// silently absent. The gas-load factor is the third shape: the class *accepts* it and no part
-/// of `run` reads it, so the model carries it as a declaration the solve is indifferent to.
+/// **The one parameter still declared and refused.**
+///
+/// The two Murphree efficiencies are now ported, so this is what is left: the gas-load factor,
+/// which the class *accepts* and no part of `run` reads - so the model carries it as a
+/// declaration the solve is indifferent to.
 ///
 /// # Errors
-/// [`AzothError::InvalidInput`] for a Murphree efficiency of either kind.
-fn refuse_unported(
-    murphree_efficiency: Option<f64>,
-    component_murphree_efficiency: Option<&[f64]>,
-    max_allowable_gas_load_factor: Option<f64>,
-) -> Result<()> {
-    if let Some(efficiency) = murphree_efficiency {
-        return Err(AzothError::invalid_input(
-            "murphree_efficiency",
-            format!(
-                "a Murphree efficiency of {efficiency} is not ported: \
-                 `SimpleTray.setMurphreeEfficiency` and the per-tray correction `applyMurphreeCorrection` \
-                 applies are the classes that would close it. Omitted means the ideal stage, \
-                 which is the class's own default of one"
-            ),
-        ));
-    }
-    if let Some(efficiencies) = component_murphree_efficiency {
-        return Err(AzothError::invalid_input(
-            "component_murphree_efficiency",
-            format!(
-                "{} component Murphree efficiencies are not ported: \
-                 `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)` and the \
-                 `applyMurphreeCorrection` override it feeds are the classes that would close \
-                 them",
-                efficiencies.len()
-            ),
-        ));
-    }
+/// Never, which is the point: the argument is read and discarded.
+fn refuse_unported(max_allowable_gas_load_factor: Option<f64>) -> Result<()> {
     // The design limit: read by `isGasLoadFactorWithinDesignLimit`, \
     // `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit`, and by nothing on
     // the run path - so it is accepted and the separation is indifferent to it.

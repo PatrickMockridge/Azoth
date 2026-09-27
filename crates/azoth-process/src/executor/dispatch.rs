@@ -715,6 +715,9 @@ fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
             top_pressure: pascals(p.si("top_pressure")?),
             bottom_pressure: pascals(p.si("bottom_pressure")?),
             tray_temperatures: None,
+            // The absorber's two efficiencies reach the model's own flat signature; a form
+            // declares neither.
+            murphree: None,
             temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
             max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,
@@ -744,6 +747,9 @@ fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
             top_pressure: pascals(p.si("top_pressure")?),
             bottom_pressure: pascals(p.si("bottom_pressure")?),
             tray_temperatures: None,
+            // The absorber's two efficiencies reach the model's own flat signature; a form
+            // declares neither.
+            murphree: None,
             temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
             max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,
@@ -935,6 +941,8 @@ fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::Column
         murphree_efficiency: p
             .optional_number("murphree_efficiency")?
             .map(crate::column::murphree::Murphree::from_column_wide),
+        // `AbsorptionColumn`'s override is the absorber entries' and not the column's.
+        absorber_murphree: None,
         // A flowsheet's column takes the class's cold seed; a warm start is the divergence
         // instrument's and the tear's.
         initial_state: None,

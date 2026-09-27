@@ -56,6 +56,20 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe column_divergence \
   > captures/process_column_divergence.tsv
 ```
 
+**`ProcessProbe absorber_efficiency` is the absorber's Murphree override, and NeqSim's own solve
+does not converge with it.** It runs the lean-oil absorber at `0.6` column-wide and at `1.0` with
+methane overridden to `0.6`: **both take the 80-iteration cap**, reporting `FAILED` and
+`FALLBACK_PRODUCTS` with temperature residuals of `3.25` and `22.66` K - where the same state with
+no correction converges in 17 passes at `9.4e-5` and `RIGOROUS_CONVERGED`. So the correction is
+what breaks it, and this capture is **evidence of a divergence rather than an oracle for a state**.
+What it does pin to its own numbers is the resolution the override reads, printed per stage as
+`tray_murphree_efficiency=` and `component_murphree_efficiency=`.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe absorber_efficiency \
+  > captures/process_absorber_efficiency.tsv
+```
+
 **`ProcessProbe column_divergence` is the Murphree divergence instrument.** It runs the same
 binary column at `0.6` and `0.85` and prints two things `process_column.tsv` does not carry: the
 class's per-pass `getConvergenceHistory()`, and per tray the *flashed* system's two phase

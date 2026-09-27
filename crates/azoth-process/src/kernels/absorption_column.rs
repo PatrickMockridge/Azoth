@@ -19,6 +19,7 @@ use azoth_core::{AzothError, Result};
 use super::distillation_column::{
     ColumnOutcome, ColumnSetup, ReactiveSection, SolverType, TrayProfile,
 };
+use crate::column::absorber_murphree::AbsorberMurphree;
 use crate::stream::Stream;
 
 /// What an absorber's solve hands back: the profile and the two products.
@@ -57,6 +58,10 @@ pub struct AbsorberSetup {
     pub bottom_pressure: Pressure,
     /// One outlet-temperature pin per tray, `NaN` where a tray has none.
     pub tray_temperatures: Option<Vec<f64>>,
+    /// **The absorber's own Murphree correction**, or `None` for the ideal stage.
+    /// `AbsorptionColumn.applyMurphreeCorrection` replaces the base's, so this is not the same
+    /// field as the distillation column's.
+    pub murphree: Option<AbsorberMurphree>,
     /// The convergence tolerance on the mean tray-temperature change.
     pub temperature_tolerance: f64,
     /// The iteration cap.
@@ -96,8 +101,9 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         max_iterations: setup.max_iterations,
         // **The absorber's correction is an override rather than this one**: `AbsorptionColumn
         // .applyMurphreeCorrection` corrects both phases and takes a per-component efficiency,
-        // so its own two parameters are `AbsorberSetup`'s and this is the base's.
+        // so it is carried separately and the base's is left unset.
         murphree_efficiency: None,
+        absorber_murphree: setup.murphree.clone(),
         // The class's own cold seed: a warm start arrives with the divergence instrument.
         initial_state: None,
         top_specification: None,

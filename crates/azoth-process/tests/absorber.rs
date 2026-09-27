@@ -2,6 +2,8 @@
 
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
+use azoth_process::column::absorber_murphree::AbsorberMurphree;
+use azoth_process::column::murphree::Murphree;
 use azoth_process::kernels::distillation_column::{ColumnSetup, SolverType, distillation_column};
 
 fn relative(actual: f64, expected: f64, tolerance: f64, what: &str) {
@@ -168,6 +170,7 @@ fn lean_oil() -> ColumnSetup {
         reboiler_temperature: None,
         temperature_tolerance: 1.0e-4,
         murphree_efficiency: None,
+        absorber_murphree: None,
         initial_state: None,
         max_iterations: 80,
         top_specification: None,
@@ -230,6 +233,7 @@ fn hydrocarbon_stripper() -> ColumnSetup {
         reboiler_temperature: None,
         temperature_tolerance: 1.0e-4,
         murphree_efficiency: None,
+        absorber_murphree: None,
         initial_state: None,
         max_iterations: 80,
         top_specification: None,
@@ -398,6 +402,7 @@ fn a_reactive_absorber_on_a_fluid_that_does_not_react_is_the_same_column() {
         reboiler_temperature: None,
         temperature_tolerance: 1.0e-4,
         murphree_efficiency: None,
+        absorber_murphree: None,
         initial_state: None,
         max_iterations: 80,
         top_specification: None,
@@ -448,5 +453,81 @@ fn a_reactive_absorber_on_a_fluid_that_does_not_react_is_the_same_column() {
     assert_eq!(
         plain.iterations, reactive.iterations,
         "the two routes take the same number of passes"
+    );
+}
+
+/// **The absorber's Murphree override, and NeqSim's own solve does not converge with it.**
+///
+/// `validation/neqsim/captures/process_absorber_efficiency.tsv` runs the uncorrected row's own
+/// lean-oil state twice: at `0.6` column-wide, and at `1.0` column-wide with **methane** overridden
+/// to `0.6` through `setComponentMurphreeEfficiency(String, double)`. NeqSim takes the
+/// 80-iteration cap on both, reporting `FAILED` and `FALLBACK_PRODUCTS` with temperature residuals
+/// of `3.25` and `22.66` K - where the same state with no correction converges in 17 passes at
+/// `9.4e-5` and `RIGOROUS_CONVERGED`. **The correction is what breaks it.**
+///
+/// This port converges on the same state in seven passes at `6.5e-3`, so the row is evidence of a
+/// divergence rather than an oracle - the same family as the `0_85` column row, and asserted as
+/// one: what is pinned is that the port *reaches* a state at the row's own gate, that the state
+/// **moves** when the correction is stated (so a port that dropped the parameter would fail here),
+/// and the resolution the override reads.
+///
+/// **The correction's arithmetic is oracled at the kernel instead**, where it can be: the
+/// allocator's limiting-component loop is `column::absorber_murphree`'s own unit test, because
+/// the class invalidates both caches at the end of a solve and a capture can never show them.
+#[test]
+fn the_absorbers_murphree_override_converges_where_the_class_does_not() {
+    // **Both sides at the row's own gate**, so the comparison is between two states and not
+    // between a converged one and a partial one.
+    let mut uncorrected = lean_oil();
+    uncorrected.temperature_tolerance = 1.0e-2;
+    let plain = distillation_column(&uncorrected).expect("the uncorrected row converges");
+
+    let mut setup = lean_oil();
+    setup.temperature_tolerance = 1.0e-2;
+    setup.absorber_murphree = Some(AbsorberMurphree {
+        base: Murphree::from_column_wide(0.6),
+        per_component: None,
+    });
+    let corrected = distillation_column(&setup)
+        .expect("this port reaches the row's gate where the class takes its iteration cap");
+
+    // **The correction bites**, which is what a dropped parameter would not do - and it bites
+    // *weakly*, which is the measurement: this absorber is liquid-film limited, so an efficiency
+    // on the vapour blend moves the top tray's methane by `5.3e-4` and no more. A threshold
+    // above that would pass a port that had dropped the parameter.
+    assert!(
+        (corrected.trays[4].gas_z[0] - plain.trays[4].gas_z[0]).abs() > 1.0e-4,
+        "the override moves the profile: {} against {}",
+        corrected.trays[4].gas_z[0],
+        plain.trays[4].gas_z[0]
+    );
+    assert!(
+        corrected.temperature_residual <= 1.0e-2,
+        "the row's own gate is met: {}",
+        corrected.temperature_residual
+    );
+
+    // **And the resolution, which is what the capture pins to its own numbers.**
+    // `getComponentMurphreeEfficiency` reads the component's own value, then the base's two
+    // steps - so a component at `0.6` under a column-wide `1.0` resolves to `0.6` for that
+    // component and `1.0` for the others.
+    let resolved = AbsorberMurphree {
+        base: Murphree::from_column_wide(1.0),
+        per_component: Some(vec![0.6, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN]),
+    };
+    assert_eq!(resolved.resolve(2, 0), 0.6, "methane's own value");
+    assert_eq!(
+        resolved.resolve(2, 1),
+        1.0,
+        "and every other component falls through"
+    );
+    assert_eq!(
+        AbsorberMurphree {
+            base: Murphree::from_column_wide(0.6),
+            per_component: None,
+        }
+        .resolve(4, 3),
+        0.6,
+        "and with no component map it is the base's own resolution"
     );
 }
