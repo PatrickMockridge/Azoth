@@ -15,13 +15,19 @@
  * cargo run -p azoth-cli -- edit --flowsheet specs/flowsheets/demo.toml \
  *     --command '{"command":"set_position","node":"instance:sep1","x":1234,"y":56}' \
  *     --run --json > ui/test/fixtures/envelope.json
+ * cargo run -p azoth-cli -- edit --flowsheet specs/flowsheets/demo.toml \
+ *     --command '{"command":"remove_instance","id":"hx1"}' --json > ui/test/fixtures/broken.json
  * ```
  *
  * The edit is a **position**, which is why the assertions below can say that one gesture is in the
  * document *and* in the graph: it is a command that changes the layout and nothing else, so the run
  * it reports is the shipped demo's own.
  *
- * The fixtures are committed, so the check runs with no Rust toolchain and no wasm build.
+ * The fixtures are committed, so the check runs with no Rust toolchain and no wasm build — and
+ * `currency.test.ts` is what keeps them from becoming a copy of a library that has moved: it asks
+ * the module `npm run wasm` just built for the same three documents and compares. It was already
+ * stale when that test was written — the catalogue fixture named `mol/s` where the shipped column
+ * spec had been corrected to `mol/hr` — and nothing in the tree could see it.
  */
 
 import { describe, expect, it } from "vitest";

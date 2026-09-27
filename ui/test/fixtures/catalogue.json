@@ -2409,7 +2409,7 @@
           "values": []
         },
         {
-          "description": "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty",
+          "description": "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/hr for a product flow, W for a duty",
           "dimension": null,
           "kind": "quantity",
           "name": "top_specification_target",
@@ -2779,7 +2779,7 @@
           "values": []
         },
         {
-          "description": "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/s for a product flow, W for a duty",
+          "description": "the target value, in the unit its type implies: dimensionless for a purity, a recovery or a reflux ratio, mol/hr for a product flow, W for a duty",
           "dimension": null,
           "kind": "quantity",
           "name": "top_specification_target",
