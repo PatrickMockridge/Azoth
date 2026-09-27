@@ -280,6 +280,21 @@ def test_every_message_the_server_writes_is_the_shape_its_revision_names(server:
             current,
             "CallToolResult",
         ),
+        # **The resource surface**, which is a read and not an edit: the list, one read, and a URI
+        # this server does not publish - the last a bad request rather than a result.
+        ("resources/list", modern(10, "resources/list"), current, "ListResourcesResult"),
+        (
+            "resources/read",
+            modern(11, "resources/read", {"uri": "azoth://document"}),
+            current,
+            "ReadResourceResult",
+        ),
+        (
+            "an unknown resource",
+            modern(12, "resources/read", {"uri": "azoth://secrets"}),
+            current,
+            "JSONRPCErrorResponse",
+        ),
         # An unknown method is the envelope, which is why it is validated as one.
         ("an unknown method", modern(7, "tools/write"), current, "JSONRPCErrorResponse"),
         (

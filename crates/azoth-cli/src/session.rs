@@ -17,7 +17,7 @@ use std::path::Path;
 use azoth_core::{AzothError, Result};
 use azoth_process::middleware::command::Command;
 use azoth_process::middleware::session::Workspace;
-use azoth_process::middleware::{self, envelope, tools};
+use azoth_process::middleware::{self, envelope, resources, tools};
 use azoth_process::{ExecutionOrder, UnitOpSpec, load_palette};
 use serde_json::{Value, json};
 
@@ -70,6 +70,23 @@ impl Session {
         let document =
             middleware::catalogue(&self.palette, with_tools).map_err(|error| error.to_string())?;
         serde_json::from_str(&document).map_err(|error| error.to_string())
+    }
+
+    /// **Read one resource**, or `None` for a URI this server does not publish.
+    ///
+    /// **A read and not an edit**, which is the whole claim: this takes `&self` where every other
+    /// call takes `&mut self`, so a resource surface cannot be a second way to change a document -
+    /// the borrow checker is what enforces `docs/src/calculus/session.md`'s third claim rather
+    /// than a reviewer.
+    #[must_use]
+    pub fn read_resource(&self, uri: &str) -> Option<resources::Reading> {
+        resources::read(&self.workspace, &self.palette, uri)
+    }
+
+    /// The resources this server publishes, and whether each is a fact about the document.
+    #[must_use]
+    pub fn resources(&self) -> &'static [resources::Resource] {
+        &resources::RESOURCES
     }
 
     /// One tool call: the envelope, or the sentence that refused the call.

@@ -192,3 +192,74 @@ fn an_envelope_is_one_document_of_the_layers_below_it() {
         *workspace.flowsheet()
     );
 }
+
+// --- the resources ------------------------------------------------------------
+
+/// A read answers with text, and the report's text is about the *values*, not the document.
+#[test]
+fn the_report_resource_says_which_state_the_values_are_in() {
+    use azoth_process::middleware::resources;
+
+    let mut workspace = opened();
+    let read = |workspace: &Workspace, uri: &str| {
+        resources::read(workspace, &palette(), uri).expect("a published resource")
+    };
+
+    // **Never run.** The values are absent rather than stale, and the two are different sentences
+    // because they are different next steps: one is "run it", the other "run it again".
+    let unrun = read(&workspace, "azoth://report");
+    assert_eq!(unrun.text, "the document has not run");
+    assert!(unrun.dirty, "a document with no values is not current");
+
+    // **Run.** Now there are values, and they are the document's.
+    workspace.run().expect("the shipped document runs");
+    let current = read(&workspace, "azoth://report");
+    assert!(!current.dirty);
+    let report: serde_json::Value =
+        serde_json::from_str(&current.text).expect("the report is JSON");
+    assert_eq!(report["converged"], true);
+
+    // **Edited without a run, which is the state the flag exists for.** The values describe the
+    // document as it was before the edit, so the read answers with a sentence rather than with a
+    // number a client would cache - and it is the same `dirty` the envelope carries.
+    workspace
+        .apply(&Command::SetParameter {
+            instance: "p1".into(),
+            name: "outlet_pressure".into(),
+            value: serde_json::json!(3.0e6),
+        })
+        .expect("the edit lands");
+    let stale = read(&workspace, "azoth://report");
+    assert!(stale.dirty);
+    assert!(stale.text.contains("nothing current"), "{}", stale.text);
+    // And the values are still *there*: the flag marks them, it does not delete them - which is
+    // why the text has to say so rather than the absence saying it.
+    assert!(workspace.report().is_some());
+}
+
+/// The other three resources, and the stamp on each.
+#[test]
+fn the_other_resources_answer_with_their_own_text() {
+    use azoth_process::middleware::resources;
+
+    let workspace = opened();
+    let palette = palette();
+    let document = resources::read(&workspace, &palette, "azoth://document").expect("published");
+    assert!(document.text.contains("[[instances]]"), "{}", document.text);
+    assert_eq!(document.mime_type, "application/toml");
+
+    let diagnostics =
+        resources::read(&workspace, &palette, "azoth://diagnostics").expect("published");
+    let records: Vec<serde_json::Value> =
+        serde_json::from_str(&diagnostics.text).expect("records are JSON");
+    assert!(records.is_empty(), "the shipped document is sound");
+
+    let catalogue = resources::read(&workspace, &palette, "azoth://catalogue").expect("published");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&catalogue.text).expect("the catalogue is JSON");
+    assert_eq!(parsed["unit_ops"].as_array().expect("an array").len(), 29);
+
+    // A URI this server does not publish is `None` rather than an error: the transport answers it
+    // as a bad request, which is what a client's mistake about a name is.
+    assert!(resources::read(&workspace, &palette, "azoth://secrets").is_none());
+}

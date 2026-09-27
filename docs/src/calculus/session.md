@@ -72,10 +72,20 @@ prevent", stated as the thing the operation returns.*
 given, unchanged, for every resource — so a resource surface cannot become a second way to change
 a document.
 
-*Status: **specified**. `Azoth/Session.lean` carries the operator — `Azoth.Session.read` over a
-closed set of resources, and `Azoth.Session.reading_leaves_the_state_alone` — and the *thing it
-would operate on* is not built: `azoth mcp` and `azoth serve` serve tools, and no resource is
-published. That is the reading [Reflection and feedback](./rho.md) takes of its own unbuilt half,
-and the tranche that publishes the surface is the one that flips this line to proved.*
+*Status: **proved**, and in three places rather than one.* `Azoth.Session.read` is the operator —
+a closed set of resources and a pair of states — and `Azoth.Session.reading_leaves_the_state_alone`
+is the claim about it. In the implementation the same thing is a **signature**:
+`crates/azoth-cli/src/session.rs`'s `read_resource` takes `&self` where every tool call takes
+`&mut self`, so a resource path that changed a document would not compile. And the surface is
+published: `crates/azoth-process/src/middleware/resources.rs` declares the four resources,
+`azoth mcp` and `POST /mcp` answer `resources/list` and `resources/read`, and
+`crates/azoth-cli/tests/mcp.rs` reads every one of them around an edit and finds the document
+unchanged.
+
+**And the read carries the stamp that makes a cache answerable.** Every read reports the same
+`dirty` flag the envelope does, and the report resource answers with a sentence rather than with
+values while it is set — because a client that caches a report read before an edit is holding a
+number the session has already disowned, which is the mistake the flag exists to prevent, one
+layer out where the reader is a cache rather than a person.
 
 *Enforcement: construction — `crates/azoth-process/src/check.rs` decides a connection's legality and names the field when it refuses, `crates/azoth-cli/src/session.rs` is the one session every transport calls, and `crates/azoth-process/src/middleware/session.rs` is where an edit sets the flag the claim above is about.*

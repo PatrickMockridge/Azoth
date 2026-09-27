@@ -79,11 +79,42 @@ const META_VERSION: &str = "io.modelcontextprotocol/protocolVersion";
 const META_CAPABILITIES: &str = "io.modelcontextprotocol/clientCapabilities";
 
 /// The methods the current revision defines, for a refusal to name.
-const MODERN_METHODS: [&str; 3] = ["server/discover", "tools/list", "tools/call"];
+const MODERN_METHODS: [&str; 5] = [
+    "server/discover",
+    "tools/list",
+    "tools/call",
+    "resources/list",
+    "resources/read",
+];
 
 /// The methods the handshake revisions define. **`ping` is here and not above**: the schema for
 /// `2026-07-28` defines no `PingRequest`, so a modern client has `server/discover` instead.
-const LEGACY_METHODS: [&str; 4] = ["initialize", "ping", "tools/list", "tools/call"];
+const LEGACY_METHODS: [&str; 6] = [
+    "initialize",
+    "ping",
+    "tools/list",
+    "tools/call",
+    "resources/list",
+    "resources/read",
+];
+
+/// **How long a read may be cached, in milliseconds.**
+///
+/// The two are the two kinds of fact this server answers with. `azoth://catalogue` is a property
+/// of the *library* - the palette, the units and the substances - and is the same for every client
+/// this process serves, so an hour is a hint rather than a promise. The other three are properties
+/// of a *document*, which an edit changes, so a client may cache them for no time at all: the
+/// `dirty` stamp beside them is what says whether they are still true, and this is what says it
+/// may change on the next call.
+const TTL_LIBRARY: i64 = 3_600_000;
+const TTL_DOCUMENT: i64 = 0;
+
+/// The meta key a read stamps with whether the document has changed since it was computed.
+///
+/// **A server's own key must be domain-prefixed**, which is the specification's rule rather than a
+/// convention here, and it is the same flag the envelope carries: a client that caches a report
+/// read while this is true is caching an answer the session has already disowned.
+const META_DIRTY: &str = "io.azoth/dirty";
 
 /// Serve the tool schema over stdio, against one document.
 ///
@@ -268,7 +299,15 @@ impl Protocol {
                 id,
                 json!({
                     "supportedVersions": PROTOCOL_VERSIONS,
-                    "capabilities": { "tools": { "listChanged": false } },
+                    "capabilities": {
+                        "tools": { "listChanged": false },
+                        // **`subscribe` is false and not an omission.** A subscription is a
+                        // notification when a document changes, and this server has one client
+                        // per session: the answer to "has it changed" is the `dirty` stamp on
+                        // every read, which a client that cares polls, and there is no second
+                        // reader to notify. `resources/updated` is therefore not emitted.
+                        "resources": { "subscribe": false, "listChanged": false }
+                    },
                     "_meta": { "io.modelcontextprotocol/serverInfo": server_info() },
                     "instructions": INSTRUCTIONS,
                     "ttlMs": 3_600_000,
@@ -278,6 +317,8 @@ impl Protocol {
             ),
             "tools/list" => tools_list(session, id),
             "tools/call" => tools_call(session, id, request),
+            "resources/list" => resources_list(session, id),
+            "resources/read" => resources_read(session, id, request),
             // `ping` is not one of them, which is the schema's answer rather than a preference:
             // `2026-07-28` defines no `PingRequest`, and `server/discover` is what replaced it.
             other => unknown_method(id, other, &MODERN_METHODS),
@@ -290,6 +331,8 @@ impl Protocol {
             "ping" => result(id, json!({})),
             "tools/list" => tools_list(session, id),
             "tools/call" => tools_call(session, id, request),
+            "resources/list" => resources_list(session, id),
+            "resources/read" => resources_read(session, id, request),
             other => unknown_method(id, other, &LEGACY_METHODS),
         }
     }
@@ -347,6 +390,82 @@ fn tools_list(session: &Session, id: &Value) -> Value {
             "ttlMs": 3_600_000,
             // A property of this build and this palette, so a client may cache it for
             // the session but not across sessions.
+            "cacheScope": "private",
+        }),
+    )
+}
+
+/// The resources this server publishes.
+///
+/// **The list is a property of the build and not of a document**, so its own cache hint is the
+/// library's: the four URIs do not move when a document is edited, and each *read* carries the
+/// hint that says whether it does.
+fn resources_list(session: &Session, id: &Value) -> Value {
+    let list: Vec<Value> = session
+        .resources()
+        .iter()
+        .map(|resource| {
+            json!({
+                "uri": resource.uri,
+                "name": resource.name,
+                "description": resource.description,
+                "mimeType": resource.mime_type,
+            })
+        })
+        .collect();
+    result(
+        id,
+        json!({ "resources": list, "ttlMs": TTL_LIBRARY, "cacheScope": "private" }),
+    )
+}
+
+/// **One resource, read.** A read and not an edit: the call takes `&Session` where a tool call
+/// takes `&mut Session`, so nothing in this path can change the document.
+///
+/// **A URI this server does not publish is a bad request and not an error result**, because it is
+/// a client's mistake about a name rather than anything about the document - and the message lists
+/// what there is, which is what makes it a mistake a client can correct. Every *published* URI
+/// answers with text, including `azoth://report` before the document has run.
+fn resources_read(session: &Session, id: &Value, request: &Value) -> Value {
+    let Some(uri) = request.pointer("/params/uri").and_then(Value::as_str) else {
+        return error_response(
+            id,
+            INVALID_PARAMS,
+            "a `resources/read` carries a `uri`",
+            None,
+        );
+    };
+    let Some(reading) = session.read_resource(uri) else {
+        let known: Vec<&str> = session
+            .resources()
+            .iter()
+            .map(|resource| resource.uri)
+            .collect();
+        return error_response(
+            id,
+            INVALID_PARAMS,
+            &format!(
+                "`{uri}` is not a resource this server publishes: {}",
+                known.join(", ")
+            ),
+            None,
+        );
+    };
+    let ttl = if reading.uri == "azoth://catalogue" {
+        TTL_LIBRARY
+    } else {
+        TTL_DOCUMENT
+    };
+    result(
+        id,
+        json!({
+            "contents": [{
+                "uri": reading.uri,
+                "mimeType": reading.mime_type,
+                "text": reading.text,
+                "_meta": { META_DIRTY: reading.dirty },
+            }],
+            "ttlMs": ttl,
             "cacheScope": "private",
         }),
     )
