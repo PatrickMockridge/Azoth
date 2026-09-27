@@ -46,6 +46,12 @@ impl From<&Diagnostic> for DiagnosticRecord {
             Diagnostic::OverfedPort { count, .. } | Diagnostic::UnderfedPort { count, .. } => {
                 json!({ "count": count })
             }
+            // **The one diagnostic whose payload used to be a sentence.** A connection that does
+            // not fit carries the field and the two dimensions it found, so a canvas marks the
+            // field rather than the edge and an agent can read which side was which.
+            Diagnostic::TypeMismatch { mismatch, .. } => {
+                serde_json::to_value(mismatch).unwrap_or_else(|_| json!({}))
+            }
             _ => json!({}),
         };
         let location = diagnostic.location();

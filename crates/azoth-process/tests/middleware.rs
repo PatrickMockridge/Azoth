@@ -7,6 +7,7 @@
 
 use std::collections::BTreeMap;
 
+use azoth_process::check::Mismatch;
 use azoth_process::middleware::diagnostic::{DiagnosticRecord, records};
 use azoth_process::middleware::form::{FormSpec, dimension_id, forms};
 use azoth_process::middleware::graph::{Graph, Node, graph};
@@ -87,7 +88,11 @@ fn every_variant() -> Vec<Diagnostic> {
         Diagnostic::TypeMismatch {
             from: "p1.outlet".into(),
             to: "hx1.inlet".into(),
-            detail: "`h` is a molar_energy and `n` is a molar_flow".into(),
+            mismatch: Mismatch::DifferentField {
+                field: "h".into(),
+                producer: "molar_energy (scalar)".into(),
+                consumer: "molar_flow (scalar)".into(),
+            },
         },
         Diagnostic::OverfedPort {
             instance: "sep1".into(),
@@ -275,6 +280,37 @@ fn a_record_is_the_documented_shape() {
             "message": "`feed` takes one stream and 2 are connected",
             "detail": { "count": 2 },
         })
+    );
+}
+
+#[test]
+fn a_type_mismatch_reaches_the_wire_as_its_field_and_dimensions() {
+    // **The one diagnostic whose payload used to be a sentence.** A front end marks the field
+    // that differs rather than the edge it sits on, and this is what says so: the record carries
+    // the reason, the field, and each side's dimension and shape.
+    let record = DiagnosticRecord::from(&Diagnostic::TypeMismatch {
+        from: "p1.outlet".into(),
+        to: "hx1.inlet".into(),
+        mismatch: Mismatch::DifferentField {
+            field: "h".into(),
+            producer: "molar_energy (scalar)".into(),
+            consumer: "molar_flow (scalar)".into(),
+        },
+    });
+    assert_eq!(
+        record.detail,
+        serde_json::json!({
+            "reason": "different_field",
+            "field": "h",
+            "producer": "molar_energy (scalar)",
+            "consumer": "molar_flow (scalar)",
+        })
+    );
+    assert_eq!(record.code, "type_mismatch");
+    // And the human line is still the sentence the CLI prints, rendered from the structure.
+    assert_eq!(
+        record.message,
+        "field \"h\" differs: molar_energy (scalar) vs molar_flow (scalar)"
     );
 }
 

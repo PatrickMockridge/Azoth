@@ -16,10 +16,12 @@
 
 use std::collections::{HashMap, HashSet};
 
+use serde::{Deserialize, Serialize};
+
 use azoth_core::unit_vocab_gen::dimension_exponents;
 use azoth_core::units::UNIT_NAMES;
 
-use crate::channel::{ChannelType, Direction, FieldType, Multiplicity};
+use crate::channel::{ChannelType, Direction, FieldType, Multiplicity, Shape};
 use crate::flowsheet::{Connection, Flowsheet, Instance, Recycle, split_endpoint};
 use crate::unit_op::UnitOpSpec;
 
@@ -117,7 +119,7 @@ pub enum Diagnostic {
     TypeMismatch {
         from: String,
         to: String,
-        detail: String,
+        mismatch: Mismatch,
     },
     OverfedPort {
         instance: String,
@@ -648,7 +650,7 @@ impl Diagnostic {
             Self::ConsumerNotInlet { port, .. } => {
                 format!("`{port}` consumes, and is not an inlet")
             }
-            Self::TypeMismatch { detail, .. } => detail.clone(),
+            Self::TypeMismatch { mismatch, .. } => mismatch.message(),
             Self::OverfedPort { port, count, .. } => {
                 format!("`{port}` takes one stream and {count} are connected")
             }
@@ -989,11 +991,11 @@ pub fn validate(flowsheet: &Flowsheet, palette: &[UnitOpSpec]) -> Vec<Diagnostic
                 channel_type(&instances, &specs, from_i, from_p),
                 channel_type(&instances, &specs, to_i, to_p),
             ) {
-                if let Err(detail) = compatible(from_t, to_t) {
+                if let Err(mismatch) = compatible(from_t, to_t) {
                     diags.push(Diagnostic::TypeMismatch {
                         from: format!("{from_i}.{from_p}"),
                         to: format!("{to_i}.{to_p}"),
-                        detail,
+                        mismatch,
                     });
                 }
             }
@@ -1217,21 +1219,87 @@ fn channel_type<'s>(
     Some(&spec.ports.iter().find(|p| p.name == port)?.fields)
 }
 
+/// **Why two channel types do not fit together**, as the thing a canvas marks and a reader reads.
+///
+/// The rule below used to answer with a `String` built by `format!` and `{:?}`, which made it the
+/// one diagnostic in this file whose payload was prose: a caller could print it and could not
+/// *ask* it anything. The variant names the field and the two dimensions, so a front end can mark
+/// the field that differs rather than the edge it sits on, and `message` renders the sentence the
+/// CLI has always printed.
+///
+/// **Measured, and it is a latent rule rather than an exercised one**: every one of the shipped
+/// palette's 77 port field-sets declares the same five dimensions, so no pair of them can
+/// mismatch and nothing in `specs/` reaches this. What reaches it is a palette a caller loaded -
+/// `Workspace::open` takes one - which is why the structure is worth having and why its witness
+/// is a test's own pair rather than a case.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "reason", rename_all = "snake_case")]
+pub enum Mismatch {
+    /// The two ports declare different fields, so there is nothing to line up.
+    DifferentFields {
+        producer: Vec<String>,
+        consumer: Vec<String>,
+    },
+    /// One port declares a field the other does not.
+    MissingField { field: String },
+    /// Both declare the field, at different dimensions or shapes.
+    DifferentField {
+        field: String,
+        producer: String,
+        consumer: String,
+    },
+}
+
+impl Mismatch {
+    /// The human line, which is the same sentence the CLI prints.
+    #[must_use]
+    pub fn message(&self) -> String {
+        match self {
+            Self::DifferentFields { producer, consumer } => {
+                format!("field sets differ: {producer:?} vs {consumer:?}")
+            }
+            Self::MissingField { field } => format!("field {field:?} present on only one side"),
+            Self::DifferentField {
+                field,
+                producer,
+                consumer,
+            } => format!("field {field:?} differs: {producer} vs {consumer}"),
+        }
+    }
+}
+
+/// A field as its sentence reads it: the dimension and the shape, which are what compatibility
+/// compares. The `FieldType`'s `Debug` form names the struct, which is a line for a terminal
+/// rather than a phrase for a reader.
+fn describe(field: &FieldType) -> String {
+    match field.shape {
+        Shape::Scalar => format!("{} (scalar)", field.dimension),
+        Shape::Vector => format!("{} (vector)", field.dimension),
+    }
+}
+
 /// Two channel types are compatible when they carry the same field names, each at
 /// the same dimension (compared by exponent tuple, not by id string) and shape.
-fn compatible(a: &ChannelType, b: &ChannelType) -> Result<(), String> {
+fn compatible(a: &ChannelType, b: &ChannelType) -> Result<(), Mismatch> {
     if a.len() != b.len() {
-        return Err(format!(
-            "field sets differ: {:?} vs {:?}",
-            a.keys().collect::<Vec<_>>(),
-            b.keys().collect::<Vec<_>>()
-        ));
+        return Err(Mismatch::DifferentFields {
+            producer: a.keys().cloned().collect(),
+            consumer: b.keys().cloned().collect(),
+        });
     }
     for (name, field) in a {
         match b.get(name) {
-            None => return Err(format!("field {name:?} present on only one side")),
+            None => {
+                return Err(Mismatch::MissingField {
+                    field: name.clone(),
+                });
+            }
             Some(other) if !fields_compatible(field, other) => {
-                return Err(format!("field {name:?} differs: {field:?} vs {other:?}"));
+                return Err(Mismatch::DifferentField {
+                    field: name.clone(),
+                    producer: describe(field),
+                    consumer: describe(other),
+                });
             }
             Some(_) => {}
         }
