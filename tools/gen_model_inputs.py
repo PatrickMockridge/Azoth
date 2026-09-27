@@ -177,7 +177,6 @@ def dimension_text(dimension: str | None) -> str:
     return f"Some({rust_str(dimension)})" if dimension else "None"
 
 
-
 def dimension_exponents() -> dict[str, list[int]]:
     """Every dimension's exponents, by name, from the vocabulary table.
 
@@ -228,20 +227,20 @@ def emit_lean(rows: list[tuple[dict[str, Any], dict[str, Any]]]) -> str:
         "written as the integers `Azoth.Vocabulary.exponents` carries - not as a `Dimension`,",
         "whose equality is not computable and would make the theorem below unprovable by",
         "computation. -/",
-        "def rows : List (String × String × String × List Int) :=",
+        # The character between the types is Lean's `Prod` notation and not a letter: the row is a
+        # 4-tuple, and a plain `x` would not elaborate. Ruff reads it as ambiguous, which is true
+        # of a sentence and false of the source this string is.
+        "def rows : List (String × String × String × List Int) :=",  # noqa: RUF001
         "  [",
     ]
     for palette_entry, model in rows:
         for name, declaration in model.get("inputs", {}).items():
-            dimension = dimension_of(
-                declaration.get("unit"), vocabulary, f"{model['id']}.{name}"
-            )
+            dimension = dimension_of(declaration.get("unit"), vocabulary, f"{model['id']}.{name}")
             if dimension is None:
                 continue
             vector = ", ".join(str(value) for value in exponents[dimension])
             out.append(
-                f'    ("{palette_entry["id"]}", "{name}", "{declaration["unit"]}", '
-                f"[{vector}]),"
+                f'    ("{palette_entry["id"]}", "{name}", "{declaration["unit"]}", [{vector}]),'
             )
     out += [
         "  ]",
@@ -267,6 +266,7 @@ def emit_lean(rows: list[tuple[dict[str, Any], dict[str, Any]]]) -> str:
         "",
     ]
     return "\n".join(out)
+
 
 def format_rust(text: str, generator: str) -> str:
     """Run the emitted Rust through rustfmt, which every generated file is compared against.

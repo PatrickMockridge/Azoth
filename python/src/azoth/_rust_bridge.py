@@ -4191,6 +4191,11 @@ def distillation_column(
     gas_side_draw_fractions: Sequence[float] | None = None,
     liquid_side_draw_fractions: Sequence[float] | None = None,
     pumparound_fractions: Sequence[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: object | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
 ) -> DistillationColumnResult:
     """`process.distillation_column`, computed in Rust.
 
@@ -4239,6 +4244,13 @@ def distillation_column(
         if liquid_side_draw_fractions is None
         else [float(v) for v in liquid_side_draw_fractions],
         None if pumparound_fractions is None else [float(v) for v in pumparound_fractions],
+        None if side_draw_flow_tray is None else int(side_draw_flow_tray),
+        side_draw_flow_phase,
+        None
+        if side_draw_flow_target is None
+        else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        side_draw_flow_tolerance,
+        None if side_draw_flow_max_iterations is None else int(side_draw_flow_max_iterations),
     )
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),

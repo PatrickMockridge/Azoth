@@ -37,6 +37,7 @@ on converges here and not there.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import NamedTuple
 
 from azoth.core.errors import InvalidInputError
@@ -52,6 +53,17 @@ from azoth.process.reference._column_stage import (
     stage,
     validate_draws,
 )
+
+_DrawVector = tuple[float, ...] | None
+_Draws = tuple[_DrawVector, _DrawVector, _DrawVector] | None
+
+#: One draw kind's fractions, or `None` where the case states none of that kind.
+DrawVector = tuple[float, ...] | None
+#: The three draw kinds, in `DRAW_FIELDS`' order - what `_states` takes.
+Draws = tuple[DrawVector, DrawVector, DrawVector] | None
+#: One side-draw flow specification, as the helper returns it: tray, phase, target, tolerance,
+#: cap.
+SideDrawSpecification = tuple[int, str, float, float, int]
 
 #: The class's own adaptive-relaxation constants, from `DistillationColumn`'s initialisers.
 MIN_SEQUENTIAL_RELAXATION = 0.5
@@ -233,6 +245,11 @@ def distillation_column(
     gas_side_draw_fractions: list[float] | None = None,
     liquid_side_draw_fractions: list[float] | None = None,
     pumparound_fractions: list[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: Q | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -392,28 +409,51 @@ def distillation_column(
         warnings,
     )
 
-    states = _states(
-        components,
-        n,
-        list(feed_z),
-        t,
-        p,
-        stages,
-        stage,
-        has_reboiler,
-        has_condenser,
-        top,
-        bottom,
-        t_reb,
-        t_cond,
-        tolerance,
-        iterations_cap,
-        top_specification,
-        bottom_specification,
-        solver_type,
-        reactive=section,
-        draws=draws,
-        murphree_efficiency=murphree_efficiency,
+    # **A specified draw flow is an outer search over whole column solves**, so the tear owns
+    # the call and the block below is its inner solve - see `_side_draw_flows`.
+    def solve_once(active_draws: Draws) -> _States:
+        """One inner solve at one set of draws, which is what the tear iterates."""
+        return _states(
+            components,
+            n,
+            list(feed_z),
+            t,
+            p,
+            stages,
+            stage,
+            has_reboiler,
+            has_condenser,
+            top,
+            bottom,
+            t_reb,
+            t_cond,
+            tolerance,
+            iterations_cap,
+            top_specification,
+            bottom_specification,
+            solver_type,
+            reactive=section,
+            draws=active_draws,
+            murphree_efficiency=murphree_efficiency,
+        )
+
+    flows = _side_draw_flow_specification(
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        # **The target arrives as a quantity and the helper takes SI**, which is where every
+        # other unit-carrying input of this model crosses too.
+        side_draw_flow_target
+        if side_draw_flow_target is None
+        else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+    )
+    states = (
+        solve_once(draws)
+        if flows is None
+        else _side_draw_flow_tear(
+            solve_once, list(components), draws, flows, stages, has_reboiler, has_condenser
+        )
     )
     warnings.extend(states.warnings)
 
@@ -1263,6 +1303,321 @@ def _spec() -> dict[str, object]:
     from azoth._models_gen import model
 
     return model("process.distillation_column")
+
+
+#: `SIDE_DRAW_CANDIDATE_SCAN_STEP`, the grid the bounded scan walks.
+_SIDE_DRAW_SCAN_STEP = 5.0e-3
+#: `addSideDrawFlowSpecification`'s seed for an uncontrolled draw.
+_SIDE_DRAW_SEED_FRACTION = 0.05
+#: `wasSideDrawFractionAttempted`'s identity tolerance.
+_SIDE_DRAW_IDENTITY = 1.0e-12
+
+
+def _side_draw_flow_specification(
+    tray: int | None,
+    phase: str | None,
+    target: float | None,
+    tolerance: float | None,
+    max_iterations: int | None,
+) -> SideDrawSpecification | None:
+    """The one side-draw flow specification this model declares, or ``None``.
+
+    **One and not a list, because one is what the port implements**: the class solves a list of
+    them as *coordinated* tear variables, which is a different search. A target without a tray or
+    a phase is refused, as the two end specifications are.
+    """
+    if tray is None and phase is None and target is None:
+        return None
+    if tray is None or phase is None or target is None:
+        raise InvalidInputError(
+            "side_draw_flow_tray",
+            "a side-draw flow specification is stated by its tray, its phase and its target "
+            "together: `addSideDrawFlowSpecification(tray, phase, flow, unit)` takes all three, "
+            "and a declaration that states one or two of them says nothing",
+        )
+    if not (target == target and abs(target) != float("inf")) or target < 0.0:
+        raise InvalidInputError(
+            "side_draw_flow_target",
+            f"a side-draw target flow of {target} is not finite and non-negative, which "
+            f"`ColumnSideDrawSpecification`'s own constructor refuses",
+        )
+    if phase not in ("gas", "liquid"):
+        raise InvalidInputError(
+            "side_draw_flow_phase",
+            f"`{phase}` is not a side-draw phase: `SideDrawPhase` carries `gas` and `liquid`",
+        )
+    return (
+        int(tray),
+        phase,
+        float(target),
+        1.0e-4 if tolerance is None else float(tolerance),
+        12 if max_iterations is None else int(max_iterations),
+    )
+
+
+def _side_draw_flows_refused(draws: Draws) -> None:
+    """A specification beside a pumparound is the class's *coordinated* tear."""
+    if draws is not None and draws[2] is not None:
+        raise InvalidInputError(
+            "side_draw_flow_target",
+            "a side-draw flow specification is stated beside a pumparound: the class solves the "
+            "two together as coordinated tear variables, and this port carries the independent "
+            "single-variable search",
+        )
+
+
+def _tray_count(number_of_stages: int, has_reboiler: bool, has_condenser: bool) -> int:
+    return int(number_of_stages) + int(has_reboiler) + int(has_condenser)
+
+
+def _side_draw_fraction(draws: Draws, tray: int, phase: str) -> float:
+    vector = None if draws is None else draws[0 if phase == "gas" else 1]
+    if vector is None or tray >= len(vector):
+        return 0.0
+    return float(vector[tray])
+
+
+def _side_draw_maximum(draws: Draws, tray: int, phase: str) -> float:
+    if phase == "gas":
+        return 1.0
+    pumparound = 0.0 if draws is None or draws[2] is None else float(draws[2][tray])
+    return max(0.0, 1.0 - pumparound)
+
+
+def _side_draw_with_fraction(
+    draws: Draws, tray: int, phase: str, fraction: float, tray_count: int
+) -> Draws:
+    """The same draws at one tray's stated fraction, the vector grown where the caller stated
+    none - which is what `setSideDrawFraction` does to the tray."""
+    gas, liquid, pumparound = draws if draws is not None else (None, None, None)
+    current = gas if phase == "gas" else liquid
+    vector: list[float] = [0.0] * tray_count if current is None else list(current)
+    if len(vector) < tray_count:
+        vector = vector + [0.0] * (tray_count - len(vector))
+    vector[tray] = fraction
+    stated: tuple[float, ...] = tuple(vector)
+    return (stated, liquid, pumparound) if phase == "gas" else (gas, stated, pumparound)
+
+
+def _side_draw_mass_flow(states: object, components: list[str], tray: int, phase: str) -> float:
+    """The draw's mass flow, kg/s - `getSideDrawStream(...).getFlowRate(unit)`.
+
+    **The draw is the tray's own phase scaled**, so its composition is the tray's and its mass
+    flow is the withdrawn moles times that composition's molar mass - which is exactly what
+    `Stream::mass_flow` computes on the Rust side.
+    """
+    from azoth.eos import components as databank
+
+    moles = (states.gas_side_draw_n if phase == "gas" else states.liquid_side_draw_n)[tray]  # type: ignore[attr-defined]
+    composition = (states.tray_gas_z if phase == "gas" else states.tray_liquid_z)[tray]  # type: ignore[attr-defined]
+    if moles <= 0.0 or not composition:
+        return 0.0
+    fluid = databank.mixture_of(components, eos="pr")[0]
+    mass = sum(
+        zi * component.molar_mass.to("kg/mol").magnitude  # type: ignore[union-attr]
+        for zi, component in zip(composition, fluid.components, strict=True)
+    )
+    return float(moles) * float(mass)
+
+
+def _side_draw_attempted(attempted: list[float], fraction: float) -> bool:
+    if fraction != fraction or abs(fraction) == float("inf"):
+        return True
+    return any(abs(prior - fraction) <= _SIDE_DRAW_IDENTITY for prior in attempted)
+
+
+def _side_draw_next(
+    target: float,
+    accepted_fractions: list[float],
+    accepted_flows: list[float],
+    attempted: list[float],
+    maximum: float,
+) -> float:
+    """`selectNextSingleSideDrawCandidate`: accepted probes only can propose."""
+    if not accepted_fractions:
+        origin = attempted[-1] if attempted else 0.0
+        return _side_draw_grid(origin, attempted, maximum)
+
+    best_index = 0
+    best_residual = float("inf")
+    lower: int | None = None
+    lower_residual = float("inf")
+    upper: int | None = None
+    upper_residual = float("inf")
+    for index, flow in enumerate(accepted_flows):
+        residual = abs(flow - target)
+        if residual < best_residual:
+            best_residual = residual
+            best_index = index
+        if flow <= target and residual < lower_residual:
+            lower_residual = residual
+            lower = index
+        if flow >= target and residual < upper_residual:
+            upper_residual = residual
+            upper = index
+
+    if lower is not None and upper is not None and lower != upper:
+        denominator = accepted_flows[upper] - accepted_flows[lower]
+        interpolated = (
+            accepted_fractions[lower]
+            + (target - accepted_flows[lower])
+            * (accepted_fractions[upper] - accepted_fractions[lower])
+            / denominator
+            if abs(denominator) > 1.0e-12
+            else 0.5 * (accepted_fractions[lower] + accepted_fractions[upper])
+        )
+        interpolated = min(max(0.0, interpolated), maximum)
+        if not _side_draw_attempted(attempted, interpolated):
+            return interpolated
+
+    best_fraction = accepted_fractions[best_index]
+    actual = accepted_flows[best_index]
+    multiplicative = (
+        0.0
+        if target <= 1.0e-12
+        else min(
+            max(
+                0.0,
+                best_fraction + _SIDE_DRAW_SCAN_STEP
+                if abs(actual) <= 1.0e-12
+                else best_fraction * target / actual,
+            ),
+            maximum,
+        )
+    )
+    if not _side_draw_attempted(attempted, multiplicative):
+        return multiplicative
+    nearest = _side_draw_nearest_rejected(best_fraction, attempted, accepted_fractions)
+    if nearest == nearest and abs(nearest - best_fraction) < _SIDE_DRAW_SCAN_STEP:
+        opposite = best_fraction + (5.0 * _SIDE_DRAW_SCAN_STEP) * (
+            1.0 if best_fraction - nearest >= 0.0 else -1.0
+        )
+        opposite = min(max(0.0, opposite), maximum)
+        if not _side_draw_attempted(attempted, opposite):
+            return opposite
+    return _side_draw_grid(best_fraction, attempted, maximum)
+
+
+def _side_draw_nearest_rejected(
+    origin: float, attempted: list[float], accepted: list[float]
+) -> float:
+    nearest = float("nan")
+    nearest_distance = float("inf")
+    for fraction in attempted:
+        if _side_draw_attempted(accepted, fraction):
+            continue
+        distance = abs(fraction - origin)
+        if distance < nearest_distance:
+            nearest_distance = distance
+            nearest = fraction
+    return nearest
+
+
+def _side_draw_grid(origin: float, attempted: list[float], maximum: float) -> float:
+    """`nextUntriedSideDrawGridFractionAround`: the deterministic scan, above then below."""
+    first_upper = -(-(origin + _SIDE_DRAW_IDENTITY) // _SIDE_DRAW_SCAN_STEP) * _SIDE_DRAW_SCAN_STEP
+    first_lower = (origin - _SIDE_DRAW_IDENTITY) // _SIDE_DRAW_SCAN_STEP * _SIDE_DRAW_SCAN_STEP
+    maximum_steps = int(-(-maximum // _SIDE_DRAW_SCAN_STEP)) + 1
+    for step in range(maximum_steps + 1):
+        offset = step * _SIDE_DRAW_SCAN_STEP
+        upper = first_upper + offset
+        if upper <= maximum + _SIDE_DRAW_IDENTITY:
+            upper = min(max(0.0, upper), maximum)
+            if not _side_draw_attempted(attempted, upper):
+                return upper
+        lower = first_lower - offset
+        if lower >= -_SIDE_DRAW_IDENTITY:
+            lower = min(max(0.0, lower), maximum)
+            if not _side_draw_attempted(attempted, lower):
+                return lower
+    return float("nan")
+
+
+def _side_draw_flow_tear(
+    solve: Callable[[Draws], _States],
+    components: list[str],
+    draws: Draws,
+    specification: SideDrawSpecification,
+    number_of_stages: int,
+    has_reboiler: bool,
+    has_condenser: bool,
+) -> _States:
+    """`solveSingleSideDrawFlowSpecification`: the class's own candidate search.
+
+    **The copy is the part a pure function does not need** - each candidate is another solve -
+    and acceptance is ``Ok``, because this implementation refuses a state it cannot reach
+    rather than publishing a fallback for it. **The one-shot continuation retry is not ported**:
+    it re-solves a rejected fraction *warm*, and `_states` always seeds from its own `init`.
+    """
+    _side_draw_flows_refused(draws)
+    tray, phase, target, tolerance, max_iterations = specification
+    tray_count = _tray_count(number_of_stages, has_reboiler, has_condenser)
+    if tray >= tray_count:
+        raise InvalidInputError(
+            "side_draw_flow_tray",
+            f"a side-draw flow specification names tray {tray} of a column with {tray_count} "
+            f"tray(s), which is not a tray it has",
+        )
+    if (tray == 0 and has_reboiler) or (tray + 1 == tray_count and has_condenser):
+        raise InvalidInputError(
+            "side_draw_flow_tray",
+            f"a side-draw flow specification names {tray}, which is this port's reboiler or "
+            f"condenser: the ends are `column::reboiler` and `column::condenser` rather than "
+            f"stages, so there is no draw for the specification to move",
+        )
+
+    maximum = _side_draw_maximum(draws, tray, phase)
+    candidate_fraction = _side_draw_fraction(draws, tray, phase)
+    if candidate_fraction <= 0.0:
+        candidate_fraction = _SIDE_DRAW_SEED_FRACTION
+    attempted: list[float] = []
+    accepted_fractions: list[float] = []
+    accepted_flows: list[float] = []
+    best_residual = float("inf")
+    best_states: _States | None = None
+
+    for _ in range(max_iterations):
+        if candidate_fraction != candidate_fraction or abs(candidate_fraction) == float("inf"):
+            break
+        candidate_fraction = min(max(0.0, candidate_fraction), maximum)
+        if _side_draw_attempted(attempted, candidate_fraction):
+            candidate_fraction = _side_draw_next(
+                target, accepted_fractions, accepted_flows, attempted, maximum
+            )
+            if candidate_fraction != candidate_fraction:
+                break
+        attempted.append(candidate_fraction)
+        candidate_draws = _side_draw_with_fraction(
+            draws, tray, phase, candidate_fraction, tray_count
+        )
+        try:
+            states = solve(candidate_draws)
+        except Exception:  # a rejected candidate is the class's own state
+            candidate_fraction = _side_draw_next(
+                target, accepted_fractions, accepted_flows, attempted, maximum
+            )
+            continue
+        flow = _side_draw_mass_flow(states, components, tray, phase)
+        accepted_fractions.append(candidate_fraction)
+        accepted_flows.append(flow)
+        residual = abs(flow - target) / max(1.0e-12, abs(target))
+        if residual < best_residual:
+            best_residual = residual
+            best_states = states
+        if residual <= tolerance:
+            return states
+        candidate_fraction = _side_draw_next(
+            target, accepted_fractions, accepted_flows, attempted, maximum
+        )
+
+    if best_states is None:
+        raise InvalidInputError(
+            "side_draw_flow_target",
+            f"every candidate for a {phase.upper()} draw of {target} kg/s on tray {tray} was "
+            f"rejected by the column solve, so the class's own "
+            f"`finalizeColumnTearConvergenceStatus` has nothing to publish",
+        )
+    return best_states
 
 
 def _build_specification(

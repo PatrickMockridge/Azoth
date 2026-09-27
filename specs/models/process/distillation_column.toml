@@ -169,6 +169,28 @@ unit = "dimensionless"
 length = "one per tray"
 optional = true
 description = "the liquid each tray withdraws as a pumparound. **The return is not ported**: `ColumnPumparound` carries a return tray and a temperature drop, which is a recycle the column's own solver iterates.\n"
+[inputs.side_draw_flow_tray]
+unit = "dimensionless"
+optional = true
+description = "**the tray whose draw flow is specified**, which `addSideDrawFlowSpecification(tray, phase, flow, unit)` takes. Omitted means every draw stays a *fraction* of its stage's own phase, decided once - which is what the three fraction vectors above are.\n"
+[inputs.side_draw_flow_phase]
+type = "enum"
+values = ["gas", "liquid"]
+optional = true
+description = "which of the stage's two phases the specification controls, `SideDrawPhase`. **Stated with the tray and the target or not at all**: a target without a phase is a declaration that cannot be read.\n"
+[inputs.side_draw_flow_target]
+unit = "kg/s"
+optional = true
+description = "the mass flow the draw must deliver - `getSideDrawStream(tray, phase).getFlowRate(unit)`, so a **mass** rate and not a molar one. The column moves the draw's fraction until the draw delivers it.\n"
+[inputs.side_draw_flow_tolerance]
+unit = "dimensionless"
+optional = true
+description = "the relative residual the search stops at. **Omitted means `1e-4`**, which is `ColumnSideDrawSpecification`'s own field initialiser.\n"
+[inputs.side_draw_flow_max_iterations]
+unit = "dimensionless"
+optional = true
+description = "the candidate cap for this specification. **Omitted means `12`**, the class's own field initialiser; the tear's own cap is the largest of it and `maxColumnTearIterations`.\n"
+
 [outputs]
 [outputs.tray_temperature]
 type = "vector"

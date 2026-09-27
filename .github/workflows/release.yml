@@ -186,12 +186,20 @@ jobs:
       # short-lived certificate, and the resulting signature records which
       # repository and workflow produced it. That is checkable by anyone, and
       # there is nothing here to leak.
+      # **The bundles go in `sigs/`, not beside what they sign.** `${f}.sigstore.json` for
+      # `f = dist/X.whl` is `dist/X.whl.sigstore.json` - a file *inside* `dist/` - which three
+      # jobs below then had to know about and one did not: `verify` globbed `dist/*` and tried
+      # to verify a bundle as though it were an artifact, looking for a bundle of the bundle.
+      # That is not a hypothetical; it is what the dry run of 2026-09-27 died on, and it would
+      # have died the same way on a tag. Keeping the signatures in their own tree means the
+      # only thing in `dist/` is a distribution, and `packages-dir: dist/` means what it says.
       - name: Sign every artifact and the provenance record
         run: |
           set -euo pipefail
+          mkdir -p sigs
           for f in dist/* provenance.json; do
             echo "signing $f"
-            cosign sign-blob --yes --bundle "${f}.sigstore.json" "$f"
+            cosign sign-blob --yes --bundle "sigs/$(basename "$f").sigstore.json" "$f"
           done
 
       - uses: actions/upload-artifact@v4
@@ -200,7 +208,7 @@ jobs:
           path: |
             dist/**
             provenance.json
-            *.sigstore.json
+            sigs/**
 
   verify:
     name: Verify what we just signed
@@ -226,21 +234,25 @@ jobs:
       # published artifact. A signature nobody has ever checked is a claim.
       #
       # **Two refs are accepted, `refs/heads/main` and a `v*` tag, and the second is the
-      # release.** It used to be the tag alone, which made the dry run fail here: a
-      # `workflow_dispatch` runs on a branch, so its OIDC identity is `@refs/heads/main`
-      # and the tag-only pattern rejected a signature that was perfectly good - the one job
-      # that exists to say "the bundle verifies" said the opposite, one step before anything
-      # was published. Accepting `main` as well does not widen what can be released, because
-      # `pypi` and `publish` are both gated on `startsWith(github.ref, 'refs/tags/v')`: a
-      # branch run can satisfy this check and still reach no index. The repository, the
-      # workflow file and the issuer are pinned as tightly as before, and a dispatch from
-      # any branch other than `main` is still refused.
+      # release.** It used to be the tag alone, and a `workflow_dispatch` runs on a branch, so
+      # its OIDC identity is `@refs/heads/main`: measured against the old pattern, a dispatch
+      # was rejected there. The dry run that was actually run got past this check and died on
+      # the bundle path below instead, which is how the second defect was found rather than
+      # predicted - the wheel verified, and the file after it in `dist/` was its own bundle.
+      # Accepting `main` as well does not widen what can be released, because `pypi` and
+      # `publish` are both gated on `startsWith(github.ref, 'refs/tags/v')`: a branch run can
+      # satisfy this check and still reach no index. The repository, the workflow file and the
+      # issuer are pinned as tightly as before, and a dispatch from any branch other than
+      # `main` is still refused.
+      # The loop runs over the artifacts and the record, which is exactly what `sign` signed and
+      # what `sigs/` holds a bundle for. It ran over everything in `dist/` before, bundles and
+      # all, and a bundle has no bundle of its own.
       - name: Verify
         run: |
           set -euo pipefail
           for f in dist/* provenance.json; do
             cosign verify-blob "$f" \
-              --bundle "${f}.sigstore.json" \
+              --bundle "sigs/$(basename "$f").sigstore.json" \
               --certificate-identity-regexp \
                 '(?i)^https://github\.com/patrickmockridge/azoth/\.github/workflows/release\.yml@refs/(heads/main|tags/v.*)$' \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com
@@ -274,8 +286,11 @@ jobs:
           path: .
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # **`dist/`, not `.`**: the `.sigstore.json` bundles and `provenance.json` sit beside
-          # `dist/`, and the action would try to upload them.
+          # **`dist/`, not `.`** - and this now says what it means. The comment here used to
+          # claim the bundles "sit beside `dist/`", which was wrong: they were written as
+          # `${f}.sigstore.json` and for `f = dist/X.whl` that is a file *inside* `dist/`, so
+          # this directory held six distributions and seven signature bundles. They live in
+          # `sigs/` now, and `dist/` holds nothing that is not a distribution.
           packages-dir: dist/
 
   publish:
@@ -295,8 +310,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # `sigs/*` is attached rather than merely produced: the notes point a reader at how
+          # to verify these artifacts, and a bundle left in a workflow artifact that expires is
+          # not something a reader can check anything against.
           gh release create "${RELEASE_TAG}" \
             --repo "${{ github.repository }}" \
             --title "${RELEASE_TAG}" \
             --notes "See README.md for how to verify these artifacts." \
-            dist/* provenance.json
+            dist/* provenance.json sigs/*

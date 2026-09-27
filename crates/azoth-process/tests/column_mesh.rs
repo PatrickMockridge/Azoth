@@ -454,11 +454,14 @@ fn model(
         None,
         None,
         None,
-        // The model's reactive section, which this test does not state.
         None,
         None,
         None,
-        // Nor its side draws.
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,

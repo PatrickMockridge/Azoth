@@ -889,7 +889,17 @@ fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome>
 /// The column a distillation, packed or stripping entry configures.
 fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::ColumnSetup> {
     Ok(kernels::ColumnSetup {
-        side_draw_flows: Vec::new(),
+        // **The same resolution the model makes**, so a flowsheet's specified draw and a case's
+        // are one declaration read once.
+        side_draw_flows: crate::models::distillation_column::build_side_draw_flow(
+            p.optional_number("side_draw_flow_tray")?
+                .map(|v| v as usize),
+            p.optional_text("side_draw_flow_phase")?.as_deref(),
+            p.optional_si("side_draw_flow_target")?,
+            p.optional_number("side_draw_flow_tolerance")?,
+            p.optional_number("side_draw_flow_max_iterations")?
+                .map(|v| v as usize),
+        )?,
         reactive: kernels::ReactiveSection::None,
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,

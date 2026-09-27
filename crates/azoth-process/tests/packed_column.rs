@@ -120,7 +120,11 @@ fn the_packed_column_is_the_base_column_at_the_heights_stage_count() {
         None,
         None,
         None,
-        // The base column's side draws, which this test does not state.
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,

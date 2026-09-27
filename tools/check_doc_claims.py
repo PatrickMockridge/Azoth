@@ -635,7 +635,6 @@ def sweep_paths(pages: list[Path]) -> tuple[int, list[str], list[str]]:
     return checked, failures, escapes
 
 
-
 # --- the port's sources -----------------------------------------------------
 
 #: The three spec trees a port has to account for itself in.

@@ -85,7 +85,7 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `two_phase_round_trip` | components = ['methane', 'n-butane'], P = 1000000.0, V = 0.0019610505645240935, z = [0.6, 0.4] | T = 300.0, beta = 0.8356955 |
+| `two_phase_round_trip` | components = ['methane', 'n-butane'], P = 1000000.0, V = 0.0019610505645240935, z = [0.6, 0.4] | T = 300.0, vapour_fraction = 0.8356955 |
 
 ## References
 

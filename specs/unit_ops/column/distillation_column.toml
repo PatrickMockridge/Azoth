@@ -13,6 +13,17 @@ description = "one fraction per tray of the vapour withdrawn from that tray's ow
 description = "the same for the liquid, which a pumparound draws from too - the two are bounded together and may not sum above one"
 [parameters.pumparound_fractions]
 description = "the same for a pumparound; its **return** to another tray is a recycle the class iterates and this port does not carry"
+[parameters.side_draw_flow_tray]
+description = "the tray whose draw flow is specified, which `addSideDrawFlowSpecification` takes; omitted means every draw stays a fraction of its stage's own phase"
+[parameters.side_draw_flow_phase]
+description = "which of the stage's two phases the specification controls - gas or liquid - `SideDrawPhase`"
+[parameters.side_draw_flow_target]
+description = "the **mass** flow the draw must deliver; the column moves the draw's fraction until it does"
+[parameters.side_draw_flow_tolerance]
+description = "the relative residual the search stops at; the class defaults it to 1e-4"
+[parameters.side_draw_flow_max_iterations]
+description = "the candidate cap; the class defaults it to 12, and the tear's own cap is the largest of it and `maxColumnTearIterations`"
+
 [source]
 standard = "NeqSim process/equipment/distillation/DistillationColumn.java"
 [parameters.number_of_stages]

@@ -71,9 +71,9 @@ not an equation, and both implementations read it from here.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `the_probes_feed_at_288_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 288.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | beta = 0.1151303722044179, structure = structure_ii, balance_error = 0.0 |
-| `the_probes_feed_at_283_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 283.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | beta = 0.1153041888231433, structure = structure_ii, balance_error = 0.0 |
-| `the_probes_feed_at_278_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 278.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | beta = 0.115458677947638, structure = structure_ii, balance_error = 0.0 |
+| `the_probes_feed_at_288_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 288.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | hydrate_fraction = 0.1151303722044179, structure = structure_ii, balance_error = 0.0 |
+| `the_probes_feed_at_283_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 283.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | hydrate_fraction = 0.1153041888231433, structure = structure_ii, balance_error = 0.0 |
+| `the_probes_feed_at_278_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 278.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | hydrate_fraction = 0.115458677947638, structure = structure_ii, balance_error = 0.0 |
 
 ## References
 
