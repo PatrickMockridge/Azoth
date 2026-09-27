@@ -8,9 +8,14 @@
 //!
 //! [`edit`] and [`forms`] are the middleware's two doors here: one command against a document,
 //! and the palette as the forms a front-end renders.
+//!
+//! [`crosscheck`] is the one door that faces outward rather than inward: it answers a NeqSim
+//! flash request in NeqSim's own document shape, for a caller deciding whether to trust a number
+//! another implementation produced.
 
 pub mod check;
 pub mod cli;
+pub mod crosscheck;
 pub mod edit;
 pub mod forms;
 pub mod mcp;
