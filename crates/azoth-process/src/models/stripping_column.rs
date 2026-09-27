@@ -158,6 +158,9 @@ pub fn stripping_column(
     murphree_efficiency: Option<f64>,
     component_murphree_efficiency: Option<&[f64]>,
     max_allowable_gas_load_factor: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
 ) -> Result<StrippingColumnResult> {
     let out = absorber(
@@ -180,6 +183,9 @@ pub fn stripping_column(
         murphree_efficiency,
         component_murphree_efficiency,
         max_allowable_gas_load_factor,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
     )?;
 

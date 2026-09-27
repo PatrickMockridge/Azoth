@@ -290,6 +290,39 @@ pub struct ColumnSetup {
     pub reactive: ReactiveSection,
 }
 
+/// **`DistillationColumn.setReactive`'s two forms, resolved from the three declared inputs.**
+///
+/// The class clears both bounds for `setReactive(true)` and sets both for
+/// `setReactive(true, start, end)`; a single bound is a declaration the class cannot make, so it
+/// is refused rather than guessed - and so is a section stated without `reactive = true`, which
+/// says nothing. **One resolution for the four column ids**, because the absorber, the stripper
+/// and the packed column all inherit this setter and none of them overrides it.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] for half a section, or for bounds without `reactive`.
+pub fn reactive_section(
+    reactive: Option<bool>,
+    start: Option<usize>,
+    end: Option<usize>,
+) -> Result<ReactiveSection> {
+    match (reactive.unwrap_or(false), start, end) {
+        (false, None, None) => Ok(ReactiveSection::None),
+        (true, None, None) => Ok(ReactiveSection::All),
+        (true, Some(start), Some(end)) => Ok(ReactiveSection::Section { start, end }),
+        (_, Some(_), None) | (_, None, Some(_)) => Err(AzothError::invalid_input(
+            "reactive_start_tray",
+            "a reactive section is stated by both bounds or by neither: `setReactive(true)` \
+             covers every middle tray and `setReactive(true, start, end)` a run of them, and \
+             the class has no form that states one end alone",
+        )),
+        (false, Some(_), Some(_)) => Err(AzothError::invalid_input(
+            "reactive",
+            "a reactive section was stated without `reactive = true`, which is a declaration \
+             that says nothing",
+        )),
+    }
+}
+
 /// Which trays run their flash reactively: `DistillationColumn.setReactive`.
 ///
 /// **The section is stated over *middle*-tray indices, which is the class's own convention**:

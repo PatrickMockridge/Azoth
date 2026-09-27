@@ -4430,6 +4430,9 @@ def absorption_column(
     murphree_efficiency: float | None = None,
     component_murphree_efficiency: Sequence[float] | None = None,
     max_allowable_gas_load_factor: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
     solver_type: str | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber; see :func:`azoth.process.reference.absorption_column`.
@@ -4461,6 +4464,9 @@ def absorption_column(
         if component_murphree_efficiency is None
         else [float(v) for v in component_murphree_efficiency],
         max_allowable_gas_load_factor,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
     )
     return AbsorptionColumnResult(
@@ -4508,6 +4514,9 @@ def packed_column(
     packing_hydraulic_capacity_factor: float | None = None,
     column_diameter: Q | None = None,
     murphree_efficiency: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
     top_specification_target: float | None = None,
@@ -4547,6 +4556,9 @@ def packed_column(
         packing_hydraulic_capacity_factor,
         None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
         murphree_efficiency,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
         top_specification_type,
         top_specification_target,
@@ -4609,6 +4621,9 @@ def stripping_column(
     murphree_efficiency: float | None = None,
     component_murphree_efficiency: Sequence[float] | None = None,
     max_allowable_gas_load_factor: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
     solver_type: str | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper; see :func:`azoth.process.reference.stripping_column`.
@@ -4638,6 +4653,9 @@ def stripping_column(
         if component_murphree_efficiency is None
         else [float(v) for v in component_murphree_efficiency],
         max_allowable_gas_load_factor,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
     )
     return StrippingColumnResult(

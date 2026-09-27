@@ -12,6 +12,8 @@ assumptions = [
     "**`has_condenser` and `has_reboiler` are the base's**, because two of the class's three constructors take them and the class adds no end of its own.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**the class's own test state is captured and is not an oracle.** Run as its test runs it, the column has no internal traffic, the feed passes through the empty trays below it, and the class still reports `RIGOROUS_CONVERGED` with residuals of exactly zero.",
+    "**`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.",
+    "**On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.",
 ]
 references = [
     "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and is not ported.",
@@ -100,6 +102,18 @@ description = "the column's internal diameter. **It does not enter the solve**: 
 unit = "dimensionless"
 optional = true
 description = "the column-wide Murphree tray efficiency, applied to each interior stage's vapour. **Omitted means the ideal stage.** Refused with `solver_type = naphtali_sandholm`, whose solver carries a different correction.\n"
+[inputs.reactive]
+type = "boolean"
+optional = true
+description = "**whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`, inherited and not overridden. The ends never do. Measured: the section is either the plain flash or a divergence - see the notes.\n"
+[inputs.reactive_start_tray]
+unit = "dimensionless"
+optional = true
+description = "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last. **Both bounds or neither.** An absorber has no ends, so every stage is a middle tray.\n"
+[inputs.reactive_end_tray]
+unit = "dimensionless"
+optional = true
+description = "the last reactive middle tray, inclusive.\n"
 [inputs.solver_type]
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]

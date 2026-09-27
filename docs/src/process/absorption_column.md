@@ -38,6 +38,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `murphree_efficiency` | dimensionless | *Optional.* **not ported**: an absorber does not use the base's correction. `AbsorptionColumn.applyMurphreeCorrection` is an *override* that corrects **both phases** through a limiting-component allocator, and that arithmetic is the one owed here. |
 | `component_murphree_efficiency` | dimensionless | *Optional.* **not ported**: the per-component Murphree efficiency, which `AbsorptionColumn.setComponentMurphreeEfficiency(int, String, double)` sets and the `applyMurphreeCorrection` override applies - one efficiency per component, with the column-wide value as the fallback where a component states none. |
 | `max_allowable_gas_load_factor` | dimensionless | *Optional.* the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit`, `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit` read it and none of them is on the run path. The class defaults it to 0.15. |
+| `reactive` | - | *Optional.* **whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`, inherited and not overridden. The ends never do. Measured: the section is either the plain flash or a divergence - see the notes. |
+| `reactive_start_tray` | dimensionless | *Optional.* the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last. **Both bounds or neither.** An absorber has no ends, so every stage is a middle tray. |
+| `reactive_end_tray` | dimensionless | *Optional.* the last reactive middle tray, inclusive. |
 | `solver_type` | direct_substitution / damped_substitution / inside_out / matrix_inside_out / wegstein / sum_rates / newton / naphtali_sandholm / mesh_residual / auto | *Optional.* which of the base's ten solving strategies runs, by the same names `process.distillation_column` declares. **`direct_substitution` is the class's own default**; `naphtali_sandholm` refuses here, because a column with no pinned reboiler runs `solveBubblePointMethod`. |
 
 
@@ -83,6 +86,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **both inlets carry the same substances in the same order.** The class indexes every tray's components by one list built from its first feed, so a solvent naming different substances is a different fluid rather than an inlet, and this refuses it.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 - **`murphree_efficiency` and `component_murphree_efficiency` are declared and refused**, as are the eight strategies of `solver_type` this port does not carry. Each refusal names the class that would close it. What is owed here is the override, which corrects both phases.
+- **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
+- **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
 
 ## Cases
 

@@ -862,11 +862,37 @@ public class ProcessProbe {
         900.0, 70.0, 5, 12.0, 0.0, 1.0e-2, "DIRECT_SUBSTITUTION");
     absorberRow("hydrocarbon_stripper", strip, stripZ, 150.0, 70.0, strip, richZ, 900.0, 70.0, 5,
         12.0, 0.0, 1.0e-4, "DIRECT_SUBSTITUTION");
+
+    // **The same two machines with `setReactive(true)`**, which is the sibling ids' reactive
+    // section and has no test of its own in the class: no `AbsorptionColumnTest`,
+    // `StrippingColumnTest` or `PackedColumnTest` calls `setReactive`. `AbsorptionColumn`
+    // overrides no `run`, so this is the base's reactive tray on the base's middle trays - and
+    // an absorber has no ends, so `setReactive(true)` flags *every* stage, which the row's own
+    // `reactive_tray_flags` prints. On this fluid the carbon-and-hydrogen formula matrix has
+    // rank two against six species, so the section is not the NR=0 no-op: the trays really do
+    // route to the reactive flash.
+    absorberRow("lean_oil_absorber_reactive", gas, gasZ, 2000.0, 30.0, gas, pureHeptane, 600.0,
+        20.0, 5, 15.0, 0.0, 1.0e-4, "DIRECT_SUBSTITUTION", true);
+    absorberRow("hydrocarbon_stripper_reactive", strip, stripZ, 150.0, 70.0, strip, richZ, 900.0,
+        70.0, 5, 12.0, 0.0, 1.0e-4, "DIRECT_SUBSTITUTION", true);
   }
 
   static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
       double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
       double solventC, int trays, double bara, double stageC, double tolerance, String solver) {
+    absorberRow(label, gasNames, gasZ, gasKgPerHour, gasC, solventNames, solventZ,
+        solventKgPerHour, solventC, trays, bara, stageC, tolerance, solver, false);
+  }
+
+  /// **The same machine with `setReactive(true)`.** `AbsorptionColumn` inherits the base's
+  /// `setReactive` and overrides no `run`, so its middle trays are the base's middle trays - and
+  /// an absorber has no ends at all, so `replaceMiddleTrays` walks *every* stage. The flag's
+  /// own javadoc is wrong about the mechanism (the column constructs no `ReactiveTray`), so the
+  /// row prints the per-tray flags the class actually set beside its answer.
+  static void absorberRow(String label, String[] gasNames, double[] gasZ, double gasKgPerHour,
+      double gasC, String[] solventNames, double[] solventZ, double solventKgPerHour,
+      double solventC, int trays, double bara, double stageC, double tolerance, String solver,
+      boolean reactive) {
     Stream gas = feedMass("gas", gasNames, gasZ, gasC + 273.15, bara, gasKgPerHour);
     Stream solvent = feedMass("solvent", solventNames, solventZ, solventC + 273.15, bara,
         solventKgPerHour);
@@ -877,6 +903,9 @@ public class ProcessProbe {
     neqsim.process.equipment.absorber.AbsorptionColumn column = stripper
         ? new neqsim.process.equipment.absorber.StrippingColumn(label, trays)
         : new neqsim.process.equipment.absorber.AbsorptionColumn(label, trays);
+    // **The flag is set before the inlets are attached**, which is the order the class's own
+    // reactive column tests use.
+    column.setReactive(reactive);
     if (stripper) {
       ((neqsim.process.equipment.absorber.StrippingColumn) column).addStrippingGasStream(gas);
       ((neqsim.process.equipment.absorber.StrippingColumn) column).addRichLiquidStream(solvent);
@@ -925,6 +954,16 @@ public class ProcessProbe {
     System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
     System.out.println("mass_residual=" + column.getLastMassResidual());
     System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    // **Only on a reactive row**, so every row already in the capture keeps its own bytes.
+    if (reactive) {
+      System.out.println("reactive=true");
+      System.out.println("reports_reactive=" + column.isReactive());
+      StringBuilder flags = new StringBuilder("reactive_tray_flags=");
+      for (int i = 0; i < column.getNumberOfTrays(); i++) {
+        flags.append(column.getTray(i).isUseReactiveFlash() ? "1" : "0");
+      }
+      System.out.println(flags);
+    }
     System.out.println("gas_in_mol_per_sec=" + gas.getFlowRate("mol/sec"));
     System.out.println("solvent_in_mol_per_sec=" + solvent.getFlowRate("mol/sec"));
     for (int i = 0; i < column.getNumberOfTrays(); i++) {
@@ -993,6 +1032,14 @@ public class ProcessProbe {
     // The contactor form, `testBasicAbsorber`'s own state re-cased on PR: a twelve-carbon
     // solvent against a light gas, ten middle trays, no ends, the solvent at the top stage.
     packedContactorRow("packed_contactor_6m");
+
+    // **The oracle's own state with a reactive section**, which is the only sibling reactive
+    // row that sits on a column this port already reproduces exactly: `packed_distillation_
+    // binary_2m` is the base column's own `binary_methane_butane_4_stages`, so the difference
+    // here is the section and nothing else. `PackedColumn` inherits `setReactive`, and its
+    // middle trays are the four the height derives - the two ends stay equilibrium stages.
+    packedColumnRow("packed_distillation_binary_2m_reactive", binary, binaryZ, 300.0, 20.0,
+        1000.0, 2.0, "Pall-Ring-50", 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, true);
   }
 
   /// The contactor constructor, which fixes ten middle trays and reads its packed height only in
@@ -1052,6 +1099,18 @@ public class ProcessProbe {
       double feedPressureBara, double kgPerHour, double packedHeight, String packingType,
       int feedTray, Double condenserC, Double reboilerC, double topBara, double bottomBara,
       double tolerance, int maxIterations) {
+    packedColumnRow(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, packedHeight,
+        packingType, feedTray, condenserC, reboilerC, topBara, bottomBara, tolerance,
+        maxIterations, false);
+  }
+
+  /// **The same column with `setReactive(true)`.** `PackedColumn extends DistillationColumn`
+  /// and its `run` is `super.run(id)` before the packing's report, so the reactive section is
+  /// the base's own on the stage count the packing's height derives.
+  static void packedColumnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, double packedHeight, String packingType,
+      int feedTray, Double condenserC, Double reboilerC, double topBara, double bottomBara,
+      double tolerance, int maxIterations, boolean reactive) {
     SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], z[i]);
@@ -1067,6 +1126,7 @@ public class ProcessProbe {
     neqsim.process.equipment.distillation.PackedColumn column =
         new neqsim.process.equipment.distillation.PackedColumn(label, packedHeight, packingType,
             true, true);
+    column.setReactive(reactive);
     column.addFeedStream(inlet, feedTray);
     if (condenserC != null) {
       column.setCondenserTemperature(condenserC, "C");
@@ -1088,6 +1148,15 @@ public class ProcessProbe {
     process.run();
 
     System.out.println(label);
+    if (reactive) {
+      System.out.println("reactive=true");
+      System.out.println("reports_reactive=" + column.isReactive());
+      StringBuilder flags = new StringBuilder("reactive_tray_flags=");
+      for (int i = 0; i < column.getNumberOfTrays(); i++) {
+        flags.append(column.getTray(i).isUseReactiveFlash() ? "1" : "0");
+      }
+      System.out.println(flags);
+    }
     System.out.println("packed_height_m=" + packedHeight);
     System.out.println("packing_type=" + packingType);
     System.out.println("stage_count_middle=" + (column.getNumberOfTrays() - 2));

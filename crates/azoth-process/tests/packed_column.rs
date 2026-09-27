@@ -87,6 +87,9 @@ fn the_packed_column_is_the_base_column_at_the_heights_stage_count() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     .expect("the packed column converges");
 
@@ -154,6 +157,9 @@ fn the_packed_binary_row_reaches_neqsims_profile() {
         Some(kelvins(253.15)),
         1.0e-6,
         200,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -252,6 +258,9 @@ fn the_height_moves_the_stage_count_and_the_profile() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     .expect("the packed column converges");
 
@@ -315,6 +324,9 @@ fn a_non_positive_capacity_factor_is_refused() {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .expect_err("the class's own setter refuses this");
         assert!(
@@ -345,6 +357,9 @@ fn the_packing_parameters_do_not_move_the_solve() {
         Some(kelvins(253.15)),
         1.0e-6,
         200,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -390,6 +405,9 @@ fn the_packing_parameters_do_not_move_the_solve() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     .expect("the packed column converges");
 
@@ -399,4 +417,147 @@ fn the_packing_parameters_do_not_move_the_solve() {
     );
     assert_eq!(plain.distillate_n, dressed.distillate_n);
     assert_eq!(plain.condenser_duty.value, dressed.condenser_duty.value);
+}
+
+/// **The reactive section on the packed column, which is the base's own and is the identity on
+/// this fluid.**
+///
+/// `PackedColumn` inherits `setReactive` and does not override it, so the flag reaches the four
+/// middle trays the height derives - `reactive_tray_flags=011110`, the two ends never - and
+/// NeqSim's own row `packed_distillation_binary_2m_reactive` is **bit-identical to
+/// `packed_distillation_binary_2m` across all sixty-nine captured keys**. That is not a
+/// coincidence and not a no-op in the port: this fluid has no independent reaction. Methane and
+/// n-butane give a carbon-and-hydrogen formula matrix of rank two against two species, so
+/// `independent_reactions()` is zero and the reactive route *is* the equilibrium flash - the
+/// property the class's own `ReactiveDistillationTest` asserts at `0.01` kg/hr.
+///
+/// **So the case is the identity**, and what it holds is the *routing*: a
+/// `reactive = true` that silently never reached the trays would pass this test and fail the
+/// capture's flag line, which is why the row is a case at all.
+#[test]
+fn the_reactive_section_is_the_delegations_own_on_a_fluid_that_does_not_react() {
+    let reactive = |reactive: bool| {
+        packed_column(
+            &["methane".to_string(), "n-butane".to_string()],
+            7.490704036290964,
+            &[0.5, 0.5],
+            pascals(2.0e6),
+            kelvins(300.0),
+            2.0,
+            2,
+            true,
+            true,
+            pascals(1.9e6),
+            pascals(2.0e6),
+            Some(kelvins(373.15)),
+            Some(kelvins(253.15)),
+            1.0e-6,
+            200,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(reactive),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .expect("the packed column converges")
+    };
+    let plain = reactive(false);
+    let dressed = reactive(true);
+
+    // **The same state, and not bit-identical in this port.** NeqSim's two rows *are*
+    // bit-identical, because its reactive route delegates to the plain flash when there are no
+    // independent reactions; this port runs its own reactive solve, which reaches the same point
+    // from a different arithmetic - measured at `3.7e-12` K on the worst tray, a relative
+    // `1.1e-14`. Holding the port to NeqSim's bit-identity would be asserting something about
+    // the *route* and not about the answer.
+    for (plain_t, dressed_t) in plain.tray_temperature.iter().zip(&dressed.tray_temperature) {
+        relative(
+            dressed_t.value,
+            plain_t.value,
+            1.0e-11,
+            "a tray on a fluid with no independent reaction",
+        );
+    }
+    for (plain_n, dressed_n) in plain.tray_gas_n.iter().zip(&dressed.tray_gas_n) {
+        relative(*dressed_n, *plain_n, 1.0e-11, "a tray's vapour");
+    }
+    relative(
+        dressed.distillate_n,
+        plain.distillate_n,
+        1.0e-12,
+        "distillate",
+    );
+    for (plain_z, dressed_z) in plain.distillate_z.iter().zip(&dressed.distillate_z) {
+        relative(
+            *dressed_z,
+            *plain_z,
+            1.0e-12,
+            "the distillate's composition",
+        );
+    }
+    relative(
+        dressed.condenser_duty.value,
+        plain.condenser_duty.value,
+        1.0e-10,
+        "condenser duty",
+    );
+    assert_eq!(
+        plain.iterations, dressed.iterations,
+        "and the two solves take the same number of passes"
+    );
+}
+
+/// **The three parameters are the class's two forms**, so half a section is refused rather than
+/// guessed - the same resolution `process.distillation_column` states, shared by all four ids.
+#[test]
+fn half_a_reactive_section_is_refused() {
+    let error = packed_column(
+        &["methane".to_string(), "n-butane".to_string()],
+        7.490704036290964,
+        &[0.5, 0.5],
+        pascals(2.0e6),
+        kelvins(300.0),
+        2.0,
+        2,
+        true,
+        true,
+        pascals(1.9e6),
+        pascals(2.0e6),
+        Some(kelvins(373.15)),
+        Some(kelvins(253.15)),
+        1.0e-6,
+        200,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        Some(1),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect_err("one bound alone is not a section the class can state");
+    assert!(
+        error.to_string().contains("both bounds or by neither"),
+        "{error}"
+    );
 }

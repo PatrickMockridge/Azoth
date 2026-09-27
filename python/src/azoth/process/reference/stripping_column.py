@@ -37,6 +37,9 @@ def stripping_column(
     murphree_efficiency: float | None = None,
     component_murphree_efficiency: list[float] | None = None,
     max_allowable_gas_load_factor: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
     solver_type: str | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper.
@@ -88,6 +91,12 @@ def stripping_column(
         murphree_efficiency,
         component_murphree_efficiency,
         max_allowable_gas_load_factor,
+        # **The three follow `absorption_column`'s own signature and not this function's**,
+        # because the delegation is positional: the spec declares them before `solver_type`
+        # and the absorber's signature carries them there.
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
     )
     return StrippingColumnResult(

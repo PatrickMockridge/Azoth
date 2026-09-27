@@ -525,10 +525,10 @@ pub fn distillation_column(
 /// through `top_feed`, which is `addGasInStream` and `addSolventInStream`.
 #[pyfunction]
 #[pyo3(
-    signature = (gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, solver_type = None)
+    signature = (gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None)
 )]
 #[pyo3(
-    text_signature = "(gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, solver_type=None)"
+    text_signature = "(gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input
@@ -557,6 +557,9 @@ pub fn absorption_column(
     murphree_efficiency: Option<f64>,
     component_murphree_efficiency: Option<Vec<f64>>,
     max_allowable_gas_load_factor: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
 ) -> PyResult<crate::results::PyAbsorptionColumnResult> {
     azoth_process::absorption_column(
@@ -579,6 +582,9 @@ pub fn absorption_column(
         murphree_efficiency,
         component_murphree_efficiency.as_deref(),
         max_allowable_gas_load_factor,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
     )
     .map(|r| crate::results::PyAbsorptionColumnResult::from(&r))
@@ -592,10 +598,10 @@ pub fn absorption_column(
 /// report afterwards, so `packed_height` reaches the separation only through `estimateStages`.
 #[pyfunction]
 #[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature = None, condenser_temperature = None, packing_type = None, structured_packing = None, design_flood_fraction = None, packing_hydraulic_capacity_factor = None, column_diameter = None, murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
+    signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature = None, condenser_temperature = None, packing_type = None, structured_packing = None, design_flood_fraction = None, packing_hydraulic_capacity_factor = None, column_diameter = None, murphree_efficiency = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
 )]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, packing_type=None, structured_packing=None, design_flood_fraction=None, packing_hydraulic_capacity_factor=None, column_diameter=None, murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, packing_type=None, structured_packing=None, design_flood_fraction=None, packing_hydraulic_capacity_factor=None, column_diameter=None, murphree_efficiency=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input
@@ -622,6 +628,9 @@ pub fn packed_column(
     packing_hydraulic_capacity_factor: Option<f64>,
     column_diameter: Option<f64>,
     murphree_efficiency: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
     top_specification_type: Option<&str>,
     top_specification_target: Option<f64>,
@@ -652,6 +661,9 @@ pub fn packed_column(
         packing_hydraulic_capacity_factor,
         column_diameter,
         murphree_efficiency,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
         top_specification_type,
         top_specification_target,
@@ -671,10 +683,10 @@ pub fn packed_column(
 /// call with the other labels.
 #[pyfunction]
 #[pyo3(
-    signature = (stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, solver_type = None)
+    signature = (stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None)
 )]
 #[pyo3(
-    text_signature = "(stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, solver_type=None)"
+    text_signature = "(stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input
@@ -699,6 +711,9 @@ pub fn stripping_column(
     murphree_efficiency: Option<f64>,
     component_murphree_efficiency: Option<Vec<f64>>,
     max_allowable_gas_load_factor: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
 ) -> PyResult<crate::results::PyStrippingColumnResult> {
     azoth_process::stripping_column(
@@ -721,6 +736,9 @@ pub fn stripping_column(
         murphree_efficiency,
         component_murphree_efficiency.as_deref(),
         max_allowable_gas_load_factor,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         solver_type,
     )
     .map(|r| crate::results::PyStrippingColumnResult::from(&r))

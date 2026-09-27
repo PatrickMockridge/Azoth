@@ -1107,6 +1107,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "max_allowable_gas_load_factor",
         "dimensionless",
     ),
+    (
+        "process.absorption_column",
+        "reactive_start_tray",
+        "dimensionless",
+    ),
+    (
+        "process.absorption_column",
+        "reactive_end_tray",
+        "dimensionless",
+    ),
     ("process.component_splitter", "feed_n", "molar_flow"),
     ("process.component_splitter", "feed_z", "dimensionless"),
     ("process.component_splitter", "feed_p", "pressure"),
@@ -1374,6 +1384,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "process.packed_column",
         "murphree_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.packed_column",
+        "reactive_start_tray",
+        "dimensionless",
+    ),
+    (
+        "process.packed_column",
+        "reactive_end_tray",
         "dimensionless",
     ),
     (
@@ -1666,6 +1686,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "process.stripping_column",
         "max_allowable_gas_load_factor",
+        "dimensionless",
+    ),
+    (
+        "process.stripping_column",
+        "reactive_start_tray",
+        "dimensionless",
+    ),
+    (
+        "process.stripping_column",
+        "reactive_end_tray",
         "dimensionless",
     ),
     ("process.tank", "feed_n", "molar_flow"),

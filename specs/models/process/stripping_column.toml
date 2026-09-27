@@ -12,6 +12,8 @@ assumptions = [
     "**both inlets carry the same substances in the same order**, which is the class's own indexing and `process.absorption_column`'s refusal.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
     "**the Murphree efficiencies and the eight unported strategies are refused by name**, as the base refuses them.",
+    "**`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.",
+    "**On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/absorber/StrippingColumn.java` is the port source; it extends `AbsorptionColumn` and adds no equations.",
@@ -90,6 +92,18 @@ description = "**not ported**: the per-component Murphree efficiency, which the 
 unit = "dimensionless"
 optional = true
 description = "the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does.\n"
+[inputs.reactive]
+type = "boolean"
+optional = true
+description = "**whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`, inherited and not overridden. The ends never do. Measured: the section is either the plain flash or a divergence - see the notes.\n"
+[inputs.reactive_start_tray]
+unit = "dimensionless"
+optional = true
+description = "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last. **Both bounds or neither.** An absorber has no ends, so every stage is a middle tray.\n"
+[inputs.reactive_end_tray]
+unit = "dimensionless"
+optional = true
+description = "the last reactive middle tray, inclusive.\n"
 [inputs.solver_type]
 type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]

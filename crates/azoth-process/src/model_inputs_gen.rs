@@ -207,6 +207,27 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "reactive",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "reactive_start_tray",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "reactive_end_tray",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
                 name: "solver_type",
                 kind: "enum",
                 values: &[
@@ -1430,6 +1451,27 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "reactive",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "reactive_start_tray",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "reactive_end_tray",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
                 name: "solver_type",
                 kind: "enum",
                 values: &[
@@ -2418,6 +2460,27 @@ static ALL: &[ModelInputs] = &[
             },
             ModelInput {
                 name: "max_allowable_gas_load_factor",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "reactive",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "reactive_start_tray",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "reactive_end_tray",
                 kind: "quantity",
                 values: &[],
                 optional: true,

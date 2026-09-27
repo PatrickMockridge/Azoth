@@ -25,6 +25,7 @@ from azoth.process.reference.distillation_column import (
     _feed,
     _si,
     _states,
+    reactive_section,
     unported_solver_class,
 )
 
@@ -52,6 +53,9 @@ def absorption_column(
     murphree_efficiency: float | None = None,
     component_murphree_efficiency: list[float] | None = None,
     max_allowable_gas_load_factor: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
     solver_type: str | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber.
@@ -169,6 +173,7 @@ def absorption_column(
             solvent_pressure,
         ),
         tray_temperatures=None if tray_temperatures is None else tuple(tray_temperatures),
+        reactive=reactive_section(reactive, reactive_start_tray, reactive_end_tray),
     )
 
     return AbsorptionColumnResult(

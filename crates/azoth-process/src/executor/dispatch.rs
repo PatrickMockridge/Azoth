@@ -718,6 +718,12 @@ fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
             temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
             max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,
+            reactive: kernels::distillation_column::reactive_section(
+                p.optional_flag("reactive")?,
+                p.optional_number("reactive_start_tray")?
+                    .map(|v| v as usize),
+                p.optional_number("reactive_end_tray")?.map(|v| v as usize),
+            )?,
         },
     )?;
     // The kernel's own warnings, which are the *solver's* - a column that hit its iteration cap
@@ -741,6 +747,12 @@ fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
             temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
             max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,
+            reactive: kernels::distillation_column::reactive_section(
+                p.optional_flag("reactive")?,
+                p.optional_number("reactive_start_tray")?
+                    .map(|v| v as usize),
+                p.optional_number("reactive_end_tray")?.map(|v| v as usize),
+            )?,
         },
     )?;
     let warnings = out.warnings.clone();
@@ -858,6 +870,12 @@ fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome>
         top_specification: None,
         bottom_specification: None,
         solver_type: solver,
+        reactive: kernels::distillation_column::reactive_section(
+            p.optional_flag("reactive")?,
+            p.optional_number("reactive_start_tray")?
+                .map(|v| v as usize),
+            p.optional_number("reactive_end_tray")?.map(|v| v as usize),
+        )?,
     })?;
     // **Streams only**, for the reason the rate-based entry gives below: `PackedColumnResult` is
     // `DistillationColumnResult` under this id's type, and neither carries the `Serialize` the

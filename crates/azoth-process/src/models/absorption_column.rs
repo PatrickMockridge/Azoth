@@ -160,6 +160,9 @@ pub fn absorption_column(
     murphree_efficiency: Option<f64>,
     component_murphree_efficiency: Option<&[f64]>,
     max_allowable_gas_load_factor: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
 ) -> Result<AbsorptionColumnResult> {
     refuse_unported(
@@ -228,6 +231,11 @@ pub fn absorption_column(
         temperature_tolerance,
         max_iterations,
         solver_type: solver,
+        reactive: crate::kernels::distillation_column::reactive_section(
+            reactive,
+            reactive_start_tray,
+            reactive_end_tray,
+        )?,
     })?;
 
     warnings.extend(out.warnings.iter().cloned());

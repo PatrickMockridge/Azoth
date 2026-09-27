@@ -549,7 +549,7 @@ fn the_generated_input_table_is_the_models_own() {
             walked += 1;
         }
     }
-    assert_eq!(walked, 332, "the inputs this test walked");
+    assert_eq!(walked, 341, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

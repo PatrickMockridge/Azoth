@@ -60,6 +60,9 @@ pub struct PackedSetup {
     /// The column-wide Murphree tray efficiency, or `None` for the ideal stage - the base
     /// column's own correction, which `PackedColumn` inherits.
     pub murphree_efficiency: Option<f64>,
+    /// **Which trays flash reactively**, which `PackedColumn` inherits from the base and does
+    /// not override: its middle trays are the ones the packing's height derives.
+    pub reactive: ReactiveSection,
     pub top_specification: Option<Specification>,
     pub bottom_specification: Option<Specification>,
     pub solver_type: SolverType,
@@ -93,9 +96,7 @@ pub fn packed_column(setup: &PackedSetup) -> Result<ColumnOutcome> {
         top_feed: None,
         tray_temperatures: None,
         solver_type: setup.solver_type,
-        // The class inherits `setReactive` and this entry does not declare the section: the
-        // packings's own parameters are a report, and the reactive section is the base's.
-        reactive: ReactiveSection::None,
+        reactive: setup.reactive,
         // The draws are the base column's too, and this entry declares none of them.
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,

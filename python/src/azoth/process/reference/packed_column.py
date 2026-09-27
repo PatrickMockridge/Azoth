@@ -72,6 +72,9 @@ def packed_column(
     packing_hydraulic_capacity_factor: float | None = None,
     column_diameter: Q | None = None,
     murphree_efficiency: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
     top_specification_target: float | None = None,
@@ -163,6 +166,12 @@ def packed_column(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        # **The section is the base's own**, whose signature carries it after the two
+        # specifications - which is the order the spec declares its inputs in, and the order a
+        # positional caller has to follow.
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
     )
     return PackedColumnResult(
         tray_temperature=out.tray_temperature,

@@ -167,6 +167,9 @@ pub fn packed_column(
     packing_hydraulic_capacity_factor: Option<f64>,
     column_diameter: Option<f64>,
     murphree_efficiency: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
     top_specification_type: Option<&str>,
     top_specification_target: Option<f64>,
@@ -227,12 +230,11 @@ pub fn packed_column(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
-        // **A packed column's stages are equilibrium stages**: `PackedColumn` inherits
-        // `setReactive`, and this id does not declare the section yet - the packing is a report
-        // on the far side of the solve, and the reactive section is the base column's own.
-        None,
-        None,
-        None,
+        // **The section is the base column's own**, which `PackedColumn` inherits and does not
+        // override: its middle trays are the ones the packing's height derives.
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
         // **A packed column's draws are the base column's, and this id does not declare them.**
         None,
         None,

@@ -16,7 +16,9 @@
 use azoth_core::units::Pressure;
 use azoth_core::{AzothError, Result};
 
-use super::distillation_column::{ColumnOutcome, ColumnSetup, SolverType, TrayProfile};
+use super::distillation_column::{
+    ColumnOutcome, ColumnSetup, ReactiveSection, SolverType, TrayProfile,
+};
 use crate::stream::Stream;
 
 /// What an absorber's solve hands back: the profile and the two products.
@@ -61,6 +63,10 @@ pub struct AbsorberSetup {
     pub max_iterations: usize,
     /// Which of the base's strategies to run.
     pub solver_type: SolverType,
+    /// **Which trays flash reactively.** `AbsorptionColumn` inherits `setReactive` and overrides
+    /// no `run`, so this is the base's section - and an absorber has no ends, so every stage is
+    /// a middle tray.
+    pub reactive: ReactiveSection,
 }
 
 /// Solve a tray absorber, or a stripper - the same equations with the inlets named otherwise.
@@ -97,9 +103,7 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         top_feed: Some(setup.solvent.clone()),
         tray_temperatures: setup.tray_temperatures.clone(),
         solver_type: setup.solver_type,
-        // **The absorber's own section is the class's**: `AbsorptionColumn` inherits
-        // `setReactive`, and its model does not declare the input yet, so it is `None` here.
-        reactive: super::distillation_column::ReactiveSection::None,
+        reactive: setup.reactive,
         // The absorber's own fractions are the class's too, and its model does not declare them.
         gas_side_draw_fractions: None,
         liquid_side_draw_fractions: None,

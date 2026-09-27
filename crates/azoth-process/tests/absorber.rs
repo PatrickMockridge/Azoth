@@ -300,6 +300,9 @@ fn the_stripping_column_id_reaches_the_absorber_model() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     .expect("the stripper converges");
 
@@ -326,5 +329,106 @@ fn the_stripping_column_id_reaches_the_absorber_model() {
         321.706608455782,
         2.0e-3,
         "the bottom tray's temperature",
+    );
+}
+
+/// **The reactive section on an absorber, which is inherited, routed, and refused where the
+/// class does not converge it either.**
+///
+/// `AbsorptionColumn` inherits `setReactive` and overrides no `run`, so the section is the
+/// base's own - and an absorber has no ends, so `setReactive(true)` flags **every** stage:
+/// the capture's `reactive_tray_flags=11111`. No `AbsorptionColumnTest`, `StrippingColumnTest`
+/// or `PackedColumnTest` calls `setReactive`, so the two rows in the capture are this port's
+/// own measurement of what the class does with it.
+///
+/// **On a fluid that reacts the class does not reach a column result** - the hydrocarbon
+/// absorber at this port's own gate ends `FALLBACK_PRODUCTS` with a mass residual of `6.4e5`
+/// after 16 iterations, and its own log calls the published products not a rigorous column
+/// result. This port refuses it one stage earlier and names the reason the reactive tray
+/// tranche already codified: the reactive flash's two phases converge to one composition, so
+/// nothing says which of them leaves by the vapour port.
+#[test]
+fn a_reactive_absorber_is_refused_where_the_class_does_not_converge_it_either() {
+    let mut setup = lean_oil();
+    setup.reactive = azoth_process::kernels::ReactiveSection::All;
+    let error = distillation_column(&setup).expect_err("neither library reaches a column result");
+    assert!(
+        error.to_string().contains("without a vapour/liquid label"),
+        "the refusal names the reactive flash's own reason: {error}"
+    );
+}
+
+/// **And on a fluid with no independent reaction the section is the equilibrium flash**, so the
+/// two columns are the same machine - the property `testReactiveColumnMassBalanceNR0` asserts
+/// and the reason the packed column's own reactive case is an identity.
+#[test]
+fn a_reactive_absorber_on_a_fluid_that_does_not_react_is_the_same_column() {
+    // **Two species and no more.** The carbon-and-hydrogen formula matrix has rank two, so a
+    // third species would give the fluid an independent reaction and the section would stop
+    // being the identity; methane against n-heptane is two, and the heavy one is a liquid at
+    // 15 bar and 293 K, which an absorber's solvent has to be.
+    let light = |reactive| ColumnSetup {
+        feed: Stream::from_pt(
+            vec!["methane".into(), "n-heptane".into()],
+            vec![0.98, 0.02],
+            30.852602094576984,
+            pascals(15.0e5),
+            kelvins(303.15),
+        )
+        .expect("the fluid resolves"),
+        feed_stage: 0,
+        number_of_stages: 5,
+        has_reboiler: false,
+        has_condenser: false,
+        top_pressure: pascals(15.0e5),
+        bottom_pressure: pascals(15.0e5),
+        condenser_temperature: None,
+        reboiler_temperature: None,
+        temperature_tolerance: 1.0e-4,
+        murphree_efficiency: None,
+        max_iterations: 80,
+        top_specification: None,
+        bottom_specification: None,
+        top_feed: Some(
+            Stream::from_pt(
+                vec!["methane".into(), "n-heptane".into()],
+                vec![0.0, 1.0],
+                1.6632569898375,
+                pascals(15.0e5),
+                kelvins(293.15),
+            )
+            .expect("the fluid resolves"),
+        ),
+        tray_temperatures: None,
+        solver_type: SolverType::DirectSubstitution,
+        gas_side_draw_fractions: None,
+        liquid_side_draw_fractions: None,
+        pumparound_fractions: None,
+        reactive,
+    };
+    let plain = distillation_column(&light(azoth_process::kernels::ReactiveSection::None))
+        .expect("the plain column converges");
+    let reactive = distillation_column(&light(azoth_process::kernels::ReactiveSection::All))
+        .expect("and the reactive one is the same machine");
+
+    for (a, b) in plain.trays.iter().zip(&reactive.trays) {
+        relative(
+            b.temperature.value,
+            a.temperature.value,
+            1.0e-9,
+            "tray temperature",
+        );
+        relative(b.gas_n, a.gas_n, 1.0e-9, "tray vapour");
+    }
+    relative(
+        reactive.distillate.n,
+        plain.distillate.n,
+        1.0e-10,
+        "distillate",
+    );
+    relative(reactive.bottoms.n, plain.bottoms.n, 1.0e-10, "bottoms");
+    assert_eq!(
+        plain.iterations, reactive.iterations,
+        "the two routes take the same number of passes"
     );
 }

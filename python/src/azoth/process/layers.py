@@ -1380,6 +1380,17 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=12,
         identified_by=(LABEL_KEY, "packed_distillation_binary_2m"),
     ),
+    # **The reactive packed column, whose answer is the row above's own.** `reactive = true`
+    # reaches the four middle trays and changes nothing, because this fluid has no independent
+    # reaction - so the case is the *identity*, and it exists because a flag that silently did
+    # nothing would otherwise look exactly like one that worked.
+    LayerCase(
+        model="process.packed_column",
+        case="packed_binary_2m_reactive_is_the_delegations_own",
+        capture="process_packed_column.tsv",
+        block=15,
+        identified_by=(LABEL_KEY, "packed_distillation_binary_2m_reactive"),
+    ),
     LayerCase(
         model="process.packed_column",
         case="packed_binary_2m3_is_one_stage_more",
@@ -1494,7 +1505,13 @@ UNCASED_ROWS: dict[str, int] = {
     # gate of `1.6e-2`. The classes' *tests* accept it only because they loosened that gate to
     # `5e-2`, a settable this port has not carried. The two loose-gate rows are the same
     # measurement one step out, and the stripper's pinned row states `MESH_RESIDUAL` besides.
-    "process_absorber.tsv": 5,
+    # **And the two reactive sibling rows.** `AbsorptionColumn` inherits `setReactive` and no
+    # `AbsorptionColumnTest`, `StrippingColumnTest` or `PackedColumnTest` calls it, so these are
+    # the measurement rather than an oracle: on this fluid the class's own solve ends
+    # `FALLBACK_PRODUCTS` with a mass residual of `6.4e5` after 16 iterations, and its own log
+    # calls the published products not a rigorous column result. The port refuses the states
+    # neither library converges, and what it asserts about them is that refusal.
+    "process_absorber.tsv": 7,
     # The packed column's thirteen: eleven stage-count rows and two solved rows. **The eleven are
     # the constructor's own arithmetic** - `PackedColumn(name, height, packing, true, true)` with
     # no feed and no solve, printing the trays it made - so there is no model state for them to be

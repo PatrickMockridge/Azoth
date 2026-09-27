@@ -302,27 +302,7 @@ def distillation_column(
     """
     _refuse_unported(solver_type, murphree_efficiency)
 
-    # **`setReactive`'s two forms, and neither states half a section** - the mirror of the Rust
-    # model's own resolution.
-    if (reactive_start_tray is None) != (reactive_end_tray is None):
-        raise InvalidInputError(
-            "reactive_start_tray",
-            "a reactive section is stated by both bounds or by neither: `setReactive(true)` "
-            "covers every middle tray and `setReactive(true, start, end)` a run of them, and the "
-            "class has no form that states one end alone",
-        )
-    section: tuple[int, int] | None = None
-    if reactive:
-        start, end = reactive_start_tray, reactive_end_tray
-        section = (-1, -1) if start is None or end is None else (int(start), int(end))
-    elif reactive_start_tray is not None:
-        raise InvalidInputError(
-            "reactive",
-            "a reactive section was stated without `reactive = true`, which is a declaration "
-            "that says nothing",
-        )
-    else:
-        section = None
+    section = reactive_section(reactive, reactive_start_tray, reactive_end_tray)
     if section is not None and solver_type == "naphtali_sandholm":
         raise InvalidInputError(
             "reactive",
@@ -463,6 +443,35 @@ def distillation_column(
         energy_residual=states.energy_residual,
         warnings=tuple(warnings),
     )
+
+
+def reactive_section(
+    reactive: bool | None, start: int | None, end: int | None
+) -> tuple[int, int] | None:
+    """`DistillationColumn.setReactive`'s two forms, resolved from the three declared inputs.
+
+    The class clears both bounds for `setReactive(true)` and sets both for
+    `setReactive(true, start, end)`; a single bound is a declaration the class cannot make, so it
+    is refused rather than guessed - and so is a section stated without `reactive = true`. **One
+    resolution for the four column ids**, because the absorber, the stripper and the packed
+    column all inherit this setter and none of them overrides it.
+    """
+    if (start is None) != (end is None):
+        raise InvalidInputError(
+            "reactive_start_tray",
+            "a reactive section is stated by both bounds or by neither: `setReactive(true)` "
+            "covers every middle tray and `setReactive(true, start, end)` a run of them, and the "
+            "class has no form that states one end alone",
+        )
+    if reactive:
+        return (-1, -1) if start is None or end is None else (int(start), int(end))
+    if start is not None:
+        raise InvalidInputError(
+            "reactive",
+            "a reactive section was stated without `reactive = true`, which is a declaration "
+            "that says nothing",
+        )
+    return None
 
 
 def _states(

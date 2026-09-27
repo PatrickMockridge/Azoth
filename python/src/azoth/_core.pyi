@@ -3134,6 +3134,9 @@ def absorption_column(
     murphree_efficiency: float | None = None,
     component_murphree_efficiency: list[float] | None = None,
     max_allowable_gas_load_factor: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: float | None = None,
+    reactive_end_tray: float | None = None,
     solver_type: str | None = None,
 ) -> AbsorptionColumnResult: ...
 def component_splitter(
@@ -3321,6 +3324,9 @@ def packed_column(
     packing_hydraulic_capacity_factor: float | None = None,
     column_diameter: float | None = None,
     murphree_efficiency: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: float | None = None,
+    reactive_end_tray: float | None = None,
     solver_type: str | None = None,
     top_specification_type: str | None = None,
     top_specification_target: float | None = None,
@@ -3470,6 +3476,9 @@ def stripping_column(
     murphree_efficiency: float | None = None,
     component_murphree_efficiency: list[float] | None = None,
     max_allowable_gas_load_factor: float | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: float | None = None,
+    reactive_end_tray: float | None = None,
     solver_type: str | None = None,
 ) -> StrippingColumnResult: ...
 def tank(
