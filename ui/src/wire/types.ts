@@ -204,6 +204,45 @@ export interface SessionReport {
  */
 export type UnitResult = Record<string, unknown>;
 
+/**
+ * One instantiated unit operation, and what backs it.
+ *
+ * **Every key is always present, `null` rather than missing**, because a reader switching on
+ * `verification` should not also have to test for the field's existence — the same rule the
+ * diagnostics' own records follow.
+ */
+export interface UnitProvenance {
+  /** The document's own name for this instance, as `Envelope.paths` spells it. */
+  instance: string;
+  /** The palette entry it was added as, e.g. `unit_ops.pump`. */
+  unit: string;
+  /** The registered model id, where the palette entry has one. */
+  model: string | null;
+  /** The provenance line the palette carries, e.g. the NeqSim class. */
+  source: string | null;
+  /** Whether the executor has a kernel for it, and why not where it does not. */
+  runnable: boolean;
+  refusal: string | null;
+  /**
+   * The model's spec and Rust kernel hashes, and how far its answer is checked.
+   *
+   * **Absent together and absent rather than defaulted**: a palette entry with no model has no
+   * calculation to describe, and `null` says so where an empty string would look like a hash
+   * nobody could compare.
+   */
+  spec_sha256: string | null;
+  rust_sha256: string | null;
+  verification: string | null;
+}
+
+/** What a document as a whole rests on: the library, its version, and one entry per instance. */
+export interface ProvenanceRecord {
+  library: string;
+  version: string;
+  /** One entry per instantiated unit operation, **in the document's own order**. */
+  units: UnitProvenance[];
+}
+
 /** Everything one call answers with. */
 export interface Envelope {
   ok: boolean;
@@ -220,6 +259,8 @@ export interface Envelope {
   paths: string[];
   session: SessionReport | null;
   run_error: string | null;
+  /** What the document rests on, which is a fact about the *run* and not about any stream. */
+  provenance: ProvenanceRecord;
 }
 
 /** An enum parameter's allowed values live in `values`; this is what chooses a control. */
