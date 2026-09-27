@@ -1,5 +1,6 @@
 //! Result shapes shared by every calculation.
 
+use crate::provenance::Provenance;
 use crate::warning::Warning;
 
 /// Flow regime of a pipe flow, under the Crane/Moody boundaries.
@@ -108,6 +109,25 @@ pub trait CalcResult {
     /// True when any warning is the given code.
     fn has_warning(&self, code: crate::warning::WarningCode) -> bool {
         self.warnings().iter().any(|w| w.code == code)
+    }
+
+    /// What this answer rests on: the generated half, and what this call reported.
+    ///
+    /// A default method rather than a constant each implementation declares, so a result
+    /// type added later cannot be the one that does not describe itself. The lookup is by
+    /// [`Self::CALC_ID`], which every implementation already carries, against a table the
+    /// generator builds from the same registry those ids come from - so the two agreeing is
+    /// a property of the build rather than of anyone remembering.
+    ///
+    /// `None` matches [`crate::spec::CalcSpec`]'s own by-id lookup rather than inventing a
+    /// second convention: an id this build does not ship has no provenance, and saying so is
+    /// better than a block that would describe code nobody can identify. For a result type
+    /// the registry ships, it is always `Some`, which `crates/azoth-*/tests/provenance.rs`
+    /// asserts per crate.
+    #[must_use]
+    fn provenance(&self) -> Option<Provenance<'_>> {
+        crate::provenance_gen::provenance(Self::CALC_ID)
+            .map(|static_half| Provenance::of(*static_half, self.warnings()))
     }
 }
 

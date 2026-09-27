@@ -139,6 +139,23 @@ def test_the_block_exists_for_every_registered_id() -> None:
     assert len(registered) == 192
 
 
+def test_the_rust_table_carries_exactly_the_same_ids() -> None:
+    """Two generated files, one list - checked, because they are two files.
+
+    Both are emitted from the same blocks, so they agree unless a language's emitter drops
+    one. Nothing else would notice: the Rust side compiles with a short table and the
+    Python side passes with a long one, and the id that fell out would be found only by a
+    caller who happened to ask for it.
+    """
+    text = (REPO_ROOT / "crates" / "azoth-core" / "src" / "provenance_gen.rs").read_text(
+        encoding="utf-8"
+    )
+    rust_ids = re.findall(r'^\s*calc_id: "([^"]+)",$', text, flags=re.MULTILINE)
+
+    assert len(rust_ids) == len(PROVENANCE), f"{len(rust_ids)} vs {len(PROVENANCE)}"
+    assert set(rust_ids) == set(PROVENANCE)
+
+
 def test_an_unknown_id_is_refused_rather_than_answered_with_an_empty_block() -> None:
     """The same rule the databank follows for a substance it cannot name.
 

@@ -30,6 +30,8 @@
 //! result dataclass, so the two implementations cannot drift apart unnoticed.
 
 pub mod error;
+pub mod provenance;
+pub mod provenance_gen;
 pub mod range;
 pub mod result;
 pub mod solver;
