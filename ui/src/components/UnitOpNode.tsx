@@ -17,7 +17,7 @@
  * machine from the one the declaration describes.
  */
 
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 
 import { glyphFor, isVertical, senseFor, sideOf, type Side } from "../state/glyphs";
 import { Glyph } from "./Glyph";
@@ -39,6 +39,15 @@ export type NodePayload = {
   readout: Readout[];
   bad: boolean;
 };
+
+/**
+ * The node xyflow holds, typed by its payload.
+ *
+ * **`NodeProps` is generic over the node**, so naming the payload here is what makes `data` the
+ * projection's shape in the component below instead of `Record<string, unknown>`. The alternative
+ * was a cast or a re-read per render, and neither is a statement about the type — this is.
+ */
+export type AppNode = Node<NodePayload, typeof UNIT_NODE | typeof STREAM_NODE>;
 
 export const UNIT_NODE = "unit_op";
 export const STREAM_NODE = "stream";
@@ -95,10 +104,11 @@ function offset(slot: Slot): { left?: string; top?: string } {
   return isVertical(slot.side) ? { left: percent } : { top: percent };
 }
 
-export function UnitOpNode({ data, selected }: NodeProps) {
-  // The canvas is handed this payload by `Flowsheet`, which builds it from the graph document.
-  const payload = data as unknown as NodePayload;
-  const { graph, form, readout, bad } = payload;
+export function UnitOpNode({ data, selected }: NodeProps<AppNode>) {
+  // **No cast.** The canvas is handed this payload by `Flowsheet`, which builds it from the graph
+  // document, and `NodeProps<AppNode>` is what makes that a statement about the type rather than
+  // an assertion in the component that reads it.
+  const { graph, form, readout, bad } = data;
 
   if (graph.role !== "instance") {
     // A boundary stream: one handle on the side the stream leaves or arrives at, named by the

@@ -1,3 +1,4 @@
+import { asExecutionOrder } from "../wire/decode";
 import type { Envelope, ExecutionOrder } from "../wire/types";
 import type { Theme } from "../state/theme";
 import type { Units } from "../state/units";
@@ -44,7 +45,12 @@ export function TitleStrip({
           value={envelope.execution_order}
           disabled={!session}
           title="which order the next run takes; ProcessSystem.useGraphBasedExecution is a flag, so there are two"
-          onChange={(event) => onOrder(event.target.value as ExecutionOrder)}
+          onChange={(event) => {
+            const chosen = asExecutionOrder(event.target.value);
+            if (chosen !== null) {
+              onOrder(chosen);
+            }
+          }}
         >
           <option value="insertion">insertion</option>
           <option value="topological">topological</option>

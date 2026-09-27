@@ -7,15 +7,19 @@ import type { KeyboardEvent } from "react";
  * is what makes the strip one stop rather than six. A row of plain buttons with `aria-selected` on
  * them would *look* like tabs and be a set of six independent controls to anything reading the DOM.
  */
-export function DockTabs({
+export function DockTabs<Id extends string>({
   tabs,
   active,
   onTab,
   label,
 }: {
-  tabs: readonly { id: string; label: string; count?: number }[];
-  active: string;
-  onTab: (id: string) => void;
+  // **Generic over the id, so a tab can only be reported back as what it is.** The ids this
+  // draws are a closed set — a sheet name, a tab name — and a `string` here would make every
+  // caller cast the answer back to the union it came from, which is an assertion where a type
+  // is available.
+  tabs: readonly { id: Id; label: string; count?: number }[];
+  active: Id;
+  onTab: (id: Id) => void;
   /** What the strip is over, for the group's own accessible name. */
   label: string;
 }) {

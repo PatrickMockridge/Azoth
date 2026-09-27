@@ -28,7 +28,8 @@ import type { EditorCommand } from "../wire/commands";
 import type { Units } from "../state/units";
 import { formatQuantity } from "../wire/field";
 import { removeCommandFor } from "../wire/nodes";
-import type { Catalogue, Envelope, GraphEdge, GraphNode } from "../wire/types";
+import { asEdgeData } from "../wire/decode";
+import type { Catalogue, Envelope, GraphNode } from "../wire/types";
 import { STREAM_NODE, UNIT_NODE, nodeTypes, type NodePayload } from "./UnitOpNode";
 
 export interface FlowsheetProps {
@@ -125,9 +126,14 @@ export function Flowsheet({
           if (edge.data === undefined) {
             continue;
           }
-          // xyflow types `data` as `Record<string, unknown>`; this is the projection's own shape,
-          // which `GraphEdge` mirrors and `fixtures.test.ts` holds to the emitted document.
-          const data = edge.data as unknown as GraphEdge["data"];
+          // **Read back, not asserted.** xyflow types `data` as `Record<string, unknown>` — it
+          // carries the projection's object and does not know its shape — so this reads it again
+          // rather than asserting it. An edge whose data is not the projection's is one a canvas
+          // cannot make a command from, and dropping it is what `data === undefined` above does.
+          const data = asEdgeData(edge.data);
+          if (data === null) {
+            continue;
+          }
           onCommand(
             data.kind === "recycle"
               ? { command: "remove_recycle", stream: data.path }

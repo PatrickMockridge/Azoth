@@ -14,6 +14,7 @@
 
 import { displayOf, type Units } from "./units";
 import type { TabId } from "./layout";
+import { fieldOf, isQuantity } from "../wire/decode";
 import type { Envelope, Quantity, UnitResult } from "../wire/types";
 
 /** One scalar a result carries: a number, a name, a switch, or a quantity with its unit. */
@@ -90,8 +91,8 @@ export function seriesOf(result: UnitResult, units?: Units): Series[] {
     }
     if (value.every((entry) => typeof entry === "number")) {
       out.push({ key, values: value as number[], unit: null });
-    } else if (value.every(isQuantity)) {
-      const quantities = value as Quantity[];
+    } else if (allQuantities(value)) {
+      const quantities = value;
       // **One factor for the column**, taken from the first entry: a profile is one dimension, and
       // a vector whose entries disagreed about theirs would be a defect the library cannot write.
       const first = quantities[0];
@@ -128,7 +129,9 @@ export function warningsOf(result: UnitResult): ResultWarning[] {
     if (typeof warning !== "object" || warning === null) {
       return [];
     }
-    const { code, message, field } = warning as Partial<ResultWarning>;
+    const code = fieldOf(warning, "code");
+    const message = fieldOf(warning, "message");
+    const field = fieldOf(warning, "field");
     return [
       {
         code: typeof code === "string" ? code : "warning",
@@ -151,13 +154,9 @@ function shown(units: Units | undefined, unit: string): { unit: string; factor: 
 }
 
 /** Whether a value is the codec's `{magnitude_si, unit}` shape. */
-function isQuantity(value: unknown): value is Quantity {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "magnitude_si" in value &&
-    typeof (value as Quantity).magnitude_si === "number"
-  );
+/** `Array.prototype.every` keeps its predicate's narrowing, which the built-in cannot express. */
+function allQuantities(values: unknown[]): values is Quantity[] {
+  return values.every(isQuantity);
 }
 
 /**

@@ -17,7 +17,8 @@
  */
 
 import { displayOf, type Units } from "./units";
-import type { Catalogue, Envelope, Quantity, StreamRecord } from "../wire/types";
+import { isQuantity } from "../wire/decode";
+import type { Catalogue, Envelope, StreamRecord } from "../wire/types";
 
 /** The substance axis a composition table is laid out over. */
 export interface Axis {
@@ -121,25 +122,16 @@ export function streamColumns(record: StreamRecord | undefined, units?: Units): 
     return reading;
   }
   const claimed = new Set([...declared.map((column) => column.key), "z"]);
-  const extra = Object.entries(record)
-    .filter(([key, value]) => !claimed.has(key) && isQuantity(value))
-    .map(([key, value]) => ({
-      key,
-      label: key,
-      unit: shown((value as Quantity).unit),
-      digits: 4,
-    }));
+  // **A `flatMap` and not a filter-then-map**, because the filter's predicate is what narrows the
+  // value: after it, TypeScript still has the tuple's second element as `unknown`, and the map had
+  // to assert it back. Here the guard is the branch, so the value is a `Quantity` where it is read.
+  const extra = Object.entries(record).flatMap(([key, value]) => {
+    if (claimed.has(key) || !isQuantity(value)) {
+      return [];
+    }
+    return [{ key, label: key, unit: shown(value.unit), digits: 4 }];
+  });
   return [...reading, ...extra];
-}
-
-/** Whether a record's value is the codec's `{magnitude_si, unit}` shape. */
-function isQuantity(value: unknown): boolean {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "magnitude_si" in value &&
-    "unit" in value
-  );
 }
 
 /** One row of a workbook: what the row *is*, and the record it read, where a run reached it. */

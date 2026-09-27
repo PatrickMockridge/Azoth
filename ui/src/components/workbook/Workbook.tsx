@@ -9,8 +9,9 @@ import {
   streamRows,
 } from "../../state/columns";
 import { displayOf, type Units } from "../../state/units";
+import { fieldOf, isQuantity } from "../../wire/decode";
 import { formatQuantity } from "../../wire/field";
-import type { Catalogue, Envelope, Quantity, StreamRecord } from "../../wire/types";
+import type { Catalogue, Envelope, StreamRecord } from "../../wire/types";
 import { DockTabs } from "../property/DockTabs";
 import { WorkbookGrid } from "./WorkbookGrid";
 
@@ -64,7 +65,7 @@ export function Workbook({
           { id: "composition", label: LABELS.composition },
           { id: "tears", label: LABELS.tears, count: envelope.session?.tears.length ?? 0 },
         ]}
-        onTab={(id) => setSheet(id as Sheet)}
+        onTab={setSheet}
       />
       {sheet === "streams" ? (
         <WorkbookGrid
@@ -184,16 +185,18 @@ function massFactor(units: Units): number {
 
 /** One cell: the record's value, or a dash where the run left none. */
 function cell(record: StreamRecord | undefined, key: string, units: Units): string {
-  const value = (record as Record<string, unknown> | undefined)?.[key];
+  // Read, not indexed: `StreamRecord` is a closed type and a column key is a string — the row's
+  // key is one of the record's own fields or a value the databank added, and which it is is a
+  // question about the record rather than about the type.
+  const value = fieldOf(record, key);
   if (value === undefined || value === null) {
     return "—";
   }
   if (typeof value === "number") {
     return value.toFixed(4);
   }
-  const quantity = value as Quantity;
-  if (typeof quantity.magnitude_si === "number") {
-    return formatQuantity(quantity.magnitude_si, quantity.unit, 4, units);
+  if (isQuantity(value)) {
+    return formatQuantity(value.magnitude_si, value.unit, 4, units);
   }
   return String(value);
 }

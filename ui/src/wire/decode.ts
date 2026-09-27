@@ -172,6 +172,41 @@ export function asRole(value: string): Role | null {
   return ROLES.find((entry) => entry === value) ?? null;
 }
 
+/**
+ * The order a control names, or `null`.
+ *
+ * **A `<select>`'s value is a `string`**, and the two options are the class's two orders — so this
+ * is where that becomes a fact rather than an assertion. `null` cannot arrive from a control whose
+ * options are these two; a reader that says so is one an option added later cannot silently pass.
+ */
+export function asExecutionOrder(value: string): ExecutionOrder | null {
+  return ORDERS.find((entry) => entry === value) ?? null;
+}
+
+/**
+ * An edge's own data, re-read from what xyflow holds.
+ *
+ * **A re-read and not an assertion.** xyflow types an edge's `data` as `Record<string, unknown>`
+ * — it carries the object and does not know its shape — so a consumer that wants the projection's
+ * fields either asserts them back or reads them. This reads them: an edge the projection did not
+ * make is `null`, which is a thing a canvas can drop rather than a field that arrives `undefined`.
+ */
+export function asEdgeData(value: unknown): GraphEdge["data"] | null {
+  try {
+    return edgeData(value);
+  } catch {
+    return null;
+  }
+}
+
+/** Whether a value is a scalar with a unit, which is what the codec writes and nothing else. */
+export function isQuantity(value: unknown): value is Quantity {
+  return (
+    typeof fieldOf(value, "magnitude_si") === "number" &&
+    typeof fieldOf(value, "unit") === "string"
+  );
+}
+
 function position(value: unknown, path: string): Position {
   const raw = obj(value, path);
   return { x: num(raw.x, `${path}.x`), y: num(raw.y, `${path}.y`) };
@@ -266,26 +301,30 @@ function recycleSettings(value: unknown, path: string): RecycleSettings {
   return settings;
 }
 
+function edgeData(value: unknown, path = "an edge's data"): GraphEdge["data"] {
+  const raw = obj(value, path);
+  const data: GraphEdge["data"] = {
+    kind: oneOf(raw.kind, `${path}.kind`, ["connection", "recycle"] as const),
+    from: str(raw.from, `${path}.from`),
+    to: str(raw.to, `${path}.to`),
+    path: str(raw.path, `${path}.path`),
+  };
+  if (raw.settings !== undefined) {
+    data.settings = recycleSettings(raw.settings, `${path}.settings`);
+  }
+  return data;
+}
+
 function graphEdge(value: unknown, path: string): GraphEdge {
   const raw = obj(value, path);
-  const data = obj(raw.data, `${path}.data`);
-  const edge: GraphEdge = {
+  return {
     id: str(raw.id, `${path}.id`),
     source: str(raw.source, `${path}.source`),
     sourceHandle: str(raw.sourceHandle, `${path}.sourceHandle`),
     target: str(raw.target, `${path}.target`),
     targetHandle: str(raw.targetHandle, `${path}.targetHandle`),
-    data: {
-      kind: oneOf(data.kind, `${path}.data.kind`, ["connection", "recycle"] as const),
-      from: str(data.from, `${path}.data.from`),
-      to: str(data.to, `${path}.data.to`),
-      path: str(data.path, `${path}.data.path`),
-    },
+    data: edgeData(raw.data, `${path}.data`),
   };
-  if (data.settings !== undefined) {
-    edge.data.settings = recycleSettings(data.settings, `${path}.data.settings`);
-  }
-  return edge;
 }
 
 function graph(value: unknown, path: string): Graph {

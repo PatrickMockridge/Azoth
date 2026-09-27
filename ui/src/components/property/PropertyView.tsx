@@ -94,7 +94,7 @@ export function PropertyView({
         label={title(kind, node, edge)}
         active={active}
         tabs={available.map((id) => ({ id, label: LABELS[id] }))}
-        onTab={(id) => setRemembered({ ...remembered, [kind]: id as TabId })}
+        onTab={(id) => setRemembered({ ...remembered, [kind]: id })}
       />
       {sheet(active, { catalogue, envelope, node, edge, result, units, onCommand, onSelect })}
     </>

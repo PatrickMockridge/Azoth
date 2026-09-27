@@ -42,6 +42,12 @@ jobs:
       # approximates a rational (`0.3333` for `1/3`, measured to differ by 4.6e-4 at
       # x = 10^6). A line says its decimal is NeqSim's own with a `numerics-ok:` marker.
       - run: python tools/check_numerics.py
+      # The front end's own three shapes, which no other checker reads: a cast on the wire
+      # boundary where the decoder belongs, a magnitude with significant digits written in
+      # the editor, and a part of the envelope kept in local state beside it. `ui/src` was
+      # the fourth place the vocabulary page's "no factor is written down" rule had never
+      # been swept, and the cast rule's first run found eleven sites.
+      - run: python tools/check_ui.py
       # The vendoring record: every column of every vendored upstream, and what was
       # done with it. It also prints the tally, because the interesting number is how
       # many columns are absent because the model does not exist yet.
