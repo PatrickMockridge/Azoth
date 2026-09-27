@@ -52,7 +52,17 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe column_solvers > captures/process_column_solvers.tsv
 java -cp .:neqsim-f0c7436.jar ProcessProbe column_efficiency \
   > captures/process_column_efficiency.tsv
+java -cp .:neqsim-f0c7436.jar ProcessProbe column_divergence \
+  > captures/process_column_divergence.tsv
 ```
+
+**`ProcessProbe column_divergence` is the Murphree divergence instrument.** It runs the same
+binary column at `0.6` and `0.85` and prints two things `process_column.tsv` does not carry: the
+class's per-pass `getConvergenceHistory()`, and per tray the *flashed* system's two phase
+compositions beside the vapour the tray hands up with its phase count and phase-0 type. Without
+those, the `7` K between the two implementations on tray 3 is a number with no reading attached.
+`0.6` is the control: this port reproduces that row to `1e-4` K, so installing its endpoint and
+running one pass of the port's map must move no tray - and it does not.
 
 **`ProcessProbe column_efficiency` measures the per-stage efficiency rule.** It runs the
 Murphree binary column three times: at `0.6` column-wide, at `0.6` with stage 3 overridden to

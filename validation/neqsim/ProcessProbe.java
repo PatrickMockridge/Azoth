@@ -196,6 +196,9 @@ public class ProcessProbe {
       case "column_efficiency":
         murphreeStageRows();
         break;
+      case "column_divergence":
+        divergenceRows();
+        break;
       case "shortcut_column":
         shortcutColumnRows();
         break;
@@ -719,6 +722,88 @@ public class ProcessProbe {
         19.0, 20.0, 1.0e-9, 2000, true, false, 0.6);
   }
 
+  /// **The divergence instrument, and it prints two things the column capture does not.**
+  ///
+  /// `process_column.tsv` carries each tray's temperature, pressure and two traffic rates, and
+  /// **no composition at all** - which is enough to say that the port's `0.85` state differs by
+  /// `7` K and not enough to say where. This prints, per tray, the flashed system's *both* phase
+  /// compositions (the correction's `y_eq` and its neighbour's `y_in`), the **cached** vapour the
+  /// tray hands up, the phase count and the phase-0 type; and per pass, the class's own
+  /// `getConvergenceHistory()`.
+  ///
+  /// **Why those four and no more.** `applyMurphreeCorrection` reads `getThermoSystem().
+  /// getPhase(0)` for `y_eq` and the tray below's for `y_in`, and `setCachedGasOutStream` writes
+  /// the corrected stream into a *separate* object - so a state's map is fixed by exactly these
+  /// three vectors per tray. A warm start built from them, run one pass, says whether NeqSim's
+  /// endpoint is a fixed point of this port's arithmetic; the history says whether the two
+  /// reached it by the same path.
+  static void divergenceRows() {
+    divergenceRow("divergence_0_6", 0.6);
+    divergenceRow("divergence_0_85", 0.85);
+  }
+
+  /// One row of [`divergenceRows`]: [`runColumn`]'s own state with the divergence block turned
+  /// on, so the two captures cannot drift apart in how the column was built.
+  static void divergenceRow(String label, double efficiency) {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.5, 0.5 };
+    runColumn(label, names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200,
+        true, false, "DIRECT_SUBSTITUTION", efficiency, -1, 0.0, null, true);
+  }
+
+  /// The two things `process_column.tsv` does not carry: the class's per-pass
+  /// `getConvergenceHistory()`, and per tray the *flashed* system's two phase compositions
+  /// beside the **cached** vapour the tray hands up.
+  ///
+  /// **Why those and no more.** `applyMurphreeCorrection` reads `getThermoSystem().getPhase(0)`
+  /// for `y_eq` and the tray below's for `y_in`, and `setCachedGasOutStream` writes the corrected
+  /// stream into a *separate* object - so a state's map is fixed by exactly these vectors, and a
+  /// warm start built from them answers whether NeqSim's endpoint is a fixed point of this
+  /// port's arithmetic. The history is the cheaper question beside it: whether the two reached
+  /// their states by the same path.
+  static void divergenceBlock(neqsim.process.equipment.distillation.DistillationColumn column) {
+    int pass = 0;
+    for (double[] entry : column.getConvergenceHistory()) {
+      StringBuilder line = new StringBuilder("pass" + pass + "=");
+      for (int k = 0; k < entry.length; k++) {
+        if (k > 0) {
+          line.append(' ');
+        }
+        line.append(entry[k]);
+      }
+      System.out.println(line);
+      pass++;
+    }
+    System.out.println("history_length=" + pass);
+    for (int stage = 0; stage < column.getNumberOfTrays(); stage++) {
+      String prefix = "tray" + stage + "_";
+      SystemInterface system = column.getTray(stage).getThermoSystem();
+      System.out.println(prefix + "phases=" + system.getNumberOfPhases());
+      System.out.println(prefix + "phase0type=" + system.getPhase(0).getType());
+      System.out.println(prefix + "eq_gas_z=" + composition(system.getPhase(0)));
+      if (system.getNumberOfPhases() > 1) {
+        System.out.println(prefix + "eq_liquid_z=" + composition(system.getPhase(1)));
+      }
+      StreamInterface handedUp = column.getTray(stage).getGasOutStream();
+      if (handedUp != null) {
+        System.out.println(prefix + "out_gas_z=" + composition(handedUp.getThermoSystem().getPhase(0)));
+        System.out.println(prefix + "out_gas_n=" + handedUp.getFlowRate("mol/sec"));
+      }
+    }
+  }
+
+  /// One phase's composition as `name:value` pairs, in the phase's own component order.
+  static String composition(neqsim.thermo.phase.PhaseInterface phase) {
+    StringBuilder out = new StringBuilder();
+    for (int j = 0; j < phase.getNumberOfComponents(); j++) {
+      if (j > 0) {
+        out.append(' ');
+      }
+      out.append(phase.getComponent(j).getName()).append(':').append(phase.getComponent(j).getx());
+    }
+    return out.toString();
+  }
+
   /// **The per-stage efficiency vector, on that same column.** `getEffectiveMurphreeEfficiency`
   /// resolves two fields - `perStageMurphreeEfficiency[stage]` when it is present and not `NaN`,
   /// `murphreeEfficiency` otherwise - and three rows measure the whole rule: the column-wide
@@ -749,7 +834,7 @@ public class ProcessProbe {
   static void murphreeStageRow(String label, String[] names, double[] z, int stage,
       double efficiency, double[] array) {
     runColumn(label, names, z, 300.0, 20.0, 1000.0, 4, 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200,
-        true, false, "DIRECT_SUBSTITUTION", 0.6, stage, efficiency, array);
+        true, false, "DIRECT_SUBSTITUTION", 0.6, stage, efficiency, array, false);
   }
 
   /// **The side-draw column rows, and why they are in this capture rather than one of their own.**
@@ -1421,7 +1506,7 @@ public class ProcessProbe {
       boolean condenser, boolean totalCondenser, String solver, Double murphreeEfficiency) {
     runColumn(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, stages, feedTray,
         condenserC, reboilerC, topBara, bottomBara, tolerance, maxIterations, condenser,
-        totalCondenser, solver, murphreeEfficiency, -1, 0.0, null);
+        totalCondenser, solver, murphreeEfficiency, -1, 0.0, null, false);
   }
 
   /// The same, with the per-stage override: `array` when it is not `null` and the single-stage
@@ -1430,7 +1515,7 @@ public class ProcessProbe {
       double feedPressureBara, double kgPerHour, int stages, int feedTray, double condenserC,
       double reboilerC, double topBara, double bottomBara, double tolerance, int maxIterations,
       boolean condenser, boolean totalCondenser, String solver, Double murphreeEfficiency,
-      int overrideStage, double overrideEfficiency, double[] overrideArray) {
+      int overrideStage, double overrideEfficiency, double[] overrideArray, boolean divergence) {
     SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], z[i]);
@@ -1494,6 +1579,9 @@ public class ProcessProbe {
     System.out.println("feed_mol_per_sec=" + inlet.getFlowRate("mol/sec"));
     System.out.println("feed_kg_per_hour=" + inlet.getFlowRate("kg/hr"));
     System.out.println("tray_count=" + column.getNumberOfTrays());
+    if (divergence) {
+      divergenceBlock(column);
+    }
     if (solver != null) {
       System.out.println("solver_requested=" + solver);
     }

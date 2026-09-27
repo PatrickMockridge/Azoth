@@ -10,6 +10,7 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
 use azoth_process::column::murphree::Murphree;
+use azoth_process::column::murphree::{correct_vapour, corrects};
 use azoth_process::kernels::distillation_column::ColumnState;
 use azoth_process::kernels::distillation_column::{
     ColumnSetup, SideDrawFlow, SideDrawPhase, SolverType, distillation_column,
@@ -1142,4 +1143,270 @@ fn a_warm_start_reproduces_the_cold_paths_tray_temperatures() {
             "the warm start's distillate",
         );
     }
+}
+
+/// One row of a capture's `key=value` lines, selected by its label.
+fn capture_row(capture: &str, label: &str) -> std::collections::BTreeMap<String, String> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../validation/neqsim/captures")
+        .join(capture);
+    let text = std::fs::read_to_string(&path).expect("the capture is committed");
+    let block = text
+        .split("\n\n")
+        .find(|block| block.lines().next() == Some(label))
+        .unwrap_or_else(|| panic!("{capture} has no `{label}` row"));
+    block
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect()
+}
+
+fn row_number(row: &std::collections::BTreeMap<String, String>, key: &str) -> f64 {
+    row.get(key)
+        .unwrap_or_else(|| panic!("the row has no `{key}`"))
+        .parse()
+        .unwrap_or_else(|_| panic!("`{key}` is not a number"))
+}
+
+fn row_composition(row: &std::collections::BTreeMap<String, String>, key: &str) -> Vec<f64> {
+    row.get(key)
+        .unwrap_or_else(|| panic!("the row has no `{key}`"))
+        .split_whitespace()
+        .map(|pair| {
+            pair.split_once(':')
+                .expect("a composition is `name:value`")
+                .1
+                .parse()
+                .expect("a mole fraction is a number")
+        })
+        .collect()
+}
+
+/// **The divergence instrument.** NeqSim's `0.85` endpoint, installed as this port's
+/// `ColumnState`, run for **one** pass of this port's map, and compared tray by tray against the
+/// state it came from.
+///
+/// **Why one pass decides.** NeqSim's endpoint is a *converged* state - the `_tight` row takes
+/// 22 passes at a `1e-9` gate moving no tray by more than `8e-10` K - so it is a fixed point of
+/// NeqSim's map to `1e-7` K, and this port's answer differs from it by `7` K on tray 3. Seven
+/// orders between the instrument's floor (about `1e-6` K, measured in
+/// [`a_warm_start_reproduces_the_cold_paths_tray_temperatures`]) and the signal is what makes a
+/// single pass a measurement rather than a guess.
+///
+/// **The state is NeqSim's reads fed through this port's own arithmetic**, never a formula
+/// retyped here: each tray's `y_eq` is the capture's flashed vapour, its neighbour below's is
+/// `y_in`, and the corrected stream the tray *hands up* is
+/// [`azoth_process::column::murphree::correct_vapour`] applied to that pair. The class's caches
+/// are invalidated by `finalizeTrayProperties` at the end of its solve, so the handed-up vapour
+/// is not in the capture for the interior trays - recomputing it is the only faithful reading,
+/// and it is the port's arithmetic rather than a second implementation.
+///
+/// **`tray0` and `tray5` are the two special cases, and both are the capture's own shape.** The
+/// reboiler is never corrected, so its gas is the flash's; and `tray5_gas_n` is the *published
+/// distillate* rather than the condenser's flash, because `finalizeSolve` writes the products
+/// back onto the ends. The capture shows the second: `tray5_out_gas_z` is `0.96882`, the
+/// distillate, where `tray5_eq_gas_z` is `0.96591`.
+///
+/// **Gauss-Seidel localises the first tray *affected*, not the tray at fault.** A tray reading a
+/// neighbour that is already wrong moves because of that, so a reading of "tray 2 moved" names
+/// the lowest tray whose neighbourhood is inconsistent, and the tray whose own equation differs
+/// is at or below it.
+fn divergence_row(label: &str) -> azoth_process::kernels::distillation_column::ColumnOutcome {
+    use azoth_process::kernels::ReactiveSection;
+    use azoth_process::kernels::distillation_column::SolverType;
+
+    let row = capture_row("process_column_divergence.tsv", label);
+    let components: Vec<String> = vec!["methane".into(), "n-butane".into()];
+    let trays = row_number(&row, "tray_count") as usize;
+    let efficiency = row_number(&row, "murphree_efficiency");
+
+    let mut equilibrium_gas = Vec::with_capacity(trays);
+    let mut equilibrium_liquid = Vec::with_capacity(trays);
+    let mut temperatures = Vec::with_capacity(trays);
+    for index in 0..trays {
+        let at = |key: &str| row_number(&row, &format!("tray{index}_{key}"));
+        let p = pascals(at("pressure_bara") * 1.0e5);
+        let t = kelvins(at("temperature_K"));
+        equilibrium_gas.push(
+            Stream::from_pt(
+                components.clone(),
+                row_composition(&row, &format!("tray{index}_eq_gas_z")),
+                at("gas_n"),
+                p,
+                t,
+            )
+            .expect("the tray's vapour resolves"),
+        );
+        equilibrium_liquid.push(
+            Stream::from_pt(
+                components.clone(),
+                row_composition(&row, &format!("tray{index}_eq_liquid_z")),
+                at("liquid_n"),
+                p,
+                t,
+            )
+            .expect("the tray's liquid resolves"),
+        );
+        temperatures.push(at("temperature_K"));
+    }
+
+    // **The vapour each tray hands up**, which is the corrected blend where the class corrects
+    // and the flash where it does not - `corrects` is the port's own guard, so this cannot
+    // disagree with the solve about which trays are corrected.
+    let mut gas = Vec::with_capacity(trays);
+    for index in 0..trays {
+        // `corrects` is the port's own guard, so this cannot disagree with the solve about which
+        // trays are corrected.
+        if corrects(index, trays, true, efficiency) {
+            gas.push(
+                correct_vapour(
+                    (
+                        Some(&equilibrium_gas[index]),
+                        Some(&equilibrium_liquid[index]),
+                    ),
+                    (
+                        Some(&equilibrium_gas[index - 1]),
+                        Some(&equilibrium_liquid[index - 1]),
+                    ),
+                    efficiency,
+                )
+                .expect("the corrected vapour resolves")
+                .expect("a corrected stage hands up a stream"),
+            );
+        } else {
+            gas.push(equilibrium_gas[index].clone());
+        }
+    }
+    // And the condenser hands up the published distillate, which is what the class wrote there.
+    let top = trays - 1;
+    gas[top] = Stream::from_pt(
+        components,
+        row_composition(&row, "distillate_z"),
+        row_number(&row, "distillate_n"),
+        pascals(row_number(&row, "distillate_P") * 1.0e5),
+        kelvins(row_number(&row, "distillate_T")),
+    )
+    .expect("the distillate resolves");
+
+    let mut setup = binary_column(1.0e9);
+    setup.murphree_efficiency = Some(Murphree::from_column_wide(efficiency));
+    setup.initial_state = Some(ColumnState {
+        gas,
+        liquid: equilibrium_liquid,
+        temperatures,
+    });
+    setup.solver_type = SolverType::DirectSubstitution;
+    setup.reactive = ReactiveSection::None;
+    setup.max_iterations = 5;
+    distillation_column(&setup).expect("one pass of the map")
+}
+
+/// **The control first, and it is what makes the reading a measurement.**
+///
+/// `0.6` is the row this port reproduces to `1e-4` K, so one pass from NeqSim's `0.6` endpoint
+/// must move no tray by more than the instrument's floor. If it moves by `7` K the instrument
+/// is broken - a lossy install, a wrong inlet rule, a wrong flash - and the `0.85` reading below
+/// is void rather than interesting.
+#[test]
+fn the_instruments_control_settles_on_the_row_this_port_reproduces() {
+    let before = capture_row("process_column_divergence.tsv", "divergence_0_6");
+    let after = divergence_row("divergence_0_6");
+    let mut worst = 0.0_f64;
+    for (index, tray) in after.trays.iter().enumerate() {
+        let disagreement = (tray.temperature.value
+            - row_number(&before, &format!("tray{index}_temperature_K")))
+        .abs();
+        worst = worst.max(disagreement);
+    }
+    assert!(
+        worst < 1.0e-4,
+        "the control moved a tray by {worst} K, so the instrument is not faithful and the \
+         `0.85` reading below says nothing"
+    );
+}
+
+/// **The `0.85` reading, pre-registered.** Either NeqSim's endpoint is a fixed point of this
+/// port's map - in which case the `7` K is a question of which of two fixed points each path
+/// reached, and not of a different arithmetic - or the first tray to move is where the two maps
+/// part.
+#[test]
+fn neqsims_0_85_endpoint_under_one_pass_of_this_ports_map() {
+    let before = capture_row("process_column_divergence.tsv", "divergence_0_85");
+    let trays = row_number(&before, "tray_count") as usize;
+    let after = divergence_row("divergence_0_85");
+
+    let mut moved: Vec<(usize, f64, f64)> = Vec::new();
+    for (index, tray) in after.trays.iter().enumerate() {
+        let was = row_number(&before, &format!("tray{index}_temperature_K"));
+        let delta = tray.temperature.value - was;
+        if delta.abs() > 1.0e-4 {
+            moved.push((index, was, delta));
+        }
+    }
+    // **The localisation is the result, so it is asserted and not printed.** Measured on the
+    // `0.85` row: `{2: -2.729881334332674, 3: -9.834999320712939, 4: -10.189198031777039}` and
+    // nothing on trays 0, 1 or 5. Trays 2 and 3 are held at `1e-3` K so a port that moved them
+    // differently fails rather than reaching this point; the *sign* matters as much as the size,
+    // because the port's own `0.85` state is **above** NeqSim's on tray 3 by `11.2` K and this
+    // pass moves NeqSim's *down* by `9.83` - the two maps part in the same direction.
+    let expected = [
+        (2_usize, -2.729881334332674_f64),
+        (3, -9.834999320712939),
+        (4, -10.189198031777039),
+    ];
+    let seen: Vec<usize> = moved.iter().map(|(index, _, _)| *index).collect();
+    assert_eq!(
+        seen,
+        vec![2, 3, 4],
+        "the trays that move, and the three that do not: the ends are uncorrected and tray 1 \
+         reads a reboiler that has not moved"
+    );
+    for (index, delta) in &expected {
+        let (_, _, actual) = moved
+            .iter()
+            .find(|(moved, _, _)| moved == index)
+            .expect("the tray moved");
+        assert!(
+            (actual - delta).abs() < 1.0e-3,
+            "tray {index} moves {actual} K where the measurement says {delta}"
+        );
+    }
+    // **And the two ends do not move at all**, which is the correction's own guard showing:
+    // `corrects` is false on the reboiler and the condenser, so whatever the interior does, the
+    // ends are the same two states on both sides.
+    for index in [0, trays - 1] {
+        let was = row_number(&before, &format!("tray{index}_temperature_K"));
+        assert!(
+            (after.trays[index].temperature.value - was).abs() < 1.0e-6,
+            "tray {index} is an end and must be untouched"
+        );
+    }
+    // **The reading, printed rather than asserted away.** Which trays move, and by how much, is
+    // the experiment's whole output; a bare pass/fail here would throw it out.
+    for (index, was, delta) in &moved {
+        println!("tray {index}: {was} K moves {delta} K");
+        // **The classification the plan pre-registered**, on the three quantities the outcome
+        // publishes: the flashed liquid (which the correction never touches), the vapour the
+        // tray hands up, and the flash's two traffic rates.
+        let tray = &after.trays[*index];
+        let eq_liquid = row_composition(&before, &format!("tray{index}_eq_liquid_z"));
+        let eq_gas = row_composition(&before, &format!("tray{index}_eq_gas_z"));
+        println!(
+            "  liquid_z  was {eq_liquid:?}\n            is {:?}",
+            tray.liquid_z
+        );
+        println!(
+            "  handed-up gas_z was {eq_gas:?}\n            is {:?}",
+            tray.gas_z
+        );
+        println!(
+            "  gas_n {:.6} -> {:.6}, liquid_n {:.6} -> {:.6}",
+            row_number(&before, &format!("tray{index}_gas_n")),
+            tray.gas_n,
+            row_number(&before, &format!("tray{index}_liquid_n")),
+            tray.liquid_n
+        );
+    }
+    println!("{} of 6 trays moved by more than 1e-4 K", moved.len());
 }

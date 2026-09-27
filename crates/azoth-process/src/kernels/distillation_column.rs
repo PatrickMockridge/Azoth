@@ -1556,7 +1556,18 @@ fn sweep(net: &mut Network, setup: &ColumnSetup, temperatures: &mut [f64]) -> Re
 
     for iter in 1..=setup.max_iterations {
         iterations = iter as u32;
-        let old: Vec<f64> = (0..tray_count).map(|i| net.temperature(i)).collect();
+        // **`oldtemps` is the *damped* profile the previous pass wrote back, not the trays'
+        // own temperatures.** `DistillationColumn` ends a pass with
+        // `trays.get(i).setTemperature(newTemp)` and reads `oldtemps[i] = getTemperature()`
+        // at the top of the next one, so the residual it reports is measured against the
+        // value it *applied* rather than the one the flash produced. The difference is the
+        // whole of `temperature_step_residual` in the capture: `9.58e-7` against `5.75e-7`
+        // on the `0.6` row, an `effectiveRelaxation` of about `0.60`.
+        //
+        // **`SimpleTray.setTemperature` writes only its own field**, so this does not move a
+        // tray: `run` re-flashes from the inlets and `setTemperature(mixedStream.getTemperature())`
+        // overwrites it. What carries is the *residual*, and through it the controller.
+        let old: Vec<f64> = temperatures.to_vec();
 
         // Down the column: each tray takes the liquid from the one above it.
         for i in (2..=first_feed).rev() {
