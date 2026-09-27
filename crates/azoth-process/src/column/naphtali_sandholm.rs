@@ -86,14 +86,76 @@ const COMPONENT_IMBALANCE_TOLERANCE: f64 = 5.0e-3;
 /// the liquid totals and the two enthalpies.
 type DerivedState = (Vec<Vec<f64>>, Vec<Vec<f64>>, Vec<f64>, Vec<f64>, Vec<f64>);
 
+/// One component's constants in the **Wilson correlation's own units**.
+///
+/// **Not this crate's.** Every temperature in this file is kelvin and every pressure is pascals,
+/// and the correlation is written for bara - so a seed built straight from the mixture would be
+/// right in two fields and out by `1e5` in the third. The field names carry the units so the one
+/// crossing is visible where it happens, which a `(f64, f64, f64)` could not do.
+#[derive(Debug, Clone, Copy)]
+struct WilsonSeed {
+    /// The critical temperature, K.
+    tc_k: f64,
+    /// The critical pressure, **bara**, which is what the correlation divides by.
+    pc_bara: f64,
+    /// The acentric factor, dimensionless.
+    acentric: f64,
+}
+
+/// Where one tray's variables sit in its block of the mesh vector.
+///
+/// **`C + 2`, derived rather than stored, and decoded in one place.** The block length, the
+/// slice bounds in `residual` and the block-bidiagonal size all have to agree; a stored copy is
+/// a number that can disagree with the component count, and the index arithmetic would then read
+/// a neighbouring tray's variable rather than reporting anything. The decode lived twice - once
+/// in `variable` and once in `set_variable` - and is one function here for the same reason.
+#[derive(Debug, Clone, Copy)]
+struct Layout {
+    /// The components, one liquid flow each.
+    components: usize,
+}
+
+/// One variable of a tray's block.
+#[derive(Debug, Clone, Copy)]
+enum Variable {
+    /// The liquid flow of one component.
+    Liquid(usize),
+    /// The tray's temperature.
+    Temperature,
+    /// The tray's vapour flow.
+    Vapour,
+}
+
+impl Layout {
+    /// The layout of a `components`-component tray.
+    fn new(components: usize) -> Self {
+        Self { components }
+    }
+
+    /// The variables one tray contributes: `C` component flows, the temperature, the vapour flow.
+    fn block_len(&self) -> usize {
+        self.components + 2
+    }
+
+    /// What the `k`th variable of a tray's block is.
+    fn variable(&self, k: usize) -> Variable {
+        match k {
+            k if k < self.components => Variable::Liquid(k),
+            k if k == self.components => Variable::Temperature,
+            _ => Variable::Vapour,
+        }
+    }
+}
+
 /// The whole solve: the MESH state, its thermodynamics, and the Newton loop over both.
 struct Mesh {
     /// Tray count, including the two ends.
     n: usize,
     /// Component count.
     c: usize,
-    /// Variables per tray: `C` liquid component flows, the temperature, the vapour flow.
-    m: usize,
+    /// Where one tray's variables sit in its block. **Derived from `c`, never stored**: the
+    /// block length, the slice bounds and the block-bidiagonal size have to be one number.
+    layout: Layout,
     /// Tray temperatures, K.
     t: Vec<f64>,
     /// Tray pressures, Pa.
@@ -134,8 +196,8 @@ struct Mesh {
     /// The mixture and its ideal-gas model, resolved once from the feed's components.
     mixture: azoth_eos::Mixture,
     ideal_gas: azoth_eos::IdealGasModel,
-    /// The components' critical constants in the Wilson correlation's units: bara and kelvin.
-    wilson: Vec<(f64, f64, f64)>,
+    /// The components' constants in the Wilson correlation's own units.
+    wilson: Vec<WilsonSeed>,
     /// The feed's substances, by name, as the outcome's streams carry them.
     components: Vec<String>,
 }
@@ -143,32 +205,29 @@ struct Mesh {
 impl Mesh {
     /// Every variable's value, in the order the Jacobian is assembled in.
     fn variable(&self, tray: usize, k: usize) -> f64 {
-        if k < self.c {
-            self.liq[tray][k]
-        } else if k == self.c {
-            self.t[tray]
-        } else {
-            self.v[tray]
+        match self.layout.variable(k) {
+            Variable::Liquid(i) => self.liq[tray][i],
+            Variable::Temperature => self.t[tray],
+            Variable::Vapour => self.v[tray],
         }
     }
 
     /// Set one variable.
     fn set_variable(&mut self, tray: usize, k: usize, value: f64) {
-        if k < self.c {
-            self.liq[tray][k] = value;
-        } else if k == self.c {
-            self.t[tray] = value;
-        } else {
-            self.v[tray] = value;
+        match self.layout.variable(k) {
+            Variable::Liquid(i) => self.liq[tray][i] = value,
+            Variable::Temperature => self.t[tray] = value,
+            Variable::Vapour => self.v[tray] = value,
         }
     }
 
     /// The residual vector, one block per tray.
     fn residual(&self) -> Vec<f64> {
-        let mut f = vec![0.0; self.n * self.m];
+        let mut f = vec![0.0; self.n * self.layout.block_len()];
         for j in 0..self.n {
             let block = self.residual_for_tray(j);
-            f[j * self.m..(j + 1) * self.m].copy_from_slice(&block);
+            f[j * self.layout.block_len()..(j + 1) * self.layout.block_len()]
+                .copy_from_slice(&block);
         }
         f
     }
@@ -176,7 +235,7 @@ impl Mesh {
     /// One tray's `C + 2` residuals: the component balances, the energy balance (or the
     /// temperature specification) and the summation equation.
     fn residual_for_tray(&self, j: usize) -> Vec<f64> {
-        let mut f = vec![0.0; self.m];
+        let mut f = vec![0.0; self.layout.block_len()];
         let lj = self.l[j];
         for i in 0..self.c {
             let mut balance = self.liq[j][i] + self.vap[j][i];
@@ -244,8 +303,8 @@ impl Mesh {
 
     /// The Wilson correlation for one component, which is the class's fallback and seed.
     fn wilson_k(&self, i: usize, t: f64, p_bar: f64) -> f64 {
-        let (tc, pc, omega) = self.wilson[i];
-        (pc / p_bar) * (5.37 * (1.0 + omega) * (1.0 - tc / t)).exp()
+        let seed = &self.wilson[i];
+        (seed.pc_bara / p_bar) * (5.37 * (1.0 + seed.acentric) * (1.0 - seed.tc_k / t)).exp()
     }
 
     /// Evaluate every tray's thermodynamics.
@@ -363,7 +422,7 @@ impl Mesh {
     /// temperature and composition and on nothing else, so a perturbed variable can reach the
     /// equations of its own tray and of its two neighbours and no further.
     fn jacobian(&mut self, f0: &[f64]) -> Result<BlockTridiagonal> {
-        let mut jac = BlockTridiagonal::new(self.n, self.m)?;
+        let mut jac = BlockTridiagonal::new(self.n, self.layout.block_len())?;
         // **The base is frozen, and restored without re-evaluating.** Every column must be a
         // derivative of the *same* residual vector: `evaluateThermoForTray` advances its own
         // K-value fixed point, so a restore that re-evaluated would leave the next column
@@ -371,7 +430,7 @@ impl Mesh {
         // `restoreDerivedThermodynamicStateForTray`.
         let base = self.save_derived();
         for tray in 0..self.n {
-            for k in 0..self.m {
+            for k in 0..self.layout.block_len() {
                 let original = self.variable(tray, k);
                 let h = (original.abs() * PERTURBATION).max(MIN_PERTURBATION);
                 self.set_variable(tray, k, original + h);
@@ -383,7 +442,8 @@ impl Mesh {
                     let perturbed = self.residual_for_tray(j);
                     let block = jac.block_mut(j, tray)?;
                     for (equation, row) in block.iter_mut().enumerate() {
-                        row[k] = (perturbed[equation] - f0[j * self.m + equation]) / h;
+                        row[k] =
+                            (perturbed[equation] - f0[j * self.layout.block_len() + equation]) / h;
                     }
                 }
 
@@ -522,7 +582,9 @@ pub fn solve(setup: &ColumnSetup, pressures: &[Pressure]) -> Result<ColumnOutcom
 
         let jacobian = mesh.jacobian(&residual)?;
         let rhs: Vec<Vec<f64>> = (0..mesh.n)
-            .map(|j| residual[j * mesh.m..(j + 1) * mesh.m].to_vec())
+            .map(|j| {
+                residual[j * mesh.layout.block_len()..(j + 1) * mesh.layout.block_len()].to_vec()
+            })
             .collect();
         // **The class's own fallback**: where the block route reports the system singular it
         // eliminates the same matrix densely, and only a dense failure counts as a failed step.
@@ -530,7 +592,10 @@ pub fn solve(setup: &ColumnSetup, pressures: &[Pressure]) -> Result<ColumnOutcom
             Some(solution) => Some(solution),
             None => dense_solve(&jacobian.to_dense(), &rhs.concat()).map(|flat| {
                 (0..mesh.n)
-                    .map(|j| flat[j * mesh.m..(j + 1) * mesh.m].to_vec())
+                    .map(|j| {
+                        flat[j * mesh.layout.block_len()..(j + 1) * mesh.layout.block_len()]
+                            .to_vec()
+                    })
                     .collect::<Vec<Vec<f64>>>()
             }),
         };
@@ -630,7 +695,7 @@ fn apply_trust_region(mesh: &Mesh, dx: &mut [f64]) {
     const MAX_DT: f64 = 10.0;
     let mut scale = 1.0_f64;
     for j in 0..mesh.n {
-        let base = j * mesh.m;
+        let base = j * mesh.layout.block_len();
         for i in 0..mesh.c {
             let cap = 0.5 * mesh.liq[j][i] + 1.0e-3 * mesh.flow_scale;
             let step = dx[base + i].abs();
@@ -660,7 +725,7 @@ fn apply_trust_region(mesh: &Mesh, dx: &mut [f64]) {
 /// `applyUpdate`: the step, with the physical bounds the class enforces.
 fn apply_update(mesh: &mut Mesh, dx: &[f64], alpha: f64) {
     for j in 0..mesh.n {
-        let base = j * mesh.m;
+        let base = j * mesh.layout.block_len();
         for i in 0..mesh.c {
             mesh.liq[j][i] = (mesh.liq[j][i] - alpha * dx[base + i]).max(1.0e-20);
         }
@@ -796,17 +861,15 @@ impl Mesh {
         let (mixture, ideal_gas) =
             azoth_eos::databank::mixture_of(&names, azoth_eos::Cubic::Pr, None)?;
         let c = feed.components.len();
-        let m = c + 2;
+        let layout = Layout::new(c);
         let p: Vec<f64> = pressures.iter().map(|value| value.value).collect();
-        let wilson: Vec<(f64, f64, f64)> = mixture
+        let wilson: Vec<WilsonSeed> = mixture
             .components()
             .iter()
-            .map(|component| {
-                (
-                    component.tc.value,
-                    component.pc.value / 1.0e5,
-                    component.omega,
-                )
+            .map(|component| WilsonSeed {
+                tc_k: component.tc.value,
+                pc_bara: component.pc.value / 1.0e5,
+                acentric: component.omega,
             })
             .collect();
 
@@ -853,7 +916,7 @@ impl Mesh {
         let mut mesh = Self {
             n,
             c,
-            m,
+            layout,
             t: vec![0.0; n],
             p,
             v: vec![0.0; n],
