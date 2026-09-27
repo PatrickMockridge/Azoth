@@ -1551,7 +1551,13 @@ UNCASED_ROWS: dict[str, int] = {
     # class's own multistage state re-cased, where the class rejects 18 of 30 candidates and never
     # converges. The middle one is a case: the same one-tray shape on a fluid that does have a
     # liquid, which is the substitution this port is held to.
-    "process_column.tsv": 15,
+    # **And the pumparound's *return*, which is a recycle the port does not carry.** The row is
+    # the binary column this model reproduces exactly with `addLiquidPumparound("PA", 1, 3, 0.10,
+    # 5.0)` on it, so the difference from `binary_rigorous` is the recycle and nothing else:
+    # measured, the return is the draw at exactly `T - 5 K` (`334.5849` -> `329.5849`), its flow
+    # settles to a `2.8e-5` relative change in 19 iterations, the cooler takes `-438.78` W, and
+    # the profile moves - tray 1 lands at `334.58` K against the ideal column's `336.15`.
+    "process_column.tsv": 16,
     # One capture for two ids, because the two machines it drives are one class with two names,
     # and five of its six rows are uncased for each of them. **The pinned pair is the classes'
     # own isothermal case**: `setOutletTemperature` on every stage makes the base's gate exactly

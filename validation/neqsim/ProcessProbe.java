@@ -671,6 +671,9 @@ public class ProcessProbe {
     // The Murphree rows, which live here for the same reason again.
     murphreeRows();
 
+    // **The pumparound's *return*: a liquid draw that comes back to another tray.**
+    pumparoundReturnRows();
+
     // **The draw's *flow* specification, which is a tear loop and not a split.** Every row above
     // states a fraction; `addSideDrawFlowSpecification` states a target *flow* and lets the column
     // move that fraction until the draw delivers it. It is last so that the blocks the cases
@@ -1842,6 +1845,83 @@ public class ProcessProbe {
         new String[] { "methane", "n-butane" }, new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4,
         2, true, true, -20.0, 100.0, 19.0, 20.0, 1.0e-6, SIDE_DRAW_TRAY, 0.0, 0.10, 0.05);
 
+  }
+
+  /// **The pumparound's return, which is a tray-to-tray recycle rather than a draw.**
+  ///
+  /// `addLiquidPumparound(name, drawTray, returnTray, fraction, drop)` withdraws liquid from one
+  /// tray, cools it by `drop` kelvin, and **returns it to another tray** - where the return joins
+  /// the tray's inlets and the whole column is solved again, until the return's own flow stops
+  /// changing. The draw alone is what this port already carries; the *return* is what it does
+  /// not, so the rows here are on the column the port reproduces exactly, and the difference
+  /// from `binary_methane_butane_4_stages` is the recycle and nothing else.
+  static void pumparoundReturnRows() {
+    pumparoundReturnRow("side_draw_pumparound_return_binary", new String[] { "methane", "n-butane" },
+        new double[] { 0.5, 0.5 }, 300.0, 20.0, 1000.0, 4, 2, true, true, -20.0, 100.0, 19.0, 20.0,
+        1.0e-6, 1, 3, 0.10, 5.0);
+  }
+
+  static void pumparoundReturnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, int stages, int feedTray, boolean condenser,
+      boolean reboiler, double condenserC, double reboilerC, double topBara, double bottomBara,
+      double tolerance, int drawTray, int returnTray, double fraction, double temperatureDrop) {
+    SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("pumparound feed", fluid);
+    inlet.setFlowRate(kgPerHour, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn(label, stages, reboiler,
+            condenser);
+    column.addFeedStream(inlet, feedTray);
+    column.setCondenserTemperature(condenserC, "C");
+    column.setReboilerTemperature(reboilerC, "C");
+    column.setTopPressure(topBara);
+    column.setBottomPressure(bottomBara);
+    column.setTemperatureTolerance(tolerance);
+    column.setMaxNumberOfIterations(200, true);
+    column.setMaxPumparoundIterations(12);
+    column.setPumparoundTolerance(1.0e-4);
+    neqsim.process.equipment.distillation.DistillationColumn.ColumnPumparound pumparound =
+        column.addLiquidPumparound(label + " PA", drawTray, returnTray, fraction, temperatureDrop);
+    column.run();
+
+    System.out.println(label);
+    System.out.println("cubic=pr");
+    System.out.println("stages=" + stages);
+    System.out.println("feed_tray=" + feedTray);
+    System.out.println("has_condenser=" + condenser);
+    System.out.println("has_reboiler=" + reboiler);
+    System.out.println("pumparound_draw_tray=" + pumparound.getDrawTrayNumber());
+    System.out.println("pumparound_return_tray=" + pumparound.getReturnTrayNumber());
+    System.out.println("pumparound_fraction=" + pumparound.getDrawFraction());
+    System.out.println("pumparound_temperature_drop=" + pumparound.getTemperatureDrop());
+    System.out.println("solved=" + column.solved());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("pumparound_relative_change=" + column.getLastPumparoundRelativeChange());
+    System.out.println("mass_balance_kg_per_hour=" + column.getMassBalance("kg/hr"));
+    System.out.println("energy_balance_error=" + column.getEnergyBalanceError());
+    if (pumparound.getDrawStream() != null) {
+      print("pumparound_draw", pumparound.getDrawStream());
+    }
+    if (pumparound.getReturnStream() != null) {
+      print("pumparound_return", pumparound.getReturnStream());
+    }
+    System.out.println("pumparound_duty_W=" + pumparound.getDuty());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println("tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    print("distillate", column.getGasOutStream());
+    print("bottoms", column.getLiquidOutStream());
+    System.out.println();
   }
 
   /// **The side-draw flow specification, on the class's own two states.**
