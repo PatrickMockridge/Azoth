@@ -224,6 +224,17 @@ jobs:
       # Signing and verifying in the release pipeline is not redundant: it is
       # the only thing that proves the published bundle verifies against the
       # published artifact. A signature nobody has ever checked is a claim.
+      #
+      # **Two refs are accepted, `refs/heads/main` and a `v*` tag, and the second is the
+      # release.** It used to be the tag alone, which made the dry run fail here: a
+      # `workflow_dispatch` runs on a branch, so its OIDC identity is `@refs/heads/main`
+      # and the tag-only pattern rejected a signature that was perfectly good - the one job
+      # that exists to say "the bundle verifies" said the opposite, one step before anything
+      # was published. Accepting `main` as well does not widen what can be released, because
+      # `pypi` and `publish` are both gated on `startsWith(github.ref, 'refs/tags/v')`: a
+      # branch run can satisfy this check and still reach no index. The repository, the
+      # workflow file and the issuer are pinned as tightly as before, and a dispatch from
+      # any branch other than `main` is still refused.
       - name: Verify
         run: |
           set -euo pipefail
@@ -231,7 +242,7 @@ jobs:
             cosign verify-blob "$f" \
               --bundle "${f}.sigstore.json" \
               --certificate-identity-regexp \
-                '(?i)^https://github\.com/patrickmockridge/azoth/\.github/workflows/release\.yml@refs/tags/v.*$' \
+                '(?i)^https://github\.com/patrickmockridge/azoth/\.github/workflows/release\.yml@refs/(heads/main|tags/v.*)$' \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com
           done
 
