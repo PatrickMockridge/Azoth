@@ -776,7 +776,8 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
         Ok(p.optional_text(name)?
             .unwrap_or_else(|| default.to_string()))
     };
-    MassTransferCorrelation::parse(&text("mass_transfer_correlation", "onda_1968")?)?;
+    let correlation =
+        MassTransferCorrelation::parse(&text("mass_transfer_correlation", "onda_1968")?)?;
     SegmentSolver::parse(&text("segment_solver", "sequential_explicit")?)?;
     ColumnSolver::parse(&text("column_solver", "fixed_point_profile")?)?;
 
@@ -793,6 +794,7 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
             .optional_number("mass_transfer_correction")?
             .unwrap_or(1.0),
         heat_transfer_correction: 1.0,
+        mass_transfer_correlation: correlation,
         // **The palette declares no transfer whitelist**, so a flowsheet's column walks the
         // union of its two inlets' components, which is the class's own default.
         transfer_components: None,

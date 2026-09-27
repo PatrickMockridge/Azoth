@@ -51,7 +51,11 @@ fn lean(height: f64) -> Stream {
     feed(&["water", "CO2"], &[1.0, 0.0], 303.15, 50.0, 2000.0)
 }
 
-fn settings(height: f64, heat_none: bool) -> (ProfileSettings, SnapshotSettings) {
+fn settings(
+    height: f64,
+    heat_none: bool,
+    billet_schultes: bool,
+) -> (ProfileSettings, SnapshotSettings) {
     (
         ProfileSettings {
             packed_height: height,
@@ -66,6 +70,7 @@ fn settings(height: f64, heat_none: bool) -> (ProfileSettings, SnapshotSettings)
             heat_transfer_none: heat_none,
             mass_transfer_correction: 3.0,
             heat_transfer_correction: 1.0,
+            billet_schultes,
         },
     )
 }
@@ -75,7 +80,7 @@ fn settings(height: f64, heat_none: bool) -> (ProfileSettings, SnapshotSettings)
 /// there are four segments and that the component balance closes to `1e-5` mol/s.
 #[test]
 fn the_absorber_absorbs_carbon_dioxide() {
-    let (profile, snapshot) = settings(6.0, false);
+    let (profile, snapshot) = settings(6.0, false, false);
     let gas_in = configured(6.0);
     let liquid_in = lean(6.0);
     let outcome = solve_fixed_point_profile(
@@ -131,7 +136,7 @@ fn co2_moles(stream: &Stream) -> f64 {
 /// `if (segmentHeight > 0.0)`.
 #[test]
 fn a_bed_of_no_height_transfers_nothing() {
-    let (profile, snapshot) = settings(0.0, false);
+    let (profile, snapshot) = settings(0.0, false, false);
     let outcome = solve_fixed_point_profile(
         &configured(0.0),
         &lean(0.0),
@@ -159,7 +164,7 @@ fn a_bed_of_no_height_transfers_nothing() {
 /// `testCanDisableExplicitHeatTransfer`, and the zeros are exact.
 #[test]
 fn disabling_heat_transfer_is_exactly_zero() {
-    let (profile, snapshot) = settings(6.0, true);
+    let (profile, snapshot) = settings(6.0, true, false);
     let outcome = solve_fixed_point_profile(
         &configured(6.0),
         &lean(6.0),
@@ -194,7 +199,7 @@ fn relative(actual: f64, expected: f64, tolerance: f64, what: &str) {
 /// of magnitude rather than by digits.
 #[test]
 fn the_classs_absorber_state_is_reproduced_on_pr() {
-    let (profile, snapshot) = settings(6.0, false);
+    let (profile, snapshot) = settings(6.0, false, false);
     let outcome = solve_fixed_point_profile(
         &configured(6.0),
         &lean(6.0),
@@ -327,7 +332,7 @@ fn the_classs_absorber_state_is_reproduced_on_pr() {
 #[test]
 fn the_reference_diffusivity_is_the_classs_constant_and_the_matrix_is_real() {
     use azoth_process::segment::calculate_transport_snapshot;
-    let (_, snapshot) = settings(6.0, false);
+    let (_, snapshot) = settings(6.0, false, false);
     let (snap, gas_phase, _liquid_phase) =
         calculate_transport_snapshot(&configured(6.0), &lean(6.0), 1.5, &snapshot)
             .expect("the snapshot");
@@ -374,7 +379,7 @@ fn the_reference_diffusivity_is_the_classs_constant_and_the_matrix_is_real() {
 /// `segment::film::tests::a_component_the_phase_does_not_carry_is_the_base_coefficient`.
 #[test]
 fn the_union_transfer_list_names_a_component_the_gas_does_not_carry() {
-    let (profile, snapshot) = settings(6.0, false);
+    let (profile, snapshot) = settings(6.0, false, false);
     let error =
         solve_fixed_point_profile(&configured(6.0), &lean(6.0), &profile, &snapshot, &[], true)
             .expect_err("the union list does not solve in this port");
@@ -382,5 +387,104 @@ fn the_union_transfer_list_names_a_component_the_gas_does_not_carry() {
     assert!(
         message.contains("composition sums to"),
         "and it refuses for a reason of its own: {message}"
+    );
+}
+
+/// **`BILLET_SCHULTES_1999` is two constants of the packing and not a correlation, and the
+/// capture's own pair measures it.** `process_rate_based_billet.tsv` runs the class's
+/// configured absorber state twice on PR, once at each correlation; every number here is read
+/// from those two blocks.
+///
+/// `Pall-Ring-50` resolves to the file's plastic row, `cp = 0.698` and `ch = 2.725`, so the
+/// multipliers are `ch/6/0.4 = 1.1354166...` on `kGa` and `cp = 0.698` on `kLa` - **neither
+/// floored at the class's `0.1`**, which is why this state does not exercise the clamp. What it
+/// does pin is that the multiplier is applied *after* `finiteNonNegative` and *before*
+/// `massTransferCorrectionFactor`, and that both film coefficients carry it into the heat
+/// coefficients rather than only into the transfer.
+#[test]
+fn the_billet_schultes_multiplier_is_the_packings_own_two_constants() {
+    let (profile, onda) = settings(6.0, false, false);
+    let (_, billet) = settings(6.0, false, true);
+    let solve = |snapshot: &SnapshotSettings| {
+        solve_fixed_point_profile(
+            &configured(6.0),
+            &lean(6.0),
+            &profile,
+            snapshot,
+            &["CO2".to_string()],
+            true,
+        )
+        .expect("the profile solves")
+    };
+    let onda = solve(&onda);
+    let billet = solve(&billet);
+
+    // The bottom segment, against the capture's own two readings.
+    relative(
+        onda.segments[0].k_ga,
+        135.79988356254145,
+        1.0e-6,
+        "ONDA kGa",
+    );
+    relative(
+        billet.segments[0].k_ga,
+        154.18945112830227,
+        1.0e-6,
+        "billet kGa",
+    );
+    relative(
+        onda.segments[0].k_la,
+        0.009432860559780317,
+        1.0e-6,
+        "ONDA kLa",
+    );
+    relative(
+        billet.segments[0].k_la,
+        0.006583152243472645,
+        1.0e-6,
+        "billet kLa",
+    );
+
+    // **And the pair's ratio is the multiplier, exactly on the gas side and only nearly on the
+    // liquid one** - which is a property of the state and not of the arithmetic. The class
+    // scales a *base* that both film coefficients are computed from, so the ratio of two runs
+    // is the multiplier times the ratio of the two bases; the state moved between them, and the
+    // two sides do not feel it equally. Measured on the capture's own pair: the gas ratio is
+    // `1.13541666...` to the last digit, and the liquid ratio is `0.6978956` against `0.698`,
+    // because the base `kLa` itself moved by `1.495e-4`.
+    let (gas_multiplier, liquid_multiplier) = (
+        billet.segments[0].k_ga / onda.segments[0].k_ga,
+        billet.segments[0].k_la / onda.segments[0].k_la,
+    );
+    relative(
+        gas_multiplier,
+        2.725 / 6.0 / 0.4,
+        1.0e-9,
+        "the gas multiplier",
+    );
+    relative(
+        liquid_multiplier,
+        0.6978956385236719,
+        1.0e-5,
+        "the liquid multiplier, as the capture itself measures it",
+    );
+    assert!(
+        (liquid_multiplier - 0.698).abs() < 2.0e-4,
+        "and it is the packing's own `cp`: {liquid_multiplier} against 0.698"
+    );
+
+    // The state moves with it, and in the direction the capture does: less liquid-film capacity
+    // retains less CO2, so the gas keeps more of it.
+    assert!(
+        billet.gas_outlet.z[1] > onda.gas_outlet.z[1],
+        "CO2 in the gas outlet: {} billet against {} onda",
+        billet.gas_outlet.z[1],
+        onda.gas_outlet.z[1]
+    );
+    relative(
+        billet.component_transfer_totals[0].1,
+        0.0024291784706160805,
+        1.0e-6,
+        "billet CO2 total",
     );
 }

@@ -94,7 +94,7 @@ description = "`setMassTransferCorrectionFactor`, which scales both film coeffic
 type = "enum"
 values = ["onda_1968", "billet_schultes_1999"]
 optional = true
-description = "**`onda_1968` is ported**; `billet_schultes_1999` is refused by name, with `MassTransferCorrelation` behind it. That value is a constant multiplier on the two coefficients rather than a correlation.\n"
+description = "**Both are ported.** `billet_schultes_1999` is not a correlation: it multiplies `kGa` by `max(0.1, Ch/0.4)` and `kLa` by `max(0.1, Cp)`, the two constants the packing's own row carries.\n"
 [inputs.film_model]
 type = "enum"
 values = ["overall_two_resistance", "maxwell_stefan_matrix"]

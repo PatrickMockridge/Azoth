@@ -50,6 +50,8 @@
 //       > captures/process_side_draw.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
 //       > captures/process_rate_based_packed_column.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
+//       > captures/process_rate_based_billet.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -185,6 +187,9 @@ public class ProcessProbe {
         break;
       case "rate_based":
         rateBasedRows();
+        break;
+      case "rate_based_billet":
+        rateBasedBilletRows();
         break;
       case "shortcut_column":
         shortcutColumnRows();
@@ -3637,10 +3642,32 @@ public class ProcessProbe {
     rateBasedTegRow("teg_circulation", 50.0, 12.0, 6, 20.0);
   }
 
+  /// **`BILLET_SCHULTES_1999` in one capture, beside its own `ONDA_1968` baseline.** The class's
+  /// second "correlation" is not one: it multiplies the two film coefficients by constants taken
+  /// off the packing row, so one state run twice is the whole measurement. `Pall-Ring-50`
+  /// resolves to the plastic row, `cp = 0.698` and `ch = 2.725`, so the pair is `1.1354166` on
+  /// `kGa` and `0.698` on `kLa` - neither floored at the class's `0.1`.
+  static void rateBasedBilletRows() {
+    rateBasedCo2WaterRow("billet_onda", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
+    rateBasedCo2WaterRow("billet_schultes", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999);
+  }
+
   /// `configuredColumn`'s own state and settings - the four segments, the 3.0 correction, the
   /// 1e-9 tolerance and `CO2` as the only transfer component - on the cubic the row names.
   static void rateBasedCo2WaterRow(String label, double gasCo2, double liquidCo2, double height,
       String packing, boolean pr, boolean heatOff) {
+    rateBasedCo2WaterRow(label, gasCo2, liquidCo2, height, packing, pr, heatOff,
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
+  }
+
+  /// The same state with the mass-transfer correlation stated rather than left at the class's
+  /// `ONDA_1968` field initialiser, which is why the rows above are unchanged by this overload.
+  static void rateBasedCo2WaterRow(String label, double gasCo2, double liquidCo2, double height,
+      String packing, boolean pr, boolean heatOff,
+      neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation
+          correlation) {
     Stream gas = rateFeed("gas in", pr, 313.15, 50.0, 1000.0, new String[] { "methane", "CO2" },
         new double[] { 1.0 - gasCo2, gasCo2 });
     Stream liquid = rateFeed("lean liquid", pr, 303.15, 50.0, 2000.0,
@@ -3656,6 +3683,7 @@ public class ProcessProbe {
     column.setTransferComponents("CO2");
     column.setMassTransferCorrectionFactor(3.0);
     column.setConvergenceTolerance(1.0e-9);
+    column.setMassTransferCorrelation(correlation);
     if (heatOff) {
       column.setHeatTransferModel(
           neqsim.process.equipment.distillation.RateBasedPackedColumn.HeatTransferModel.NONE);

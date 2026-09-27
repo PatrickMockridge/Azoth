@@ -92,6 +92,19 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
   > captures/process_rate_based_packed_column.tsv
 ```
 
+**`ProcessProbe rate_based_billet` is the same absorber state run twice**, once at each
+`MassTransferCorrelation`, because that parameter is not a correlation: it scales the two film
+coefficients by constants the packing row carries, so one state at each value is the whole
+measurement. `Pall-Ring-50` resolves to the file's plastic row, `cp = 0.698` and `ch = 2.725`,
+so the pair is `1.1354166...` on `kGa` and `0.698` on `kLa`; the capture's own two ratios are
+what the port's test reads, and the liquid one is `0.6978956` rather than `0.698` because the
+base `kLa` moved `1.495e-4` between the two converged states.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
+  > captures/process_rate_based_billet.tsv
+```
+
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
 output is what lets `tools/gen_neqsim_cases.py --check` be a build gate: it reads a capture

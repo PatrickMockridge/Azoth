@@ -39,6 +39,9 @@ pub struct SnapshotSettings {
     pub mass_transfer_correction: f64,
     /// `heatTransferCorrectionFactor`, which scales both heat coefficients.
     pub heat_transfer_correction: f64,
+    /// Whether `massTransferCorrelation` is `BILLET_SCHULTES_1999`, which scales the two film
+    /// coefficients by the packing's own constants.
+    pub billet_schultes: bool,
 }
 
 /// The four numbers `calculateTransportSnapshot` substitutes for a phase that reports none.
@@ -184,11 +187,21 @@ pub fn calculate_transport_snapshot(
         },
     )?;
 
-    // `BILLET_SCHULTES_1999` is refused by name before a snapshot is built, so both multipliers
-    // are one: they exist in the class as a constant scaling of the two coefficients and not as
-    // a correlation.
-    let k_ga = non_negative(hydraulics.k_ga, 0.0) * settings.mass_transfer_correction;
-    let k_la = non_negative(hydraulics.k_la, 0.0) * settings.mass_transfer_correction;
+    // **`BILLET_SCHULTES_1999` is a constant of the packing, not a correlation.** The class
+    // takes two numbers off the packing specification and floors each at `0.1`; both are on
+    // the registry row already, and `ONDA_1968` leaves the pair at one.
+    let (gas_multiplier, liquid_multiplier) = if settings.billet_schultes {
+        (
+            (packing.billet_gas_constant / 0.4).max(0.1),
+            (packing.billet_liquid_constant).max(0.1),
+        )
+    } else {
+        (1.0, 1.0)
+    };
+    let k_ga =
+        non_negative(hydraulics.k_ga, 0.0) * gas_multiplier * settings.mass_transfer_correction;
+    let k_la =
+        non_negative(hydraulics.k_la, 0.0) * liquid_multiplier * settings.mass_transfer_correction;
 
     let gas_heat_transfer_coefficient = volumetric_heat_transfer_coefficient(
         k_ga,

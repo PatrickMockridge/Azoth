@@ -2,7 +2,7 @@
 //!
 //! Spec: `specs/models/process/rate_based_packed_column.toml`. **The arithmetic is
 //! [`crate::segment`]'s**; what this module adds is the class's own defaults for the eleven
-//! palette parameters, the refusal of the four enum values it does not carry, and the flat
+//! palette parameters, the refusal of the three enum values it does not carry, and the flat
 //! record a case and a capture can address.
 
 use azoth_core::units::{
@@ -337,10 +337,11 @@ pub fn rate_based_packed_column(
     segment_solver: Option<&str>,
     column_solver: Option<&str>,
 ) -> Result<RateBasedPackedColumnResult> {
-    // **The four refusals come first, and each names its class** - so a caller who states a
+    // **The three refusals come first, and each names its class** - so a caller who states a
     // solver the port does not carry hears which one would close it rather than reading a
     // number from a machine that silently ran something else.
-    MassTransferCorrelation::parse(mass_transfer_correlation.unwrap_or("onda_1968"))?;
+    let correlation =
+        MassTransferCorrelation::parse(mass_transfer_correlation.unwrap_or("onda_1968"))?;
     let film = FilmModel::parse(film_model.unwrap_or("maxwell_stefan_matrix"))?;
     let heat = HeatTransferModel::parse(heat_transfer_model.unwrap_or("chilton_colburn_analogy"))?;
     SegmentSolver::parse(segment_solver.unwrap_or("sequential_explicit"))?;
@@ -387,6 +388,7 @@ pub fn rate_based_packed_column(
         convergence_tolerance: convergence_tolerance.unwrap_or(DEFAULT_TOLERANCE),
         mass_transfer_correction: mass_transfer_correction.unwrap_or(1.0),
         heat_transfer_correction: 1.0,
+        mass_transfer_correlation: correlation,
         transfer_components: transfer_components.map(<[String]>::to_vec),
         film_model: film,
         heat_transfer_model: heat,

@@ -17,7 +17,9 @@ use crate::stream::Stream;
 pub enum MassTransferCorrelation {
     /// `ONDA_1968`, the class's default and the one every state of its own tests runs.
     Onda1968,
-    /// `BILLET_SCHULTES_1999`, **not ported**.
+    /// `BILLET_SCHULTES_1999`, which scales both film coefficients by a **constant of the
+    /// packing** rather than by a correlation: `max(0.1, Ch/0.4)` on `kGa` and `max(0.1, Cp)`
+    /// on `kLa`.
     BilletSchultes1999,
 }
 
@@ -74,17 +76,11 @@ impl MassTransferCorrelation {
     /// Parse the spec's spelling.
     ///
     /// # Errors
-    /// [`AzothError::InvalidInput`] for `billet_schultes_1999`, naming the class.
+    /// [`AzothError::InvalidInput`] for a value the class does not carry.
     pub fn parse(value: &str) -> Result<Self> {
         match value {
             "onda_1968" => Ok(Self::Onda1968),
-            "billet_schultes_1999" => Err(refused(
-                "mass_transfer_correlation",
-                value,
-                "MassTransferCorrelation.BILLET_SCHULTES_1999",
-                "Measured, that value is not a correlation at all: it is a constant multiplier, \
-                 `max(0.1, Ch/0.4)` on `kGa` and `max(0.1, Cp)` on `kLa`.",
-            )),
+            "billet_schultes_1999" => Ok(Self::BilletSchultes1999),
             other => Err(AzothError::invalid_input(
                 "mass_transfer_correlation",
                 format!("`{other}` is not one of onda_1968 or billet_schultes_1999"),
@@ -212,6 +208,8 @@ pub struct RateBasedSetup {
     pub convergence_tolerance: f64,
     pub mass_transfer_correction: f64,
     pub heat_transfer_correction: f64,
+    /// Which multiplier the packing's two constants apply, or `ONDA_1968`'s identity.
+    pub mass_transfer_correlation: MassTransferCorrelation,
     /// The transfer whitelist; `None` is the union of the two inlets' components.
     pub transfer_components: Option<Vec<String>>,
     pub film_model: FilmModel,
@@ -287,6 +285,8 @@ pub fn rate_based_packed_column(setup: &RateBasedSetup) -> Result<RateBasedOutco
             heat_transfer_none: setup.heat_transfer_model == HeatTransferModel::None,
             mass_transfer_correction: setup.mass_transfer_correction,
             heat_transfer_correction: setup.heat_transfer_correction,
+            billet_schultes: setup.mass_transfer_correlation
+                == MassTransferCorrelation::BilletSchultes1999,
         },
         setup.transfer_components.as_deref().unwrap_or(&[]),
         setup.film_model == FilmModel::MaxwellStefanMatrix,
