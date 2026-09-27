@@ -95,9 +95,18 @@ yet](docs/src/index.md#not-for-design-work-yet) about the placeholder fitting co
 
 ## Install
 
+**Not on PyPI yet.** `azoth-engine` is the name 0.1 will publish under, and 0.1 is
+**to be announced** - it goes up once the Python surface is settled. Nothing is uploaded
+under that name today, so `pip install azoth-engine` has nothing to fetch. Until then,
+from a checkout:
+
 ```bash
-pip install azoth-engine   # the distribution; `import azoth` is unchanged
+pip install maturin
+pip install .
 ```
+
+The distribution name is `azoth-engine` because `azoth` is taken on PyPI; `import azoth`
+is what the package has always been and is unchanged by it.
 
 ## Quick start
 
