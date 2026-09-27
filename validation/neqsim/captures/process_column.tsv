@@ -1158,6 +1158,12 @@ bottoms_T=373.15
 bottoms_h=-6132.476781201999
 bottoms_s=-32.351883998888
 bottoms_z=methane:0.030170331016495015 n-butane:0.969829668983505
+tray0_phases=2 phase0type=GAS beta=0.2705927829877819
+tray1_phases=2 phase0type=GAS beta=0.09391641850650245
+tray2_phases=2 phase0type=GAS beta=0.47829026504568073
+tray3_phases=2 phase0type=GAS beta=0.7498365421830738
+tray4_phases=2 phase0type=GAS beta=0.842643428206093
+tray5_phases=2 phase0type=GAS beta=0.8406182726492426
 terminal_top_n=3.7264760720867867
 terminal_top_P=19.0
 terminal_top_T=253.14999999999998
@@ -1281,6 +1287,12 @@ bottoms_T=373.15
 bottoms_h=-6629.879050205778
 bottoms_s=-33.719301696522535
 bottoms_z=methane:0.0245858395846681 n-butane:0.9754141604153319
+tray0_phases=2 phase0type=GAS beta=0.2638768695314635
+tray1_phases=2 phase0type=GAS beta=0.09286923614161946
+tray2_phases=2 phase0type=GAS beta=0.5117557193324378
+tray3_phases=2 phase0type=GAS beta=0.8212061974709547
+tray4_phases=2 phase0type=GAS beta=0.8096181573156327
+tray5_phases=2 phase0type=GAS beta=0.7653167589627248
 terminal_top_n=3.7714939579816043
 terminal_top_P=19.0
 terminal_top_T=253.14999999999998
@@ -1404,6 +1416,12 @@ bottoms_T=373.15
 bottoms_h=-6629.878996104015
 bottoms_s=-33.71930154779041
 bottoms_z=methane:0.024585840192085547 n-butane:0.9754141598079145
+tray0_phases=2 phase0type=GAS beta=0.26387688210324445
+tray1_phases=2 phase0type=GAS beta=0.0928692395880859
+tray2_phases=2 phase0type=GAS beta=0.511755724715254
+tray3_phases=2 phase0type=GAS beta=0.8212062058609274
+tray4_phases=2 phase0type=GAS beta=0.8096181642214643
+tray5_phases=2 phase0type=GAS beta=0.7653167649912208
 terminal_top_n=3.7714939525333353
 terminal_top_P=19.0
 terminal_top_T=253.14999999999998
@@ -1527,6 +1545,12 @@ bottoms_T=373.15
 bottoms_h=-6132.477894761537
 bottoms_s=-32.351887060194926
 bottoms_z=methane:0.030170318514212865 n-butane:0.9698296814857871
+tray0_phases=2 phase0type=GAS beta=0.27059284489775415
+tray1_phases=2 phase0type=GAS beta=0.09391641092370762
+tray2_phases=2 phase0type=GAS beta=0.478290299720057
+tray3_phases=2 phase0type=GAS beta=0.7498366148932128
+tray4_phases=2 phase0type=GAS beta=0.8426434743942292
+tray5_phases=2 phase0type=GAS beta=0.840618299120037
 terminal_top_n=3.7264761636705726
 terminal_top_P=19.0
 terminal_top_T=253.14999999999998

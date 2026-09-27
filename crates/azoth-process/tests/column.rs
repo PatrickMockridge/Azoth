@@ -380,9 +380,15 @@ fn a_corrected_columns_products_are_reconciled_against_its_feed() {
 /// state to every printed digit** (`302.156771` on tray 3, with and without). A relaxation
 /// cannot move a fixed point, and these two rows say it does not.
 ///
-/// So the difference is in the *maps* and not in the paths, and it has not been localised. What
-/// this test holds is the *measurement* rather than a tolerance: the shape of the port's answer,
-/// and the size of the disagreement - so that a later tranche which closes it moves this test
+/// **The phase guards are refuted too.** The class's correction skips a stage whose system holds
+/// fewer than two phases - and so does this port, whose `(Some, Some)` is the same statement -
+/// so a stage skipped by one and corrected by the other would be the divergence. The capture's
+/// `trayN_phases` rows say **every stage holds two phases on both rows**, with `phase0type=GAS`,
+/// so neither implementation skips anything and the guard is not the difference either.
+///
+/// So the difference is in the *maps* and not in the paths, and it is not localised. What this
+/// test holds is the *measurement* rather than a tolerance: the shape of the port's answer, and
+/// the size of the disagreement - so that a later tranche which closes it moves this test
 /// deliberately rather than by accident.
 #[test]
 fn a_high_murphree_efficiency_reaches_this_ports_own_fixed_point() {
