@@ -62,6 +62,15 @@ pub struct AbsorberSetup {
     /// `AbsorptionColumn.applyMurphreeCorrection` replaces the base's, so this is not the same
     /// field as the distillation column's.
     pub murphree: Option<AbsorberMurphree>,
+    pub gas_side_draw_fractions: Option<Vec<f64>>,
+    pub liquid_side_draw_fractions: Option<Vec<f64>>,
+    pub pumparound_fractions: Option<Vec<f64>>,
+    /// The side-draw flow specification, or empty where every draw stays a fraction.
+    pub side_draw_flows: Vec<crate::kernels::distillation_column::SideDrawFlow>,
+    /// The pumparound returns, and the loop's own two switches.
+    pub pumparound_returns: Vec<crate::column::pumparound::PumparoundReturn>,
+    pub pumparound_tolerance: Option<f64>,
+    pub pumparound_max_iterations: Option<usize>,
     /// The convergence tolerance on the mean tray-temperature change.
     pub temperature_tolerance: f64,
     /// The iteration cap.
@@ -112,15 +121,17 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         tray_temperatures: setup.tray_temperatures.clone(),
         solver_type: setup.solver_type,
         reactive: setup.reactive,
-        // The absorber's own fractions are the class's too, and its model does not declare them.
-        gas_side_draw_fractions: None,
-        side_draw_flows: Vec::new(),
-        liquid_side_draw_fractions: None,
-        pumparound_fractions: None,
-        pumparound_returns: Vec::new(),
+        // **An absorber has no ends, so a draw on tray 0 or the top tray is legitimate** -
+        // `refuse_end_draws` keys its refusal on `has_reboiler`/`has_condenser`, both false here.
+        gas_side_draw_fractions: setup.gas_side_draw_fractions.clone(),
+        side_draw_flows: setup.side_draw_flows.clone(),
+        liquid_side_draw_fractions: setup.liquid_side_draw_fractions.clone(),
+        pumparound_fractions: setup.pumparound_fractions.clone(),
+        pumparound_returns: setup.pumparound_returns.clone(),
+        // The loop rebuilds its own start states, as the base column's tear does.
         pumparound_inlets: Vec::new(),
-        pumparound_tolerance: None,
-        pumparound_max_iterations: None,
+        pumparound_tolerance: setup.pumparound_tolerance,
+        pumparound_max_iterations: setup.pumparound_max_iterations,
     })?;
 
     Ok(AbsorberOutcome {

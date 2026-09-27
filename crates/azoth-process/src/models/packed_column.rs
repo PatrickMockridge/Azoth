@@ -177,6 +177,21 @@ pub fn packed_column(
     bottom_specification_type: Option<&str>,
     bottom_specification_target: Option<f64>,
     bottom_specification_component: Option<&str>,
+    tray_murphree_efficiency: Option<&[f64]>,
+    gas_side_draw_fractions: Option<&[f64]>,
+    liquid_side_draw_fractions: Option<&[f64]>,
+    pumparound_fractions: Option<&[f64]>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
 ) -> Result<PackedColumnResult> {
     // **The class's own check, on the one packing parameter it does not simply read.**
     // `setPackingHydraulicCapacityFactor` throws for a value that is not positive and finite, so
@@ -223,9 +238,10 @@ pub fn packed_column(
         temperature_tolerance,
         max_iterations,
         murphree_efficiency,
-        // **The packed column declares no per-stage efficiency**, so the base column's vector is
-        // absent and every stage takes the column-wide value.
-        None,
+        // **A notional stage is still a stage.** The height derives the tray count, so these are
+        // one entry per theoretical stage with the same `NaN` fall-through the column's own
+        // vector uses.
+        tray_murphree_efficiency,
         solver_type,
         top_specification_type,
         top_specification_target,
@@ -238,26 +254,24 @@ pub fn packed_column(
         reactive,
         reactive_start_tray,
         reactive_end_tray,
-        // **A packed column's draws are the base column's, and this id does not declare them.**
-        None,
-        None,
-        None,
-        // **This entry declares no side-draw flow specification.** It declares none of the three
-        // draw-fraction vectors either - the packing's own parameters are a report on the far
-        // side of the solve - so a specified draw has nothing here to move.
-        None,
-        None,
-        None,
-        None,
-        None,
-        // **This entry declares no pumparound with a return either**, for the reason it declares
-        // no draw fractions: the packing's parameters are a report on the far side of the solve.
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
+        // **The draws are the base column's and `PackedColumn` inherits all of them**: it
+        // overrides `run` and `toJson` and no part of the separation, so a draw on a notional
+        // stage is the same split the column makes. The ends are still the ends, so a fraction
+        // on one is still refused.
+        gas_side_draw_fractions,
+        liquid_side_draw_fractions,
+        pumparound_fractions,
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )?;
 
     Ok(out.into())

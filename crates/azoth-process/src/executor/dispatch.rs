@@ -715,9 +715,16 @@ fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
             top_pressure: pascals(p.si("top_pressure")?),
             bottom_pressure: pascals(p.si("bottom_pressure")?),
             tray_temperatures: None,
-            // The absorber's two efficiencies reach the model's own flat signature; a form
-            // declares neither.
+            // The absorber's two efficiencies and its draw surface reach the model's own flat
+            // signature; a palette entry declares none of them.
             murphree: None,
+            gas_side_draw_fractions: None,
+            liquid_side_draw_fractions: None,
+            pumparound_fractions: None,
+            side_draw_flows: Vec::new(),
+            pumparound_returns: Vec::new(),
+            pumparound_tolerance: None,
+            pumparound_max_iterations: None,
             temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
             max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,
@@ -747,9 +754,16 @@ fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
             top_pressure: pascals(p.si("top_pressure")?),
             bottom_pressure: pascals(p.si("bottom_pressure")?),
             tray_temperatures: None,
-            // The absorber's two efficiencies reach the model's own flat signature; a form
-            // declares neither.
+            // The absorber's two efficiencies and its draw surface reach the model's own flat
+            // signature; a palette entry declares none of them.
             murphree: None,
+            gas_side_draw_fractions: None,
+            liquid_side_draw_fractions: None,
+            pumparound_fractions: None,
+            side_draw_flows: Vec::new(),
+            pumparound_returns: Vec::new(),
+            pumparound_tolerance: None,
+            pumparound_max_iterations: None,
             temperature_tolerance: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).0,
             max_iterations: algorithm_limits(&model_gen::DISTILLATION_COLUMN_SPEC).1,
             solver_type: kernels::distillation_column::SolverType::DirectSubstitution,

@@ -4462,6 +4462,21 @@ def absorption_column(
     reactive_start_tray: int | None = None,
     reactive_end_tray: int | None = None,
     solver_type: str | None = None,
+    tray_murphree_efficiency: Sequence[float] | None = None,
+    gas_side_draw_fractions: Sequence[float] | None = None,
+    liquid_side_draw_fractions: Sequence[float] | None = None,
+    pumparound_fractions: Sequence[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: object | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: object | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber; see :func:`azoth.process.reference.absorption_column`.
 
@@ -4496,6 +4511,27 @@ def absorption_column(
         reactive_start_tray,
         reactive_end_tray,
         solver_type,
+        None if tray_murphree_efficiency is None else [float(v) for v in tray_murphree_efficiency],
+        None if gas_side_draw_fractions is None else [float(v) for v in gas_side_draw_fractions],
+        None
+        if liquid_side_draw_fractions is None
+        else [float(v) for v in liquid_side_draw_fractions],
+        None if pumparound_fractions is None else [float(v) for v in pumparound_fractions],
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        None
+        if side_draw_flow_target is None
+        else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        None
+        if pumparound_temperature_drop is None
+        else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     return AbsorptionColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -4552,6 +4588,21 @@ def packed_column(
     bottom_specification_type: str | None = None,
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
+    tray_murphree_efficiency: Sequence[float] | None = None,
+    gas_side_draw_fractions: Sequence[float] | None = None,
+    liquid_side_draw_fractions: Sequence[float] | None = None,
+    pumparound_fractions: Sequence[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: object | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: object | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> PackedColumnResult:
     """Solve a packed column; see :func:`azoth.process.reference.packed_column`.
 
@@ -4594,6 +4645,27 @@ def packed_column(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        None if tray_murphree_efficiency is None else [float(v) for v in tray_murphree_efficiency],
+        None if gas_side_draw_fractions is None else [float(v) for v in gas_side_draw_fractions],
+        None
+        if liquid_side_draw_fractions is None
+        else [float(v) for v in liquid_side_draw_fractions],
+        None if pumparound_fractions is None else [float(v) for v in pumparound_fractions],
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        None
+        if side_draw_flow_target is None
+        else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        None
+        if pumparound_temperature_drop is None
+        else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     return PackedColumnResult(
         gas_side_draw_n=tuple(
@@ -4653,6 +4725,21 @@ def stripping_column(
     reactive_start_tray: int | None = None,
     reactive_end_tray: int | None = None,
     solver_type: str | None = None,
+    tray_murphree_efficiency: Sequence[float] | None = None,
+    gas_side_draw_fractions: Sequence[float] | None = None,
+    liquid_side_draw_fractions: Sequence[float] | None = None,
+    pumparound_fractions: Sequence[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: object | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: object | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper; see :func:`azoth.process.reference.stripping_column`.
 
@@ -4685,6 +4772,27 @@ def stripping_column(
         reactive_start_tray,
         reactive_end_tray,
         solver_type,
+        None if tray_murphree_efficiency is None else [float(v) for v in tray_murphree_efficiency],
+        None if gas_side_draw_fractions is None else [float(v) for v in gas_side_draw_fractions],
+        None
+        if liquid_side_draw_fractions is None
+        else [float(v) for v in liquid_side_draw_fractions],
+        None if pumparound_fractions is None else [float(v) for v in pumparound_fractions],
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        None
+        if side_draw_flow_target is None
+        else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        None
+        if pumparound_temperature_drop is None
+        else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     return StrippingColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),

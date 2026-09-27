@@ -549,10 +549,10 @@ pub fn distillation_column(
 /// through `top_feed`, which is `addGasInStream` and `addSolventInStream`.
 #[pyfunction]
 #[pyo3(
-    signature = (gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None)
+    signature = (gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None, tray_murphree_efficiency = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray = None, pumparound_draw_tray = None, pumparound_draw_fraction = None, pumparound_temperature_drop = None, pumparound_tolerance = None, pumparound_max_iterations = None)
 )]
 #[pyo3(
-    text_signature = "(gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None)"
+    text_signature = "(gas_components, solvent_components, gas_n, gas_z, gas_p, gas_t, solvent_n, solvent_z, solvent_p, solvent_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None, tray_murphree_efficiency=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input
@@ -585,6 +585,21 @@ pub fn absorption_column(
     reactive_start_tray: Option<usize>,
     reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
+    tray_murphree_efficiency: Option<Vec<f64>>,
+    gas_side_draw_fractions: Option<Vec<f64>>,
+    liquid_side_draw_fractions: Option<Vec<f64>>,
+    pumparound_fractions: Option<Vec<f64>>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
 ) -> PyResult<crate::results::PyAbsorptionColumnResult> {
     azoth_process::absorption_column(
         &gas_components,
@@ -610,6 +625,21 @@ pub fn absorption_column(
         reactive_start_tray,
         reactive_end_tray,
         solver_type,
+        tray_murphree_efficiency.as_deref(),
+        gas_side_draw_fractions.as_deref(),
+        liquid_side_draw_fractions.as_deref(),
+        pumparound_fractions.as_deref(),
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     .map(|r| crate::results::PyAbsorptionColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
@@ -622,10 +652,10 @@ pub fn absorption_column(
 /// report afterwards, so `packed_height` reaches the separation only through `estimateStages`.
 #[pyfunction]
 #[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature = None, condenser_temperature = None, packing_type = None, structured_packing = None, design_flood_fraction = None, packing_hydraulic_capacity_factor = None, column_diameter = None, murphree_efficiency = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None)
+    signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature = None, condenser_temperature = None, packing_type = None, structured_packing = None, design_flood_fraction = None, packing_hydraulic_capacity_factor = None, column_diameter = None, murphree_efficiency = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, tray_murphree_efficiency = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray = None, pumparound_draw_tray = None, pumparound_draw_fraction = None, pumparound_temperature_drop = None, pumparound_tolerance = None, pumparound_max_iterations = None)
 )]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, packing_type=None, structured_packing=None, design_flood_fraction=None, packing_hydraulic_capacity_factor=None, column_diameter=None, murphree_efficiency=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, packing_type=None, structured_packing=None, design_flood_fraction=None, packing_hydraulic_capacity_factor=None, column_diameter=None, murphree_efficiency=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, tray_murphree_efficiency=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input
@@ -662,6 +692,21 @@ pub fn packed_column(
     bottom_specification_type: Option<&str>,
     bottom_specification_target: Option<f64>,
     bottom_specification_component: Option<&str>,
+    tray_murphree_efficiency: Option<Vec<f64>>,
+    gas_side_draw_fractions: Option<Vec<f64>>,
+    liquid_side_draw_fractions: Option<Vec<f64>>,
+    pumparound_fractions: Option<Vec<f64>>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
 ) -> PyResult<crate::results::PyPackedColumnResult> {
     azoth_process::packed_column(
         &components,
@@ -695,6 +740,21 @@ pub fn packed_column(
         bottom_specification_type,
         bottom_specification_target,
         bottom_specification_component,
+        tray_murphree_efficiency.as_deref(),
+        gas_side_draw_fractions.as_deref(),
+        liquid_side_draw_fractions.as_deref(),
+        pumparound_fractions.as_deref(),
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     .map(|r| crate::results::PyPackedColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
@@ -707,10 +767,10 @@ pub fn packed_column(
 /// call with the other labels.
 #[pyfunction]
 #[pyo3(
-    signature = (stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None)
+    signature = (stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures = None, murphree_efficiency = None, component_murphree_efficiency = None, max_allowable_gas_load_factor = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None, tray_murphree_efficiency = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray = None, pumparound_draw_tray = None, pumparound_draw_fraction = None, pumparound_temperature_drop = None, pumparound_tolerance = None, pumparound_max_iterations = None)
 )]
 #[pyo3(
-    text_signature = "(stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None)"
+    text_signature = "(stripping_gas_components, rich_liquid_components, stripping_gas_n, stripping_gas_z, stripping_gas_p, stripping_gas_t, rich_liquid_n, rich_liquid_z, rich_liquid_p, rich_liquid_t, number_of_stages, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, tray_temperatures=None, murphree_efficiency=None, component_murphree_efficiency=None, max_allowable_gas_load_factor=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None, tray_murphree_efficiency=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None)"
 )]
 #[allow(non_snake_case)] // the record's own field names
 #[allow(clippy::too_many_arguments)] // one parameter per declared input
@@ -739,6 +799,21 @@ pub fn stripping_column(
     reactive_start_tray: Option<usize>,
     reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
+    tray_murphree_efficiency: Option<Vec<f64>>,
+    gas_side_draw_fractions: Option<Vec<f64>>,
+    liquid_side_draw_fractions: Option<Vec<f64>>,
+    pumparound_fractions: Option<Vec<f64>>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
 ) -> PyResult<crate::results::PyStrippingColumnResult> {
     azoth_process::stripping_column(
         &stripping_gas_components,
@@ -764,6 +839,21 @@ pub fn stripping_column(
         reactive_start_tray,
         reactive_end_tray,
         solver_type,
+        tray_murphree_efficiency.as_deref(),
+        gas_side_draw_fractions.as_deref(),
+        liquid_side_draw_fractions.as_deref(),
+        pumparound_fractions.as_deref(),
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     .map(|r| crate::results::PyStrippingColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

@@ -319,6 +319,21 @@ fn the_stripping_column_id_reaches_the_absorber_model() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the stripper converges");
 

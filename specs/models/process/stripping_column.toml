@@ -109,6 +109,77 @@ type = "enum"
 values = ["direct_substitution", "damped_substitution", "inside_out", "matrix_inside_out", "wegstein", "sum_rates", "newton", "naphtali_sandholm", "mesh_residual", "auto"]
 optional = true
 description = "which of the base's ten solving strategies runs. **`direct_substitution` is the class's own default**; `naphtali_sandholm` refuses here, because a column with no pinned reboiler runs `solveBubblePointMethod`.\n"
+[inputs.tray_murphree_efficiency]
+type = "vector"
+unit = "dimensionless"
+length = "one per stage, the reboiler at index 0"
+optional = true
+description = "one override per stage, `NaN` where a stage falls through to `murphree_efficiency` - `DistillationColumn.setMurphreeEfficiencies`, whose own resolution is `getEffectiveMurphreeEfficiency`. A length that is not the stage count is refused, and a value outside `[0, 1]` is clamped rather than refused.\n"
+[inputs.gas_side_draw_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray, a zero where a tray draws nothing"
+optional = true
+description = "**the vapour each tray withdraws from its own outlet**, which `setGasSideDrawFraction` states as a fraction of the phase: a draw has the tray's composition, temperature and pressure and a different flow. **A fraction on an end is refused.**\n"
+[inputs.liquid_side_draw_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray"
+optional = true
+description = "the liquid each tray withdraws as a side draw, from the same liquid a pumparound takes from: **the two are bounded together** by `validateLiquidSplitFractions` and may not sum above one.\n"
+[inputs.pumparound_fractions]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray"
+optional = true
+description = "the liquid each tray withdraws as a pumparound. **The return is ported**: `pumparound_*` below states the tray it comes back to, its fraction and its temperature drop, and the column iterates the recycle.\n"
+[inputs.side_draw_flow_tray]
+unit = "dimensionless"
+optional = true
+description = "**the tray whose draw flow is specified**, which `addSideDrawFlowSpecification(tray, phase, flow, unit)` takes. Omitted means every draw stays a *fraction* of its stage's own phase, decided once - which is what the three fraction vectors above are.\n"
+[inputs.side_draw_flow_phase]
+type = "enum"
+values = ["gas", "liquid"]
+optional = true
+description = "which of the stage's two phases the specification controls, `SideDrawPhase`. **Stated with the tray and the target or not at all**: a target without a phase is a declaration that cannot be read.\n"
+[inputs.side_draw_flow_target]
+unit = "kg/s"
+optional = true
+description = "the mass flow the draw must deliver - `getSideDrawStream(tray, phase).getFlowRate(unit)`, so a **mass** rate and not a molar one. The column moves the draw's fraction until the draw delivers it.\n"
+[inputs.side_draw_flow_tolerance]
+unit = "dimensionless"
+optional = true
+description = "the relative residual the search stops at. **Omitted means `1e-4`**, which is `ColumnSideDrawSpecification`'s own field initialiser.\n"
+[inputs.side_draw_flow_max_iterations]
+unit = "dimensionless"
+optional = true
+description = "the candidate cap for this specification. **Omitted means `12`**, the class's own field initialiser; the tear's own cap is the largest of it and `maxColumnTearIterations`.\n"
+
+[inputs.pumparound_return_tray]
+unit = "dimensionless"
+optional = true
+description = "**the tray the pumparound's liquid comes back to**, which `addLiquidPumparound(name, drawTray, returnTray, fraction, drop)` takes. **Stated with the draw tray, the fraction and the drop or not at all.**\n"
+[inputs.pumparound_draw_tray]
+unit = "dimensionless"
+optional = true
+description = "the tray the pumparound's liquid leaves. It must be a middle tray: the ends here are `column::reboiler` and `column::condenser` rather than stages.\n"
+[inputs.pumparound_draw_fraction]
+unit = "dimensionless"
+optional = true
+description = "the fraction of the draw tray's liquid withdrawn, which `setLiquidPumparoundDrawFraction` states on the tray - the same vector `pumparound_fractions` writes.\n"
+[inputs.pumparound_temperature_drop]
+unit = "K"
+optional = true
+description = "the drop from the draw to the return, which `updateReturnStream` subtracts before re-flashing. **The cooler's duty is the enthalpy between the two streams.**\n"
+[inputs.pumparound_tolerance]
+unit = "dimensionless"
+optional = true
+description = "the relative return-flow change the outer loop stops at. **Omitted means `1e-4`**, which is `pumparoundTolerance`'s own field initialiser.\n"
+[inputs.pumparound_max_iterations]
+unit = "dimensionless"
+optional = true
+description = "the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser.\n"
+
 [outputs]
 [outputs.tray_temperature]
 type = "vector"

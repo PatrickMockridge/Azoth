@@ -59,6 +59,21 @@ not an equation, and both implementations read it from here.
 | `bottom_specification_type` | product_purity / reflux_ratio / component_recovery / product_flow_rate / duty | *Optional.* the bottom product's degree of freedom, which `ColumnSpecification` carries. Omitted, the bottom is pinned by temperature - the class's other route. |
 | `bottom_specification_target` | dimensionless | *Optional.* the target value, in the unit its type implies, as the top specification's is. |
 | `bottom_specification_component` | - | *Optional.* the component a purity or a recovery constrains; unread by the other three types. |
+| `tray_murphree_efficiency` | dimensionless | *Optional.* one override per stage, `NaN` where a stage falls through to `murphree_efficiency` - `DistillationColumn.setMurphreeEfficiencies`, whose own resolution is `getEffectiveMurphreeEfficiency`. A length that is not the stage count is refused, and a value outside `[0, 1]` is clamped rather than refused. |
+| `gas_side_draw_fractions` | dimensionless | *Optional.* **the vapour each tray withdraws from its own outlet**, which `setGasSideDrawFraction` states as a fraction of the phase: a draw has the tray's composition, temperature and pressure and a different flow. **A fraction on an end is refused.** |
+| `liquid_side_draw_fractions` | dimensionless | *Optional.* the liquid each tray withdraws as a side draw, from the same liquid a pumparound takes from: **the two are bounded together** by `validateLiquidSplitFractions` and may not sum above one. |
+| `pumparound_fractions` | dimensionless | *Optional.* the liquid each tray withdraws as a pumparound. **The return is ported**: `pumparound_*` below states the tray it comes back to, its fraction and its temperature drop, and the column iterates the recycle. |
+| `side_draw_flow_tray` | dimensionless | *Optional.* **the tray whose draw flow is specified**, which `addSideDrawFlowSpecification(tray, phase, flow, unit)` takes. Omitted means every draw stays a *fraction* of its stage's own phase, decided once - which is what the three fraction vectors above are. |
+| `side_draw_flow_phase` | gas / liquid | *Optional.* which of the stage's two phases the specification controls, `SideDrawPhase`. **Stated with the tray and the target or not at all**: a target without a phase is a declaration that cannot be read. |
+| `side_draw_flow_target` | kg/s | *Optional.* the mass flow the draw must deliver - `getSideDrawStream(tray, phase).getFlowRate(unit)`, so a **mass** rate and not a molar one. The column moves the draw's fraction until the draw delivers it. |
+| `side_draw_flow_tolerance` | dimensionless | *Optional.* the relative residual the search stops at. **Omitted means `1e-4`**, which is `ColumnSideDrawSpecification`'s own field initialiser. |
+| `side_draw_flow_max_iterations` | dimensionless | *Optional.* the candidate cap for this specification. **Omitted means `12`**, the class's own field initialiser; the tear's own cap is the largest of it and `maxColumnTearIterations`. |
+| `pumparound_return_tray` | dimensionless | *Optional.* **the tray the pumparound's liquid comes back to**, which `addLiquidPumparound(name, drawTray, returnTray, fraction, drop)` takes. **Stated with the draw tray, the fraction and the drop or not at all.** |
+| `pumparound_draw_tray` | dimensionless | *Optional.* the tray the pumparound's liquid leaves. It must be a middle tray: the ends here are `column::reboiler` and `column::condenser` rather than stages. |
+| `pumparound_draw_fraction` | dimensionless | *Optional.* the fraction of the draw tray's liquid withdrawn, which `setLiquidPumparoundDrawFraction` states on the tray - the same vector `pumparound_fractions` writes. |
+| `pumparound_temperature_drop` | K | *Optional.* the drop from the draw to the return, which `updateReturnStream` subtracts before re-flashing. **The cooler's duty is the enthalpy between the two streams.** |
+| `pumparound_tolerance` | dimensionless | *Optional.* the relative return-flow change the outer loop stops at. **Omitted means `1e-4`**, which is `pumparoundTolerance`'s own field initialiser. |
+| `pumparound_max_iterations` | dimensionless | *Optional.* the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser. |
 
 
 ## Outputs

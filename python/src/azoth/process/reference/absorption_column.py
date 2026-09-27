@@ -20,12 +20,19 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AbsorptionColumnResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.process.reference._column_stage import StreamRecord
 from azoth.process.reference.distillation_column import (
     UNPORTED_SOLVERS,
+    Draws,
     _AbsorberMurphree,
     _feed,
     _Murphree,
+    _pumparound_return_specification,
+    _pumparound_returns_tear,
     _si,
+    _side_draw_flow_specification,
+    _side_draw_flow_tear,
+    _States,
     _states,
     reactive_section,
     unported_solver_class,
@@ -59,6 +66,21 @@ def absorption_column(
     reactive_start_tray: int | None = None,
     reactive_end_tray: int | None = None,
     solver_type: str | None = None,
+    tray_murphree_efficiency: list[float] | None = None,
+    gas_side_draw_fractions: list[float] | None = None,
+    liquid_side_draw_fractions: list[float] | None = None,
+    pumparound_fractions: list[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: Q | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: Q | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber.
 
@@ -110,7 +132,13 @@ def absorption_column(
                 column_wide=_Murphree.clamp(
                     1.0 if murphree_efficiency is None else murphree_efficiency
                 ),
-                per_stage=None,
+                # **The base column's per-stage vector**, folded in where the class's own
+                # `getMurphreeEfficiency(tray)` resolves it.
+                per_stage=(
+                    None
+                    if tray_murphree_efficiency is None
+                    else tuple(_Murphree.clamp(v) for v in tray_murphree_efficiency)
+                ),
             ),
             per_component=(
                 None
@@ -167,36 +195,104 @@ def absorption_column(
 
     # **The gas is the column's own `feed` and the solvent its `top_feed`**, which is the
     # position `addGasInStream` and `addSolventInStream` give them: stage 0 and the top stage.
-    states = _states(
-        list(gas_components),
-        gas_flow,
-        list(gas_z),
-        gas_temperature,
-        gas_pressure,
-        stages,
-        0,
-        False,
-        False,
-        top,
-        bottom,
-        None,
-        None,
-        tolerance,
-        iterations_cap,
-        None,
-        None,
-        solver_type,
-        top_feed=_feed(
-            list(solvent_components),
-            solvent_flow,
-            list(solvent_z),
-            solvent_temperature,
-            solvent_pressure,
-        ),
-        tray_temperatures=None if tray_temperatures is None else tuple(tray_temperatures),
-        reactive=reactive_section(reactive, reactive_start_tray, reactive_end_tray),
-        absorber_murphree=murphree,
+    #
+    # **The draws are the base column's, and the two outer loops are its own too**: a specified
+    # draw flow is a search over whole solves and a pumparound return is a fixed point, so this
+    # wraps the same tears `process.distillation_column` does rather than re-deriving them.
+    def solve_once(
+        active_draws: Draws, active_returns: tuple[StreamRecord | None, ...] | None = None
+    ) -> _States:
+        return _states(
+            list(gas_components),
+            gas_flow,
+            list(gas_z),
+            gas_temperature,
+            gas_pressure,
+            stages,
+            0,
+            False,
+            False,
+            top,
+            bottom,
+            None,
+            None,
+            tolerance,
+            iterations_cap,
+            None,
+            None,
+            solver_type,
+            top_feed=_feed(
+                list(solvent_components),
+                solvent_flow,
+                list(solvent_z),
+                solvent_temperature,
+                solvent_pressure,
+            ),
+            tray_temperatures=None if tray_temperatures is None else tuple(tray_temperatures),
+            reactive=reactive_section(reactive, reactive_start_tray, reactive_end_tray),
+            draws=active_draws,
+            absorber_murphree=murphree,
+            pumparound_inlets=active_returns,
+        )
+
+    draws: Draws = (
+        (
+            None
+            if gas_side_draw_fractions is None
+            else tuple(float(v) for v in gas_side_draw_fractions),
+            None
+            if liquid_side_draw_fractions is None
+            else tuple(float(v) for v in liquid_side_draw_fractions),
+            None if pumparound_fractions is None else tuple(float(v) for v in pumparound_fractions),
+        )
+        if gas_side_draw_fractions is not None
+        or liquid_side_draw_fractions is not None
+        or pumparound_fractions is not None
+        else None
     )
+    # **An absorber has no ends**, so the two end flags are false and a draw on stage 0 or the
+    # top stage is legitimate - which is what `_side_draw_flow_tear` is told here.
+    flows = _side_draw_flow_specification(
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target
+        if side_draw_flow_target is None
+        else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+    )
+    returns = _pumparound_return_specification(
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        None
+        if pumparound_temperature_drop is None
+        else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+    )
+    if returns is not None:
+        if flows is not None:
+            raise InvalidInputError(
+                "pumparound_return_tray",
+                "a pumparound with a return is stated beside a side-draw flow specification: "
+                "`solveWithColumnTearVariables` solves the two as coordinated tear variables, and "
+                "this port carries the pumparound's own fixed point alone",
+            )
+        states = _pumparound_returns_tear(
+            solve_once,
+            list(gas_components),
+            draws,
+            returns,
+            stages,
+            1.0e-4 if pumparound_tolerance is None else float(pumparound_tolerance),
+            12 if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        )
+    elif flows is not None:
+        states = _side_draw_flow_tear(
+            solve_once, list(gas_components), draws, flows, stages, False, False
+        )
+    else:
+        states = solve_once(draws)
+    warnings.extend(states.warnings)
 
     return AbsorptionColumnResult(
         tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),

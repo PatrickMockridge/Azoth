@@ -16,7 +16,9 @@ use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::kernels::absorption_column::AbsorberSetup;
 use crate::kernels::absorption_column::absorption_column as kernel;
 use crate::kernels::distillation_column::SolverType;
-use crate::models::distillation_column::unported_class;
+use crate::models::distillation_column::{
+    build_pumparound_returns, build_side_draw_flow, unported_class,
+};
 use crate::stream::Stream;
 
 /// Result of `process.absorption_column`.
@@ -166,6 +168,21 @@ pub fn absorption_column(
     reactive_start_tray: Option<usize>,
     reactive_end_tray: Option<usize>,
     solver_type: Option<&str>,
+    tray_murphree_efficiency: Option<&[f64]>,
+    gas_side_draw_fractions: Option<&[f64]>,
+    liquid_side_draw_fractions: Option<&[f64]>,
+    pumparound_fractions: Option<&[f64]>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
 ) -> Result<AbsorptionColumnResult> {
     refuse_unported(max_allowable_gas_load_factor)?;
     // **The two efficiency fields, resolved and clamped.** `AbsorptionColumn` inherits the
@@ -180,7 +197,8 @@ pub fn absorption_column(
             AbsorberMurphree {
                 base: Murphree {
                     column_wide: Murphree::clamp(murphree_efficiency.unwrap_or(1.0)),
-                    per_stage: None,
+                    per_stage: tray_murphree_efficiency
+                        .map(|values| values.iter().copied().map(Murphree::clamp).collect()),
                 },
                 per_component: component_murphree_efficiency
                     .map(|values| values.iter().copied().map(Murphree::clamp).collect()),
@@ -248,6 +266,29 @@ pub fn absorption_column(
         bottom_pressure,
         tray_temperatures: tray_temperatures.map(<[f64]>::to_vec),
         murphree,
+        // **An absorber has no ends, so a draw on tray 0 or the top tray is legitimate** - the
+        // base kernel's `refuse_end_draws` keys its refusal on the two end flags, both false here.
+        gas_side_draw_fractions: gas_side_draw_fractions.map(<[f64]>::to_vec),
+        liquid_side_draw_fractions: liquid_side_draw_fractions.map(<[f64]>::to_vec),
+        pumparound_fractions: pumparound_fractions.map(<[f64]>::to_vec),
+        side_draw_flows: build_side_draw_flow(
+            side_draw_flow_tray,
+            side_draw_flow_phase,
+            side_draw_flow_target,
+            side_draw_flow_tolerance,
+            side_draw_flow_max_iterations,
+        )?,
+        pumparound_returns: build_pumparound_returns(
+            pumparound_return_tray,
+            pumparound_draw_tray,
+            pumparound_draw_fraction,
+            pumparound_temperature_drop,
+            pumparound_tolerance,
+            pumparound_max_iterations,
+        )?
+        .0,
+        pumparound_tolerance,
+        pumparound_max_iterations,
         temperature_tolerance,
         max_iterations,
         solver_type: solver,

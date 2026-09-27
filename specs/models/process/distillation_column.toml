@@ -178,7 +178,7 @@ type = "vector"
 unit = "dimensionless"
 length = "one per tray"
 optional = true
-description = "the liquid each tray withdraws as a pumparound. **The return is not ported**: `ColumnPumparound` carries a return tray and a temperature drop, which is a recycle the column's own solver iterates.\n"
+description = "the liquid each tray withdraws as a pumparound. **The return is ported**: `pumparound_*` below states the tray it comes back to, its fraction and its temperature drop, and the column iterates the recycle.\n"
 [inputs.side_draw_flow_tray]
 unit = "dimensionless"
 optional = true

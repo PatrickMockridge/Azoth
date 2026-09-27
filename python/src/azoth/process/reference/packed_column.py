@@ -82,6 +82,21 @@ def packed_column(
     bottom_specification_type: str | None = None,
     bottom_specification_target: float | None = None,
     bottom_specification_component: str | None = None,
+    tray_murphree_efficiency: list[float] | None = None,
+    gas_side_draw_fractions: list[float] | None = None,
+    liquid_side_draw_fractions: list[float] | None = None,
+    pumparound_fractions: list[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: Q | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: Q | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
 ) -> PackedColumnResult:
     """Solve a packed column.
 
@@ -110,7 +125,23 @@ def packed_column(
             **Refused where it is not positive and finite**, which is
             ``setPackingHydraulicCapacityFactor``'s own check.
         column_diameter: the column's internal diameter. **It does not enter the solve.**
-        murphree_efficiency: **not ported**; omitted is the ideal stage.
+        murphree_efficiency: the column-wide Murphree tray efficiency; omitted is the ideal stage.
+        tray_murphree_efficiency: one override per *theoretical* stage, ``NaN`` where a stage
+            falls through to the column-wide value.
+        gas_side_draw_fractions: the vapour each stage withdraws, one entry per stage.
+        liquid_side_draw_fractions: the liquid each stage withdraws as a side draw.
+        pumparound_fractions: the liquid each stage withdraws as a pumparound.
+        side_draw_flow_tray: the stage whose draw flow is specified.
+        side_draw_flow_phase: which of that stage's phases the specification controls.
+        side_draw_flow_target: the mass flow the draw must deliver.
+        side_draw_flow_tolerance: the relative residual the specification's search stops at.
+        side_draw_flow_max_iterations: the candidate cap for that search.
+        pumparound_return_tray: the stage a pumparound's liquid comes back to.
+        pumparound_draw_tray: the stage it leaves.
+        pumparound_draw_fraction: the fraction of that stage's liquid withdrawn.
+        pumparound_temperature_drop: the cooler's drop on the way back.
+        pumparound_tolerance: the relative residual the return's loop stops at.
+        pumparound_max_iterations: the cap on that loop.
         solver_type: **only ``direct_substitution`` and ``naphtali_sandholm`` are ported**.
         top_specification_type: the top product's degree of freedom.
         top_specification_target: its target value.
@@ -159,9 +190,10 @@ def packed_column(
         reboiler_temperature,
         condenser_temperature,
         murphree_efficiency,
-        # **The packed column declares no per-stage vector**, so the base column's overrides are
-        # absent and every stage takes the column-wide value.
-        None,
+        # **A notional stage is still a stage.** The height derives the tray count, so these are
+        # one entry per theoretical stage with the same `NaN` fall-through the column's own
+        # vector uses.
+        tray_murphree_efficiency,
         solver_type,
         top_specification_type,
         top_specification_target,
@@ -175,6 +207,23 @@ def packed_column(
         reactive,
         reactive_start_tray,
         reactive_end_tray,
+        # **The draws are the base column's and `PackedColumn` inherits every one of them**, so a
+        # draw on a notional stage is the split the column makes. The two unit-carrying targets
+        # cross as quantities, which is what the base reference's own signature takes.
+        gas_side_draw_fractions,
+        liquid_side_draw_fractions,
+        pumparound_fractions,
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
     )
     return PackedColumnResult(
         tray_temperature=out.tray_temperature,
