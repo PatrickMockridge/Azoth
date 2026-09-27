@@ -58,7 +58,9 @@ fn two_phases_reduce_to_the_two_phase_flash() {
             .unwrap_or_else(|e| panic!("T={t}, P={p_pa}: {e}"));
 
         let beta = split.fractions[0];
-        let reference_beta = reference.vapour_fraction.expect("a split has a vapour fraction");
+        let reference_beta = reference
+            .vapour_fraction
+            .expect("a split has a vapour fraction");
         // Only where the flash's own answer is a *split*. A subcooled or superheated feed
         // has a negative or above-one vapour fraction, which is the negative flash and
         // not a phase amount; the multiphase solver has no negative phase to report and

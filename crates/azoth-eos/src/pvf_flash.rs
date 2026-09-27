@@ -93,7 +93,11 @@ pub fn pvf_flash(
                  `eos.bubble_temperature` and `eos.dew_temperature` - calculations with \
                  their own procedures. This model solves the interior of the two-phase \
                  region, which is the part they do not",
-                if vapour_fraction <= 0.0 { "bubble" } else { "dew" }
+                if vapour_fraction <= 0.0 {
+                    "bubble"
+                } else {
+                    "dew"
+                }
             ),
         });
     }

@@ -2471,9 +2471,15 @@ pub fn pvf_flash(
         alpha,
         alpha_params.as_deref(),
     )?;
-    azoth_eos::pvf_flash::pvf_flash(&mixture, pascals(P), vapour_fraction, kelvins(temperature), &z)
-        .map(|r| PyPvfFlashResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
+    azoth_eos::pvf_flash::pvf_flash(
+        &mixture,
+        pascals(P),
+        vapour_fraction,
+        kelvins(temperature),
+        &z,
+    )
+    .map(|r| PyPvfFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// The temperature and vapour-volume-fraction flash of a mixture (T,fraction -> P).

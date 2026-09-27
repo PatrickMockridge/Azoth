@@ -276,7 +276,7 @@ fn clamp_state(u: &mut [f64], n: usize) {
         *value = value.clamp(-20.0, 20.0);
     }
     if !u[n].is_finite() {
-        u[n] = 300.0_f64.ln();
+        u[n] = crate::DEFAULT_START_TEMPERATURE.ln();
     }
     if !u[n + 1].is_finite() {
         u[n + 1] = 1.0e5_f64.ln();

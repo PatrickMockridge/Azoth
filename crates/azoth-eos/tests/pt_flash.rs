@@ -164,7 +164,9 @@ fn the_identities_hold_at_every_returned_answer() {
     for case in spec.cases {
         let result = flash_case(case);
         let z = case.vector("z").expect("the case declares z");
-        let beta = result.vapour_fraction.expect("the spec's cases are all splits");
+        let beta = result
+            .vapour_fraction
+            .expect("the spec's cases are all splits");
         let context = &format!("{}::{}", spec.id, case.id);
 
         for (i, &zi) in z.iter().enumerate() {

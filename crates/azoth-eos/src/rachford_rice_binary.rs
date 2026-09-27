@@ -72,5 +72,8 @@ pub fn rachford_rice_binary(z1: f64, K1: f64, K2: f64) -> Result<RachfordRiceBin
         &mut warnings,
     )?;
 
-    Ok(RachfordRiceBinaryResult { vapour_fraction: beta, warnings })
+    Ok(RachfordRiceBinaryResult {
+        vapour_fraction: beta,
+        warnings,
+    })
 }

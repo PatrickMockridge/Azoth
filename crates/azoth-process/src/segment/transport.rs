@@ -41,6 +41,20 @@ pub struct SnapshotSettings {
     pub heat_transfer_correction: f64,
 }
 
+/// The four numbers `calculateTransportSnapshot` substitutes for a phase that reports none.
+///
+/// **Transcriptions, and the class names them nowhere else.** `RateBasedPackedColumn.java:1759`
+/// to `:1762` is `finitePositive(getDensity("kg/m3"), 1.0)` and its three siblings - a gas
+/// density of `1.0`, a liquid's of `800.0`, and the two viscosities - so these are what upstream
+/// uses rather than a judgement made here.
+const FALLBACK_GAS_DENSITY: f64 = 1.0;
+/// See [`FALLBACK_GAS_DENSITY`].
+const FALLBACK_LIQUID_DENSITY: f64 = 800.0;
+/// See [`FALLBACK_GAS_DENSITY`].
+const FALLBACK_GAS_VISCOSITY: f64 = 1.0e-5;
+/// See [`FALLBACK_GAS_DENSITY`].
+const FALLBACK_LIQUID_VISCOSITY: f64 = 1.0e-3;
+
 /// `calculateTransportSnapshot`: the 17 numbers the segment's transfer and heat steps read.
 #[derive(Debug, Clone)]
 pub struct TransportSnapshot {
@@ -112,12 +126,14 @@ pub fn calculate_transport_snapshot(
     let gas_phase = phase_view(gas, Pick::Gas)?;
     let liquid_phase = phase_view(liquid, Pick::Liquid)?;
 
-    // The class's three sentinels: a non-positive density or viscosity is replaced outright
-    // rather than reported, and they are not among the four properties a warning names.
-    let gas_density = finite_positive(gas_phase.density, 1.0);
-    let liquid_density = finite_positive(liquid_phase.density, 800.0);
-    let gas_viscosity = finite_positive(gas_phase.transport.mu.value, 1.0e-5);
-    let liquid_viscosity = finite_positive(liquid_phase.transport.mu.value, 1.0e-3);
+    // The class's four sentinels, `RateBasedPackedColumn.java:1759-1762`: a non-positive
+    // density or viscosity is replaced outright rather than reported, and they are not among
+    // the four properties a warning names.
+    let gas_density = finite_positive(gas_phase.density, FALLBACK_GAS_DENSITY);
+    let liquid_density = finite_positive(liquid_phase.density, FALLBACK_LIQUID_DENSITY);
+    let gas_viscosity = finite_positive(gas_phase.transport.mu.value, FALLBACK_GAS_VISCOSITY);
+    let liquid_viscosity =
+        finite_positive(liquid_phase.transport.mu.value, FALLBACK_LIQUID_VISCOSITY);
 
     let mut fallbacks = Fallbacks::default();
     let (gas_diffusivity, gas_took) = average_diffusivity(NEQSIM_EFFECTIVE_DIFFUSIVITY, true);

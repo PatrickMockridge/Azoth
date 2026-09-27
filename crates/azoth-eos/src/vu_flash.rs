@@ -44,7 +44,9 @@ pub fn vu_flash(
     )?;
 
     let algorithm = algorithm_of(spec)?;
-    let start_t = algorithm.initial_temperature.unwrap_or(300.0);
+    let start_t = algorithm
+        .initial_temperature
+        .unwrap_or(crate::DEFAULT_START_TEMPERATURE);
     let start_p = MOLAR_GAS_CONSTANT * start_t / v.value;
     let solved = solve_pressure_temperature(
         mixture,

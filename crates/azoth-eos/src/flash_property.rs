@@ -354,7 +354,10 @@ pub fn solve_temperature(
 
 /// The starting temperature, from the spec, floored where upstream floors it.
 fn start_temperature(algorithm: &ModelAlgorithm) -> f64 {
-    algorithm.initial_temperature.unwrap_or(300.0).max(50.0)
+    algorithm
+        .initial_temperature
+        .unwrap_or(crate::DEFAULT_START_TEMPERATURE)
+        .max(50.0)
 }
 
 /// Whether a failed trial is the caller's error rather than a state this path cannot

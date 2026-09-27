@@ -393,7 +393,9 @@ fn the_answer_never_exceeds_the_three_phase_ceiling() {
             got.phase_count
         );
         assert!(
-            got.phase_fractions.iter().all(|beta| *beta >= 0.0 && *beta <= 1.0),
+            got.phase_fractions
+                .iter()
+                .all(|beta| *beta >= 0.0 && *beta <= 1.0),
             "{names:?} at {t} K / {p} Pa: betas {:?}",
             got.phase_fractions
         );

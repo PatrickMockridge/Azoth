@@ -108,7 +108,8 @@ pub fn reboiler(
                 mixed.t,
                 &mixed.z,
             )?;
-            let (vapour_fraction, liquid_fraction) = phase_fractions(flash.phase, flash.vapour_fraction)?;
+            let (vapour_fraction, liquid_fraction) =
+                phase_fractions(flash.phase, flash.vapour_fraction)?;
 
             let vapour = if vapour_fraction > 0.0 {
                 Some(Stream::from_pt(

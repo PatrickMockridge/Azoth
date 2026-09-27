@@ -32,7 +32,9 @@ fn the_flash_splits_where_neqsim_does() {
     ] {
         let result = flash(t, p);
         assert_eq!(result.phase, azoth_eos::Phase::TwoPhase, "at {t} K");
-        let solved = result.vapour_fraction.expect("a split has a vapour fraction");
+        let solved = result
+            .vapour_fraction
+            .expect("a split has a vapour fraction");
         assert!(
             (solved / beta - 1.0).abs() < 1.0e-5,
             "at {t} K the vapour fraction is {solved} against NeqSim's {beta}"

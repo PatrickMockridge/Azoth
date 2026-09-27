@@ -62,7 +62,10 @@ fn every_case_in_the_spec() {
                 common::assert_close(got, want, case.tolerance, &format!("{context} ({name})"));
             }
         }
-        if let (Some(beta), Some(want)) = (result.vapour_fraction, case.expected_value("vapour_fraction")) {
+        if let (Some(beta), Some(want)) = (
+            result.vapour_fraction,
+            case.expected_value("vapour_fraction"),
+        ) {
             common::assert_close(beta, want, case.tolerance, &format!("{context} (beta)"));
         }
         common::assert_consistent(&result, context);

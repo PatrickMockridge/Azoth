@@ -183,7 +183,10 @@ pub fn rachford_rice(z: &[f64], k: &[f64]) -> Result<RachfordRiceResult> {
         });
     }
 
-    Ok(RachfordRiceResult { vapour_fraction: beta, warnings })
+    Ok(RachfordRiceResult {
+        vapour_fraction: beta,
+        warnings,
+    })
 }
 
 /// NeqSim's `calcBetaNielsen2023`: the same equation solved in Nielsen & Lia's rescaled

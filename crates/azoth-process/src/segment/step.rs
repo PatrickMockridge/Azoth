@@ -12,9 +12,11 @@ use super::transport::{SnapshotSettings, TransportSnapshot, calculate_transport_
 use crate::stream::Stream;
 
 /// `maxTransferFractionPerSegment`: the share of a donor's inventory one segment may move.
+///
+/// `RateBasedPackedColumn.java:100`'s own `0.35`.
 pub const MAX_TRANSFER_FRACTION: f64 = 0.35;
 
-/// `maxHeatTransferFractionPerSegment`.
+/// `maxHeatTransferFractionPerSegment`: `RateBasedPackedColumn.java:145`'s own `0.50`.
 pub const MAX_HEAT_TRANSFER_FRACTION: f64 = 0.50;
 
 /// One segment's answer, as the class's `SegmentResult` carries it.
@@ -298,6 +300,10 @@ fn limit_transfer(
 }
 
 /// `molarConcentration`: the phase's molar density, mol/m³.
+///
+/// The `0.020` kg/mol is the class's own fallback, `finitePositive(phase.getMolarMass(),
+/// 0.020)` at `RateBasedPackedColumn.java:2533` and `:2929` - about water's molar mass, and
+/// reached only where a phase reports none.
 fn concentration(view: &PhaseView) -> f64 {
     view.density / super::film::finite_positive(view.molar_mass, 0.020)
 }

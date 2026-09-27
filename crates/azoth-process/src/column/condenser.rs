@@ -116,7 +116,8 @@ pub fn condenser(
                 mixed.t,
                 &mixed.z,
             )?;
-            let (vapour_fraction, liquid_fraction) = phase_fractions(flash.phase, flash.vapour_fraction)?;
+            let (vapour_fraction, liquid_fraction) =
+                phase_fractions(flash.phase, flash.vapour_fraction)?;
             let distillate = phase_stream(&mixed, flash.y, vapour_fraction, flash.t)?;
             let reflux = phase_stream(&mixed, flash.x, liquid_fraction, flash.t)?;
             let duty =

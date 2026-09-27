@@ -111,7 +111,10 @@ pub fn phase_boundary_temperature(
 
     // Wilson's saturation-temperature estimate, iterated to `S = 1` the same way the
     // pressure search seeds itself, then a Raoult's-law starting temperature.
-    let mut temperature = algorithm.initial_temperature.unwrap_or(300.0).max(50.0);
+    let mut temperature = algorithm
+        .initial_temperature
+        .unwrap_or(crate::DEFAULT_START_TEMPERATURE)
+        .max(50.0);
 
     // Seed the incipient phase *away* from the held one, as `phase_boundary_pressure`
     // does: the two equal would make the first step trivial.

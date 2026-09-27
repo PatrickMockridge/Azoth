@@ -21,6 +21,16 @@ use azoth_core::{AzothError, ModelAlgorithm, ModelSpec, Result};
 ///
 /// Here rather than in each of the models that need it, and `pub` because it is part
 /// of the model layer's contract rather than of any one model.
+/// The start temperature a spec's algorithm falls back to, in K, where it states none.
+///
+/// **The port's own number, and not the class's.** NeqSim's flashes begin at the *system's*
+/// temperature (`system.getTemperature()`), and its flash algorithms carry no `300` in their
+/// bytecode at the pin - so a spec that states no `algorithm.initial_temperature` is a state
+/// those classes do not have, and this is the choice made here. It is a *start* rather than an
+/// answer: every path that reads it iterates, and the state it lands on is what the result
+/// reports. `freezing_point`'s `14.0` is its own datum, not this.
+pub(crate) const DEFAULT_START_TEMPERATURE: f64 = 300.0;
+
 pub fn algorithm_of(spec: &ModelSpec) -> Result<&'static ModelAlgorithm> {
     spec.algorithm.ok_or_else(|| AzothError::InvalidInput {
         field: "algorithm".to_string(),
