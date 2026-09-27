@@ -6,6 +6,37 @@ Rust and once in Python**, with an agentic layer on top. The algorithms are port
 [NeqSim](https://github.com/equinor/neqsim) under Apache-2.0 and credited in
 [`NOTICE`](NOTICE).
 
+## Every number says what it rests on
+
+The hazard this library is organised against is not a crash. It is a number that looks
+reasonable, goes into a design, and has nothing about it saying where it came from.
+
+So a result is **self-describing**. Ask it, and it names the calculation it is the answer to,
+the spec and both kernels with a SHA-256 of each, the source the equation is attributed to,
+how far its answer is externally checked, and which declared checks *this call* could not
+evaluate:
+
+```python
+r = azoth.hydraulics.darcy_weisbach(
+    0.02, q(100.0, "m"), q(0.1, "m"), q(998.0, "kg/m**3"), q(1.5, "m/s")
+)
+r.provenance.verification     # 'source_needed' - a source was sought and not found
+r.provenance.skipped_checks   # ('re',) - the Reynolds bound was never reached
+r.provenance.rust_sha256      # the bytes of the kernel that produced this number
+```
+
+The last line is the one that changes what is possible. It is not a claim in a manual; it is
+a claim a machine can check against the tree, and
+`python/tests/test_provenance.py` recomputes all 192 of them. `r.to_json()`
+carries the block, so the same holds for a result written to a file, served over MCP, or
+handed to an agent.
+
+**That is what an agent needs in order to justify a number, and what a reviewer needs in
+order to accept one.** An agent calling this library cannot present a value without
+presenting where it came from, and neither can quietly present one whose bounds were never
+checked — "checked and fine" and "never checked" are different states, and the block keeps
+them different.
+
 ## Why azoth
 
 - **Two implementations, mirrored.** Every calculation is written twice by hand — one Rust

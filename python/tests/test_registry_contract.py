@@ -221,6 +221,28 @@ def test_every_result_carries_the_calc_id(calc: dict[str, Any]) -> None:
     assert callable(reference)
 
 
+def test_every_result_class_declares_the_id_it_is_registered_under() -> None:
+    """`CALC_ID` is each class's own, and it is the id the registry files it under.
+
+    Read from the class's own `__dict__` rather than by attribute access, because the base
+    declares the name with no value: an inherited `CALC_ID` would be a lookup that found the
+    *declaration* rather than an answer, and a class that had none would raise only at the
+    first call to `provenance` - the latest possible moment, on a result the caller already
+    holds.
+
+    This is half of the contract. The field names are held to Rust by `test_cross_impl`, and
+    the id is held to the registry here and to Rust's own `CALC_ID` there.
+    """
+    for calc_id, result_type in result_types().items():
+        assert "CALC_ID" in vars(result_type), (
+            f"{calc_id}: {result_type.__name__} does not declare its own CALC_ID"
+        )
+        assert calc_id == result_type.CALC_ID, (
+            f"{result_type.__name__} claims {result_type.CALC_ID!r} but the registry files "
+            f"it under {calc_id!r}"
+        )
+
+
 #: Parameters a public wrapper may take that are not spec inputs.
 #:
 #: The keycard is not an input to a calculation - it is the authority the call reads

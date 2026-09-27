@@ -10,6 +10,14 @@
 # mixes screening with at least one azoth step. An optional `tranche` names the port
 # tranche (P0–P12) that will back a `screening` skill; `azoth`-basis skills omit it.
 #
+# The basis is checked against the `SKILL.md` rather than trusted: an `azoth` skill
+# must name a calculation id, and a `screening` or `advisory` one must not - because
+# a skill that says it produces no azoth number while citing one is the drift that
+# distinction exists to catch. `id_references_ok` exempts a skill that names an id
+# *in order to disclaim it*, which no rule can tell from a citation; it takes a
+# reason, and it sits here rather than inline because this is where the basis it
+# qualifies is declared.
+#
 # Validated by tools/validate_skills.py.
 
 catalog_version = "1.0"
@@ -52,6 +60,7 @@ version = "0.1.0"
 description = "Read what a result rests on — warnings, verify_status, NOTICE — before trusting it. USE WHEN: a result must be attributed to a source, or a placeholder must be distinguished from verified data."
 calculation_basis = "advisory"
 path = "skills/library/provenance-verification/SKILL.md"
+id_references_ok = "teaches how to read a result rather than producing one; the id it names is an example of what a result carries"
 tags = ["library", "provenance", "verification"]
 
 [[skill]]
@@ -258,7 +267,9 @@ tags = ["flow-assurance"]
 name = "azoth-surf-cooldown-screening"
 version = "0.1.0"
 description = "Educational SURF flowline/riser cooldown and no-touch-time screening placeholder with public assumptions. USE WHEN: a task needs a quick, public estimate of how long an insulated subsea flowline stays above its hydrate formation temperature after shutdown, and should be directed to validated NeqSim methods for real cooldown and hydrate calculations."
-calculation_basis = "screening"
+# `hybrid`, which is what the skill's own text says: its hydrate half calls the ported
+# `eos.hydrate_formation_temperature` and its cooldown half is the placeholder.
+calculation_basis = "hybrid"
 path = "skills/flow-assurance/surf-cooldown-screening/SKILL.md"
 tranche = "P9"
 tags = ["flow-assurance"]
@@ -339,6 +350,7 @@ version = "0.1.0"
 description = "Educational centrifugal-compressor power screening using the public polytropic-head equation (API 617 / API 619 style). USE WHEN: a task needs a public, screening-level estimate of polytropic head, discharge temperature, and gas power for a single compression stage before detailed compressor selection."
 calculation_basis = "screening"
 path = "skills/process/compressor-power-screening/SKILL.md"
+id_references_ok = "names the azoth calculation in order to say it is not the one this skill runs"
 tranche = "mechanical-design"
 tags = ["process"]
 
@@ -348,6 +360,7 @@ version = "0.1.0"
 description = "Educational control-valve sizing screening that estimates the required flow coefficient (Kv/Cv) and flags choked flow per public IEC 60534-2-1 / ISA-75.01 equations for liquid and gas service. USE WHEN: a task needs a public, screening-level required Cv and a choked-flow flag before detailed control-valve selection."
 calculation_basis = "screening"
 path = "skills/process/control-valve-cv-screening/SKILL.md"
+id_references_ok = "names the azoth calculation in order to say it is not the one this skill runs"
 tranche = "standards"
 tags = ["process"]
 
@@ -411,6 +424,7 @@ version = "0.1.0"
 description = "Educational gas-scrubber sizing screening using the public Souders-Brown / K-factor relation for vertical separators with a mist-eliminator gas-load check. USE WHEN: a task needs a public, screening-level estimate of the Souders-Brown velocity, required vessel diameter, velocity utilisation, and mist-eliminator load for a vertical gas scrubber before detailed separator design."
 calculation_basis = "screening"
 path = "skills/process/gas-scrubber-sizing-screening/SKILL.md"
+id_references_ok = "names the azoth calculation in order to say it is not the one this skill runs"
 tranche = "mechanical-design"
 tags = ["process"]
 
@@ -508,6 +522,7 @@ version = "0.1.0"
 description = "Educational separator screening indicators for gas load, residence time, and capacity warnings. USE WHEN: a task needs public separator capacity screening without proprietary design methods."
 calculation_basis = "screening"
 path = "skills/process/separator-modelling/SKILL.md"
+id_references_ok = "names the azoth calculation in order to say it is not the one this skill runs"
 tranche = "mechanical-design"
 tags = ["process"]
 

@@ -13,6 +13,7 @@ use serde::Serialize;
 use crate::executor::json::SessionReport;
 use crate::middleware::diagnostic::{DiagnosticRecord, records};
 use crate::middleware::graph::Graph;
+use crate::middleware::provenance::{ProvenanceRecord, session_provenance};
 use crate::middleware::session::Workspace;
 
 /// Everything one call answers with.
@@ -41,6 +42,14 @@ pub struct Envelope {
     /// arrives here rather than as a diagnostic, because it is a fact about the world and not
     /// about the document.
     pub run_error: Option<String>,
+    /// What the run rests on: the library, and every unit the document instantiates with the
+    /// spec and kernel hashes behind it.
+    ///
+    /// On the envelope rather than inside `session`, because `SessionReport` is the one stream
+    /// encoder and its published bytes are pinned by tests - a block about which *code* ran is
+    /// not a fact about any stream, and putting it there would move a document that has
+    /// nothing to do with it.
+    pub provenance: ProvenanceRecord,
 }
 
 /// The document itself, in the three forms a front-end reads it in.
@@ -73,6 +82,7 @@ pub fn envelope(workspace: &Workspace) -> Result<Envelope> {
         paths: workspace.paths(),
         session: workspace.report().transpose()?,
         run_error: workspace.run_error().map(str::to_string),
+        provenance: session_provenance(workspace),
     })
 }
 

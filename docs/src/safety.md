@@ -35,6 +35,35 @@ two answers is not an answer.
 | A name the data cannot answer is an error, not a default | one choke point for every substance lookup | `crates/azoth-eos/src/databank.rs` |
 | The Python path cannot quietly stand in for the Rust one | `AZOTH_REQUIRE_RUST=1` makes a missing core fatal | `python/src/azoth/_dispatch.py` |
 | A proof with a gap fails the build | one `#print axioms` line per claimed theorem, against an allow-list of three | `lean/Azoth/Axioms.lean`, `tools/check_lean_axioms.py` |
+| A number says what it rests on, wherever it goes | a provenance block on every result, generated with the code's own hashes | `python/src/azoth/core/provenance.py`, `crates/azoth-core/src/provenance.rs` |
+
+## A number carries its own account
+
+The table above is mostly about *refusing* something. This one is about a value that is
+returned, and it exists because of the same asymmetry the rest of this page is about: the
+number is the thing that travels, and everything that would tell a reader how far to trust
+it — the spec, the valid range, the source, the test tally, the oracle — has until now lived
+*beside* it rather than *on* it. A result carried its values and its warnings and nothing
+else.
+
+So a result now names the calculation it is the answer to, the spec and both implementations
+with a SHA-256 of each, the source its equation is attributed to, how far its answer is
+externally checked, and which declared checks *this call* could not evaluate. The block is in
+the JSON, in the MCP envelope and in the CLI report, so a caller cannot hold the number
+without holding the account of it — and `python/tests/test_provenance.py` recomputes every
+hash against the file it names, which is what makes the claim checkable rather than stated.
+
+Two consequences are worth naming, because both are deliberate.
+
+**The status is derived, not declared.** A spec refuses a verification-status field, and this
+does not add one back: the status is measured from the tests a spec ships and the external
+cases under `validation/`. 170 of the 192 ids read `partially_verified` — exercised against
+expectations pinned in their own tree, with no independent oracle recorded — and that is the
+honest answer rather than a hedge. A declared status is a status that can be wrong.
+
+**The block holds no float.** Every field is a string, an integer or a boolean, so the rule
+that JSON has no representation for a non-finite number cannot reach it. A block that could
+be `null` in a document a reader trusts would be the failure this page is about.
 
 ## What the checks caught
 

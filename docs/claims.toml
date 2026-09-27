@@ -13,7 +13,8 @@
 # Probes: specs.calcs, specs.models, specs.ids, unit_ops.declared, unit_ops.kernels,
 # unit_ops.dispatch, unit_ops.refusals, vocabulary.units, lean.axioms_gated,
 # lean.axioms_dim, lean.gate_printed, lean.modules, pairs.eos_files, skills.total,
-# skills.azoth, skills.screening_p11, path, lean.gated.
+# skills.azoth, skills.screening_p11, provenance.ids, provenance.partially_verified,
+# path, lean.gated.
 # `python tools/check_doc_claims.py --probe <name>` prints one measurement.
 
 # --- what the library carries -------------------------------------------------
@@ -27,6 +28,22 @@ measure = { total = "specs.ids", calcs = "specs.calcs", models = "specs.models" 
 page = "README.md"
 text = "The full catalog — {calcs} calculations and {models} models"
 measure = { calcs = "specs.calcs", models = "specs.models" }
+
+# --- what a result says about itself ------------------------------------------
+#
+# The block is generated from the same registry the id counts come from, so these move
+# whenever a calculation is added or a validation case lands. A number typed into the
+# README or the safety page would be wrong within a tranche.
+
+[[claim]]
+page = "README.md"
+text = "recomputes all {ids} of them"
+measure = { ids = "provenance.ids" }
+
+[[claim]]
+page = "docs/src/safety.md"
+text = "{count} of the {ids} ids read `partially_verified`"
+measure = { count = "provenance.partially_verified", ids = "provenance.ids" }
 
 # --- the unit-operation palette -----------------------------------------------
 #
@@ -110,8 +127,8 @@ measure = { azoth_basis = "skills.azoth" }
 
 [[claim]]
 page = "docs/src/agentic/roadmap.md"
-text = "The remaining {placeholders} are placeholders — {screening} `screening`, {advisory} `advisory` and {data_retrieval} `data-retrieval`"
-measure = { placeholders = "skills.placeholders", screening = "skills.screening", advisory = "skills.advisory", data_retrieval = "skills.data_retrieval" }
+text = "The remaining {placeholders} are placeholders — {screening} `screening`, {advisory} `advisory`, {data_retrieval} `data-retrieval` and {hybrid} `hybrid`"
+measure = { placeholders = "skills.placeholders", screening = "skills.screening", advisory = "skills.advisory", data_retrieval = "skills.data_retrieval", hybrid = "skills.hybrid" }
 
 # --- what CI cannot measure ----------------------------------------------------
 #

@@ -183,6 +183,33 @@ def test_result_shapes_agree_across_languages() -> None:
         )
 
 
+def test_calc_ids_agree_across_languages() -> None:
+    """Rust's `CALC_ID` const and Python's `CALC_ID` attribute must be the same id.
+
+    The ids Rust reports come from its own associated constants, so this is the comparison of
+    two independent declarations rather than of one table read twice. It matters because each
+    side's provenance lookup is keyed on its own - Rust's on `CalcResult::CALC_ID`, Python's
+    on the class attribute - so an id that disagreed would give the two backends different
+    blocks for the same calculation, and nothing else would say so.
+
+    Only the calculations, because `calc_ids()` covers those: it is a hand-written list and
+    the models are not in it. The models' ids are held to the registry by
+    `test_registry_contract`, which is where that half of the contract lives.
+    """
+    from azoth._dispatch import result_types
+
+    types = result_types()
+    rust_ids = list(_extension().calc_ids())
+    assert rust_ids, "the extension reported no calc ids; the comparison would be vacuous"
+
+    for calc_id in rust_ids:
+        assert calc_id in types, f"{calc_id}: Rust ships an id Python does not register"
+        assert calc_id == types[calc_id].CALC_ID, (
+            f"{calc_id}: Rust declares it, Python's {types[calc_id].__name__} claims "
+            f"{types[calc_id].CALC_ID!r}"
+        )
+
+
 def test_errors_are_the_same_class_object() -> None:
     """Both implementations must raise the *same* exception classes.
 

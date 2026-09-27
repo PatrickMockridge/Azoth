@@ -70,6 +70,7 @@ default a caller can replace.
 
 - `azoth.eos.component`, `azoth.eos.from_names`, `azoth.eos.mixture`, `azoth.eos.available`
   and `azoth.eos.kij_for` — `python/src/azoth/eos/components.py`.
+- `eos.pt_flash` — the calculation a composition is built to be handed to.
 - The `eos` calc pages under `docs/src/eos/`.
 
 ## References

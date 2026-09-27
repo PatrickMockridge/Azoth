@@ -163,6 +163,67 @@ pub fn render_pipe(
     );
 
     out.push_str(&render_warnings(&result.warnings));
+    out.push_str(&render_trust(&[
+        "hydraulics.darcy_weisbach",
+        "hydraulics.crane_k_factors",
+    ]));
+    out
+}
+
+/// The first twelve hex digits of a hash, for a terminal line.
+///
+/// Truncated rather than omitted: enough to compare two reports by eye, and the full value is
+/// in the envelope and in `provenance.json` for anyone who needs to. A hash shorter than that
+/// is printed whole rather than panicking on the slice - it cannot be, for a generated table,
+/// but a report is not the place to find out.
+fn short_hash(hash: &str) -> &str {
+    hash.get(..12).unwrap_or(hash)
+}
+
+/// Which code produced the numbers in this report, in full.
+///
+/// The third rule beside the two this module already follows - assumptions are printed, and
+/// warnings are printed rather than summarised. A reader who cannot say what computed a value
+/// cannot decide whether to use it, and "azoth pipe" composes two calculations rather than
+/// one, so both are named.
+pub fn render_trust(calc_ids: &[&str]) -> String {
+    let mut out = String::new();
+    out.push_str("\n  trust\n");
+    for calc_id in calc_ids {
+        match azoth_core::provenance_gen::provenance(calc_id) {
+            None => row(
+                &mut out,
+                calc_id,
+                "no provenance: not an id this build ships",
+            ),
+            Some(entry) => {
+                row(&mut out, "calc", entry.calc_id);
+                row(
+                    &mut out,
+                    "spec",
+                    &format!("{} @ {}", entry.spec_path, short_hash(entry.spec_sha256)),
+                );
+                row(
+                    &mut out,
+                    "kernel",
+                    &format!("{} @ {}", entry.rust_path, short_hash(entry.rust_sha256)),
+                );
+                row(&mut out, "source", entry.source);
+                row(
+                    &mut out,
+                    "status",
+                    &format!(
+                        "{} ({} external case(s), {} of {} test(s) skipped)",
+                        entry.verification.as_str(),
+                        entry.validation_cases,
+                        entry.tests_skipped,
+                        entry.tests_active + entry.tests_skipped
+                    ),
+                );
+            }
+        }
+    }
+    out.push('\n');
     out
 }
 

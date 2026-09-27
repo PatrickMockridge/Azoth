@@ -55,6 +55,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import sys
 import tomllib
@@ -299,6 +300,45 @@ def skills_data_retrieval() -> int:
     return sum(1 for s in _skills() if s.get("calculation_basis") == "data-retrieval")
 
 
+def skills_hybrid() -> int:
+    """Skills that call the library for part of their answer and screen for the rest."""
+    return sum(1 for s in _skills() if s.get("calculation_basis") == "hybrid")
+
+
+def _provenance_table() -> dict[str, dict[str, object]]:
+    """The generated provenance table, read as data.
+
+    Parsed rather than imported, for the reason the skills catalog is: this tool runs in
+    `spec-validate` before the library is built, so reaching for `azoth` would end that. The
+    generated file is a literal, so there is nothing importing it would add.
+    """
+    path = ROOT / "python" / "src" / "azoth" / "_provenance_gen.py"
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "PROVENANCE":
+            table = ast.literal_eval(node.value)
+            if not isinstance(table, dict):
+                raise ProbeError("PROVENANCE is not a mapping")
+            return table
+    raise ProbeError("the generated table declares no PROVENANCE")
+
+
+def provenance_ids() -> int:
+    return positive(len(_provenance_table()), "provenance entries")
+
+
+def provenance_partially_verified() -> int:
+    """Every id with no independent oracle recorded for it.
+
+    The normal case rather than a defect, and the number a page quoting it has to be held to:
+    it moves whenever a validation case is added.
+    """
+    return sum(
+        1
+        for entry in _provenance_table().values()
+        if entry.get("verification") == "partially_verified"
+    )
+
+
 class ProbeError(Exception):
     """A probe could not measure - the tree is not where the probe looks."""
 
@@ -323,7 +363,10 @@ MEASURES = {
     "skills.screening": skills_screening,
     "skills.advisory": skills_advisory,
     "skills.data_retrieval": skills_data_retrieval,
+    "skills.hybrid": skills_hybrid,
     "skills.screening_p11": skills_screening_p11,
+    "provenance.ids": provenance_ids,
+    "provenance.partially_verified": provenance_partially_verified,
 }
 
 #: Probes whose measurement is a number. A capture that is not one cannot be compared.

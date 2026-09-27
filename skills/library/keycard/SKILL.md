@@ -80,6 +80,8 @@ trust it.
 
 ## Related Azoth functionality
 
+- `eos.pr_z_factor` — the cubic it feeds: a card's `Tc`, `Pc` and `omega` are the
+  constants that calculation reads, which is what a card exists to override.
 - `keycard.example.toml` — the template.
 - `python/src/azoth/keycard.py` — the reader.
 - `specs/schema/keycard.schema.json` and `tools/check_user_data.py` — the schema and

@@ -84,9 +84,93 @@ REQUIRED_SECTIONS = (
 )
 
 
+#: A `SKILL.md` line carrying this marker is exempt from the basis check, and must say why.
+#:
+#: The idiom `tools/check_numerics.py` already uses for its own exemptions: a marker travels
+#: with the line it excuses and puts the reason where the next reader is looking, which a
+#: list of file-and-line pairs does not.
+ID_MARKER = "azoth-id-ok:"
+
+
+def registered_ids() -> list[str]:
+    """Every calc and model id this library ships, longest first.
+
+    Read from the spec trees rather than from `azoth._registry_gen`: this tool runs in CI's
+    `spec-validate` job before the library is built, so importing `azoth` would end that -
+    and the specs are where the registry comes from anyway.
+
+    Longest first so an id that is a prefix of another cannot win the match. `eos.pt_flash` is
+    a strict prefix of `eos.pt_flash_saft`, and a first-match alternation would report the
+    shorter one on a line that named the longer.
+    """
+    ids: list[str] = []
+    for tree in ("specs/calcs", "specs/models"):
+        for path in sorted((ROOT / tree).rglob("*.toml")):
+            ids.append(tomllib.loads(path.read_text(encoding="utf-8"))["id"])
+    return sorted(ids, key=len, reverse=True)
+
+
+def _id_pattern(ids: list[str]) -> re.Pattern[str]:
+    """An id, not preceded by a word character, and not followed by one or a dot.
+
+    A substring test would report `eos.pt_flash` on a line naming `eos.pt_flash_saft`, and a
+    word boundary alone does not help because the id itself contains a dot - so the trailing
+    guard has to reject both.
+
+    The leading guard rejects a word character and *not* a dot, because the form a skill
+    writes is `azoth.hydraulics.darcy_weisbach`: the id is preceded by the package it lives
+    in, and a guard that rejected that would miss every reference a skill actually makes.
+    """
+    return re.compile(r"(?<!\w)(?:" + "|".join(re.escape(item) for item in ids) + r")(?![\w.])")
+
+
+def _basis_problems(entry: dict[str, object], resolved: Path, where: str, ids: list[str]) -> list[str]:
+    """A skill's prose and its declared basis must agree about whether it computes.
+
+    The catalog says how a skill's numbers are produced and the `SKILL.md` says it in prose,
+    and only one of the two is read by an agent deciding what to do. Nothing held them
+    together, so a skill declared `screening` could cite an azoth calculation and an `azoth`
+    skill could name none - which is the distinction the whole catalog is built on, declared
+    and unenforced.
+    """
+    basis = entry.get("calculation_basis")
+    if basis not in ("azoth", "screening", "advisory"):
+        # `data-retrieval` returns data and `hybrid` calls the library among other things, so
+        # neither claim is contradicted by naming an id either way.
+        return []
+
+    pattern = _id_pattern(ids)
+    named = {
+        match
+        for line in resolved.read_text(encoding="utf-8").splitlines()
+        if ID_MARKER not in line
+        for match in pattern.findall(line)
+    }
+    if named and entry.get("id_references_ok"):
+        # A screening skill naming an azoth id *in order to disclaim it* is the honest case,
+        # and no syntactic rule separates "azoth's `process.compressor` is an isentropic step
+        # over an efficiency, which is not what this skill computes" from a citation of one it
+        # calls. So the judgement is declared, with a reason, beside the basis it qualifies -
+        # which is also where a reader is already looking to find out how the skill computes.
+        return []
+    if basis == "azoth" and not named:
+        return [
+            f"{where}: basis is `azoth` and the skill names no calculation id - a skill that "
+            f"drives the library has to say which calculation it drives"
+        ]
+    if basis in ("screening", "advisory") and named:
+        return [
+            f"{where}: basis is `{basis}`, which produces no azoth number, and the skill names "
+            f"{sorted(named)}. Re-declare it `hybrid` if it does call the library, or mark the "
+            f"line `{ID_MARKER} <reason>` if it only refers to one"
+        ]
+    return []
+
+
 def problems(entries: list[dict[str, object]]) -> list[str]:
     """The catalog's errors, in the order a reader meets them."""
     found: list[str] = []
+    ids = registered_ids()
     names: dict[str, str] = {}
     for index, entry in enumerate(entries):
         where = f"skills.toml skill[{index}]"
@@ -129,6 +213,7 @@ def problems(entries: list[dict[str, object]]) -> list[str]:
             found.append(f"{where}: path {path!r} is not a file under skills/")
         else:
             found.extend(_section_problems(resolved, where))
+            found.extend(_basis_problems(entry, resolved, where, ids))
 
         tags = entry.get("tags")
         if not isinstance(tags, list) or not tags:

@@ -25,6 +25,7 @@ from azoth import _models_gen
 from azoth._dispatch import resolve
 from azoth._registry_gen import CALCS
 from azoth.core import serialise
+from azoth.core.provenance import FRAMEWORK_DOCUMENT_KEYS
 from azoth.core.units import CANONICAL_UNITS, unit_for
 from azoth.core.warnings import Warning, WarningCode
 
@@ -59,6 +60,15 @@ def _documents(value: Any) -> list[dict[str, Any]]:
     return found
 
 
+def _block_values(value: Any) -> list[Any]:
+    """Every leaf in a framework block, at any depth."""
+    if isinstance(value, dict):
+        return [leaf for item in value.values() for leaf in _block_values(item)]
+    if isinstance(value, list):
+        return [leaf for item in value for leaf in _block_values(item)]
+    return [value]
+
+
 def _assert_serialises(result: Any, context: str) -> dict[str, Any]:
     """The shape contract, applied to one result."""
     document = result.to_json()
@@ -70,13 +80,27 @@ def _assert_serialises(result: Any, context: str) -> dict[str, Any]:
     import dataclasses
 
     declared = {field.name for field in dataclasses.fields(result)}
-    assert declared == set(loaded), (
+    # The document carries the result's fields *and* the framework keys - the provenance
+    # block, which is a property rather than a field, so it is deliberately absent from
+    # `dataclasses.fields`. The list is imported from the library rather than written here:
+    # a test holding its own copy is a second thing to keep in step with the writer.
+    assert declared | set(FRAMEWORK_DOCUMENT_KEYS) == set(loaded), (
         f"{context}: the document and the result disagree about the fields: "
-        f"{sorted(declared ^ set(loaded))}"
+        f"{sorted(declared | set(FRAMEWORK_DOCUMENT_KEYS) ^ set(loaded))}"
     )
 
     # The same result serialises to the same bytes, so two runs of one calculation are comparable.
     assert document == result.to_json(), f"{context}: serialising twice differs"
+
+    # The block holds no float, so the rule that JSON cannot carry a non-finite number cannot
+    # refuse it. Checked rather than asserted in a comment, because a float added to the block
+    # later would be a value that could silently become `null` in a document a reader trusts.
+    for key in FRAMEWORK_DOCUMENT_KEYS:
+        for value in _block_values(loaded[key]):
+            assert not isinstance(value, float), (
+                f"{context}: {key} carries the float {value!r}; the block must stay integral "
+                f"and textual, so that JSON's non-finite rule cannot reach it"
+            )
 
     # Every quantity names a unit this library can resolve, in the vocabulary's own spelling:
     # `unit_for` is what turns it back into something `pint` reads, and that is the way back a

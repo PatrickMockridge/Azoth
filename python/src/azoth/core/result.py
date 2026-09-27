@@ -26,9 +26,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
+from azoth._provenance_gen import provenance as provenance_table
 from azoth.core import serialise
+from azoth.core.provenance import PROVENANCE_KEY, Provenance
 from azoth.core.units import Q
 from azoth.core.warnings import Warning, WarningCode
 
@@ -150,6 +152,30 @@ class _HasWarnings:
 
     warnings: tuple[Warning, ...]
 
+    #: The spec id this result is the answer to, mirroring ``CalcResult::CALC_ID`` in Rust.
+    #:
+    #: A `ClassVar` and not a field: ``dataclasses.fields`` ignores it, so the field contract
+    #: ``test_cross_impl`` holds the two languages to is unaffected and ``slots=True`` does
+    #: not give it a slot. Declared with no value here so that a subclass omitting its own is
+    #: a type error under strict mypy rather than an ``AttributeError`` at the first call to
+    #: :attr:`provenance` - "every result is self-describing" is then a property of the type
+    #: system rather than of the day the codemod ran.
+    CALC_ID: ClassVar[str]
+
+    @property
+    def provenance(self) -> Provenance:
+        """What this answer rests on: the generated half, and what this call reported.
+
+        A property rather than a method, so it reads beside ``warnings`` and ``is_clean``.
+
+        Raises:
+            KeyError: if ``CALC_ID`` is not a registered id. Unreachable for a result this
+                library ships, and a refusal rather than an empty block - a block that
+                existed but said nothing would let a number be presented as though it
+                carried its provenance when it carried nothing.
+        """
+        return Provenance.of(provenance_table(type(self).CALC_ID), self.warnings)
+
     def to_dict(self) -> dict[str, Any]:
         """This result as JSON-shaped data.
 
@@ -159,11 +185,20 @@ class _HasWarnings:
         """
         # The walk's return is `Any` - it writes whatever a field holds - and the dataclass branch
         # is the one a result takes, which is a mapping.
-        return cast("dict[str, Any]", serialise.to_dict(self))
+        document = cast("dict[str, Any]", serialise.to_dict(self))
+        # Through the same walk rather than beside it: the block is a frozen dataclass, so
+        # `serialise` writes it too and a result as JSON is still one writer.
+        document[PROVENANCE_KEY] = self.provenance.to_dict()
+        return document
 
     def to_json(self) -> str:
-        """This result as the JSON document, for a file, a cell or a wire."""
-        return serialise.to_json(self)
+        """This result as the JSON document, for a file, a cell or a wire.
+
+        Through :meth:`to_dict`, so the document and the mapping are the same answer. Written
+        as ``serialise.to_json(self)`` it would walk the dataclass's fields directly and the
+        provenance block - which is not a field - would be in one and not the other.
+        """
+        return serialise.to_json(self.to_dict())
 
     @property
     def is_clean(self) -> bool:
@@ -178,6 +213,8 @@ class _HasWarnings:
 @dataclass(frozen=True, slots=True, eq=False)
 class ReynoldsNumberResult(_HasWarnings):
     """Result of ``hydraulics.reynolds_number``."""
+
+    CALC_ID: ClassVar[str] = "hydraulics.reynolds_number"
 
     #: Reynolds number. Dimensionless.
     re: float
@@ -195,6 +232,8 @@ class ColebrookResult(_HasWarnings):
     alongside it: ``f`` is the last iterate, and if ``converged`` is false it is
     not a solution to the equation at all.
     """
+
+    CALC_ID: ClassVar[str] = "hydraulics.friction_factor_colebrook"
 
     #: Darcy friction factor. Dimensionless.
     f: float
@@ -217,6 +256,8 @@ class SwameeJainResult(_HasWarnings):
     does not exist.
     """
 
+    CALC_ID: ClassVar[str] = "hydraulics.friction_factor_swamee_jain"
+
     #: Darcy friction factor. Dimensionless.
     f: float
     #: Caveats.
@@ -234,6 +275,8 @@ class HaalandResult(_HasWarnings):
     to tell which calc a result came from.
     """
 
+    CALC_ID: ClassVar[str] = "hydraulics.friction_factor_haaland"
+
     #: Darcy friction factor. Dimensionless.
     f: float
     #: Caveats.
@@ -243,6 +286,8 @@ class HaalandResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PumpPowerResult(_HasWarnings):
     """Result of ``hydraulics.pump_power``."""
+
+    CALC_ID: ClassVar[str] = "hydraulics.pump_power"
 
     #: Shaft power the pump must be supplied with.
     power: Q
@@ -254,6 +299,8 @@ class PumpPowerResult(_HasWarnings):
 class OrificeFlowResult(_HasWarnings):
     """Result of ``hydraulics.orifice_flow``."""
 
+    CALC_ID: ClassVar[str] = "hydraulics.orifice_flow"
+
     #: Volumetric flow rate through the orifice.
     q: Q
     #: Caveats.
@@ -264,6 +311,8 @@ class OrificeFlowResult(_HasWarnings):
 class ControlValveCvResult(_HasWarnings):
     """Result of ``hydraulics.control_valve_cv``."""
 
+    CALC_ID: ClassVar[str] = "hydraulics.control_valve_cv"
+
     #: Volumetric flow rate through the valve.
     q: Q
     #: Caveats.
@@ -273,6 +322,8 @@ class ControlValveCvResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class ChokedFlowAreaResult(_HasWarnings):
     """Result of ``hydraulics.choked_flow_area``."""
+
+    CALC_ID: ClassVar[str] = "hydraulics.choked_flow_area"
 
     #: Throat area required for the choked flow.
     a: Q
@@ -288,6 +339,8 @@ class ConductionPlaneWallResult(_HasWarnings):
     namespace other than hydraulics, which is what made a second domain worth
     having: nothing about this class is hydraulics-shaped.
     """
+
+    CALC_ID: ClassVar[str] = "thermal.conduction_plane_wall"
 
     #: Heat flow rate through the wall. Signed, and it follows the sign of the
     #: temperature difference rather than being reported as a magnitude.
@@ -306,6 +359,8 @@ class PrKappaResult(_HasWarnings):
     is no conversion to get wrong because there is no unit to convert.
     """
 
+    CALC_ID: ClassVar[str] = "eos.pr_kappa"
+
     #: The Peng-Robinson alpha-function coefficient. Dimensionless, and a property
     #: of the substance alone: no temperature, no pressure.
     kappa: float
@@ -321,6 +376,8 @@ class EquilibriumConstantResult(_HasWarnings):
     inputs are a name and a temperature, and the arithmetic behind them is a fitted
     correlation read from the databank rather than a constitutive equation.
     """
+
+    CALC_ID: ClassVar[str] = "reactions.equilibrium_constant"
 
     #: ``ln K`` at the caller's temperature, from the row's four coefficients.
     ln_k: float
@@ -350,6 +407,8 @@ class ChemicalEquilibriumResult(_HasWarnings):
     one of the two captured fluids never converges.
     """
 
+    CALC_ID: ClassVar[str] = "reactions.chemical_equilibrium"
+
     #: The moles of each species at the answer, or where the solve gave up.
     moles: tuple[Q, ...]
     #: Passes taken.
@@ -370,6 +429,8 @@ class FilterResult(_HasWarnings):
     its duty: the *applied* drop can differ from the requested one, so a result that reported
     only the outlet would make a clamped row indistinguishable from an ordinary one.
     """
+
+    CALC_ID: ClassVar[str] = "process.filter"
 
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
@@ -397,6 +458,8 @@ class PipeResult(_HasWarnings):
     it at the precision of the *pressure*.
     """
 
+    CALC_ID: ClassVar[str] = "process.pipe"
+
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
     #: Outlet composition, one entry per component.
@@ -420,6 +483,8 @@ class ComponentSplitterResult(_HasWarnings):
     Two named outlets, because the class fixes the count at two and the factor is per
     component - so the two records carry different *compositions*.
     """
+
+    CALC_ID: ClassVar[str] = "process.component_splitter"
 
     #: Overhead molar flow.
     overhead_n: Q
@@ -455,6 +520,8 @@ class CompressorResult(_HasWarnings):
     ``n * (outlet_h - inlet_h)``, which the record already carries.
     """
 
+    CALC_ID: ClassVar[str] = "process.compressor"
+
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
     #: Outlet composition, one entry per component.
@@ -476,6 +543,8 @@ class ExpanderResult(_HasWarnings):
     ``CompressorResult``'s fields and its own class, for the reason every pair of ids in this
     registry has two: a result type is the registry's handle on an id.
     """
+
+    CALC_ID: ClassVar[str] = "process.expander"
 
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
@@ -500,6 +569,8 @@ class CoolerResult(_HasWarnings):
     things - which is why :class:`ThrottlingValveResult` repeats :class:`PumpResult`'s five
     fields rather than inheriting them.
     """
+
+    CALC_ID: ClassVar[str] = "process.cooler"
 
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
@@ -527,6 +598,8 @@ class HeaterResult(_HasWarnings):
     reached, in every branch, so it is ``outlet_n * (outlet_h - inlet_h)`` however the outlet
     was specified.
     """
+
+    CALC_ID: ClassVar[str] = "process.heater"
 
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
@@ -558,6 +631,8 @@ class PumpResult(_HasWarnings):
     outlet's is reported because a machine changes it.
     """
 
+    CALC_ID: ClassVar[str] = "process.pump"
+
     #: Molar flow out, which is the inlet's.
     outlet_n: Q
     #: Outlet composition, one entry per component.
@@ -581,6 +656,8 @@ class ThrottlingValveResult(_HasWarnings):
     work and this adds nothing, so the enthalpy crosses unchanged and the temperature is
     what the outlet pressure makes of it.
     """
+
+    CALC_ID: ClassVar[str] = "process.throttling_valve"
 
     #: Outlet molar flow, which is the inlet's.
     outlet_n: Q
@@ -606,6 +683,8 @@ class SeparatorResult(_HasWarnings):
     ``unit_ops.separator``'s ``vapour`` and ``liquid`` are called, and not a list of two
     records.
     """
+
+    CALC_ID: ClassVar[str] = "process.separator"
 
     #: Vapour outlet molar flow.
     vapour_n: Q
@@ -638,6 +717,8 @@ class GasScrubberResult(_HasWarnings):
     The same fields as :class:`SeparatorResult`, and its own class: a result type is the
     registry's handle on an id, and the two entries reach one arithmetic.
     """
+
+    CALC_ID: ClassVar[str] = "process.gas_scrubber"
 
     #: Vapour outlet molar flow.
     vapour_n: Q
@@ -672,6 +753,8 @@ class StirredTankReactorResult(_HasWarnings):
     temperature instead.
     """
 
+    CALC_ID: ClassVar[str] = "process.stirred_tank_reactor"
+
     #: Product molar flow.
     product_n: Q
     #: Product composition.
@@ -696,6 +779,8 @@ class PlugFlowReactorResult(_HasWarnings):
     the march, including the inlet, so their length is ``number_of_steps + 1`` - which is what
     makes this result unlike the other unit operations'.
     """
+
+    CALC_ID: ClassVar[str] = "process.plug_flow_reactor"
 
     #: Product molar flow.
     product_n: Q
@@ -738,6 +823,8 @@ class GibbsReactorResult(_HasWarnings):
     is checked entry by entry against the capture.
     """
 
+    CALC_ID: ClassVar[str] = "process.gibbs_reactor"
+
     #: Product molar flow.
     product_n: Q
     #: Product composition, over the feed's own species order.
@@ -772,6 +859,8 @@ class FlareResult(_HasWarnings):
     the class computes beside it.
     """
 
+    CALC_ID: ClassVar[str] = "process.flare"
+
     #: Product molar flow.
     product_n: Q
     #: Product composition.
@@ -800,6 +889,8 @@ class Iso6976Result(_HasWarnings):
     ``inferior_calorific_value`` beside ``density_real`` composes to it.
     """
 
+    CALC_ID: ClassVar[str] = "standards.iso6976"
+
     #: The mixture's molar mass.
     molar_mass: Q
     #: The mixture's compression factor at the volumetric reference temperature.
@@ -825,6 +916,8 @@ class EjectorResult(_HasWarnings):
     One outlet: a two-inlet machine still discharges through one port, and its record is the
     same five fields every other outlet carries.
     """
+
+    CALC_ID: ClassVar[str] = "process.ejector"
 
     #: Outlet molar flow.
     outlet_n: Q
@@ -859,6 +952,8 @@ class ThreePhaseSeparatorResult(_HasWarnings):
     ``getOilOutStream``, which it calls ``oil``) and ``heavy_liquid`` (``getWaterOutStream``)
     - each the record's five fields.
     """
+
+    CALC_ID: ClassVar[str] = "process.three_phase_separator"
 
     #: Vapour outlet molar flow.
     vapour_n: Q
@@ -903,6 +998,8 @@ class TankResult(_HasWarnings):
     otherwise the pair ``process.separator`` reports.
     """
 
+    CALC_ID: ClassVar[str] = "process.tank"
+
     #: Gas outlet molar flow.
     gas_n: Q
     #: Gas outlet composition.
@@ -935,6 +1032,8 @@ class HeatExchangerResult(_HasWarnings):
     names - the shape :class:`SeparatorResult` has, with the two sides carrying different
     fluids rather than two phases of one.
     """
+
+    CALC_ID: ClassVar[str] = "process.heat_exchanger"
 
     #: Hot outlet molar flow.
     hot_out_n: Q
@@ -982,6 +1081,8 @@ class ManifoldResult(_HasWarnings):
     five vectors a splitter's do, and the feeds arrive as :class:`MixerResult`'s do.
     """
 
+    CALC_ID: ClassVar[str] = "process.manifold"
+
     #: Molar flow out, one entry per outlet.
     products_n: tuple[Q, ...]
     #: Outlet compositions, one row per outlet.
@@ -1006,6 +1107,8 @@ class MixerResult(_HasWarnings):
     out. A feed carries four of the five - ``h`` is what the flash computes from the other
     three - because an inlet has no enthalpy to report independently of its state.
     """
+
+    CALC_ID: ClassVar[str] = "process.mixer"
 
     #: Molar flow out: the feeds' sum.
     product_n: Q
@@ -1034,6 +1137,8 @@ class SplitterResult(_HasWarnings):
     feed's, written out once per outlet.
     """
 
+    CALC_ID: ClassVar[str] = "process.splitter"
+
     #: Molar flow of each outlet.
     products_n: tuple[Q, ...]
     #: Composition of each outlet, one row per outlet.
@@ -1058,6 +1163,8 @@ class ReactivePhaseEquilibriumResult(_HasWarnings):
     composition comes back as it went in. A solve that ran and did not converge is the
     other case, and ``skipped`` is what separates them.
     """
+
+    CALC_ID: ClassVar[str] = "reactions.reactive_phase_equilibrium"
 
     #: Whether the phase was one the solve runs in.
     skipped: bool
@@ -1114,6 +1221,8 @@ class ReactivePhFlashResult(_HasWarnings):
     in a different number of steps.
     """
 
+    CALC_ID: ClassVar[str] = "reactions.reactive_ph_flash"
+
     #: ``getEquilibriumTemperature``: the temperature the loop stopped at.
     temperature: Q
     #: ``isConverged``. **Also true where the *bracket* closed rather than the residual**,
@@ -1137,6 +1246,8 @@ class ReactiveTpFlashResult(_HasWarnings):
     reports is decided by its path. The rows below are that run's own; the moles summed
     over them are what the element balance and the equilibrium fix.
     """
+
+    CALC_ID: ClassVar[str] = "reactions.reactive_tp_flash"
 
     #: How many phases the driver stopped on.
     phase_count: int
@@ -1184,6 +1295,8 @@ class ReferencePotentialsResult(_HasWarnings):
     order and the table's row order, and a position is what the basis actually chose over.
     """
 
+    CALC_ID: ClassVar[str] = "reactions.reference_potentials"
+
     #: The standard-state reference potentials, one per component, in the caller's order.
     #: A potential solved for directly and one propagated are the same quantity;
     #: ``independent`` says which is which.
@@ -1205,6 +1318,8 @@ class ReferencePotentialsResult(_HasWarnings):
 class KineticRateLawResult(_HasWarnings):
     """Result of ``reactions.kinetic_rate_law``."""
 
+    CALC_ID: ClassVar[str] = "reactions.kinetic_rate_law"
+
     #: The reaction's rate factor at ``T``, by the selected law - a bare number, as the
     #: class stores and returns it.
     rate_factor: float
@@ -1218,6 +1333,8 @@ class KineticsResult(_HasWarnings):
 
     One entry per component of the phase, in the order it was given.
     """
+
+    CALC_ID: ClassVar[str] = "reactions.kinetics"
 
     #: ``reacCoef`` per component: the pseudo-first-order coefficient, the sum of every
     #: reaction's own contribution.
@@ -1243,6 +1360,8 @@ class PureSaturationResult(_HasWarnings):
     the difference is in how it was reached.
     """
 
+    CALC_ID: ClassVar[str] = "eos.pure_saturation"
+
     #: The saturation pressure.
     p_sat: Q
     #: The common value of ``ln phi_L`` and ``ln phi_V`` at the converged pressure.
@@ -1259,6 +1378,8 @@ class PureSaturationResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class FreezingPointResult(_HasWarnings):
     """Result of ``eos.freezing_point``."""
+
+    CALC_ID: ClassVar[str] = "eos.freezing_point"
 
     #: The temperature at which the solid and the fluid meet.
     temperature: Q
@@ -1292,6 +1413,8 @@ class HydrateStructure(StrEnum):
 class HydrateFormationTemperatureResult(_HasWarnings):
     """Result of ``eos.hydrate_formation_temperature``."""
 
+    CALC_ID: ClassVar[str] = "eos.hydrate_formation_temperature"
+
     #: The temperature at which the hydrate's water fugacity meets the fluid's.
     temperature: Q
     #: The structure that comparison found stable.
@@ -1307,6 +1430,8 @@ class HydrateFormationTemperatureResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class TpSolidFlashResult(_HasWarnings):
     """Result of ``eos.tp_solid_flash``."""
+
+    CALC_ID: ClassVar[str] = "eos.tp_solid_flash"
 
     #: The fraction of the feed's moles in the pure solid, and zero where none forms.
     solid_fraction: float
@@ -1333,6 +1458,8 @@ class TpSolidFlashResult(_HasWarnings):
 class TpMultiflashWaxResult(_HasWarnings):
     """Result of ``eos.tp_multiflash_wax``."""
 
+    CALC_ID: ClassVar[str] = "eos.tp_multiflash_wax"
+
     #: The fraction of the feed's moles in the wax phase, and zero where none forms.
     wax_fraction: float
     #: How many phases the feed splits into: two, or three where the wax survives.
@@ -1356,6 +1483,8 @@ class TpMultiflashWaxResult(_HasWarnings):
 class WaxSolidFugacityResult(_HasWarnings):
     """Result of ``eos.wax_solid_fugacity``."""
 
+    CALC_ID: ClassVar[str] = "eos.wax_solid_fugacity"
+
     #: The wax phase's fugacity coefficient for one component. Dimensionless.
     fugacity_coefficient: float
     #: Caveats.
@@ -1366,6 +1495,8 @@ class WaxSolidFugacityResult(_HasWarnings):
 class SolidFugacityResult(_HasWarnings):
     """Result of ``eos.solid_fugacity``."""
 
+    CALC_ID: ClassVar[str] = "eos.solid_fugacity"
+
     #: The solid's fugacity coefficient for one component. Dimensionless.
     fugacity_coefficient: float
     #: Caveats.
@@ -1375,6 +1506,8 @@ class SolidFugacityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class SaltPrecipitationResult(_HasWarnings):
     """Result of ``eos.salt_precipitation``."""
+
+    CALC_ID: ClassVar[str] = "eos.salt_precipitation"
 
     #: The solid taken, in moles per mole of feed.
     precipitated_moles: float
@@ -1395,6 +1528,8 @@ class SaltPrecipitationResult(_HasWarnings):
 class ScaleSaturationRatioResult(_HasWarnings):
     """Result of ``eos.scale_saturation_ratio``."""
 
+    CALC_ID: ClassVar[str] = "eos.scale_saturation_ratio"
+
     #: ``IAP/Ksp``, one at saturation, clamped at ``exp(69)`` and floored at zero.
     saturation_ratio: float
     #: The ion activity product, so a divergence can be read as either half.
@@ -1408,6 +1543,8 @@ class ScaleSaturationRatioResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class TbpFractionPropertiesResult(_HasWarnings):
     """Result of ``eos.tbp_fraction_properties``."""
+
+    CALC_ID: ClassVar[str] = "eos.tbp_fraction_properties"
 
     #: Critical temperature.
     tc: Q
@@ -1427,6 +1564,8 @@ class TbpFractionPropertiesResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class HydrateFormationPressureResult(_HasWarnings):
     """Result of ``eos.hydrate_formation_pressure``."""
+
+    CALC_ID: ClassVar[str] = "eos.hydrate_formation_pressure"
 
     #: The pressure at which the hydrate's water fugacity meets the fluid's.
     pressure: Q
@@ -1449,6 +1588,8 @@ class HydrateEquilibriumLineResult(_HasWarnings):
     arithmetic at each point is ``eos.hydrate_formation_temperature``'s.
     """
 
+    CALC_ID: ClassVar[str] = "eos.hydrate_equilibrium_line"
+
     #: The formation temperatures, in grid order, in kelvin.
     temperature: tuple[float, ...]
     #: The pressures the points were solved at, in pascals, parallel to ``temperature``.
@@ -1460,6 +1601,8 @@ class HydrateEquilibriumLineResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class HydrateInhibitorWtResult(_HasWarnings):
     """Result of ``eos.hydrate_inhibitor_wt``."""
+
+    CALC_ID: ClassVar[str] = "eos.hydrate_inhibitor_wt"
 
     #: The inhibitor's moles at the answer, the feed's own included.
     inhibitor_moles: float
@@ -1480,6 +1623,8 @@ class HydrateInhibitorWtResult(_HasWarnings):
 class HydrateInhibitorConcentrationResult(_HasWarnings):
     """Result of ``eos.hydrate_inhibitor_concentration``."""
 
+    CALC_ID: ClassVar[str] = "eos.hydrate_inhibitor_concentration"
+
     #: The inhibitor's moles at the answer, the feed's own included.
     inhibitor_moles: float
     #: The inhibitor's mass fraction of the inhibitor-and-water pair, which is what a dosing
@@ -1499,6 +1644,8 @@ class HydrateInhibitorConcentrationResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class HydrateFractionResult(_HasWarnings):
     """Result of ``eos.hydrate_fraction``."""
+
+    CALC_ID: ClassVar[str] = "eos.hydrate_fraction"
 
     #: The fraction of the feed's moles that is hydrate, on the feed's own basis.
     hydrate_fraction: float
@@ -1528,6 +1675,8 @@ class PrMolarVolumeResult(_HasWarnings):
     again.
     """
 
+    CALC_ID: ClassVar[str] = "eos.pr_molar_volume"
+
     #: Molar volume.
     v: Q
     #: Caveats.
@@ -1537,6 +1686,8 @@ class PrMolarVolumeResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PrMassDensityResult(_HasWarnings):
     """Result of ``eos.pr_mass_density``."""
+
+    CALC_ID: ClassVar[str] = "eos.pr_mass_density"
 
     #: Mass density. Positive whenever the molar mass and volume are, which the
     #: bounds ensure.
@@ -1549,6 +1700,8 @@ class PrMassDensityResult(_HasWarnings):
 class PrPenelouxShiftResult(_HasWarnings):
     """Result of ``eos.pr_peneloux_shift``."""
 
+    CALC_ID: ClassVar[str] = "eos.pr_peneloux_shift"
+
     #: The Peneloux volume-translation parameter.
     c: Q
     #: Caveats.
@@ -1558,6 +1711,8 @@ class PrPenelouxShiftResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class SrkPenelouxShiftResult(_HasWarnings):
     """Result of ``eos.srk_peneloux_shift``."""
+
+    CALC_ID: ClassVar[str] = "eos.srk_peneloux_shift"
 
     #: The Peneloux volume-translation parameter.
     c: Q
@@ -1569,6 +1724,8 @@ class SrkPenelouxShiftResult(_HasWarnings):
 class HeatOfVaporizationResult(_HasWarnings):
     """Result of ``eos.heat_of_vaporization``."""
 
+    CALC_ID: ClassVar[str] = "eos.heat_of_vaporization"
+
     #: The pure-component heat of vaporisation.
     hov: Q
     #: Caveats.
@@ -1579,6 +1736,8 @@ class HeatOfVaporizationResult(_HasWarnings):
 class LiquidHeatCapacityResult(_HasWarnings):
     """Result of ``eos.liquid_heat_capacity``."""
 
+    CALC_ID: ClassVar[str] = "eos.liquid_heat_capacity"
+
     #: The pure-component liquid heat capacity.
     cp: Q
     #: Caveats.
@@ -1588,6 +1747,8 @@ class LiquidHeatCapacityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class AntoineVaporPressureResult(_HasWarnings):
     """Result of ``eos.antoine_vapor_pressure``."""
+
+    CALC_ID: ClassVar[str] = "eos.antoine_vapor_pressure"
 
     #: The pure-component vapour pressure.
     p_sat: Q
@@ -1605,6 +1766,8 @@ class NitricSulfuricAcidVaporPressureResult(_HasWarnings):
     NeqSim's refit of Pennington's Antoine pair rather than the paper's.
     """
 
+    CALC_ID: ClassVar[str] = "eos.nitric_sulfuric_acid_vapor_pressure"
+
     #: The pure-component saturation vapour pressure of water.
     p_water: Q
     #: The pure-component saturation vapour pressure of nitric acid.
@@ -1619,6 +1782,8 @@ class NitricSulfuricAcidVaporPressureResult(_HasWarnings):
 class RackettMolarVolumeResult(_HasWarnings):
     """Result of ``eos.rackett_molar_volume``."""
 
+    CALC_ID: ClassVar[str] = "eos.rackett_molar_volume"
+
     #: The saturated liquid molar volume.
     v: Q
     #: Caveats.
@@ -1628,6 +1793,8 @@ class RackettMolarVolumeResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class CostaldMolarVolumeResult(_HasWarnings):
     """Result of ``eos.costald_molar_volume``."""
+
+    CALC_ID: ClassVar[str] = "eos.costald_molar_volume"
 
     #: The saturated liquid molar volume.
     v: Q
@@ -1639,6 +1806,8 @@ class CostaldMolarVolumeResult(_HasWarnings):
 class ChungViscosityResult(_HasWarnings):
     """Result of ``eos.chung_viscosity``."""
 
+    CALC_ID: ClassVar[str] = "eos.chung_viscosity"
+
     #: The gas dynamic viscosity.
     mu: Q
     #: Caveats.
@@ -1648,6 +1817,8 @@ class ChungViscosityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class ChungConductivityResult(_HasWarnings):
     """Result of ``eos.chung_conductivity``."""
+
+    CALC_ID: ClassVar[str] = "eos.chung_conductivity"
 
     #: The gas thermal conductivity.
     k: Q
@@ -1659,6 +1830,8 @@ class ChungConductivityResult(_HasWarnings):
 class MasonSaxenaConductivityResult(_HasWarnings):
     """Result of ``eos.mason_saxena_conductivity``."""
 
+    CALC_ID: ClassVar[str] = "eos.mason_saxena_conductivity"
+
     #: The gas mixture thermal conductivity.
     k: Q
     #: Caveats.
@@ -1668,6 +1841,8 @@ class MasonSaxenaConductivityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class TynCalusDiffusivityResult(_HasWarnings):
     """Result of ``eos.tyn_calus_diffusivity``."""
+
+    CALC_ID: ClassVar[str] = "eos.tyn_calus_diffusivity"
 
     #: The binary diffusion coefficient.
     d: Q
@@ -1679,6 +1854,8 @@ class TynCalusDiffusivityResult(_HasWarnings):
 class UmrprAlphaResult(_HasWarnings):
     """Result of ``eos.umrpr_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.umrpr_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -1689,6 +1866,8 @@ class UmrprAlphaResult(_HasWarnings):
 class WilkeChangDiffusivityResult(_HasWarnings):
     """Result of ``eos.wilke_chang_diffusivity``."""
 
+    CALC_ID: ClassVar[str] = "eos.wilke_chang_diffusivity"
+
     #: The binary diffusion coefficient.
     d: Q
     #: Caveats.
@@ -1698,6 +1877,8 @@ class WilkeChangDiffusivityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PackingHydraulicsResult(_HasWarnings):
     """Result of ``hydraulics.packing_hydraulics``."""
+
+    CALC_ID: ClassVar[str] = "hydraulics.packing_hydraulics"
 
     #: The packing the name resolved to, which is ``Pall-Ring-50`` where nothing matched.
     packing_name: str
@@ -1755,6 +1936,8 @@ class PackingHydraulicsResult(_HasWarnings):
 class PhaseTransportResult(_HasWarnings):
     """Result of ``eos.phase_transport``."""
 
+    CALC_ID: ClassVar[str] = "eos.phase_transport"
+
     #: The phase's dynamic viscosity.
     mu: Q
     #: The phase's thermal conductivity.
@@ -1771,6 +1954,8 @@ class PhaseTransportResult(_HasWarnings):
 class LiquidConductivityPolynomResult(_HasWarnings):
     """Result of ``eos.liquid_conductivity_polynom``."""
 
+    CALC_ID: ClassVar[str] = "eos.liquid_conductivity_polynom"
+
     #: The mixture's thermal conductivity.
     k: Q
     #: Caveats.
@@ -1780,6 +1965,8 @@ class LiquidConductivityPolynomResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class LiquidViscosityPureResult(_HasWarnings):
     """Result of ``eos.liquid_viscosity_pure``."""
+
+    CALC_ID: ClassVar[str] = "eos.liquid_viscosity_pure"
 
     #: The component's pure-liquid viscosity.
     mu: Q
@@ -1791,6 +1978,8 @@ class LiquidViscosityPureResult(_HasWarnings):
 class ChapmanEnskogDiffusivityResult(_HasWarnings):
     """Result of ``eos.chapman_enskog_diffusivity``."""
 
+    CALC_ID: ClassVar[str] = "eos.chapman_enskog_diffusivity"
+
     #: The pair's binary diffusion coefficient.
     d: Q
     #: Caveats.
@@ -1800,6 +1989,8 @@ class ChapmanEnskogDiffusivityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class FullerSchettlerGiddingsDiffusivityResult(_HasWarnings):
     """Result of ``eos.fuller_schettler_giddings_diffusivity``."""
+
+    CALC_ID: ClassVar[str] = "eos.fuller_schettler_giddings_diffusivity"
 
     #: The pair's binary diffusion coefficient.
     d: Q
@@ -1811,6 +2002,8 @@ class FullerSchettlerGiddingsDiffusivityResult(_HasWarnings):
 class ParachorMixtureSurfaceTensionResult(_HasWarnings):
     """Result of ``eos.parachor_mixture_surface_tension``."""
 
+    CALC_ID: ClassVar[str] = "eos.parachor_mixture_surface_tension"
+
     #: The interface's surface tension.
     sigma: Q
     #: Caveats.
@@ -1820,6 +2013,8 @@ class ParachorMixtureSurfaceTensionResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class HaydukMinhasDiffusivityResult(_HasWarnings):
     """Result of ``eos.hayduk_minhas_diffusivity``."""
+
+    CALC_ID: ClassVar[str] = "eos.hayduk_minhas_diffusivity"
 
     #: The binary diffusion coefficient.
     d: Q
@@ -1831,6 +2026,8 @@ class HaydukMinhasDiffusivityResult(_HasWarnings):
 class SchwartzentruberAlphaResult(_HasWarnings):
     """Result of ``eos.schwartzentruber_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.schwartzentruber_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -1840,6 +2037,8 @@ class SchwartzentruberAlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class SoreideWhitsonAlphaResult(_HasWarnings):
     """Result of ``eos.soreide_whitson_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.soreide_whitson_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -1851,6 +2050,8 @@ class SoreideWhitsonAlphaResult(_HasWarnings):
 class SiddiqiLucasDiffusivityResult(_HasWarnings):
     """Result of ``eos.siddiqi_lucas_diffusivity``."""
 
+    CALC_ID: ClassVar[str] = "eos.siddiqi_lucas_diffusivity"
+
     #: The binary diffusion coefficient.
     d: Q
     #: Caveats.
@@ -1861,6 +2062,8 @@ class SiddiqiLucasDiffusivityResult(_HasWarnings):
 class Co2WaterDiffusivityResult(_HasWarnings):
     """Result of ``eos.co2_water_diffusivity``."""
 
+    CALC_ID: ClassVar[str] = "eos.co2_water_diffusivity"
+
     #: The binary diffusion coefficient.
     d: Q
     #: Caveats.
@@ -1870,6 +2073,8 @@ class Co2WaterDiffusivityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class ParachorSurfaceTensionResult(_HasWarnings):
     """Result of ``eos.parachor_surface_tension``."""
+
+    CALC_ID: ClassVar[str] = "eos.parachor_surface_tension"
 
     #: The surface tension, in N/m.
     sigma: Q
@@ -1884,6 +2089,8 @@ class AqueousViscosityResult(_HasWarnings):
     One quantity, as :class:`ViscosityResult` has: the phase's dynamic viscosity.
     """
 
+    CALC_ID: ClassVar[str] = "eos.aqueous_viscosity"
+
     #: The phase's dynamic viscosity.
     viscosity: Q
     #: Caveats.
@@ -1893,6 +2100,8 @@ class AqueousViscosityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class ViscosityResult(_HasWarnings):
     """Result of ``eos.viscosity``."""
+
+    CALC_ID: ClassVar[str] = "eos.viscosity"
 
     #: The liquid dynamic viscosity, in Pa*s.
     mu: Q
@@ -1904,6 +2113,8 @@ class ViscosityResult(_HasWarnings):
 class ThermalConductivityResult(_HasWarnings):
     """Result of ``eos.thermal_conductivity``."""
 
+    CALC_ID: ClassVar[str] = "eos.thermal_conductivity"
+
     #: The liquid thermal conductivity, in W/(m*K).
     k: Q
     #: Caveats.
@@ -1913,6 +2124,8 @@ class ThermalConductivityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class Matcop5PrumrAlphaResult(_HasWarnings):
     """Result of ``eos.matcop5_prumr_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.matcop5_prumr_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -1924,6 +2137,8 @@ class Matcop5PrumrAlphaResult(_HasWarnings):
 class MatcopAlphaResult(_HasWarnings):
     """Result of ``eos.matcop_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.matcop_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -1933,6 +2148,8 @@ class MatcopAlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class MatcopPrAlphaResult(_HasWarnings):
     """Result of ``eos.matcop_pr_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.matcop_pr_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -1944,6 +2161,8 @@ class MatcopPrAlphaResult(_HasWarnings):
 class MatcopPrumrAlphaResult(_HasWarnings):
     """Result of ``eos.matcop_prumr_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.matcop_prumr_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -1953,6 +2172,8 @@ class MatcopPrumrAlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class MatcopPrumrNewAlphaResult(_HasWarnings):
     """Result of ``eos.matcop_prumr_new_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.matcop_prumr_new_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -1964,6 +2185,8 @@ class MatcopPrumrNewAlphaResult(_HasWarnings):
 class WilkeViscosityResult(_HasWarnings):
     """Result of ``eos.wilke_viscosity``."""
 
+    CALC_ID: ClassVar[str] = "eos.wilke_viscosity"
+
     #: The gas mixture dynamic viscosity.
     mu: Q
     #: Caveats.
@@ -1973,6 +2196,8 @@ class WilkeViscosityResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class NrtlActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.nrtl_activity_coefficients``."""
+
+    CALC_ID: ClassVar[str] = "eos.nrtl_activity_coefficients"
 
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
@@ -1986,6 +2211,8 @@ class NrtlActivityCoefficientsResult(_HasWarnings):
 class UnifacActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.unifac_activity_coefficients``."""
 
+    CALC_ID: ClassVar[str] = "eos.unifac_activity_coefficients"
+
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
     #: The activity coefficient of each component.
@@ -1997,6 +2224,8 @@ class UnifacActivityCoefficientsResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class UnifacUmrpruActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.unifac_umrpru_activity_coefficients``."""
+
+    CALC_ID: ClassVar[str] = "eos.unifac_umrpru_activity_coefficients"
 
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
@@ -2010,6 +2239,8 @@ class UnifacUmrpruActivityCoefficientsResult(_HasWarnings):
 class UnifacPsrkActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.unifac_psrk_activity_coefficients``."""
 
+    CALC_ID: ClassVar[str] = "eos.unifac_psrk_activity_coefficients"
+
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
     #: The activity coefficient of each component.
@@ -2021,6 +2252,8 @@ class UnifacPsrkActivityCoefficientsResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class VanLaarAcidActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.van_laar_acid_activity_coefficients``."""
+
+    CALC_ID: ClassVar[str] = "eos.van_laar_acid_activity_coefficients"
 
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
@@ -2034,6 +2267,8 @@ class VanLaarAcidActivityCoefficientsResult(_HasWarnings):
 class UniquacActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.uniquac_activity_coefficients``."""
 
+    CALC_ID: ClassVar[str] = "eos.uniquac_activity_coefficients"
+
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
     #: The activity coefficient of each component.
@@ -2046,6 +2281,8 @@ class UniquacActivityCoefficientsResult(_HasWarnings):
 class WilsonActivityCoefficientsResult(_HasWarnings):
     """Result of ``eos.wilson_activity_coefficients``."""
 
+    CALC_ID: ClassVar[str] = "eos.wilson_activity_coefficients"
+
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
     #: The activity coefficient of each component.
@@ -2057,6 +2294,8 @@ class WilsonActivityCoefficientsResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class VuFlashSingleCompResult(_HasWarnings):
     """Result of ``eos.vu_flash_single_comp``."""
+
+    CALC_ID: ClassVar[str] = "eos.vu_flash_single_comp"
 
     #: The saturation temperature at the pressure asked for - the state's temperature.
     T: Q
@@ -2073,6 +2312,8 @@ class VuFlashSingleCompResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PvfFlashResult(_HasWarnings):
     """Result of ``eos.pvf_flash``."""
+
+    CALC_ID: ClassVar[str] = "eos.pvf_flash"
 
     #: The temperature at which the feed's vapour fraction is the one asked for.
     T: Q
@@ -2106,6 +2347,8 @@ class VsFlashResult(_HasWarnings):
     temperature are answers, reported alongside the phase split.
     """
 
+    CALC_ID: ClassVar[str] = "eos.vs_flash"
+
     #: The pressure that satisfies the volume and entropy.
     P: Q
     #: The temperature that satisfies the volume and entropy.
@@ -2135,6 +2378,8 @@ class VsFlashResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class TvFractionFlashResult(_HasWarnings):
     """Result of ``eos.tv_fraction_flash``."""
+
+    CALC_ID: ClassVar[str] = "eos.tv_fraction_flash"
 
     #: The pressure at which the volume fraction is the one asked for.
     P: Q
@@ -2172,6 +2417,8 @@ class VuFlashResult(_HasWarnings):
     temperature are answers, reported alongside the phase split.
     """
 
+    CALC_ID: ClassVar[str] = "eos.vu_flash"
+
     #: The pressure that satisfies the volume and internal energy.
     P: Q
     #: The temperature that satisfies the volume and internal energy.
@@ -2201,6 +2448,8 @@ class VuFlashResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PvRefluxFlashResult(_HasWarnings):
     """Result of ``eos.pv_reflux_flash``."""
+
+    CALC_ID: ClassVar[str] = "eos.pv_reflux_flash"
 
     #: The temperature at which the phase ratio is the one asked for.
     T: Q
@@ -2233,6 +2482,8 @@ class VhFlashResult(_HasWarnings):
     A closed vessel at fixed volume and enthalpy: both the pressure and the
     temperature are answers, reported alongside the phase split.
     """
+
+    CALC_ID: ClassVar[str] = "eos.vh_flash"
 
     #: The pressure that satisfies the volume and enthalpy.
     P: Q
@@ -2268,6 +2519,8 @@ class Vdw1fMixBinaryResult(_HasWarnings):
     everything else in this namespace.
     """
 
+    CALC_ID: ClassVar[str] = "eos.vdw1f_mix_binary"
+
     #: The mixture's attraction parameter.
     a_mix: float
     #: The mixture's repulsion parameter - the mole-fraction-weighted mean of the
@@ -2281,6 +2534,8 @@ class Vdw1fMixBinaryResult(_HasWarnings):
 class RachfordRiceResult(_HasWarnings):
     """Result of ``eos.rachford_rice``."""
 
+    CALC_ID: ClassVar[str] = "eos.rachford_rice"
+
     #: The root of the Rachford-Rice equation, returned as the equation gives it:
     #: outside ``[0, 1]`` it is the negative flash rather than a phase split, and the
     #: caller decides what that means. A feed whose K-values do not straddle one has no
@@ -2293,6 +2548,8 @@ class RachfordRiceResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class RachfordRiceBinaryResult(_HasWarnings):
     """Result of ``eos.rachford_rice_binary``."""
+
+    CALC_ID: ClassVar[str] = "eos.rachford_rice_binary"
 
     #: The vapour fraction that solves the Rachford-Rice equation. Outside ``[0, 1]``
     #: the feed is single phase and this is the tangent-plane value rather than a
@@ -2312,6 +2569,8 @@ class PrDepartureResult(_HasWarnings):
     ``s_dep_r`` and ``cp_dep_r``. The multiplication by ``R`` and ``T`` happens where
     those live - the model layer - so this namespace stays unit-free end to end.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pr_departure"
 
     #: The logarithm of the fugacity coefficient. Returned as a logarithm rather
     #: than as ``phi`` because the logarithm is what the algebra produces, what the
@@ -2342,6 +2601,8 @@ class PrsvKappaResult(_HasWarnings):
     correlation.
     """
 
+    CALC_ID: ClassVar[str] = "eos.prsv_kappa"
+
     #: The PRSV alpha-function coefficient. Dimensionless.
     kappa: float
     #: Caveats.
@@ -2362,6 +2623,8 @@ class PrAlphaAbResult(_HasWarnings):
     field instead. That division of labour is the schema's own - `equation` is
     machine-evaluable, `latex` is typeset for a reader.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pr_alpha_ab"
 
     #: The alpha function, where Peng-Robinson's temperature dependence lives.
     alpha: float
@@ -2388,6 +2651,8 @@ class PrZFactorResult(_HasWarnings):
     like a right one.
     """
 
+    CALC_ID: ClassVar[str] = "eos.pr_z_factor"
+
     #: The smallest admissible root.
     z_min: float
     #: The largest admissible root. Equal to ``z_min`` when only one is admissible.
@@ -2411,6 +2676,8 @@ class PrZFactorResult(_HasWarnings):
 class SrkKappaResult(_HasWarnings):
     """Result of ``eos.srk_kappa``."""
 
+    CALC_ID: ClassVar[str] = "eos.srk_kappa"
+
     #: The Soave-Redlich-Kwong alpha-function coefficient. Dimensionless.
     kappa: float
     #: Caveats.
@@ -2420,6 +2687,8 @@ class SrkKappaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class Pr78KappaResult(_HasWarnings):
     """Result of ``eos.pr78_kappa``."""
+
+    CALC_ID: ClassVar[str] = "eos.pr78_kappa"
 
     #: The 1978 Peng-Robinson alpha-function coefficient. Dimensionless.
     kappa: float
@@ -2431,6 +2700,8 @@ class Pr78KappaResult(_HasWarnings):
 class TwuKappaResult(_HasWarnings):
     """Result of ``eos.twu_kappa``."""
 
+    CALC_ID: ClassVar[str] = "eos.twu_kappa"
+
     #: Twu's alpha-function coefficient. Dimensionless.
     kappa: float
     #: Caveats.
@@ -2440,6 +2711,8 @@ class TwuKappaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class TwucoonAlphaResult(_HasWarnings):
     """Result of ``eos.twucoon_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.twucoon_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -2451,6 +2724,8 @@ class TwucoonAlphaResult(_HasWarnings):
 class TwucoonParamAlphaResult(_HasWarnings):
     """Result of ``eos.twucoon_param_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.twucoon_param_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -2460,6 +2735,8 @@ class TwucoonParamAlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class TwucoonStatoilAlphaResult(_HasWarnings):
     """Result of ``eos.twucoon_statoil_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.twucoon_statoil_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -2471,6 +2748,8 @@ class TwucoonStatoilAlphaResult(_HasWarnings):
 class PrDaneshAlphaResult(_HasWarnings):
     """Result of ``eos.pr_danesh_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.pr_danesh_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -2480,6 +2759,8 @@ class PrDaneshAlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PrDelft1998AlphaResult(_HasWarnings):
     """Result of ``eos.pr_delft1998_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.pr_delft1998_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -2491,6 +2772,8 @@ class PrDelft1998AlphaResult(_HasWarnings):
 class PrGassem2001AlphaResult(_HasWarnings):
     """Result of ``eos.pr_gassem2001_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.pr_gassem2001_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -2500,6 +2783,8 @@ class PrGassem2001AlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PrLeeKeslerAlphaResult(_HasWarnings):
     """Result of ``eos.pr_lee_kesler_alpha``."""
+
+    CALC_ID: ClassVar[str] = "eos.pr_lee_kesler_alpha"
 
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
@@ -2511,6 +2796,8 @@ class PrLeeKeslerAlphaResult(_HasWarnings):
 class MollerupAlphaResult(_HasWarnings):
     """Result of ``eos.mollerup_alpha``."""
 
+    CALC_ID: ClassVar[str] = "eos.mollerup_alpha"
+
     #: The temperature-dependent alpha function. Dimensionless.
     alpha: float
     #: Caveats.
@@ -2520,6 +2807,8 @@ class MollerupAlphaResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class SrkAlphaAbResult(_HasWarnings):
     """Result of ``eos.srk_alpha_ab``."""
+
+    CALC_ID: ClassVar[str] = "eos.srk_alpha_ab"
 
     #: The Soave alpha function.
     alpha: float
@@ -2534,6 +2823,8 @@ class SrkAlphaAbResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class SrkZFactorResult(_HasWarnings):
     """Result of ``eos.srk_z_factor``."""
+
+    CALC_ID: ClassVar[str] = "eos.srk_z_factor"
 
     #: The smallest admissible root.
     z_min: float
@@ -2555,6 +2846,8 @@ class SrkZFactorResult(_HasWarnings):
 class SrkDepartureResult(_HasWarnings):
     """Result of ``eos.srk_departure``."""
 
+    CALC_ID: ClassVar[str] = "eos.srk_departure"
+
     #: The logarithm of the fugacity coefficient.
     ln_phi: float
     #: The departure enthalpy over ``R*T``.
@@ -2571,6 +2864,8 @@ class SrkDepartureResult(_HasWarnings):
 class RkAlphaAbResult(_HasWarnings):
     """Result of ``eos.rk_alpha_ab``."""
 
+    CALC_ID: ClassVar[str] = "eos.rk_alpha_ab"
+
     #: The Redlich-Kwong alpha function, ``1/sqrt(Tr)``.
     alpha: float
     #: ``A = a*alpha*P/(R**2*T**2)``, the dimensionless attraction parameter.
@@ -2584,6 +2879,8 @@ class RkAlphaAbResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class RkDepartureResult(_HasWarnings):
     """Result of ``eos.rk_departure``."""
+
+    CALC_ID: ClassVar[str] = "eos.rk_departure"
 
     #: The logarithm of the fugacity coefficient.
     ln_phi: float
@@ -2613,6 +2910,8 @@ class KComponent:
 class KFactorsResult(_HasWarnings):
     """Result of ``hydraulics.crane_k_factors``."""
 
+    CALC_ID: ClassVar[str] = "hydraulics.crane_k_factors"
+
     #: Total resistance coefficient for all listed fittings. Dimensionless.
     k_total: float
     #: The friction factor the coefficients were based on.
@@ -2626,6 +2925,8 @@ class KFactorsResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class DarcyWeisbachResult(_HasWarnings):
     """Result of ``hydraulics.darcy_weisbach``."""
+
+    CALC_ID: ClassVar[str] = "hydraulics.darcy_weisbach"
 
     #: Pressure drop over the pipe length.
     dp: Q
@@ -2661,6 +2962,8 @@ class PtFlashResult(_HasWarnings):
     Branch on ``phase`` and on presence, never on whether the number looks
     plausible.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pt_flash"
 
     #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
     vapour_fraction: float | None
@@ -2706,6 +3009,8 @@ class GeNrtlFlashResult(_HasWarnings):
     same reason the phase model reports ``p_sat`` beside ``ln_phi``.
     """
 
+    CALC_ID: ClassVar[str] = "eos.ge_nrtl_flash"
+
     #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
     vapour_fraction: float | None
     #: Liquid-phase mole fractions.
@@ -2743,6 +3048,8 @@ class PtPhaseEnvelopeResult(_HasWarnings):
     critical point, together with the cricondenbar, cricondentherm and the critical
     point itself.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pt_phase_envelope"
 
     #: The dew-point temperatures, in trace order.
     dew_temperature: tuple[float, ...]
@@ -2783,6 +3090,8 @@ class PhFlashResult(_HasWarnings):
     should not have to run it again to get them.
     """
 
+    CALC_ID: ClassVar[str] = "eos.ph_flash"
+
     #: The temperature that satisfies the enthalpy. This is the model's answer.
     T: Q
     #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
@@ -2819,6 +3128,8 @@ class PsFlashResult(_HasWarnings):
     reading one already knows how to read the other.
     """
 
+    CALC_ID: ClassVar[str] = "eos.ps_flash"
+
     #: The temperature that satisfies the entropy. This is the model's answer.
     T: Q
     #: The vapour fraction at that temperature, or ``None`` for a single-phase feed.
@@ -2851,6 +3162,8 @@ class TvFlashResult(_HasWarnings):
     it. Same shape as :class:`PhFlashResult` but with the pressure as the answer.
     """
 
+    CALC_ID: ClassVar[str] = "eos.tv_flash"
+
     #: The pressure that satisfies the volume. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
@@ -2882,6 +3195,8 @@ class PvFlashResult(_HasWarnings):
     The temperature that satisfies a volume at a fixed pressure, and the phase split at
     it. Same shape as :class:`PhFlashResult`.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pv_flash"
 
     #: The temperature that satisfies the volume. This is the model's answer.
     T: Q
@@ -2929,6 +3244,8 @@ class ThFlashResult(_HasWarnings):
     Same shape as :class:TvFlashResult, with the pressure as the answer.
     """
 
+    CALC_ID: ClassVar[str] = "eos.th_flash"
+
     #: The pressure that satisfies the property. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
@@ -2959,6 +3276,8 @@ class TsFlashResult(_HasWarnings):
 
     Same shape as :class:TvFlashResult, with the pressure as the answer.
     """
+
+    CALC_ID: ClassVar[str] = "eos.ts_flash"
 
     #: The pressure that satisfies the property. This is the model's answer.
     P: Q
@@ -2991,6 +3310,8 @@ class TuFlashResult(_HasWarnings):
     Same shape as :class:TvFlashResult, with the pressure as the answer.
     """
 
+    CALC_ID: ClassVar[str] = "eos.tu_flash"
+
     #: The pressure that satisfies the property. This is the model's answer.
     P: Q
     #: The vapour fraction at that pressure, or ``None`` for a single-phase feed.
@@ -3021,6 +3342,8 @@ class PuFlashResult(_HasWarnings):
 
     Same shape as :class:PvFlashResult, with the temperature as the answer.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pu_flash"
 
     #: The temperature that satisfies the property. This is the model's answer.
     T: Q
@@ -3054,6 +3377,8 @@ class StabilityTestResult(_HasWarnings):
     found": a trial that converges trivially still has a distance, and it is that
     near-zero number which is the evidence it was trivial.
     """
+
+    CALC_ID: ClassVar[str] = "eos.stability_test"
 
     #: Whether the feed is stable as a single phase.
     verdict: StabilityVerdict
@@ -3093,6 +3418,8 @@ class TpMultiflashResult(_HasWarnings):
     root they sit on, and the root is the compressibility.
     """
 
+    CALC_ID: ClassVar[str] = "eos.tp_multiflash"
+
     #: How many phases the feed splits into: 1, 2 or 3.
     phase_count: int
     #: The mole fraction of the feed in each phase, summing to one.
@@ -3126,6 +3453,8 @@ class CapillaryDewPointResult(_HasWarnings):
     this model has that the flat one does not.
     """
 
+    CALC_ID: ClassVar[str] = "eos.capillary_dew_point"
+
     #: The dew-point temperature.
     temperature: Q
     #: The composition of the liquid that first appears.
@@ -3157,6 +3486,8 @@ class BubblePressureResult(_HasWarnings):
     and ``y`` there - and a shared field would have to be named after neither.
     """
 
+    CALC_ID: ClassVar[str] = "eos.bubble_pressure"
+
     #: The bubble-point pressure.
     pressure: Q
     #: The composition of the vapour that first appears.
@@ -3180,6 +3511,8 @@ class BubblePressureResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class DewPressureResult(_HasWarnings):
     """Result of ``eos.dew_pressure``."""
+
+    CALC_ID: ClassVar[str] = "eos.dew_pressure"
 
     #: The dew-point pressure.
     pressure: Q
@@ -3210,6 +3543,8 @@ class BubbleTemperatureResult(_HasWarnings):
     and ``y`` there - and a shared field would have to be named after neither.
     """
 
+    CALC_ID: ClassVar[str] = "eos.bubble_temperature"
+
     #: The bubble-point temperature.
     temperature: Q
     #: The composition of the vapour that first appears.
@@ -3233,6 +3568,8 @@ class BubbleTemperatureResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class DewTemperatureResult(_HasWarnings):
     """Result of ``eos.dew_temperature``."""
+
+    CALC_ID: ClassVar[str] = "eos.dew_temperature"
 
     #: The dew-point temperature.
     temperature: Q
@@ -3262,6 +3599,8 @@ class HybridEosGeFlashResult(_HasWarnings):
     aqueous phase - so the order of every vector here is the model's and not the answer's,
     and no ``role`` field is needed to say which phase is which.
     """
+
+    CALC_ID: ClassVar[str] = "eos.hybrid_eos_ge_flash"
 
     #: The mole fraction of the feed in each role, in ``[gas, oil, aqueous]`` order.
     phase_fractions: tuple[float, ...]
@@ -3293,6 +3632,8 @@ class ReactiveHybridEosGeFlashResult(_HasWarnings):
     returned result is one whose three conditions held - the pass floor, the brine's
     composition and the fraction solve's residual.
     """
+
+    CALC_ID: ClassVar[str] = "reactions.reactive_hybrid_eos_ge_flash"
 
     #: The mole fraction of the feed in each of ``[gas, oil, aqueous]``, summing to one. A
     #: role the solve drove to nothing carries the solver's floor rather than zero.
@@ -3357,6 +3698,8 @@ class IapwsHenryLawResult(_HasWarnings):
     from differencing the constant.
     """
 
+    CALC_ID: ClassVar[str] = "eos.iapws_henry_law"
+
     #: ``kH``, the Henry constant.
     henry: Q
     #: ``ln kH``, the logarithm of the value above and not of NeqSim's bar figure.
@@ -3381,6 +3724,8 @@ class IdealGasCpResult(_HasWarnings):
     as the single step it is, rather than folded into the answer.
     """
 
+    CALC_ID: ClassVar[str] = "eos.ideal_gas_cp"
+
     #: The ideal-gas heat capacity. Carries ``OUT_OF_VALID_RANGE`` when it is not
     #: positive, which means the polynomial has been evaluated outside its range.
     cp: Q
@@ -3397,6 +3742,8 @@ class MolarEnthalpyEntropyResult(_HasWarnings):
     the datum, ``h_departure`` carries the equation of state, and a single total hides
     which of the two a disagreement came from.
     """
+
+    CALC_ID: ClassVar[str] = "eos.molar_enthalpy_entropy"
 
     #: The molar enthalpy, ``h_ideal + h_departure``.
     h: Q
@@ -3435,6 +3782,8 @@ class CriticalPointResult(_HasWarnings):
     varies with composition, and the mechanical route cannot produce the second.
     """
 
+    CALC_ID: ClassVar[str] = "eos.critical_point"
+
     #: The critical temperature.
     tc: Q
     #: The critical pressure.
@@ -3461,6 +3810,8 @@ class BwrsPhaseResult(_HasWarnings):
     :func:`azoth.eos.molar_enthalpy_entropy` gets absolute values.
     """
 
+    CALC_ID: ClassVar[str] = "eos.bwrs_phase"
+
     #: The compressibility factor ``Z = P/(rho R T)``.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3484,6 +3835,8 @@ class TpFlashSaftResult(_HasWarnings):
     because a single-phase answer has no vapour fraction - and which phase it is comes from
     the Gibbs comparison, not from the loop.
     """
+
+    CALC_ID: ClassVar[str] = "eos.tp_flash_saft"
 
     #: The vapour fraction, present only when the flash found a split.
     vapour_fraction: float | None
@@ -3523,6 +3876,8 @@ class SaftVrMiePhaseResult(_HasWarnings):
     the dispersion alone would be a wrong answer rather than a missing one.
     """
 
+    CALC_ID: ClassVar[str] = "eos.saft_vr_mie_phase"
+
     #: The compressibility factor at the chosen root.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3546,6 +3901,8 @@ class PcsaftRahmatPhaseResult(_HasWarnings):
     because the temperature derivative of the Helmholtz energy is not derived - an
     enthalpy taken from somewhere else would be a different fluid's.
     """
+
+    CALC_ID: ClassVar[str] = "eos.pcsaft_rahmat_phase"
 
     #: The compressibility factor at the chosen root.
     z_factor: float
@@ -3576,6 +3933,8 @@ class SrkCpaPhaseResult(_HasWarnings):
     rather than a missing one.
     """
 
+    CALC_ID: ClassVar[str] = "eos.srk_cpa_phase"
+
     #: The compressibility factor at the chosen root.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3604,6 +3963,8 @@ class PrCpaPhaseResult(_HasWarnings):
     which this model's case runs.
     """
 
+    CALC_ID: ClassVar[str] = "eos.pr_cpa_phase"
+
     #: The compressibility factor at the chosen root.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3630,6 +3991,8 @@ class UmrCpaPhaseResult(_HasWarnings):
     Gibbs energy's own Hessian.
     """
 
+    CALC_ID: ClassVar[str] = "eos.umr_cpa_phase"
+
     #: The compressibility factor at the chosen root.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3651,6 +4014,8 @@ class FurstElectrolyteMod2004PhaseResult(_HasWarnings):
     component-independent ``FBornD`` added to every ``ln phi`` - which makes that entry
     depend on the phase's *size*, so this model's cases carry a looser tolerance.
     """
+
+    CALC_ID: ClassVar[str] = "eos.furst_electrolyte_mod2004_phase"
 
     #: The compressibility factor at the chosen root.
     z_factor: float
@@ -3674,6 +4039,8 @@ class FurstElectrolytePhaseResult(_HasWarnings):
     derivative.
     """
 
+    CALC_ID: ClassVar[str] = "eos.furst_electrolyte_phase"
+
     #: The compressibility factor at the chosen root.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3695,6 +4062,8 @@ class SoreideWhitsonPhaseResult(_HasWarnings):
     differentiated against.
     """
 
+    CALC_ID: ClassVar[str] = "eos.soreide_whitson_phase"
+
     #: The compressibility factor at the chosen root.
     z_factor: float
     #: The fugacity coefficients, as logarithms, one per component.
@@ -3710,6 +4079,8 @@ class AmmoniaPhaseResult(_HasWarnings):
     The ammonia reference phase state: the compressibility factor and the Helmholtz
     property set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
+
+    CALC_ID: ClassVar[str] = "eos.ammonia_phase"
 
     #: The compressibility factor ``Z = P/(rho R T)``.
     z_factor: float
@@ -3737,6 +4108,8 @@ class Co2PhaseResult(_HasWarnings):
     property set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
 
+    CALC_ID: ClassVar[str] = "eos.co2_phase"
+
     #: The compressibility factor ``Z = P/(rho R T)``.
     z_factor: float
     #: The internal energy.
@@ -3762,6 +4135,8 @@ class HydrogenPhaseResult(_HasWarnings):
     The Leachman hydrogen phase state: the compressibility factor and the Helmholtz
     property set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
+
+    CALC_ID: ClassVar[str] = "eos.hydrogen_phase"
 
     #: The compressibility factor ``Z = P/(rho R T)``.
     z_factor: float
@@ -3789,6 +4164,8 @@ class WaterPhaseResult(_HasWarnings):
     set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
 
+    CALC_ID: ClassVar[str] = "eos.water_phase"
+
     #: The compressibility factor ``Z = P v/(R T)``.
     z_factor: float
     #: The internal energy.
@@ -3814,6 +4191,8 @@ class ArgonSolidPhaseResult(_HasWarnings):
     The solid argon phase state: the compressibility factor and the Helmholtz property
     set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
+
+    CALC_ID: ClassVar[str] = "eos.argon_solid_phase"
 
     #: The compressibility factor ``Z = P v/(R T)``.
     z_factor: float
@@ -3841,6 +4220,8 @@ class ParahydrogenSolidPhaseResult(_HasWarnings):
     property set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
 
+    CALC_ID: ClassVar[str] = "eos.parahydrogen_solid_phase"
+
     #: The compressibility factor ``Z = P v/(R T)``.
     z_factor: float
     #: The internal energy.
@@ -3867,6 +4248,8 @@ class EosCgPhaseResult(_HasWarnings):
     (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
 
+    CALC_ID: ClassVar[str] = "eos.eos_cg_phase"
+
     #: The compressibility factor ``Z = P v/(R T)``.
     z_factor: float
     #: The internal energy.
@@ -3889,6 +4272,8 @@ class EosCgPhaseResult(_HasWarnings):
 class GeNrtlPhaseResult(_HasWarnings):
     """Result of ``eos.ge_nrtl_phase``."""
 
+    CALC_ID: ClassVar[str] = "eos.ge_nrtl_phase"
+
     #: The NRTL activity coefficient of each component.
     gamma: tuple[float, ...]
     #: The natural logarithm of each activity coefficient.
@@ -3904,6 +4289,8 @@ class GeNrtlPhaseResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class GeUnifacPhaseResult(_HasWarnings):
     """Result of ``eos.ge_unifac_phase``."""
+
+    CALC_ID: ClassVar[str] = "eos.ge_unifac_phase"
 
     #: The UNIFAC activity coefficient of each component.
     gamma: tuple[float, ...]
@@ -3921,6 +4308,8 @@ class GeUnifacPhaseResult(_HasWarnings):
 class GeWilsonPhaseResult(_HasWarnings):
     """Result of ``eos.ge_wilson_phase``."""
 
+    CALC_ID: ClassVar[str] = "eos.ge_wilson_phase"
+
     #: The Wilson activity coefficient of each component.
     gamma: tuple[float, ...]
     #: The natural logarithm of each activity coefficient.
@@ -3936,6 +4325,8 @@ class GeWilsonPhaseResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class PitzerPhaseResult(_HasWarnings):
     """Result of ``eos.pitzer_phase``."""
+
+    CALC_ID: ClassVar[str] = "eos.pitzer_phase"
 
     #: The activity coefficient of each component.
     gamma: tuple[float, ...]
@@ -3967,6 +4358,8 @@ class PitzerPhaseResult(_HasWarnings):
 class KentEisenbergPhaseResult(_HasWarnings):
     """Result of ``eos.kent_eisenberg_phase``."""
 
+    CALC_ID: ClassVar[str] = "eos.kent_eisenberg_phase"
+
     #: The activity coefficient of each component, identically one.
     gamma: tuple[float, ...]
     #: The natural logarithm of each activity coefficient, identically zero.
@@ -3980,6 +4373,8 @@ class KentEisenbergPhaseResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class DesmukhMatherPhaseResult(_HasWarnings):
     """Result of ``eos.desmukh_mather_phase``."""
+
+    CALC_ID: ClassVar[str] = "eos.desmukh_mather_phase"
 
     #: The activity coefficient of each component.
     gamma: tuple[float, ...]
@@ -4001,6 +4396,8 @@ class DesmukhMatherPhaseResult(_HasWarnings):
 class GeUniquacPhaseResult(_HasWarnings):
     """Result of ``eos.ge_uniquac_phase``."""
 
+    CALC_ID: ClassVar[str] = "eos.ge_uniquac_phase"
+
     #: The UNIQUAC activity coefficient of each component.
     gamma: tuple[float, ...]
     #: The natural logarithm of each activity coefficient.
@@ -4016,6 +4413,8 @@ class GeUniquacPhaseResult(_HasWarnings):
 @dataclass(frozen=True, slots=True, eq=False)
 class GeVanLaarAcidPhaseResult(_HasWarnings):
     """Result of ``eos.ge_van_laar_acid_phase``."""
+
+    CALC_ID: ClassVar[str] = "eos.ge_van_laar_acid_phase"
 
     #: The Van Laar acid activity coefficient of each component.
     gamma: tuple[float, ...]
@@ -4036,6 +4435,8 @@ class Gerg2008PhaseResult(_HasWarnings):
     The GERG-2008 phase state: the compressibility factor and the Helmholtz property set
     (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
+
+    CALC_ID: ClassVar[str] = "eos.gerg2008_phase"
 
     #: The compressibility factor ``Z = P v/(R T)``.
     z_factor: float
@@ -4063,6 +4464,8 @@ class HeliumPhaseResult(_HasWarnings):
     set (internal energy, enthalpy, entropy, heat capacities and Gibbs energy).
     """
 
+    CALC_ID: ClassVar[str] = "eos.helium_phase"
+
     #: The compressibility factor ``Z = P/(rho R T)``.
     z_factor: float
     #: The internal energy.
@@ -4085,6 +4488,8 @@ class HeliumPhaseResult(_HasWarnings):
 class EffectiveDiffusionResult(_HasWarnings):
     """Result of ``eos.effective_diffusion``."""
 
+    CALC_ID: ClassVar[str] = "eos.effective_diffusion"
+
     #: One effective coefficient per component, in ``x``'s order, in m**2/s.
     effective_diffusion: tuple[Q, ...]
     #: Caveats.
@@ -4106,6 +4511,8 @@ class GeFlashResult(_HasWarnings):
     reported apart for the same reason the phase model reports ``p_sat`` beside
     ``ln_phi``.
     """
+
+    CALC_ID: ClassVar[str] = "eos.ge_flash"
 
     #: The vapour fraction, or ``None`` when there is no vapour fraction to report.
     vapour_fraction: float | None
@@ -4146,6 +4553,8 @@ class ShortcutDistillationColumnResult(_HasWarnings):
     inside the arithmetic: it is the one intermediate the NeqSim class exposes, and it is what
     makes the capture's K-values checkable against the class's own flash.
     """
+
+    CALC_ID: ClassVar[str] = "process.shortcut_distillation_column"
 
     #: Distillate molar flow.
     distillate_n: Q
@@ -4195,6 +4604,8 @@ class StrippingColumnResult(_HasWarnings):
     stripped gas and `getLeanLiquidStream` the stripped liquid, and the two classes are one set
     of counter-current stage equations.
     """
+
+    CALC_ID: ClassVar[str] = "process.stripping_column"
 
     #: Each tray's temperature, from the gas end at stage 0 up.
     tray_temperature: tuple[Q, ...]
@@ -4247,6 +4658,8 @@ class PackedColumnResult(_HasWarnings):
     for here instead - HETP, the theoretical stages and the percent flood - are
     ``ColumnInternalsDesigner``'s report on the far side of the solve and are not ported.
     """
+
+    CALC_ID: ClassVar[str] = "process.packed_column"
 
     #: Each tray's temperature, the reboiler at stage 0 to the condenser at the top.
     tray_temperature: tuple[Q, ...]
@@ -4310,6 +4723,8 @@ class AbsorptionColumnResult(_HasWarnings):
     are no duties.
     """
 
+    CALC_ID: ClassVar[str] = "process.absorption_column"
+
     #: Each tray's temperature, from the gas end at stage 0 up.
     tray_temperature: tuple[Q, ...]
     #: Each tray's pressure.
@@ -4359,6 +4774,8 @@ class DistillationColumnResult(_HasWarnings):
     profile, not a scalar: two solvers reaching the same one is the agreement worth asserting,
     and it is what the capture holds.
     """
+
+    CALC_ID: ClassVar[str] = "process.distillation_column"
 
     #: Each tray's temperature, from the reboiler at stage 0 to the condenser.
     tray_temperature: tuple[Q, ...]
@@ -4422,6 +4839,8 @@ class RateBasedPackedColumnResult(_HasWarnings):
     carried ``SegmentResult`` fields. Three of the class's thirty-four are constants on the
     ported path and one is derived, so they are not here.
     """
+
+    CALC_ID: ClassVar[str] = "process.rate_based_packed_column"
 
     #: The gas leaving the top segment.
     gas_out_n: Q

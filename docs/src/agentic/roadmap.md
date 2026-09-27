@@ -13,9 +13,9 @@ are: the four `library/` skills, four under `eos/`, four under `flow-assurance/`
 two under `hydraulics/`, two under `process/` and one under `thermal/`, driving the
 71 calculations and 121 models the library implements.
 
-The remaining 73 are placeholders — 45 `screening`, 18 `advisory` and 10
-`data-retrieval` — and each `screening` one names **what would back it**, which is a
-tranche where a tranche covers the physics and a named family where none does:
+The remaining 73 are placeholders — 44 `screening`, 18 `advisory`, 10
+`data-retrieval` and 1 `hybrid` — and each `screening` one names **what would back it**,
+which is a tranche where a tranche covers the physics and a named family where none does:
 
 - **What a tranche covers** — 7 skills under P4 (six under `pvt/`,
   `azoth-near-well-and-injectivity` under `subsurface/`); `azoth-surf-cooldown-screening`
