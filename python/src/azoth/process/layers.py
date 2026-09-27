@@ -1486,10 +1486,12 @@ LAYER_CASES: tuple[LayerCase, ...] = (
     ),
     # **The Murphree rows, on the capture's last four blocks.** `0.6` is the oracle - the port
     # reproduces its whole profile to about `1e-6` - and `0_85` is NeqSim's state that the port
-    # does *not* reproduce, because the correction makes the map's fixed point path-dependent at
-    # a high efficiency and `solveSequential` relaxes the streams where this port relaxes the
-    # temperature profile. The two `_tight` rows are the measurement that both are *converged*
-    # states rather than partial ones, and they are declared uncased in `UNCASED_ROWS`.
+    # does *not* reproduce, by up to `7` K on tray 3. **The cause is not established**:
+    # `applyRelaxationFast` - the obvious guess, since the class relaxes the streams and this
+    # port does not - was implemented and measured on both rows, and it moves neither, so the
+    # difference is in the maps rather than in the paths and it is not localised. The two
+    # `_tight` rows are the measurement that both are *converged* states rather than partial
+    # ones, and they are declared uncased in `UNCASED_ROWS`.
     LayerCase(
         model="process.distillation_column",
         case="murphree_0_6",

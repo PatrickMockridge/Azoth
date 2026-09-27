@@ -369,13 +369,21 @@ fn a_corrected_columns_products_are_reconciled_against_its_feed() {
 /// converged state and not a partial one**. This port finds a different one - nearer the ideal
 /// profile, and self-consistent to `1e-13` K - and the two differ by up to `7` K on tray 3.
 ///
-/// **The correction makes the map's fixed point path-dependent at a high efficiency**, and the
-/// two implementations walk different paths: `solveSequential` relaxes the *streams* by its own
-/// `applyRelaxationFast` and gates on three residuals, where this port relaxes the temperature
-/// profile alone - the substitution `distillation_column`'s own doc states. At `0.6` the two
-/// paths land on the same state (the row above, to `1e-6`); at `0.85` they do not. This test
-/// holds the divergence to a *measurement* rather than to a tolerance: the shape of the port's
-/// answer, and the size of the disagreement.
+/// **The two implementations reach different fixed points at `0.85`, and the cause is NOT
+/// established.** At `0.6` they agree to `1e-6` (the row above); at `0.85`, with both solvers
+/// reporting convergence, they differ by up to `7` K on tray 3.
+///
+/// **`applyRelaxationFast` is not the reason, and that is measured rather than argued.** The
+/// class relaxes the *streams* a stage is handed by its own relaxation factor, which this port
+/// does not - so the obvious guess is that the path is what selects the fixed point. It was
+/// implemented and measured on both rows: **`0.6` still matches, and `0.85` lands on the same
+/// state to every printed digit** (`302.156771` on tray 3, with and without). A relaxation
+/// cannot move a fixed point, and these two rows say it does not.
+///
+/// So the difference is in the *maps* and not in the paths, and it has not been localised. What
+/// this test holds is the *measurement* rather than a tolerance: the shape of the port's answer,
+/// and the size of the disagreement - so that a later tranche which closes it moves this test
+/// deliberately rather than by accident.
 #[test]
 fn a_high_murphree_efficiency_reaches_this_ports_own_fixed_point() {
     let mut setup = binary_column(1.0e-6);
