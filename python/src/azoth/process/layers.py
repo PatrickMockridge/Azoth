@@ -755,6 +755,83 @@ def _rate_based_packed_column(inputs: Mapping[str, Any]) -> dict[str, float]:
     return layers
 
 
+def _as_inputs(spec: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """A case's SI inputs as the quantities a reference's public entry takes.
+
+    **A dumper reads a case, and a case's inputs are SI magnitudes** - the shape the Rust
+    kernel and the cross-implementation comparison both use. The public reference takes
+    *quantities*, because a caller of the library writes `feed_p = 5.0 * bar`. So a dumper
+    has to put the unit back on, and it reads that unit from the spec's own declaration
+    rather than from a table here: an input the spec gives no unit has none, and is passed
+    through as the number, list or name it is.
+    """
+    from azoth.core.units import from_si
+
+    declared = spec.get("inputs", {})
+    out: dict[str, Any] = {}
+    for name, value in inputs.items():
+        unit = declared.get(name, {}).get("unit")
+        # **A quantity only where the value has a dimension.** A spec declares a unit for
+        # everything, and a `dimensionless` one is a *number* to the reference - an iteration
+        # cap, a damping factor - so wrapping it would hand the arithmetic a quantity where it
+        # reads a float, and a composition vector would be a quantity of a list.
+        dimensional = bool(unit) and unit != "dimensionless"
+        if dimensional and isinstance(value, (int, float)):
+            out[name] = from_si(float(value), unit)
+        else:
+            out[name] = value
+    return out
+
+
+def _gibbs_reactor(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.gibbs_reactor`'s layers, from the solve the result was built from.
+
+    **The solver's own iterations are the interior**, and the capture prints them: the
+    reference's `min_iterations` is a floor that bites, so three of the capture's rows stop at
+    exactly a hundred and a dump that reported the *convergence* rather than the count would
+    agree with the answer and say nothing about the path. `converged` is deliberately not
+    dumped: the capture writes it as `true`, which is not a number, and the iterations and the
+    final error are what the comparison can hold.
+    """
+    from azoth.process.reference.gibbs_reactor import _spec, gibbs_reactor
+
+    result = gibbs_reactor(**_as_inputs(_spec(), inputs))
+    return {
+        "iterations": float(result.iterations),
+        "final_error": float(result.final_error),
+        "product_T": result.product_t.to("K").magnitude,
+        # **`product_h` is deliberately not dumped**, and neither are the moles nor the
+        # composition. The
+        # capture's `product_z` is the outlet *stream's own flash*, which on these rows reports
+        # the feed - `specs/cases/process/gibbs_reactor.toml` says so and takes the class's
+        # `outlet_moles` instead - and the two libraries' enthalpies diverge by `5.4e-2` at
+        # 1000 K, measured and recorded there. A layer whose key the capture prints but this
+        # port does not answer the same way is a *divergence to record*, not one to dump: the
+        # comparison cannot be told to ignore it and would report it as a failure of the port.
+    }
+
+
+def _plug_flow_reactor(inputs: Mapping[str, Any]) -> dict[str, float]:
+    """`process.plug_flow_reactor`'s layers, from the march the result was built from.
+
+    **The answer is a profile**, and what a capture prints *about* it is the scalars beside
+    the table: the conversion, the pressure drop in the capture's own unit (bara), the outlet
+    temperature and the duty. The stations are the capture's own `profile` value - one
+    multi-line string - and a dump is numbers under the capture's key names, so they are not
+    split out here; the residence time is on the reference's `March` and on no result field,
+    so it is one of the keys the capture has and this dump does not.
+    """
+    from azoth.process.reference.plug_flow_reactor import _spec, plug_flow_reactor
+
+    result = plug_flow_reactor(**_as_inputs(_spec(), inputs))
+    return {
+        "conversion": float(result.conversion),
+        "pressure_drop_bar": result.pressure_drop.to("Pa").magnitude / 1.0e5,
+        "outlet_temperature_K": result.outlet_temperature.to("K").magnitude,
+        "heat_duty_W": result.heat_duty.to("W").magnitude,
+    }
+
+
 DUMPERS: dict[str, Dumper] = {
     "process.rate_based_packed_column": _rate_based_packed_column,
     "process.absorption_column": _absorption_column,
@@ -768,6 +845,8 @@ DUMPERS: dict[str, Dumper] = {
     "process.pump": _pump,
     "process.splitter": _splitter,
     "process.mixer": _mixer,
+    "process.gibbs_reactor": _gibbs_reactor,
+    "process.plug_flow_reactor": _plug_flow_reactor,
     "process.compressor": _compressor,
     "process.heat_exchanger": _heat_exchanger,
     "process.shortcut_distillation_column": _shortcut_distillation_column,
@@ -1474,6 +1553,69 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=6,
         identified_by=(LABEL_KEY, "reference_pin_cold_320"),
     ),
+    # **The two reactors a total said nothing about.** The plug-flow reactor's `March` says
+    # "which `layers` dumps" in its own docstring, and nothing did: the model was ported with
+    # its instrument promised and unwritten, and the Gibbs reactor beside it. The captures
+    # existed the whole time - `process_plug_flow_reactor.tsv` and `process_gibbs_reactor.tsv`
+    # - so what was missing was a dumper and not an oracle, and each case below is the probe
+    # row whose settings its inputs are.
+    LayerCase(
+        model="process.plug_flow_reactor",
+        case="hundred_steps",
+        capture="process_plug_flow_reactor.tsv",
+        block=0,
+        identified_by=(LABEL_KEY, "rk4_default"),
+        diagnostic=(("heat_duty_W", 1.0),),
+    ),
+    LayerCase(
+        model="process.plug_flow_reactor",
+        case="isothermal",
+        capture="process_plug_flow_reactor.tsv",
+        block=4,
+        identified_by=(LABEL_KEY, "isothermal_rk4"),
+        diagnostic=(("heat_duty_W", 1.0),),
+    ),
+    LayerCase(
+        model="process.plug_flow_reactor",
+        case="catalyst_bed",
+        capture="process_plug_flow_reactor.tsv",
+        block=5,
+        identified_by=(LABEL_KEY, "bed_rk4"),
+        diagnostic=(("heat_duty_W", 1.0),),
+    ),
+    LayerCase(
+        model="process.plug_flow_reactor",
+        case="frozen_ten_steps",
+        capture="process_plug_flow_reactor.tsv",
+        block=7,
+        identified_by=(LABEL_KEY, "rk4_ten_steps"),
+        # **The duty is zero by construction on this row** - the case is adiabatic and the
+        # probe's own `heat_duty_W` is `0.0` - so a ratio has nothing to divide. A bound of
+        # 1 W on a duty of order 10 kW says "both are zero" rather than loosening the case.
+        diagnostic=(("heat_duty_W", 1.0),),
+    ),
+    LayerCase(
+        model="process.plug_flow_reactor",
+        case="euler_ten_steps",
+        capture="process_plug_flow_reactor.tsv",
+        block=8,
+        identified_by=(LABEL_KEY, "euler_ten_steps"),
+        diagnostic=(("heat_duty_W", 1.0),),
+    ),
+    LayerCase(
+        model="process.gibbs_reactor",
+        case="reverse_water_gas_shift_at_1000_k",
+        capture="process_gibbs_reactor.tsv",
+        block=6,
+        identified_by=(LABEL_KEY, "rwgs_1000k"),
+    ),
+    LayerCase(
+        model="process.gibbs_reactor",
+        case="reverse_water_gas_shift_at_1200_k",
+        capture="process_gibbs_reactor.tsv",
+        block=5,
+        identified_by=(LABEL_KEY, "rwgs_1200k"),
+    ),
 )
 
 #: Probe rows that are **deliberately not cases**, per capture, by the count they take.
@@ -1485,6 +1627,16 @@ LAYER_CASES: tuple[LayerCase, ...] = (
 #: held to the `reference_pin_*` rows instead. Counting them here rather than leaving the
 #: block count open keeps the check exact: a probe row added without a case still fails.
 UNCASED_ROWS: dict[str, int] = {
+    # The plug-flow reactor's five: the probe swept ten states and the model declares five
+    # cases, so the five left over are the probe's own sweep - its Euler default, its coarse
+    # and every-step marches, its half-activity bed and its concentration probe - kept as
+    # evidence for what the step count, the refresh frequency and the bed move.
+    "process_plug_flow_reactor.tsv": 5,
+    # And the Gibbs reactor's six: the probe ran eight states and the model two, and the six
+    # between them are the methane/oxygen and ammonia rows, which `specs/cases/process/
+    # gibbs_reactor.toml` says cannot be cases at all - "a feed whose products settle at
+    # `1e-15` and `1e-7`" cannot be asserted relatively.
+    "process_gibbs_reactor.tsv": 6,
     # The rate-based column's seven. `_srk` is the class's own state on the cubic its test file
     # uses, kept beside the PR row that the port is held to so the pair measures what the cubic
     # moved; the two TEG rows are `SystemSrkCPAstatoil` with mixing rule 10, which PR cannot
@@ -1740,15 +1892,25 @@ def capture_blocks(capture: str) -> list[dict[str, str]]:
     blocks: list[dict[str, str]] = []
     for chunk in text.strip().split("\n\n"):
         rows: dict[str, str] = {}
+        #: The key the last `key=value` line opened, so a line without one can continue it.
+        opened: str | None = None
         for line in chunk.strip().splitlines():
             line = line.strip()
             if not line:
                 continue
             if "=" in line:
                 key, _, value = line.partition("=")
-                rows[key.strip()] = value.strip()
-            else:
+                opened = key.strip()
+                rows[opened] = value.strip()
+            elif opened is None:
                 rows[LABEL_KEY] = line
+            else:
+                # **A line with no key continues the one above it.** A probe that prints a
+                # profile prints `profile=` and then the table under it, and a table's rows
+                # have no `=` in them: read as labels they overwrite the block's own name,
+                # which is how the plug-flow capture identified itself as
+                # `5.000000,733.4597,...` - a row of numbers - rather than by its case.
+                rows[opened] = f"{rows[opened]}\n{line}"
         if rows:
             blocks.append(rows)
     return blocks
