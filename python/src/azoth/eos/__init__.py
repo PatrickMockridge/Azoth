@@ -3145,8 +3145,8 @@ def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
     to one is a mistake, and silently correcting it would make it invisible in every
     number downstream.
 
-    **Read ``phase``, not ``vapour_fraction``.** ``vapour_fraction`` is ``None`` where there is no vapour
-    fraction to report, which is one of two things: the feed has no two-phase
+    **Read ``phase``, not ``vapour_fraction``.** ``vapour_fraction`` is ``None`` where there is
+    no vapour fraction to report, which is one of two things: the feed has no two-phase
     solution at all (every K-value on the same side of one, and the result says
     ``all_liquid`` or ``all_vapour``), or the iteration converged to ``x = y = z``
     and the model cannot tell which single phase the feed is (``TRIVIAL``). A

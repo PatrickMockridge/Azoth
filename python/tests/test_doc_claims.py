@@ -523,6 +523,7 @@ def test_the_shipped_tree_passes(monkeypatch: pytest.MonkeyPatch) -> None:
 
 # --- the port's sources ------------------------------------------------------
 
+
 #: A spec of the shape the source sweep reads: an id and a `[source]` block.
 def a_spec(name: str, source: str) -> str:
     return f"specs/models/eos/{name}.toml\nid = 'eos.{name}'\n[source]\n{source}\n"

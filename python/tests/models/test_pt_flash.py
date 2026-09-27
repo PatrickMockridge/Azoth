@@ -353,11 +353,13 @@ def test_the_phase_label_and_the_vapour_fraction_agree() -> None:
                     f"{where}: a split with no vapour fraction"
                 )
                 assert 0.0 <= result.vapour_fraction <= 1.0, (
-                    f"{where}: `two_phase` with beta = {result.vapour_fraction}, which is not a "
+                    f"{where}: `two_phase` with vapour_fraction = {result.vapour_fraction}, "
                     f"split and not a number a caller can use as one"
                 )
             elif result.phase is Phase.TRIVIAL:
-                assert result.vapour_fraction is None, f"{where}: a trivial solution with a beta"
+                assert result.vapour_fraction is None, (
+                    f"{where}: a trivial solution carries a vapour_fraction"
+                )
 
     assert seen == set(Phase), f"the sweep reached only {seen}, so it proved little"
 

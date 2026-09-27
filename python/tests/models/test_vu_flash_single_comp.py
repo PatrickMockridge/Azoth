@@ -57,7 +57,9 @@ def test_the_split_is_the_fraction_of_the_span_the_energy_is() -> None:
 
     for fraction in (0.1, 0.25, 0.5, 0.75, 0.9):
         result = at(u_liq + fraction * span)
-        h.assert_close(result.vapour_fraction, fraction, 1e-5, f"the split at {fraction} of the span")
+        h.assert_close(
+            result.vapour_fraction, fraction, 1e-5, f"the split at {fraction} of the span"
+        )
         assert result.phase is Phase.TWO_PHASE
 
 

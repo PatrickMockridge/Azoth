@@ -291,9 +291,7 @@ def test_the_two_units_libraries_agree_on_every_affine_conversion() -> None:
     affine = _extension().unit_affine_si
     for unit in display_units():
         for value in (1.0, 30.0):
-            expected = float(
-                ureg.Quantity(value, unit["pint"]).to_base_units().magnitude
-            )
+            expected = float(ureg.Quantity(value, unit["pint"]).to_base_units().magnitude)
             got = affine(unit["id"], value)
             assert got is not None, f"{unit['id']}: the Rust vocabulary has no conversion for it"
             assert got == pytest.approx(expected, rel=1.0e-15), (
