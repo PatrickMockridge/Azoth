@@ -144,6 +144,7 @@ ignore = [
 exclude = [
   "python/src/azoth/_registry_gen.py",
   "python/src/azoth/_models_gen.py",
+  "python/src/azoth/_provenance_gen.py",
   "python/src/azoth/core/_units_gen.py",
 ]
 
@@ -156,6 +157,10 @@ exclude = [
 # test_registry_contract.py, not by a linter.
 "python/src/azoth/_registry_gen.py" = ["E501"]
 "python/src/azoth/_models_gen.py" = ["E501"]
+# The same arrangement: hashes and paths are repr()s of the tree, so their line
+# length is the tree's rather than the generator's, and the file's correctness is
+# asserted by the tests that recompute every hash rather than by a linter.
+"python/src/azoth/_provenance_gen.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
