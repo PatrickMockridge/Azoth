@@ -51,6 +51,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `n_butane_at_250_k_and_1_bar` | components = ['n-butane'], T = 250.0, P = 100000.0, z = [1.0] | k = 0.11961650179494385 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Friend, D. G.; Ely, J. F.; Ingham, H. (1989). "Thermophysical properties of methane." J. Phys. Chem. Ref. Data 18(2), 583-638. DOI 10.1063/1.555828.

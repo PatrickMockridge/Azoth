@@ -83,6 +83,16 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `methane_butane_two_phase_against_neqsim` | components = ['methane', 'n-butane'], T = 250.0, P = 3000000.0, z = [0.6, 0.4] | vapour_fraction = 0.5358099100649695, x = [0.1631945070550116, 0.8368054929449847], y = [0.9784192439248908, 0.021580756075112423], k = [5.995400724282181, 0.025789345710502048], z_liquid = 0.12428945085670298, z_vapour = 0.8971134509509505, phase = two_phase |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 1 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). "Accurate statistical associating fluid theory for chain molecules formed from Mie segments." The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786

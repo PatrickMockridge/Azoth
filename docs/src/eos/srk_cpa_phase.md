@@ -57,6 +57,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `water_methanol_liquid_against_neqsim` | components = ['water', 'methanol'], T = 300.0, P = 10000000.0, z = [0.6, 0.4], compressed_phase = liquid | z_factor = 0.105050962879418, ln_phi = [-8.02010646183615, -6.14028423012298] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 1 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). "An Equation of State for Associating Fluids." Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203

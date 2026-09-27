@@ -56,6 +56,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `superheated_vapour_0_1_mpa` | T = 400.0, P = 100000.0 | z_factor = 0.9892213858361777, u = 45898.9212613165, h = 49188.88170650791, s = 135.157852743207, cv = 27.17571680600745, cp = 36.17575750369828, g = -4874.259390774879 |
 | `superheated_vapour_10_mpa` | T = 600.0, P = 10000000.0 | z_factor = 0.7255997212984295, u = 47180.15827766464, h = 50799.96636556177, s = 104.0450172030427, cv = 47.30749121738625, cp = 92.6111035134201, g = -11627.04395626384 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Wagner, W.; Kretzschmar, H.-J. (2008). "International Steam Tables: Properties of Water and Steam Based on the Industrial Formulation IAPWS-IF97." Springer, 2nd edition.

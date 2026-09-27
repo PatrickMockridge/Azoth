@@ -62,6 +62,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methane_butane_propane_at_350_k` | Tc = [190.56, 425.12, 369.83], Vc = [9.9e-05, 0.000255, 0.000203], M = [0.016043, 0.058123, 0.044097], omega = [0.0115, 0.2002, 0.1523], dipole = [0.0, 0.0, 0.0], kappa = [0.0, 0.0, 0.0], T = 350.0, V = 0.0017565092156106297, z = [0.5, 0.3, 0.2] | mu = 1.0826970028242582e-05 |
 | `methane_rich_propane_at_300_k` | Tc = [190.56, 369.83], Vc = [9.9e-05, 0.000203], M = [0.016043, 0.044097], omega = [0.0115, 0.1523], dipole = [0.0, 0.0], kappa = [0.0, 0.0], T = 300.0, V = 0.0023956252115606555, z = [0.8, 0.2] | mu = 1.0447753047985489e-05 |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 3 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Wilke, C. R. (1950). "A viscosity equation for gas mixtures." Journal of Chemical Physics 18(4), 517-519. DOI 10.1063/1.1747673.

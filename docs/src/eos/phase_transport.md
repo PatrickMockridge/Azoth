@@ -71,6 +71,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `co2_water_313k_50bar_gas` | components = ['CO2', 'water'], phase = gas, T = 313.15, P = 5000000.0, z = [0.9978562046113857, 0.002143795388614308] | mu = 1.8462596972222117e-05, k = 0.024804749452710006 |
 | `co2_water_313k_50bar_aqueous` | components = ['CO2', 'water'], phase = aqueous, T = 313.15, P = 5000000.0, z = [0.0006691762234084198, 0.9993308237765915] | mu = 0.0006526078179332641, k = 0.6344057039895419 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 6 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `physicalproperties/system/PhysicalProperties.java` and its per-phase subclasses are the port source; the correlations behind them are the ids named in the assumptions.

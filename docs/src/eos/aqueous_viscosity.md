@@ -58,6 +58,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methanol_at_300_k_and_5_bar` | components = ['methanol'], T = 300.0, P = 500000.0, z = [1.0] | viscosity = 0.0004955318590786208 |
 | `teg_at_300_k_and_5_bar` | components = ['TEG'], T = 300.0, P = 500000.0, z = [1.0] | viscosity = 0.03461914543810686 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 7 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `liquidphysicalproperties/WaterPhysicalProperties.java` is the phase class and `liquidphysicalproperties/viscosity/Viscosity.java` the correlation, through `calcViscosity`.

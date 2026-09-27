@@ -84,6 +84,16 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `methane_butane_from_1_bar` | components = ['methane', 'n-butane'], z = [0.5, 0.5], P = 100000.0 | critical_temperature = 374.10816823385227, critical_pressure = 9847254.291361708, cricondenbar_temperature = 338.1730734329673, cricondenbar_pressure = 10991724.974149518, cricondentherm_temperature = 384.01825099724374, cricondentherm_pressure = 7700036.838731829, iterations = 62 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L. (1980). "Calculation of phase envelopes and critical points for multicomponent mixtures." Fluid Phase Equilibria 4(1-2), 1-10. DOI 10.1016/0378-3812(80)80001-8.

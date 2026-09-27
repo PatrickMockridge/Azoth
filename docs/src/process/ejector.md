@@ -79,6 +79,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_higher_discharge_pressure_recovers_more` | motive_components = ['methane', 'n-butane'], motive_n = 1.0, motive_z = [0.9, 0.1], motive_p = 3000000.0, motive_t = 400.0, suction_components = ['methane', 'n-butane'], suction_n = 0.5, suction_z = [0.9, 0.1], suction_p = 500000.0, suction_t = 300.0, discharge_pressure = 1400000.0, motive_nozzle_efficiency = 0.75, suction_nozzle_efficiency = 0.9, mixing_efficiency = 0.85, diffuser_efficiency = 0.8 | outlet_n = 1.5, outlet_z = [0.9, 0.10000000000000002], outlet_p = 1400000.0, outlet_t = 358.3237392844819, outlet_h = 3403.07504324092 |
 | `a_heavier_suction_discharges_cooler` | motive_components = ['methane', 'n-butane'], motive_n = 1.0, motive_z = [0.5, 0.5], motive_p = 3000000.0, motive_t = 400.0, suction_components = ['methane', 'n-butane'], suction_n = 0.5, suction_z = [0.5, 0.5], suction_p = 500000.0, suction_t = 300.0, discharge_pressure = 1000000.0, motive_nozzle_efficiency = 0.75, suction_nozzle_efficiency = 0.9, mixing_efficiency = 0.85, diffuser_efficiency = 0.8 | outlet_n = 1.5, outlet_z = [0.5, 0.5], outlet_p = 1000000.0, outlet_t = 356.90811887938446, outlet_h = 5223.362705020146 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/ejector/Ejector.java` is the port source, through its `run`.

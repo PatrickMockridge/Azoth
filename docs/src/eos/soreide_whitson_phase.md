@@ -61,6 +61,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_shipped_tests_aqueous_phase_at_318_k` | components = ['nitrogen', 'CO2', 'methane', 'ethane', 'water'], T = 318.15, P = 4000000.0, x = [4.43466786008e-05, 0.00207206064762, 0.000126652518641, 0.00012950695283, 0.997627433202], salinity = 0.0, compressed_phase = liquid | z_factor = 0.0325913627959958, ln_phi = [7.87077912257, 4.51720999562, 7.81676630214, 7.60034898607, -6.03211618573] |
 | `a_condensate_at_333_k` | components = ['CO2', 'methane', 'n-butane', 'n-heptane', 'water'], T = 333.15, P = 10000000.0, x = [0.185665176862, 0.68097815081, 0.039866374583, 0.0188443410379, 0.074645956707], salinity = 0.0, compressed_phase = vapour | z_factor = 0.7690830488152696, ln_phi = [-0.344901510120477, -0.08858361432369372, -1.287720027792928, -2.053384039061119, -0.5779054139995432] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Soreide, I.; Whitson, C. H. (1992). "Peng-Robinson predictions for hydrocarbons, CO2, N2, and H2S with pure water and NaCl brine." Fluid Phase Equilibria 77, 217-240.

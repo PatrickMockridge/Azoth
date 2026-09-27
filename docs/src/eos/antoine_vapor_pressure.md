@@ -118,6 +118,17 @@ Methane's coefficients, A = 5.23243, B = 891.0098, C = 332.0975, D = 0, E = 0, w
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 5 declared, every one run
+- External check: 5 external validation cases name it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.antoine_vapor_pressure`

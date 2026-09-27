@@ -92,6 +92,16 @@ not an equation, and both implementations read it from here.
 | `the_state_pt_flash_settles_on` | components = ['methane', 'n-butane'], P = 2500000.0, vapour_fraction = 0.8422055475803881, temperature = 330.0, z = [0.6, 0.4] | T = 330.0 |
 | `a_second_state` | components = ['methane', 'propane', 'n-butane'], P = 5000000.0, vapour_fraction = 0.993505628186177, temperature = 350.0, z = [0.5, 0.3, 0.2] | T = 350.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L.; Mollerup, J. M. (2004). "Thermodynamic Models: Fundamentals and Computational Aspects." Tie-Line Publications.

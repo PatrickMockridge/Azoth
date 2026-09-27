@@ -70,6 +70,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_heat_input_moves_the_flash` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, heat_input = 1000.0, gas_in_liquid = 0.0 | vapour_n = 0.8544688027651463, vapour_z = [0.8035773316657293, 0.19642266833427077], vapour_p = 2000000.0, vapour_t = 305.9744979880211, vapour_h = 821.1818312940813, liquid_n = 0.14553119723485375, liquid_z = [0.09185823889567003, 0.90814176110433], liquid_p = 2000000.0, liquid_t = 305.9744979880211, liquid_h = -16539.564427297686 |
 | `entrainment_carries_vapour_into_the_liquid` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.05 | vapour_n = 0.7773101311100368, vapour_z = [0.8339243334525452, 0.16607566654745468], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.1529163915928, liquid_n = 0.22268986888996328, liquid_z = [0.23253041230060956, 0.7674695876993904], liquid_p = 2000000.0, liquid_t = 300.0, liquid_h = -13999.027492525918 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/Separator.java` is the port source, through its `run`.

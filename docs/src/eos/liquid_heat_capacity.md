@@ -94,6 +94,17 @@ Water, c0 = 276370, c1 = -2090.1, c2 = 8.125, c3 = -0.014116, c4 = 9.37e-6, at T
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 3 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.liquid_heat_capacity`

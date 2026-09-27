@@ -52,6 +52,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `n_butane_at_250_k_and_1_bar` | components = ['n-butane'], T = 250.0, P = 100000.0, z = [1.0] | mu = 0.00027260541411752915 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Pedersen, K. S.; Fredenslund, A.; Christensen, P. L.; Thomassen, P. (1984). "Viscosity of crude oils." Chem. Eng. Sci. 39(6), 1011-1016. DOI 10.1016/0009-2509(84)87009-8.

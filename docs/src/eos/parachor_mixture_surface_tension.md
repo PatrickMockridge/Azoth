@@ -67,6 +67,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `co2_water_gas_aqueous` | parachors = [78.0, 52.8786226], rho_gas = 113.27066791939949, M_gas = 0.04395427203887297, x_gas = [0.9978562046113857, 0.002143795388614308], rho_liquid = 988.9287133030801, M_liquid = 0.018032395235927503, x_liquid = [0.0006691762234084198, 0.9993308237765915] | sigma = 0.053145026912194734 |
 | `methane_water_gas_aqueous` | parachors = [77.3, 52.8786226], rho_gas = 34.86438099173673, M_gas = 0.016044320517662743, x_gas = [0.9993303662967818, 0.0006696337032181434], rho_liquid = 1000.9892088811749, M_liquid = 0.018014999423996814, x_liquid = [2.92090864962477e-07, 0.9999997079091351] | sigma = 0.058892233350760124 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `physicalproperties/interfaceproperties/surfacetension/ParachorSurfaceTension.java` is the port source, through `InterfaceProperties.getSurfaceTension`.

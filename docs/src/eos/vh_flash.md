@@ -89,6 +89,16 @@ not an equation, and both implementations read it from here.
 | `two_phase_round_trip` | components = ['methane', 'n-butane'], V = 0.0008190137837514, H = -367.869594652, z = [0.6, 0.4] | P = 2500000.0, T = 330.0 |
 | `subcooled_liquid_round_trip` | components = ['methane', 'n-butane'], V = 0.0002650925925539, H = -6905.393577389, z = [0.6, 0.4] | P = 5000000.0, T = 300.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L.; Mollerup, J. M. (2004). Thermodynamic Models: Fundamentals and Computational Aspects. Tie-Line Publications.

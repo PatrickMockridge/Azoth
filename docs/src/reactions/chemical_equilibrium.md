@@ -81,6 +81,16 @@ not an equation, and both implementations read it from here.
 | `co2_h2s_water_does_not_converge` | a_matrix = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 2.0, 2.0, 1.0, 1.0, 3.0, 1.0, 0.0, 0.0], [2.0, 0.0, 1.0, 0.0, 1.0, 1.0, 3.0, 0.0, 3.0], [0.0, 0.0, 0.0, -1.0, -1.0, 1.0, -1.0, -2.0, -2.0]], b = [0.0100000002, 0.0100000002, 20.020000000599993, 10.0200000008, 0.0], whole_system = False, moles = [0.01, 0.01, 10.0, 1e-10, 1e-10, 1e-10, 1e-10, 1e-10, 1e-10], chem_ref = [-54.799675618630715, -6.095027215259875, 34.71668301316976, 8.47902384579385, 29.168005792406905, 80.53072046786522, -51.26333965244762, 5.860693250061994, -62.360694093973336], log_activity = [-1.3721072326782651e-05, -8.614131123395666e-06, 1.115629776754501e-08, 2.3715913856170966e-05, 1.7155360115678198e-05, -4.8482080576093406e-05, 1.7155360115678198e-05, 2.3715913856170966e-05, -2.9401819753305247e-06], T = 298.15, max_iterations = 100, tolerance = 1e-08, concentration_basis = mole_fraction, solvent_weight = 0.18015, solvent_mask = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], phase_moles = 10.0200000006 | iterations = 12.0, error = 117.07787931775188 |
 | `pitzer_solute_molality_basis` | a_matrix = [[0.0, 1.0, 0.0, 0.0, 1.0, 1.0], [2.0, 0.0, 1.0, 3.0, 1.0, 0.0], [1.0, 2.0, 1.0, 1.0, 3.0, 3.0], [0.0, 0.0, -1.0, 1.0, -1.0, -2.0]], b = [0.0100000002, 20.000000000499995, 10.0200000008, 0.0], whole_system = False, moles = [10.0, 0.01, 1e-10, 1e-10, 1e-10, 1e-10], chem_ref = [23.78310085986042, -32.940389825685756, 15.342032518644482, 64.44833840215271, -35.196714614082545, -52.078851296514415], log_activity = [0.000999500333044967, 0.0009995003630436372, -3.226015236634794e-05, -3.224423338465954e-05, -3.226015236634794e-05, -5.063766380430934e-05], T = 298.15, max_iterations = 100, tolerance = 1e-08, concentration_basis = solute_molality, solvent_weight = 0.18015, solvent_mask = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], phase_moles = 10.0100000004 | moles = [9.999942607753312, 0.00997130374295162, 1.178699719153167e-11, 2.8696177848112205e-05, 2.8696448124304545e-05, 8.968048550413358e-12], iterations = 14.0, error = 4.883971308947797e-10 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalEquilibrium` is the port source: `chemSolve`, `solve` and `step`.

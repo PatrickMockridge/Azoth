@@ -56,6 +56,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `n_butane_nc12_equimolar_at_298_15_k` | components = ['n-butane', 'nc12'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.19314718055973779, 0.49999935609153545], gamma = [1.213061319425015, 1.648720209074888] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 1 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Coutinho, J. A. P.; Andersen, S. I.; Stenby, E. H. (1995). "Evaluation of activity coefficient models in prediction of alkane solid-liquid equilibria." Fluid Phase Equilibria 103, 23-39.

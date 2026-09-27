@@ -83,6 +83,16 @@ not an equation, and both implementations read it from here.
 | `methane_butane_two_phase_at_360_k_40_bar` | components = ['methane', 'n-butane'], T = 360.0, P = 4000000.0, z = [0.5, 0.5] | phase_count = 2, seeded = two_phase_flash, phase_fractions = [0.8139457129518551, 0.18605428704814486], z_factor = [0.7784548921212494, 0.15404179516968172] |
 | `methane_butane_two_phase_at_250_k_50_bar` | components = ['methane', 'n-butane'], T = 250.0, P = 5000000.0, z = [0.5, 0.5] | phase_count = 2, seeded = two_phase_flash, phase_fractions = [0.21848944858961394, 0.7815105514103861], z_factor = [0.7871775377076164, 0.1786351934671386] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 7 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L. (1982). "The isothermal flash problem. Part I. Stability." Fluid Phase Equilibria 9(1), 1-19. The tangent-plane criterion the seeding rests on.

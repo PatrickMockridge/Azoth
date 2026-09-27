@@ -72,6 +72,16 @@ not an equation, and both implementations read it from here.
 | `well_above_the_triple_point` | components = ['para-hydrogen'], solid = para-hydrogen, z = [1.0], P = 1876432.785899884 | temperature = 14.3982923022496 |
 | `the_lng_feed_neqsims_own_test_builds` | components = ['CO2', 'nitrogen', 'methane', 'ethane', 'propane'], solid = CO2, z = [0.0894843679470231, 0.579634022102985, 0.170546677734326, 0.144227745985202, 0.0161071862304642], P = 500000.0 | temperature = 184.710072436643, component = CO2 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009). "Fundamental Equations of State for Parahydrogen, Normal Hydrogen, and Orthohydrogen." Journal of Physical and Chemical Reference Data 38(3), 721-748.

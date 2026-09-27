@@ -69,6 +69,16 @@ not an equation, and both implementations read it from here.
 | `gas_at_1_bar` | T = 300.0, P = 100000.0, compressed_phase = vapour | z_factor = 1.000584534646334, u = 5483.632550699886, h = 7979.443586448574, s = 107.8880264448619, cv = 20.53458433576209, cp = 28.85299070530393, g = -24386.96434700999 |
 | `gas_at_10_bar` | T = 100.0, P = 1000000.0, compressed_phase = vapour | z_factor = 0.9983759652275699, u = 1773.315295196198, h = 2603.415989860626, s = 59.74983629167724, cv = 14.32576936590632, cp = 23.20854934562025, g = -3371.567639307098 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Leachman, J. W.; Jacobsen, R. T.; Penoncello, S. G.; Lemmon, E. W. (2009). "Fundamental Equations of State for Parahydrogen, Normal Hydrogen, and Orthohydrogen." Journal of Physical and Chemical Reference Data 38(3), 721-748.

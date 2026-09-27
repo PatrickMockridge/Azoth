@@ -59,6 +59,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_same_drop_stated_as_a_delta` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 2000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2000000.0, outlet_t = 314.62348149495364, outlet_h = 1235.7579669275347 |
 | `a_pressure_above_the_inlet_is_honoured` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 4000000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 4000000.0, outlet_t = 325.0535827975854, outlet_h = 1235.7579658880618 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/valve/ThrottlingValve.java` is the port source, through its `run`.

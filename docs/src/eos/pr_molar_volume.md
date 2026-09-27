@@ -94,6 +94,17 @@ The propane-like state this namespace is built on: `eos.pr_alpha_ab`'s worked ex
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 5 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.pr_molar_volume`

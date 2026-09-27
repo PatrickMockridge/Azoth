@@ -59,6 +59,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `butane_5_to_20_bara_at_250_k` | components = ['n-butane'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 500000.0, inlet_t = 250.0, outlet_pressure = 2000000.0, isentropic_efficiency = 0.75 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 2000000.0, outlet_t = 250.76214168277508, outlet_h = -25382.694279985513 |
 | `the_work_divides_by_the_efficiency` | components = ['n-butane'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 500000.0, inlet_t = 250.0, outlet_pressure = 2000000.0, isentropic_efficiency = 1.0 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 2000000.0, outlet_t = 250.40558913594867, outlet_h = -25426.73406996356 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pump/Pump.java` is the port source, through its `run`.

@@ -68,6 +68,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `isothermal_800_k` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = True, reactor_temperature = 800.0, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 500000.0, product_t = 800.0, product_h = 16686.180909326755, heat_duty = 9824.941623206952 |
 | `isothermal_800_k_3bara` | components = ['methane', 'oxygen', 'CO2', 'water', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.02, 0.03, 0.8], feed_p = 500000.0, feed_t = 500.0, reaction = methanecombustion, limiting_reactant = oxygen, conversion = 0.5, isothermal = True, reactor_temperature = 800.0, reactor_pressure = 300000.0, pressure_drop = 0.0 | product_n = 1.0, product_z = [0.025, 0.05, 0.045, 0.08, 0.8], product_p = 300000.0, product_t = 800.0, product_h = 16685.47174570607, heat_duty = 9824.232459586266 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/StirredTankReactor.java` is the port source, through its `run`, and `StoichiometricReaction.java` is the reaction it applies.

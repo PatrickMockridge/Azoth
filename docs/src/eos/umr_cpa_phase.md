@@ -61,6 +61,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methane_water_umr_cpa_liquid` | components = ['methane', 'water'], T = 298.15, P = 7000000.0, z = [0.00138737483226154, 0.998612625167738], compressed_phase = liquid | z_factor = 0.0499704749585408, ln_phi = [6.43308581534347, -7.65091591105412] |
 | `methane_water_umr_cpa_flashed_gas` | components = ['methane', 'water'], T = 298.15, P = 7000000.0, z = [0.999387223488167, 0.000612776511832817], compressed_phase = vapour | z_factor = 0.865633455342091, ln_phi = [-0.146643147716477, -0.254793979654883] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 3 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Voutsas, E.; Magoulas, K.; Tassios, D. (2004). "Universal mixing rule for cubic equations of state applicable to symmetric and asymmetric systems: results and simple, predictive scheme for parameters." Industrial & Engineering Chemistry Research 43(19), 6238-6246.

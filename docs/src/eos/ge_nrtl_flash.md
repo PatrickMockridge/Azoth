@@ -87,6 +87,16 @@ not an equation, and both implementations read it from here.
 | `methanol_water_lean_at_353_k_1_bar` | components = ['methanol', 'water'], T = 353.0, P = 100000.0, z = [0.4, 0.6], eos = srk | vapour_fraction = 0.6463992350060533, x = [0.10245169349074107, 0.8975483065092589], y = [0.5627683064991684, 0.4372316935008316], k = [5.493011265355118, 0.4871400127770868], ln_phi_liquid = [1.688042232848783, -0.7293086162406686], ln_phi_vapour = [-0.015434372366168085, -0.010104919589718743], z_vapour = 0.986817566574521, phase = two_phase |
 | `ethanol_water_lean_at_360_k_1_bar` | components = ['ethanol', 'water'], T = 360.0, P = 100000.0, z = [0.3, 0.7], eos = srk | vapour_fraction = 0.2030182294468199, x = [0.25755537830618297, 0.742444621693817], y = [0.4666234103221714, 0.5333765896778285], k = [1.8117401134890976, 0.7184058906117206], ln_phi_liquid = [0.575275625342385, -0.33939370791304313], ln_phi_vapour = [-0.019012146765247262, -0.008673145511841318], z_vapour = 0.986420223948831, phase = two_phase |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Rachford, H. H.; Rice, J. D. (1952). "Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium." Journal of Petroleum Technology 4(10), 19-3. DOI 10.2118/952327-G

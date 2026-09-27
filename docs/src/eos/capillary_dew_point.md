@@ -78,6 +78,16 @@ not an equation, and both implementations read it from here.
 | `methane_butane_at_20_bar_non_wetting_at_60_degrees` | components = ['methane', 'n-butane'], P = 2000000.0, y = [0.5, 0.5], pore_radius = 1e-07, contact_angle = 1.0471975511965976, surface_tension = 0.005009379844 | temperature = 345.2648952977, capillary_pressure = 50093.798440000006 |
 | `methane_butane_at_20_bar_in_a_micron_pore` | components = ['methane', 'n-butane'], P = 2000000.0, y = [0.5, 0.5], pore_radius = 1e-06, contact_angle = 0.0, surface_tension = 0.005018886547 | temperature = 345.1663199089, capillary_pressure = 10037.773094 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Kelvin, W. T. (1871). "On the equilibrium of vapour at a curved surface of liquid." Philosophical Magazine 42(282), 448-452. The K-value shift this model applies.

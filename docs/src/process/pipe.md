@@ -67,6 +67,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `liquid_n_butane_1000m` | components = ['n-butane'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 2000000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 1999981.6572976355, outlet_t = 300.0, pressure_drop = 18.3427023645 |
 | `water_1000m` | components = ['water'], inlet_n = 1.0, inlet_z = [1.0], inlet_p = 500000.0, inlet_t = 300.0, length = 1000.0, diameter = 0.1, roughness = 1e-05 | outlet_n = 1.0, outlet_z = [1.0], outlet_p = 499992.6009196372, outlet_t = 300.0, pressure_drop = 7.399080362802124 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pipeline/AdiabaticPipe.java` is the port source, through its `run` and `calcPressureOut`.

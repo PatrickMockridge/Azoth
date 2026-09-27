@@ -59,6 +59,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `octane_decane_lean_at_350_k_1_bar` | components = ['n-octane', 'nc10'], T = 350.0, P = 100000.0, x = [0.4, 0.6] | gamma = [1.3244982894719637, 1.2690654430682413], ln_gamma = [0.28103373827725736, 0.23828075798428433], ln_phi = [-0.7223683220963804, -2.469267539112864], p_sat = [36663.00196112154, 6670.013533199678] |
 | `heptane_nonane_at_320_k_1_bar` | components = ['n-heptane', 'n-nonane'], T = 320.0, P = 100000.0, x = [0.6, 0.4] | gamma = [1.11569378278132, 1.6877976784227413], ln_gamma = [0.10947643811901124, 0.5234245302358307], ln_phi = [-1.2171489374520243, -2.6890676330028507], p_sat = [26537.12803675743, 4025.616322494449] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Wilson, G. M. (1964). "Vapor-Liquid Equilibrium. XI. A New Expression for the Excess Free Energy of Mixing." Journal of the American Chemical Society 86(2), 127-130.

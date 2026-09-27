@@ -64,6 +64,16 @@ not an equation, and both implementations read it from here.
 | `moderate` | T = 70.0, P = 1000000.0 | z_factor = 0.04115817758159705, u = -6703.43046951401, h = -6679.475900489107, s = 32.91467946537777, cv = 22.91388515385048, cp = 30.2861248758349, g = -8983.50346306555 |
 | `high_pressure_limit` | T = 300.0, P = 16000000000.0 | z_factor = 78.26334731174067, u = 33066.67782235993, h = 228281.9804972656, s = 29.83859635146606, cv = 24.14247552045469, cp = 24.85501023110843, g = 219330.4015918258 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Maltby, V.; Hammer, M.; Wilhelmsen, O. (2024). "Equation of State for Solid Argon." Journal of Physical and Chemical Reference Data 53(4), 043102.

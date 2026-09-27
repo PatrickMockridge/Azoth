@@ -95,6 +95,17 @@ Propane-like, omega = 0.152, Tc = 369.83 K, Pc = 4.248e6 Pa: Z_RA = 0.29056 - 0.
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 3 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.srk_peneloux_shift`

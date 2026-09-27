@@ -105,6 +105,17 @@ methane, Cv0 = 27.544151394 J/(mol*K), M = 0.016043 kg/mol, omega = 0.0115, Tc =
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 4 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.chung_conductivity`

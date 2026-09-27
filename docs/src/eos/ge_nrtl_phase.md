@@ -65,6 +65,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methanol_water_equimolar_at_298_15_k_1_bar` | components = ['methanol', 'water'], T = 298.15, P = 100000.0, x = [0.5, 0.5] | gamma = [1.2331788561677834, 1.5262904213232393], ln_gamma = [0.2095952713815616, 0.42284023016955086], ln_phi = [-1.5658530965838922, -3.0258410151978015], p_sat = [16940.747558344778, 3178.7528699883305] |
 | `ethanol_water_equimolar_at_350_k_1_bar` | components = ['ethanol', 'water'], T = 350.0, P = 100000.0, x = [0.5, 0.5] | gamma = [1.0061354062518342, 1.2908387491361855], ln_gamma = [0.006116661279835519, 0.2552922002184329], ln_phi = [-0.0368209604820562, -0.6216821329673664], p_sat = [95797.11447554835, 41603.98070870418] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Renon, H.; Prausnitz, J. M. (1968). "Local compositions in thermodynamic excess functions for liquid mixtures." AIChE Journal 14(1), 135-144.

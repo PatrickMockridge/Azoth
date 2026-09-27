@@ -67,6 +67,16 @@ not an equation, and both implementations read it from here.
 | `propane_at_300_k` | components = ['propane'], T = 300.0 | p_sat = 997905.585109325 |
 | `carbon_dioxide_at_280_k` | components = ['co2'], T = 280.0 | p_sat = 4150449.601020932 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Peng, D. Y.; Robinson, D. B. (1976). "A New Two-Constant Equation of State." Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.

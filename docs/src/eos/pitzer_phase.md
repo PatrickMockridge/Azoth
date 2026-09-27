@@ -76,6 +76,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methane_in_water_at_one_atmosphere` | components = ['methane', 'water'], T = 298.15, P = 101325.0, x = [0.000999000999000999, 0.999000999000999] | gamma = [1.0, 1.0], ln_gamma = [0.0, 0.0], ln_phi = [10.571392848178034, -3.4618442318936333], henry = [711.2370654308118, 0.0], gamma_inf = [1.0, 1.0], molality = [0.055509297807382736, 55.50929780738274], ionic_strength = 0.0, osmotic_coefficient = 1.0, water_activity = 0.999000999000999, dataset = legacy |
 | `carbon_dioxide_in_water_at_one_atmosphere` | components = ['CO2', 'water'], T = 298.15, P = 101325.0, x = [0.047619047619047616, 0.9523809523809523] | gamma = [1.0, 1.0], ln_gamma = [0.0, 0.0], ln_phi = [7.9967552088819165, -3.4618442318936333], henry = [51.65450928785164, 0.0], gamma_inf = [1.0, 1.0], molality = [2.7754648903691366, 55.50929780738274], ionic_strength = 0.0, osmotic_coefficient = 1.0, water_activity = 0.9523809523809523, dataset = legacy |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 8 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Pitzer, K. S. (1991). "Activity Coefficients in Electrolyte Solutions", 2nd edition. CRC Press. The extended equations this ports are 8-2-8, 8-2-10 and 8-3-2.

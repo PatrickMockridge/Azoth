@@ -58,6 +58,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `co2_h2s_water_standard_at_298_15` | components = ['CO2', 'H2S', 'water', 'HS-', 'OH-', 'H3O+', 'HCO3-', 'S--', 'CO3--'], source = standard, T = 298.15 | potentials = [-135846.03262887645, -15109.3096192815, 86061.16003668531, 21019.134456794694, 72306.22849248124, 199632.18316177875, -127079.60827279043, 14528.405825181253, -154589.47136119858], independent = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0], rank = 5.0 |
 | `mdea_water_co2_takes_the_product_fallback` | components = ['MDEA', 'water', 'CO2', 'OH-', 'H3O+', 'HCO3-'], source = standard, T = 298.15 | potentials = [44289.36733828517, 86061.16003668531, -135846.03262887645, 72306.22849248124, 199632.18316177875, -127079.60827279043], independent = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0], survivors = [1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0], rank = 4.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionList` is the port source: `removeJunkReactions`, `removeDependentReactions` and `calcReferencePotentials`.

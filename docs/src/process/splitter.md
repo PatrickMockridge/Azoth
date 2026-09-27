@@ -58,6 +58,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_two_way_split_of_a_liquid` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [0.3, 0.7] | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001] |
 | `the_factors_are_normalised` | components = ['n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.6, 0.4], feed_p = 1000000.0, feed_t = 300.0, split_factors = [3.0, 7.0] | products_n = [0.3, 0.7], products_z = [[0.6, 0.4], [0.6, 0.4]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-20689.86284462001, -20689.86284462001] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/Splitter.java` is the port source, through its `run`.

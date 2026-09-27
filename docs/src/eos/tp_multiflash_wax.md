@@ -73,6 +73,16 @@ not an equation, and both implementations read it from here.
 | `the_names_feed_at_255_k` | components = ['methane', 'n-heptane', 'nc14', 'nc20'], eos = srk, T = 255.0, P = 500000.0, z = [0.7, 0.1, 0.1, 0.1] | wax_fraction = 0.132007556310333, phase_count = 3 |
 | `the_names_feed_at_245_k` | components = ['methane', 'n-heptane', 'nc14', 'nc20'], eos = srk, T = 245.0, P = 500000.0, z = [0.7, 0.1, 0.1, 0.1] | wax_fraction = 0.154193075421103, phase_count = 3 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 5 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Won, K. W. (1986). "Thermodynamics for solid solution-liquid-vapor equilibria: wax phase formation from heavy hydrocarbon mixtures." Fluid Phase Equilibria 30, 265-279. DOI 10.1016/0378-3812(86)80061-9.

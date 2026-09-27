@@ -134,6 +134,16 @@ not an equation, and both implementations read it from here.
 | `heat_transfer_disabled` | gas_components = ['methane', 'CO2'], gas_n = 14.744278187963598, gas_z = [0.9, 0.1], gas_p = 5000000.0, gas_t = 313.15, liquid_components = ['water', 'CO2'], liquid_n = 30.8384987818793, liquid_z = [1.0, 0.0], liquid_p = 5000000.0, liquid_t = 303.15, transfer_components = ['CO2'], column_diameter = 1.0, packed_height = 6.0, number_of_segments = 4, packing_type = Pall-Ring-50, max_iterations = 20, convergence_tolerance = 1e-09, mass_transfer_correction = 3.0, heat_transfer_model = none | segment_overall_heat_transfer_coefficient = [0.0, 0.0, 0.0, 0.0], segment_heat_transfer_rate = [0.0, 0.0, 0.0, 0.0] |
 | `zero_packed_height` | gas_components = ['methane', 'CO2'], gas_n = 14.744278187963598, gas_z = [0.9, 0.1], gas_p = 5000000.0, gas_t = 313.15, liquid_components = ['water', 'CO2'], liquid_n = 30.8384987818793, liquid_z = [1.0, 0.0], liquid_p = 5000000.0, liquid_t = 303.15, transfer_components = ['CO2'], column_diameter = 1.0, packed_height = 0.0, number_of_segments = 4, packing_type = Pall-Ring-50, max_iterations = 20, convergence_tolerance = 1e-09, mass_transfer_correction = 3.0 | iterations = 1, converged = True, total_absolute_molar_transfer = 0.0, segment_height_from_bottom = [0.0, 0.0, 0.0, 0.0], segment_heat_transfer_rate = [0.0, 0.0, 0.0, 0.0], segment_net_molar_transfer = [0.0, 0.0, 0.0, 0.0] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/RateBasedPackedColumn.java` is the port source; `internals/PackingHydraulicsCalculator.java` is the packing's, and `process.rate_based_packed_column` composes it through `hydraulics.packing_hydraulics`.

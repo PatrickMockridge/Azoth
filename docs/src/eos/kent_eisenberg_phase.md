@@ -56,6 +56,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `brine_at_298_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 298.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-5.058119157801453, 18.420680743952367, 18.420680743952367, 2.3351395840225817] |
 | `brine_at_373_k_and_5_bar` | components = ['water', 'Na+', 'Cl-', 'CO2'], T = 373.15, P = 500000.0, x = [0.89, 0.04, 0.04, 0.03] | gamma = [1.0, 1.0, 1.0, 1.0], ln_gamma = [0.0, 0.0, 0.0, 0.0], ln_phi = [-1.5990198338566504, 18.420680743952367, 18.420680743952367, 3.5581577891204947] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Kent, R. L. and Eisenberg, B. (1976). "Better data for amine treating." Hydrocarbon Processing 55(2), 87-90.

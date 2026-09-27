@@ -61,6 +61,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `methane_butane_vapour_against_neqsim` | components = ['methane', 'n-butane'], T = 350.0, P = 3000000.0, z = [0.6, 0.4], compressed_phase = vapour | v = 0.0008141097344315069, z_factor = 0.8392705810739511, ln_phi = [0.02297989515406737, -0.4210924858702312], h_res = -1487.2509968943298, s_res = -2.963464837211711 |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 1 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Gross, J.; Sadowski, G. (2001). "Perturbed-Chain SAFT: An Equation of State Based on a Perturbation Theory for Chain Molecules." Industrial & Engineering Chemistry Research 40(4), 1244-1260. DOI 10.1021/ie0003887

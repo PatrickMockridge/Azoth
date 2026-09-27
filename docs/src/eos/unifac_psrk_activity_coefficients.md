@@ -62,6 +62,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `water_methane_equimolar_at_250_k` | components = ['water', 'methane'], T = 250.0, x = [0.5, 0.5] | ln_gamma = [0.8381920105028207, 0.9674010863177143], gamma = [2.3121827932351917, 2.631097570496052] |
 | `water_methane_equimolar_at_400_k` | components = ['water', 'methane'], T = 400.0, x = [0.5, 0.5] | ln_gamma = [0.887381334379193, 0.8684378121136531], gamma = [2.4287612030473236, 2.3831849613326668] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Holderbaum, T.; Gmehling, J. (1991). "PSRK: A group contribution equation of state based on UNIFAC." Fluid Phase Equilibria 70(2-3), 251-265.

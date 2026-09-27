@@ -87,6 +87,16 @@ not an equation, and both implementations read it from here.
 | `a_subcooled_liquid_feed` | components = ['methane', 'n-butane'], T = 300.0, P = 3000000.0, z = [0.1, 0.9] | vapour_fraction = -0.07000432582249205, x = [0.15059398408339061, 0.8494060159166106], y = [0.8733205226073144, 0.12667947739270397], k = [5.799172708809655, 0.14913889826410245], ln_phi_liquid = [1.702063242525731, -2.413379883241813], ln_phi_vapour = [-0.05565202843993218, -0.5105026790902871], z_liquid = 0.11033733769989125, z_vapour = 0.8875314607526533, min_t_over_tc = 0.7056831012420023, iterations = 12 |
 | `water_methanol_cpa_at_356_k_and_1_bar` | components = ['water', 'methanol'], eos = srk, associating = True, T = 356.0, P = 100000.0, z = [0.6, 0.4] | vapour_fraction = 0.208383589004737, x = [0.674266566871552, 0.325733433128448], y = [0.317873017714004, 0.682126982285996], k = [0.4714352354611679, 2.094126401893144], ln_phi_liquid = [-0.789379766771299, 0.668790784130641], ln_phi_vapour = [-0.0374062219152301, -0.070345690341699], z_liquid = 0.000876327166634292, z_vapour = 0.941152554938007, min_t_over_tc = 0.5499768268190948, iterations = 12 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: 20 external validation cases name it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Rachford, H. H.; Rice, J. D. (1952). "Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium." Journal of Petroleum Technology 4(10), 19-3. DOI 10.2118/952327-G

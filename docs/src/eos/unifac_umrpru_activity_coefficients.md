@@ -65,6 +65,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methanol_water_umrmc_at_the_reference_temperature` | components = ['methanol', 'water'], parameters = umrmc, T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.12324232727606305, 0.1682814563408821], gamma = [1.131158498295627, 1.1832696025168774] |
 | `water_methane_umr_at_350_k` | components = ['water', 'methane'], parameters = umr, T = 350.0, x = [0.5, 0.5] | ln_gamma = [-0.11770245129283669, -1.015316464175723], gamma = [0.8889605223204923, 0.36228776059156376] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Voutsas, E.; Magoulas, K.; Tassios, D. (2004). "Universal mixing rule for cubic equations of state applicable to symmetric and asymmetric systems: results and simple, predictive scheme for parameters." Industrial & Engineering Chemistry Research 43(19), 6238-6246.

@@ -65,6 +65,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `an_even_routing_is_the_feed_twice` | components = ['methane', 'n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, split_factors = [0.5, 0.5, 0.5] | overhead_n = 0.5, overhead_z = [0.5, 0.3, 0.2], overhead_p = 2000000.0, overhead_t = 300.0, overhead_h = -8984.692382765697, bottoms_n = 0.5, bottoms_z = [0.5, 0.3, 0.2], bottoms_p = 2000000.0, bottoms_t = 300.0, bottoms_h = -8984.692382765697 |
 | `all_of_one_component` | components = ['methane', 'n-butane', 'n-pentane'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, split_factors = [1.0, 0.5, 0.0] | overhead_n = 0.65, overhead_z = [0.7692307692307692, 0.23076923076923075, 0.0], overhead_p = 2000000.0, overhead_t = 300.0, overhead_h = -1032.853638221404, bottoms_n = 0.35, bottoms_z = [0.0, 0.4285714285714286, 0.5714285714285715], bottoms_p = 2000000.0, bottoms_t = 300.0, bottoms_h = -21393.95295200862 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/splitter/ComponentSplitter.java` is the port source, through its `run`.

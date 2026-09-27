@@ -65,6 +65,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_equilibrium_split` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0 | vapour_n = 0.8182211906421439, vapour_z = [0.8339243334525452, 0.16607566654745468], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.1529163915932, liquid_n = 0.18177880935785606, liquid_z = [0.09718095876744991, 0.9028190412325501], liquid_p = 2000000.0, liquid_t = 300.0, liquid_h = -17268.958496924708 |
 | `a_pressure_drop_is_not_a_throttling` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 200000.0, gas_in_liquid = 0.0 | vapour_n = 0.8360536845155941, vapour_z = [0.8203430710096191, 0.1796569289903808], vapour_p = 1800000.0, vapour_t = 300.0, vapour_h = 594.757372548732, liquid_n = 0.16394631548440586, liquid_z = [0.08630357366533918, 0.9136964263346607], liquid_p = 1800000.0, liquid_t = 300.0, liquid_h = -17457.57964433711 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/GasScrubber.java`, whose steady state is `Separator.run`'s.

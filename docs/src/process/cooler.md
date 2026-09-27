@@ -68,6 +68,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `no_specification_is_isothermal` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 3000000.0, outlet_t = 320.0, outlet_h = 1235.7579663941092, outlet_duty = 0.0 |
 | `no_specification_with_a_drop_is_isothermal_and_not_isenthalpic` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, pressure_drop = 200000.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 2800000.0, outlet_t = 320.0, outlet_h = 1285.3807981097964, outlet_duty = 49.6228317156872 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 6 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Cooler.java`, which carries no steady-state `run` of its own, and `Heater.java`, whose `run` is what this reaches.

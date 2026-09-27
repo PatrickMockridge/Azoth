@@ -62,6 +62,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `sodium_chloride_at_313_k` | components = ['water', 'Na+', 'Cl-'], T = 313.15, P = 500000.0, x = [0.9, 0.05, 0.05] | gamma = [1.11111111111111, 0.302269779010361, 0.302269779010361], ln_gamma = [0.105360515657826, -1.19643535238806, -1.19643535238806], molality = [55.509297807382744, 3.08384987818793, 3.08384987818793], ionic_strength = 3.08384987818793, solvent_molar_mass = 0.018015, ln_phi = [-4.1038894569859705, -34.538776394910684, -34.538776394910684] |
 | `water_methanol_sodium_chloride_at_313_k` | components = ['water', 'methanol', 'Na+', 'Cl-'], T = 313.15, P = 500000.0, x = [0.85, 0.05, 0.05, 0.05] | gamma = [1.11111111111111, 1.11111111111111, 0.307561742004006, 0.307561742004006], ln_gamma = [0.105360515657826, 0.105360515657826, -1.17907942488568, -1.17907942488568], molality = [50.251701906904295, 2.9559824651120175, 2.9559824651120175, 2.9559824651120175], ionic_strength = 2.9559824651120175, solvent_molar_mass = 0.018794277777777774, ln_phi = [-4.1038894569859705, -2.5413181254443002, -34.538776394910684, -34.538776394910684] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Deshmukh, R. D. and Mather, A. E. (1981). "A mathematical model for equilibrium solubility of hydrogen sulfide and carbon dioxide in aqueous alkanolamine solutions." Chemical Engineering Science 36(2), 355-362.

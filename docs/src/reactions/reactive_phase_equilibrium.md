@@ -96,6 +96,16 @@ not an equation, and both implementations read it from here.
 | `bicarbonate_brine_carries_its_spectator_charge` | concentration_basis = mole_fraction, source = standard, seed = none, phase = aqueous, components = ['CO2', 'water', 'HCO3-', 'CO3--', 'OH-', 'H3O+'], moles = [0.0001355791821408818, 9.999762521408506, 0.01997989768435248, 1.0295648328160809e-13, 1.7001418398616546e-08, 3.111766580692449e-08], whole_system = False, phase_charge = 1.3138935581800328e-08, phase_moles = 10.039857943101433, log_activity = [0.035523536890543994, 3.686576278028042e-06, -0.001870113251873029, 0.04431928501758531, 0.04451635300816914, -0.07984441634095774], T = 298.15, max_iterations = 100, tolerance = 1e-08 | a_matrix = [[1.0, 0.0, 1.0, 1.0, 0.0, 0.0], [0.0, 2.0, 1.0, 0.0, 1.0, 3.0], [2.0, 1.0, 3.0, 3.0, 1.0, 1.0], [0.0, 0.0, -1.0, -2.0, -1.0, 1.0]], b = [0.020115476866617132, 20.019505050855795, 10.059973420945283, -0.019979896707241075], chem_ref = [-27386.689890154594, 49908.04579044469, 36153.11424624062, 99569.74518438231, 127079.60827279044, 72552.57488898831], moles = [0.00013557499371962708, 9.999762521742847, 0.019979896714367944, 5.158348135543692e-09, 1.0066427974203557e-08, 3.3529432680236246e-08], iterations = 18.0 |
 | `a_single_gas_phase_is_skipped` | concentration_basis = mole_fraction, source = standard, seed = none, phase = gas, components = ['CO2', 'water', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], moles = [0.010000000000594776, 1.0000000000592608, 6.510000000780689e-50, 6.510000000780689e-50, 6.510000000780689e-50, 6.510000000780689e-50], whole_system = False, phase_charge = -1.9530000002342068e-49, phase_moles = 6.51000000038698, log_activity = [-0.002118177352953553, 0.0038986657427502918, 0.0009239312649800555, -0.011948665294150354, 0.0009239312649800555, 0.005695619852952781], T = 400.0, max_iterations = 100, tolerance = 1e-08 | a_matrix = [[1.0, 0.0, 0.0, 0.0, 1.0, 1.0], [0.0, 2.0, 1.0, 3.0, 1.0, 0.0], [2.0, 1.0, 1.0, 1.0, 3.0, 3.0], [0.0, 0.0, -1.0, 1.0, -1.0, -2.0]], b = [0.010000000000594776, 2.0000000001185216, 1.0200000000604503, 0.0], chem_ref = [-178983.82465811548, 114828.6944246573, 111965.52575477365, 235383.72618908188, -134036.59780668365, -139762.93514645094], moles = [0.010000000000594776, 1.0000000000592608, 6.510000000780689e-50, 6.510000000780689e-50, 6.510000000780689e-50, 6.510000000780689e-50], iterations = 0.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionOperations` is the port source: `getReactivePhaseIndex`, `calcNVector`, `calcBVector`, `calcAmatrix`, `calcChemRefPot`, `updateMoles` and `solveChemEq`.

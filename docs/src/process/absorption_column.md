@@ -95,6 +95,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `lean_oil_absorber` | gas_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], gas_n = 30.852602094576984, gas_z = [0.92, 0.04, 0.025, 0.01, 0.005, 0.0], gas_p = 1500000.0, gas_t = 303.15, solvent_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], solvent_n = 1.6632569898375, solvent_z = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], solvent_p = 1500000.0, solvent_t = 293.15, number_of_stages = 5, top_pressure = 1500000.0, bottom_pressure = 1500000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [299.10907966626354, 299.7940316636134, 300.49322271941304, 301.26748639388506, 301.7126561904438], tray_pressure = [1500000.0, 1500000.0, 1500000.0, 1500000.0, 1500000.0], tray_gas_n = [31.02657698982344, 30.994044668451405, 30.961128515891744, 30.91441340721759, 30.587796968266012], tray_liquid_n = [1.9280715291956925, 2.1020464244421477, 2.069511412099089, 2.0365923915807302, 1.9898748368771202], gas_out_n = 30.58779316625974, gas_out_z = [0.9232019625988978, 0.03925797304019808, 0.02291858320152024, 0.0070019486397466715, 0.0009070802787657044, 0.006712452240871433], gas_out_p = 1500000.0, gas_out_t = 301.7126561904438, gas_out_h = 757.4203577777466, liquid_out_n = 1.928065918154764, liquid_out_z = [0.075559265364807, 0.01726565673374861, 0.03645423585925705, 0.04893601577830049, 0.0656188283447739, 0.756165997919113], liquid_out_p = 1500000.0, liquid_out_t = 299.10907966626354, liquid_out_h = -27387.776830145922 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/absorber/AbsorptionColumn.java` is the port source; it extends `DistillationColumn` and overrides no `run`.

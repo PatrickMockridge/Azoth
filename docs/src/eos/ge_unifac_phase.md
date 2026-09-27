@@ -60,6 +60,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methanol_benzene_lean_at_330_k_1_bar` | components = ['methanol', 'benzene'], T = 330.0, P = 100000.0, x = [0.3, 0.7] | gamma = [2.438666100525438, 1.2823370264201932], ln_gamma = [0.89145120970853, 0.24868421507205765], ln_phi = [0.5943403414559508, -0.3985351322447149], p_sat = [74296.1636937194, 52349.94248595396] |
 | `water_toluene_at_340_k_1_bar` | components = ['water', 'toluene'], T = 340.0, P = 100000.0, x = [0.7, 0.3] | gamma = [2.33400089129135, 11.554897951262657], ln_gamma = [0.8475839157371919, 2.4471094121220194], ln_phi = [-0.45549541840173835, 1.1230427732916306], p_sat = [27169.38673684547, 26605.116506459886] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Fredenslund, A.; Jones, R. L.; Prausnitz, J. M. (1975). "Group-contribution estimation of activity coefficients in nonideal liquid mixtures." AIChE Journal 21(6), 1086-1099.

@@ -78,6 +78,16 @@ not an equation, and both implementations read it from here.
 | `nothing_freezes_above_the_triple_point` | components = ['water', 'methane'], solid = water, eos = srk, T = 278.15, P = 1000000.0, z = [0.5, 0.5] | solid_fraction = 0.0, phase_count = 2 |
 | `carbon_dioxide_ice_where_the_tables_are_not_water` | components = ['CO2', 'methane'], solid = CO2, eos = srk, T = 193.15, P = 1000000.0, z = [0.5, 0.5] | solid_fraction = 0.444150617161187, phase_count = 2 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L. (1982). "The isothermal flash problem. Part II. Phase-split calculation." Fluid Phase Equilibria 9(1), 21-40. The `E`/`Q` fraction formulation the solve uses.

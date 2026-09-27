@@ -64,6 +64,16 @@ not an equation, and both implementations read it from here.
 | `gas_at_1_bar` | T = 250.0, P = 100000.0 | z_factor = 0.9910804757839274, u = 18448.49242476431, h = 20508.57955644186, s = 114.1463065955995, cv = 26.76607117465508, cp = 35.42837300640891, g = -8027.997092458026 |
 | `dense_at_50_bar` | T = 350.0, P = 5000000.0 | z_factor = 0.8437487158617321, u = 20201.48425031786, h = 22656.8592477497, s = 90.84828162369554, cv = 34.21361584125806, cp = 52.26455362012712, g = -9140.039320543745 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Span, R.; Wagner, W. (1996). "A New Equation of State for Carbon Dioxide Covering the Fluid Region from the Triple-Point Temperature to 1100 K at Pressures up to 800 MPa." Journal of Physical and Chemical Reference Data 25(6), 1509-1596.

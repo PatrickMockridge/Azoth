@@ -66,6 +66,16 @@ not an equation, and both implementations read it from here.
 | `pure_methane_gas` | components = ['methane'], T = 298.15, P = 100000.0, z = [1.0] | z_factor = 0.9982739642903633, u = -2490.335522491387, h = -15.65726129035627, s = 0.0712832633381323, cv = 27.40968856927136, cp = 35.80073649119611, g = -36.91036625462061 |
 | `natural_gas_mixture` | components = ['methane', 'ethane', 'CO2', 'nitrogen'], T = 298.15, P = 1000000.0, z = [0.8, 0.1, 0.05, 0.05] | z_factor = 0.9788426234310892, u = -2613.765064217002, h = -187.2562620327814, s = -13.59791139314746, cv = 29.03567170090722, cp = 38.29477941341759, g = 3866.961019834134 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Gernert, J.; Span, R. (2016). "EOS-CG: A Helmholtz energy mixture model for humid gases and CCS mixtures." Journal of Chemical Thermodynamics 93, 274-293.

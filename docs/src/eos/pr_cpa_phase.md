@@ -58,6 +58,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `water_methanol_pr_liquid` | components = ['water', 'methanol'], eos = pr, associating = True, T = 300.0, P = 10000000.0, z = [0.6, 0.4], compressed_phase = liquid | z_factor = 0.1075970257848238, ln_phi = [-7.317420134313837, -7.878653311740308], h_res = -43490.57273629496, s_res = -82.26162261793057 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Kontogeorgis, G. M.; Voutsas, E. C.; Yakoumis, I. V.; Tassios, D. P. (1996). "An Equation of State for Associating Fluids." Industrial & Engineering Chemistry Research 35(11), 4310-4318. DOI 10.1021/ie9600203

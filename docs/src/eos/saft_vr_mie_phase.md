@@ -62,6 +62,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `methane_butane_vapour_against_neqsim` | components = ['methane', 'n-butane'], T = 350.0, P = 3000000.0, z = [0.6, 0.4], compressed_phase = vapour | v = 0.0008260515668683107, z_factor = 0.8515814873614467, ln_phi = [0.0303544890821417, -0.394263574814552], h_res = -1433.6897143213828, s_res = -2.9364502191263444 |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 1 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Lafitte, T.; Apostolakou, A.; Avendano, C.; Galindo, A.; Adjiman, C. S.; Muller, E. A.; Jackson, G. (2013). "Accurate statistical associating fluid theory for chain molecules formed from Mie segments." The Journal of Chemical Physics 139(15), 154504. DOI 10.1063/1.4819786

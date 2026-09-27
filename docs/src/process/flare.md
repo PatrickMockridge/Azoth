@@ -63,6 +63,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `sour_gas` | components = ['methane', 'CO2', 'nitrogen'], inlet_n = 1.0, inlet_z = [0.8, 0.15, 0.05], inlet_p = 101325.0, inlet_t = 288.15 | product_n = 1.0, product_z = [0.8, 0.15, 0.05], product_p = 101325.0, product_t = 288.15, product_h = 504.0082050804368, heat_duty = 679291.5927940359, co2_emission = 0.041809500000000006 |
 | `heavy` | components = ['methane', 'n-butane', 'n-heptane'], inlet_n = 0.9999999999999999, inlet_z = [0.6, 0.3, 0.1], inlet_p = 101325.0, inlet_t = 288.15 | product_n = 0.9999999999999999, product_z = [0.6, 0.3, 0.1], product_p = 101325.0, product_t = 288.15, product_h = -2022.5692972719955, heat_duty = 1856692.489362915, co2_emission = 0.110025 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/flare/Flare.java` is the port source, through its `run`.

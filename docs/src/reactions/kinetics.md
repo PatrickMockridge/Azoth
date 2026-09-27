@@ -64,6 +64,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `co2_water_aqueous_phase_at_298_15` | components = ['CO2', 'water', 'OH-', 'H3O+', 'HCO3-', 'CO3--'], reaction_components = ['water', 'CO2', 'HCO3-', 'H3O+', 'water', 'OH-', 'H3O+', 'H3O+', 'CO3--', 'HCO3-', 'water'], reaction_lengths = [4.0, 3.0, 4.0], reaction_coefficients = [-2.0, -1.0, 1.0, 1.0, -2.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0], rate_factors = [0.004327147905576517, 0.004327147905576517, 0.004327147905576517], equilibrium_constants = [4.412340363006617e-07, 3.2581887406912058e-18, 8.370205822785757e-16], fractions = [1.1772872314229393e-05, 0.9999836689077933, 1.4298146909556775e-12, 2.2790899484670708e-06, 2.2791285133966227e-06, 8.374388127330817e-16], molar_masses = [0.04401, 0.018015, 0.017001000000000002, 0.01902, 0.061, 0.059982], density = 1001.7345003123514, inter_fractions = [1.1772872314229393e-05, 0.9999836689077933, 1.4298146909556775e-12, 2.2790899484670708e-06, 2.2791285133966227e-06, 8.374388127330817e-16], inter_density = 1001.7345003123514, diffusion = [1.3273085673495432e-09, 1.2949443034517625e-09, 1.873193606363133e-09, 1.7615254560250475e-09, 9.308800234111773e-10, 9.395402172459193e-10] | coefficient = [0.012981443716729553, 0.006729079680068898, 0.009173699852615236, 0.00016195498812433516, 0.009173699852615236, 0.009173699852615236], phi_infinite = [0.0, 1.1794482752412865, 1381653.4253719337, 1.3692626894193294, 5.138683056155029, 11751832282.985014], irreversible = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `neqsim.chemicalreactions.kinetics.Kinetics.calcReacMatrix` is the port source.

@@ -69,6 +69,16 @@ not an equation, and both implementations read it from here.
 | `a_superheated_feed_is_reported_rather_than_clamped` | z = [0.5, 0.5], K = [1.5, 0.9] | vapour_fraction = 3.9999999999999916 |
 | `an_ion_is_skipped` | z = [0.1, 0.45, 0.45], K = [1e-40, 7.304244305324782, 0.33749596785762953] | vapour_fraction = 0.6754007405823642 |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 8 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Rachford, H. H.; Rice, J. D. (1952). "Procedure for Use of Electronic Digital Computers in Calculating Flash Vaporization Hydrocarbon Equilibrium." Journal of Petroleum Technology 4(10), 19-3. DOI 10.2118/952327-G

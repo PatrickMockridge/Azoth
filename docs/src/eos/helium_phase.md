@@ -65,6 +65,16 @@ not an equation, and both implementations read it from here.
 | `gas_at_1_bar` | T = 300.0, P = 100000.0 | z_factor = 1.0004744912017172, u = 3761.829372397934, h = 6257.354515541211, s = 112.10308031769742, cv = 12.472686316985868, cp = 20.786326370649327, g = -27373.56957976801 |
 | `dense_at_200_bar` | T = 400.0, P = 20000000.0 | z_factor = 1.0673228266214245, u = 5042.388106074379, h = 8592.078408836254, s = 74.10811629278298, cv = 12.608784419728487, cp = 20.765412170856578, g = -21051.16810827694 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Arp, V. D.; McCarty, R. D.; Friend, D. G. (1998). "Thermophysical Properties of Helium-4 from 0.8 to 1500 K with Pressures to 2000 MPa." NIST Technical Note 1334 (revised).

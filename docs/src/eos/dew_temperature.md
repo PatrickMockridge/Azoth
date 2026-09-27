@@ -69,6 +69,16 @@ not an equation, and both implementations read it from here.
 | `methane_and_butane_at_300_k` | components = ['methane', 'n-butane'], P = 1567347.3649394324, y = [0.8, 0.2] | temperature = 299.9999999999671, incipient = [0.07356449416596675, 0.9264355058340331], k = [10.874811402836803, 0.21588119058535227], z_liquid = 0.05929085850301092, z_vapour = 0.921823600632476, min_t_over_tc = 0.7056831012419248, iterations = 6 |
 | `methane_propane_and_butane_at_300_k` | components = ['methane', 'propane', 'n-butane'], P = 1036545.9819627925, y = [0.5, 0.3, 0.2] | temperature = 299.99999999994776, incipient = [0.03255340258615442, 0.3097785905731886, 0.6576680068406568], k = [15.359377523635496, 0.9684336139714743, 0.30410480351724356], z_liquid = 0.03830037886818703, z_vapour = 0.903143558301091, min_t_over_tc = 0.7056831012418794, iterations = 5 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L. (1982). "The isothermal flash problem. Part II. Phase-split calculation." Fluid Phase Equilibria 9(1), 21-40. DOI 10.1016/0378-3812(82)85002-4.

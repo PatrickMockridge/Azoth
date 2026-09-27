@@ -64,6 +64,16 @@ not an equation, and both implementations read it from here.
 | `moderate` | T = 20.0, P = 100000000.0 | z_factor = 10.95162828337962, u = 178.1288404282875, h = 1999.266806337245, s = 0.8717060968631262, cv = 2.760332287046142, cp = 2.802738495196803, g = 1981.832684399983 |
 | `high_pressure` | T = 80.0, P = 1000000000.0 | z_factor = 18.22414602498301, u = 2898.02391477147, h = 15019.94162913842, s = 6.933412140452078, cv = 15.2601089366134, cp = 15.71316527176994, g = 14465.26865790226 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Sannerhaugen, A. (2026). "Equation of State for Solid Para-hydrogen." (thesis).

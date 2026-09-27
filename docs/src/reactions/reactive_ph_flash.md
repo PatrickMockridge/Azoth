@@ -73,6 +73,16 @@ not an equation, and both implementations read it from here.
 | `wgs_600k_the_capture_specification_halved` | components = ['CO', 'water', 'CO2', 'hydrogen'], T = 500.0, P = 100000.0, moles = [0.25, 0.25, 0.25, 0.25], enthalpy = -182008.71195353585, max_phases = 2 | temperature = 600.0000397583285, converged = True |
 | `wgs_600k_the_round_trip_on_pr` | components = ['CO', 'water', 'CO2', 'hydrogen'], T = 500.0, P = 100000.0, moles = [0.25, 0.25, 0.25, 0.25], enthalpy = -182009.96741333907, max_phases = 2, cubic = pr | temperature = 600.0, converged = True |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L. (1987). "Multiphase isenthalpic and isentropic flash algorithms." Fluid Phase Equilibria 33(1), 13-27. DOI 10.1016/0378-3812(87)87022-5. The reference the class's docstring cites and its code does not follow.

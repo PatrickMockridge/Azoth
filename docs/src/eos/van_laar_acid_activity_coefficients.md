@@ -67,6 +67,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `nitric_sulfuric_binary_at_273_15_k` | components = ['nitric acid', 'sulfuric acid'], T = 273.15, x = [0.55, 0.45] | ln_gamma = [-0.3810666728665312, -0.22769455391617024], gamma = [0.6831323417100698, 0.7963674700147698] |
 | `water_with_a_dissolved_carrier_gas_at_250_k` | components = ['water', 'hno3', 'nitrogen'], T = 250.0, x = [0.5, 0.3, 0.2] | ln_gamma = [-1.6703822245219693, -2.5993237294026637, 27.631021115928547], gamma = [0.18817512674335166, 0.07432382423947895, 1000000000000.0] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 5 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Taleb, D.; Ponche, J. L.; Mirabel, P. (1996). "Vapor pressures in the ternary system water-nitric acid-sulfuric acid at low temperature." Journal of Geophysical Research 101(D20), 25967-25977.

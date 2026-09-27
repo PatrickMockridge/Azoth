@@ -82,6 +82,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_pinned_hot_outlet` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.8, 0.2], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['n-butane', 'n-pentane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 500000.0, cold_in_t = 300.0, flow_arrangement = counterflow, hot_outlet_temperature = 350.0 | hot_out_n = 1.0, hot_out_z = [0.8, 0.2], hot_out_p = 2000000.0, hot_out_t = 350.0, hot_out_h = 3219.4541058847717, cold_out_n = 1.0, cold_out_z = [0.5, 0.5], cold_out_p = 500000.0, cold_out_t = 318.43800346001626, cold_out_h = -18273.273337934537 |
 | `a_pinned_cold_outlet` | hot_components = ['methane', 'n-butane'], hot_in_n = 1.0, hot_in_z = [0.8, 0.2], hot_in_p = 2000000.0, hot_in_t = 400.0, cold_components = ['n-butane', 'n-pentane'], cold_in_n = 1.0, cold_in_z = [0.5, 0.5], cold_in_p = 500000.0, cold_in_t = 300.0, flow_arrangement = counterflow, cold_outlet_temperature = 320.0 | hot_out_n = 1.0, hot_out_z = [0.8, 0.2], hot_out_p = 2000000.0, hot_out_t = 345.4935748670965, hot_out_h = 2968.692983939156, cold_out_n = 1.0, cold_out_z = [0.5, 0.5], cold_out_p = 500000.0, cold_out_t = 320.0, cold_out_h = -18022.51221053017 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 5 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run`.

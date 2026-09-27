@@ -90,6 +90,16 @@ not an equation, and both implementations read it from here.
 | `a_reboilers_reflux_ratio_round_trips` | components = ['methane', 'n-butane'], P = 5000000.0, reflux = 1.1577715694040032, phase = liquid, temperature = 300.0, z = [0.6, 0.4] | T = 300.0 |
 | `a_ratio_that_is_not_a_states_own` | components = ['methane', 'n-butane'], P = 1000000.0, reflux = 2.0, phase = vapour, temperature = 250.0, z = [0.6, 0.4] | T = 166.402852 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L.; Mollerup, J. M. (2004). "Thermodynamic Models: Fundamentals and Computational Aspects." Tie-Line Publications.

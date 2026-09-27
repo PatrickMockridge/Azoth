@@ -103,6 +103,16 @@ not an equation, and both implementations read it from here.
 | `wilson_fallback_superheated_gas` | components = ['methane', 'ethane', 'propane', 'n-butane'], feed_n = 1.0, feed_z = [0.1, 0.3, 0.4, 0.2], feed_p = 2000000.0, feed_t = 450.0, light_key = propane, heavy_key = n-butane, light_key_recovery_distillate = 0.98, heavy_key_recovery_bottoms = 0.98, reflux_ratio_multiplier = 1.2 | relative_volatility = 2.360742641862776, minimum_stages = 9.061531808008356, minimum_reflux_ratio = 0.8355991286740769, actual_reflux_ratio = 1.0027189544088924, actual_stages = 22.4423070346342, feed_tray_number = 15.0, condenser_duty = -47800.89600383143, reboiler_duty = 47931.163544252726, distillate_n = 0.7956, distillate_z = [0.1255656108597285, 0.3766968325791855, 0.4927099044746104, 0.005027652086475621], distillate_p = 2000000.0, distillate_t = 450.0, distillate_h = 11686.336029445352, bottoms_n = 0.20440000000000003, bottoms_z = [0.0004892367906066676, 0.0014677103718200707, 0.03913894324853232, 0.958904109589041], bottoms_p = 2000000.0, bottoms_t = 450.0, bottoms_h = 17894.58448158318 |
 | `binary_methane_nbutane` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.5, 0.5], feed_p = 2000000.0, feed_t = 300.0, light_key = methane, heavy_key = n-butane, light_key_recovery_distillate = 0.99, heavy_key_recovery_bottoms = 0.99, reflux_ratio_multiplier = 1.2 | relative_volatility = 46.648767420893286, minimum_stages = 2.391643282325193, minimum_reflux_ratio = 0.21184536162652234, actual_reflux_ratio = 0.2542144339518268, actual_stages = 8.193966146245264, feed_tray_number = 5.0, condenser_duty = -18813.2165092774, reboiler_duty = 18737.84467755389, distillate_n = 0.5, distillate_z = [0.99, 0.010000000000000009], distillate_p = 2000000.0, distillate_t = 300.0, distillate_h = 588.2035463850532, bottoms_n = 0.5, bottoms_z = [0.010000000000000009, 0.99], bottoms_p = 2000000.0, bottoms_t = 300.0, bottoms_h = -18733.17152906549 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/ShortcutDistillationColumn.java` is the port source, through its `run`. **The class names its methods and cites no paper**: the references below are those methods' papers.

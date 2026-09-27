@@ -63,6 +63,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `a_mixed_solvent_brine` | components = ['methane', 'water', 'methanol', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.000287690429746332, 0.599209614955317, 0.398504711342053, 0.00099899163644202, 0.00099899163644202], compressed_phase = liquid | z_factor = 0.0143169079260678, ln_phi = [8.1240382842901, -5.80843124874109, -3.7502294824506, -244.763115915202, -171.000171568275] |
 | `the_shipped_mixture_at_sixty_c` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 333.15, P = 4000000.0, x = [0.994528454609112, 0.0054715453908882, 9.99959608122957e-44, 9.99959608122957e-44], compressed_phase = vapour | z_factor = 0.961828896991428, ln_phi = [-0.0402397605190196, -0.0624465131459805, -66.8663870397073, -89.7133010982492] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 5 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Furst, W.; Renon, H. (1993). "Representation of excess properties of electrolyte solutions using a new equation of state." AIChE Journal 39(2), 335-343.

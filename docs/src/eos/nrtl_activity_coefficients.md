@@ -55,6 +55,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `methanol_water_equimolar_at_298_15_k` | components = ['methanol', 'water'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.20959527138156164, 0.4228402301695509], gamma = [1.2331788561677834, 1.5262904213232393] |
 | `ethanol_water_equimolar_at_298_15_k` | components = ['ethanol', 'water'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [-0.04091499634696748, 0.24111595048976658], gamma = [0.9599107223979105, 1.2726685933000568] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 2 declared, every one run
+- External check: 2 external validation cases name it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Renon, H.; Prausnitz, J. M. (1968). "Local compositions in thermodynamic excess functions for liquid mixtures." AIChE Journal 14(1), 135-144.

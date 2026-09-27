@@ -155,6 +155,16 @@ not an equation, and both implementations read it from here.
 | `murphree_0_6` | components = ['methane', 'n-butane'], feed_n = 7.490704036290964, feed_z = [0.49999999999999994, 0.49999999999999994], feed_p = 2000000.0, feed_t = 300.0, number_of_stages = 4, feed_stage = 2, has_reboiler = True, has_condenser = True, top_pressure = 1900000.0, bottom_pressure = 2000000.0, reboiler_temperature = 373.15, condenser_temperature = 253.14999999999998, temperature_tolerance = 1e-06, max_iterations = 200, murphree_efficiency = 0.6 | tray_temperature = [373.15, 336.17610149619395, 303.1308245367222, 302.1846100734558, 296.56967983176895, 253.14999999999998], tray_pressure = [2000000.0, 1980000.0, 1960000.0000000002, 1939999.9999999998, 1920000.0, 1900000.0], tray_gas_n = [1.5935901648726694, 0.6104268433574532, 4.497779636973569, 3.904812548909508, 3.80082289353683, 3.7264760720867867], tray_liquid_n = [3.764227964204178, 5.889255034047075, 4.906090702189604, 1.3027391363431713, 0.709771702362906, 0.6057817557197408], distillate_n = 3.7264760720867867, distillate_z = [0.9745893826201694, 0.025410617379830604], distillate_p = 1900000.0, distillate_t = 253.14999999999998, distillate_h = -1229.4669988295639, bottoms_n = 3.764227964204178, bottoms_z = [0.030170331016495015, 0.969829668983505], bottoms_p = 2000000.0, bottoms_t = 373.15, bottoms_h = -6132.476781201999, condenser_duty = -18650.975463115934, reboiler_duty = 61658.439796998275 |
 | `side_draw_flow_one_tray_gas_binary` | components = ['methane', 'n-butane'], feed_n = 7.490704036290964, feed_z = [0.49999999999999994, 0.49999999999999994], feed_p = 2000000.0, feed_t = 300.0, number_of_stages = 1, feed_stage = 0, has_reboiler = False, has_condenser = False, top_pressure = 2000000.0, bottom_pressure = 2000000.0, temperature_tolerance = 1e-06, max_iterations = 200, side_draw_flow_tray = 0, side_draw_flow_phase = gas, side_draw_flow_target = 0.006944444444444444, side_draw_flow_tolerance = 1e-05, side_draw_flow_max_iterations = 12 | tray_temperature = [299.9999999999999], tray_pressure = [2000000.0], tray_gas_n = [3.7940693256162255], tray_liquid_n = [3.395114823364233], distillate_n = 3.7940693256162263, distillate_z = [0.8339243334525466, 0.1660756665474534], distillate_p = 2000000.0, distillate_t = 299.9999999999999, distillate_h = 530.1529163915893, bottoms_n = 3.395114823364233, bottoms_z = [0.0971809587674502, 0.9028190412325497], bottoms_p = 2000000.0, bottoms_t = 299.9999999999999, bottoms_h = -17268.958496924723 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 11 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/DistillationColumn.java` is the port source, through `init` and `solveSequential`; the stage is `SimpleTray.java`, ported as `crates/azoth-process/src/column/tray.rs`.

@@ -89,6 +89,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `an_entrainment_out_of_the_oil_re_runs_the_vapour` | components = ['methane', 'n-butane', 'water'], feed_n = 1.0, feed_z = [0.5, 0.3, 0.2], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.05, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0 | vapour_n = 0.5856018960876607, vapour_z = [0.8181515293017343, 0.1803148749555399, 0.0015335957427256757], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 185.79332639291266, light_liquid_n = 0.21536986845247452, light_liquid_z = [0.09699086751349374, 0.9026669734727175, 0.0003421590138866759], light_liquid_p = 2000000.0, light_liquid_t = 300.0, light_liquid_h = -17267.597049152402, heavy_liquid_n = 0.199028235459865, heavy_liquid_z = [1.3949914078317068e-08, 1.299159027526262e-15, 0.9999999860500847], heavy_liquid_p = 2000000.0, heavy_liquid_t = 300.0, heavy_liquid_h = -44702.48623278945 |
 | `a_dry_feed_has_no_aqueous_outlet` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_aqueous = 0.0, gas_in_oil = 0.0, oil_in_aqueous = 0.0, oil_in_gas = 0.0, aqueous_in_gas = 0.0, aqueous_in_oil = 0.0 | vapour_n = 0.8182211906421439, vapour_z = [0.8339243334525452, 0.16607566654745468], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.1529163915932, light_liquid_n = 0.18177880935785606, light_liquid_z = [0.09718095876744991, 0.9028190412325501], light_liquid_p = 2000000.0, light_liquid_t = 300.0, light_liquid_h = -17268.958496924708, heavy_liquid_n = 0.0, heavy_liquid_p = 2000000.0, heavy_liquid_t = 300.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 6 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/ThreePhaseSeparator.java` is the port source, through its `run`.

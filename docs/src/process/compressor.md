@@ -60,6 +60,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_reversible_limit_at_efficiency_one` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 6000000.0, isentropic_efficiency = 1.0 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 6000000.0, outlet_t = 368.7592218240752, outlet_h = 3049.9081133820987 |
 | `the_efficiency_divides_the_step` | components = ['methane', 'n-butane'], inlet_n = 1.0, inlet_z = [0.9, 0.1], inlet_p = 3000000.0, inlet_t = 320.0, outlet_pressure = 6000000.0, isentropic_efficiency = 0.75 | outlet_n = 1.0, outlet_z = [0.9, 0.1], outlet_p = 6000000.0, outlet_t = 380.2120359420128, outlet_h = 3654.624827852691 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/compressor/Compressor.java` is the port source, through its no-chart steady-state branch.

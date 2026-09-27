@@ -85,6 +85,16 @@ not an equation, and both implementations read it from here.
 | `van_laar_acid_fluid_at_273_15_k` | components = ['CO2', 'water', 'nitric acid', 'sulfuric acid'], liquid_model = van_laar_acid, cubic = srk, T = 273.15, P = 100000.0, z = [0.9090909090909091, 0.06363636363636363, 0.013636363636363636, 0.013636363636363636] | vapour_fraction = 0.9101615466858757, x = [9.923246171795144e-13, 0.7011681817398651, 0.14704421358299002, 0.15178760467615265], ln_phi_liquid = [27.631021115928547, -6.9114435631978655, -5.765979127979182, -31.749973352727675], z_vapour = 0.993446874971783, phase = two_phase |
 | `the_same_fluid_vapour_at_its_own_tolerance` | components = ['CO2', 'water', 'nitric acid', 'sulfuric acid'], liquid_model = van_laar_acid, cubic = srk, T = 273.15, P = 100000.0, z = [0.9090909090909091, 0.06363636363636363, 0.013636363636363636, 0.013636363636363636] | y = [0.9988236839943918, 0.000708114595836434, 0.0004682014097692246, 2.570656866497064e-15], k = [1006549335471.8438, 0.0010099069157407177, 0.0031840859178384282, 1.6935881371747747e-14] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPflash.sucsSubsGammaPhi` is the port source for the update rule, and `EosGeFlashModel.requiresDirectGammaPhiFlash` for the dispatch.

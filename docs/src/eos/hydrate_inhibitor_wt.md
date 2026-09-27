@@ -71,6 +71,16 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `meg_to_a_thirty_percent_aqueous_fraction` | components = ['methane', 'ethane', 'propane', 'i-butane', 'MEG', 'water'], moles = [1.0, 0.1, 0.05, 0.005, 0.1, 1.0], inhibitor = MEG, wt_target = 0.3, T = 273.15, P = 10000000.0, eos = srk | inhibitor_moles = 0.124375874492093, weight_fraction = 0.3 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `HydrateInhibitorwtFlash` is the port source.

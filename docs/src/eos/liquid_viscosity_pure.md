@@ -114,6 +114,17 @@ water's LIQVISC model is 3 with `l1 = -27.952757828`, `l2 = 4665.22592993`, `l3 
 | `above_the_critical_temperature_the_sentinel_answers` | `reference` | an independent value; active |
 
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.liquid_viscosity_pure`

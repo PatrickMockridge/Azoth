@@ -66,6 +66,16 @@ not an equation, and both implementations read it from here.
 | `pure_methane_gas` | components = ['methane'], T = 298.15, P = 100000.0, z = [1.0] | z_factor = 0.9982739662369379, u = -2490.338319719316, h = -15.65726127764794, s = 0.07128338687926752, cv = 27.40984467558066, cp = 35.80090197911206, g = -36.91040307570142 |
 | `natural_gas_mixture` | components = ['methane', 'ethane', 'CO2', 'nitrogen'], T = 298.15, P = 1000000.0, z = [0.8, 0.1, 0.05, 0.05] | z_factor = 0.9788426477111625, u = -2613.767855236111, h = -187.2562548015943, s = -13.59792620612604, cv = 29.03583588858814, cp = 38.29495289222858, g = 3866.965443554885 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Kunz, O.; Wagner, W. (2012). "The GERG-2008 wide-range equation of state for natural gases and other mixtures: An expansion of GERG-2004." Journal of Chemical & Engineering Data 57(11), 3032-3091.

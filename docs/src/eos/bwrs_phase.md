@@ -66,6 +66,16 @@ not an equation, and both implementations read it from here.
 | `methane_and_ethane` | components = ['methane', 'ethane'], T = 300.0, P = 1000000.0, z = [0.5, 0.5] | z_factor = 0.9002728242345232, ln_phi = [-0.013319302953322648, -0.1773749663515858], h_res = -914.8873893166501, s_res = -2.2568644935547337, cp_res = 7.100809443311604 |
 | `pure_methane` | components = ['methane'], T = 300.0, P = 1000000.0, z = [1.0] | z_factor = 0.9830969624646309, ln_phi = [-0.016953681620111363], h_res = -156.3684951278399, s_res = -0.3802675737903293, cp_res = 0.9343242529486586 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Younglove, B. A.; Ely, J. F. (1987). "Thermophysical Properties of Fluids. II. Methane, Ethane, Propane, Isobutane, and Normal Butane." Journal of Physical and Chemical Reference Data 16(4), 577-798. DOI 10.1063/1.555785

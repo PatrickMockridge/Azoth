@@ -123,6 +123,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `isothermal` | components = ['methane', 'oxygen', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.85], feed_p = 500000.0, feed_t = 600.0, length = 5.0, diameter = 0.1, number_of_tubes = 1.0, energy_mode = isothermal, coolant_temperature = 298.15, overall_heat_transfer_coefficient = 50.0, number_of_steps = 100.0, integration_method = rk4, property_update_frequency = 10.0, thermodynamic_coupling = frozen_properties, reaction = methanecombustion, reaction_orders = [1.0, 1.0], rate_type = power_law, pre_exponential_factor = 10000.0, activation_energy = 80000.0, temperature_exponent = 0.0, heat_of_reaction = -802000.0 | product_t = 600.0, conversion = 0.041060028350672906, outlet_temperature = 600.0, heat_duty = 1646.5071368619836 |
 | `catalyst_bed` | components = ['methane', 'oxygen', 'nitrogen'], feed_n = 1.0, feed_z = [0.05, 0.1, 0.85], feed_p = 500000.0, feed_t = 600.0, length = 5.0, diameter = 0.1, number_of_tubes = 1.0, energy_mode = adiabatic, coolant_temperature = 298.15, overall_heat_transfer_coefficient = 50.0, number_of_steps = 100.0, integration_method = rk4, property_update_frequency = 10.0, thermodynamic_coupling = frozen_properties, reaction = methanecombustion, reaction_orders = [1.0, 1.0], rate_type = power_law, pre_exponential_factor = 10000.0, activation_energy = 80000.0, temperature_exponent = 0.0, heat_of_reaction = -802000.0, catalyst_bulk_density = 800.0, catalyst_activity_factor = 1.0, catalyst_particle_diameter = 0.003, catalyst_void_fraction = 0.4 | product_t = 670.2251236528832, product_p = 323908.56136280234, conversion = 0.055707247687328265, pressure_drop = 176091.43863719766, outlet_temperature = 670.2251236528832 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 5 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/PlugFlowReactor.java` is the port source, through its `run` and `calculateDerivatives`; `KineticReaction.java` is the rate law and `CatalystBed.java` the bed.

@@ -97,6 +97,17 @@ n-butane, c0 = 5.21e7, c1 = 0.32, c2 = -0.212, c3 = 0.258, Tc = 425.12 K, at T =
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 3 declared, every one run
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.heat_of_vaporization`

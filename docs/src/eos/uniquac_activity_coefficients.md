@@ -59,6 +59,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `methanol_water_equimolar_at_298_15_k` | components = ['methanol', 'water'], T = 298.15, x = [0.5, 0.5], aij = [[0.0, -71.0], [209.0, 0.0]] | ln_gamma = [0.1976568551186017, 0.29402288919456004], gamma = [1.2185441848728196, 1.3418146163712932] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Abrams, D. S.; Prausnitz, J. M. (1975). "Statistical thermodynamics of liquid mixtures: A new expression for the excess Gibbs energy of partly or completely miscible systems." AIChE Journal 21(1), 116-128.

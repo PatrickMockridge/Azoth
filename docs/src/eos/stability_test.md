@@ -66,6 +66,16 @@ not an equation, and both implementations read it from here.
 | `a_two_phase_feed_is_unstable` | components = ['methane', 'n-butane'], T = 330.0, P = 2500000.0, z = [0.6, 0.4] | tm = [-2.220446049250313e-16, -0.21403386436968574], w = [[0.6000000000028413, 0.3999999999971587], [0.06789944155312776, 0.9321005584468723]], iterations = [16, 9] |
 | `a_trivial_flash_is_not_a_stable_feed` | components = ['methane', 'n-butane'], T = 430.0, P = 6000000.0, z = [0.6, 0.4] | tm = [-2.220446049250313e-16, -2.220446049250313e-16], w = [[0.6000000000116592, 0.39999999998834085], [0.59999999999665, 0.40000000000334995]], iterations = [15, 17] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L. (1982). "The isothermal flash problem. Part I. Stability." Fluid Phase Equilibria 9(1), 1-19. The tangent-plane criterion, the two-trial structure and the `tm = 1 - sum(W)` form.

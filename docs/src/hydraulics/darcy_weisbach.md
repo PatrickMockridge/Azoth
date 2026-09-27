@@ -105,6 +105,17 @@ Evaluating the equation at f = 0.02, L = 100 m, D = 0.1 m, rho = 998 kg/m**3 and
 | `round_trip_units` | `property` | unit_round_trip; active |
 
 
+## How far this is checked
+**`source_needed`** — a source was sought and not found, which outranks good evidence elsewhere: an attribution that does not resolve is not made to resolve by the rest being sound.
+
+- Tests: 6 declared — 4 run, 2 skipped, each with its reason on the test itself
+- External check: 1 external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.hydraulics.darcy_weisbach`

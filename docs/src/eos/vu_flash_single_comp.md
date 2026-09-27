@@ -68,6 +68,16 @@ not an equation, and both implementations read it from here.
 | `propane_at_20_bar_half_vapour` | components = ['propane'], P = 2000000.0, V = 0.000523070028446, U = -5192.179547873 | T = 330.189683051239, vapour_fraction = 0.5 |
 | `n_butane_at_2_bar_half_vapour` | components = ['n-butane'], P = 200000.0, V = 0.005751905323641, U = -10484.245165447 | T = 292.041483332711, vapour_fraction = 0.5 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Michelsen, M. L.; Mollerup, J. M. (2004). "Thermodynamic Models: Fundamentals and Computational Aspects." Tie-Line Publications.

@@ -49,6 +49,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `co2_water_aqueous_phase` | binary_diffusion = [[1.3298101098167177e-07, 1.32981826012159e-07], [1.329826410361882e-07, 2.0568595403496719e-07]], x = [1.4052475102269458e-05, 0.9999859475248978] | effective_diffusion = [1.32981826012159e-07, 1.3298264103573872e-07] |
 | `methane_n_heptane_oil_phase` | binary_diffusion = [[1.4366530998185989e-07, 1.432289958431809e-07], [1.427958072195365e-07, 6.89737792946623e-08]], x = [0.004145278302387163, 0.9958547216976128] | effective_diffusion = [1.432289958431809e-07, 1.4279580721953783e-07] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PhysicalProperties.calcEffectiveDiffusionCoefficients` and `Diffusivity.calcEffectiveDiffusionCoefficients` are the port source.

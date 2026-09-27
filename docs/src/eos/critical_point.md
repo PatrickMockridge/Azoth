@@ -73,6 +73,16 @@ not an equation, and both implementations read it from here.
 | `pure_propane` | components = ['propane'], z = [1.0] | tc = 369.8124146141963, pc = 4247401.68587663, vc = 0.00022253485817164885, z_c = 0.3074013092188133 |
 | `methane_and_butane` | components = ['methane', 'n-butane'], z = [0.4, 0.6] | tc = 389.72436734238954, pc = 8223457.654726913, vc = 0.00018525082354388668, z_c = 0.4701353007478311 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Heidemann, R. A.; Khalil, A. M. (1980). "The calculation of critical points." AIChE Journal 26(5), 769-779. DOI 10.1002/aic.690260510.

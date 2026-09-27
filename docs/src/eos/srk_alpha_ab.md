@@ -104,6 +104,17 @@ A propane-like component at Tr = 0.8, Pr = 0.25, with the coefficient `eos.srk_k
 | `round_trip_units` | `property` | unit_round_trip; **skipped** - Every input and every output is dimensionless, so there is no unit to convert. Declared rather than omitted so the omission is a recorded decision. |
 
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared — 2 run, 1 skipped, each with its reason on the test itself
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.srk_alpha_ab`

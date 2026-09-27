@@ -97,6 +97,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `hydrocarbon_stripper` | stripping_gas_components = ['methane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], rich_liquid_components = ['methane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], stripping_gas_n = 2.547079374624363, stripping_gas_z = [0.99, 0.008, 0.0015, 0.0005, 0.0], stripping_gas_p = 1200000.0, stripping_gas_t = 343.15, rich_liquid_n = 2.9489815574232177, rich_liquid_z = [0.02, 0.08, 0.12, 0.15, 0.63], rich_liquid_p = 1200000.0, rich_liquid_t = 343.15, number_of_stages = 5, top_pressure = 1200000.0, bottom_pressure = 1200000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [321.706608455782, 325.7629838093825, 329.5399755743931, 333.18535921380345, 337.4756767231461], tray_pressure = [1200000.0, 1200000.0, 1200000.0, 1200000.0, 1200000.0], tray_gas_n = [2.7279541990373932, 2.802590567757772, 2.8794915186188894, 2.983269506121942, 3.0863681590312635], tray_liquid_n = [2.40966121118395, 2.590537094838872, 2.665180172095894, 2.7420904284327983, 2.845876882580072], overhead_gas_n = 3.086389912429422, overhead_gas_z = [0.7933252789771452, 0.07619406979290001, 0.06873841855655499, 0.0361693602046566, 0.025572872468743128], overhead_gas_p = 1200000.0, overhead_gas_t = 337.4756906481115, overhead_gas_h = 2822.7677411042864, lean_liquid_n = 2.4096710196150735, lean_liquid_z = [0.05487713716722947, 0.00880774500850238, 0.06025358305292857, 0.13783328942864104, 0.7382282453426986], lean_liquid_p = 1200000.0, lean_liquid_t = 321.70664969208974, lean_liquid_h = -23614.26232543406 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/absorber/StrippingColumn.java` is the port source; it extends `AbsorptionColumn` and adds no equations.

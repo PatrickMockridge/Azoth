@@ -58,6 +58,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `the_shipped_test_aqueous_phase` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.000226524776743935, 0.997777272904135, 0.000998101159560386, 0.000998101159560386], compressed_phase = liquid | z_factor = 0.009635856436241555, ln_phi = [8.372595802264165, -5.748783297111036, -275.90879316740336, -166.57835487746573] |
 | `the_shipped_test_gas` | components = ['methane', 'water', 'Na+', 'Cl-'], T = 298.15, P = 1001325.0, x = [0.996758133992898, 0.00324186600710256, 1.0000986677163e-43, 1.0000986677163e-43], compressed_phase = vapour | z_factor = 0.9832407607272112, ln_phi = [-0.0168629980706277, -0.01945168784894277, -71.76613018523096, -96.53977553024383] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Furst, W.; Renon, H. (1993). "Representation of excess properties of electrolyte solutions using a new equation of state." AIChE Journal 39(2), 335-343.

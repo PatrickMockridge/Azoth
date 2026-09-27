@@ -75,6 +75,16 @@ not an equation, and both implementations read it from here.
 | `the_probes_feed_at_283_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 283.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | hydrate_fraction = 0.1153041888231433, structure = structure_ii, balance_error = 0.0 |
 | `the_probes_feed_at_278_15_k` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, T = 278.15, P = 10000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | hydrate_fraction = 0.115458677947638, structure = structure_ii, balance_error = 0.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - van der Waals, J. H.; Platteeuw, J. C. (1959). "Clathrate Solutions." Advances in Chemical Physics 2(1), 1-57. DOI 10.1002/9780470143483.ch1.

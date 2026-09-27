@@ -61,6 +61,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `two_feeds_three_outlets` | components = ['methane', 'n-butane'], feed_n = [1.0, 2.0], feed_z = [[0.9, 0.1], [0.3, 0.7]], feed_p = [3000000.0, 1000000.0], feed_t = [320.0, 300.0], split_factors = [0.2, 0.3, 0.5] | products_n = [0.6, 0.9, 1.5], products_z = [[0.5, 0.5], [0.5, 0.5], [0.5, 0.5]], products_p = [1000000.0, 1000000.0, 1000000.0], products_t = [292.53239958887025, 292.53239958887025, 292.53239958887025], products_h = [-6804.671364046703, -6804.671364046703, -6804.671364046703] |
 | `a_zero_flow_feed_is_dropped` | components = ['methane', 'n-butane'], feed_n = [0.0, 2.0], feed_z = [[0.9, 0.1], [0.3, 0.7]], feed_p = [3000000.0, 1000000.0], feed_t = [320.0, 300.0], split_factors = [0.5, 0.5] | products_n = [1.0, 1.0], products_z = [[0.3, 0.7], [0.3, 0.7]], products_p = [1000000.0, 1000000.0], products_t = [300.0, 300.0], products_h = [-10824.824519313497, -10824.824519313497] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/manifold/Manifold.java` is the port source, through its `run`.

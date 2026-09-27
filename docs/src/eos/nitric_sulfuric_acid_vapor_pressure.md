@@ -96,6 +96,17 @@ At T = 273.15 K: water: 8.42926609 - 1827.17843/273.15 - 71208.271/273.15**2 = 8
 | `above_the_stated_range_at_340_k` | `reference` | an independent value; active |
 
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 4 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
+
 ## Implementation
 
 - Python: `azoth.eos.nitric_sulfuric_acid_vapor_pressure`

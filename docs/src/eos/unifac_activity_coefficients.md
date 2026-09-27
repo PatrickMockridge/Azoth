@@ -59,6 +59,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `acetone_n_hexane_equimolar_at_298_15_k` | components = ['acetone', 'n-hexane'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.42003577558486405, 0.4424161881344282], gamma = [1.522016005657412, 1.556463387246744] |
 | `methanol_water_equimolar_at_298_15_k` | components = ['methanol', 'water'], T = 298.15, x = [0.5, 0.5] | ln_gamma = [0.109465434560284, 0.18285472222380844], gamma = [1.1156815062468024, 1.200639969105366] |
 
+## How far this is checked
+**`verified`** — at least one external case exists and every case is confirmed.
+
+- Tests: 2 declared, every one run
+- External check: 2 external validation cases name it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Fredenslund, A.; Jones, R. L.; Prausnitz, J. M. (1975). "Group-contribution estimation of activity coefficients in nonideal liquid mixtures." AIChE Journal 21(6), 1086-1099.

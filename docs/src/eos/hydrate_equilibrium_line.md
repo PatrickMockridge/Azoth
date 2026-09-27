@@ -66,6 +66,16 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `methane_ethane_propane_water_from_1_to_200_bara` | components = ['methane', 'ethane', 'propane', 'water'], eos = srk, hydrate_model = pvtsim, P_min = 100000.0, P_max = 20000000.0, z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.09886307464162135] | temperature = [258.09958291696, 282.316876654403, 287.76298187239, 290.688987372908, 292.552200127104, 293.861737270018, 294.863816418626, 295.690077826984, 296.410250673584, 297.061002920514], pressure = [100000.0, 2311111.1, 4522222.2, 6733333.3, 8944444.4, 11155555.6, 13366666.7, 15577777.8, 17788888.9, 20000000.0] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - van der Waals, J. H.; Platteeuw, J. C. (1959). "Clathrate Solutions." Advances in Chemical Physics 2(1), 1-57. DOI 10.1002/9780470143483.ch1.

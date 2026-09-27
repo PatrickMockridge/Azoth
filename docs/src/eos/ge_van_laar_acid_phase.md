@@ -59,6 +59,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `water_nitric_sulfuric_ternary_at_250_k_1_bar` | components = ['water', 'nitric acid', 'sulfuric acid'], T = 250.0, P = 100000.0, x = [0.5, 0.3, 0.2] | gamma = [0.008700227753081819, 0.7987122544877442, 0.0008824018478058464], ln_gamma = [-4.744406075149099, -0.22475453013437338, -7.032862995958898], ln_phi = [-11.69540382388977, -5.755854414443559, -31.384700009432617], p_sat = [95.76791536798726, 396.1629357961019, 2.6554098435359023e-06] |
 | `ternary_at_273_15_k_2_bar` | components = ['water', 'nitric acid', 'sulfuric acid'], T = 273.15, P = 200000.0, x = [0.7, 0.1, 0.2] | gamma = [0.11522424177591703, 0.2051486278402778, 4.1511422687461275e-05], ln_gamma = [-2.160875120775458, -1.584020548684296, -10.089541923119715], ln_phi = [-7.952900089095513, -6.163076242405616, -31.69156217792585], p_sat = [610.3592249571752, 2052.9169266045096, 8.305997595294622e-05] |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Taleb, D.; Ponche, J. L.; Mirabel, P. (1996). "Vapor pressures in the ternary system water-nitric acid-sulfuric acid at low temperature." Journal of Geophysical Research 101(D20), 25967-25977. DOI 10.1029/96JD02155

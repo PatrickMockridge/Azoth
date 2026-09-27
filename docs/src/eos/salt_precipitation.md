@@ -68,6 +68,16 @@ not an equation, and both implementations read it from here.
 |---|---|---|
 | `the_pitzer_brines_halite_at_25_c` | components = ['water', 'Na+', 'Cl-', 'CO3--', 'HCO3-'], salt = NaCl, T = 298.15, P = 1000000.0, z = [0.802568218298555, 0.0963081861958266, 0.0963081861958266, 0.00321027287319422, 0.00160513643659711] | precipitated_moles = 0.006137361975339, initial_saturation_ratio = 1.27219919895626, final_saturation_ratio = 1.0 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 1 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Oddo, J. E.; Tomson, M. B. (1982). "Simplified calculation of CaCO3 saturation at high temperatures and pressures in brine solutions." Journal of Petroleum Technology 34(7), 1583-1590. DOI 10.2118/10352-PA.

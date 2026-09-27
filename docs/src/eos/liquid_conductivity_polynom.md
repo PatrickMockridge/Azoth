@@ -56,6 +56,16 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `co2_water_aqueous_phase` | liquid_conductivity = [[0.251502, 0.0005238919, -3.82111e-06], [-0.384, 0.00525, -6.37e-06]], molar_mass = [0.04401, 0.018015], z = [0.0006691762234084198, 0.9993308237765915], T = 313.15 | k = 0.6344057039895419 |
 | `methane_nbutane_oil_phase` | liquid_conductivity = [[0.290304, -0.0004720407, -4.320339e-06], [0.24688, -0.0004719916, -6.249512e-08]], molar_mass = [0.016043, 0.058123], z = [0.09542082642782022, 0.9045791735721797], T = 300.0 | k = 0.09683839660866919 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 2 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `physicalproperties/methods/liquidphysicalproperties/conductivity/Conductivity.java` is the port source.

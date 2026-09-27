@@ -64,6 +64,16 @@ not an equation, and both implementations read it from here.
 | `gas_at_1_bar` | T = 300.0, P = 100000.0 | z_factor = 0.9898632310837752, u = 26421.15826398924, h = 28890.21251356837, s = 121.0014317549826, cv = 27.99489936167249, cp = 36.82669984618634, g = -7410.217012926424 |
 | `dense_at_100_bar` | T = 350.0, P = 10000000.0 | z_factor = 0.1113511630491471, u = 11992.14162839433, h = 12316.18040732534, s = 45.05941561082694, cv = 46.57537627252494, cp = 90.77336517601113, g = -3454.615056464115 |
 
+## How far this is checked
+**`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
+
+- Tests: 3 declared, every one run
+- External check: no external validation case names it
+
+The same account travels with every result this returns: `result.provenance`
+carries the status, the spec and both kernels with a SHA-256 of each, and which
+declared checks *that call* could not evaluate.
+
 ## References
 
 - Gao, K.; Wu, J.; Bell, I. H.; Lemmon, E. W. (2020). "Thermodynamic Properties of Ammonia." Journal of Physical and Chemical Reference Data.
