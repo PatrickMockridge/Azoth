@@ -39,7 +39,12 @@ def residual(z: list[float], k: list[float], beta: float) -> float:
 def test_spec_case(case: dict[str, Any]) -> None:
     """Run one case declared in the model spec."""
     result = call(case)
-    h.assert_close(result.vapour_fraction, case["expected"]["beta"], case["tolerance"], f"{case['id']} (beta)")
+    h.assert_close(
+        result.vapour_fraction,
+        case["expected"]["vapour_fraction"],
+        case["tolerance"],
+        f"{case['id']} (vapour_fraction)",
+    )
     h.assert_consistent(result, case["id"])
 
 
@@ -79,7 +84,9 @@ def test_a_root_outside_the_unit_interval_is_reported_not_clamped() -> None:
     """
     subcooled_k = [5.799172708809655, 0.14913889826410245]
     negative = rachford_rice([0.1, 0.9], subcooled_k)
-    assert negative.vapour_fraction < -0.06, f"the subcooled state's root is below zero; got {negative.vapour_fraction}"
+    assert negative.vapour_fraction < -0.06, (
+        f"the subcooled state's root is below zero; got {negative.vapour_fraction}"
+    )
     assert abs(residual([0.1, 0.9], subcooled_k, negative.vapour_fraction)) <= 1e-10
 
     superheated = rachford_rice([0.5, 0.5], [1.5, 0.9])

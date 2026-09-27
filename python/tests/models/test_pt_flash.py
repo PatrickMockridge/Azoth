@@ -92,7 +92,12 @@ def test_spec_case(case: dict[str, Any]) -> None:
     assert result.iterations == expected["iterations"], f"{case['id']}: iteration count"
 
     assert result.vapour_fraction is not None, f"{case['id']}: every spec case is a split"
-    h.assert_close(result.vapour_fraction, expected["beta"], tolerance, f"{case['id']} (beta)")
+    h.assert_close(
+        result.vapour_fraction,
+        expected["vapour_fraction"],
+        tolerance,
+        f"{case['id']} (vapour_fraction)",
+    )
 
     for name in ("x", "y", "k", "ln_phi_liquid", "ln_phi_vapour"):
         actual = getattr(result, name)
@@ -256,7 +261,9 @@ def test_the_mixture_parameters_and_vapour_fraction_reduce_to_the_binary_kernels
 
         # And the same reduction through the public API, which is the one a caller
         # would actually be relying on.
-        h.assert_close(result.vapour_fraction, closed_form.vapour_fraction, 1e-12, f"reported beta at T={t_c}")
+        h.assert_close(
+            result.vapour_fraction, closed_form.vapour_fraction, 1e-12, f"reported beta at T={t_c}"
+        )
 
 
 def test_a_feed_with_no_rachford_rice_root_is_single_phase() -> None:
@@ -307,7 +314,9 @@ def test_a_negative_flash_reports_its_vapour_fraction() -> None:
     assert any(w.code == "OUT_OF_VALID_RANGE" for w in result.warnings)
 
     for i, zi in enumerate(z):
-        material = (1.0 - result.vapour_fraction) * result.x[i] + result.vapour_fraction * result.y[i]
+        material = (1.0 - result.vapour_fraction) * result.x[i] + result.vapour_fraction * result.y[
+            i
+        ]
         assert abs(material - zi) <= 1e-12, f"the negative flash breaks the balance at {i}"
         assert result.x[i] > 0.0 and result.y[i] > 0.0
 
@@ -340,7 +349,9 @@ def test_the_phase_label_and_the_vapour_fraction_agree() -> None:
             where = f"T={temperature} K, P={pressure} Pa"
             seen.add(result.phase)
             if result.phase is Phase.TWO_PHASE:
-                assert result.vapour_fraction is not None, f"{where}: a split with no vapour fraction"
+                assert result.vapour_fraction is not None, (
+                    f"{where}: a split with no vapour fraction"
+                )
                 assert 0.0 <= result.vapour_fraction <= 1.0, (
                     f"{where}: `two_phase` with beta = {result.vapour_fraction}, which is not a "
                     f"split and not a number a caller can use as one"
@@ -529,7 +540,9 @@ def test_the_two_backends_agree_on_every_spec_case() -> None:
 
         assert py.iterations == rs.iterations, f"{case['id']}: iteration count"
         assert py.phase is rs.phase, f"{case['id']}: phase"
-        assert py.vapour_fraction is not None and rs.vapour_fraction is not None, f"{case['id']}: a split"
+        assert py.vapour_fraction is not None and rs.vapour_fraction is not None, (
+            f"{case['id']}: a split"
+        )
         h.assert_close(py.vapour_fraction, rs.vapour_fraction, 1e-12, f"{case['id']} (beta)")
         h.assert_close(py.z_liquid, rs.z_liquid, 1e-12, f"{case['id']} (z_liquid)")
         h.assert_close(py.z_vapour, rs.z_vapour, 1e-12, f"{case['id']} (z_vapour)")
@@ -717,7 +730,9 @@ def test_an_associating_flash_answers_the_lowest_gibbs_energy() -> None:
         # exact ordering of two numbers equal to sixteen digits.
         other = answers[1]
         assert other.vapour_fraction is not None and answer.vapour_fraction is not None
-        h.assert_close(other.vapour_fraction, answer.vapour_fraction, 1e-12, f"{T} K, the two kernels")
+        h.assert_close(
+            other.vapour_fraction, answer.vapour_fraction, 1e-12, f"{T} K, the two kernels"
+        )
         other_split = gibbs_energy(T, 1.0e5, other.vapour_fraction, list(other.x), list(other.y))
         h.assert_close(
             other_split,

@@ -24,7 +24,7 @@ def call(case: dict[str, Any]) -> PvfFlashResult:
     return pvf_flash(
         fluid,
         Q(case["inputs"]["P"], "Pa"),
-        case["inputs"]["beta"],
+        case["inputs"]["vapour_fraction"],
         Q(case["inputs"]["temperature"], "K"),
         case["inputs"]["z"],
     )
@@ -36,7 +36,12 @@ def test_spec_case(case: dict[str, Any]) -> None:
     h.assert_close(
         result.T.to("K").magnitude, case["expected"]["T"], case["tolerance"], f"{case['id']} (T)"
     )
-    h.assert_close(result.vapour_fraction, case["inputs"]["beta"], case["tolerance"], f"{case['id']} (beta)")
+    h.assert_close(
+        result.vapour_fraction,
+        case["inputs"]["vapour_fraction"],
+        case["tolerance"],
+        f"{case['id']} (vapour_fraction)",
+    )
     h.assert_consistent(result, case["id"])
 
 

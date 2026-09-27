@@ -45,14 +45,14 @@ def test_spec_case(case: dict[str, Any]) -> None:
     result = call(case)
     h.assert_close(
         result.vapour_fraction,
-        h.expected(case, "beta"),
+        h.expected(case, "vapour_fraction"),
         case.get("tolerance", 1e-12),
         f"{case['id']} (beta)",
     )
     h.assert_consistent(result, case["id"])
 
     def resolve(quantity: str, _case: dict[str, Any] = case) -> float | None:
-        if quantity == "beta":
+        if quantity == "vapour_fraction":
             return result.vapour_fraction
         return h.input_(_case, quantity) if quantity in _case["inputs"] else None
 
