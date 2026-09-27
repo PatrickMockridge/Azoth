@@ -298,17 +298,86 @@ def test_a_skip_goes_stale_when_its_sentence_leaves_the_page(
     assert "stale" in failures[0]
 
 
-# --- the calculus sweep -------------------------------------------------------
+# --- the enforcement sweep ----------------------------------------------------
 #
-# The nine layers are `docs/src/calculus/`'s, and each page states once where its claim is
-# enforced. The rule worth testing is the one that makes the sweep a gate rather than a
-# formality: **a page may claim `nothing` only where no status claims a proof.** A proved
-# claim whose implementation half enforces nothing is the finding the sweep exists for.
+# Two trees: the nine layers in `docs/src/calculus/`, and the surface a front-end binds in
+# `docs/src/architecture/`. Each page states once where its claim is enforced. The rule worth
+# testing is the one that makes the sweep a gate rather than a formality: **a page may claim
+# `nothing` only where no status claims a proof.** A proved claim whose implementation half
+# enforces nothing is the finding the sweep exists for.
 
 
 def calculus(*pages: str) -> list[str]:
     """Synthetic calculus pages, each `name\\ntext`."""
     return [f"docs/src/calculus/{entry}" for entry in pages]
+
+
+def architecture(*pages: str) -> list[str]:
+    """Synthetic architecture pages. The same rules, the other normative tree."""
+    return [f"docs/src/architecture/{entry}" for entry in pages]
+
+
+def test_an_architecture_page_with_no_marker_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The surface a front-end binds makes the same kind of claim, so it is swept the same way.
+
+    Without this the sweep reads one tree and reports OK while the pages that describe the
+    editor and the middleware state their enforcement nowhere.
+    """
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus("process.md\n*Status: **proved**.*\n\n*Enforcement: check — `x.rs`.*"),
+        *architecture("middleware.md\nIt holds no copy of the flowsheet."),
+        "x.rs\n",
+    )
+    checked, failures, _ = tool.sweep_enforcement()
+    assert checked == 1
+    assert len(failures) == 1
+    assert "docs/src/architecture/middleware.md" in failures[0]
+
+
+def test_an_enforcement_naming_a_status_the_page_does_not_state_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A marker about a status this page never states is one written for another page's claim.
+
+    The shape a contradiction takes: `process.md` says the balance is **specified** while three
+    other pages group it with the recycle as **characterised**, and no rule could see it because
+    each page's own statuses are consistent. This catches the half that is decidable - a marker
+    whose status word is nowhere on the page it sits under.
+    """
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "process.md\n*Status: **specified**.*\n\n"
+            "*Enforcement: check — `x.rs`, and the claim stays **characterised**.*"
+        ),
+        "x.rs\n",
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert len(failures) == 1
+    assert "'characterised'" in failures[0]
+    assert "this page does not make" in failures[0]
+
+
+def test_a_marker_naming_a_status_the_page_does_state_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The rule above is about a stray word, not about bold text in a marker."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        *calculus(
+            "process.md\n*Status: **specified**.*\n\n*Status: **characterised**.*\n\n"
+            "*Enforcement: check — `x.rs`, and the second claim stays **characterised**.*"
+        ),
+        "x.rs\n",
+    )
+    _, failures, _ = tool.sweep_enforcement()
+    assert failures == []
 
 
 def test_a_proved_claim_with_nothing_enforcing_it_is_refused(

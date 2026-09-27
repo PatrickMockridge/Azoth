@@ -266,3 +266,5 @@ The middleware waited on the backend, in the order
 [the specification's tranche table](./specification.md) fixes — the one data path first,
 then transport properties, the physics, a kernel for every unit op, and the executor.
 That order is stated there and is not repeated here.
+
+*Enforcement: construction — `crates/azoth-process/src/middleware/mod.rs` is the surface and every binding is written against it, so a front-end cannot hold a second rule set, and `crates/azoth-cli/src/session.rs` is the one session the two network transports share — `crates/azoth-cli/tests/mcp_http.rs` reads an edit made through `/mcp` back through `/rpc`.*

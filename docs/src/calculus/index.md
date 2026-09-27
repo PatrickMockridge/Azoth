@@ -66,15 +66,21 @@ the general machinery, before the *dimensional* barb that would give those two c
 something to be about, which is a later tranche — so they stay specifications.
 [Processes and channels](./process.md) states three claims and **one of them is proved**:
 `Azoth.Process.unit_op_is_extensional` is the adequacy claim, and it is proved at the level the
-layer supports. The other two — one about conservation following from linearity, one about a
-recycle having a fixed point — are **characterised**, and for one reason: a barb records a
-**channel** and not a magnitude. The first is a lemma about values crossing channels. The second
-is a statement whose conclusion is `BarbedBisim`, which is barb-set equality plus reduction
-closure, and the five constructors of `Process` carry no value — so a loop and a process emitting
-its fixed point barb the same channel whatever the loop converges to, and uniqueness, the half
-the page says matters, is invisible to the layer. Naming that is the point; a claim weakened into
-something provable would be a different claim, and a claim dressed as a theorem would be a
-vacuity.
+layer supports. The other two carry **different** statuses, and the difference between those two
+words is the whole of the judgement:
+
+- **The balance is specified.** It is a lemma about values crossing channels, and this
+  development's barbs record a **channel** and not a magnitude — so the layer it needs is one
+  that does not exist, and `Azoth.Process.balances_close_under_linearity` is what the tranche that
+  builds that layer proves.
+- **The recycle's fixed point is characterised.** Its conclusion is `BarbedBisim`, which is
+  barb-set equality plus reduction closure — a relation that exists — but the five constructors
+  of `Process` carry no value, so a loop and a process emitting its fixed point barb the same
+  channel whatever the loop converges to, and uniqueness, the half the page says matters, is
+  invisible to the layer. Nothing this repository can do would violate it.
+
+Naming that is the point; a claim weakened into something provable would be a different claim,
+and a claim dressed as a theorem would be a vacuity.
 
 So each claim names its theorem and says which of three things it is:
 

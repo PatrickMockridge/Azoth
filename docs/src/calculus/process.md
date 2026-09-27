@@ -154,4 +154,4 @@ an executor here would put a second flowsheet layer beside the port, and
 [Reflection](./rho.md) is where the reason that is a later question rather than
 this one is set out.
 
-*Enforcement: check — `crates/azoth-process/src/check.rs` holds a flowsheet to the channel discipline at run time, and the balance lemma stays characterised because a barb records a channel and not a magnitude.*
+*Enforcement: check — `crates/azoth-process/src/check.rs` holds a flowsheet to the channel discipline at run time, and the balance lemma stays specified (its layer is the value-carrying barb, and there is none) while the recycle's fixed point is characterised, both because a barb records a channel and not a magnitude.*

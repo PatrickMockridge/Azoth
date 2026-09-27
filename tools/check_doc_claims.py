@@ -687,20 +687,33 @@ def sweep_sources() -> tuple[int, list[str], list[str]]:
     return checked, failures, markers
 
 
-# --- the calculus sweep -----------------------------------------------------
+# --- the enforcement sweep ---------------------------------------------------
+
+
+def swept_pages() -> list[Path]:
+    """Every page that states where its claims are enforced.
+
+    Two trees. `docs/src/calculus/` is normative for the *types* - nine layers, each with
+    a Lean module and a status. `docs/src/architecture/` is normative for the *surface* a
+    front-end binds, and a claim about the surface is the same kind of claim: `dirty`
+    means this, a failed run takes the values with it, the doors disagree about nothing.
+    Until this sweep reached it, those rested on tests no page named.
+    """
+    pages: list[Path] = []
+    for tree in ("calculus", "architecture"):
+        pages += sorted((ROOT / "docs" / "src" / tree).glob("*.md"))
+    return pages
 
 
 def sweep_enforcement() -> tuple[int, list[str], list[str]]:
-    """Every calculus page states where its claim is enforced, and the kinds are legal.
+    """Every page of the two normative trees states where its claims are enforced.
 
     Returns (checked, failures, nothing-claims).
 
-    `docs/src/calculus/` is normative for the types and states nine layers, each with a
-    Lean module and a status - **proved**, **specified** or **characterised**. What no
-    page said until now is whether the *implementation* half is enforced by a
-    construction, by a check, or by nothing - and that difference is the whole review: a
-    claim that is proved and enforced by nothing is one whose implementation half nobody
-    would notice breaking.
+    What no page said until now is whether the *implementation* half of a claim is
+    enforced by a construction, by a check, or by nothing - and that difference is the
+    whole review: a claim that is proved and enforced by nothing is one whose
+    implementation half nobody would notice breaking.
 
     So each page carries one marker, after its last status:
 
@@ -719,9 +732,9 @@ def sweep_enforcement() -> tuple[int, list[str], list[str]]:
     failures: list[str] = []
     nothing_claims: list[str] = []
     checked = 0
-    pages = sorted((ROOT / "docs" / "src" / "calculus").glob("*.md"))
+    pages = swept_pages()
     if not pages:
-        raise ProbeError("no calculus pages; this sweep is looking in the wrong place")
+        raise ProbeError("no pages under the swept trees; this is looking in the wrong place")
     for page in pages:
         where = str(page.relative_to(ROOT))
         text = page.read_text(encoding="utf-8")
@@ -735,10 +748,20 @@ def sweep_enforcement() -> tuple[int, list[str], list[str]]:
         checked += 1
         kind, reason = markers[0]
         statuses = STATUS.findall(text)
+        status_words = {word for line in statuses for word in BOLD.findall(line)}
         if "*Status:" in text and text.index("*Enforcement:") < text.rindex("*Status:"):
             failures.append(
                 f"{where}: the marker sits above the last `*Status:*`; it summarises the page's "
                 f"claims, so it goes after them"
+            )
+        # A marker that names a status this page never states is one written about another
+        # page's claim - the shape a contradiction takes when two pages describe one claim.
+        stray = sorted({word for word in BOLD.findall(reason)} - status_words)
+        if status_words and stray:
+            failures.append(
+                f"{where}: the marker names {stray}, and this page's statuses are "
+                f"{sorted(status_words)} - so the enforcement stated here is about a claim "
+                f"this page does not make"
             )
         if not statuses and kind == "nothing":
             failures.append(
@@ -820,7 +843,7 @@ def main(argv: list[str] | None = None) -> int:
     failures += [f for claim in claims for f in claim.check()]
     checked, sweep_failures, escapes = sweep_paths(pages)
     failures += sweep_failures
-    layers, layer_failures, unenforced = sweep_enforcement()
+    pages_swept, layer_failures, unenforced = sweep_enforcement()
     failures += layer_failures
     specs, spec_failures, source_markers = sweep_sources()
     failures += spec_failures
@@ -839,7 +862,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"check_doc_claims: OK ({len(claims)} claim(s) across "
         f"{len({c.page for c in claims})} page(s), {checked} path(s) checked, "
-        f"{layers} calculus layer(s), "
+        f"{pages_swept} swept page(s), "
         f"{specs} spec source(s))"
     )
     if source_markers:

@@ -125,3 +125,5 @@ dumping ground.
   and the list of what is still not built.
 - [The calculus of thermodynamic dimensionality](../calculus/index.md) is the formal
   layer: the types, the vocabulary, and what a keycard is as a capability.
+
+*Enforcement: check — the pipeline above is `.github/workflows/ci.yml`'s regenerate-and-diff, which makes a generated file that disagrees with its specification a build failure, and the mirror is `python/tests/test_cross_impl.py`, which runs every case through both halves.*

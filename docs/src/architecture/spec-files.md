@@ -228,3 +228,5 @@ tolerance = 1.0e-9
 | `test_registry_contract.py` | spec ↔ registry ↔ code agreement, in both languages |
 | `test_model_contract.py` | the same for models, plus the algorithm-scheme vocabulary |
 | the `docs-drift` job | a spec edited without regenerating its output |
+
+*Enforcement: check — the table above is the enforcement: `tools/spec_lint.py` refuses a spec the schema or a semantic rule rejects, and `.github/workflows/ci.yml`'s `docs-drift` job fails on a spec edited without regenerating its output.*

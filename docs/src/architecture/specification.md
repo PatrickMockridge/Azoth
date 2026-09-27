@@ -327,6 +327,9 @@ page:
   and flowsheet to the calculus's rules. **The interpreter is built too** — tranche P12's
   `executor` module runs a flowsheet to its steady state, and what it reaches is named in
   `ROADMAP.md` — and `lean/Azoth/Process.lean` carries the calculus's claims: one proved
-  (`unit_op_is_extensional`), the other two characterised rather than dressed as theorems,
-  each saying why. A page describing a port was a specification; it is now a
+  (`unit_op_is_extensional`), one specified (the balance, whose layer is the value-carrying barb)
+  and one characterised (the recycle's fixed point), rather than dressed as theorems, each
+  saying why. A page describing a port was a specification; it is now a
   declaration with a checker and an executor behind it.
+
+*Enforcement: check — `tools/check_manifest.py` refuses a `not-ported` row that names no NeqSim class, which keeps the port's backlog honest, and `tools/check_doc_claims.py` holds this page's numbers to the tree, so a policy stated here cannot go stale against the code.*

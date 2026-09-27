@@ -237,3 +237,5 @@ refuses by name**: `unit_ops.packed_column` has a kernel
 and a registered id, and its declaration describes the packing rather than the column, so the
 executor says so rather than running a machine the declaration does not describe. What is still
 owed is named in `ROADMAP.md`.
+
+*Enforcement: construction — the Rust type is the schema: `crates/azoth-process/src/channel.rs` declares the port record and `crates/azoth-process/src/flowsheet.rs` the document, so a flowsheet that disagrees with the declaration cannot be read, and `crates/azoth-process/src/check.rs`'s `validate` rules on what was read.*
