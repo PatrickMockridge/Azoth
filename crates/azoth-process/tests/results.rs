@@ -78,13 +78,13 @@ fn published() -> Vec<(&'static str, Option<&'static [&'static str]>)> {
         // same statement as its sibling's below.
         ("unit_ops.packed_column", None),
         ("unit_ops.pump", None),
-        // **The rate-based packed column reaches an interior and publishes none of it**, which is
-        // why its row is `None` rather than a `FIELDS`. What is missing is the step from its
-        // kernel's `RateBasedOutcome` to its model's flat record - the model *does* declare the
-        // segment profile as `[outputs]`, and builds them from its own flat inputs today. So the
-        // row is a statement about the wire rather than about the arithmetic, and the day that
-        // constructor lands is the day this row carries a `FIELDS` beside it.
-        ("unit_ops.rate_based_packed_column", None),
+        // **The rate-based packed column reaches an interior and publishes all of it**: its
+        // executor arm calls the model's own `RateBasedPackedColumnResult::of`, so the wire
+        // carries the segment profile rather than only the two outlets.
+        (
+            "unit_ops.rate_based_packed_column",
+            Some(models::RateBasedPackedColumnResult::FIELDS),
+        ),
         ("unit_ops.separator", None),
         (
             "unit_ops.shortcut_distillation_column",

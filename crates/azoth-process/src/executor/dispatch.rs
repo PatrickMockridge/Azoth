@@ -802,16 +802,10 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
             "chilton_colburn_analogy",
         )?)?,
     })?;
-    // **Streams only, and the reason is a constructor rather than a declaration.** The kernel
-    // reaches a segment profile, film coefficients and an interphase balance, and the model
-    // *does* declare all of them as `[outputs]` - what is missing is the step from the kernel's
-    // `RateBasedOutcome` to the model's flat record, which the model builds from its own flat
-    // *inputs* today. `tests/results.rs` holds the two lists to each other, so the day that
-    // constructor lands is the day this line changes and the entry is listed.
-    Ok(KernelOutcome::streams_only(vec![
-        out.gas_out,
-        out.liquid_out,
-    ]))
+    // **The whole segment profile crosses here**, through the same constructor the model uses,
+    // so a flowsheet's rate-based column publishes what a direct call to the id does.
+    let result = crate::models::RateBasedPackedColumnResult::of(&out);
+    KernelOutcome::publishing(vec![out.gas_out, out.liquid_out], &result)
 }
 
 fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {

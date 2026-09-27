@@ -23,7 +23,8 @@
 //! take the whole envelope with it, which is the failure `run_error` exists to prevent.
 
 use azoth_core::units::{
-    MassRate, MolarEnergy, Power, Pressure, ThermalConductance, ThermodynamicTemperature, Velocity,
+    DiffusionCoefficient, DynamicViscosity, Length, MassDensity, MassRate, MolarEnergy, Power,
+    Pressure, ThermalConductance, ThermodynamicTemperature, Velocity,
 };
 use azoth_core::{AzothError, Result, Warning};
 use serde::ser::SerializeSeq;
@@ -120,6 +121,34 @@ impl WireScalar for MassRate {
 
 impl WireScalar for ThermalConductance {
     const UNIT: &'static str = "W/K";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for Length {
+    const UNIT: &'static str = "m";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for MassDensity {
+    const UNIT: &'static str = "kg/m**3";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for DynamicViscosity {
+    const UNIT: &'static str = "Pa*s";
+    fn magnitude(&self) -> f64 {
+        self.value
+    }
+}
+
+impl WireScalar for DiffusionCoefficient {
+    const UNIT: &'static str = "m**2/s";
     fn magnitude(&self) -> f64 {
         self.value
     }

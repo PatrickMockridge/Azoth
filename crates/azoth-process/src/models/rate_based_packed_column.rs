@@ -15,9 +15,12 @@ use azoth_core::units::{
 use azoth_core::warning::{Warning, WarningCode};
 use azoth_core::{AzothError, CalcResult, Result};
 
+use serde::Serialize;
+
+use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::rate_based_packed_column::{
-    ColumnSolver, FilmModel, HeatTransferModel, MassTransferCorrelation, RateBasedSetup,
-    SegmentSolver, rate_based_packed_column as kernel,
+    ColumnSolver, FilmModel, HeatTransferModel, MassTransferCorrelation, RateBasedOutcome,
+    RateBasedSetup, SegmentSolver, rate_based_packed_column as kernel,
 };
 use crate::segment::{Property, SegmentResult};
 use crate::stream::Stream;
@@ -29,27 +32,33 @@ use crate::stream::Stream;
 /// carried `SegmentResult` fields. Four of the class's thirty-four are not here - three are
 /// constants on the ported path and one is derived - and the module's own doc for
 /// [`crate::segment::step::SegmentResult`] says which and why.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct RateBasedPackedColumnResult {
     /// The gas leaving the top segment, mol/s.
     pub gas_out_n: f64,
     /// The gas outlet's composition.
     pub gas_out_z: Vec<f64>,
     /// The gas outlet's pressure.
+    #[serde(serialize_with = "scalar")]
     pub gas_out_p: Pressure,
     /// The gas outlet's temperature.
+    #[serde(serialize_with = "scalar")]
     pub gas_out_t: ThermodynamicTemperature,
     /// The gas outlet's molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub gas_out_h: MolarEnergy,
     /// The liquid leaving the bottom segment, mol/s.
     pub liquid_out_n: f64,
     /// The liquid outlet's composition.
     pub liquid_out_z: Vec<f64>,
     /// The liquid outlet's pressure.
+    #[serde(serialize_with = "scalar")]
     pub liquid_out_p: Pressure,
     /// The liquid outlet's temperature.
+    #[serde(serialize_with = "scalar")]
     pub liquid_out_t: ThermodynamicTemperature,
     /// The liquid outlet's molar enthalpy.
+    #[serde(serialize_with = "scalar")]
     pub liquid_out_h: MolarEnergy,
     /// The passes taken.
     pub iterations: u32,
@@ -63,18 +72,29 @@ pub struct RateBasedPackedColumnResult {
     pub component_transfer_totals: Vec<f64>,
     /// Each component the totals are stated over, in the same order.
     pub transfer_components: Vec<String>,
+    #[serde(serialize_with = "scalars")]
     pub segment_height_from_bottom: Vec<Length>,
+    #[serde(serialize_with = "scalars")]
     pub segment_gas_temperature: Vec<ThermodynamicTemperature>,
+    #[serde(serialize_with = "scalars")]
     pub segment_liquid_temperature: Vec<ThermodynamicTemperature>,
+    #[serde(serialize_with = "scalars")]
     pub segment_gas_pressure: Vec<Pressure>,
+    #[serde(serialize_with = "scalars")]
     pub segment_liquid_pressure: Vec<Pressure>,
     pub segment_gas_molar_flow: Vec<f64>,
     pub segment_liquid_molar_flow: Vec<f64>,
+    #[serde(serialize_with = "scalars")]
     pub segment_gas_density: Vec<MassDensity>,
+    #[serde(serialize_with = "scalars")]
     pub segment_liquid_density: Vec<MassDensity>,
+    #[serde(serialize_with = "scalars")]
     pub segment_gas_viscosity: Vec<DynamicViscosity>,
+    #[serde(serialize_with = "scalars")]
     pub segment_liquid_viscosity: Vec<DynamicViscosity>,
+    #[serde(serialize_with = "scalars")]
     pub segment_gas_diffusivity: Vec<DiffusionCoefficient>,
+    #[serde(serialize_with = "scalars")]
     pub segment_liquid_diffusivity: Vec<DiffusionCoefficient>,
     pub segment_wetted_area: Vec<f64>,
     pub segment_k_ga: Vec<f64>,
@@ -82,13 +102,18 @@ pub struct RateBasedPackedColumnResult {
     pub segment_gas_heat_transfer_coefficient: Vec<f64>,
     pub segment_liquid_heat_transfer_coefficient: Vec<f64>,
     pub segment_overall_heat_transfer_coefficient: Vec<f64>,
+    #[serde(serialize_with = "scalars")]
     pub segment_interface_temperature: Vec<ThermodynamicTemperature>,
+    #[serde(serialize_with = "scalars")]
     pub segment_heat_transfer_rate: Vec<Power>,
+    #[serde(serialize_with = "scalars")]
     pub segment_pressure_drop_per_meter: Vec<Pressure>,
     pub segment_percent_flood: Vec<f64>,
     pub segment_net_molar_transfer: Vec<f64>,
+    #[serde(serialize_with = "scalars")]
     pub segment_enthalpy_balance_residual: Vec<Power>,
     /// Caveats.
+    #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
 }
 
@@ -141,6 +166,131 @@ impl CalcResult for RateBasedPackedColumnResult {
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings
+    }
+}
+
+impl RateBasedPackedColumnResult {
+    /// The flat record, from the kernel's own outcome.
+    ///
+    /// **This is the only place the segment profile is spelled out.** The model and the
+    /// executor's arm for this id each hold a `RateBasedOutcome` from the same kernel, so
+    /// calling this from both is what keeps the wire and the model from stating different
+    /// records.
+    pub fn of(outcome: &RateBasedOutcome) -> Self {
+        let names: Vec<String> = outcome
+            .component_transfer_totals
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect();
+        let totals: Vec<f64> = outcome
+            .component_transfer_totals
+            .iter()
+            .map(|(_, total)| *total)
+            .collect();
+
+        let column = |pick: fn(&SegmentResult) -> f64| -> Vec<f64> {
+            outcome.segments.iter().map(pick).collect()
+        };
+        let temperatures = |pick: fn(&SegmentResult) -> f64| -> Vec<ThermodynamicTemperature> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| azoth_core::units::kelvins(pick(segment)))
+                .collect()
+        };
+        let pressures = |pick: fn(&SegmentResult) -> f64| -> Vec<Pressure> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| azoth_core::units::pascals(pick(segment)))
+                .collect()
+        };
+        let lengths = |pick: fn(&SegmentResult) -> f64| -> Vec<Length> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| azoth_core::units::meters(pick(segment)))
+                .collect()
+        };
+        let densities = |pick: fn(&SegmentResult) -> f64| -> Vec<MassDensity> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| kilograms_per_cubic_meter(pick(segment)))
+                .collect()
+        };
+        let viscosities = |pick: fn(&SegmentResult) -> f64| -> Vec<DynamicViscosity> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| pascal_seconds(pick(segment)))
+                .collect()
+        };
+        let diffusivities = |pick: fn(&SegmentResult) -> f64| -> Vec<DiffusionCoefficient> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| square_meters_per_second(pick(segment)))
+                .collect()
+        };
+        let powers = |pick: fn(&SegmentResult) -> f64| -> Vec<Power> {
+            outcome
+                .segments
+                .iter()
+                .map(|segment| watts(pick(segment)))
+                .collect()
+        };
+
+        Self {
+            gas_out_n: outcome.gas_out.n,
+            gas_out_z: outcome.gas_out.z.clone(),
+            gas_out_p: outcome.gas_out.p,
+            gas_out_t: outcome.gas_out.t,
+            gas_out_h: outcome.gas_out.h,
+            liquid_out_n: outcome.liquid_out.n,
+            liquid_out_z: outcome.liquid_out.z.clone(),
+            liquid_out_p: outcome.liquid_out.p,
+            liquid_out_t: outcome.liquid_out.t,
+            liquid_out_h: outcome.liquid_out.h,
+            iterations: outcome.iterations as u32,
+            convergence_residual: outcome.convergence_residual,
+            converged: outcome.converged,
+            total_absolute_molar_transfer: outcome.total_absolute_molar_transfer,
+            component_transfer_totals: totals,
+            transfer_components: names,
+            segment_height_from_bottom: lengths(|segment| segment.height_from_bottom),
+            segment_gas_temperature: temperatures(|segment| segment.gas_temperature),
+            segment_liquid_temperature: temperatures(|segment| segment.liquid_temperature),
+            segment_gas_pressure: pressures(|segment| segment.gas_pressure),
+            segment_liquid_pressure: pressures(|segment| segment.liquid_pressure),
+            segment_gas_molar_flow: column(|segment| segment.gas_molar_flow.value),
+            segment_liquid_molar_flow: column(|segment| segment.liquid_molar_flow.value),
+            segment_gas_density: densities(|segment| segment.gas_density),
+            segment_liquid_density: densities(|segment| segment.liquid_density),
+            segment_gas_viscosity: viscosities(|segment| segment.gas_viscosity),
+            segment_liquid_viscosity: viscosities(|segment| segment.liquid_viscosity),
+            segment_gas_diffusivity: diffusivities(|segment| segment.gas_diffusivity),
+            segment_liquid_diffusivity: diffusivities(|segment| segment.liquid_diffusivity),
+            segment_wetted_area: column(|segment| segment.wetted_area),
+            segment_k_ga: column(|segment| segment.k_ga),
+            segment_k_la: column(|segment| segment.k_la),
+            segment_gas_heat_transfer_coefficient: column(|segment| {
+                segment.gas_heat_transfer_coefficient
+            }),
+            segment_liquid_heat_transfer_coefficient: column(|segment| {
+                segment.liquid_heat_transfer_coefficient
+            }),
+            segment_overall_heat_transfer_coefficient: column(|segment| {
+                segment.overall_heat_transfer_coefficient
+            }),
+            segment_interface_temperature: temperatures(|segment| segment.interface_temperature),
+            segment_heat_transfer_rate: powers(|segment| segment.heat_transfer_rate),
+            segment_pressure_drop_per_meter: pressures(|segment| segment.pressure_drop_per_meter),
+            segment_percent_flood: column(|segment| segment.percent_flood),
+            segment_net_molar_transfer: column(|segment| segment.net_molar_transfer),
+            segment_enthalpy_balance_residual: powers(|segment| segment.enthalpy_balance_residual),
+            warnings: warnings_for(outcome.fallbacks, outcome.converged, outcome.iterations),
+        }
     }
 }
 
@@ -242,120 +392,7 @@ pub fn rate_based_packed_column(
         heat_transfer_model: heat,
     })?;
 
-    let names: Vec<String> = outcome
-        .component_transfer_totals
-        .iter()
-        .map(|(name, _)| name.clone())
-        .collect();
-    let totals: Vec<f64> = outcome
-        .component_transfer_totals
-        .iter()
-        .map(|(_, total)| *total)
-        .collect();
-
-    let column = |pick: fn(&SegmentResult) -> f64| -> Vec<f64> {
-        outcome.segments.iter().map(pick).collect()
-    };
-    let temperatures = |pick: fn(&SegmentResult) -> f64| -> Vec<ThermodynamicTemperature> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| azoth_core::units::kelvins(pick(segment)))
-            .collect()
-    };
-    let pressures = |pick: fn(&SegmentResult) -> f64| -> Vec<Pressure> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| azoth_core::units::pascals(pick(segment)))
-            .collect()
-    };
-    let lengths = |pick: fn(&SegmentResult) -> f64| -> Vec<Length> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| azoth_core::units::meters(pick(segment)))
-            .collect()
-    };
-    let densities = |pick: fn(&SegmentResult) -> f64| -> Vec<MassDensity> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| kilograms_per_cubic_meter(pick(segment)))
-            .collect()
-    };
-    let viscosities = |pick: fn(&SegmentResult) -> f64| -> Vec<DynamicViscosity> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| pascal_seconds(pick(segment)))
-            .collect()
-    };
-    let diffusivities = |pick: fn(&SegmentResult) -> f64| -> Vec<DiffusionCoefficient> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| square_meters_per_second(pick(segment)))
-            .collect()
-    };
-    let powers = |pick: fn(&SegmentResult) -> f64| -> Vec<Power> {
-        outcome
-            .segments
-            .iter()
-            .map(|segment| watts(pick(segment)))
-            .collect()
-    };
-
-    Ok(RateBasedPackedColumnResult {
-        gas_out_n: outcome.gas_out.n,
-        gas_out_z: outcome.gas_out.z.clone(),
-        gas_out_p: outcome.gas_out.p,
-        gas_out_t: outcome.gas_out.t,
-        gas_out_h: outcome.gas_out.h,
-        liquid_out_n: outcome.liquid_out.n,
-        liquid_out_z: outcome.liquid_out.z.clone(),
-        liquid_out_p: outcome.liquid_out.p,
-        liquid_out_t: outcome.liquid_out.t,
-        liquid_out_h: outcome.liquid_out.h,
-        iterations: outcome.iterations as u32,
-        convergence_residual: outcome.convergence_residual,
-        converged: outcome.converged,
-        total_absolute_molar_transfer: outcome.total_absolute_molar_transfer,
-        component_transfer_totals: totals,
-        transfer_components: names,
-        segment_height_from_bottom: lengths(|segment| segment.height_from_bottom),
-        segment_gas_temperature: temperatures(|segment| segment.gas_temperature),
-        segment_liquid_temperature: temperatures(|segment| segment.liquid_temperature),
-        segment_gas_pressure: pressures(|segment| segment.gas_pressure),
-        segment_liquid_pressure: pressures(|segment| segment.liquid_pressure),
-        segment_gas_molar_flow: column(|segment| segment.gas_molar_flow.value),
-        segment_liquid_molar_flow: column(|segment| segment.liquid_molar_flow.value),
-        segment_gas_density: densities(|segment| segment.gas_density),
-        segment_liquid_density: densities(|segment| segment.liquid_density),
-        segment_gas_viscosity: viscosities(|segment| segment.gas_viscosity),
-        segment_liquid_viscosity: viscosities(|segment| segment.liquid_viscosity),
-        segment_gas_diffusivity: diffusivities(|segment| segment.gas_diffusivity),
-        segment_liquid_diffusivity: diffusivities(|segment| segment.liquid_diffusivity),
-        segment_wetted_area: column(|segment| segment.wetted_area),
-        segment_k_ga: column(|segment| segment.k_ga),
-        segment_k_la: column(|segment| segment.k_la),
-        segment_gas_heat_transfer_coefficient: column(|segment| {
-            segment.gas_heat_transfer_coefficient
-        }),
-        segment_liquid_heat_transfer_coefficient: column(|segment| {
-            segment.liquid_heat_transfer_coefficient
-        }),
-        segment_overall_heat_transfer_coefficient: column(|segment| {
-            segment.overall_heat_transfer_coefficient
-        }),
-        segment_interface_temperature: temperatures(|segment| segment.interface_temperature),
-        segment_heat_transfer_rate: powers(|segment| segment.heat_transfer_rate),
-        segment_pressure_drop_per_meter: pressures(|segment| segment.pressure_drop_per_meter),
-        segment_percent_flood: column(|segment| segment.percent_flood),
-        segment_net_molar_transfer: column(|segment| segment.net_molar_transfer),
-        segment_enthalpy_balance_residual: powers(|segment| segment.enthalpy_balance_residual),
-        warnings: warnings_for(outcome.fallbacks, outcome.converged, outcome.iterations),
-    })
+    Ok(RateBasedPackedColumnResult::of(&outcome))
 }
 
 /// **A substitution the class makes silently is a caveat here**, one per property rather than
