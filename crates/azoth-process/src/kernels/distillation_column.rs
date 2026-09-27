@@ -160,6 +160,67 @@ pub struct TrayProfile {
     pub liquid_z: Vec<f64>,
 }
 
+/// **A warm start: the trays a previous solve left, installed instead of the cold seed.**
+///
+/// The class's own `DistillationColumn.initializeTrayStateFromColumn`, which maps a solved
+/// column's tray systems onto a fresh one. What travels is the three things the sweep's map
+/// reads - each tray's leaving vapour, its leaving liquid, and its temperature.
+///
+/// **The raw flash pair is deliberately not here, and that is a measurement rather than a
+/// saving.** This plan's item 4 asserted the pair was required because the correction reads the
+/// neighbour below's raw flash. Reading `sweep`'s own order refutes it: the downward pass runs
+/// the reboiler, the upward pass runs each tray in turn, and `Network::run` writes
+/// `equilibrium[i]` from the flash *before* the correction reads `equilibrium[i - 1]` - so a
+/// tray's neighbour is always this pass's by the time it is read. `a_warm_start_reproduces_the_
+/// cold_paths_tray_temperatures` measures it by starting from a state with no pair at all.
+#[derive(Debug, Clone)]
+pub struct ColumnState {
+    /// Each tray's leaving vapour, one entry per tray, the reboiler at index zero.
+    pub gas: Vec<Stream>,
+    /// Each tray's leaving liquid, one entry per tray.
+    pub liquid: Vec<Stream>,
+    /// Each tray's temperature, K.
+    pub temperatures: Vec<f64>,
+}
+
+impl ColumnState {
+    /// The trays a solved column left, as a state a second solve can start from.
+    ///
+    /// `components` is the column's own substance list, which every tray shares - the class's
+    /// trays are all views of one `SystemInterface`, so a state has one list and not one per
+    /// tray.
+    ///
+    /// # Errors
+    /// Whatever rebuilding a tray's state refuses.
+    pub fn of(outcome: &ColumnOutcome, components: &[String]) -> Result<Self> {
+        let mut gas = Vec::with_capacity(outcome.trays.len());
+        let mut liquid = Vec::with_capacity(outcome.trays.len());
+        let mut temperatures = Vec::with_capacity(outcome.trays.len());
+        for tray in &outcome.trays {
+            gas.push(Stream::from_pt(
+                components.to_vec(),
+                tray.gas_z.clone(),
+                tray.gas_n,
+                tray.pressure,
+                tray.temperature,
+            )?);
+            liquid.push(Stream::from_pt(
+                components.to_vec(),
+                tray.liquid_z.clone(),
+                tray.liquid_n,
+                tray.pressure,
+                tray.temperature,
+            )?);
+            temperatures.push(tray.temperature.value);
+        }
+        Ok(Self {
+            gas,
+            liquid,
+            temperatures,
+        })
+    }
+}
+
 /// What a column solve hands back.
 ///
 /// **Three residuals and no `converged` flag.** Where a solve stops is a measurement, and a
@@ -291,6 +352,10 @@ pub struct ColumnSetup {
     /// states the column-wide value and its per-stage overrides, and [`crate::column::murphree`]
     /// is the correction the sequential sweep applies.
     pub murphree_efficiency: Option<Murphree>,
+    /// **Where the solve starts**, or `None` for the class's own cold seed. A [`ColumnState`]
+    /// installs every tray's vapour, liquid and temperature instead of [`seed_network`]'s
+    /// linear profile.
+    pub initial_state: Option<ColumnState>,
     /// The iteration cap.
     pub max_iterations: usize,
     /// The top product's specification, or `None` where the top is pinned by temperature.
@@ -1029,7 +1094,10 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         modes,
     };
 
-    let mut temperatures = seed_network(&mut net, setup)?;
+    let mut temperatures = match setup.initial_state.as_ref() {
+        Some(state) => install_state(&mut net, state)?,
+        None => seed_network(&mut net, setup)?,
+    };
     let (iterations, temperature_residual) = if adjustable_specification(setup) {
         specification_loop(&mut net, setup, &mut temperatures)?
     } else {
@@ -1325,6 +1393,45 @@ fn reconcile_products(
 /// Returns the seeded profile, which the sweeps then evolve. **The seed is the class's own
 /// arithmetic**: a step towards each end, the condenser's divided by the trays above the feed
 /// and the reboiler's by the trays below it, which is why the two differ.
+/// **`initializeTrayStateFromColumn` at the port's boundary**: every tray takes the state the
+/// previous solve left it rather than a profile `seed_network` interpolates.
+///
+/// No tray is run here, which is the point - the network's `gas`/`liquid` *are* what the sweep
+/// reads on its next pass, and installing them costs one clone instead of a seed's two passes
+/// over the column. The temperatures travel beside them because the sweep's controller reads
+/// the previous pass's profile.
+///
+/// # Errors
+/// [`AzothError::InvalidInput`] when the state is not one entry per tray.
+fn install_state(net: &mut Network, state: &ColumnState) -> Result<Vec<f64>> {
+    let tray_count = net.tray_count;
+    if state.gas.len() != tray_count
+        || state.liquid.len() != tray_count
+        || state.temperatures.len() != tray_count
+    {
+        return Err(AzothError::invalid_input(
+            "initial_state",
+            format!(
+                "a state of {} vapour(s), {} liquid(s) and {} temperature(s) against a column \
+                 of {tray_count} tray(s): a warm start is one entry per tray, the ends included",
+                state.gas.len(),
+                state.liquid.len(),
+                state.temperatures.len()
+            ),
+        ));
+    }
+    // **A tray is not run here, and that is the whole of it.** The network's `gas[i]` and
+    // `liquid[i]` are what every other tray reads as its inlet, so installing them *is*
+    // installing the state - and the sweep's next pass then runs each tray from exactly the
+    // neighbours a previous solve left. Running one here would compute a tray from a state that
+    // has not been installed yet.
+    for (i, (gas, liquid)) in state.gas.iter().zip(&state.liquid).enumerate() {
+        net.gas[i] = Some(gas.clone());
+        net.liquid[i] = Some(liquid.clone());
+    }
+    Ok(state.temperatures.clone())
+}
+
 fn seed_network(net: &mut Network, setup: &ColumnSetup) -> Result<Vec<f64>> {
     let first_feed = setup.feed_stage;
     let tray_count = net.tray_count;

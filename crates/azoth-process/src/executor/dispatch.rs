@@ -935,6 +935,9 @@ fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::Column
         murphree_efficiency: p
             .optional_number("murphree_efficiency")?
             .map(crate::column::murphree::Murphree::from_column_wide),
+        // A flowsheet's column takes the class's cold seed; a warm start is the divergence
+        // instrument's and the tear's.
+        initial_state: None,
         top_specification: None,
         bottom_specification: None,
         top_feed: None,

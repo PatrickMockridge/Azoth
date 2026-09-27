@@ -92,6 +92,8 @@ pub fn packed_column(setup: &PackedSetup) -> Result<ColumnOutcome> {
         temperature_tolerance: setup.temperature_tolerance,
         max_iterations: setup.max_iterations,
         murphree_efficiency: setup.murphree_efficiency.clone(),
+        // `PackedColumn` declares no warm start; the base column takes its cold seed.
+        initial_state: None,
         top_specification: setup.top_specification.clone(),
         bottom_specification: setup.bottom_specification.clone(),
         top_feed: None,

@@ -10,6 +10,7 @@
 use azoth_core::units::{kelvins, pascals};
 use azoth_process::Stream;
 use azoth_process::column::murphree::Murphree;
+use azoth_process::kernels::distillation_column::ColumnState;
 use azoth_process::kernels::distillation_column::{
     ColumnSetup, SideDrawFlow, SideDrawPhase, SolverType, distillation_column,
 };
@@ -40,6 +41,7 @@ fn binary_column(tolerance: f64) -> ColumnSetup {
         reboiler_temperature: Some(kelvins(373.15)),
         temperature_tolerance: tolerance,
         murphree_efficiency: None,
+        initial_state: None,
         max_iterations: 200,
         top_specification: None,
         bottom_specification: None,
@@ -507,6 +509,7 @@ fn the_deethanizer_converges_here_where_neqsim_does_not() {
         reboiler_temperature: Some(kelvins(353.15)),
         temperature_tolerance: 1.0e-5,
         murphree_efficiency: None,
+        initial_state: None,
         max_iterations: 80,
         top_specification: None,
         bottom_specification: None,
@@ -777,6 +780,7 @@ fn a_specified_side_draw_flow_is_torn_until_the_draw_delivers_it() {
         temperature_tolerance: 1.0e-6,
         max_iterations: 200,
         murphree_efficiency: None,
+        initial_state: None,
         top_specification: None,
         bottom_specification: None,
         top_feed: None,
@@ -885,6 +889,7 @@ fn a_coordinated_side_draw_tear_is_refused_by_name() {
         temperature_tolerance: 1.0e-6,
         max_iterations: 200,
         murphree_efficiency: None,
+        initial_state: None,
         top_specification: None,
         bottom_specification: None,
         top_feed: None,
@@ -1068,4 +1073,73 @@ fn a_per_stage_override_resolves_where_the_class_resolves_it() {
         disagreement > 19.0,
         "tray 3 is {disagreement} K from the capture, and this row exists to hold that gap"
     );
+}
+
+/// **A warm start from a solved column lands on that column's own fixed point**, which is what
+/// a state *is*: `DistillationColumn.initializeTrayStateFromColumn`, installed instead of the
+/// cold seed.
+///
+/// **One pass, because the state is the answer.** The gate is the mean tray-temperature change
+/// between passes, and a column started at its own endpoint has that at zero - so a warm start
+/// that took more than one pass would mean the install was lossy.
+///
+/// **And it is measured on a corrected column too**, which is the half that matters: the
+/// Murphree correction reads the neighbour below's *raw flash*, and this tranche's plan asserted
+/// a state had to carry that pair. `Network::run` rewrites `equilibrium[i]` from the flash
+/// before the correction reads `equilibrium[i - 1]`, and the sweep walks upward - so the pair is
+/// this pass's by the time it is read, and a state without one is faithful. These two rows are
+/// that measurement: `E = 0.6` corrects four of the six trays, and the warm start still lands on
+/// the cold path's temperatures to `1e-9` K.
+#[test]
+fn a_warm_start_reproduces_the_cold_paths_tray_temperatures() {
+    for efficiency in [None, Some(Murphree::from_column_wide(0.6))] {
+        let mut setup = binary_column(1.0e-6);
+        setup.murphree_efficiency = efficiency.clone();
+        let cold = distillation_column(&setup).expect("the cold solve converges");
+
+        let state =
+            ColumnState::of(&cold, &setup.feed.components).expect("the state rebuilds from it");
+        let mut warm_setup = binary_column(1.0e-6);
+        warm_setup.murphree_efficiency = efficiency;
+        warm_setup.initial_state = Some(state);
+        let warm = distillation_column(&warm_setup).expect("the warm solve converges");
+
+        assert_eq!(
+            warm.iterations, 1,
+            "a state at the fixed point is one pass, and this took {}",
+            warm.iterations
+        );
+        for (index, (before, after)) in cold.trays.iter().zip(&warm.trays).enumerate() {
+            // **One pass moves a tray by at most the cold solve's own gate times the tray
+            // count**, and the reason for the factor is the gate's own shape: the port stops on
+            // `temperature_residual`, which is the *mean* tray change, so a single tray may move
+            // by up to N times it. Measured, tray 1 moves `1.02e-6` K against a `1e-6` gate on
+            // six trays. That is the instrument's floor - six orders under the `7` K it exists
+            // to resolve - and it belongs in the divergence test's own doc.
+            absolute(
+                before.temperature.value,
+                after.temperature.value,
+                setup.temperature_tolerance * cold.trays.len() as f64,
+                &format!("tray {index} of the warm start"),
+            );
+            // **The flows carry a rebuild's own floor and the temperatures do not.** A
+            // `ColumnState` is `Stream`s rebuilt from each tray's `(T, P, z)`, and the reboiler's
+            // vapour comes back `3.7e-8` relative from where the cold path left it - measured,
+            // and the reason this one is not held to `1e-9`. It is five orders under the
+            // `7` K this instrument exists to resolve.
+            relative(
+                before.gas_n,
+                after.gas_n,
+                1.0e-6,
+                &format!("tray {index}'s vapour"),
+            );
+        }
+        // Measured at `3.5e-9` relative, and held at the flows' floor for the same reason.
+        relative(
+            cold.distillate.n,
+            warm.distillate.n,
+            1.0e-6,
+            "the warm start's distillate",
+        );
+    }
 }

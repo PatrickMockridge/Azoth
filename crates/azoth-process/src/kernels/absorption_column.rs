@@ -98,6 +98,8 @@ pub fn absorption_column(setup: &AbsorberSetup) -> Result<AbsorberOutcome> {
         // .applyMurphreeCorrection` corrects both phases and takes a per-component efficiency,
         // so its own two parameters are `AbsorberSetup`'s and this is the base's.
         murphree_efficiency: None,
+        // The class's own cold seed: a warm start arrives with the divergence instrument.
+        initial_state: None,
         top_specification: None,
         bottom_specification: None,
         top_feed: Some(setup.solvent.clone()),

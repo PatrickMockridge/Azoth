@@ -37,6 +37,7 @@ fn column(top: Option<Specification>, bottom: Option<Specification>, pin: bool) 
         reboiler_temperature: Some(kelvins(373.15)),
         temperature_tolerance: 1.0e-6,
         murphree_efficiency: None,
+        initial_state: None,
         max_iterations: 200,
         top_specification: top,
         bottom_specification: bottom,

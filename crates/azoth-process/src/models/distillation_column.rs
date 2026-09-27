@@ -362,6 +362,8 @@ pub fn distillation_column(
         temperature_tolerance,
         max_iterations,
         murphree_efficiency: murphree_efficiency.clone(),
+        // A case and a capture take the class's cold seed.
+        initial_state: None,
         top_specification,
         bottom_specification,
         top_feed: None,
