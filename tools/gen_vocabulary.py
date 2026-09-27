@@ -836,6 +836,29 @@ def emit_lean(table: dict[str, Any]) -> str:
     out += [
         "  ]",
         "",
+        "/-- Every canonical unit, with its exponents as integers.",
+        "",
+        "**A second list rather than a projection of `units`.** A `Dimension`'s `DecidableEq` is",
+        "not computable - it is built through `decidable_of_iff` - so a proof that has to",
+        "*compute* over dimensions does not reduce, which is why the per-unit theorems above are",
+        "proved with `simp` and `module` instead. `Azoth.Inputs` checks the input table against",
+        "this list, and that check has to compute.",
+        "-/",
+        "def exponents : List (String × List Int) :=",
+        "  [",
+    ]
+    for index, unit in enumerate(units):
+        exponents = by_id[unit["dimension"]]["exponents"]
+        rendered = "[" + ", ".join(str(e) for e in exponents) + "]"
+        comma = "," if index + 1 < len(units) else ""
+        out.append(f"    ({json.dumps(unit['id'])}, {rendered}){comma}")
+    out += [
+        "  ]",
+        "",
+        "/-- A unit's exponents, or `none` where the vocabulary does not carry it. -/",
+        "def exponentsOf (name : String) : Option (List Int) :=",
+        "  (exponents.find? (fun row => row.1 = name)).map (fun row => row.2)",
+        "",
         "/-- The dimension of a canonical unit, or `none` if the name is not in the",
         "vocabulary.",
         "",
@@ -968,7 +991,12 @@ def emit_lean_gate(table: dict[str, Any]) -> str:
         "-- `tools/check_lean_axioms.py`, which refuses any axiom set outside",
         "-- `propext`, `Classical.choice` and `Quot.sound`.",
         "",
+        "import Azoth.Inputs",
         "import Azoth.Vocabulary",
+        "",
+        "-- One line for the input table's theorem, which `gen_model_inputs.py` writes:",
+        "-- the gate covers the pipeline's *inputs* as well as its units.",
+        "#print axioms Azoth.Inputs.every_input_dimension_is_its_units",
         "",
     ]
     out += [f"#print axioms Azoth.Vocabulary.{lean_name(u['id'])}" for u in table["units"]]

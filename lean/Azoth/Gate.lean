@@ -8,7 +8,12 @@
 -- `tools/check_lean_axioms.py`, which refuses any axiom set outside
 -- `propext`, `Classical.choice` and `Quot.sound`.
 
+import Azoth.Inputs
 import Azoth.Vocabulary
+
+-- One line for the input table's theorem, which `gen_model_inputs.py` writes:
+-- the gate covers the pipeline's *inputs* as well as its units.
+#print axioms Azoth.Inputs.every_input_dimension_is_its_units
 
 #print axioms Azoth.Vocabulary.u_dimensionless_dimension
 #print axioms Azoth.Vocabulary.u_m_dimension

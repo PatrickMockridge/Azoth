@@ -119,7 +119,7 @@ Rust then holds those exponents; what holds them is the `pint` comparison below.
 
 ## The checks, and what each one can see
 
-Five, and they are complementary rather than redundant. Each was verified by
+Six, and they are complementary rather than redundant. Each was verified by
 breaking the thing it guards.
 
 | Check | Where | Catches |
@@ -129,6 +129,7 @@ breaking the thing it guards.
 | `pint` dimensionality | `python/tests/test_units_cross_library.py` | table exponents that `pint` disagrees with |
 | Factor agreement | the same file | the two units libraries disagreeing about a factor |
 | Lean dimension | `lean/Azoth/Vocabulary.lean`, one theorem per unit | a unit whose exponents name a different dimension than `lean-units` does |
+| Input dimension | `lean/Azoth/Inputs.lean`, one theorem over the table | an input whose generated dimension disagrees with the dimension of the unit it declares |
 
 The factor check is the one that was missing. It compares `pint`'s own answer for a
 unit name against `azoth._core.unit_si_factor`, which runs the very conversion a

@@ -91,6 +91,90 @@ def units : List (String × Units.Dimension) :=
     ("kmol/h", Dim.ofExponents [0, 0, -1, 0, 0, 1, 0])
   ]
 
+/-- Every canonical unit, with its exponents as integers.
+
+**A second list rather than a projection of `units`.** A `Dimension`'s `DecidableEq` is
+not computable - it is built through `decidable_of_iff` - so a proof that has to
+*compute* over dimensions does not reduce, which is why the per-unit theorems above are
+proved with `simp` and `module` instead. `Azoth.Inputs` checks the input table against
+this list, and that check has to compute.
+-/
+def exponents : List (String × List Int) :=
+  [
+    ("dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("m", [1, 0, 0, 0, 0, 0, 0]),
+    ("mm", [1, 0, 0, 0, 0, 0, 0]),
+    ("m**2", [2, 0, 0, 0, 0, 0, 0]),
+    ("m**3/s", [3, 0, -1, 0, 0, 0, 0]),
+    ("kg/s", [0, 1, -1, 0, 0, 0, 0]),
+    ("mol/s", [0, 0, -1, 0, 0, 1, 0]),
+    ("mol", [0, 0, 0, 0, 0, 1, 0]),
+    ("kg", [0, 1, 0, 0, 0, 0, 0]),
+    ("kg/m**3", [-3, 1, 0, 0, 0, 0, 0]),
+    ("m/s", [1, 0, -1, 0, 0, 0, 0]),
+    ("m**2/s", [2, 0, -1, 0, 0, 0, 0]),
+    ("Pa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("Pa*s", [-1, 1, -1, 0, 0, 0, 0]),
+    ("K", [0, 0, 0, 0, 1, 0, 0]),
+    ("W", [2, 1, -3, 0, 0, 0, 0]),
+    ("J/(kg*K)", [2, 0, -2, 0, -1, 0, 0]),
+    ("W/(m*K)", [1, 1, -3, 0, -1, 0, 0]),
+    ("W/(m**2*K)", [0, 1, -3, 0, -1, 0, 0]),
+    ("W/K", [2, 1, -3, 0, -1, 0, 0]),
+    ("N/m", [0, 1, -2, 0, 0, 0, 0]),
+    ("kg/mol", [0, 1, 0, 0, 0, -1, 0]),
+    ("m**3/mol", [3, 0, 0, 0, 0, -1, 0]),
+    ("J", [2, 1, -2, 0, 0, 0, 0]),
+    ("J/mol", [2, 1, -2, 0, 0, -1, 0]),
+    ("Pa*m**6/mol**2", [5, 1, -2, 0, 0, -2, 0]),
+    ("J/(mol*K)", [2, 1, -2, 0, -1, -1, 0]),
+    ("J/(mol*K**2)", [2, 1, -2, 0, -2, -1, 0]),
+    ("J/(mol*K**3)", [2, 1, -2, 0, -3, -1, 0]),
+    ("J/(mol*K**4)", [2, 1, -2, 0, -4, -1, 0]),
+    ("J/(mol*K**5)", [2, 1, -2, 0, -5, -1, 0]),
+    ("C", [0, 0, 1, 1, 0, 0, 0]),
+    ("angstrom", [1, 0, 0, 0, 0, 0, 0]),
+    ("1/K", [0, 0, 0, 0, -1, 0, 0]),
+    ("1/K**2", [0, 0, 0, 0, -2, 0, 0]),
+    ("1/K**3", [0, 0, 0, 0, -3, 0, 0]),
+    ("mol/kg", [0, -1, 0, 0, 0, 1, 0]),
+    ("bar", [-1, 1, -2, 0, 0, 0, 0]),
+    ("kPa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("MPa", [-1, 1, -2, 0, 0, 0, 0]),
+    ("psi", [-1, 1, -2, 0, 0, 0, 0]),
+    ("atm", [-1, 1, -2, 0, 0, 0, 0]),
+    ("kg/h", [0, 1, -1, 0, 0, 0, 0]),
+    ("t/h", [0, 1, -1, 0, 0, 0, 0]),
+    ("lb/h", [0, 1, -1, 0, 0, 0, 0]),
+    ("t", [0, 1, 0, 0, 0, 0, 0]),
+    ("lb", [0, 1, 0, 0, 0, 0, 0]),
+    ("kJ", [2, 1, -2, 0, 0, 0, 0]),
+    ("MJ", [2, 1, -2, 0, 0, 0, 0]),
+    ("Btu", [2, 1, -2, 0, 0, 0, 0]),
+    ("kW", [2, 1, -3, 0, 0, 0, 0]),
+    ("MW", [2, 1, -3, 0, 0, 0, 0]),
+    ("hp", [2, 1, -3, 0, 0, 0, 0]),
+    ("ft", [1, 0, 0, 0, 0, 0, 0]),
+    ("in", [1, 0, 0, 0, 0, 0, 0]),
+    ("cm", [1, 0, 0, 0, 0, 0, 0]),
+    ("m**3/h", [3, 0, -1, 0, 0, 0, 0]),
+    ("L/min", [3, 0, -1, 0, 0, 0, 0]),
+    ("gpm", [3, 0, -1, 0, 0, 0, 0]),
+    ("ft**3/min", [3, 0, -1, 0, 0, 0, 0]),
+    ("ft/s", [1, 0, -1, 0, 0, 0, 0]),
+    ("lb/ft**3", [-3, 1, 0, 0, 0, 0, 0]),
+    ("kJ/(kg*K)", [2, 0, -2, 0, -1, 0, 0]),
+    ("Btu/(lb*degF)", [2, 0, -2, 0, -1, 0, 0]),
+    ("kJ/mol", [2, 1, -2, 0, 0, -1, 0]),
+    ("cP", [-1, 1, -1, 0, 0, 0, 0]),
+    ("kmol", [0, 0, 0, 0, 0, 1, 0]),
+    ("kmol/h", [0, 0, -1, 0, 0, 1, 0])
+  ]
+
+/-- A unit's exponents, or `none` where the vocabulary does not carry it. -/
+def exponentsOf (name : String) : Option (List Int) :=
+  (exponents.find? (fun row => row.1 = name)).map (fun row => row.2)
+
 /-- The dimension of a canonical unit, or `none` if the name is not in the
 vocabulary.
 

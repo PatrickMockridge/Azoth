@@ -109,3 +109,34 @@ def test_every_gated_name_is_a_declaration_that_exists() -> None:
         f"lean/Azoth/ declares. Either the name is misspelled or the theorem was "
         f"removed; in both cases the gate is naming something that is not there."
     )
+
+
+# --- the input table ---------------------------------------------------------
+
+
+def test_the_input_table_has_one_row_per_generated_dimension() -> None:
+    """**The theorem is proved over rows, so a generator that emitted none would be vacuous.**
+
+    `Azoth.Inputs.rows` is one entry per (palette entry, input) whose declaration carries a
+    unit, and the Rust table beside it is the same set. The two are compared here by count
+    because the Lean side cannot read the Rust one: `every_input_dimension_is_its_units`
+    closes over whatever rows exist, and a table that collapsed to nothing would close just as
+    quietly as one that is right.
+    """
+    lean = (REPO_ROOT / "lean" / "Azoth" / "Inputs.lean").read_text(encoding="utf-8")
+    rust = (REPO_ROOT / "crates" / "azoth-process" / "src" / "model_inputs_gen.rs").read_text(
+        encoding="utf-8"
+    )
+
+    lean_rows = len(re.findall(r'^    \("unit_ops\.', lean, flags=re.MULTILINE))
+    rust_rows = len(re.findall(r"dimension: Some\(", rust))
+    assert lean_rows > 0, "the Lean input table is empty"
+    assert lean_rows == rust_rows, (
+        f"the Lean table has {lean_rows} dimensioned input(s) and the Rust one {rust_rows}; "
+        f"both are emitted by `tools/gen_model_inputs.py`, so one of them is stale"
+    )
+    assert "def rowCount : Nat := rows.length" in lean
+    assert "theorem every_input_dimension_is_its_units" in lean
+    # And the gate covers it, which is what makes the theorem checked rather than written.
+    gate = (REPO_ROOT / "lean" / "Azoth" / "Gate.lean").read_text(encoding="utf-8")
+    assert "#print axioms Azoth.Inputs.every_input_dimension_is_its_units" in gate

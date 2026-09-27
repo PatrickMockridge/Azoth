@@ -33,6 +33,10 @@
 //! sulphide's Henry constant really is `9.3e7 bar`, and the model that reads it should
 //! return that rather than a literature value this library invented - and the thinness is
 //! recorded here rather than smoothed over.
+//!
+//! **Filed upstream as [`equinor/neqsim#4044`](https://github.com/equinor/neqsim/issues/4044)**:
+//! the four sets and the `exp(900)` sentinel are the table's, and the issue says what each row
+//! count is rather than what this library does about it.
 
 use azoth_core::{AzothError, Result};
 

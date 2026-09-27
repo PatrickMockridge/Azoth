@@ -2638,6 +2638,7 @@ def pvf_flash(
     kij: list[float],
     association: AssociationSpec,
     P: float,
+    vapour_fraction: float,
     temperature: float,
     z: list[float],
     eos: str = "pr",
