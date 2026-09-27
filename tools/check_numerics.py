@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Fail on the ways an absence gets written as a number.
+"""Fail on the shapes that lose a number's meaning, or invent one.
 
 # Why this exists
 
 `docs/src/calculus/numerics.md` states the rule and `lean/Azoth/Pow.lean` proves the
 part of it that is provable. Neither runs on a new file, and the cases here are the ones
-a person gets wrong while believing they have not.
+a person gets wrong while believing they have not. Six rules: two are about an exponent
+written in a form that loses its meaning, and the rest are about a *value* the library
+does not have, spelled as a number it computes with.
 
 **An integral exponent written as `powf(2.0)`.** That is `exp (2 log x)`, which is
 `NaN` for `x < 0` where `powi(2)` is exact and total. Fifteen sites in this tree do it.
@@ -22,6 +24,11 @@ refuses.
 **A `f64::MAX` outside a `let mut` seed.** The largest finite float is three things a
 reader cannot tell apart from the line: a bound somebody meant, a ceiling that saturates
 an infinity, and a `min` fold's seed.
+
+**A fraction clamped into range.** A fraction outside `[0, 1]` is a state this library
+refuses elsewhere - a composition that does not sum, a phase fraction at an end - so a
+clamp answers a number where the physics has none. `clamp` is the right answer only where
+the class clamps, and then it is a transcription to name.
 
 **An index lookup defaulted to zero.** `names.iter().position(|n| n == want).unwrap_or(0)`
 answers zero for a name the list does not carry, and zero is a *different* entry - so a
@@ -96,6 +103,10 @@ SEED = re.compile(r"^\s*let mut \w+ = f64::MAX;\s*$")
 #: that is later used to address an entry.
 ZERO_INDEX_DEFAULT = re.compile(r"\.unwrap_or\(0\)")
 INDEX_IDIOM = re.compile(r"\.(?:position|rposition|binary_search)\(|\bindex_of\(")
+
+#: A `clamp` call on something the statement calls a fraction.
+CLAMP = re.compile(r"\.?clamp\(")
+FRACTION = re.compile(r"\b[a-z_]*(?:fraction|frac)\b", re.IGNORECASE)
 
 #: How a line says its number is deliberate.
 EXEMPT = "numerics-ok:"
@@ -265,6 +276,21 @@ def index_defaulted_to_zero(match: re.Match[str], line: str, where: str, suffix:
     )
 
 
+def fraction_clamped_rather_than_refused(
+    match: re.Match[str], line: str, where: str, suffix: str
+) -> str | None:
+    """A fraction clamped into range, where this library's own rule is to refuse one."""
+    _ = suffix
+    if not FRACTION.search(line):
+        return None
+    return (
+        f"{where}: `{match.group(0)}` clamps a fraction into range, and a fraction outside it "
+        f"is a state this library refuses elsewhere - a composition that does not sum, a phase "
+        f"fraction outside `[0, 1]`. A clamp answers a number there where the physics has none. "
+        f"Keep it only where the class clamps, and mark it `{EXEMPT} <reason>` naming that."
+    )
+
+
 def build_rules() -> tuple[Rule, ...]:
     """The rules, in the order their findings are reported."""
     fields = "|".join(re.escape(name) for name in physical_fields())
@@ -289,6 +315,12 @@ def build_rules() -> tuple[Rule, ...]:
         ),
         Rule("physical-field-defaulted-to-zero", {".rs": defaults}, physical_field_defaulted),
         Rule("maximum-float-outside-a-seed", {".rs": F64_MAX}, maximum_float_outside_a_seed),
+        Rule(
+            "fraction-clamped-rather-than-refused",
+            {".rs": CLAMP},
+            fraction_clamped_rather_than_refused,
+            multiline=True,
+        ),
         Rule(
             "index-defaulted-to-zero",
             {".rs": ZERO_INDEX_DEFAULT},

@@ -215,3 +215,16 @@ def test_an_index_defaulted_to_zero_is_reported(tmp_path: Path) -> None:
     # And the marker excuses it where the source is the source of the answer.
     marked = "// numerics-ok: the class's own `phaseIndex = 0`\n" + split
     assert offenders(tmp_path, "a.rs", marked) == []
+
+
+def test_a_fraction_clamped_into_range_is_reported(tmp_path: Path) -> None:
+    """The sixth rule: a clamp where the library's own answer is a refusal."""
+    messages = offenders(tmp_path, "a.rs", "let f = phase_fraction.clamp(0.0, 1.0);\n")
+    assert len(messages) == 1, messages
+    assert "clamps a fraction" in messages[0]
+
+    # A clamp that is not about a fraction is not this rule's business.
+    assert offenders(tmp_path, "a.rs", "let t = temperature.clamp(1.0, 5000.0);\n") == []
+
+    marked = "// numerics-ok: the class's own clamp\nlet f = phase_fraction.clamp(0.0, 1.0);\n"
+    assert offenders(tmp_path, "a.rs", marked) == []

@@ -225,6 +225,8 @@ pub fn shortcut_distillation_column(
 
     // The duties, which are estimates: a hard-coded latent heat and one per cent of the
     // feed's own enthalpy, in W because the feed's flow is mol/s.
+    // numerics-ok: `ShortcutDistillationColumn` carries the same two bounds, `0.999` and
+    // `0.001`, in its own bytecode.
     let total_distillate_fraction = (0..n)
         .map(|i| feed.z[i] * fractions[i])
         .sum::<f64>()

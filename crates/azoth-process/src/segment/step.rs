@@ -207,6 +207,8 @@ fn component_transfer(
     let k_value = interface.ratio(component);
     let gas_fraction = gas_phase.mole_fraction(&gas.components, component);
     let liquid_fraction = liquid_phase.mole_fraction(&liquid.components, component);
+    // numerics-ok: `RateBasedPackedColumn` writes the same clamp at :1843, :1845 and
+    // :1859 - `clamp(kValue * liquidFraction, 0.0, 0.999999)` and its reciprocal.
     let gas_interface =
         interface.gas_fraction(component, clamp(k_value * liquid_fraction, 0.0, 0.999999));
     let liquid_interface = interface.liquid_fraction(
@@ -253,6 +255,8 @@ fn component_transfer(
     // **The harmonic mean's collapse is not a zero transfer**: where the two films disagree in
     // sign the class falls to the overall two-resistance form, which is a different expression
     // on the same state.
+    //
+    // numerics-ok: the `yStar` clamp below is `RateBasedPackedColumn.java:1859`'s own.
     if transfer_density == 0.0 {
         let y_star = clamp(k_value * liquid_fraction, 0.0, 0.999999);
         let driving_force = gas_fraction - y_star;

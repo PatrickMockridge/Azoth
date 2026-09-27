@@ -273,6 +273,8 @@ pub fn solve_fixed_topology_from(
             };
             let mut total = 0.0;
             for (k, phase) in phases.iter_mut().enumerate() {
+                // numerics-ok: upstream keeps a phase fraction strictly inside (0, 1) -
+                // see `FRACTION_FLOOR` - and the caller drops a phase that is not there.
                 let candidate = phase.fraction - scale * correction[k];
                 phase.fraction = candidate.clamp(FRACTION_FLOOR, 1.0 - FRACTION_FLOOR);
                 total += phase.fraction;
