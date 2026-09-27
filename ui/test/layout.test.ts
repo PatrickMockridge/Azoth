@@ -47,6 +47,15 @@ it("offers a tear a convergence sheet and a plain connection none", () => {
 it("shows a unit operation's design first and a stream's conditions first", () => {
   expect(tabsFor("instance", null)[0]).toBe("design");
   expect(tabsFor("feed", null)[0]).toBe("conditions");
+  // **Provenance is the last tab of a unit operation's window**, after the wiring, because where
+  // an answer came from is what a reader checks *after* the design and the connections.
+  const instance = tabsFor("instance", null);
+  expect(instance).toContain("provenance");
+  expect(instance[instance.length - 1]).toBe("provenance");
+  // And it is an *instance's* sheet: the record is written per instantiated unit operation, so a
+  // feed or a connection has nothing on it to show.
+  expect(tabsFor("feed", null)).not.toContain("provenance");
+  expect(tabsFor("edge", edge("connection"))).not.toContain("provenance");
   expect(tabsFor("product", null)[0]).toBe("conditions");
   expect(tabsFor("edge", edge("connection"))[0]).toBe("connections");
 });

@@ -17,6 +17,7 @@ import { ConditionsSheet } from "./ConditionsSheet";
 import { ConnectionsSheet } from "./ConnectionsSheet";
 import { DesignSheet } from "./DesignSheet";
 import { DockTabs } from "./DockTabs";
+import { ProvenanceSheet } from "./ProvenanceSheet";
 import { ResultsSheet } from "./ResultsSheet";
 import { StagesSheet } from "./StagesSheet";
 import { TearSheet } from "./TearSheet";
@@ -34,6 +35,7 @@ const LABELS: Record<TabId, string> = {
   profiles: "Profiles",
   performance: "Performance",
   results: "Results",
+  provenance: "Provenance",
 };
 
 /**
@@ -179,6 +181,10 @@ function sheet(
     case "convergence":
       return edge === null ? null : (
         <TearSheet catalogue={catalogue} edge={edge} onCommand={onCommand} />
+      );
+    case "provenance":
+      return node === null ? null : (
+        <ProvenanceSheet envelope={envelope} instance={node.data.name} />
       );
     case "connections":
       return (

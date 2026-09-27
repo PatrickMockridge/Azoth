@@ -26,7 +26,8 @@ export type TabId =
   | "stages"
   | "profiles"
   | "performance"
-  | "results";
+  | "results"
+  | "provenance";
 
 /** What a selection is, in the property view's terms, or `null` when nothing is selected. */
 export function kindOf(node: GraphNode | null, edge: GraphEdge | null): Kind | null {
@@ -57,7 +58,10 @@ export function tabsFor(
 ): readonly TabId[] {
   switch (kind) {
     case "instance":
-      return ["design", ...extra, "worksheet", "connections"];
+      // **Provenance last, after the wiring**, for the reason Connections is last: what a person
+      // came for is the design, the wiring is what they check next, and where the answer came
+      // from is what they check afterwards.
+      return ["design", ...extra, "worksheet", "connections", "provenance"];
     case "feed":
     case "product":
       return ["conditions", "composition", "connections"];
