@@ -15,6 +15,7 @@ pub mod diagnostic;
 pub mod envelope;
 pub mod form;
 pub mod graph;
+pub mod resources;
 pub mod session;
 pub mod tools;
 

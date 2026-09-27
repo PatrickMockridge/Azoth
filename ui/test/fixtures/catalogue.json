@@ -1967,6 +1967,36 @@
           "values": []
         },
         {
+          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one. **An absorber has no ends** - the constructor passes `false, false` - so `setReactive(true)` flags every stage, which the capture's `reactive_tray_flags` prints as `11111`",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "reactive",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the last reactive middle tray",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_end_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last - `setReactive(true, start, end)`. Both bounds are stated or neither",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_start_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
           "description": "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares",
           "dimension": null,
           "kind": "enum",
@@ -2700,6 +2730,36 @@
           "dimension": null,
           "kind": "string",
           "name": "packing_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: the two ends never do, and a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "reactive",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the last reactive middle tray",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_end_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last - `setReactive(true, start, end)`. Both bounds are stated or neither",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_start_tray",
           "range": [],
           "required": false,
           "unit": null,
@@ -3678,6 +3738,36 @@
           ],
           "required": true,
           "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one. **An absorber has no ends** - the constructor passes `false, false` - so `setReactive(true)` flags every stage, which the capture's `reactive_tray_flags` prints as `11111`",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "reactive",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the last reactive middle tray",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_end_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last - `setReactive(true, start, end)`. Both bounds are stated or neither",
+          "dimension": null,
+          "kind": "quantity",
+          "name": "reactive_start_tray",
+          "range": [],
+          "required": false,
+          "unit": null,
           "values": []
         },
         {

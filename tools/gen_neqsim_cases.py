@@ -386,7 +386,7 @@ CASES: tuple[Case, ...] = (
         },
         eos=None,
         mappings=(
-            Mapping("beta", "init(0) first beta"),
+            Mapping("vapour_fraction", "init(0) first beta"),
             Mapping("x", "init(0) first OIL x", index=0, under="x"),
             Mapping("x", "init(0) first OIL x", index=1, under="x"),
             Mapping("y", "init(0) first GAS x", index=0, under="y"),

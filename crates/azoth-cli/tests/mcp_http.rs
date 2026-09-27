@@ -186,7 +186,16 @@ fn headers_of(message: &Value) -> Vec<(String, String)> {
             message["method"].as_str().unwrap_or_default().to_string(),
         ),
     ];
-    if let Some(name) = message.pointer("/params/name").and_then(Value::as_str) {
+    // **A resource's name is its uri**, which is the specification's own rule for the methods
+    // whose `Mcp-Name` is not a tool: `resources/read` names what it reads, and the server's own
+    // `headers_agree` accepts either key. A client that sent no header for a read would be
+    // refused by the transport before the method was judged, which is what the case below checks
+    // on purpose.
+    if let Some(name) = message
+        .pointer("/params/name")
+        .or_else(|| message.pointer("/params/uri"))
+        .and_then(Value::as_str)
+    {
         headers.push(("Mcp-Name".to_string(), name.to_string()));
     }
     headers
@@ -597,4 +606,69 @@ fn a_body_that_is_not_json_has_no_id_to_answer_to() {
     assert_eq!(status, 400, "{body}");
     assert_eq!(code(&body), -32700);
     assert_eq!(body["id"], Value::Null);
+}
+
+/// **The resource surface over HTTP**, and the header the transport requires of it.
+///
+/// `mcp_http.rs` has carried `resources/read` in its `NAME_REQUIRED` list since the list was
+/// written — the header requirement is the transport's and is answered before the method is
+/// judged — so this is the case that makes that list about a method the server actually serves:
+/// the name a client sends in `Mcp-Name` is the **uri**, and a client that sent nothing is told
+/// which header is missing rather than that the method does not exist.
+#[test]
+fn a_resource_is_read_over_http_and_its_uri_is_the_name() {
+    let server = Server::start(&[]);
+
+    let (status, listed) = server.send(&message(1, "resources/list", json!({})));
+    assert_eq!(status, 200);
+    let uris: Vec<&str> = listed["result"]["resources"]
+        .as_array()
+        .expect("an array")
+        .iter()
+        .filter_map(|resource| resource["uri"].as_str())
+        .collect();
+    assert_eq!(
+        uris,
+        [
+            "azoth://document",
+            "azoth://diagnostics",
+            "azoth://report",
+            "azoth://catalogue"
+        ]
+    );
+
+    // A read: the document as TOML, with the stamp a cache is answerable by.
+    let (status, read) = server.send(&message(
+        2,
+        "resources/read",
+        json!({ "uri": "azoth://document" }),
+    ));
+    assert_eq!(status, 200);
+    let content = &read["result"]["contents"][0];
+    assert!(
+        content["text"]
+            .as_str()
+            .expect("text")
+            .contains("[[instances]]")
+    );
+    assert!(content["_meta"]["io.azoth/dirty"].is_boolean());
+
+    // And the header. A client that omits `Mcp-Name` is told so — which a client that sent the
+    // *reason* instead of the name would not be, and that is the mistake the header exists for.
+    let (status, refused) = server.send_with(
+        &message(3, "resources/read", json!({ "uri": "azoth://document" })),
+        &[
+            ("MCP-Protocol-Version", REV),
+            ("Mcp-Method", "resources/read"),
+        ],
+    );
+    assert_eq!(status, 400);
+    assert_eq!(refused["error"]["code"], -32020);
+    assert!(
+        refused["error"]["message"]
+            .as_str()
+            .expect("a sentence")
+            .contains("Mcp-Name"),
+        "{refused}"
+    );
 }

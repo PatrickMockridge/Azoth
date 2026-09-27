@@ -425,3 +425,108 @@ fn the_process_ends_when_its_stdin_does() {
     let status = client.child.wait().expect("the server exits");
     assert!(status.success(), "a closed stdin is a clean shutdown");
 }
+
+// --- the resources ------------------------------------------------------------
+//
+// The surface `docs/src/calculus/session.md` calls "a read is not an edit". Three things are worth
+// holding: the list is the layer's own and not a second copy of it, a read answers with text and a
+// stamp, and a read changes nothing.
+
+#[test]
+fn the_resources_are_the_ones_the_layer_declares() {
+    // The same assertion `tools_list` gets, for the same reason: this is a projection of
+    // `middleware::resources` and a list written here would be a second place the four URIs live.
+    let mut client = Client::start(&[]);
+    let listed = client.result("resources/list", json!({}));
+    let served: Vec<Value> = listed["resources"].as_array().expect("an array").clone();
+    let declared = azoth_process::middleware::resources::RESOURCES;
+    assert_eq!(served.len(), declared.len());
+    for (served, declared) in served.iter().zip(declared.iter()) {
+        assert_eq!(served["uri"], declared.uri);
+        assert_eq!(served["name"], declared.name);
+        assert_eq!(served["description"], declared.description);
+        assert_eq!(served["mimeType"], declared.mime_type);
+    }
+    // And the list is a property of the library rather than of a document, which is what its own
+    // cache hint says: the URIs do not move when a document is edited.
+    assert_eq!(listed["ttlMs"], 3_600_000);
+}
+
+#[test]
+fn a_read_answers_with_text_and_a_stamp() {
+    let mut client = Client::start(&[]);
+    let read = client.result("resources/read", json!({ "uri": "azoth://document" }));
+    let content = &read["contents"][0];
+    assert_eq!(content["uri"], "azoth://document");
+    assert_eq!(content["mimeType"], "application/toml");
+    // The document itself, as TOML rather than as a JSON restatement of it.
+    let text = content["text"].as_str().expect("text");
+    assert!(text.contains("[[instances]]"), "{text}");
+    // **The stamp**, which is the flag the envelope carries and not a second mechanism: a client
+    // that caches this answer can tell whether an edit has landed since.
+    assert!(content["_meta"]["io.azoth/dirty"].is_boolean());
+    // And a document resource may not be cached: the next edit changes it.
+    assert_eq!(read["ttlMs"], 0);
+}
+
+#[test]
+fn the_report_is_current_or_says_there_is_none() {
+    // **The resource a client caches**, and the two states a *transport* can reach: nothing has
+    // run, or a run's answer is current. The third - values that went stale under an edit - is
+    // what `Session::call`'s `run` argument can produce and what no transport asks for today: an
+    // MCP call takes the process's policy and never overrides it, so a session that runs at all
+    // runs on every call. The stamp is on every read either way, and the middleware's own test
+    // covers that third state where it is constructible.
+    let mut client = Client::start(&["--no-run"]);
+    let unrun = client.result("resources/read", json!({ "uri": "azoth://report" }));
+    assert_eq!(unrun["contents"][0]["text"], "the document has not run");
+    assert_eq!(unrun["contents"][0]["_meta"]["io.azoth/dirty"], true);
+
+    // A session that runs answers with the report, and says it is current.
+    let mut running = Client::start(&[]);
+    let ran = running.tool("remove_instance", json!({ "id": "nosuch" }));
+    assert_eq!(ran["result"]["structuredContent"]["dirty"], false);
+    let read = running.result("resources/read", json!({ "uri": "azoth://report" }));
+    let report: Value = serde_json::from_str(read["contents"][0]["text"].as_str().expect("text"))
+        .expect("the report is JSON");
+    assert_eq!(report["converged"], true);
+    assert_eq!(read["contents"][0]["_meta"]["io.azoth/dirty"], false);
+}
+
+#[test]
+fn a_read_changes_nothing() {
+    // **The claim in one test.** Reading every resource leaves the document exactly as it was,
+    // which is why `Session::read_resource` takes `&self` and no transport can offer a resource
+    // as a second way to edit.
+    let mut client = Client::start(&[]);
+    let before = client.tool("remove_instance", json!({ "id": "nosuch" }));
+    let document = before["result"]["structuredContent"]["flowsheet"]["document"].clone();
+
+    for uri in [
+        "azoth://document",
+        "azoth://diagnostics",
+        "azoth://report",
+        "azoth://catalogue",
+    ] {
+        client.result("resources/read", json!({ "uri": uri }));
+    }
+
+    let after = client.tool("remove_instance", json!({ "id": "nosuch" }));
+    assert_eq!(
+        after["result"]["structuredContent"]["flowsheet"]["document"], document,
+        "a read is not an edit"
+    );
+}
+
+#[test]
+fn a_uri_this_server_does_not_publish_is_a_bad_request() {
+    let mut client = Client::start(&[]);
+    let refused = client.modern("resources/read", json!({ "uri": "azoth://secrets" }));
+    assert_eq!(refused["error"]["code"], -32602);
+    // The message lists what there is, which is what makes it a mistake a client can correct.
+    let message = refused["error"]["message"].as_str().expect("a sentence");
+    assert!(message.contains("azoth://document"), "{message}");
+    // And an unknown method is still an unknown method.
+    let missing = client.modern("resources/subscribe", json!({ "uri": "azoth://document" }));
+    assert_eq!(missing["error"]["code"], -32601);
+}

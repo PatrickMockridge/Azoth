@@ -29,6 +29,7 @@ is named at the foot of this page.
 | the whole of it as one document | **yes** — `middleware::envelope`, which is what every binding answers with |
 | a result as JSON | **yes** — a *session's* result writes JSON from Rust (`executor::json`, which the envelope embeds) and a *calculation's* writes it from Python (`azoth.core.serialise`). That second one is one walk over `dataclasses.fields` which every result inherits through `_HasWarnings`, so **there is no codec per model** — a result is serialisable by being a frozen dataclass. The two writers name the *unit* in the same key and the magnitude in different ones, deliberately: a stream record's five fields are SI by construction and a spec's unit need not be. **Every registered calculation and every registered model is run and its result serialised** by `python/tests/test_result_json.py` — the twenty-eight `process.*` models among them, so a `PumpResult` reads field by field with no codec of its own |
 | a tool schema for an agent | **yes** — `middleware::tools`, one tool per command, projected from the command model rather than written beside it, and **served over MCP** by `azoth mcp`, which is that schema's projection and not a second one |
+| a resource a client may read | **yes** — `middleware::resources`, four of them (`azoth://document`, `azoth://diagnostics`, `azoth://report`, `azoth://catalogue`), served by `resources/list` and `resources/read` on both MCP transports. **A read and not an edit**: the call takes `&Session` where a tool call takes `&mut Session`, and every read carries the `dirty` stamp that tells a client whether its cache is still true |
 
 ## The layers
 
@@ -206,14 +207,18 @@ process away, and an HTTP client that asks for one is told so rather than left g
 answer to the call that changed it, and loading, saving and validating are the session's own
 openings rather than edits to it. A read tool would return the same document as every other tool.
 
+**What a client reads by name is a resource, and a resource is not a tool.** The four are the four
+things a call does not answer with — the document as TOML, the diagnostics, the report, and the
+catalogue, which is a fact about the library rather than about this session. `resources/read` takes
+no arguments but a URI, changes nothing, and stamps every answer with `dirty`, so a client that
+caches one can tell whether an edit has landed since.
+
 ## What is not built
 
 Named with the class that would close each, because a page that lists only what works is a page
 that reads as finished.
 
-- **MCP resources.** The tools are served; a *resource* is a second surface for a document every
-  call already returns, with a URI grammar to invent and a cache a client may serve stale — which is
-  what `dirty` exists to prevent. The palette is already `add_instance`'s `unit` enum. **The
+- **MCP conformance, and what a pin cannot see.** **The
   messages are checked against the specification now**: its JSON Schema for each revision is
   vendored under `python/tests/validation/vendor/mcp/`, and `test_mcp_conformance.py` holds every
   message both transports write to the definition for the revision that message belongs to — two
