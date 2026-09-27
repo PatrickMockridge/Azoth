@@ -193,7 +193,9 @@ def _table(name: str) -> list[str]:
     text = (ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch.rs").read_text(
         encoding="utf-8"
     )
-    match = re.search(rf"pub const {name}[^=]*= &\[(.*?)\n\];", text, re.S)
+    # `)];` as well as `];`: a one-entry table is rustfmt'd across lines as
+    # `&[(\n    "id",\n    "why",\n)];`.
+    match = re.search(rf"pub const {name}[^=]*= &\[(.*?)\n\)?\];", text, re.S)
     if match is None:
         raise ProbeError(f"the {name} table is not where this probe looks for it")
     ids = re.findall(r'"(unit_ops\.\w+)"', match.group(1))
@@ -590,6 +592,101 @@ def sweep_paths(pages: list[Path]) -> tuple[int, list[str], list[str]]:
     return checked, failures, escapes
 
 
+
+# --- the port's sources -----------------------------------------------------
+
+#: The three spec trees a port has to account for itself in.
+SPEC_TREES = ("unit_ops", "models", "calcs")
+
+#: Where a spec says its arithmetic came from. Empty is a refusal rather than a default: the
+#: port rule is that a port names the paper, the NeqSim class and its own notes, and a spec
+#: whose `[source].standard` is a bare "NeqSim" has named none of them.
+SOURCE = "source.standard"
+
+#: How a spec says its source cannot be named - a class deleted upstream, a source that was
+#: never published. The marker travels with the file, so the reason is where the next reader
+#: looks, and the count of markers is printed rather than being a silence.
+SOURCE_MARKER = "source-ok:"
+
+#: What counts as naming a source: a `.java` file, a backticked symbol or path, a work with a
+#: year, a standard's number, or an author list. Five shapes because a port's source is one of
+#: five kinds of place - a NeqSim class, a NeqSim method, a paper, a standard, or a textbook the
+#: spec cites by its authors.
+NAMES_A_CLASS = re.compile(
+    r"\.java\b"
+    r"|`[A-Za-z_][A-Za-z0-9_.()/]*`"
+    r"|\b\d{4}\b"
+    r"|\b[A-Z]{2,}[ -]?[A-Z]?\d+"
+    # An author list: two or more capitalised surnames joined by `&` or `,` - "Smith, Van Ness &
+    # Abbott". Measured, the flash family cites its textbook this way, and those specs name the
+    # NeqSim class beside it in `edition`.
+    r"|\b[A-Z][a-z]+(?:,? ?& ?|, )[A-Z][a-z]+"
+)
+
+
+def sweep_sources() -> tuple[int, list[str], list[str]]:
+    """Every spec says where its arithmetic came from, and says it in a checkable shape.
+
+    Returns `(checked, failures, markers)`.
+
+    **A bare \"NeqSim\" is the failure this exists for.** The port rules are that a port names
+    the paper, the NeqSim class and its own notes, and that a divergence from the source is a
+    finding rather than a repair - so the class matters: `NeqSim's getAntoineVaporPressure` is
+    checkable against the pin, where `NeqSim` alone is a claim about a whole library. Measured,
+    127 of the 221 specs name a NeqSim source and 94 a paper or a standard, and every one of
+    them names a class, a method or a year.
+
+    A spec that cannot name its source - a class deleted upstream, a correlation that was never
+    published - carries a `source-ok:` marker with the reason, which is the same idiom the
+    numerics lint uses for a literal a source writes.
+    """
+    failures: list[str] = []
+    markers: list[str] = []
+    checked = 0
+    found = 0
+    for tree in SPEC_TREES:
+        for path in sorted((ROOT / "specs" / tree).rglob("*.toml")):
+            where = str(path.relative_to(ROOT))
+            try:
+                spec = tomllib.loads(path.read_text(encoding="utf-8"))
+            except tomllib.TOMLDecodeError as error:
+                failures.append(f"{where}: is not valid TOML: {error}")
+                continue
+            source = spec.get("source")
+            checked += 1
+            if not isinstance(source, dict):
+                failures.append(
+                    f"{where}: has no `[source]`. A port names the paper or the NeqSim class it "
+                    f"came from, and a spec with neither is one nobody can check"
+                )
+                continue
+            standard = str(source.get("standard", "")).strip()
+            # **The whole `[source]` block is the citation.** `standard` is the work and
+            # `edition` is the locus within it - a line number, a method, the paragraphs of a
+            # textbook - and several specs name the NeqSim class there rather than here.
+            citation = f"{standard} {source.get('edition', '')}"
+            found += 1
+            text = path.read_text(encoding="utf-8")
+            if SOURCE_MARKER in text:
+                markers.append(f"{where} - {standard or 'no standard'}")
+                continue
+            if not standard:
+                failures.append(
+                    f"{where}: `{SOURCE}` is empty. Refused rather than defaulted: a spec that "
+                    f"names no source cannot be held to one"
+                )
+            elif not NAMES_A_CLASS.search(citation):
+                failures.append(
+                    f"{where}: its `[source]` is {standard!r}, and neither it nor `edition` "
+                    f"names a class, method, paper, standard or author - so nothing says what "
+                    f"this spec was ported from. Name the `.java`, the method, the paper with "
+                    f"its year, or mark it `{SOURCE_MARKER} <reason>`"
+                )
+    if not found:
+        raise ProbeError("measured no spec with a `[source]`; the tree is not where this looks")
+    return checked, failures, markers
+
+
 # --- the calculus sweep -----------------------------------------------------
 
 
@@ -725,6 +822,8 @@ def main(argv: list[str] | None = None) -> int:
     failures += sweep_failures
     layers, layer_failures, unenforced = sweep_enforcement()
     failures += layer_failures
+    specs, spec_failures, source_markers = sweep_sources()
+    failures += spec_failures
     failures += check_skips(skips)
 
     if failures:
@@ -740,8 +839,13 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"check_doc_claims: OK ({len(claims)} claim(s) across "
         f"{len({c.page for c in claims})} page(s), {checked} path(s) checked, "
-        f"{layers} calculus layer(s))"
+        f"{layers} calculus layer(s), "
+        f"{specs} spec source(s))"
     )
+    if source_markers:
+        print(f"  {len(source_markers)} source(s) marked unnameable:")
+        for entry in source_markers:
+            print(f"    {entry}")
     if unenforced:
         # Printed rather than passed over: a claim nothing enforces is a state to look at,
         # and a number a reader can watch is the difference between a judgement and a habit.

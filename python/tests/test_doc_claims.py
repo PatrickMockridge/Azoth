@@ -450,3 +450,106 @@ def test_the_shipped_tree_passes(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(tool, "ROOT", REPO_ROOT)
     monkeypatch.setattr(sys, "path", [*sys.path, str(REPO_ROOT / "tools")])
     assert tool.main([]) == 0
+
+
+# --- the port's sources ------------------------------------------------------
+
+#: A spec of the shape the source sweep reads: an id and a `[source]` block.
+def a_spec(name: str, source: str) -> str:
+    return f"specs/models/eos/{name}.toml\nid = 'eos.{name}'\n[source]\n{source}\n"
+
+
+def test_a_spec_naming_its_neqsim_class_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A `.java` path is the shape the probe can hold a port to."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        a_spec("thing", 'standard = "NeqSim process/equipment/Thing.java"'),
+    )
+    checked, failures, markers = tool.sweep_sources()
+    assert (checked, failures, markers) == (1, [], [])
+
+
+def test_a_spec_naming_a_paper_or_a_standard_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """And so are the three other kinds of place a port's arithmetic comes from."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        a_spec("paper", 'standard = "Chung, T.-H.; Ajlan, M. (1988)"'),
+        a_spec("standard", 'standard = "Crane TP-410"'),
+        a_spec("textbook", 'standard = "Standard thermodynamics, as in Smith, Van Ness & Abbott"'),
+    )
+    checked, failures, markers = tool.sweep_sources()
+    assert checked == 3, checked
+    assert failures == [], failures
+    assert markers == []
+
+
+def test_a_bare_neqsim_is_not_a_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """**The failure this sweep exists for.** A library is not a class, and nothing about
+    "NeqSim" says what was ported or what to compare against."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        a_spec("vague", 'standard = "NeqSim, developed at NTNU and maintained by Equinor"'),
+    )
+    checked, failures, _ = tool.sweep_sources()
+    assert checked == 1
+    assert len(failures) == 1, failures
+    assert "names a class, method, paper, standard or author" in failures[0]
+
+
+def test_a_spec_with_no_source_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A spec nobody can check is refused rather than passed over."""
+    # One spec with a source, so the probe has something to measure - a tree where *nothing*
+    # names a source is a broken probe rather than a finding.
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        a_spec("named", 'standard = "NeqSim process/Thing.java"'),
+        "specs/calcs/eos/bare.toml\nid = 'eos.bare'\n",
+    )
+    _, failures, _ = tool.sweep_sources()
+    assert len(failures) == 1, failures
+    assert "has no `[source]`" in failures[0]
+
+
+def test_the_marker_excuses_a_source_that_cannot_be_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A definition has no paper, and the marker says so rather than the sweep assuming it."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        a_spec(
+            "defined",
+            'standard = "The definition of molar mass"\n'
+            "# source-ok: molar mass is a definition, and there is no paper to cite for one.",
+        ),
+    )
+    checked, failures, markers = tool.sweep_sources()
+    assert (checked, failures) == (1, [])
+    assert len(markers) == 1 and "molar mass" in markers[0]
+
+
+def test_an_empty_source_block_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`edition` may carry the citation, but `standard` may not be missing."""
+    tool = rooted(
+        tmp_path,
+        monkeypatch,
+        a_spec("empty", 'edition = "`Thing.java` at line 4"'),
+    )
+    _, failures, _ = tool.sweep_sources()
+    assert len(failures) == 1, failures
+    assert "is empty" in failures[0]
+
+
+def test_no_spec_at_all_is_a_broken_probe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A tree that moved would otherwise report zero findings and pass."""
+    tool = rooted(tmp_path, monkeypatch, "docs/page.md\nnothing here")
+    with pytest.raises(tool.ProbeError):
+        tool.sweep_sources()

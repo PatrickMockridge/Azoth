@@ -5,6 +5,8 @@ latex = '''P = \frac{\rho\,g\,Q\,H}{\eta}'''
 assumptions = ["steady state; the flow and head are not changing with time", "the fluid is incompressible and its density is constant through the pump", "`H` is the total head developed, including the static lift, the friction and fitting losses in the circuit, and any velocity-head difference between the pump's inlet and outlet.", "the pump is a single unit, not stages in series or machines in parallel", "`eta` is the pump's own efficiency at the operating point, not the motor's.", "The operating point is on the pump's curve rather than beyond its range.", "no account of the fluid's vapour pressure; cavitation is not modelled and NPSH is a separate calculation"]
 references = ["Standard gravity: the 1901 CGPM resolution fixed it at exactly 9.80665 m/s**2.", "No specific source is claimed: the relation is general pump engineering."]
 [source]
+# source-ok: the hydraulic-power relation is elementary and its source is the equation
+# this spec states; there is no paper or class it was taken from.
 standard = "standard pump hydraulics; the hydraulic-power relation in any fluids text"
 [inputs]
 [inputs.rho]

@@ -55,7 +55,7 @@ measure = { declared = "unit_ops.declared", kernels = "unit_ops.kernels" }
 
 [[claim]]
 page = "docs/src/architecture/middleware.md"
-text = "the `DISPATCH` table, {entries} entries and {refusals} refusals by name"
+text = "the `DISPATCH` table, {entries} entries and **{refusals}** refusal by name"
 measure = { entries = "unit_ops.dispatch", refusals = "unit_ops.refusals" }
 
 # --- the Lean gate ------------------------------------------------------------

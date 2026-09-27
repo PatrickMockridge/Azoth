@@ -14,6 +14,8 @@ references = [
     "Peng, D. Y.; Robinson, D. B. (1976). \"A New Two-Constant Equation of State.\" Industrial & Engineering Chemistry Fundamentals 15(1), 59-64. DOI 10.1021/i160057a011.",
 ]
 [source]
+# source-ok: the ideal-gas-plus-departure composition is what an absolute enthalpy *is*,
+# not a paper - the definition and the datum NeqSim makes are in `edition`.
 standard = "The composition of ideal-gas and residual contributions"
 edition = "Standard thermodynamics: an absolute enthalpy or entropy is a reference value plus an ideal-gas integral plus a departure, with the datum NeqSim's (`T_ref = 273.15 K`, `P_ref = 1.01325 bar`)."
 [inputs]

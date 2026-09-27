@@ -10,6 +10,8 @@ references = ["""\
     BIPM. \"The International System of Units (SI)\", 9th edition (2019). (the mole and the \
     kilogram, and therefore the units this calc divides)"""]
 [source]
+# source-ok: molar mass is a definition, and there is no paper to cite for one - which is
+# what `edition` says in as many words.
 standard = "The definition of molar mass"
 edition = """\
     Molar mass is the mass per amount of substance, so a mass density is a molar mass \
