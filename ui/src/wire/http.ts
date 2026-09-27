@@ -16,6 +16,7 @@
  * edit says `false`; Solve says `true`.
  */
 
+import { decodeCatalogue, decodeEnvelope, fieldOf } from "./decode";
 import type { HostedDoor, Opened, Session } from "./session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./types";
 
@@ -46,13 +47,8 @@ async function post(base: string, body: Record<string, unknown>): Promise<unknow
 
 /** The server's own sentence where it wrote one, so a refusal reaches the editor as it was made. */
 function sentence(answer: unknown, status: number): string {
-  if (typeof answer === "object" && answer !== null && "error" in answer) {
-    const { error } = answer as { error: unknown };
-    if (typeof error === "string") {
-      return error;
-    }
-  }
-  return `the server answered ${status}`;
+  const error = fieldOf(answer, "error");
+  return typeof error === "string" ? error : `the server answered ${status}`;
 }
 
 class HttpSession implements Session {
@@ -63,16 +59,16 @@ class HttpSession implements Session {
   }
 
   async apply(command: Command): Promise<Envelope> {
-    return (await post(this.#base, { command, run: false })) as Envelope;
+    return decodeEnvelope(await post(this.#base, { command, run: false }));
   }
 
   async run(): Promise<Envelope> {
     // `command: null` is the route's "the envelope as it stands", and `run` is what makes it run.
-    return (await post(this.#base, { command: null, run: true })) as Envelope;
+    return decodeEnvelope(await post(this.#base, { command: null, run: true }));
   }
 
   async setOrder(order: ExecutionOrder): Promise<Envelope> {
-    return (await post(this.#base, { order, command: null })) as Envelope;
+    return decodeEnvelope(await post(this.#base, { order, command: null }));
   }
 }
 
@@ -87,11 +83,11 @@ export class HttpDoor implements HostedDoor {
   }
 
   async catalogue(withTools = false): Promise<Catalogue> {
-    return (await post(this.#base, { catalogue: withTools })) as Catalogue;
+    return decodeCatalogue(await post(this.#base, { catalogue: withTools }));
   }
 
   async attach(): Promise<Opened> {
-    const envelope = (await post(this.#base, { command: null })) as Envelope;
+    const envelope = decodeEnvelope(await post(this.#base, { command: null }));
     return { session: new HttpSession(this.#base), envelope };
   }
 }

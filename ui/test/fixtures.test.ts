@@ -26,17 +26,20 @@
 
 import { describe, expect, it } from "vitest";
 
-import type { Catalogue, Envelope } from "../src/wire/types";
+import { decodeCatalogue, decodeEnvelope } from "../src/wire/decode";
 import brokenJson from "./fixtures/broken.json";
 import catalogueJson from "./fixtures/catalogue.json";
 import envelopeJson from "./fixtures/envelope.json";
 import { controlFor } from "../src/wire/field";
 
-// **Imported, not read.** `vite` resolves a JSON import and TypeScript infers its shape, so the
-// fixtures need no `@types/node` and the test says what it expects of them explicitly anyway.
-const catalogue = catalogueJson as unknown as Catalogue;
-const solved = envelopeJson as unknown as Envelope;
-const refused = brokenJson as unknown as Envelope;
+// **Imported, not read, and decoded rather than asserted.** `vite` resolves a JSON import and
+// TypeScript infers its shape, so the fixtures need no `@types/node`; and the three below go
+// through the same parser a browser runs, which is what makes this file the mirror's gate rather
+// than a set of assertions beside one. A cast here would let a fixture the declaration no longer
+// describes pass every `expect` below by being `undefined` in the places nobody asserts.
+const catalogue = decodeCatalogue(catalogueJson);
+const solved = decodeEnvelope(envelopeJson);
+const refused = decodeEnvelope(brokenJson);
 
 describe("the catalogue", () => {
   it("is the palette, with a model for all but one and a kernel for all but one", () => {

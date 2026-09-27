@@ -12,7 +12,7 @@
  */
 
 import type { EditorCommand } from "./commands";
-import type { Role } from "./types";
+import { asRole } from "./decode";
 
 /** The command that removes the node an id names, or none. */
 export function removeCommandFor(nodeId: string): EditorCommand | null {
@@ -20,8 +20,17 @@ export function removeCommandFor(nodeId: string): EditorCommand | null {
   if (separator < 0) {
     return null;
   }
-  const role = nodeId.slice(0, separator) as Role;
+  // **Read, not asserted.** The id's prefix is a projection convention, so a role is one of three
+  // strings or it is none of them — and `as Role` would have made a fourth look like a first.
+  const role = asRole(nodeId.slice(0, separator));
+  if (role === null) {
+    return null;
+  }
   const name = nodeId.slice(separator + 1);
+  // **Three cases and no `default`.** The type has three inhabitants once `asRole` has read the
+  // prefix, so a fourth branch could not be reached and a `default: return null` would be a case
+  // that says the reader is not exhaustive when it is. A role added to the projection fails
+  // `tsc` here rather than silently removing nothing.
   switch (role) {
     case "instance":
       return { command: "remove_instance", id: name };
@@ -29,7 +38,5 @@ export function removeCommandFor(nodeId: string): EditorCommand | null {
       return { command: "remove_input", name };
     case "product":
       return { command: "remove_product", name };
-    default:
-      return null;
   }
 }

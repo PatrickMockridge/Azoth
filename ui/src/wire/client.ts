@@ -7,10 +7,9 @@
  */
 
 import init, { Editor, palette_json } from "../wasm/pkg/azoth_wasm.js";
+import { parseCatalogue, parseEnvelope } from "./decode";
 import type { Door, Opened, OpenableDoor, Session } from "./session";
 import type { Catalogue, Command, Envelope, ExecutionOrder } from "./types";
-
-const envelope = (json: string): Envelope => JSON.parse(json) as Envelope;
 
 /**
  * The module's session.
@@ -28,15 +27,15 @@ class WasmSession implements Session {
   }
 
   async apply(command: Command): Promise<Envelope> {
-    return envelope(this.#editor.apply(JSON.stringify(command)));
+    return parseEnvelope(this.#editor.apply(JSON.stringify(command)));
   }
 
   async run(): Promise<Envelope> {
-    return envelope(this.#editor.run());
+    return parseEnvelope(this.#editor.run());
   }
 
   async setOrder(order: ExecutionOrder): Promise<Envelope> {
-    return envelope(this.#editor.set_order(order));
+    return parseEnvelope(this.#editor.set_order(order));
   }
 }
 
@@ -44,7 +43,7 @@ class WasmDoor implements OpenableDoor {
   readonly kind = "openable" as const;
 
   async catalogue(withTools = false): Promise<Catalogue> {
-    return JSON.parse(palette_json(withTools)) as Catalogue;
+    return parseCatalogue(palette_json(withTools));
   }
 
   async open(document: string): Promise<Opened> {
@@ -53,7 +52,7 @@ class WasmDoor implements OpenableDoor {
     // was in hand — and a door that had to be polled to boot would be a different shape from this
     // one for no reason.
     const editor = new Editor(document);
-    return { session: new WasmSession(editor), envelope: envelope(editor.envelope()) };
+    return { session: new WasmSession(editor), envelope: parseEnvelope(editor.envelope()) };
   }
 }
 

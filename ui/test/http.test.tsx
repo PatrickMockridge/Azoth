@@ -26,19 +26,25 @@ import { nodeIds, pill, stubXyflowEnvironment } from "./xyflow-env";
 beforeAll(stubXyflowEnvironment);
 
 /**
- * A server that answers with one thing, and records what it was asked.
+ * A server that answers, and records what it was asked.
  *
- * Nothing is emulated but the socket: the object it answers with is the fixture, which is the
- * library's own output.
+ * Nothing is emulated but the socket: what it answers with is the fixture the library wrote, and
+ * the *body* is what chooses which — because `/rpc` answers a catalogue read and an edit with two
+ * different documents, and a stub that returned one for both would be a server this one is not.
+ * That distinction used to be invisible, since the door cast whatever came back.
  */
-function stubRoute(answer: unknown, status = 200): { bodies: Record<string, unknown>[] } {
+function stubRoute(
+  answer: (body: Record<string, unknown>) => unknown,
+  status = 200,
+): { bodies: Record<string, unknown>[] } {
   const bodies: Record<string, unknown>[] = [];
   vi.stubGlobal(
     "fetch",
     (_input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      bodies.push(body);
       return Promise.resolve(
-        new Response(JSON.stringify(answer), {
+        new Response(JSON.stringify(answer(body)), {
           status,
           headers: { "Content-Type": "application/json" },
         }),
@@ -47,6 +53,10 @@ function stubRoute(answer: unknown, status = 200): { bodies: Record<string, unkn
   );
   return { bodies };
 }
+
+/** The route's two answers: a catalogue read, and everything else. */
+const theRoute = (body: Record<string, unknown>): unknown =>
+  "catalogue" in body ? catalogueJson : envelopeJson;
 
 afterEach(() => {
   // The suite imports `react` through `App`, so the tree has to go the way `app.test.tsx` takes it.
@@ -72,7 +82,7 @@ describe("the door the URL names", () => {
 describe("what a call posts", () => {
   it("sends the body the route reads, for each of the four calls", async () => {
     const door = new HttpDoor("http://127.0.0.1:4000");
-    const { bodies } = stubRoute(envelopeJson);
+    const { bodies } = stubRoute(theRoute);
 
     const { session } = await door.attach();
     await door.catalogue(true);
