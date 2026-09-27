@@ -195,6 +195,10 @@ fn lean_oil() -> ColumnSetup {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: Vec::new(),
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     }
 }
 
@@ -251,6 +255,10 @@ fn hydrocarbon_stripper() -> ColumnSetup {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: Vec::new(),
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
     }
 }
 
@@ -407,6 +415,10 @@ fn a_reactive_absorber_on_a_fluid_that_does_not_react_is_the_same_column() {
         liquid_side_draw_fractions: None,
         pumparound_fractions: None,
         side_draw_flows: Vec::new(),
+        pumparound_returns: Vec::new(),
+        pumparound_inlets: Vec::new(),
+        pumparound_tolerance: None,
+        pumparound_max_iterations: None,
         reactive,
     };
     let plain = distillation_column(&light(azoth_process::kernels::ReactiveSection::None))

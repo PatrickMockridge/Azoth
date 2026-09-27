@@ -192,6 +192,28 @@ pub struct ColumnOutcome {
     pub warnings: Vec<azoth_core::warning::Warning>,
     /// **What the side-draw flow tear did**, or `None` where no draw's flow was specified.
     pub tear: Option<TearDiagnostics>,
+    /// **What the pumparound returns did**, or `None` where no pumparound has a return.
+    pub pumparound: Option<PumparoundDiagnostics>,
+}
+
+/// **What the pumparounds' returns did**, which is `getLastPumparoundRelativeChange` beside what
+/// it was measuring.
+///
+/// **Separate from the tear's**, because the two are different outer loops: a specified draw
+/// *flow* is a search over candidates, and a pumparound return is a fixed point on a stream the
+/// column already knows how to take. The class keeps their diagnostics apart for the same reason.
+#[derive(Debug, Clone)]
+pub struct PumparoundDiagnostics {
+    /// Outer passes taken, `getLastPumparoundIterationCount`'s subject.
+    pub iterations: usize,
+    /// The worst return-flow change at the last pass, `getLastPumparoundRelativeChange`.
+    pub relative_change: f64,
+    /// Whether it reached the pumparound tolerance.
+    pub converged: bool,
+    /// Each return's flow, mol/s, in the order the setup states them.
+    pub return_n: Vec<f64>,
+    /// Each cooler's duty in W: the return's enthalpy less the draw's, negative for cooling.
+    pub duty: Vec<f64>,
 }
 
 /// Which of the class's ten solving strategies the column runs.
@@ -293,6 +315,17 @@ pub struct ColumnSetup {
     /// **The draws whose *flow* is specified rather than their fraction**, which
     /// `addSideDrawFlowSpecification` states and [`crate::column::tear`] solves.
     pub side_draw_flows: Vec<SideDrawFlow>,
+    /// **The liquid pumparounds whose draw comes back to another tray**, which
+    /// `addLiquidPumparound` states and [`crate::column::pumparound`] iterates. The fraction is
+    /// written onto the draw tray's pumparound vector, so this is the return alone.
+    pub pumparound_returns: Vec<crate::column::pumparound::PumparoundReturn>,
+    /// The return streams the last pass carried, one per tray - **the recycle's own state**, and
+    /// what [`crate::column::pumparound`] sets on each pass after the first.
+    pub pumparound_inlets: Vec<Option<Stream>>,
+    /// The class's `pumparoundTolerance`, or `None` for its own `1e-4`.
+    pub pumparound_tolerance: Option<f64>,
+    /// The class's `maxPumparoundIterations`, or `None` for its own `12`.
+    pub pumparound_max_iterations: Option<usize>,
 }
 
 /// The phase a side-draw flow specification controls: `ColumnSideDrawSpecification.SideDrawPhase`.
@@ -574,6 +607,12 @@ struct Network {
     reactive: Vec<bool>,
     /// What the stages have had to fall back on, one entry per kind.
     warnings: Vec<azoth_core::warning::Warning>,
+    /// **The pumparound returns, one per tray**, which a returning draw joins the tray's inlets
+    /// as. Empty until [`crate::column::pumparound`] has built them.
+    returns: Vec<Option<Stream>>,
+    /// The return joins the tray's inlets **before** the neighbours'**, which is the order
+    /// `replaceMiddleTrays` leaves them in: the return is an added stream and the vapour and the
+    /// liquid are the links `init` made.
     /// The three draw-fraction vectors, in `DRAW_FIELDS`' order.
     draws: [Option<Vec<f64>>; 3],
     /// What each tray withdrew, in the same order.
@@ -608,6 +647,11 @@ impl Network {
             }
         }
         inlets.extend(self.feeds_at(i).into_iter().cloned());
+        // **A returning pumparound is an inlet like any other**, which is what makes the recycle
+        // a recycle: the tray the liquid comes back to mixes it with its own inlets.
+        if let Some(returned) = self.returns.get(i).and_then(Option::as_ref) {
+            inlets.push(returned.clone());
+        }
         inlets
     }
 
@@ -792,10 +836,29 @@ impl Network {
 pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     // **A specified draw flow is an outer search over whole column solves**, so the tear owns
     // the call and the body below is its inner solve - see [`crate::column::tear`].
-    if let Some(specification) = setup.side_draw_flows.first() {
-        return crate::column::tear::solve_single_flow(setup, specification, &solve_once);
+    // **The pumparound returns are the outer loop and the draw's flow tear is the inner one**,
+    // which is the class's own order: `solveWithColumnTearVariables` runs
+    // `solveConfiguredColumn`, and a return is rebuilt from the draw that solve produced. The
+    // two are refused together, because `hasPumparoundTearVariablesOnly` and
+    // `hasSingleSideDrawFlowSpecificationOnly` are the class's two separate paths and this port
+    // carries the second alone - see `column::tear`.
+    if !setup.pumparound_returns.is_empty() {
+        if !setup.side_draw_flows.is_empty() {
+            return Err(AzothError::invalid_input(
+                "pumparound_returns",
+                "a pumparound with a return is stated beside a side-draw flow specification: \
+                 `solveWithColumnTearVariables` solves the two as coordinated tear variables, \
+                 and this port carries the pumparound's own fixed point alone",
+            ));
+        }
+        return crate::column::pumparound::solve_with_returns(setup, &solve_once);
     }
-    solve_once(setup)
+    match setup.side_draw_flows.first() {
+        Some(specification) => {
+            crate::column::tear::solve_single_flow(setup, specification, &solve_once)
+        }
+        None => solve_once(setup),
+    }
 }
 
 /// One column solve, with no tear: `solveConfiguredColumn`.
@@ -941,6 +1004,7 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
             vec![None; tray_count],
             vec![None; tray_count],
         ],
+        returns: setup.pumparound_inlets.clone(),
         gas: vec![None; tray_count],
         liquid: vec![None; tray_count],
         equilibrium: vec![(None, None); tray_count],
@@ -979,6 +1043,13 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         .chain(setup.top_feed.iter())
         .collect();
     let feed_enthalpy: f64 = feeds.iter().map(|feed| feed.n * feed.h.value).sum();
+    // The returns carry enthalpy in on the same boundary as the draws carry it out.
+    let returned_enthalpy: f64 = net
+        .returns
+        .iter()
+        .flatten()
+        .map(|returned| returned.n * returned.h.value)
+        .sum();
     // **The draws are a third route out of the column**, so both closures count them: a feed
     // leaves as the two products *and* whatever the trays withdrew, and a residual that ignored
     // the draws would report an imbalance that is not there.
@@ -990,7 +1061,8 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
     let products_enthalpy =
         distillate.n * distillate.h.value + bottoms.n * bottoms.h.value + drawn_enthalpy;
     let energy_residual = if feed_enthalpy.abs() > 0.0 {
-        (feed_enthalpy + reboiler_duty + condenser_duty - products_enthalpy).abs()
+        (feed_enthalpy + returned_enthalpy + reboiler_duty + condenser_duty - products_enthalpy)
+            .abs()
             / feed_enthalpy.abs()
     } else {
         0.0
@@ -1086,6 +1158,7 @@ fn solve_once(setup: &ColumnSetup) -> Result<ColumnOutcome> {
         energy_residual,
         warnings: net.warnings.clone(),
         tear: None,
+        pumparound: None,
         gas_side_draws: net.drawn[0].clone(),
         liquid_side_draws: net.drawn[1].clone(),
         pumparounds: net.drawn[2].clone(),
@@ -1140,6 +1213,16 @@ fn supplied_and_drawn(setup: &ColumnSetup, net: &Network) -> (Vec<f64>, Vec<f64>
     for feed in std::iter::once(&setup.feed).chain(setup.top_feed.iter()) {
         for (c, amount) in supplied.iter_mut().enumerate() {
             *amount += feed.n * fraction_of(feed, c);
+        }
+    }
+    // **A pumparound's return is an inlet and its draw is an outlet**, so the two appear on
+    // opposite sides of the closure and cancel - which is the correct boundary and not a
+    // circular one: the column's inlets are its feeds *and* whatever comes back to it, and its
+    // outlets are its products *and* whatever leaves it. The cooler's duty is the enthalpy
+    // between them and is not an imbalance.
+    for returned in net.returns.iter().flatten() {
+        for (c, amount) in supplied.iter_mut().enumerate() {
+            *amount += returned.n * fraction_of(returned, c);
         }
     }
     let mut drawn = vec![0.0; setup.feed.z.len()];
