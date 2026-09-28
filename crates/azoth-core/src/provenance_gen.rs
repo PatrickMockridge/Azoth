@@ -2283,7 +2283,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "hydraulics.packing_sizing",
         name: "A packed bed's required column diameter from its flooding velocity",
         spec_path: "specs/calcs/hydraulics/packing_sizing.toml",
-        spec_sha256: "4e953706774861da2366b1f50cc2c043d4e54158fc54d13766363e918b570eb0",
+        spec_sha256: "c3502140a51134280068426b3684c3dd39f18cdb423adf14dcb357efeb46d0a7",
         python_path: "python/src/azoth/hydraulics/reference/packing_sizing.py",
         python_sha256: "524074b103ab2ec12cf3b409e2a1089c13fe5a160c6b7cc4167ff80035cf2962",
         rust_path: "crates/azoth-hydraulics/src/packing_sizing.rs",

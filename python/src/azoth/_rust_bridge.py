@@ -119,6 +119,7 @@ from azoth.core.result import (
     OrificeFlowResult,
     PackedColumnResult,
     PackingHydraulicsResult,
+    PackingSizingResult,
     ParachorMixtureSurfaceTensionResult,
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
@@ -397,6 +398,44 @@ def packing_hydraulics(
         minimum_wetting_rate=result.minimum_wetting_rate,
         wetting_ok=result.wetting_ok,
         design_ok=result.design_ok,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def packing_sizing(
+    packing: str,
+    design_flood_fraction: float,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    liquid_viscosity: Q,
+    hydraulic_capacity_factor: float,
+) -> PackingSizingResult:
+    """A packed bed's required diameter, computed in Rust."""
+    spec = _spec_for("hydraulics.packing_sizing")
+    result = _core.packing_sizing(
+        packing,
+        # Dimensionless: no unit to convert, so a plain float crosses.
+        design_flood_fraction,
+        input_to_si(spec, "vapor_mass_flow", vapor_mass_flow),
+        input_to_si(spec, "liquid_mass_flow", liquid_mass_flow),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        hydraulic_capacity_factor,
+    )
+    return PackingSizingResult(
+        packing_name=result.packing_name,
+        packing_factor=result.packing_factor,
+        flooding_velocity=result.flooding_velocity,
+        design_velocity=result.design_velocity,
+        vapor_volumetric_flow=result.vapor_volumetric_flow,
+        required_area=from_si(result.required_area.magnitude_si, result.required_area.unit),
+        required_diameter=from_si(
+            result.required_diameter.magnitude_si, result.required_diameter.unit
+        ),
+        column_diameter=from_si(result.column_diameter.magnitude_si, result.column_diameter.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -51,6 +51,7 @@ from azoth.core.result import (
     KFactorsResult,
     OrificeFlowResult,
     PackingHydraulicsResult,
+    PackingSizingResult,
     PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
@@ -68,6 +69,7 @@ __all__ = [
     "friction_factor_swamee_jain",
     "orifice_flow",
     "packing_hydraulics",
+    "packing_sizing",
     "pump_power",
     "reynolds_number",
 ]
@@ -79,6 +81,7 @@ _HAALAND = "hydraulics.friction_factor_haaland"
 _CRANE_K = "hydraulics.crane_k_factors"
 _DARCY_WEISBACH = "hydraulics.darcy_weisbach"
 _PACKING_HYDRAULICS = "hydraulics.packing_hydraulics"
+_PACKING_SIZING = "hydraulics.packing_sizing"
 _PUMP_POWER = "hydraulics.pump_power"
 _ORIFICE_FLOW = "hydraulics.orifice_flow"
 _CONTROL_VALVE_CV = "hydraulics.control_valve_cv"
@@ -293,6 +296,41 @@ def packing_hydraulics(
         surface_tension=surface_tension,
         vapor_diffusivity=vapor_diffusivity,
         liquid_diffusivity=liquid_diffusivity,
+        hydraulic_capacity_factor=hydraulic_capacity_factor,
+    )
+
+
+def packing_sizing(
+    packing: str,
+    design_flood_fraction: float,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    liquid_viscosity: Q,
+    hydraulic_capacity_factor: float,
+) -> PackingSizingResult:
+    """The internal diameter a packed bed needs at a chosen fraction of flood.
+
+    The vapour's volumetric flow over the design velocity gives an area, and the diameter that
+    area implies is rounded **up** to the next standard vessel size. **The rounding is why
+    ``column_diameter`` and ``required_diameter`` are both reported**: the table's floor is
+    ``0.3`` m, so a requirement of ``0.12`` m and one of ``0.30`` m buy the same vessel.
+
+    Raises:
+        OutOfRangeError: if the design flood fraction, either density or the liquid viscosity is
+            not positive.
+
+    See :func:`azoth.hydraulics.reference.packing_sizing`.
+    """
+    return resolve(_PACKING_SIZING)(  # type: ignore[no-any-return]
+        packing=packing,
+        design_flood_fraction=design_flood_fraction,
+        vapor_mass_flow=vapor_mass_flow,
+        liquid_mass_flow=liquid_mass_flow,
+        vapor_density=vapor_density,
+        liquid_density=liquid_density,
+        liquid_viscosity=liquid_viscosity,
         hydraulic_capacity_factor=hydraulic_capacity_factor,
     )
 

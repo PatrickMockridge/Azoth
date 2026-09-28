@@ -249,6 +249,40 @@ pub fn packing_hydraulics(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The internal diameter a packed bed needs at a chosen fraction of flood.
+#[pyfunction]
+#[pyo3(signature = (packing, design_flood_fraction, vapor_mass_flow, liquid_mass_flow, vapor_density, liquid_density, liquid_viscosity, hydraulic_capacity_factor))]
+#[pyo3(
+    text_signature = "(packing, design_flood_fraction, vapor_mass_flow, liquid_mass_flow, vapor_density, liquid_density, liquid_viscosity, hydraulic_capacity_factor)"
+)]
+#[allow(clippy::too_many_arguments)] // One per declared input.
+pub fn packing_sizing(
+    py: Python<'_>,
+    packing: &str,
+    design_flood_fraction: f64,
+    vapor_mass_flow: f64,
+    liquid_mass_flow: f64,
+    vapor_density: f64,
+    liquid_density: f64,
+    liquid_viscosity: f64,
+    hydraulic_capacity_factor: f64,
+) -> PyResult<crate::results::PyPackingSizingResult> {
+    hyd::packing_sizing::packing_sizing(
+        packing,
+        hyd::packing_sizing::PackingSizingState {
+            design_flood_fraction,
+            vapor_mass_flow: kilograms_per_second(vapor_mass_flow),
+            liquid_mass_flow: kilograms_per_second(liquid_mass_flow),
+            vapor_density: kilograms_per_cubic_meter(vapor_density),
+            liquid_density: kilograms_per_cubic_meter(liquid_density),
+            liquid_viscosity: pascal_seconds(liquid_viscosity),
+            hydraulic_capacity_factor,
+        },
+    )
+    .map(|r| crate::results::PyPackingSizingResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 #[pyfunction]
 #[pyo3(signature = (f, L, D, rho, v, mu=None))]
 #[pyo3(text_signature = "(f, L, D, rho, v, mu=None)")]

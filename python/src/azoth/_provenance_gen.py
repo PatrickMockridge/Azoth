@@ -1679,7 +1679,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'hydraulics.packing_sizing': {
         "calc_id": 'hydraulics.packing_sizing',
         "name": "A packed bed's required column diameter from its flooding velocity",
-        "spec": {'path': 'specs/calcs/hydraulics/packing_sizing.toml', 'sha256': '4e953706774861da2366b1f50cc2c043d4e54158fc54d13766363e918b570eb0'},
+        "spec": {'path': 'specs/calcs/hydraulics/packing_sizing.toml', 'sha256': 'c3502140a51134280068426b3684c3dd39f18cdb423adf14dcb357efeb46d0a7'},
         "code": [{'path': 'python/src/azoth/hydraulics/reference/packing_sizing.py', 'sha256': '524074b103ab2ec12cf3b409e2a1089c13fe5a160c6b7cc4167ff80035cf2962'}, {'path': 'crates/azoth-hydraulics/src/packing_sizing.rs', 'sha256': '8b31cc3815281734277d022c11e80da685e32025d9369811052f821bee4f5a0f'}],
         "source": 'NeqSim master `PackingHydraulicsCalculator`',
         "verification": 'partially_verified',

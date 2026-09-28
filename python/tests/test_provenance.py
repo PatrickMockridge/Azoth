@@ -136,7 +136,7 @@ def test_the_block_exists_for_every_registered_id() -> None:
     registered = {entry["id"] for entry in [*CALCS, *MODELS]}
 
     assert set(PROVENANCE) == registered
-    assert len(registered) == 192
+    assert len(registered) == 193
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

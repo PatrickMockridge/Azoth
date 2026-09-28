@@ -84,7 +84,7 @@ use azoth_thermal::results::ConductionPlaneWallResult;
 use azoth_hydraulics::results::{
     ChokedFlowAreaResult, ColebrookResult, ControlValveCvResult, DarcyWeisbachResult,
     HaalandResult, KComponent, KFactorsResult, OrificeFlowResult, PackingHydraulicsResult,
-    PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
+    PackingSizingResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
 };
 use pyo3::prelude::*;
 
@@ -9505,6 +9505,83 @@ impl From<&PackingHydraulicsResult> for PyPackingHydraulicsResult {
     }
 }
 
+/// Result of `hydraulics.packing_sizing`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PackingSizingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPackingSizingResult {
+    /// The packing the name resolved to.
+    #[pyo3(get)]
+    pub packing_name: String,
+    /// The resolved packing factor, in 1/m.
+    #[pyo3(get)]
+    pub packing_factor: f64,
+    /// The vapour velocity at flooding.
+    #[pyo3(get)]
+    pub flooding_velocity: f64,
+    /// `flooding_velocity * design_flood_fraction`.
+    #[pyo3(get)]
+    pub design_velocity: f64,
+    /// The vapour's volumetric flow.
+    #[pyo3(get)]
+    pub vapor_volumetric_flow: f64,
+    /// The cross-sectional area the vapour needs.
+    #[pyo3(get)]
+    pub required_area: PyQty,
+    /// The raw diameter, before the standard-size rounding.
+    #[pyo3(get)]
+    pub required_diameter: PyQty,
+    /// The required internal diameter, rounded up to the next standard size.
+    #[pyo3(get)]
+    pub column_diameter: PyQty,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPackingSizingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PackingSizingResult(packing={} required={:.4} {} column={:.4} {})",
+            self.packing_name,
+            self.required_diameter.magnitude_si,
+            self.required_diameter.unit,
+            self.column_diameter.magnitude_si,
+            self.column_diameter.unit
+        )
+    }
+}
+
+impl From<&PackingSizingResult> for PyPackingSizingResult {
+    fn from(r: &PackingSizingResult) -> Self {
+        Self {
+            packing_name: r.packing_name.clone(),
+            packing_factor: r.packing_factor,
+            flooding_velocity: r.flooding_velocity,
+            design_velocity: r.design_velocity,
+            vapor_volumetric_flow: r.vapor_volumetric_flow,
+            required_area: PyQty {
+                magnitude_si: r.required_area.value,
+                unit: "m**2".to_string(),
+            },
+            required_diameter: PyQty {
+                magnitude_si: r.required_diameter.value,
+                unit: "m".to_string(),
+            },
+            column_diameter: PyQty {
+                magnitude_si: r.column_diameter.value,
+                unit: "m".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+
 /// Result of `hydraulics.darcy_weisbach`, transported.
 #[pyclass(
     frozen,
@@ -10002,6 +10079,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // result's shape is a cross-language contract whether or not its spec calls it
         // a calculation.
         PackingHydraulicsResult::CALC_ID => PackingHydraulicsResult::FIELDS.to_vec(),
+        PackingSizingResult::CALC_ID => PackingSizingResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -10023,6 +10101,7 @@ pub fn calc_ids() -> Vec<String> {
         HaalandResult::CALC_ID.to_string(),
         OrificeFlowResult::CALC_ID.to_string(),
         PackingHydraulicsResult::CALC_ID.to_string(),
+        PackingSizingResult::CALC_ID.to_string(),
         ControlValveCvResult::CALC_ID.to_string(),
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),
