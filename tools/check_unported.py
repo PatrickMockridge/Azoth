@@ -55,8 +55,10 @@ MODEL_DIR = ROOT / "specs" / "models"
 
 #: A call site, in either language: the helper's name and one string literal. The literal
 #: is the row's key, so a site that names a row differently is a site this reads
-#: differently - which is the point rather than a limitation.
-CALL = re.compile(r"\b(?:unported::refuse|_unported\.refuse)\(\s*\"([^\"]+)\"\s*\)")
+#: differently - which is the point rather than a limitation. The comma is optional because
+#: `rustfmt` breaks a long argument onto its own line and leaves a trailing one, which is
+#: how two rows went unread on this checker's first run over the converted tree.
+CALL = re.compile(r"\b(?:unported::refuse|_unported\.refuse)\(\s*\"([^\"]+)\"\s*,?\s*\)")
 
 #: Where a call site is written, in each language.
 RUST_SITES = ROOT / "crates"
@@ -83,25 +85,31 @@ def model_specs(model_dir: Path = MODEL_DIR) -> list[tuple[Path, dict[str, objec
     return specs
 
 
-def declared(model_dir: Path = MODEL_DIR) -> tuple[dict[str, str], list[str]]:
-    """Every declared row as `key -> model id`, and every well-formedness failure.
+def declared(model_dir: Path = MODEL_DIR) -> tuple[dict[str, set[str]], list[str]]:
+    """Every declared row as `model id -> its keys`, and every well-formedness failure.
 
-    `model_dir` is a parameter so the test suite can point this at a synthetic tree -
-    the reason `spec_lint.py` takes `--spec-dir`, and the only way to prove the check
-    fails on a disagreement rather than on the tree it happens to be reading.
+    **Keyed by model rather than by key**, because two ids legitimately refuse the same
+    thing: `process.absorption_column` and `process.distillation_column` both refuse the
+    eight `ColumnSolverFactory` strategies neither carries, and a key-only map called that
+    a duplicate on this checker's first run over the converted tree.
+
+    `model_dir` is a parameter so the test suite can point this at a synthetic tree - the
+    reason `spec_lint.py` takes `--spec-dir`, and the only way to prove the check fails on
+    a disagreement rather than on the tree it happens to be reading.
     """
     failures: list[str] = []
-    rows: dict[str, str] = {}
+    rows: dict[str, set[str]] = {}
     for path, spec in model_specs(model_dir):
         where = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
         inputs = spec.get("inputs", {})
         assert isinstance(inputs, dict)
+        mine = rows.setdefault(str(spec["id"]), set())
         for row in spec.get("unported", []) or []:
             assert isinstance(row, dict)
             key = unported_key(row)
-            if key in rows:
+            if key in mine:
                 failures.append(f"{where}: declares {key!r} twice")
-            rows[key] = str(spec["id"])
+            mine.add(key)
 
             parameter = str(row["parameter"])
             declared_input = inputs.get(parameter)
@@ -163,26 +171,28 @@ def check(
                 )
                 continue
             model = model_ids[0]
-            mine = {key for key, owner in declared_rows.items() if owner == model}
-            undeclared = sorted(keys - mine)
+            undeclared = sorted(keys - declared_rows.get(model, set()))
             if undeclared:
                 failures.append(
                     f"{language}: {stem} refuses {undeclared}, which {model} does not declare"
                 )
 
     # **And the other direction**, which is what catches a declaration the code has not
-    # kept: a row both implementations must refuse, and one of them does not.
+    # kept: every row of a model both implementations must refuse, and one of them does
+    # not. Compared per model, because a key belongs to the spec that declares it and two
+    # specs can declare the same one.
     for language, root, suffix in (
         ("rust", rust_root, ".rs"),
         ("python", python_root, ".py"),
     ):
         written = {key for keys in sites(root, suffix).values() for key in keys}
-        missing = sorted(set(declared_rows) - written)
-        if missing:
-            failures.append(
-                f"{language}: declares {missing} and no {language} site refuses them, so the "
-                f"row is a claim this implementation has not kept"
-            )
+        for model, keys in sorted(declared_rows.items()):
+            missing = sorted(keys - written)
+            if missing:
+                failures.append(
+                    f"{language}: {model} declares {missing} and no {language} site refuses "
+                    f"them, so the row is a claim this implementation has not kept"
+                )
     return failures
 
 
@@ -198,7 +208,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     rows, _ = declared()
-    print(f"check_unported: OK ({len(rows)} declared row(s), refused in both languages)")
+    total = sum(len(keys) for keys in rows.values())
+    print(
+        f"check_unported: OK ({total} declared row(s) over "
+        f"{len([m for m, k in rows.items() if k])} model(s), refused in both languages)"
+    )
     return 0
 
 

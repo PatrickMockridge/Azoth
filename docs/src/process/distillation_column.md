@@ -107,6 +107,27 @@ not an equation, and both implementations read it from here.
 | `temperature_tolerance > 0` | raises | a convergence tolerance is positive, and zero is a solve that never stops |
 | `feed_t > 0` | raises | an absolute temperature |
 
+## Not carried
+
+Values this model's inputs declare and the port does not carry. Each is refused
+by **both** implementations from the same row, and `tools/check_unported.py`
+holds the declaration and the two languages to each other.
+
+| Value | NeqSim | Measured by |
+|---|---|---|
+| `solver_type` = `damped_substitution` | `DampedSubstitutionSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `inside_out` | `InsideOutSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `matrix_inside_out` | `MatrixInsideOutSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `wegstein` | `WegsteinSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `sum_rates` | `SumRatesSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `newton` | `TemperatureNewtonSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `mesh_residual` | `MeshResidualSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `auto` | `AutoSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `reactive`, when `solver_type` = `naphtali_sandholm` | `NaphtaliSandholmSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `gas_side_draw_fractions`, when `solver_type` = `naphtali_sandholm` | `NaphtaliSandholmSolver` | `validation/neqsim/captures/process_side_draw.tsv` |
+| `murphree_efficiency`, when `solver_type` = `naphtali_sandholm` | `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` | `validation/neqsim/captures/process_column_efficiency.tsv` |
+
+
 ## Assumptions
 
 - **the solve is `DIRECT_SUBSTITUTION`**, which is `DistillationColumn`'s own default: `init` flashes the feed stage, seeds a linear temperature profile and links the trays, then the sweeps run each tray from its neighbours' outlets until the mean tray-temperature change is under the tolerance.

@@ -119,20 +119,11 @@ fn refuse_murphree_gas_draw(setup: &ColumnSetup, tray_count: usize) -> Result<()
 /// **It is checked before the mesh dispatch and not with the draws**, because the mesh solve
 /// returns before the sequential setup runs - so a check placed there would never see it.
 fn refuse_murphree_mesh(setup: &ColumnSetup) -> Result<()> {
-    let Some(efficiency) = setup.murphree_efficiency.as_ref() else {
+    let Some(_efficiency) = setup.murphree_efficiency.as_ref() else {
         return Ok(());
     };
-    Err(AzothError::invalid_input(
-        "solver_type",
-        format!(
-            "a Murphree efficiency of {} is not ported on the `naphtali_sandholm` \
-             solve: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's \
-             K-values by an Edmister `K^eta` proxy, where the sequential core's \
-             `applyMurphreeCorrection` - the one this port carries - blends the vapour leaving \
-             a stage against the vapour entering it. The two are different corrections rather \
-             than two spellings of one",
-            efficiency.column_wide
-        ),
+    Err(crate::unported::refuse(
+        "murphree_efficiency@solver_type=naphtali_sandholm",
     ))
 }
 

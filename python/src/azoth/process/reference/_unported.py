@@ -50,6 +50,21 @@ def parameter_of(key: str) -> str:
     return key.replace("@", "=").split("=", 1)[0]
 
 
+def values_for(parameter: str) -> tuple[str, ...]:
+    """Every value of one input the declaration marks as not carried, in row order.
+
+    **Derived, so it cannot drift.** A hand-written tuple of the strategies this port
+    declines was carried here once and was wrong in two ways at once - it named a value the
+    port does carry, and it said nine where the tree refuses eight - and nothing read it.
+    Read from the declaration, both are impossible.
+    """
+    return tuple(
+        str(row["value"])
+        for row in rows().values()
+        if row["parameter"] == parameter and "value" in row
+    )
+
+
 def refuse(key: str) -> InvalidInputError:
     """Refuse a value the declaration marks as not carried.
 

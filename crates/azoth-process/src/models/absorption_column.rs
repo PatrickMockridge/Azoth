@@ -16,10 +16,9 @@ use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::kernels::absorption_column::AbsorberSetup;
 use crate::kernels::absorption_column::absorption_column as kernel;
 use crate::kernels::distillation_column::SolverType;
-use crate::models::distillation_column::{
-    build_pumparound_returns, build_side_draw_flow, unported_class,
-};
+use crate::models::distillation_column::{build_pumparound_returns, build_side_draw_flow};
 use crate::stream::Stream;
+use crate::unported;
 
 /// Result of `process.absorption_column`.
 ///
@@ -207,18 +206,26 @@ pub fn absorption_column(
             .clone(),
         )
     };
+    // The same eight `process.distillation_column` refuses, from this id's own declaration.
     let solver = match solver_type.unwrap_or("direct_substitution") {
         "direct_substitution" => SolverType::DirectSubstitution,
         "naphtali_sandholm" => SolverType::NaphtaliSandholm,
+        "damped_substitution" => return Err(unported::refuse("solver_type=damped_substitution")),
+        "inside_out" => return Err(unported::refuse("solver_type=inside_out")),
+        "matrix_inside_out" => return Err(unported::refuse("solver_type=matrix_inside_out")),
+        "wegstein" => return Err(unported::refuse("solver_type=wegstein")),
+        "sum_rates" => return Err(unported::refuse("solver_type=sum_rates")),
+        "newton" => return Err(unported::refuse("solver_type=newton")),
+        "mesh_residual" => return Err(unported::refuse("solver_type=mesh_residual")),
+        "auto" => return Err(unported::refuse("solver_type=auto")),
         other => {
             return Err(AzothError::invalid_input(
                 "solver_type",
                 format!(
-                    "solver_type = {other} is not ported: `ColumnSolverFactory.{}` is the class \
-                     that would close it, and the strategies are path variants of one another \
-                     rather than different physics - see `process.distillation_column`'s own \
-                     `solver_type`, whose capture measures it.",
-                    unported_class(other)
+                    "`{other}` is not one of `ColumnSolverFactory`'s ten strategies, which are \
+                     `direct_substitution`, `damped_substitution`, `inside_out`, \
+                     `matrix_inside_out`, `wegstein`, `sum_rates`, `newton`, \
+                     `naphtali_sandholm`, `mesh_residual` and `auto`"
                 ),
             ));
         }

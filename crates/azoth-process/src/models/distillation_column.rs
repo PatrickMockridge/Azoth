@@ -14,6 +14,7 @@ use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::distillation_column as kernel;
 use crate::kernels::distillation_column::{Specification, SpecificationKind};
 use crate::stream::Stream;
+use crate::unported;
 
 /// Result of `process.distillation_column`.
 ///
@@ -309,22 +310,30 @@ pub(crate) fn distillation_column_outcome(
         &mut warnings,
     )?;
 
+    // **The eight this port does not carry are refused from the declaration, one arm each.**
+    // The arm is what makes the pair countable: the key is a literal here and in the Python
+    // half, so `tools/check_unported.py` reads two sets of the same shape rather than two
+    // sentences. The class that would close each gap comes from the row, so the map that used
+    // to be hand-written in both languages is gone with the sentences that needed it.
     let solver = match solver_type.unwrap_or("direct_substitution") {
         "direct_substitution" => kernel::SolverType::DirectSubstitution,
         "naphtali_sandholm" => kernel::SolverType::NaphtaliSandholm,
+        "damped_substitution" => return Err(unported::refuse("solver_type=damped_substitution")),
+        "inside_out" => return Err(unported::refuse("solver_type=inside_out")),
+        "matrix_inside_out" => return Err(unported::refuse("solver_type=matrix_inside_out")),
+        "wegstein" => return Err(unported::refuse("solver_type=wegstein")),
+        "sum_rates" => return Err(unported::refuse("solver_type=sum_rates")),
+        "newton" => return Err(unported::refuse("solver_type=newton")),
+        "mesh_residual" => return Err(unported::refuse("solver_type=mesh_residual")),
+        "auto" => return Err(unported::refuse("solver_type=auto")),
         other => {
             return Err(AzothError::invalid_input(
                 "solver_type",
                 format!(
-                    "solver_type = {other} is not ported: `ColumnSolverFactory.{}` is the class \
-                     that would close it. **The capture measures why it is refused rather than \
-                     ported**: `validation/neqsim/captures/process_column_solvers.tsv` runs the \
-                     binary column under all ten strategies and puts every one of them within \
-                     `2.5e-6` K of every other on tray 1 and within `1.1e-7` relative on the \
-                     distillate, so they are path variants rather than different physics - the \
-                     ten land on three bit-identical states, and each state is where a solve \
-                     stopped.",
-                    unported_class(other)
+                    "`{other}` is not one of `ColumnSolverFactory`'s ten strategies, which are \
+                     `direct_substitution`, `damped_substitution`, `inside_out`, \
+                     `matrix_inside_out`, `wegstein`, `sum_rates`, `newton`, \
+                     `naphtali_sandholm`, `mesh_residual` and `auto`"
                 ),
             ));
         }
@@ -337,12 +346,7 @@ pub(crate) fn distillation_column_outcome(
     // theirs from the tray's own flash - so here the flag could only be silently non-reactive,
     // which is the failure mode this port refuses everywhere else.
     if reactive != kernel::ReactiveSection::None && solver == kernel::SolverType::NaphtaliSandholm {
-        return Err(AzothError::invalid_input(
-            "reactive",
-            "a reactive section under `naphtali_sandholm` is not ported: `NaphtaliSandholmSolver` \
-             reads its fugacities from the MESH equations, and this port's mesh does not route a \
-             tray's flash at all, so the flag would be ignored rather than honoured",
-        ));
+        return Err(unported::refuse("reactive@solver_type=naphtali_sandholm"));
     }
 
     // **Side draws under the simultaneous solve are refused for the same reason the reactive
@@ -352,11 +356,8 @@ pub(crate) fn distillation_column_outcome(
         || liquid_side_draw_fractions.is_some()
         || pumparound_fractions.is_some();
     if draws_stated && solver == kernel::SolverType::NaphtaliSandholm {
-        return Err(AzothError::invalid_input(
-            "gas_side_draw_fractions",
-            "side draws under `naphtali_sandholm` are not ported: this port's mesh solves the \
-             MESH equations together and never forms a tray's own outlet streams, so there is \
-             nothing for a fraction to split",
+        return Err(unported::refuse(
+            "gas_side_draw_fractions@solver_type=naphtali_sandholm",
         ));
     }
 
@@ -494,32 +495,6 @@ pub fn distillation_column(
         pumparound_max_iterations,
     )?;
     Ok(DistillationColumnResult::of(&out, warnings))
-}
-
-/// The `ColumnSolverFactory` class behind each strategy this port does not carry.
-///
-/// **Named per strategy, because that is what a refusal owes a caller.** `columnSolver` hands
-/// back one of these for each `SolverType`, and `AutoSolver` is the ladder rather than a
-/// method: `candidateSolvers` returns `NAPHTALI_SANDHOLM` first, then `MATRIX_INSIDE_OUT`,
-/// `INSIDE_OUT` and `DAMPED_SUBSTITUTION`, and this port has the first and the last of those.
-///
-/// **The eight are refused as path variants rather than as physics**, which the capture
-/// measures: on the binary column every one of the ten lands within `2.5e-6` K of every other
-/// on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states -
-/// and `inside_out`, `matrix_inside_out`, `mesh_residual` and a fallen-back `wegstein` land on
-/// the substitution core's own state exactly. That is a measured non-port, the shape `P10` used
-/// for the adaptive-derivative refinement that converges on nothing.
-pub(crate) fn unported_class(strategy: &str) -> &'static str {
-    match strategy {
-        "damped_substitution" => "DampedSubstitutionSolver",
-        "inside_out" => "InsideOutSolver",
-        "matrix_inside_out" => "MatrixInsideOutSolver",
-        "wegstein" => "WegsteinSolver",
-        "sum_rates" => "SumRatesSolver",
-        "newton" => "TemperatureNewtonSolver",
-        "mesh_residual" => "MeshResidualSolver",
-        _ => "AutoSolver",
-    }
 }
 
 /// **The one side-draw flow specification this model declares**, or an empty vector.

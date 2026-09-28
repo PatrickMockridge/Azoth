@@ -91,6 +91,24 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `gas_t > 0` | raises | an absolute temperature |
 | `solvent_t > 0` | raises | an absolute temperature |
 
+## Not carried
+
+Values this model's inputs declare and the port does not carry. Each is refused
+by **both** implementations from the same row, and `tools/check_unported.py`
+holds the declaration and the two languages to each other.
+
+| Value | NeqSim | Measured by |
+|---|---|---|
+| `solver_type` = `damped_substitution` | `DampedSubstitutionSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `inside_out` | `InsideOutSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `matrix_inside_out` | `MatrixInsideOutSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `wegstein` | `WegsteinSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `sum_rates` | `SumRatesSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `newton` | `TemperatureNewtonSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `mesh_residual` | `MeshResidualSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `solver_type` = `auto` | `AutoSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+
+
 ## Assumptions
 
 - **the column has no ends and two fixed inlets.** The constructor passes `false, false`; `addGasInStream` is `addFeedStream(stream, 0)` and `addSolventInStream` is `addFeedStream(stream, getNumberOfTrays() - 1)`, each refusing a second assignment.

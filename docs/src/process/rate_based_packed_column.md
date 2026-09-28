@@ -109,6 +109,18 @@ not an equation, and both implementations read it from here.
 | `gas_n > 0` | raises | the interface mixture sums the two inlets' moles |
 | `liquid_n > 0` | raises | likewise |
 
+## Not carried
+
+Values this model's inputs declare and the port does not carry. Each is refused
+by **both** implementations from the same row, and `tools/check_unported.py`
+holds the declaration and the two languages to each other.
+
+| Value | NeqSim | Measured by |
+|---|---|---|
+| `segment_solver` = `simultaneous_residual` | `RateBasedPackedColumn.SegmentSolver.SIMULTANEOUS_RESIDUAL` | `validation/neqsim/captures/process_rate_based_solvers.tsv` |
+| `column_solver` = `equation_oriented` | `RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED` | `validation/neqsim/captures/process_rate_based_solvers.tsv` |
+
+
 ## Assumptions
 
 - **the packing is inside the equations.** The wetted area and the two film coefficients `kGa`/`kLa` come from `PackingHydraulicsCalculator` every segment, and the fluxes are built from them - unlike `process.packed_column`, whose packing is a report read after the solve.

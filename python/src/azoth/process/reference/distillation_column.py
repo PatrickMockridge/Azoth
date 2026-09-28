@@ -47,6 +47,7 @@ from azoth.core.result import DistillationColumnResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.process.reference import _column_stage as _stage
+from azoth.process.reference import _unported
 from azoth.process.reference._column_stage import (
     StreamRecord,
     reactive_stage,
@@ -99,18 +100,8 @@ SECANT_MIN_TEMPERATURE = 100.0
 SECANT_MAX_TEMPERATURE = 1000.0
 SECANT_FIRST_OFFSET = 5.0
 
-#: The nine strategies the class carries and this port does not.
-UNPORTED_SOLVERS = (
-    "damped_substitution",
-    "inside_out",
-    "matrix_inside_out",
-    "wegstein",
-    "sum_rates",
-    "newton",
-    "naphtali_sandholm",
-    "mesh_residual",
-    "auto",
-)
+#: The strategies the class carries and this port does not, read from the declaration.
+UNPORTED_SOLVERS = _unported.values_for("solver_type")
 
 
 class Specification(NamedTuple):
@@ -336,12 +327,7 @@ def distillation_column(
 
     section = reactive_section(reactive, reactive_start_tray, reactive_end_tray)
     if section is not None and solver_type == "naphtali_sandholm":
-        raise InvalidInputError(
-            "reactive",
-            "a reactive section under `naphtali_sandholm` is not ported: `NaphtaliSandholmSolver` "
-            "reads its fugacities from the MESH equations, and this port's mesh does not route a "
-            "tray's flash at all, so the flag would be ignored rather than honoured",
-        )
+        raise _unported.refuse("reactive@solver_type=naphtali_sandholm")
 
     top_specification = _build_specification(
         top_specification_type, top_specification_target, top_specification_component, "top"
@@ -376,11 +362,7 @@ def distillation_column(
         )
 
     if draws_stated and solver_type == "naphtali_sandholm":
-        raise InvalidInputError(
-            "gas_side_draw_fractions",
-            "side draws under `naphtali_sandholm` are not ported: this port's mesh solves the "
-            "MESH equations together and never forms a tray's own outlet streams",
-        )
+        raise _unported.refuse("gas_side_draw_fractions@solver_type=naphtali_sandholm")
 
     spec = _spec()
     checks = checks_for(spec)
@@ -1559,58 +1541,44 @@ def _restate(components: list[str], stream: StreamRecord, temperature: float) ->
 
 
 def _refuse_unported(solver_type: str | None, murphree_efficiency: _Murphree | None) -> None:
-    """Refuse every parameter the palette declares and this tranche does not implement.
+    """Refuse every value this id's spec declares as not carried.
 
     **Declared and refused, rather than withdrawn.** The palette declares them because they
-    are the machine's own form fields; each refusal names the class that would close it, so a
-    reader learns what is owed rather than meeting an absence.
+    are the machine's own form fields, and each refusal reads the row the spec holds. The key
+    is a literal, one arm per value, in this half and in the Rust half - which is what makes
+    the pair countable by `tools/check_unported.py` instead of comparable by reading.
     """
-    # **The mesh solve carries a different efficiency arithmetic**, refused by name rather than
+    # **The mesh solve carries a different efficiency arithmetic**, refused rather than
     # silently ignored: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` corrects a tray's
     # K-values by an Edmister `K^eta` proxy, where the sequential core's
     # `applyMurphreeCorrection` - the one this port carries - blends the vapour leaving a stage
-    # against the vapour entering it. The two are different corrections.
+    # against the vapour entering it.
     if solver_type == "naphtali_sandholm" and murphree_efficiency is not None:
-        raise InvalidInputError(
-            "solver_type",
-            f"a Murphree efficiency of {murphree_efficiency.column_wide} is not ported on the "
-            f"`naphtali_sandholm` solve: `NaphtaliSandholmSolver.applyMurphreeEfficiencyToK` "
-            f"corrects a tray's K-values by an Edmister `K^eta` proxy, where the sequential "
-            f"core's `applyMurphreeCorrection` - the one this port carries - blends the vapour "
-            f"leaving a stage against the vapour entering it. The two are different corrections "
-            f"rather than two spellings of one",
-        )
+        raise _unported.refuse("murphree_efficiency@solver_type=naphtali_sandholm")
     if solver_type is None or solver_type in ("direct_substitution", "naphtali_sandholm"):
         return
+    if solver_type == "damped_substitution":
+        raise _unported.refuse("solver_type=damped_substitution")
+    if solver_type == "inside_out":
+        raise _unported.refuse("solver_type=inside_out")
+    if solver_type == "matrix_inside_out":
+        raise _unported.refuse("solver_type=matrix_inside_out")
+    if solver_type == "wegstein":
+        raise _unported.refuse("solver_type=wegstein")
+    if solver_type == "sum_rates":
+        raise _unported.refuse("solver_type=sum_rates")
+    if solver_type == "newton":
+        raise _unported.refuse("solver_type=newton")
+    if solver_type == "mesh_residual":
+        raise _unported.refuse("solver_type=mesh_residual")
+    if solver_type == "auto":
+        raise _unported.refuse("solver_type=auto")
     raise InvalidInputError(
         "solver_type",
-        f"solver_type = {solver_type} is not ported: `ColumnSolverFactory."
-        f"{unported_solver_class(solver_type)}` is the class that would close it. **The "
-        f"capture measures why it is refused rather than ported**: "
-        f"`validation/neqsim/captures/process_column_solvers.tsv` puts every one of the ten "
-        f"strategies within `2.5e-6` K of every other on the binary column's tray 1 and within "
-        f"`1.1e-7` relative on its distillate, so they are path variants rather than different "
-        f"physics",
+        f"`{solver_type}` is not one of `ColumnSolverFactory`'s ten strategies, which are "
+        f"`direct_substitution`, `damped_substitution`, `inside_out`, `matrix_inside_out`, "
+        f"`wegstein`, `sum_rates`, `newton`, `naphtali_sandholm`, `mesh_residual` and `auto`",
     )
-
-
-def unported_solver_class(strategy: str) -> str:
-    """The `ColumnSolverFactory` class behind a strategy this port does not carry.
-
-    **Named per strategy, because that is what a refusal owes a caller.** `columnSolver` hands
-    back one of these for each `SolverType`, and `AutoSolver` is the ladder rather than a
-    method: `candidateSolvers` returns `NAPHTALI_SANDHOLM` first, then `MATRIX_INSIDE_OUT`,
-    `INSIDE_OUT` and `DAMPED_SUBSTITUTION`, and this port has the first and the last.
-    """
-    return {
-        "damped_substitution": "DampedSubstitutionSolver",
-        "inside_out": "InsideOutSolver",
-        "matrix_inside_out": "MatrixInsideOutSolver",
-        "wegstein": "WegsteinSolver",
-        "sum_rates": "SumRatesSolver",
-        "newton": "TemperatureNewtonSolver",
-        "mesh_residual": "MeshResidualSolver",
-    }.get(strategy, "AutoSolver")
 
 
 def _si(spec: dict[str, object], name: str, value: float | Q) -> float:

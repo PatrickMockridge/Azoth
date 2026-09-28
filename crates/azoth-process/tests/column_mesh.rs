@@ -404,9 +404,15 @@ fn an_unported_strategy_is_refused_by_its_class() {
             message.contains(class),
             "{strategy} must name {class}: {message}"
         );
+        // **And the pair is countable rather than merely informative.** The class comes from
+        // the row the spec declares for this strategy, so the message this boundary produces
+        // and the message the Python half produces are the same two facts in the same order.
+        let row = azoth_process::unported::row(&format!("solver_type={strategy}"))
+            .unwrap_or_else(|| panic!("{strategy} has no declared row"));
+        assert_eq!(row.class, class);
         assert!(
-            message.contains("path variants"),
-            "the refusal carries the measurement: {message}"
+            message.contains(row.capture),
+            "the refusal points at the capture that measures it: {message}"
         );
     }
 }

@@ -528,6 +528,30 @@ def render_model(spec: dict[str, Any]) -> str:
         )
     parts.append(render_range(spec))
 
+    unported = spec.get("unported") or []
+    if unported:
+        parts.append("\n## Not carried\n\n")
+        parts.append(
+            "Values this model's inputs declare and the port does not carry. Each is refused\n"
+            "by **both** implementations from the same row, and `tools/check_unported.py`\n"
+            "holds the declaration and the two languages to each other.\n\n"
+        )
+        rows = []
+        for row in unported:
+            what = f"`{row['parameter']}"
+            what += f"` = `{row['value']}`" if "value" in row else "`"
+            if "when" in row:
+                when = ", ".join(f"`{c['parameter']}` = `{c['value']}`" for c in row["when"])
+                what += f", when {when}"
+            rows.append(
+                (
+                    what,
+                    f"`{row['class']}`",
+                    f"`{row['capture']}`" if row.get("capture") else "",
+                )
+            )
+        parts.append(render_table(rows, ("Value", "NeqSim", "Measured by")) + "\n")
+
     parts.append("\n## Assumptions\n\n")
     for assumption in spec["assumptions"]:
         parts.append(f"- {assumption}\n")

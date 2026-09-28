@@ -132,3 +132,18 @@ def test_a_refusal_with_no_spec_of_its_name_fails(tree: Tree) -> None:
     gadget.write_text(RUST_SITE, encoding="utf-8")
     failures = tree.check()
     assert any("nothing to hold it" in f for f in failures), failures
+
+
+def test_two_models_may_refuse_the_same_value(tree: Tree) -> None:
+    """**A key belongs to the spec that declares it, and two may declare one.**
+
+    `process.absorption_column` and `process.distillation_column` both decline the eight
+    `ColumnSolverFactory` strategies neither carries, so a map keyed by key alone called
+    that a duplicate the first time this checker ran over the converted tree.
+    """
+    (tree.models / "gadget.toml").write_text(SPEC.replace("widget", "gadget"), encoding="utf-8")
+    (tree.rust_root / "azoth-process" / "src" / "gadget.rs").write_text(RUST_SITE, encoding="utf-8")
+    (tree.python_root / "azoth" / "process" / "reference" / "gadget.py").write_text(
+        PYTHON_SITE, encoding="utf-8"
+    )
+    assert tree.check() == []

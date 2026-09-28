@@ -348,3 +348,65 @@ rationale = "an absolute temperature\n"
 [implementations]
 python = "azoth.process.distillation_column"
 rust = "azoth_process::distillation_column"
+
+[[unported]]
+parameter = "solver_type"
+value = "damped_substitution"
+class = "DampedSubstitutionSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "inside_out"
+class = "InsideOutSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "matrix_inside_out"
+class = "MatrixInsideOutSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "wegstein"
+class = "WegsteinSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "sum_rates"
+class = "SumRatesSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "newton"
+class = "TemperatureNewtonSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "mesh_residual"
+class = "MeshResidualSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "solver_type"
+value = "auto"
+class = "AutoSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "reactive"
+class = "NaphtaliSandholmSolver"
+capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported.when]]
+parameter = "solver_type"
+value = "naphtali_sandholm"
+[[unported]]
+parameter = "gas_side_draw_fractions"
+class = "NaphtaliSandholmSolver"
+capture = "validation/neqsim/captures/process_side_draw.tsv"
+[[unported.when]]
+parameter = "solver_type"
+value = "naphtali_sandholm"
+[[unported]]
+parameter = "murphree_efficiency"
+class = "NaphtaliSandholmSolver.applyMurphreeEfficiencyToK"
+capture = "validation/neqsim/captures/process_column_efficiency.tsv"
+[[unported.when]]
+parameter = "solver_type"
+value = "naphtali_sandholm"

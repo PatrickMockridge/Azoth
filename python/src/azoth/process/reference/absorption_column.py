@@ -20,6 +20,7 @@ from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AbsorptionColumnResult
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
+from azoth.process.reference import _unported
 from azoth.process.reference._column_stage import StreamRecord
 from azoth.process.reference.distillation_column import (
     UNPORTED_SOLVERS,
@@ -35,7 +36,6 @@ from azoth.process.reference.distillation_column import (
     _States,
     _states,
     reactive_section,
-    unported_solver_class,
 )
 
 #: The class's own `DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR`.
@@ -147,13 +147,30 @@ def absorption_column(
             ),
         ).checked(len(gas_components))
     )
+    # **The same eight `process.distillation_column` refuses, from this id's own declaration**,
+    # one literal arm each so `tools/check_unported.py` reads the same shape in both halves.
     if solver_type is not None and solver_type not in ("direct_substitution", "naphtali_sandholm"):
+        if solver_type == "damped_substitution":
+            raise _unported.refuse("solver_type=damped_substitution")
+        if solver_type == "inside_out":
+            raise _unported.refuse("solver_type=inside_out")
+        if solver_type == "matrix_inside_out":
+            raise _unported.refuse("solver_type=matrix_inside_out")
+        if solver_type == "wegstein":
+            raise _unported.refuse("solver_type=wegstein")
+        if solver_type == "sum_rates":
+            raise _unported.refuse("solver_type=sum_rates")
+        if solver_type == "newton":
+            raise _unported.refuse("solver_type=newton")
+        if solver_type == "mesh_residual":
+            raise _unported.refuse("solver_type=mesh_residual")
+        if solver_type == "auto":
+            raise _unported.refuse("solver_type=auto")
         raise InvalidInputError(
             "solver_type",
-            f"solver_type = {solver_type} is not ported: `ColumnSolverFactory."
-            f"{unported_solver_class(solver_type)}` is the class that would close it. The "
-            f"strategies are path variants of one another rather than different physics - "
-            f"`process.distillation_column`'s `solver_type` carries the measurement.",
+            f"`{solver_type}` is not one of `ColumnSolverFactory`'s ten strategies, which are "
+            f"`direct_substitution`, `damped_substitution`, `inside_out`, `matrix_inside_out`, "
+            f"`wegstein`, `sum_rates`, `newton`, `naphtali_sandholm`, `mesh_residual` and `auto`",
         )
     if list(gas_components) != list(solvent_components):
         raise InvalidInputError(
