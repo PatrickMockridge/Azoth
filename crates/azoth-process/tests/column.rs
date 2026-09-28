@@ -1414,3 +1414,59 @@ fn neqsims_0_85_endpoint_under_one_pass_of_this_ports_map() {
     }
     println!("{} of 6 trays moved by more than 1e-4 K", moved.len());
 }
+
+/// **The coordinated tear is a recorded non-port, and the record is a measurement.**
+///
+/// `validation/neqsim/captures/process_column_tear.tsv` runs the class on a five-stage
+/// fractionator carrying a side-draw flow specification *and* a pumparound - which is
+/// `solveWithColumnTearVariables`' outer loop over every active tear variable, not either of the
+/// two fast paths this port carries. **Neither row converges**: the side draw alone ends at a
+/// residual of `4.4e-4` after thirty iterations with **18 of its 30 candidates rejected**, and
+/// with the pumparound beside it at `0.447` with an **empty candidate history**, so the
+/// specification's search never even runs.
+///
+/// So this port's refusal to carry the pair is not a scoping decision - it is the only answer
+/// the class's own solver supports on this state. The test reads the capture rather than
+/// restating it, so the day NeqSim converges the loop this fails and says so.
+#[test]
+fn the_coordinated_tear_does_not_converge_in_neqsim_either() {
+    let alone = capture_row("process_column_tear.tsv", "tear_side_draw_alone");
+    assert_eq!(
+        alone.get("tear_converged").map(String::as_str),
+        Some("false")
+    );
+    assert_eq!(alone.get("status").map(String::as_str), Some("FAILED"));
+    assert_eq!(row_number(&alone, "tear_iterations"), 30.0);
+    assert!(
+        row_number(&alone, "tear_residual") > 1.0e-4,
+        "and it stops short of its own 1e-5 specification tolerance"
+    );
+    // **Eighteen of thirty**, which is the number the plan named and the reason the row is not
+    // an oracle: two thirds of the candidate dras were refused by the class's own acceptance
+    // rule before the iteration cap arrived.
+    assert_eq!(row_number(&alone, "tear_rejected_candidates"), 18.0);
+
+    let paired = capture_row("process_column_tear.tsv", "tear_side_draw_with_pumparound");
+    assert_eq!(
+        paired.get("with_pumparound").map(String::as_str),
+        Some("true")
+    );
+    assert_eq!(
+        paired.get("tear_converged").map(String::as_str),
+        Some("false")
+    );
+    // **A thousand times the residual, and no candidates at all.** The pair does not take the
+    // specification's search path, so `solveWithColumnTearVariables` is not the single-variable
+    // loop with one more variable in it.
+    assert!(
+        row_number(&paired, "tear_residual") > 100.0 * row_number(&alone, "tear_residual"),
+        "the pair is worse by orders, not by a little: {} against {}",
+        row_number(&paired, "tear_residual"),
+        row_number(&alone, "tear_residual")
+    );
+    assert_eq!(row_number(&paired, "tear_rejected_candidates"), 0.0);
+    assert_eq!(
+        paired.get("tear_candidate_history").map(String::as_str),
+        Some("")
+    );
+}

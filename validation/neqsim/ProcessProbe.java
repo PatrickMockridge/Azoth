@@ -48,6 +48,8 @@
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe tray > captures/process_column_tray.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe side_draw \
 //       > captures/process_side_draw.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe column_tear \
+//       > captures/process_column_tear.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based \
 //       > captures/process_rate_based_packed_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
@@ -191,6 +193,9 @@ public class ProcessProbe {
         break;
       case "side_draw":
         sideDrawRows();
+        break;
+      case "column_tear":
+        columnTearRows();
         break;
       case "rate_based":
         rateBasedRows();
@@ -1998,6 +2003,95 @@ public class ProcessProbe {
   /// *two* liquid fractions compose: `0.20` and `0.30` leave half the liquid in the tray, which is
   /// the composition `validateLiquidSplitFractions` bounds and `SimpleTraySideDrawTest` only
   /// exercises at the setter.
+  /// **The coordinated tear: a side-draw flow specification and a pumparound on one column.**
+  ///
+  /// `solveWithColumnTearVariables` has two fast paths - `hasSingleSideDrawFlowSpecificationOnly`
+  /// and `hasPumparoundTearVariablesOnly` - and an outer loop over *every* active tear variable
+  /// under one residual test. This port carries the two fast paths (`column::tear` and
+  /// `column::pumparound`) and refuses the pair; **this row is what says whether the pair has a
+  /// state to be held to at all**, which is what the plan asks before any solver is written.
+  ///
+  /// The state is the class's own multistage fractionator, re-cased to PR and with the two end
+  /// pins stated - the same substitution `side_draw_flow_five_tray_liquid_fractionator` makes and
+  /// for the same reason.
+  static void columnTearRows() {
+    columnTearRow("tear_side_draw_alone", false);
+    columnTearRow("tear_side_draw_with_pumparound", true);
+  }
+
+  /// One row of [`columnTearRows`], with the pumparound present or absent.
+  static void columnTearRow(String label, boolean withPumparound) {
+    String[] names = new String[] { "propane", "n-butane", "n-pentane", "n-hexane" };
+    double[] z = new double[] { 0.20, 0.35, 0.30, 0.15 };
+    SystemInterface fluid = new SystemPrEos(333.15, 8.0);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("tear feed", fluid);
+    inlet.setFlowRate(250.0, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn(label, 5, true, true);
+    column.addFeedStream(inlet, 3);
+    column.setTopPressure(8.0);
+    column.setBottomPressure(8.3);
+    column.setCondenserTemperature(30.0, "C");
+    column.setReboilerTemperature(110.0, "C");
+    neqsim.process.equipment.distillation.DistillationColumn.ColumnSideDrawSpecification spec =
+        column.addSideDrawFlowSpecification(
+            SIDE_DRAW_TRAY_OF(column, 5, 3),
+            neqsim.process.equipment.distillation.DistillationColumn.SideDrawPhase.LIQUID,
+            20.160854543137464, "kg/hr");
+    spec.setTolerance(1.0e-5);
+    if (withPumparound) {
+      // **The draw tray and the return tray are the specification's own tray and one below**,
+      // which is the shape `DistillationColumnCoordinatedFlowTest` drives.
+      column.addLiquidPumparound("tear PA", spec.getTrayNumber(), spec.getTrayNumber() - 1, 0.10,
+          5.0);
+    }
+    column.setMaxColumnTearIterations(30);
+    column.run();
+
+    System.out.println(label);
+    System.out.println("cubic=pr");
+    System.out.println("stages=5");
+    System.out.println("feed_tray=3");
+    System.out.println("has_condenser=true");
+    System.out.println("has_reboiler=true");
+    System.out.println("side_draw_tray=" + spec.getTrayNumber());
+    System.out.println("side_draw_phase=" + spec.getPhase());
+    System.out.println("side_draw_target=" + spec.getTargetFlowRate());
+    System.out.println("specification_tolerance=" + spec.getTolerance());
+    System.out.println("with_pumparound=" + withPumparound);
+    System.out.println("pumparound_count=" + column.getPumparounds().size());
+    System.out.println("solved=" + column.solved());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("tear_iteration_limit=30");
+    System.out.println("tear_iterations=" + column.getLastColumnTearIterationCount());
+    System.out.println("tear_residual=" + column.getLastColumnTearResidual());
+    System.out.println("tear_converged=" + column.isLastColumnTearConverged());
+    System.out.println("tear_rejected_candidates=" + column.getLastColumnTearRejectedCandidateCount());
+    System.out.println("tear_rollbacks=" + column.getLastColumnTearRollbackCount());
+    System.out.println("tear_inner_iterations=" + column.getLastColumnTearInnerIterationCount());
+    System.out.println("tear_candidate_history=" + column.getLastColumnTearCandidateHistory());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    print("feed", inlet);
+    print("gas_out", column.getGasOutStream());
+    print("liquid_out", column.getLiquidOutStream());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+      System.out.println(
+          "tray" + i + "_gas_n=" + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
+      System.out.println(
+          "tray" + i + "_liquid_n=" + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+    }
+    System.out.println();
+  }
+
   static void sideDrawRows() {
     sideDrawTrayRows();
     sideDrawColumnRows();

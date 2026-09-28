@@ -237,7 +237,8 @@ fn refuse_coordinated(setup: &ColumnSetup, _tray_count: usize) -> Result<()> {
             "side_draw_flow_target",
             "a side-draw flow specification is stated beside a pumparound: the class solves the \
              two together as coordinated tear variables, and this port carries the independent \
-             single-variable search",
+             single-variable search - which `process_column_tear.tsv` measures as the right \
+             call, because the coordinated loop does not converge",
         ));
     }
     Ok(())

@@ -40,7 +40,8 @@ assumptions = [
     "**NeqSim's own deethanizer state is written on SRK**, and on PR it does not converge in NeqSim at all - the capture keeps that as evidence.",
     "**a side draw is a split of the tray's own outlet phase**: `getGasOutStream` is the vapour scaled by `1 - gas` and `getLiquidOutStream` the liquid by `1 - liquid - pumparound`, so a draw carries the tray's own composition, temperature and pressure. **A fraction on an end is refused.**",
     "**the two closures count the draws**, which is what `columnReportsSideDrawAsOutletStream` asserts: a closure that ignored them reads `0.248` on the captured state rather than `4.1e-8`.",
-    "**what is owed is a recycle rather than a split**: the draw's flow-rate specification, `ColumnSideDrawSpecification` and `addSideDrawFlowSpecification`, whose tear loop this port does not carry, and the pumparound's return, `ColumnPumparound` - both of them P12's.",
+    "**both recycles are ported, and the pair is refused on a measurement.** A specified draw *flow* is a candidate search and a pumparound return is a fixed point; stating both puts the class on `solveWithColumnTearVariables`' coordinated loop, which `process_column_tear.tsv` shows does not converge.",
+    "**the coordinated loop fails by orders**: 18 of 30 candidates rejected and a `4.4e-4` residual on the draw alone, against `0.447` with an empty candidate history once the pumparound is beside it.",
     "**the class's own liquid-and-pumparound row is where its balance does not close**: `RECONCILED_PRODUCTS`, a `2.449` kg/hr imbalance, and products `0.0200` mol/s above this port's, which closes to `9.7e-9`.",
 ]
 references = [

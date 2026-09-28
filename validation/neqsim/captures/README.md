@@ -70,6 +70,21 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe absorber_efficiency \
   > captures/process_absorber_efficiency.tsv
 ```
 
+**`ProcessProbe column_tear` is the coordinated tear, and NeqSim does not converge it.** The
+column carries a side-draw flow specification *and* a pumparound, which puts it on
+`solveWithColumnTearVariables`' outer loop over every active tear variable rather than either of
+its two fast paths. **Neither row converges, and the pair is a thousand times worse**: the side
+draw alone ends at a residual of `4.4e-4` after 30 iterations with **18 of 30 candidates
+rejected**, and with the pumparound beside it at `0.447` with an **empty candidate history** - so
+the specification's search never runs and the loop is not the fast path with one more variable.
+This capture is the *measurement* behind this port's refusal to carry the pair, not an oracle for
+a state.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe column_tear \
+  > captures/process_column_tear.tsv
+```
+
 **`ProcessProbe column_divergence` is the Murphree divergence instrument.** It runs the same
 binary column at `0.6` and `0.85` and prints two things `process_column.tsv` does not carry: the
 class's per-pass `getConvergenceHistory()`, and per tray the *flashed* system's two phase

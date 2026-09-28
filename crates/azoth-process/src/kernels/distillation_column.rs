@@ -946,7 +946,11 @@ pub fn distillation_column(setup: &ColumnSetup) -> Result<ColumnOutcome> {
                 "pumparound_returns",
                 "a pumparound with a return is stated beside a side-draw flow specification: \
                  `solveWithColumnTearVariables` solves the two as coordinated tear variables, \
-                 and this port carries the pumparound's own fixed point alone",
+                 and this port carries the pumparound's own fixed point alone. **And the class \
+                 does not converge that loop either** - `process_column_tear.tsv` runs it: the \
+                 side draw alone ends at a residual of 4.4e-4 after 30 iterations with 18 of 30 \
+                 candidates rejected, and with the pumparound beside it at 0.447 with an empty \
+                 candidate history, so the search never runs",
             ));
         }
         return crate::column::pumparound::solve_with_returns(setup, &solve_once);
