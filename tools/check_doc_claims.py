@@ -32,6 +32,13 @@ defeat the purpose: every inline-code token that begins with a repo directory mu
 exist. The prefix rule is what keeps the pages' NeqSim vocabulary - `PhaseGEUniquac`,
 `thermo/util/leachman/`, `src/main` - out of it without an allowlist that would rot.
 
+**The specs are swept by the same rule**, and by a second one over the two names a
+spec cites most: a spec id and a capture file. A spec's `assumptions`, `description`
+and `notes` fields are prose in a data file and name repo paths, neighbor ids and
+captures exactly as a page does, so the path sweep reads them too. What it does not
+reach is a spec's claim about *what the tree carries* - that is a fact about the
+code, and it is declared and held elsewhere.
+
 # What it does not do
 
 - **Not NeqSim.** The upstream line counts are measured against a checkout CI does
@@ -116,6 +123,17 @@ def page_files() -> list[Path]:
     pages = sorted(p for p in (ROOT / "docs" / "src").rglob("*.md") if p.name != "SUMMARY.md")
     pages += [ROOT / name for name in check_links.ROOT_PAGES if (ROOT / name).exists()]
     return pages
+
+
+def spec_files() -> list[Path]:
+    """Every spec, which carries inline code the same way a page does.
+
+    A spec's `assumptions`, `description` and `notes` fields are prose in a data file, and
+    they name repo paths, spec ids and capture files exactly as a page does. Nothing read
+    them, so a spec citing a file that does not exist - or an id the registry never
+    declared - was a statement with no reader. The two sweeps below give it one.
+    """
+    return sorted((ROOT / "specs").rglob("*.toml"))
 
 
 # --- probes -----------------------------------------------------------------
@@ -635,6 +653,90 @@ def sweep_paths(pages: list[Path]) -> tuple[int, list[str], list[str]]:
     return checked, failures, escapes
 
 
+# --- what a spec names ------------------------------------------------------
+
+#: What an id looks like: two lowercase snake_case segments and nothing else. Measured, all
+#: 223 the tree declares are exactly that - never three, never a capital - which is what
+#: separates an id from a NeqSim package path such as
+#: `process.equipment.reactor.KineticReaction` that a spec cites in the same backticks.
+SPEC_ID = re.compile(r"^[a-z][a-z_0-9]*\.[a-z][a-z_0-9]*$")
+
+
+def spec_ids() -> tuple[set[str], set[str]]:
+    """Every id the tree declares, and the namespaces those ids begin with.
+
+    The first segment of an id is a namespace rather than a guess: the set is read out of
+    the ids themselves, so a token starting with one is a reference to a spec and a token
+    starting with anything else is not. That is what makes the sweep need no allowlist -
+    `algorithm.tolerance`, `henry.rs` and `test_model_cases.py` are excluded by *shape*,
+    and the namespaces are derived rather than listed.
+    """
+    declared: set[str] = set()
+    for path in spec_files():
+        try:
+            document = tomllib.loads(path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError:
+            continue
+        if isinstance(document.get("id"), str):
+            declared.add(document["id"])
+    return declared, {name.split(".")[0] for name in declared}
+
+
+def spec_strings(value: object):
+    """Every string in a parsed spec, at any depth."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from spec_strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from spec_strings(item)
+
+
+def sweep_spec_refs() -> tuple[int, list[str], list[str]]:
+    """Every spec id and capture a spec names in inline code must exist.
+
+    A spec cites its neighbours and its captures by name in prose fields nothing read. The
+    two token shapes here are unambiguous by *shape*: a dotted token whose first segment is
+    a namespace the tree declares, and a token ending `.tsv`. A capture is named either as a
+    bare file or as the path under `validation/neqsim/captures/`, and both are read as the
+    file they name.
+
+    Kept apart from `sweep_paths` because the corpus is a different one - a spec is read as
+    a document rather than line by line, since its prose is one long TOML string.
+    """
+    declared, namespaces = spec_ids()
+    captures = ROOT / "validation" / "neqsim" / "captures"
+    failures: list[str] = []
+    checked = 0
+    for path in spec_files():
+        try:
+            document = tomllib.loads(path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError:
+            continue
+        where = path.relative_to(ROOT)
+        for text in spec_strings(document):
+            for token in INLINE_CODE.findall(text):
+                word = token.strip()
+                if word.endswith(".tsv"):
+                    checked += 1
+                    if not (captures / word.rsplit("/", 1)[-1]).exists():
+                        failures.append(
+                            f"{where}: names the capture {word!r}, which is not under "
+                            f"{captures.relative_to(ROOT)}"
+                        )
+                    continue
+                if not SPEC_ID.match(word) or word.split(".")[0] not in namespaces:
+                    continue
+                checked += 1
+                if word not in declared:
+                    failures.append(
+                        f"{where}: names the id {word!r}, which the tree does not declare"
+                    )
+    return checked, failures, []
+
+
 # --- the port's sources -----------------------------------------------------
 
 #: The three spec trees a port has to account for itself in.
@@ -883,8 +985,10 @@ def main(argv: list[str] | None = None) -> int:
             hit = pattern.search((ROOT / claim.page).read_text(encoding="utf-8"))
             print(f"  {claim.page}: {'matched' if hit else 'NOT MATCHED'}  {claim.text.strip()!r}")
     failures += [f for claim in claims for f in claim.check()]
-    checked, sweep_failures, escapes = sweep_paths(pages)
+    checked, sweep_failures, escapes = sweep_paths(pages + spec_files())
     failures += sweep_failures
+    refs, ref_failures, _ = sweep_spec_refs()
+    failures += ref_failures
     pages_swept, layer_failures, unenforced = sweep_enforcement()
     failures += layer_failures
     specs, spec_failures, source_markers = sweep_sources()
@@ -896,14 +1000,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ERROR  {failure}", file=sys.stderr)
         print(
             f"\ncheck_doc_claims: FAILED with {len(failures)} problem(s), "
-            f"{checked} path(s) checked",
+            f"{checked} path(s) and {refs} spec reference(s) checked",
             file=sys.stderr,
         )
         return 1
 
     print(
         f"check_doc_claims: OK ({len(claims)} claim(s) across "
-        f"{len({c.page for c in claims})} page(s), {checked} path(s) checked, "
+        f"{len({c.page for c in claims})} page(s), {checked} path(s) and "
+        f"{refs} spec reference(s) checked, "
         f"{pages_swept} swept page(s), "
         f"{specs} spec source(s))"
     )
