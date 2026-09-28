@@ -1479,6 +1479,13 @@ public class ProcessProbe {
       }
       int phases = fluid.getNumberOfPhases();
       System.out.println("tray" + index + "_phase_count=" + phases);
+      // **The order the phases sit in, which `getSurfaceTension(0, 1)` depends on.** The
+      // designer resolves its liquid phase by type and then asks by index, so whether those two
+      // agree is the whole question.
+      for (int p = 0; p < phases; p++) {
+        System.out.println(
+            "tray" + index + "_phase" + p + "_type=" + fluid.getPhase(p).getType());
+      }
       if (phases < 2) {
         return;
       }
@@ -1490,6 +1497,15 @@ public class ProcessProbe {
       double liquidDensity = fluid.getPhase(liquidPhase).getDensity("kg/m3");
       double liquidViscosity = fluid.getPhase(liquidPhase).getViscosity("kg/msec");
       double sigma = fluid.getInterphaseProperties().getSurfaceTension(0, 1);
+      // **The literal pair the designer asks with, against the resolved pair it has already
+      // worked out.** `getTrayProperties` resolves its vapour and liquid phases by type and then
+      // calls `getSurfaceTension(0, 1)` by index; if the two disagree the resolution is wasted.
+      int gasPhase = fluid.hasPhaseType("gas") ? fluid.getPhaseNumberOfPhase("gas") : 0;
+      double sigmaResolved = fluid.getInterphaseProperties().getSurfaceTension(gasPhase, liquidPhase);
+      System.out.println("tray" + index + "_gas_phase_index=" + gasPhase);
+      System.out.println("tray" + index + "_liquid_phase_index=" + liquidPhase);
+      System.out.println(
+          "tray" + index + "_sigma_by_resolved_indices_N_per_m=" + sigmaResolved);
       System.out.println("tray" + index + "_gas_density_kg_per_m3=" + gasDensity);
       System.out.println("tray" + index + "_liquid_density_kg_per_m3=" + liquidDensity);
       System.out.println("tray" + index + "_liquid_viscosity_Pa_s=" + liquidViscosity);
