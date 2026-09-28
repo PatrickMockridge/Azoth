@@ -23,7 +23,7 @@ references = [
 ]
 [source]
 standard = "NeqSim master `ReactiveMultiphasePHflash`"
-edition = "`solveEnthalpySpec` ported as the loop, with the inner step left to `reactions.reactive_tp_flash` and the enthalpy to `azoth-eos`' `molar_enthalpy_entropy`. The entropy-specified variant and the `NR = 0` delegation to a standard PH flash are not ported."
+edition = "`solveEnthalpySpec` ported as the loop, with the inner step left to `reactions.reactive_tp_flash` and the enthalpy to `azoth-eos`' `molar_enthalpy_entropy`. The entropy-specified variant and the `NR = 0` delegation to a standard PH flash are owed, and `ROADMAP.md` names both."
 [algorithm]
 scheme = "ph_flash_secant_bisection"
 initialisation = "inner_reactive_flash"
@@ -33,7 +33,7 @@ max_iterations = 200
 [inputs]
 [inputs.components]
 type = "components"
-description = "the substances the fluid is made of, by name. **A charged one is refused**, because the inner flash's ionic branch is not ported."
+description = "the substances the fluid is made of, by name. **A charged one is refused**: the inner flash's phases are neutral, and `ROADMAP.md` names the ionic branch it owes."
 [inputs.cubic]
 type = "enum"
 values = ["srk", "pr"]

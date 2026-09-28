@@ -74,12 +74,12 @@ not an equation, and both implementations read it from here.
 
 ## Assumptions
 
-- The decoupled 2x2 Newton of `eos.vu_flash`, with the energy target supplied whole instead of assembled. NeqSim's reachable V,H class is `VHflashQfunc`, which uses a *coupled* 2x2 with a cross term instead; that is not ported, and the assumption below records what was measured.
+- The decoupled 2x2 Newton of `eos.vu_flash`, with the energy target supplied whole instead of assembled. NeqSim's reachable V,H class is `VHflashQfunc`, which uses a *coupled* 2x2 with a cross term instead; `ROADMAP.md` names it, and the assumption below records what was measured.
 - the answer is accepted on a 1e-3 relative volume and energy error, NeqSim's own acceptance and looser than the iteration's - so an iterate the loop never settled at can pass it, and carries a `SOLVER_NOT_CONVERGED` warning saying so.
 - a trial state the inner flash cannot settle is backed off, not fatal: the damping is reduced.
 - the flash at each trial state is converged, not exact: the volume and enthalpy inverted are those of a converged approximation.
 - no check that the feed is stable: the model asks where the volume and enthalpy are satisfied, not whether the state found is the equilibrium one.
-- NeqSim's reachable V,H class is `VHflashQfunc`, which adds a cross term to the 2x2. Ported faithfully it does not converge here, and NeqSim's own copy reports 23.5 bar and 290 K for the 330 K, 25 bar state. `VHflash` has no construction site and is not ported.
+- NeqSim's reachable V,H class is `VHflashQfunc`, which adds a cross term to the 2x2. Ported faithfully it does not converge here, and NeqSim's own copy reports 23.5 bar and 290 K for the 330 K, 25 bar state. `VHflash` itself has no construction site; `ROADMAP.md` names both.
 
 ## Cases
 

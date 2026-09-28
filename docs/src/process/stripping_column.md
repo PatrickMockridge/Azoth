@@ -102,7 +102,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the products are the class's own getters**: `getOverheadGasStream` is the stripped gas leaving the top tray and `getLeanLiquidStream` the lean liquid leaving the bottom.
 - **both inlets carry the same substances in the same order**, which is the class's own indexing and `process.absorption_column`'s refusal.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- **the Murphree efficiencies and the eight unported strategies are refused by name**, as the base refuses them.
+- **the Murphree efficiencies and the eight strategies the base declines are refused by name there**, because this entry delegates `solver_type` and `tray_murphree_efficiency` to `process.distillation_column` and that spec's rows carry them.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
 

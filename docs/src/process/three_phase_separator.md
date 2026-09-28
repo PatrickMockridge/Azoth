@@ -76,7 +76,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the six fractions are declared, and their order is part of the answer.** Each moves a share of the *current* from-phase's moles, so `gas_in_oil` after `gas_in_aqueous` moves a share of what is left - the order `run` applies them in is the order here.
 - **an absent phase is a zero-flow outlet.** NeqSim answers with a `1e-20 kg/hr` clone of the whole system, whose composition need not sum to one and whose enthalpy is that clone's own; both rows of the capture that have one are declared rather than pinned.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `ThreePhaseSeparator` also carries water and oil levels, three outlet valve fractions, a droplet-performance calculator and a `runTransient`. **None is ported**: every one of them reads a transient or mechanical state the steady `run` does not.
+- NeqSim's `ThreePhaseSeparator` also carries water and oil levels, three outlet valve fractions, a droplet-performance calculator and a `runTransient`. **None is here**: every one of them reads a transient or mechanical state the steady `run` does not.
 
 ## Cases
 

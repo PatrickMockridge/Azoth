@@ -477,6 +477,97 @@ entry's.
 - **`statistics/`, `util/`, `mcp/`, `mathlib/`, `integration/`, `datapresentation/`,
   `api/`** — infrastructure and tooling, not physics.
 
+### The classes the ported entries still owe
+
+**A capability that is missing has no parameter to key a declaration to.** The porting fact now
+has a field — a `[[unported]]` row in the model spec, which `tools/check_unported.py` holds to
+both implementations — and a row is only available where the port *refuses a value of a declared
+input*. Where the class is absent rather than the value refused, the spec's input and output
+lists are the statement, and the class that would close the gap is named here instead. A
+sentence claiming the same fact in a spec is refused by that same tool, because a sentence is
+a claim nothing holds.
+
+- **The mechanical-design tree** — `process/mechanicaldesign/` and the `*MechanicalDesign`
+  class beside each equipment class — is where most of them are, and no entry declares a
+  parameter any of them read. **`TrayHydraulicsCalculator`**, the tray hydraulics of
+  `process.distillation_column`, `process.absorption_column` and `process.stripping_column`;
+  **`DistillationColumnMechanicalDesign`** and **`AbsorberMechanicalDesign`**; and
+  **`ReactorMechanicalDesign`** for `process.gibbs_reactor` and `process.plug_flow_reactor`.
+- **`ColumnInternalsDesigner`** is two things, and both are owed. The first is
+  `process.packed_column`'s packing report. The second is the **sizing** —
+  `calculatePacked`, `sizeColumnDiameter`, `roundToStandardDiameter` — that
+  `calcPackingHydraulics` takes whenever `column_diameter` is left at its `-1.0` default, which
+  is every state the current capture probes.
+- **`MechanicalDesign`** — `process.ejector`'s own size, whose areas, diameters, lengths and
+  volumes `updateDesign` fills. They are absent rather than guessed.
+- **`FilterPressureDropModel`** — `FLOW_SCALED`, `TABULATED` and `ERGUN`, which replace
+  `process.filter`'s fixed drop with a curve, a table or a packed-bed correlation. The palette's
+  `pressure_drop` is the `FIXED` branch, and the other three need media geometry. Beside it,
+  **`updateParticleCapturePerformance`**: `concentrationLoadingModelEnabled` is false by
+  default, and with it off nothing about a particle reaches the fluid.
+- **`getCapacityUtilization`** — `process.gas_scrubber`'s Souders-Brown metric, which needs the
+  vapour's volumetric flow, the liquid's density and two mechanical parameters
+  (`setInternalDiameter`, `setDesignGasLoadFactor`) the entry declares neither of.
+- **The energy port** — `process.stirred_tank_reactor` runs `PHflash(inlet + duty)` when an
+  `EnergyStream` is connected, and this library's five-field record has no place for one. The
+  duty is declared out with the port named rather than guessed at.
+- **`process.pipe`'s remaining three**: `getEffectiveLength`'s fittings, `setPressureOut`/
+  `calcFlow`, and the Beggs-and-Brill multiphase limit. With no fittings added the effective
+  length is the physical length, which is what the entry's `length` is. **`process.mixer`** owes
+  the pressure-mismatch flag, which warns that the inlets arrived at different pressures — a
+  fact about upstream equipment rather than the record — and, with the rest of the tree,
+  `runTransient`.
+- **`process.distillation_column`'s cold seed** — `runBostonSullivanRefinement`, declined on a
+  measurement: without it the class's first Newton step moves the variables by `1e11` times their
+  own size. **`process.shortcut_distillation_column`** owes the tray hydraulics, the tray
+  optimization and `getResultsJson`; its own `setNumberOfTrays` override is inert, and says so.
+- **`process.throttling_valve`'s sizing mode** — solving the drop from the trim, with `Kv` from
+  `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod`. `valve_opening` is not a
+  parameter here and the `isCalcPressure` branch is absent, for the same reason: it is the
+  mechanical-design tree.
+- **The `eos` family's**: `ComponentGE.fugcoef`'s **Henry's-law branch**, which 51 of the
+  databank's 286 substances select through their `REFERENCESTATETYPE`, so the four
+  `eos.ge_*_phase` ids are the solvent branch alone; **`SysNewtonRhapsonPHflash`**, which
+  NeqSim's `ThrottlingValve` and `Compressor` select and which `eos.ph_flash` and `eos.ps_flash`
+  decline on a measured two-phase `(dH/dT)_P` factor of two; **`PHflashSingleComp`** and
+  **`PSflashSingleComp`**; **`VHflashQfunc`**'s coupled 2×2 with a cross term, and `VHflash`,
+  which has no construction site; `eos.tp_multiflash`'s **pure-component fallback** and its two
+  aqueous seeds, `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed`; and
+  `eos.soreide_whitson_phase`'s two newer parameterisations, **Chabab 2019** and
+  **Burgoyne-Nielsen 2026**. The CPA rules and the hydrate coupling are P7's and P9's, each
+  gated on a component family or a system type this crate does not carry.
+- **The reactions family's**: the **ionic branch** of `reactions.reactive_tp_flash` and
+  `reactions.reactive_ph_flash`, which is why a charged substance is refused at all;
+  `reactions.reactive_ph_flash`'s **entropy-specified variant** and its `NR = 0` delegation to
+  a standard PH flash; **`useAdaptiveDerivatives`** on `reactions.chemical_equilibrium`, which
+  `solveChemEq` sets from the second refinement onward — azoth has that derivative, and a
+  procedure over vectors has no phase to reach it through; and **`SimplexSolver`**, whose
+  estimated vertex `LinearProgrammingChemicalEquilibrium` seeds through, where this port solves
+  the program exactly.
+- **The steady-state entries, and the transient and design surface beside each.** Every
+  `process.*` class NeqSim carries also carries a `runTransient`, and most carry a mechanical
+  design and a performance or control surface the steady `run` never reads. Owed entry by
+  entry: `Splitter`'s capacity map; `Flare`'s radiation model and capacity check; `Heater`'s
+  electrical and instrument design and its bounded outlet temperatures; `Pump`'s performance
+  curve; `Compressor`'s and `Expander`'s chart and catalogue, polytropic branch, anti-surge
+  machinery, deposit model and `useGERG2008`/`useLeachman`/`useVega` property overrides;
+  `HeatExchanger`'s thermal-hydraulic rating, `useDeltaT` variant and correlation-based UA;
+  `Separator`'s capacity check and droplet-performance calculator; `ThreePhaseSeparator`'s
+  levels and outlet-valve fractions; `GasScrubber`'s vessel sizing and mesh pad; `Tank`'s wall
+  temperature, steel mass and auto-sizing; `ThrottlingValve`'s choked-flow and laminar
+  branches, fouling fraction, `isIsoThermal` mode and controller path; `Filter`'s solids
+  loading, breakthrough, backwash, regeneration and element-integrity check; and
+  `StirredTankReactor`'s vessel volume, residence time and agitator power.
+- **Three behaviours of the same shape, in `eos` and `reactions`.** `RachfordRice.calcBeta`
+  clamps its root to `[1e-12, 1 - 1e-12]` and declines to iterate where no root exists - the
+  port returns the root the equation gives, so the negative flash stays visible;
+  `HydrateInhibitorConcentrationFlash` and its `...wtFlash` sibling are the models that add
+  methanol or MEG to `eos.hydrate_formation_temperature`; and the `EPS` pinning and
+  `getLogInfiniteDiluteFugacity` reference-state correction behind
+  `reactions.reactive_tp_flash`'s ionic refusal. `Separator`'s `oilInGas` and `waterInGas` go
+  with them: no oil or aqueous phase exists here, and they are the only fields that re-run the
+  *vapour*.
+
 ## Beyond the port
 
 **The interoperation surface is built.** It is `crates/azoth-process`'s `middleware` module and

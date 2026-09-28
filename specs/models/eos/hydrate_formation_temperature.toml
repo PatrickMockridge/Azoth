@@ -9,7 +9,7 @@ assumptions = [
     "the Langmuir constant is `C = A/T exp(B/T)` and the structure is taken as the lower of the two coefficients; NeqSim's base `ComponentHydrate` integrates a Kihara potential instead and is neither model.",
     "the reference water phase is a one-component phase of the **same cubic the fluid runs**, which is where its fugacity comes from; the identity `f_w^hydrate = f_w^fluid` therefore settles the temperature rather than the reference.",
     "the stable structure is reported for the answer, I or II, because it is what decides which cages the occupancies refer to and a caller reading an occupancy needs it.",
-    "no inhibitor: NeqSim's `HydrateInhibitorConcentrationFlash` and `...wtFlash` are the models that add methanol or MEG, and neither is ported here.",
+    "no inhibitor: NeqSim's `HydrateInhibitorConcentrationFlash` and `...wtFlash` are the models that add methanol or MEG, and neither is here - `ROADMAP.md` names both.",
     "no energy balance. The formation temperature is a statement about phase equilibrium at one pressure, not about how a stream got there.",
 ]
 references = [

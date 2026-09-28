@@ -38,7 +38,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `components` | - | the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. **A charged one is refused**: the solve's ionic branch is not ported. |
+| `components` | - | the substances the fluid is made of, by name, resolved against the component databank with the keycard's overrides applied. **A charged one is refused**: the solve's phases are neutral, and `ROADMAP.md` names the ionic branch it owes. |
 | `cubic` | srk / pr | *Optional.* the cubic the fluid is flashed with. **Every captured row is `srk`**, which is what the class flashes - it is handed the caller's own `SystemInterface` - so omitting it keeps them; `pr` is the cubic the process layer's streams carry, which is why a reactive tray needs it. |
 | `T` | K | absolute temperature. It sets the standard state the potentials are reduced against, and it is what the Wilson seeds and the Rachford-Rice loops are built at. |
 | `P` | Pa | absolute pressure. Converted to bara for the potentials, which is the unit NeqSim's `ln(P/P_ref)` is taken against, and taken in pascals by the cubic. |
@@ -80,7 +80,7 @@ not an equation, and both implementations read it from here.
 - **`NR = 0` is a different flash.** A fluid with no independent reaction and more than one phase goes to a conventional VLE flash: Wilson K-values, then `K_i = phi_liq / phi_vap` by successive substitution, to `1e-12`.
 - **the single-phase branch reports no Gibbs energy.** Where the analysis finds the fluid stable the driver returns before `computeGibbsEnergy`, so `gibbs_energy` is `0.0` - and `converged` is `true` whatever the solve reported, which is the class's own overwriting.
 - **the relaxed multiphase tolerance is what a multiphase answer is worth.** Such a solve stops at `maxE < 1e-4` against `1e-9` for one phase, so two codes can stop at different points inside it: the 1000 K fluid does.
-- **the ionic branch is refused, not approximated.** NeqSim pins a gas-phase ion to `EPS` and corrects an electrolyte phase's reference state through `getLogInfiniteDiluteFugacity`; neither is ported, so a charged component is an error.
+- **the ionic branch is refused, not approximated.** NeqSim pins a gas-phase ion to `EPS` and corrects an electrolyte phase's reference state through `getLogInfiniteDiluteFugacity`; neither is here, so a charged component is an error.
 - **the element inventory is frozen from the feed.** `setElementBalance` captures `A n` before any phase work and it constrains the whole solve, so a recomputation from a phase's current moles is a different constraint.
 - **`moles` is an amount, not a composition.** The driver's `getOverallMoles` reads component amounts, and the total moves through the solve wherever a reaction changes the number of moles. It is not required to be one, and it is not renormalised.
 

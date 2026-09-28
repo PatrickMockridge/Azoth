@@ -12,8 +12,8 @@ assumptions = [
     "**`murphree_efficiency` and `component_murphree_efficiency` are declared and refused**, as are the eight strategies of `solver_type` this port does not carry. Each refusal names the class that would close it. What is owed here is the override, which corrects both phases.",
     "**`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.",
     "**On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.\n",
-    "**the tray hydraulics and the mechanical design are not ported**: `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them, and this entry declares no parameter they read.\n",
-    "**it is not the refused family**: `SimpleAbsorber`, `SimpleTEGAbsorber`, `SimpleAmineAbsorber` and `WaterStripperColumn` carry the MDEA/CO2 and TEG/water chemistry, which is unported, and porting this id closes nothing about that.\n",
+    "**the tray hydraulics and the mechanical design are owed**: `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them, this entry declares no parameter they read, and `ROADMAP.md` names both.\n",
+    "**it is not the refused family**: `SimpleAbsorber`, `SimpleTEGAbsorber`, `SimpleAmineAbsorber` and `WaterStripperColumn` carry the MDEA/CO2 and TEG/water chemistry, and porting this id closes nothing about that.\n",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/absorber/AbsorptionColumn.java` is the port source; it extends `DistillationColumn` and overrides no `run`.",
@@ -21,7 +21,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/absorber/AbsorptionColumn.java"
-edition = "Its constructor and its two inlet methods. The class adds no arithmetic to `DistillationColumn.run`; what it adds is a gas-load-factor design surface, which is declared and not ported."
+edition = "Its constructor and its two inlet methods. The class adds no arithmetic to `DistillationColumn.run`; what it adds is a gas-load-factor design surface, which `ROADMAP.md` records among the classes still owed."
 [inputs]
 [inputs.gas_components]
 type = "components"
@@ -87,7 +87,7 @@ type = "vector"
 unit = "dimensionless"
 length = "one per component"
 optional = true
-description = "one efficiency per component, which `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair - the per-tray-per-component map the class's other overload writes has no palette spelling and is not carried.\n"
+description = "one efficiency per component, which `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair - the class's other overload writes a per-tray-per-component map this entry has no spelling for.\n"
 [inputs.max_allowable_gas_load_factor]
 unit = "dimensionless"
 optional = true

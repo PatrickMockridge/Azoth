@@ -54,7 +54,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the single-phase branch is not reproduced.** `run`'s absent-oil branch writes `gasOutStream` where `liquidOutStream` was meant, so one phase comes back *swapped*, and `setInletStream` builds the liquid outlet from `getPhases()[1]` whatever the count. A pure kernel cannot swap.
 - **the feeds are one port, so every field has one entry per feed**, as `process.mixer`'s are: `feed_n`, `feed_z`, `feed_p` and `feed_t`, with the fluid's `components` declared once. `Tank.setInletStream` puts the first inlet in the mixer and every later one after it.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Tank` also carries a wall temperature, a steel mass and area, a heat transfer number, a residence time and an auto-sizing, and a `runTransient` that solves the level. **None is ported**: every one of them reads the `volume` field the steady state never asks for.
+- NeqSim's `Tank` also carries a wall temperature, a steel mass and area, a heat transfer number, a residence time and an auto-sizing, and a `runTransient` that solves the level. **None is here**: every one of them reads the `volume` field the steady state never asks for.
 
 ## Cases
 

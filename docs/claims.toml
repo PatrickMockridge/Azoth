@@ -10,11 +10,11 @@
 # may be written here on one line; punctuation must be exact, because a page that
 # retypes an em dash is a stale declaration rather than a claim that quietly moved.
 #
-# Probes: specs.calcs, specs.models, specs.ids, unit_ops.declared, unit_ops.kernels,
-# unit_ops.dispatch, unit_ops.refusals, vocabulary.units, lean.axioms_gated,
-# lean.axioms_dim, lean.gate_printed, lean.modules, pairs.eos_files, skills.total,
-# skills.azoth, skills.screening_p11, provenance.ids, provenance.partially_verified,
-# path, lean.gated.
+# Probes: specs.calcs, specs.models, specs.ids, specs.unported_rows, unit_ops.declared,
+# unit_ops.kernels, unit_ops.dispatch, unit_ops.refusals, vocabulary.units,
+# lean.axioms_gated, lean.axioms_dim, lean.gate_printed, lean.modules, pairs.eos_files,
+# skills.total, skills.azoth, skills.screening_p11, provenance.ids,
+# provenance.partially_verified, path, lean.gated.
 # `python tools/check_doc_claims.py --probe <name>` prints one measurement.
 
 # --- what the library carries -------------------------------------------------
@@ -28,6 +28,14 @@ measure = { total = "specs.ids", calcs = "specs.calcs", models = "specs.models" 
 page = "README.md"
 text = "The full catalog — {calcs} calculations and {models} models"
 measure = { calcs = "specs.calcs", models = "specs.models" }
+
+# The refusals the model specs declare. Stated once, because the number is the whole
+# point of the field: a row is a claim both implementations keep, and a count that moved
+# without a row being added or removed is the kind of drift this file exists to catch.
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "The models declare **{unported_rows} refusals**"
+measure = { unported_rows = "specs.unported_rows" }
 
 # --- what a result says about itself ------------------------------------------
 #

@@ -17,12 +17,12 @@ assumptions = [
     "**the packing's report is mechanical design and is deferred with the tree that closes it**: `DistillationColumnMechanicalDesign`, shared with four other entries, is where `ColumnInternalsDesigner`'s flood, sizing and `TrayHydraulicsCalculator` would land.\n",
 ]
 references = [
-    "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and is not ported.",
+    "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and `ROADMAP.md` names it.",
     "`validation/neqsim/captures/process_packed_column.tsv` - fifteen rows: eleven stage-count rows that build the class at a stated height and print the trays it made, and four solved rows.",
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/PackedColumn.java"
-edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`. Everything the packing adds is read by `ColumnInternalsDesigner` after the solve and is not ported."
+edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`. Everything the packing adds is read by `ColumnInternalsDesigner` after the solve, which is owed with its sizing branch - see `ROADMAP.md`."
 [algorithm]
 scheme = "sequential_substitution_sweeps"
 initialisation = "linear_temperature_profile"

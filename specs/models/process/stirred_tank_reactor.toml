@@ -7,9 +7,9 @@ assumptions = [
     "**the palette entry declared no parameters, and now declares the ones `run` reads**: the reaction, the limiting reactant, the conversion, the isothermal flag, the held temperature and pressure, and the pressure drop.",
     "**a stoichiometry row naming a substance the feed does not carry is skipped**, which is the class's own behaviour: `addComponent` throws for a component the fluid has no slot for and the catch drops it. A reaction whose products are not in the feed moves less material than its stoichiometry says.",
     "**the extent is the limiting reactant's, not the stoichiometry's.** A conversion that would take any substance below zero is refused here rather than allowed to overwrite its slot - the class's `addComponent` would carry a negative mole count.",
-    "**the energy-port branch is not ported.** `run` takes `PHflash(inlet + duty)` when an energy port is connected and in `SPECIFICATION` mode; that is an `EnergyStream` this library's five-field record has no place for, and the duty is declared out with the port named rather than guessed at.",
+    "**the energy-port branch is owed.** `run` takes `PHflash(inlet + duty)` when an energy port is connected and in `SPECIFICATION` mode; that is an `EnergyStream` this library's five-field record has no place for, and the duty is declared out with the port named rather than guessed at.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `StirredTankReactor` also carries a vessel volume, a residence time, an agitator power per volume and a `runTransient`. **None is ported**: `run` reads the first three only through energy ports and mechanical design, and the transient needs a holdup.",
+    "NeqSim's `StirredTankReactor` also carries a vessel volume, a residence time, an agitator power per volume and a `runTransient`. **None is here**: `run` reads the first three only through energy ports and mechanical design, and the transient needs a holdup.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/StirredTankReactor.java` is the port source, through its `run`, and `StoichiometricReaction.java` is the reaction it applies.",

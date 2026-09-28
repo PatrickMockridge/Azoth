@@ -110,4 +110,4 @@ declared checks *that call* could not evaluate.
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ChemicalReactionOperations` is the port source: `getReactivePhaseIndex`, `calcNVector`, `calcBVector`, `calcAmatrix`, `calcChemRefPot`, `updateMoles` and `solveChemEq`.
 - Smith, W. R.; Missen, R. W. (1982). "Chemical Reaction Equilibrium Analysis: Theory and Algorithms." Wiley, New York. The element balance and the electroneutrality constraint the operation hands the solve.
-- Apache Commons Math 3 - https://commons.apache.org/proper/commons-math/ - Apache-2.0. `SimplexSolver`, whose estimated vertex `LinearProgrammingChemicalEquilibrium` seeds through. It is not ported: this solves the program exactly, which is a different answer where the two disagree.
+- Apache Commons Math 3 - https://commons.apache.org/proper/commons-math/ - Apache-2.0. `SimplexSolver`, whose estimated vertex `LinearProgrammingChemicalEquilibrium` seeds through - owed, and named in `ROADMAP.md`. This solves the program exactly, which is a different answer where the two disagree.

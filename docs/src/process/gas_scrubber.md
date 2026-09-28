@@ -52,11 +52,11 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 ## Assumptions
 
 - **its stream side is `process.separator`'s, and that is a measurement.** `GasScrubber extends Separator` and does not override `run` - `grep -c 'public void run'` returns zero - so this capture is that model's own row through the other entry.
-- **the Souders-Brown capacity metric is not ported.** `getCapacityUtilization` needs the vapour's volumetric flow, the liquid's density and two *mechanical* parameters - `setInternalDiameter` and `setDesignGasLoadFactor` - which the palette declares neither of.
+- **the Souders-Brown capacity metric is owed, and `ROADMAP.md` names it.** `getCapacityUtilization` needs the vapour's volumetric flow, the liquid's density and two *mechanical* parameters - `setInternalDiameter` and `setDesignGasLoadFactor` - which the palette declares neither of.
 - **the three parameters are the separator's**, and the entry declares all three for the reason the separator does: a scrubber holds its feed's temperature unless a `heat_input` moves the flash, and a pressure drop is not a throttling.
 - **an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is ported**: the first three are what the capacity metric reads.
+- NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the first three are what the capacity metric reads.
 
 ## Cases
 

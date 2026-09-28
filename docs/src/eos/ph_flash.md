@@ -78,9 +78,9 @@ not an equation, and both implementations read it from here.
 - the starting temperature is declared in the spec, where upstream reads one off its thermodynamic system.
 - the flash at each trial temperature is converged, not exact: the enthalpy inverted is that of a converged approximation.
 - no check that the feed is stable: the model asks where the energy balance is satisfied, not whether the state found is the equilibrium one.
-- **a pure component's two-phase state is not found.** The temperature there is the saturation temperature, which this solver drives by the enthalpy alone. Measured on propane at 5 bar it converges at `H <= -20` and `H >= +10 kJ/mol` and fails between. `PHflashSingleComp` is not ported.
+- **a pure component's two-phase state is not found.** The temperature there is the saturation temperature, driven by the enthalpy alone. Measured on propane at 5 bar it converges at `H <= -20` and `H >= +10 kJ/mol` and fails between. It is `PHflashSingleComp`'s, which `ROADMAP.md` names.
 - **the enthalpy is a difference from a supplied datum.** It is not an absolute quantity and is not comparable with a value computed from a different reference state.
-- NeqSim carries a second H-flash scheme, `SysNewtonRhapsonPHflash`, which its `ThrottlingValve` and `Compressor` select. It is not ported: `validation/neqsim/PhFlashJacobianProbe.java` measures `(dH/dT)_P` at two-phase states to be twice the `Cp` its Jacobian uses, and its control agrees.
+- NeqSim carries a second H-flash scheme, `SysNewtonRhapsonPHflash`, which its `ThrottlingValve` and `Compressor` select; `ROADMAP.md` names it. `validation/neqsim/PhFlashJacobianProbe.java` measures `(dH/dT)_P` at two-phase states to be twice the `Cp` its Jacobian uses, and its control agrees.
 
 ## Cases
 

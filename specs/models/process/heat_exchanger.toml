@@ -8,7 +8,7 @@ assumptions = [
     "**`hot_outlet_temperature` or `cold_outlet_temperature` is the class's other mode**, pinning that side at its inlet pressure and energy-balancing the other. At most one may be given: with both, the other side has nothing left to solve for. `ua` is unread in that mode.",
     "**an arrangement NeqSim does not know is refused rather than treated as counterflow.** `calcThermalEffectivenes` falls through to the counterflow relation for anything unrecognised, which would make a misspelling a plausible answer.",
     "**the two sides may be different fluids.** This is the only unit operation whose ports do not share one fluid, so `hot_components` and `cold_components` are two declarations rather than one.",
-    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a `useDeltaT` variant, a UA from correlations and a mechanical design. **None is ported**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.",
+    "NeqSim's `HeatExchanger` also carries a thermal-hydraulic rating, a `useDeltaT` variant, a UA from correlations and a mechanical design. **None is here**, and neither is any arrangement outside the three `calcThermalEffectivenes` names.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/HeatExchanger.java` is the port source, through its `run`.",

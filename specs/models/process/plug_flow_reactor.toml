@@ -18,7 +18,7 @@ assumptions = [
     "**LHHW with no adsorption terms added is its own power law**: the denominator is `(1 + 0)**m`, which is one. The class has the same behaviour when `addAdsorptionTerm` is never called, and a declaration cannot carry the terms.\n",
     "**a reactor with no reaction is refused.** The class logs a warning and returns its feed through; a tube with no reaction is a tube, and passing it through would hide a wiring error.\n",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.\n",
-    "**`ReactorMechanicalDesign`, `runTransient` and the JSON profile export are not ported.** The class names no paper; its schemes are the textbook RK4 and Euler it writes out itself.\n",
+    "**`ReactorMechanicalDesign`, `runTransient` and the JSON profile export are owed**, and `ROADMAP.md` names them. The class names no paper; its schemes are the textbook RK4 and Euler it writes out itself.\n",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/PlugFlowReactor.java` is the port source, through its `run` and `calculateDerivatives`; `KineticReaction.java` is the rate law and `CatalystBed.java` the bed.\n",

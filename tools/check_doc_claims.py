@@ -37,7 +37,9 @@ spec cites most: a spec id and a capture file. A spec's `assumptions`, `descript
 and `notes` fields are prose in a data file and name repo paths, neighbor ids and
 captures exactly as a page does, so the path sweep reads them too. What it does not
 reach is a spec's claim about *what the tree carries* - that is a fact about the
-code, and it is declared and held elsewhere.
+code, and it is held by `tools/check_unported.py`: a refused value is a
+`[[unported]]` row, and a sentence making the same claim is an error there, because
+a sentence is a claim nothing holds.
 
 # What it does not do
 
@@ -63,6 +65,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import re
 import sys
 import tomllib
@@ -238,6 +241,26 @@ def unit_ops_refusals() -> int:
     return len(_table("UNRUNNABLE"))
 
 
+def specs_unported_rows() -> int:
+    """The refusal rows the model specs declare, counted where the checker counts them.
+
+    Loaded from `tools/check_unported.py` rather than re-derived here. The claim is
+    *about* the declaration, and a second count of the same rows would be a second
+    thing to keep in step - which is the defect the declaration exists to remove.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "check_unported", ROOT / "tools" / "check_unported.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ProbeError("tools/check_unported.py cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    rows, failures = module.declared()
+    if failures:
+        raise ProbeError(f"the declaration is not well formed: {failures[0]}")
+    return sum(len(keys) for keys in rows.values())
+
+
 def vocabulary_units() -> int:
     text = (ROOT / "specs" / "vocabulary" / "vocabulary.toml").read_text(encoding="utf-8")
     return positive(text.count("[[units]]"), "units in vocabulary.toml")
@@ -365,6 +388,7 @@ MEASURES = {
     "specs.calcs": specs_calcs,
     "specs.models": specs_models,
     "specs.ids": specs_ids,
+    "specs.unported_rows": specs_unported_rows,
     "unit_ops.declared": unit_ops_declared,
     "unit_ops.kernels": unit_ops_kernels,
     "unit_ops.dispatch": unit_ops_dispatch,

@@ -28,6 +28,11 @@ that exists. `spec_lint.py` holds the same three against the JSON Schema, and th
 deliberate duplication rather than a second source of truth: this tool has to run without
 `jsonschema` so the test suite can point it at a synthetic tree.
 
+**And no spec states the fact in a sentence.** A string anywhere under `specs/` carrying
+`not ported`, `unported` or `is not carried` is an error, because the fact has a field.
+That rule is what makes the first one meaningful: the row is held to both
+implementations, while a sentence beside it is held to nothing.
+
 # The comparison is per spec, by file stem
 
 A refusal site is attributed to a spec by the stem of the file it sits in -
@@ -63,6 +68,78 @@ CALL = re.compile(r"\b(?:unported::refuse|_unported\.refuse)\(\s*\"([^\"]+)\"\s*
 #: Where a call site is written, in each language.
 RUST_SITES = ROOT / "crates"
 PYTHON_SITES = ROOT / "python" / "src"
+
+#: Every spec tree. `specs/schema` holds JSON Schema documents rather than specs, so
+#: nothing there is walked.
+SPECS = ROOT / "specs"
+
+#: A porting claim written as a sentence.
+#:
+#: The fact has a field now, so a sentence carrying it is a claim nothing can hold: the
+#: row is held to both implementations by rule 1, and a sentence beside it is held to
+#: nothing and drifts - which is how `specs/models/process/distillation_column.toml`
+#: declared the side-draw flow tear unported while the palette entry's copy of the same
+#: sentence was corrected and the other was not.
+#:
+#: The ban is on the *phrase*, not on the meaning, and that is deliberate rather than
+#: lazy. A sentence-scoped sweep for the claim was measured and rejected: 52 occurrences
+#: in at least four senses - a claim, a correction, an argument, and a count of a set
+#: declared elsewhere - and no phrase list separates the first from the other three. What
+#: *is* exact is the question "has a porting claim been left where nothing can hold it",
+#: and after the drain this answers it: a correct file cannot fire, and a badly-worded
+#: claim cannot hide, because the sentence has nowhere left to stand. The declaration is
+#: the row; a deferral is `ROADMAP.md`'s bullet; a capability that is simply absent needs
+#: no sentence, because the absent input is the statement.
+#:
+#: **The alternation is the whole claim, and a narrower one was measured and widened.**
+#: The first draft read `not ported|unported|is not carried` and reported 43 strings; a
+#: sweep for the same claim in other words found 20 more the tree had been carrying all
+#: along - "**None is ported**" of a class's transient and mechanical design on sixteen
+#: `process.*` entries, "neither is ported", "are not carried". A phrase list that stops
+#: at one wording is a phrase list a spec dodges by rewording, which is worse than no list,
+#: because it reads as coverage. What is *not* in the list is deliberate:
+#: `not implemented` is excluded because `specs/models/eos/water_phase.toml` uses it of
+#: *NeqSim's* own missing regions, which is not a porting claim at all.
+PORTING_PROSE = re.compile(
+    r"not ported|unported|not carried"
+    r"|none (?:is |are )?ported|neither (?:is |are )?ported",
+    re.IGNORECASE,
+)
+
+
+def strings(value: object, at: str = "") -> list[tuple[str, str]]:
+    """Every string in a document, with the path it sits at.
+
+    Values only, never keys: `[[unported]]` is this field's own name, and a rule that
+    fired on it would be a rule that forbade the declaration.
+    """
+    found: list[tuple[str, str]] = []
+    if isinstance(value, str):
+        found.append((at, value))
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            found.extend(strings(item, f"{at}.{key}" if at else str(key)))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            found.extend(strings(item, f"{at}[{index}]"))
+    return found
+
+
+def porting_prose(specs_root: Path = SPECS) -> list[str]:
+    """Every sentence in a spec that carries the porting fact, which now has a field."""
+    failures: list[str] = []
+    for path in sorted(specs_root.rglob("*.toml")):
+        where = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+        spec = tomllib.loads(path.read_text(encoding="utf-8"))
+        for at, value in strings(spec):
+            match = PORTING_PROSE.search(value)
+            if match:
+                failures.append(
+                    f"{where}: {at} states {match.group(0)!r} in prose. The fact is a "
+                    f"`[[unported]]` row in a model spec, or a `ROADMAP.md` bullet, or "
+                    f"absent from this spec's inputs because the port does not carry it."
+                )
+    return failures
 
 
 def unported_key(row: dict[str, object]) -> str:
@@ -144,9 +221,14 @@ def check(
     model_dir: Path = MODEL_DIR,
     rust_root: Path = RUST_SITES,
     python_root: Path = PYTHON_SITES,
+    specs_root: Path | None = None,
 ) -> list[str]:
     """Every disagreement between the declaration and the two implementations."""
     declared_rows, failures = declared(model_dir)
+    # `None` rather than a default, because the default would be the real tree and the
+    # suite's synthetic tree has to be swept instead of it. A default here would make
+    # every test below pass by reading this checkout.
+    failures.extend(porting_prose(SPECS if specs_root is None else specs_root))
 
     stems: dict[str, list[str]] = {}
     for path, spec in model_specs(model_dir):

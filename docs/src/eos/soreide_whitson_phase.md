@@ -49,7 +49,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the water's alpha is evaluated at the brine's salinity in both.** NeqSim propagates the aqueous phase's concentration onto the attractive term and this model reads the caller's scalar, so a concentrated brine and a fresh one differ here as they do there.
 - the salt is not a component. NeqSim carries it as an extra mole number the flash splits between the phases; here it is the scalar the rule reads, so the composition is the fluid's alone.
 - the roles - which component is water, which is nitrogen, which is carbon dioxide - are decided by **name**, as NeqSim's `getkijWhitsonSoreideAqueous` decides them. A `Component` carries no name, so the databank resolver assigns the role where it resolves the name.
-- the two newer aqueous parameterisations NeqSim carries - Chabab 2019 and Burgoyne-Nielsen 2026 - are **not ported**. This is the legacy one, which is that system's default.
+- this is the legacy parameterisation, which is that system's default. NeqSim also carries Chabab 2019 and Burgoyne-Nielsen 2026, and `ROADMAP.md` names both among the classes still owed.
 - `x` is checked rather than renormalised.
 - no `h_res` or `s_res`: this model's oracle is NeqSim's `Phase.getFugacityCoefficient` surface, and a departure would be a claim without one.
 

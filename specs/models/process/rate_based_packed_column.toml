@@ -18,7 +18,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/RateBasedPackedColumn.java"
-edition = "`solveFixedPointProfile`, `calculateSegment`, `calculateTransportSnapshot`, `calculateInterfaceEquilibrium`, `applyInterphaseHeatTransfer` and the ten `DEFAULT_*` constants, ported verbatim. The equation-oriented and simultaneous-residual solvers are not ported, and the enums name them."
+edition = "`solveFixedPointProfile`, `calculateSegment`, `calculateTransportSnapshot`, `calculateInterfaceEquilibrium`, `applyInterphaseHeatTransfer` and the ten `DEFAULT_*` constants, ported verbatim, with the two solvers this spec's rows refuse named by the enums they belong to."
 [algorithm]
 scheme = "counter_current_fixed_point_profile"
 initialisation = "uniform_liquid_profile"

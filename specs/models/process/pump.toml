@@ -7,7 +7,7 @@ assumptions = [
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route. A case on SRK or a non-classic rule is not a case this can be held to.",
     "**the work is an isentropic head from a flash, not `v (P_out - P_in)`.** NeqSim clones the fluid to the outlet pressure and runs a `PSflash` at the inlet entropy, because `calculateAsCompressor` defaults to `true`; the incompressible form is its linearisation.",
     "**the outlet temperature is solved, not assumed isothermal.** The work raises the enthalpy and `Stream::from_ph` finds the temperature at which the mixture carries it.",
-    "NeqSim's `Pump` also carries a `runTransient` path, a mechanical design and a performance curve. **None is ported**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` and `isentropic_efficiency` reach.",
+    "NeqSim's `Pump` also carries a `runTransient` path, a mechanical design and a performance curve. **None is here**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` and `isentropic_efficiency` reach.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/pump/Pump.java` is the port source, through its `run`.",

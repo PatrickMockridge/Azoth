@@ -304,7 +304,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ge_nrtl_phase': {
         "calc_id": 'eos.ge_nrtl_phase',
         "name": 'Fugacity coefficients of an NRTL activity-coefficient liquid',
-        "spec": {'path': 'specs/models/eos/ge_nrtl_phase.toml', 'sha256': 'ac38e6f27060120c247f7680d48c15c150bad4801ad69f00642308afcea3e7f8'},
+        "spec": {'path': 'specs/models/eos/ge_nrtl_phase.toml', 'sha256': '31ec86d6914ba689a75760cbdc7307586d4eba0f610f46b594736267b1e554c5'},
         "code": [{'path': 'python/src/azoth/eos/reference/ge_nrtl_phase.py', 'sha256': '5b4c0eddf80522d56a53bf8114483b03080f93eca7f3b8204007d5e3d5ee9736'}, {'path': 'crates/azoth-eos/src/ge_nrtl_phase.rs', 'sha256': '5efb41057be7bb5d111d20e11ea3472b14af8c8fa1a271cfa424ca46c13d9a19'}],
         "source": 'NeqSim master `PhaseGENRTL`',
         "verification": 'partially_verified',
@@ -315,7 +315,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ge_unifac_phase': {
         "calc_id": 'eos.ge_unifac_phase',
         "name": 'Fugacity coefficients of a UNIFAC activity-coefficient liquid',
-        "spec": {'path': 'specs/models/eos/ge_unifac_phase.toml', 'sha256': '2d47c1b1ba5cc9b811649f75ccc35972d7d21139399ef8e8a3b3abfdcd973869'},
+        "spec": {'path': 'specs/models/eos/ge_unifac_phase.toml', 'sha256': 'ab01285dda0188cd44128924284db9c25e40cfe8c11641e798e3a44767a5a036'},
         "code": [{'path': 'python/src/azoth/eos/reference/ge_unifac_phase.py', 'sha256': 'e9c05e67f806445827bb2c5832481dbbe5f1188c996762bcf30c4dc0937e705f'}, {'path': 'crates/azoth-eos/src/ge_unifac_phase.rs', 'sha256': '30b857ff3bade6b39cafe74ccc183005fd96958c104620b62842ebfc3d44657b'}],
         "source": 'NeqSim master `PhaseGEUnifac`',
         "verification": 'partially_verified',
@@ -326,7 +326,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ge_uniquac_phase': {
         "calc_id": 'eos.ge_uniquac_phase',
         "name": 'Fugacity coefficients of a UNIQUAC activity-coefficient liquid',
-        "spec": {'path': 'specs/models/eos/ge_uniquac_phase.toml', 'sha256': '27baea8066fbce9ac2f9494fe6f7aafca03107ef2d23220b895846df36392afb'},
+        "spec": {'path': 'specs/models/eos/ge_uniquac_phase.toml', 'sha256': '22fcec7309751218bee4ea97a3c27f9bac0b32e03ad85d38b3451fa737a22a79'},
         "code": [{'path': 'python/src/azoth/eos/reference/ge_uniquac_phase.py', 'sha256': '8550370dfb3b29b70c8dc4f4e14e293ed73429817fa12cb42d27ffb798d051a7'}, {'path': 'crates/azoth-eos/src/ge_uniquac_phase.rs', 'sha256': 'bca48393b0b2373b62249c6b4f4438ba50f9105e339e93dfb31f8406d1093474'}],
         "source": 'NeqSim master `PhaseGEUniquac`',
         "verification": 'partially_verified',
@@ -348,7 +348,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ge_wilson_phase': {
         "calc_id": 'eos.ge_wilson_phase',
         "name": 'Fugacity coefficients of a Wilson activity-coefficient liquid',
-        "spec": {'path': 'specs/models/eos/ge_wilson_phase.toml', 'sha256': '3f7619386ae4be8806bfd2f7b7f49024c79c5476f18f774a19178277bcc14235'},
+        "spec": {'path': 'specs/models/eos/ge_wilson_phase.toml', 'sha256': '5bf14eca2fd472312d16123725003c22c7d8910962b3ef2529c32817070d5fe7'},
         "code": [{'path': 'python/src/azoth/eos/reference/ge_wilson_phase.py', 'sha256': '0db68169d452eadda46c11b2bcd94b08ca6ef618ee795bc96feb73eb27282928'}, {'path': 'crates/azoth-eos/src/ge_wilson_phase.rs', 'sha256': 'be8b742043b293eb66e354eaa46e6a683fd79f99edd88574a8cb3cb1ab7bfc21'}],
         "source": 'NeqSim master `PhaseGEWilson`',
         "verification": 'partially_verified',
@@ -436,7 +436,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.hydrate_formation_temperature': {
         "calc_id": 'eos.hydrate_formation_temperature',
         "name": 'Hydrate formation temperature',
-        "spec": {'path': 'specs/models/eos/hydrate_formation_temperature.toml', 'sha256': '2bd83b918703f29334da3658cd1769ddc29c15f6ee006e7d19d7cb65101475cc'},
+        "spec": {'path': 'specs/models/eos/hydrate_formation_temperature.toml', 'sha256': '0b0ac70b767249ddf943a2de0a777b6b5d5309ac61b60ae0346495bb47b0549a'},
         "code": [{'path': 'python/src/azoth/eos/reference/hydrate_formation_temperature.py', 'sha256': '30c9d3101283a680d4136032bbf879a0baae2b4cf5e0405390a0ba63370ef3e6'}, {'path': 'crates/azoth-eos/src/hydrate_formation_temperature.rs', 'sha256': 'acf626455df5d8bd6dbaeac556b705388e959ee3537579ecc182c4475f54b2cb'}],
         "source": 'NeqSim master `HydrateFormationTemperatureFlash`',
         "verification": 'partially_verified',
@@ -711,7 +711,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ph_flash': {
         "calc_id": 'eos.ph_flash',
         "name": 'Pressure-enthalpy flash',
-        "spec": {'path': 'specs/models/eos/ph_flash.toml', 'sha256': '94df72994fad5c1bd941b187ae540b84675f16993828cc07fc83dc036c0c0a9e'},
+        "spec": {'path': 'specs/models/eos/ph_flash.toml', 'sha256': '186ee02898e625e31373b279d905974e63bd2bf834967e2ad9e8f559adf634b7'},
         "code": [{'path': 'python/src/azoth/eos/reference/ph_flash.py', 'sha256': 'c6ccab9d63b45ea1f20a034ea62a30731b417361cd44aef52ac0fec6c3ca45f6'}, {'path': 'crates/azoth-eos/src/ph_flash.rs', 'sha256': 'e542ca473de36c41f5cf4090820a545dbf2fd4930649b7b1660129365c4fadd7'}],
         "source": 'Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup',
         "verification": 'partially_verified',
@@ -898,7 +898,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.ps_flash': {
         "calc_id": 'eos.ps_flash',
         "name": 'Pressure-entropy flash',
-        "spec": {'path': 'specs/models/eos/ps_flash.toml', 'sha256': 'cfb56e128eb62d181b2c4da8c0ed3e863549fced4f4330f6722c85b84c607a19'},
+        "spec": {'path': 'specs/models/eos/ps_flash.toml', 'sha256': '85c048727a25f15c7c481a4d03b1090350ab626c1a2b10a320071be74a14a49a'},
         "code": [{'path': 'python/src/azoth/eos/reference/ps_flash.py', 'sha256': 'a50ff58fce7af2df0b441683e1f98ee7339e09e729f0ab5c28d76351c3457072'}, {'path': 'crates/azoth-eos/src/ps_flash.rs', 'sha256': 'd6bb98ffb059ab245a96fe7674b8b1c698c2c7c68e52d2fe7afad2b93415082d'}],
         "source": 'Standard thermodynamics, as in Smith, Van Ness & Abbott; Michelsen & Mollerup',
         "verification": 'partially_verified',
@@ -986,7 +986,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.rachford_rice': {
         "calc_id": 'eos.rachford_rice',
         "name": 'Vapour fraction from the Rachford-Rice equation',
-        "spec": {'path': 'specs/models/eos/rachford_rice.toml', 'sha256': '7749760665996bcf73b0b8bd633bc7cba644add1a74c3423f23af9cf33432e9b'},
+        "spec": {'path': 'specs/models/eos/rachford_rice.toml', 'sha256': '5d9f6735a6cb99427f559bfe56a9f97b591ed9695a3a1d0484b1a461ba7b6446'},
         "code": [{'path': 'python/src/azoth/eos/reference/rachford_rice.py', 'sha256': 'b4e4d16c1aa8091e26c095dee6794bfd2dfe69f0aec6e2f1226f5b053b02b558'}, {'path': 'crates/azoth-eos/src/rachford_rice.rs', 'sha256': 'af72486c9d6eead34297b85629bf4b90107d60ecbae34d2d8d0adca939d95948'}],
         "source": 'Nielsen, L. (2023)',
         "verification": 'verified',
@@ -1118,7 +1118,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.soreide_whitson_phase': {
         "calc_id": 'eos.soreide_whitson_phase',
         "name": 'Phase state of a Soreide-Whitson fluid',
-        "spec": {'path': 'specs/models/eos/soreide_whitson_phase.toml', 'sha256': 'c6d96f88dc7c6bba5bf4caae8865c15c299b5bd6f2f5c7454b17160ba4dbedd0'},
+        "spec": {'path': 'specs/models/eos/soreide_whitson_phase.toml', 'sha256': 'c4c46556c935ca34526cd01d4ca92c31c2eeecde93981a0955462fa3e60444c1'},
         "code": [{'path': 'python/src/azoth/eos/reference/soreide_whitson_phase.py', 'sha256': 'b1504d7f8e6be5bbc3de96d560877fb5c81beee7445cf4e2f91d93e4ad4620be'}, {'path': 'crates/azoth-eos/src/soreide_whitson_phase.rs', 'sha256': 'c1903a09debbf9ed4300dbcd09b4bdabe4667417e4d0934164d2a41679fe619b'}],
         "source": 'NeqSim master `SystemSoreideWhitson`',
         "verification": 'partially_verified',
@@ -1250,7 +1250,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.tp_multiflash': {
         "calc_id": 'eos.tp_multiflash',
         "name": 'Multiphase flash at fixed temperature and pressure',
-        "spec": {'path': 'specs/models/eos/tp_multiflash.toml', 'sha256': '92a4a73588290dd87dccf7456139e913a151f190076fa3fe4400935d2e69c8ae'},
+        "spec": {'path': 'specs/models/eos/tp_multiflash.toml', 'sha256': 'c4ad9243216fd8c7f79c22c663e69c1830a0751f0e280e14bf2e57538f8ce005'},
         "code": [{'path': 'python/src/azoth/eos/reference/tp_multiflash.py', 'sha256': '250163238a27a16782b7e948febb15c84f74c366add603cfbea918d4b03be22b'}, {'path': 'crates/azoth-eos/src/tp_multiflash.rs', 'sha256': 'cbc95320d30401127233e0dad39454d737317a09644e5379427918aa98ae27e8'}],
         "source": 'NeqSim master `TPmultiflash`',
         "verification": 'partially_verified',
@@ -1448,7 +1448,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.van_laar_acid_activity_coefficients': {
         "calc_id": 'eos.van_laar_acid_activity_coefficients',
         "name": 'Activity coefficients from the Van Laar model for the water-nitric-sulfuric acid system',
-        "spec": {'path': 'specs/models/eos/van_laar_acid_activity_coefficients.toml', 'sha256': '97b7f06e2fd6f77b1b914f4fd4751d3287396b38a7d5af56319eaf71ed2ed30c'},
+        "spec": {'path': 'specs/models/eos/van_laar_acid_activity_coefficients.toml', 'sha256': '9444a7a24058a491b27e8c1a1e00ae1d3b09cf6d39ad882d920787ec7833878f'},
         "code": [{'path': 'python/src/azoth/eos/reference/van_laar_acid_activity_coefficients.py', 'sha256': 'a51cdd0721fa769f5cee11e8b09c3af19f9181c7f6a85b3634004a3fadddde8d'}, {'path': 'crates/azoth-eos/src/van_laar_acid_activity_coefficients.rs', 'sha256': 'e656b5b10c4d42ea0eb85a8420ef07676623e7dc0b5235081bcff611580b4156'}],
         "source": 'Taleb, D.; Ponche, J. L.; Mirabel, P. (1996)',
         "verification": 'verified',
@@ -1470,7 +1470,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.vh_flash': {
         "calc_id": 'eos.vh_flash',
         "name": 'Volume-enthalpy flash',
-        "spec": {'path': 'specs/models/eos/vh_flash.toml', 'sha256': 'f8564cc937d5fc00f12cb3533da103c811ce015c4bae88d6a7999ca646072f16'},
+        "spec": {'path': 'specs/models/eos/vh_flash.toml', 'sha256': '3c9b2a43c312bfea1b40097ef821dc9ebde227fe465b1229c331c55369156a68'},
         "code": [{'path': 'python/src/azoth/eos/reference/vh_flash.py', 'sha256': 'd86c5783b17c88c0c554bef0dadfb373c3878626b06960061027e21c365b7423'}, {'path': 'crates/azoth-eos/src/vh_flash.rs', 'sha256': '48fdbe4b25e6e724cb131603a0069a3a552c747bed2bbc759ac6800b93af924f'}],
         "source": 'Standard thermodynamics, as in Michelsen & Mollerup',
         "verification": 'partially_verified',
@@ -1701,7 +1701,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.absorption_column': {
         "calc_id": 'process.absorption_column',
         "name": 'Absorption column',
-        "spec": {'path': 'specs/models/process/absorption_column.toml', 'sha256': '937aecd8b61f023f5cce48dc9de2b0ed46e829347fcebb82cc7ec93642dcbea9'},
+        "spec": {'path': 'specs/models/process/absorption_column.toml', 'sha256': '50e8d5b303539937792ef382233ebf85a753d9fd8b11c309cf9ff45e670ee3e7'},
         "code": [{'path': 'python/src/azoth/process/reference/absorption_column.py', 'sha256': '12e8087eb70f7a41969e13e16d04ed6e5b2e0c56dfa95358e5dbc411fc7b3908'}, {'path': 'crates/azoth-process/src/models/absorption_column.rs', 'sha256': '9cab04bd5fa6b1f455df33315a3dbc21a872f6111a04924821ac7a0d5da90eb3'}],
         "source": 'NeqSim process/equipment/absorber/AbsorptionColumn.java',
         "verification": 'partially_verified',
@@ -1723,7 +1723,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.compressor': {
         "calc_id": 'process.compressor',
         "name": 'Compressor',
-        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '1c0fb403bfa43489daf50b9c88508ebcd79c3721e9fecb5322936d627a6e6331'},
+        "spec": {'path': 'specs/models/process/compressor.toml', 'sha256': '84e3081858429dd902f221d2cb43d124a5415aabb7a5a90b80ef6e4f01ab6e49'},
         "code": [{'path': 'python/src/azoth/process/reference/compressor.py', 'sha256': '9791e6e601ef20c517919b95155467ea26e04dfa8ef773f15280f61872bac3ab'}, {'path': 'crates/azoth-process/src/models/compressor.rs', 'sha256': '46ae0f87f9182b90b7c5de323ab29aab0f92a69965a68ee37b2aeede4f37f537'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
@@ -1745,7 +1745,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.distillation_column': {
         "calc_id": 'process.distillation_column',
         "name": 'Distillation column',
-        "spec": {'path': 'specs/models/process/distillation_column.toml', 'sha256': '8df1c825848409c30a9b2a3c062a0aa4c9d5b11e2e8c400f0d7358bccd377828'},
+        "spec": {'path': 'specs/models/process/distillation_column.toml', 'sha256': '230771b8b15dadb4efa65fed59dd3aa42f4e4fdc962c6581ab3a3ec4cab0b81d'},
         "code": [{'path': 'python/src/azoth/process/reference/distillation_column.py', 'sha256': '0a2622ed79f6c688cac4e81a6dc3a997647a53f091bc11e9129fa489cb254b0b'}, {'path': 'crates/azoth-process/src/models/distillation_column.rs', 'sha256': '7f67577ec02c42872187c7aac1bd1623fc2d9e25c7109399e634b879de60dc68'}],
         "source": 'NeqSim process/equipment/distillation/DistillationColumn.java',
         "verification": 'partially_verified',
@@ -1756,7 +1756,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.ejector': {
         "calc_id": 'process.ejector',
         "name": 'Ejector',
-        "spec": {'path': 'specs/models/process/ejector.toml', 'sha256': 'ce96b0148b5706db8db4243bd42086bdb6c0c906036c7686d75efdceb80fcffa'},
+        "spec": {'path': 'specs/models/process/ejector.toml', 'sha256': '24cc3d4390d99685c5fc4623ef308d9868761da2ca6c2fa28045d0081bd590a3'},
         "code": [{'path': 'python/src/azoth/process/reference/ejector.py', 'sha256': 'ec04ad2eb8a2f3788738f84ed31aa450480dedb62eae72fdc8b9321b2bcb8308'}, {'path': 'crates/azoth-process/src/models/ejector.rs', 'sha256': '435d18083bbd0a6c3cb5cccec21fa2499c502133a3785f7b42241128ff168426'}],
         "source": 'NeqSim process/equipment/ejector/Ejector.java',
         "verification": 'partially_verified',
@@ -1767,7 +1767,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.expander': {
         "calc_id": 'process.expander',
         "name": 'Expander',
-        "spec": {'path': 'specs/models/process/expander.toml', 'sha256': 'cade88d6c302c5a0fa5b2585f6ea1b2741140a30e098d10e16ee8a3ec8eee338'},
+        "spec": {'path': 'specs/models/process/expander.toml', 'sha256': '0808b0c885a60051874617225715d13a59baf0e96b3d5194f6481f4519732cb4'},
         "code": [{'path': 'python/src/azoth/process/reference/expander.py', 'sha256': 'f04e1d19d324c244de7cfccd45a9311ed4e705124a8dfc0f738cc384e011a789'}, {'path': 'crates/azoth-process/src/models/expander.rs', 'sha256': 'a13e27c649c1b65a941702be4bd1dcc86e9fa7610625787d35f2e8a3d3c8b6ff'}],
         "source": 'NeqSim process/equipment/compressor/Compressor.java',
         "verification": 'partially_verified',
@@ -1778,7 +1778,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.filter': {
         "calc_id": 'process.filter',
         "name": 'Filter',
-        "spec": {'path': 'specs/models/process/filter.toml', 'sha256': 'f54a6621a760d18798e4fc4ecd0935732334449dedc5e4f806b2acd350a0a9c7'},
+        "spec": {'path': 'specs/models/process/filter.toml', 'sha256': '8019c631712edbf93eb2309e4eb7ee5bd4ab68e86b4264ef9a0d7057740af476'},
         "code": [{'path': 'python/src/azoth/process/reference/filter.py', 'sha256': '754574216e2bc3544c3d5029126676799ed009378593f6fad797b9e3509f1b09'}, {'path': 'crates/azoth-process/src/models/filter.rs', 'sha256': 'c60ef89d9ad8fb9af440f59a09a63a4c7061b65d4c50df27430a32893e88f447'}],
         "source": 'NeqSim process/equipment/filter/Filter.java',
         "verification": 'partially_verified',
@@ -1789,7 +1789,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.flare': {
         "calc_id": 'process.flare',
         "name": 'Flare',
-        "spec": {'path': 'specs/models/process/flare.toml', 'sha256': 'db539e541dbee67bf8690e3c9e856608496e8a040e58b8ca162f6eed3c393d22'},
+        "spec": {'path': 'specs/models/process/flare.toml', 'sha256': 'bbd0525ca2bede54ed1e12d47914efe46b7187fc1436d351a7e36bb72fb3ecb7'},
         "code": [{'path': 'python/src/azoth/process/reference/flare.py', 'sha256': 'c25c33592a24673f307fcfd385bd20fcc7489801a5f4a2ea4a130be9ad04e7c0'}, {'path': 'crates/azoth-process/src/models/flare.rs', 'sha256': '5fc4a6b051fc58c99f7d5596ae7268a5c032a81d4e7c505d8d745c29197ff151'}],
         "source": 'NeqSim process/equipment/flare/Flare.java',
         "verification": 'partially_verified',
@@ -1800,7 +1800,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gas_scrubber': {
         "calc_id": 'process.gas_scrubber',
         "name": 'Gas scrubber',
-        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': '48933ec08c790a7a3f41ebd3a48883696ff9b202de2c416113518821d88111c3'},
+        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': '5148642a1ec35ae58294a1ea1a2d75d7785730caf48a03ecb2c7e92182ac223b'},
         "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': 'ad8222761f71311e055f8b8b6a69872d36c3bfd862097ce3815dd69cfeae32ca'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': 'f703f1f64218a8b675556372e4dfc6727442433a4fe10b1b1d503b8f8275f581'}],
         "source": 'NeqSim process/equipment/separator/GasScrubber.java',
         "verification": 'partially_verified',
@@ -1811,7 +1811,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gibbs_reactor': {
         "calc_id": 'process.gibbs_reactor',
         "name": 'Gibbs reactor',
-        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': '14539742932e4fd30071bcd4f8454d520feacf00a0ee8511076b87d724686fb2'},
+        "spec": {'path': 'specs/models/process/gibbs_reactor.toml', 'sha256': 'ff47f0252ef63c71bc6fd747d10dcc5b9f6cce9dcf7f7e879ba201c9ef9157fe'},
         "code": [{'path': 'python/src/azoth/process/reference/gibbs_reactor.py', 'sha256': 'eb000ee0ce48defdda76aa0d5a829330450d1b80ca32cbf5e52b52b5b7d4b226'}, {'path': 'crates/azoth-process/src/models/gibbs_reactor.rs', 'sha256': 'e3ff4ba6c3ffa5426cf80788371f68a47c54da9700309591b5533a42943aa4b0'}],
         "source": 'NeqSim process/equipment/reactor/GibbsReactor.java',
         "verification": 'partially_verified',
@@ -1822,7 +1822,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.heat_exchanger': {
         "calc_id": 'process.heat_exchanger',
         "name": 'Heat exchanger',
-        "spec": {'path': 'specs/models/process/heat_exchanger.toml', 'sha256': '60814efbd050b48db4520165834b52bd72508bd64dca051ad349801671c40c27'},
+        "spec": {'path': 'specs/models/process/heat_exchanger.toml', 'sha256': 'f192e838c44eda9074cb80f31e5e336fe9938f36f675026eeb68b40cd84d9eee'},
         "code": [{'path': 'python/src/azoth/process/reference/heat_exchanger.py', 'sha256': 'fd13e3a5151ea1cc0b207c613b77acae6aa9d083cee42fbed3e5f2bc1f5fc8d5'}, {'path': 'crates/azoth-process/src/models/heat_exchanger.rs', 'sha256': 'c0b4bb2ff4f02db1c3183d513b3fc1defd766296c2a4713292dbfe3b5d5f49bc'}],
         "source": 'NeqSim process/equipment/heatexchanger/HeatExchanger.java',
         "verification": 'partially_verified',
@@ -1833,7 +1833,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.heater': {
         "calc_id": 'process.heater',
         "name": 'Heater',
-        "spec": {'path': 'specs/models/process/heater.toml', 'sha256': '7307b12a6e89888287c2bc672d75e2fc5ae18723aa450bc44e68072a1553bff9'},
+        "spec": {'path': 'specs/models/process/heater.toml', 'sha256': 'ae4db4717dce0f11490050771b56de7e9e2f84f508cf9ec94ae84fb609ffac11'},
         "code": [{'path': 'python/src/azoth/process/reference/heater.py', 'sha256': '725adac026da7a29828311eeecd4b4f817b01b7a89b6c921d011443d374f0f6f'}, {'path': 'crates/azoth-process/src/models/heater.rs', 'sha256': '88222eb86fc0504b63a52107e3be4eef6777e1ab9dbe86e2255abfd7d310be71'}],
         "source": 'NeqSim process/equipment/heatexchanger/Heater.java',
         "verification": 'partially_verified',
@@ -1855,7 +1855,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.mixer': {
         "calc_id": 'process.mixer',
         "name": 'Mixer',
-        "spec": {'path': 'specs/models/process/mixer.toml', 'sha256': '549109f22c687a7adda40b9cc7899fc82a00f252fb133a457df71c8454221df8'},
+        "spec": {'path': 'specs/models/process/mixer.toml', 'sha256': 'd7c1552a588350ff46fdd5d99fca05321dc8d5f25ce6fe9fb9611058a0a2d9e6'},
         "code": [{'path': 'python/src/azoth/process/reference/mixer.py', 'sha256': '3e54201c93546b6283ff1c8786f91cd7d5fe00e07c7cc58ffc2fbfe9ec1b9971'}, {'path': 'crates/azoth-process/src/models/mixer.rs', 'sha256': '9c243b9a17d14ee9f628a2d4fa161b9a9ee9e279781c0d4f45714bde7f857ed6'}],
         "source": 'NeqSim process/equipment/mixer/Mixer.java',
         "verification": 'partially_verified',
@@ -1866,7 +1866,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.packed_column': {
         "calc_id": 'process.packed_column',
         "name": 'Packed column',
-        "spec": {'path': 'specs/models/process/packed_column.toml', 'sha256': '5f767c10ab63f274dc65347cc5a504ef36f8e74e2ae1e9e94683d567dcaa8647'},
+        "spec": {'path': 'specs/models/process/packed_column.toml', 'sha256': '5e573ae7c5e3b5f3d9d56c457eeb4ca3946446e29f3421dd286b8586efbf6d63'},
         "code": [{'path': 'python/src/azoth/process/reference/packed_column.py', 'sha256': 'b69b88eeba88187100b00d6122e7f4e11d5c66642bfdb2f0d7fc77e8ab238d2a'}, {'path': 'crates/azoth-process/src/models/packed_column.rs', 'sha256': '886ac3e233a27fec552f1a5bdf2efe6ec27b337a7a74f8d1f58a8aee4fb2b971'}],
         "source": 'NeqSim process/equipment/distillation/PackedColumn.java',
         "verification": 'partially_verified',
@@ -1877,7 +1877,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pipe': {
         "calc_id": 'process.pipe',
         "name": 'Pipe',
-        "spec": {'path': 'specs/models/process/pipe.toml', 'sha256': '2b329d82383de53e072a0e571a8b66cc43c0e8d34915969dddfcb04128222935'},
+        "spec": {'path': 'specs/models/process/pipe.toml', 'sha256': '41eac02ea4711e37243e074993ce77a5d8f421a62f7249aa8946372cf1005e60'},
         "code": [{'path': 'python/src/azoth/process/reference/pipe.py', 'sha256': '4dcff7683d2beef959c82683a25c0796ec1fc9ee1627d55ee3d2e2eeabad2f6a'}, {'path': 'crates/azoth-process/src/models/pipe.rs', 'sha256': '5d8a2b88c63b9899d7590431febf27512a324137a5ed851aadda0b2cacba4177'}],
         "source": 'NeqSim process/equipment/pipeline/AdiabaticPipe.java',
         "verification": 'partially_verified',
@@ -1888,7 +1888,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.plug_flow_reactor': {
         "calc_id": 'process.plug_flow_reactor',
         "name": 'Plug-flow reactor',
-        "spec": {'path': 'specs/models/process/plug_flow_reactor.toml', 'sha256': '105cbfcb36580e07f4ba7426df43c705ac43ababa2fa407244bfb67da1c0976f'},
+        "spec": {'path': 'specs/models/process/plug_flow_reactor.toml', 'sha256': 'ca9dba1ec7a97f612569d42b45f6f000642405ef0eebe59783376c1db62d8425'},
         "code": [{'path': 'python/src/azoth/process/reference/plug_flow_reactor.py', 'sha256': '3e4f0c21ae69edb4e29afbe642041e36eb770a78668112681e7aac029f604573'}, {'path': 'crates/azoth-process/src/models/plug_flow_reactor.rs', 'sha256': '100651a1632594c3264930fbea2f727a68b3dd42b68090346be847dee80d03d8'}],
         "source": 'NeqSim process/equipment/reactor/PlugFlowReactor.java',
         "verification": 'partially_verified',
@@ -1899,7 +1899,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.pump': {
         "calc_id": 'process.pump',
         "name": 'Pump',
-        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': '5e1490b615a38dcbba24a97970a7d52909b406290404ddd54f3cfc652224e7c0'},
+        "spec": {'path': 'specs/models/process/pump.toml', 'sha256': '97ae987bc00a910eff281464a9f050604eace81a99110ccc510ffecff7d3813d'},
         "code": [{'path': 'python/src/azoth/process/reference/pump.py', 'sha256': '1b42bfc933502cd84b74058fdcb2dc8c0fc346d0a2bb7b7dedd07867a8b3c4f6'}, {'path': 'crates/azoth-process/src/models/pump.rs', 'sha256': 'd8818c440b7808b7009e198fb0d32b6b7e6ca1b1abacc82a4dcf9c034b4f694d'}],
         "source": 'NeqSim process/equipment/pump/Pump.java',
         "verification": 'partially_verified',
@@ -1910,7 +1910,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.rate_based_packed_column': {
         "calc_id": 'process.rate_based_packed_column',
         "name": 'Rate-based packed column',
-        "spec": {'path': 'specs/models/process/rate_based_packed_column.toml', 'sha256': '221abfb5cc54c4eee1e3677ed9c62858199a46083e41ef1172aaf48cb7fa9cf0'},
+        "spec": {'path': 'specs/models/process/rate_based_packed_column.toml', 'sha256': '02cf96f4358fe80a4b7476f10d01cb59a9f116dab6d58e66c3a55a4d81f43b02'},
         "code": [{'path': 'python/src/azoth/process/reference/rate_based_packed_column.py', 'sha256': '25a2e1fea5ab06b0df25df19b984a731bb714e933e0c73e79d65ed2b871a6960'}, {'path': 'crates/azoth-process/src/models/rate_based_packed_column.rs', 'sha256': '0e4a83fabb33bb74f5df35d38bcde3e58e395b2e1248902a35e6128d3da2dd23'}],
         "source": 'NeqSim process/equipment/distillation/RateBasedPackedColumn.java',
         "verification": 'partially_verified',
@@ -1921,7 +1921,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.separator': {
         "calc_id": 'process.separator',
         "name": 'Separator',
-        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': 'f75cb371b1c5bd4376196b1e3fc959d9601bd06e382c62c8b970be36ffe2c19a'},
+        "spec": {'path': 'specs/models/process/separator.toml', 'sha256': '411fcf8a4bc5a938f0d963cc496ad72791151795572e25eb038505403f56fcac'},
         "code": [{'path': 'python/src/azoth/process/reference/separator.py', 'sha256': '335657363e3490da8dbabc182ed2e88659ca11ef4f82eb6e8a39f2352a0830f6'}, {'path': 'crates/azoth-process/src/models/separator.rs', 'sha256': '3b9d1aa48b82bb154ad6c624bba5b83a60f2914672cfa2de4d44f832a00efc26'}],
         "source": 'NeqSim process/equipment/separator/Separator.java',
         "verification": 'partially_verified',
@@ -1932,7 +1932,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.shortcut_distillation_column': {
         "calc_id": 'process.shortcut_distillation_column',
         "name": 'Shortcut distillation column',
-        "spec": {'path': 'specs/models/process/shortcut_distillation_column.toml', 'sha256': '671d0981cad69d0c2abea7cc565b7e0c05d099de960117ce289eb52c0c72ecf9'},
+        "spec": {'path': 'specs/models/process/shortcut_distillation_column.toml', 'sha256': 'af6ab19d2151c3421b8a27b1530714fee979dfd169314d66d89ccc9885c24288'},
         "code": [{'path': 'python/src/azoth/process/reference/shortcut_distillation_column.py', 'sha256': '679415df5bb8a2febb8c4759abcb14b09a515650eff6a19666e98083d4722d18'}, {'path': 'crates/azoth-process/src/models/shortcut_distillation_column.rs', 'sha256': 'cc8ff422af30f27ad3386cd7d2e5177bd2cd6f984afd929ae6c91183beef62ec'}],
         "source": 'NeqSim process/equipment/distillation/ShortcutDistillationColumn.java',
         "verification": 'partially_verified',
@@ -1943,7 +1943,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.splitter': {
         "calc_id": 'process.splitter',
         "name": 'Splitter',
-        "spec": {'path': 'specs/models/process/splitter.toml', 'sha256': '675802ca2b1295be5d52a1ad6c80e08ae4d87d1e422ab8db254dba1c55f9adec'},
+        "spec": {'path': 'specs/models/process/splitter.toml', 'sha256': '143325d59f9415b4b07dac5c16cedc3dcdb43b0fca1b44289956591246440ae2'},
         "code": [{'path': 'python/src/azoth/process/reference/splitter.py', 'sha256': 'c18c0a6d21d040cec534baadad8d84902318d1aedd4430ded6f33ff05263c1ff'}, {'path': 'crates/azoth-process/src/models/splitter.rs', 'sha256': '48ad1a1e750772c9c5f63f23c5ea7b5f0130579638707d57b1514986126678f4'}],
         "source": 'NeqSim process/equipment/splitter/Splitter.java',
         "verification": 'partially_verified',
@@ -1954,7 +1954,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.stirred_tank_reactor': {
         "calc_id": 'process.stirred_tank_reactor',
         "name": 'Stirred-tank reactor',
-        "spec": {'path': 'specs/models/process/stirred_tank_reactor.toml', 'sha256': 'f67e7ae16c6526a69eea9fda31e927df22f8dc6be7f488f5690dbfaf1da214f8'},
+        "spec": {'path': 'specs/models/process/stirred_tank_reactor.toml', 'sha256': '7a3298cfa400950a60e93ea7d9e6b62129b81df36a6177e159567b63b69598b1'},
         "code": [{'path': 'python/src/azoth/process/reference/stirred_tank_reactor.py', 'sha256': 'e370fd4ab30196198d9473e6256c6b5169e65933db5a61627ffca00cfceb83b5'}, {'path': 'crates/azoth-process/src/models/stirred_tank_reactor.rs', 'sha256': '173d3dbe9d5488cc1e4cf73a0d2366b029e7577953279575f558a7eaa352cd89'}],
         "source": 'NeqSim process/equipment/reactor/StirredTankReactor.java',
         "verification": 'partially_verified',
@@ -1965,7 +1965,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.stripping_column': {
         "calc_id": 'process.stripping_column',
         "name": 'Stripping column',
-        "spec": {'path': 'specs/models/process/stripping_column.toml', 'sha256': '26438eab93ec11b386f68d789fb1d2f07daed4ef0c0c06a0290ae0bf1db3788e'},
+        "spec": {'path': 'specs/models/process/stripping_column.toml', 'sha256': '4582693e2b1addec5900cead05a43c20e5adcaff913977b4bbe978d01e42b83d'},
         "code": [{'path': 'python/src/azoth/process/reference/stripping_column.py', 'sha256': 'fa0838332033a76e2a3b8bb0b99945f2ad7a9565ba96c378982f83c3da58b82d'}, {'path': 'crates/azoth-process/src/models/stripping_column.rs', 'sha256': 'b541325202cf545aeb2185c91766c57254eb24cc153af47e87ba6430d7492da8'}],
         "source": 'NeqSim process/equipment/absorber/StrippingColumn.java',
         "verification": 'partially_verified',
@@ -1976,7 +1976,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.tank': {
         "calc_id": 'process.tank',
         "name": 'Tank',
-        "spec": {'path': 'specs/models/process/tank.toml', 'sha256': '5131d6c344924acb1873bf711ce185cdadbbbb8a2bdcd1a4bc3f6e4e70487efd'},
+        "spec": {'path': 'specs/models/process/tank.toml', 'sha256': 'fd2738b58142abad38013296d4b0983a85096c481769c2c7a0d373ae0d9df18e'},
         "code": [{'path': 'python/src/azoth/process/reference/tank.py', 'sha256': 'bf406d71ebbc39ce9428087ead3cbc01cab68904e1249c8eaa0c2351c7c64d9d'}, {'path': 'crates/azoth-process/src/models/tank.rs', 'sha256': '329d2aaf6795bbebf6780c87d8e5e7c587d83eafb7df1d1c43fb0e66873187ea'}],
         "source": 'NeqSim process/equipment/tank/Tank.java',
         "verification": 'partially_verified',
@@ -1987,7 +1987,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.three_phase_separator': {
         "calc_id": 'process.three_phase_separator',
         "name": 'Three-phase separator',
-        "spec": {'path': 'specs/models/process/three_phase_separator.toml', 'sha256': '30cd1e0d384a5afc63ab7616753aa297f7747b7e6fdc88a65b69e9c42f0bf9d2'},
+        "spec": {'path': 'specs/models/process/three_phase_separator.toml', 'sha256': 'b1bca7aaf618c7751a7c72146a7f4c1ed0b9c2a6477e0d36272471fbb9f01128'},
         "code": [{'path': 'python/src/azoth/process/reference/three_phase_separator.py', 'sha256': '815dd2d08441f3c88e087894c5e3764fd6a1fe9a7a16764a14c56af0549abe13'}, {'path': 'crates/azoth-process/src/models/three_phase_separator.rs', 'sha256': '2f40c622c1dfa7081f9997e69a2a79f6c73b3f199089a8e480b26a2ee9823b9a'}],
         "source": 'NeqSim process/equipment/separator/ThreePhaseSeparator.java',
         "verification": 'partially_verified',
@@ -1998,7 +1998,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.throttling_valve': {
         "calc_id": 'process.throttling_valve',
         "name": 'Throttling valve',
-        "spec": {'path': 'specs/models/process/throttling_valve.toml', 'sha256': 'a3aac542b78f640043bf787aff811b3504f0dc42c21858778721b00957e61a0e'},
+        "spec": {'path': 'specs/models/process/throttling_valve.toml', 'sha256': 'f2965fb5ea1485728f0daec61cb2be87bea4746b59021c353c2181ba957dd4b1'},
         "code": [{'path': 'python/src/azoth/process/reference/throttling_valve.py', 'sha256': '85bf1dfad9cb24b04b46df9d5ca3cf331af68eda7f8f5c8407caa6dbd38a7ee4'}, {'path': 'crates/azoth-process/src/models/throttling_valve.rs', 'sha256': '4b1f7f89a5d2e83609303471638283beb5abdf0860d250d6aeedacf7b2023a63'}],
         "source": 'NeqSim process/equipment/valve/ThrottlingValve.java',
         "verification": 'partially_verified',
@@ -2009,7 +2009,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.chemical_equilibrium': {
         "calc_id": 'reactions.chemical_equilibrium',
         "name": 'Reactive chemical equilibrium by the Smith-Missen method',
-        "spec": {'path': 'specs/models/reactions/chemical_equilibrium.toml', 'sha256': 'fdc5feb0137058ec9c2da707592331ccfd7e4cf042f5528e18a75453a770bd3b'},
+        "spec": {'path': 'specs/models/reactions/chemical_equilibrium.toml', 'sha256': 'f87c343bd4980c4cb833bfab90aeca5d4c9b77d8c0ef8d89daf183ab16d34f1b'},
         "code": [{'path': 'python/src/azoth/reactions/reference/chemical_equilibrium.py', 'sha256': 'b65abfc7eb781550bfaec1ce26b4f7cba78847e571c334f3854426967a771cd5'}, {'path': 'crates/azoth-reactions/src/chemical_equilibrium.rs', 'sha256': '2efe63120a4140b37089b9ca1156033db79d8995c6c06cbba23d1fa60bbb3b79'}],
         "source": 'NeqSim master `ChemicalEquilibrium`',
         "verification": 'partially_verified',
@@ -2064,7 +2064,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reactive_ph_flash': {
         "calc_id": 'reactions.reactive_ph_flash',
         "name": 'Reactive flash at fixed pressure and enthalpy',
-        "spec": {'path': 'specs/models/reactions/reactive_ph_flash.toml', 'sha256': 'be81de0dfd7cf202eff0135efa05a56493b445f49fd98a6d046fc4acbdfefcb8'},
+        "spec": {'path': 'specs/models/reactions/reactive_ph_flash.toml', 'sha256': '7e5d5c94aa21fc3b33b71a087f9518845ca499a4f7032c5c46912ef8f95552a5'},
         "code": [{'path': 'python/src/azoth/reactions/reference/reactive_ph_flash.py', 'sha256': '1ee4cb2906a6c67e15d63a111532f29a368e31c4210cda4930b8fdcb05929ed9'}, {'path': 'crates/azoth-reactions/src/reactive_ph_flash.rs', 'sha256': 'ab26bd829fd076a1491a7d0c551ea357af3c68871be4f6e39c01d7b88e01375f'}],
         "source": 'NeqSim master `ReactiveMultiphasePHflash`',
         "verification": 'partially_verified',
@@ -2075,7 +2075,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reactive_phase_equilibrium': {
         "calc_id": 'reactions.reactive_phase_equilibrium',
         "name": 'Reactive equilibrium as an operation on one phase',
-        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': 'e1bfa6c7f44809f946a33cdc23304081d7bb045fe06689bb3e7842fc07f8e795'},
+        "spec": {'path': 'specs/models/reactions/reactive_phase_equilibrium.toml', 'sha256': '7d4ec315617cf2566c186360f2790da163d6a475f41119a114084e736b3478a2'},
         "code": [{'path': 'python/src/azoth/reactions/reference/reactive_phase_equilibrium.py', 'sha256': '6bb025440991bc2af7b491e5efc631ccf5a63a3bf2eefe27544d6befcf62001a'}, {'path': 'crates/azoth-reactions/src/reactive_phase_equilibrium.rs', 'sha256': 'f329137da46bef13a630e5b687bb684191a762affa2b69426cf18b8519e8e75a'}],
         "source": 'NeqSim master `ChemicalReactionOperations`',
         "verification": 'partially_verified',
@@ -2086,7 +2086,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'reactions.reactive_tp_flash': {
         "calc_id": 'reactions.reactive_tp_flash',
         "name": 'Reactive flash at fixed temperature and pressure',
-        "spec": {'path': 'specs/models/reactions/reactive_tp_flash.toml', 'sha256': 'a4fa24291118fe34b5266e5253aca61202f2f8b4a2c7fad0b40371dda9c81b6a'},
+        "spec": {'path': 'specs/models/reactions/reactive_tp_flash.toml', 'sha256': '94df7767116b02884910c33b2fbd144aa6ffaec45614416e37a52975da829412'},
         "code": [{'path': 'python/src/azoth/reactions/reference/reactive_tp_flash.py', 'sha256': 'b4288a807c0ad45ea2319e29190a53ac1a6e48c7e120630b0089c251fda892bf'}, {'path': 'crates/azoth-reactions/src/reactive_tp_flash.rs', 'sha256': '13062d11965c81cb14df49e1f15bbaadda2318aa6d9700ed504f8a52ac2cb1bc'}],
         "source": 'NeqSim master `ReactiveMultiphaseTPflash`',
         "verification": 'partially_verified',

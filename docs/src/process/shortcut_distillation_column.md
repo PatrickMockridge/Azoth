@@ -92,7 +92,7 @@ not an equation, and both implementations read it from here.
 - **a component between the keys takes `1/(1 + (alpha_i/alpha_LK_HK)^(-Nmin) (1 - r_LK)/r_LK)`**, and every fraction is clamped into `[1e-12, 1 - 1e-12]`, with a non-finite one replaced by `0.5`.
 - **the products are the feed's fluid with the split's moles at the stated pressure, flashed at the feed's temperature.** A stated product pressure can move a product across a phase boundary at a fixed temperature.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route. NeqSim's own distillation tests are on SRK, so the capture is re-cased.
-- **what is not ported**: `setNumberOfTrays` is inert on this class - its own override logs `calculates stages; setNumberOfTrays ignored` and returns - and the tray hydraulics, the tray optimization and `getResultsJson` are not.
+- **`setNumberOfTrays` is inert on this class** - its own override logs `calculates stages; setNumberOfTrays ignored` and returns - and the tray hydraulics, the tray optimization and `getResultsJson` are owed, and named in `ROADMAP.md`.
 
 ## Cases
 

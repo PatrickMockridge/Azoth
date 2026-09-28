@@ -52,7 +52,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the carbon comes from the element table, not the standard's.** `getElements().getNumberOfElements("C")` reads the component's formula, so a gas ISO 6976 has no row for still gets a CO2 emission - and only its duty is refused.
 - **no parameter is declared, and none is read.** The entry has one inlet and one outlet and the class's own setters (a flame height, a radiant fraction, a tip diameter) are radiation-model inputs `run` never reads.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route - and the duty reads the standard's table rather than the cubic, so the fluid choice moves the *record* and not the report.
-- NeqSim's `Flare` also carries a radiation model, a capacity check and a `runTransient`. **None is ported**: the first two read setters nothing declares, and the transient needs a holdup this library has no state for.
+- NeqSim's `Flare` also carries a radiation model, a capacity check and a `runTransient`. **None is here**: the first two read setters nothing declares, and the transient needs a holdup this library has no state for.
 
 ## Cases
 

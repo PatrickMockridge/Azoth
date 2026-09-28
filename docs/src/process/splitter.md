@@ -49,7 +49,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **NeqSim's `Splitter.run` does not conserve enthalpy, and this diverges deliberately.** Its branch enthalpies do not match the states they report, so reproducing them would mean reproducing a broken balance. The capture carries the numbers and the case's `source` states the case they make.
 - **a factor may not be negative and the total may not be zero or less.** NeqSim clamps a negative factor to zero and falls back to putting everything down the first branch when the total is not positive; this refuses both, because a splitter asked for a split it cannot make has no answer to report.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Splitter` also carries a mechanical design, a capacity map and a `runTransient` with a pressure-driven mode. **None is ported**: this is the steady-state arithmetic, which is what the palette's `split_factors` reaches.
+- NeqSim's `Splitter` also carries a mechanical design, a capacity map and a `runTransient` with a pressure-driven mode. **None is here**: this is the steady-state arithmetic, which is what the palette's `split_factors` reaches.
 
 ## Cases
 

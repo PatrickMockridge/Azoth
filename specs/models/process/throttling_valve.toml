@@ -5,16 +5,16 @@ assumptions = [
     "**the drop is isenthalpic.** `ThrottlingValve.run` flashes a `PHflash` at the inlet's total enthalpy and `Stream::from_ph` is the same operation, so the outlet's temperature is the one the mixture reaches at the outlet pressure.",
     "**`outlet_pressure` is taken at face value even above the inlet.** NeqSim's `acceptNegativeDP` defaults to `true`, so the capture's third row takes 30 bara to 40 at the same enthalpy. A port that clamped would disagree with the class it names.",
     "**nothing bounds the drop and no pressure is refused.** A valve asked for a pressure it cannot reach raises it, which is what the measured class does; whether that is a sensible thing to ask for is the caller's business and not a check this can make on a single inlet.",
-    "**`valve_opening` is not a parameter here and the sizing mode is not ported.** It solves the drop from the trim, with `Kv` from `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod` - the `process/mechanicaldesign/` tree.",
+    "**`valve_opening` is not a parameter here, and the sizing mode is owed.** It solves the drop from the trim, with `Kv` from `MechanicalDesign.calcValveSize()` and a `ValveSizingMethod` - the `process/mechanicaldesign/` tree, which `ROADMAP.md` names.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `ThrottlingValve` also carries a choked-flow branch, a laminar branch, a fouling fraction, an `isIsoThermal` mode and a controller path. **None is ported**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` reaches.",
+    "NeqSim's `ThrottlingValve` also carries a choked-flow branch, a laminar branch, a fouling fraction, an `isIsoThermal` mode and a controller path. **None is here**: this is the steady-state arithmetic, which is what the palette's `outlet_pressure` reaches.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/valve/ThrottlingValve.java` is the port source, through its `run`.",
 ]
 [source]
 standard = "NeqSim process/equipment/valve/ThrottlingValve.java"
-edition = "Its steady-state `run` in its default specification: the outlet's pressure as the inlet's clone is set to, and a `PHflash` at the inlet's enthalpy for the temperature. **The `isCalcPressure` branch is not carried**; it solves the pressure from the trim, which is the mechanical-design tree."
+edition = "Its steady-state `run` in its default specification: the outlet's pressure as the inlet's clone is set to, and a `PHflash` at the inlet's enthalpy for the temperature. **The `isCalcPressure` branch is owed**; it solves the pressure from the trim, which is the mechanical-design tree."
 [inputs]
 [inputs.components]
 type = "components"

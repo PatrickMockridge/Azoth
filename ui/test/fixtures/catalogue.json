@@ -1967,7 +1967,7 @@
           "values": []
         },
         {
-          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one. **An absorber has no ends** - the constructor passes `false, false` - so `setReactive(true)` flags every stage, which the capture's `reactive_tray_flags` prints as `11111`",
+          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash`. **An absorber has no ends**, so `setReactive(true)` flags every stage - the capture prints `11111`",
           "dimension": null,
           "kind": "boolean",
           "name": "reactive",
@@ -2254,7 +2254,7 @@
           "values": []
         },
         {
-          "description": "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one and the last stage is the condenser; `addFeedStream` refuses an index outside `[0, number_of_stages + has_reboiler + has_condenser)`",
+          "description": "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one; `addFeedStream` refuses an index outside the tray count",
           "dimension": "dimensionless",
           "kind": "quantity",
           "name": "feed_stage",
@@ -2779,7 +2779,7 @@
           "values": []
         },
         {
-          "description": "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends, so stage 0 is the reboiler when there is one **and the count is the derived one, not a declared `number_of_stages`**: `packed_height` replaces it, which is why this entry declares no stage count of its own",
+          "description": "the stage each feed enters, one entry per feed beside `feed_n`/`feed_z`/`feed_p`/`feed_t`, 0-based over the trays including the ends. **The count is the derived one**: `packed_height` replaces a declared stage count, which is why this entry declares none",
           "dimension": "dimensionless",
           "kind": "quantity",
           "name": "feed_stage",
@@ -3854,7 +3854,7 @@
           "values": []
         },
         {
-          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one. **An absorber has no ends** - the constructor passes `false, false` - so `setReactive(true)` flags every stage, which the capture's `reactive_tray_flags` prints as `11111`",
+          "description": "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash`. **An absorber has no ends**, so `setReactive(true)` flags every stage - the capture prints `11111`",
           "dimension": null,
           "kind": "boolean",
           "name": "reactive",

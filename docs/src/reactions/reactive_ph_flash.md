@@ -8,7 +8,7 @@
 
 **NeqSim master `ReactiveMultiphasePHflash`**
 
-`solveEnthalpySpec` ported as the loop, with the inner step left to `reactions.reactive_tp_flash` and the enthalpy to `azoth-eos`' `molar_enthalpy_entropy`. The entropy-specified variant and the `NR = 0` delegation to a standard PH flash are not ported.
+`solveEnthalpySpec` ported as the loop, with the inner step left to `reactions.reactive_tp_flash` and the enthalpy to `azoth-eos`' `molar_enthalpy_entropy`. The entropy-specified variant and the `NR = 0` delegation to a standard PH flash are owed, and `ROADMAP.md` names both.
 
 
 ## Algorithm
@@ -28,7 +28,7 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `components` | - | the substances the fluid is made of, by name. **A charged one is refused**, because the inner flash's ionic branch is not ported. |
+| `components` | - | the substances the fluid is made of, by name. **A charged one is refused**: the inner flash's phases are neutral, and `ROADMAP.md` names the ionic branch it owes. |
 | `cubic` | srk / pr | *Optional.* the cubic the fluid is flashed with, and the one its inner `reactions.reactive_tp_flash` is called with. **Omitted means `srk`**, which is what every captured row is and what the class flashes; `pr` is the cubic the process layer's streams carry. |
 | `T` | K | the temperature the search starts from. It is not a bound and not a guess at the answer: the loop is a secant, and where the enthalpy curve is not monotone the path decides which of its crossings is found. |
 | `P` | Pa | absolute pressure, held fixed while the temperature moves. It sets the standard state the potentials are reduced against and it is the state the cubic is evaluated at. |

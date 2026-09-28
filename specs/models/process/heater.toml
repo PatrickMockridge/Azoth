@@ -10,7 +10,7 @@ assumptions = [
     "**the duty is W and the enthalpy is per mole, and they meet because a process fluid's moles are one second of flow.** `run` adds `getDuty()` (W) to `getEnthalpy()` (J) directly; here the shift is `duty / inlet_n` in J/mol, stated rather than inherited.",
     "`pressure_drop` is applied to the inlet and the flash runs at the pressure it leaves, before the temperature or the enthalpy is set - `run` sets the pressure first, and an explicit outlet pressure (which this palette entry does not declare) would override the drop rather than add to it.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `Heater` also carries a `runTransient`, a mechanical design, an electrical and an instrument design, a utility specification and bounded outlet-temperature limits. **None is ported**: this is the steady-state arithmetic the palette's three parameters reach.",
+    "NeqSim's `Heater` also carries a `runTransient`, a mechanical design, an electrical and an instrument design, a utility specification and bounded outlet-temperature limits. **None is here**: this is the steady-state arithmetic the palette's three parameters reach.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/heatexchanger/Heater.java` is the port source, through its `run`.",

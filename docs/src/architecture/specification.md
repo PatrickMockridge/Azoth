@@ -62,6 +62,15 @@ python tools/check_manifest.py
 format is specified in [Spec files](./spec-files.md). It names the inputs and outputs with
 their units, the valid range, the assumptions that are *not* checked, and the cases.
 
+**A value the port does not carry is declared, not described.** A model spec carries an
+`[[unported]]` array: one row per refused value, naming the input, the value and the NeqSim
+class that would close it, and `tools/check_unported.py` holds every row to *both*
+implementations — so a row neither refuses fails the build, and a row one refuses and the
+other carries is the divergence the field was built to make visible. The models declare
+**21 refusals**, and no spec may say the same thing in a sentence instead,
+because a sentence is a claim nothing holds: it drifts from the code silently, and the same
+fact written twice in two files is how a corrected claim left its twin lying.
+
 **Two kernels are hand-written, and only two.** One Rust file and one Python file, and the
 spec names both in its `implementations` block; every calculation in `specs/` names both.
 They are **mirrors**: both implement the same declared arithmetic, hand-written and never

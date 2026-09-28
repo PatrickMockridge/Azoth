@@ -80,5 +80,5 @@ declared checks *that call* could not evaluate.
 ## References
 
 - Taleb, D.; Ponche, J. L.; Mirabel, P. (1996). "Vapor pressures in the ternary system water-nitric acid-sulfuric acid at low temperature." Journal of Geophysical Research 101(D20), 25967-25977.
-- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEVanLaarAcid` and `NitricSulfuricAcidVaporPressure` are the port source; the latter documents an engineering adjustment to its pure-HNO3 vapour pressure coefficients, which is not ported because the vapour pressure is not.
+- NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `ComponentGEVanLaarAcid` and `NitricSulfuricAcidVaporPressure` are the port source; the latter's engineering adjustment to its pure-HNO3 vapour pressure coefficients is `eos.nitric_sulfuric_acid_vapor_pressure`'s.
 

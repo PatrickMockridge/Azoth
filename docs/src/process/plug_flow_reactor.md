@@ -110,7 +110,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 
-- **`ReactorMechanicalDesign`, `runTransient` and the JSON profile export are not ported.** The class names no paper; its schemes are the textbook RK4 and Euler it writes out itself.
+- **`ReactorMechanicalDesign`, `runTransient` and the JSON profile export are owed**, and `ROADMAP.md` names them. The class names no paper; its schemes are the textbook RK4 and Euler it writes out itself.
 
 
 ## Cases

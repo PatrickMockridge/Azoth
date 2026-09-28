@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/absorber/AbsorptionColumn.java**
 
-Its constructor and its two inlet methods. The class adds no arithmetic to `DistillationColumn.run`; what it adds is a gas-load-factor design surface, which is declared and not ported.
+Its constructor and its two inlet methods. The class adds no arithmetic to `DistillationColumn.run`; what it adds is a gas-load-factor design surface, which `ROADMAP.md` records among the classes still owed.
 
 
 ## What this model is
@@ -36,7 +36,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `temperature_tolerance` | K | the convergence gate on the mean tray-temperature change. Where a solve stops is what its answer is, so this is a measurement and not a knob: at the classes' own `1e-2` K the two libraries stop at two different points on a slowly-converging sequence. |
 | `max_iterations` | dimensionless | the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named. |
 | `murphree_efficiency` | dimensionless | *Optional.* the column-wide Murphree tray efficiency. **`AbsorptionColumn.applyMurphreeCorrection` is an override**, not the base's: both phases are blended and the flash's vapour moles are re-allocated across the components. |
-| `component_murphree_efficiency` | dimensionless | *Optional.* one efficiency per component, which `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair - the per-tray-per-component map the class's other overload writes has no palette spelling and is not carried. |
+| `component_murphree_efficiency` | dimensionless | *Optional.* one efficiency per component, which `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair - the class's other overload writes a per-tray-per-component map this entry has no spelling for. |
 | `max_allowable_gas_load_factor` | dimensionless | *Optional.* the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit`, `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit` read it and none of them is on the run path. The class defaults it to 0.15. |
 | `reactive` | - | *Optional.* **whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`, inherited and not overridden. The ends never do. Measured: the section is either the plain flash or a divergence - see the notes. |
 | `reactive_start_tray` | dimensionless | *Optional.* the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last. **Both bounds or neither.** An absorber has no ends, so every stage is a middle tray. |
@@ -122,9 +122,9 @@ holds the declaration and the two languages to each other.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
 
-- **the tray hydraulics and the mechanical design are not ported**: `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them, and this entry declares no parameter they read.
+- **the tray hydraulics and the mechanical design are owed**: `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them, this entry declares no parameter they read, and `ROADMAP.md` names both.
 
-- **it is not the refused family**: `SimpleAbsorber`, `SimpleTEGAbsorber`, `SimpleAmineAbsorber` and `WaterStripperColumn` carry the MDEA/CO2 and TEG/water chemistry, which is unported, and porting this id closes nothing about that.
+- **it is not the refused family**: `SimpleAbsorber`, `SimpleTEGAbsorber`, `SimpleAmineAbsorber` and `WaterStripperColumn` carry the MDEA/CO2 and TEG/water chemistry, and porting this id closes nothing about that.
 
 
 ## Cases

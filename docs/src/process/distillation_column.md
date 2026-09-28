@@ -156,12 +156,12 @@ holds the declaration and the two languages to each other.
 - **`tray_murphree_efficiency` is the per-stage override, and the resolution is exact.** `getEffectiveMurphreeEfficiency` reads the stage's own entry when it is present and not `NaN`, and the column-wide value otherwise - so an all-`NaN` vector is that value to the last digit.
 - **the override's own endpoint is the `0_85` divergence again.** `process_column_efficiency.tsv` puts `0.6` everywhere with stage 3 at `0.85`: NeqSim lands `321.44` K on tray 3 and this port `302.19`, the column-wide state to `1.3e-3` K.
 - **two of `solver_type`'s ten strategies are ported**: `direct_substitution`, the class's own default, and `naphtali_sandholm`, the simultaneous MESH correction. The other eight are refused by name.
-- **the eight unported strategies are a measured non-port.** On the captured binary column all ten land within `2.5e-6` K of each other on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states - each one where a solve stopped.
+- **the eight strategies this spec's rows refuse are a measured non-port.** On the captured binary column all ten land within `2.5e-6` K of each other on tray 1 and within `1.1e-7` relative on the distillate, on three bit-identical states - each one where a solve stopped.
 - **four of them land on the substitution core's own state exactly**: `inside_out`, `matrix_inside_out`, `mesh_residual`, and `wegstein`, which reports `direct_substitution` because it fell back to it.
 - **`auto` reports `damped_substitution`** on the captured binary column although `candidateSolvers` lists the mesh solve first: it is a ladder over the others rather than a method.
 - **the second solve linearises the whole column at once**: `N` tray blocks of `C + 2` variables, `C` component balances, the energy equation and `sum(K x) = 1`, with a finite-difference Jacobian and a block-tridiagonal solve.
 - **its seed is the class's warm start**: the substitution core's converged trays, which `initializeTrayStateFromColumn` maps onto the MESH variables.
-- **the class's cold seed is not ported**, and that is measured: without `runBostonSullivanRefinement` its first Newton step moves the variables by `1e11` times their own size.
+- **the class's cold seed is owed, and `ROADMAP.md` names it**: `runBostonSullivanRefinement`, declined on a measurement - without it the class's first Newton step moves the variables by `1e11` times their own size.
 - **both implementations carry it**: the Python reference is `_column_mesh.py`, and the case `binary_mesh_solve` pins the pair against the capture's own `naphtali_sandholm` row.
 - **`AUTO` is a ladder and not one method** - the parking note's finding - so it is refused with them rather than silently resolved.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
@@ -171,7 +171,7 @@ holds the declaration and the two languages to each other.
 - **both recycles are ported, and the pair is refused on a measurement.** A specified draw *flow* is a candidate search and a pumparound return is a fixed point; stating both puts the class on `solveWithColumnTearVariables`' coordinated loop, which `process_column_tear.tsv` shows does not converge.
 - **the coordinated loop fails by orders**: 18 of 30 candidates rejected and a `4.4e-4` residual on the draw alone, against `0.447` with an empty candidate history once the pumparound is beside it.
 - **the class's own liquid-and-pumparound row is where its balance does not close**: `RECONCILED_PRODUCTS`, a `2.449` kg/hr imbalance, and products `0.0200` mol/s above this port's, which closes to `9.7e-9`.
-- **the tray hydraulics and the mechanical design are not ported**: `TrayHydraulicsCalculator` and `DistillationColumnMechanicalDesign` are the classes that would close them, and neither is a parameter this entry declares.
+- **the tray hydraulics and the mechanical design are owed**: `TrayHydraulicsCalculator` and `DistillationColumnMechanicalDesign` are the classes that would close them, neither is a parameter this entry declares, and `ROADMAP.md` names both.
 
 
 ## Cases

@@ -3,7 +3,7 @@ name = "Fugacity coefficients of a Wilson activity-coefficient liquid"
 kind = "direct"
 assumptions = [
     "this is NeqSim's `PhaseGEWilson` liquid: `phi_i = gamma_i P0_i / P`, which is what `ComponentGE.fugcoef` sets and what no GE phase overrides. There is no cubic in it - an activity-coefficient phase's non-ideality is `gamma`, and its standard state is the pure liquid at the state's temperature.",
-    "this is the *solvent* branch of `ComponentGE.fugcoef`. Any other `REFERENCESTATETYPE` gives that method a Henry's-law coefficient instead, which is not ported - 51 of the databank's 286 substances are tagged so, and a phase over one is refused.",
+    "this is the *solvent* branch of `ComponentGE.fugcoef`: the branch the substances the database tags `solvent` select, which is water, the alcohols and the glycols. Any other `REFERENCESTATETYPE` selects that method's Henry's-law coefficient instead, and `ROADMAP.md` names what would close it.",
     "`gamma_i` is `eos.wilson_activity_coefficients`', from the paraffin-wax Wilson correlation on each component's molar mass and critical temperature, and `P0_i` is `eos.antoine_vapor_pressure`'s. Neither is recomputed here.",
     "NeqSim supplies this coefficient and the oracle reads its own: commit `c5ec5fb` (PR #3774, closing upstream #3770) stores `gamma` in `getWilsonActivityCoefficient` and delegates `getGamma` to it, so `ComponentGE.fugcoef` reads a published value where it used to read zero.",
     "**a component whose Antoine data upstream has retracted is refused**, not evaluated: `nc12` and the acids are among the 93 rows that carried one repeated filler tuple and that `83b64e5` (PR #3775) has since marked `none`. A phase over one raises `PropertyUnavailable`.",

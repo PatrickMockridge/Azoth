@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/distillation/RateBasedPackedColumn.java**
 
-`solveFixedPointProfile`, `calculateSegment`, `calculateTransportSnapshot`, `calculateInterfaceEquilibrium`, `applyInterphaseHeatTransfer` and the ten `DEFAULT_*` constants, ported verbatim. The equation-oriented and simultaneous-residual solvers are not ported, and the enums name them.
+`solveFixedPointProfile`, `calculateSegment`, `calculateTransportSnapshot`, `calculateInterfaceEquilibrium`, `applyInterphaseHeatTransfer` and the ten `DEFAULT_*` constants, ported verbatim, with the two solvers this spec's rows refuse named by the enums they belong to.
 
 
 ## Algorithm

@@ -67,7 +67,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the motive nozzle's efficiency was undeclared and is now a parameter.** `run` reads `efficiencyIsentropic` - default `0.75`, its own setter - with only the other three efficiencies declared beside it, so the entry described a machine whose largest loss had no name.
 - **a stream that carries nothing is returned as the motive stream**, which is `run`'s own guard rather than a division by zero: with no mass flow at all the class clones the motive inlet and stops.
 - **the class's own diagnostics are not outputs.** The three ratios, the area ratio, the critical back pressure and the Mach numbers are `run`'s instruments; the record carries `n`, `z`, `P`, `T` and `h`, and the three ratios are readable off it. The areas and lengths are mechanical design.
-- **the two phases of the class's own size are not here**: `MechanicalDesign` is not ported, so `updateDesign`'s areas, diameters, lengths and volumes are absent rather than guessed.
+- **the class's own size is not computed here**: `updateDesign`'s areas, diameters, lengths and volumes are absent rather than guessed, and `ROADMAP.md` names `MechanicalDesign` among the classes still owed.
 - the fluids are PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
 
 ## Cases

@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/separator/Separator.java**
 
-`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless the class re-runs it. **`oilInGas` and `waterInGas` are not carried**: no oil or aqueous phase exists here.
+`run`: the pressure less `pressureDrop`, a `TPflash` at the feed's temperature or a `PHflash` at the `heatInput` enthalpy, the entrainment calls, each outlet from its flash phase unless the class re-runs it. **`oilInGas` and `waterInGas` are absent**: no oil or aqueous phase exists here.
 
 
 ## What this model is
@@ -59,7 +59,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the entrainment acts only where both phases exist.** `addPhaseFractionToPhase` returns unchanged unless the from-phase and to-phase are both present, so a single-phase feed is untouched whatever the fraction says.
 - **`efficiency` is not a parameter here.** `Separator` carries the field and a setter, and `run` never reads it - the class says so at `Separator.java:575`. The palette entry used to declare it, which is a parameter nothing could honour.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`, **none ported**. `oil_in_gas` and `water_in_gas` are not carried: no oil or aqueous phase exists here, and they are the only fields that re-run the *vapour*.
+- NeqSim's `Separator` also carries a mechanical design, a capacity check, a droplet-performance calculator and a `runTransient`, **none of it here**. `oil_in_gas` and `water_in_gas` are absent: no oil or aqueous phase exists here, and they are the only fields that re-run the *vapour*.
 
 ## Cases
 

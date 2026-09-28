@@ -18,7 +18,7 @@ assumptions = [
     "**`calculateJ`'s javadoc and its code disagree on three signs.** The comment subtracts every term; the code subtracts the first and adds the other three. The code is ported.",
     "**a singular Newton system is refused**, which costs the one capture row where two species meet three active balances. The class answers that through `SimpleMatrix.pseudoInverse`.",
     "**the fluid is PR with the classic mixing rule**, because `Stream::mixture()` has no other route. The class carries no cubic of its own, so the oracle is built on PR too.",
-    "**not ported**: the pseudo-inverse, the Armijo line search and the Tikhonov regularisation - both `false` by default - plus `ReactorMechanicalDesign` and `runTransient`.",
+    "**still owed, and named in `ROADMAP.md`**: the pseudo-inverse, the Armijo line search and the Tikhonov regularisation - both `false` by default - plus `ReactorMechanicalDesign` and `runTransient`.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/reactor/GibbsReactor.java` is the port source, through `run`, `solveGibbsEquilibrium`, `calculateJacobian` and `performIterationUpdate`.\n",
