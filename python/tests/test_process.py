@@ -362,3 +362,98 @@ def test_the_document_a_session_holds_writes_and_reads_back() -> None:
     document = process.Session(session.document)
     assert "purge" in document.document
     assert document.ok is True
+
+
+#: The captured binary column, as the three column siblings' shared base state.
+def _binary_args() -> dict[str, object]:
+    """The binary column's own inputs, which the draw surface is added to."""
+    q = azoth.ureg.Quantity
+    return dict(
+        components=["methane", "n-butane"],
+        feed_n=q(7.490704036290964, "mol/s"),
+        feed_z=[0.5, 0.5],
+        feed_p=q(20.0, "bar"),
+        feed_t=q(300.0, "K"),
+        number_of_stages=4,
+        feed_stage=2,
+        has_reboiler=True,
+        has_condenser=True,
+        top_pressure=q(19.0, "bar"),
+        bottom_pressure=q(20.0, "bar"),
+        reboiler_temperature=q(373.15, "K"),
+        condenser_temperature=q(253.15, "K"),
+    )
+
+
+#: **The draw surface's three fraction vectors, each drawing from a different tray.** They are
+#: one group because a column reads them together - `split_draws` takes all three - and each is
+#: stated at a tray of its own so that a *transposition* between them is visible in the answer.
+DRAW_VECTORS: dict[str, list[float]] = {
+    "gas_side_draw_fractions": [0.0, 0.1, 0.0, 0.0, 0.0, 0.0],
+    "liquid_side_draw_fractions": [0.0, 0.0, 0.0, 0.1, 0.0, 0.0],
+    "pumparound_fractions": [0.0, 0.0, 0.0, 0.0, 0.1, 0.0],
+}
+
+
+def test_the_draw_vectors_reach_the_kernel_one_tray_each() -> None:
+    """**The transposition test item 7 calls its own mitigation.**
+
+    The three siblings take forty-six, thirty-eight and thirty-eight positional parameters
+    through hand-written pyo3 surfaces, and the failure this holds against is two optional
+    parameters *swapped* - which no type checker sees, because all fifteen are ``Option``s of
+    compatible shape. Each vector here draws from a tray of its own, so a swap between any two
+    puts a draw on the wrong tray and the assertion below names it.
+    """
+    out = process.distillation_column(**_binary_args(), **DRAW_VECTORS)
+
+    for name, expected_tray in (
+        ("gas_side_draw_n", 1),
+        ("liquid_side_draw_n", 3),
+        ("pumparound_n", 4),
+    ):
+        drawn = [float(v.to("mol/s").magnitude) for v in getattr(out, name)]
+        assert drawn[expected_tray] > 0.0, f"{name} did not reach tray {expected_tray}"
+        assert sum(1 for v in drawn if v > 0.0) == 1, f"{name} drew from more than one tray"
+
+    # And a column with no draws is not this column, which is what says the group is read at all.
+    plain = process.distillation_column(**_binary_args())
+    assert plain.distillate_n != out.distillate_n
+
+
+def test_a_swapped_pair_of_draw_vectors_is_a_different_column() -> None:
+    """**Two of the three swapped, and the answer moves.** The gas and liquid vectors are both
+    `dimensionless` vectors of the same length, so a transposition between them is exactly the
+    failure a type checker cannot see; stating vapour where liquid is asked for puts a vapour
+    draw on a liquid tray, and the trays are far apart enough that the column answers
+    differently."""
+    straight = process.distillation_column(**_binary_args(), **DRAW_VECTORS)
+    swapped = process.distillation_column(
+        **_binary_args(),
+        gas_side_draw_fractions=DRAW_VECTORS["liquid_side_draw_fractions"],
+        liquid_side_draw_fractions=DRAW_VECTORS["gas_side_draw_fractions"],
+        pumparound_fractions=DRAW_VECTORS["pumparound_fractions"],
+    )
+    assert swapped.distillate_n != straight.distillate_n, (
+        "the gas and liquid draw vectors were swapped and the column did not move, so the two "
+        "are not reaching their own parameters"
+    )
+
+
+def test_a_pumparound_and_a_side_draw_flow_are_refused_together() -> None:
+    """**The two outer loops are separate paths**, which `DistillationColumn` states itself:
+    `hasPumparoundTearVariablesOnly` and `hasSingleSideDrawFlowSpecificationOnly` are distinct
+    questions, and a column answering both is the coordinated tear this port does not carry.
+    Both groups have to be stated *completely* to reach the refusal, which is why each is here
+    in full."""
+    q = azoth.ureg.Quantity
+    with pytest.raises(azoth.InvalidInputError, match="coordinated tear"):
+        process.distillation_column(
+            **_binary_args(),
+            pumparound_return_tray=1,
+            pumparound_draw_tray=3,
+            pumparound_draw_fraction=0.1,
+            pumparound_temperature_drop=q(5.0, "K"),
+            side_draw_flow_tray=2,
+            side_draw_flow_phase="liquid",
+            side_draw_flow_target=q(0.02, "kg/s"),
+        )

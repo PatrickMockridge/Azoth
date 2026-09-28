@@ -174,12 +174,14 @@ impl CalcResult for DistillationColumnResult {
 /// because a length is a statement about the column and not a value.
 ///
 /// # Errors
-/// [`AzothError::InvalidInput`] for a per-stage vector whose length is not the stage count, which
-/// `DistillationColumn.setMurphreeEfficiencies` refuses in its own words.
+/// [`AzothError::InvalidInput`] for a per-stage vector whose length is not the **tray** count,
+/// which `DistillationColumn.setMurphreeEfficiencies` refuses in its own words. A tray is a
+/// stage *or* an end - `numberOfTrays` counts both - so an override on the reboiler or the
+/// condenser is a legitimate entry and the vector is one longer per end.
 pub fn build_murphree(
     column_wide: Option<f64>,
     per_stage: Option<&[f64]>,
-    number_of_stages: usize,
+    tray_count: usize,
 ) -> Result<Option<Murphree>> {
     if column_wide.is_none() && per_stage.is_none() {
         return Ok(None);
@@ -188,7 +190,7 @@ pub fn build_murphree(
         column_wide: Murphree::clamp(column_wide.unwrap_or(1.0)),
         per_stage: per_stage.map(|values| values.iter().copied().map(Murphree::clamp).collect()),
     };
-    Ok(Some(efficiency.checked(number_of_stages)?.clone()))
+    Ok(Some(efficiency.checked(tray_count)?.clone()))
 }
 
 /// Solve a distillation column.
@@ -259,10 +261,13 @@ pub fn distillation_column(
         side_draw_flow_tolerance,
         side_draw_flow_max_iterations,
     )?;
+    // **The length is the tray count, not the stage count.** `setMurphreeEfficiencies` is held
+    // to `numberOfTrays`, which counts the ends too - so a six-tray column takes six overrides
+    // whatever its middle stage count is.
     let murphree_efficiency = build_murphree(
         murphree_efficiency,
         tray_murphree_efficiency,
-        number_of_stages,
+        number_of_stages + usize::from(has_reboiler) + usize::from(has_condenser),
     )?;
     // **The end is the parameter's name, not a value.** `ColumnSpecification` carries a
     // location - TOP or BOTTOM - and the class holds exactly two of them, so a declaration
