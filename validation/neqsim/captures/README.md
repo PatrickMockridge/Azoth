@@ -118,6 +118,22 @@ packing geometry - so this probe states them and prints both sides.
 java -cp .:neqsim-f0c7436.jar PackingProbe > captures/packing_probe.tsv
 ```
 
+**`PackingProbe size` is the second capture it writes, and the one the sizing path needs.** The
+four rows above *set* a diameter, and `PackedColumn`'s own capture reaches sizing only through a
+solved middle tray, so `sizeColumnDiameter` - the trial flood at **1.0 m**, the design velocity
+from `designFloodFraction`, the area from the vapour's volumetric flow, and the round up to the
+class's standard-diameter table - was measured by nothing. Five states: the absorber, structured
+packing, a high liquid load, a light load that reaches the table's **0.3 m floor**, and the
+absorber again at a `0.5` flood fraction. **That last pair is the measurement of the one claim** -
+the flood fraction moves the sized diameter from `0.4` to `0.5` m and leaves the calculation
+untouched - and **the light and high-liquid rows share a flooding velocity to the last digit**,
+which is the Eckert fit's `FLV` clamped at its ceiling of `5` on both.
+
+```bash
+java -cp .:neqsim-f0c7436.jar PackingProbe size \
+  > captures/packing_sizing_probe.tsv
+```
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are

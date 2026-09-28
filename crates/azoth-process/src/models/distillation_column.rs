@@ -193,7 +193,14 @@ pub fn build_murphree(
     Ok(Some(efficiency.checked(tray_count)?.clone()))
 }
 
-/// Solve a distillation column.
+/// **Solve a distillation column and hand back the kernel's own outcome**, which is what a
+/// subclass reads after `super.run(id)`.
+///
+/// `PackedColumn.run` is `super.run(id)` and then `calcPackingHydraulics()`, and the second step
+/// reads the **trays** - the middle one's flows, densities, viscosity and surface tension. A
+/// record carries each tray's temperature, pressure and two flows but not its compositions, so
+/// the id that inherits this one needs the outcome rather than the record. [`distillation_column`]
+/// is the record this returns to every other caller.
 ///
 /// # Errors
 /// [`azoth_core::AzothError::InvalidInput`] for a stage count or a feed stage outside the
@@ -203,7 +210,7 @@ pub fn build_murphree(
 /// [`azoth_core::AzothError::SolverNotConverged`] when the solve or a specification misses
 /// its gate.
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
-pub fn distillation_column(
+pub(crate) fn distillation_column_outcome(
     components: &[String],
     feed_n: f64,
     feed_z: &[f64],
@@ -245,7 +252,7 @@ pub fn distillation_column(
     pumparound_temperature_drop: Option<f64>,
     pumparound_tolerance: Option<f64>,
     pumparound_max_iterations: Option<usize>,
-) -> Result<DistillationColumnResult> {
+) -> Result<(kernel::ColumnOutcome, Vec<Warning>)> {
     let pumparounds = build_pumparound_returns(
         pumparound_return_tray,
         pumparound_draw_tray,
@@ -392,6 +399,100 @@ pub fn distillation_column(
     // from the result whether they ran reactively.
     warnings.extend(out.warnings.iter().cloned());
 
+    Ok((out, warnings))
+}
+
+/// Solve a distillation column, as its record.
+///
+/// # Errors
+/// Every error [`distillation_column_outcome`] raises.
+#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
+pub fn distillation_column(
+    components: &[String],
+    feed_n: f64,
+    feed_z: &[f64],
+    feed_p: Pressure,
+    feed_t: ThermodynamicTemperature,
+    number_of_stages: usize,
+    feed_stage: usize,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: Pressure,
+    bottom_pressure: Pressure,
+    reboiler_temperature: Option<ThermodynamicTemperature>,
+    condenser_temperature: Option<ThermodynamicTemperature>,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    murphree_efficiency: Option<f64>,
+    tray_murphree_efficiency: Option<&[f64]>,
+    solver_type: Option<&str>,
+    top_specification_type: Option<&str>,
+    top_specification_target: Option<f64>,
+    top_specification_component: Option<&str>,
+    bottom_specification_type: Option<&str>,
+    bottom_specification_target: Option<f64>,
+    bottom_specification_component: Option<&str>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
+    gas_side_draw_fractions: Option<&[f64]>,
+    liquid_side_draw_fractions: Option<&[f64]>,
+    pumparound_fractions: Option<&[f64]>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
+) -> Result<DistillationColumnResult> {
+    let (out, warnings) = distillation_column_outcome(
+        components,
+        feed_n,
+        feed_z,
+        feed_p,
+        feed_t,
+        number_of_stages,
+        feed_stage,
+        has_reboiler,
+        has_condenser,
+        top_pressure,
+        bottom_pressure,
+        reboiler_temperature,
+        condenser_temperature,
+        temperature_tolerance,
+        max_iterations,
+        murphree_efficiency,
+        tray_murphree_efficiency,
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
+        gas_side_draw_fractions,
+        liquid_side_draw_fractions,
+        pumparound_fractions,
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
+    )?;
     Ok(DistillationColumnResult::of(&out, warnings))
 }
 
