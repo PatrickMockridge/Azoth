@@ -30,7 +30,7 @@ together.
 
 Usage:
     python tools/provenance.py                          # source provenance
-    python tools/provenance.py --tag v0.1.0 --artifact dist/*.whl
+    python tools/provenance.py --tag v0.1.1 --artifact dist/*.whl
     python tools/provenance.py --verify provenance.json # check a record
 """
 

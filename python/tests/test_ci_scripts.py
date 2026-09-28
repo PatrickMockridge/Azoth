@@ -121,10 +121,20 @@ def version_checker() -> ModuleType:
         sys.path.pop(0)
 
 
-def _version_tree(tmp_path: Path, cargo: str, pyproject: str, crates: dict[str, str]) -> Path:
-    """A repository just large enough for the check to read: two manifests and some crates."""
+def _version_tree(
+    tmp_path: Path,
+    cargo: str,
+    pyproject: str,
+    crates: dict[str, str],
+    initialiser: str = '__version__ = "0.1.0"\n',
+) -> Path:
+    """A repository just large enough for the check to read: two manifests, some crates, and the
+    package's own `__version__`."""
     (tmp_path / "Cargo.toml").write_text(cargo, encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+    package = tmp_path / "python" / "src" / "azoth"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text(initialiser, encoding="utf-8")
     for name, text in crates.items():
         crate = tmp_path / "crates" / name
         crate.mkdir(parents=True)
@@ -144,12 +154,17 @@ def test_two_versions_that_agree_are_no_problems(tmp_path: Path) -> None:
 
 def test_a_bumped_wheel_and_an_unbumped_binary_are_reported(tmp_path: Path) -> None:
     """**The release this exists to stop**: a wheel published as one version whose own MCP server
-    reports another, with nothing in the build able to notice."""
+    reports another, with nothing in the build able to notice.
+
+    The package's `__version__` is set to agree with the bumped `pyproject.toml` so this case
+    isolates the manifest pair; a `__version__` left behind is its own case below.
+    """
     root = _version_tree(
         tmp_path,
         CARGO,
         '[project]\nname = "azoth-engine"\nversion = "0.2.0"\n',
         {"azoth-core": TAKES_IT},
+        initialiser='__version__ = "0.2.0"\n',
     )
     (problems,) = version_checker().problems(root)
     assert "0.2.0" in problems and "0.1.0" in problems
@@ -171,6 +186,26 @@ def test_a_manifest_with_no_version_is_reported_rather_than_assumed(tmp_path: Pa
     root = _version_tree(tmp_path, "[workspace]\n", PYPROJECT, {})
     (problems,) = version_checker().problems(root)
     assert "no `[workspace.package] version`" in problems
+
+
+def test_a_stale_package_version_is_reported(tmp_path: Path) -> None:
+    """**The third hand, and the one nothing held.** A release that bumps the two manifests and
+    not `azoth.__version__` ships a package whose own version disagrees with the index."""
+    root = _version_tree(
+        tmp_path,
+        '[workspace]\n[workspace.package]\nversion = "0.1.1"\n',
+        '[project]\nname = "azoth-engine"\nversion = "0.1.1"\n',
+        {"azoth-core": TAKES_IT},
+        initialiser='__version__ = "0.1.0"\n',
+    )
+    (problems,) = version_checker().problems(root)
+    assert "0.1.1" in problems and "0.1.0" in problems
+
+
+def test_a_package_with_no_version_is_reported_rather_than_assumed(tmp_path: Path) -> None:
+    root = _version_tree(tmp_path, CARGO, PYPROJECT, {}, initialiser="# nothing here\n")
+    (problems,) = version_checker().problems(root)
+    assert "states no `__version__`" in problems
 
 
 def test_the_version_gate_passes_on_this_tree() -> None:

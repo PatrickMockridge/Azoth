@@ -70,7 +70,7 @@ from azoth.core.result import FlowRegime
 from azoth.core.units import Q, ureg
 from azoth.core.warnings import Warning, WarningCode
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Imported last: `azoth.hydraulics` pulls in the dispatch layer, which imports
 # this package's submodules. Keeping it at the bottom means everything it needs

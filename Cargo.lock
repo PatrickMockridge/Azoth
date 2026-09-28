@@ -60,7 +60,7 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "azoth-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-eos",
@@ -75,7 +75,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "thiserror",
  "uom",
@@ -83,7 +83,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-eos"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-test-support",
@@ -95,7 +95,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-hydraulics"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-test-support",
@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-process"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-eos",
@@ -121,7 +121,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-python"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-eos",
@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-reactions"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-eos",
@@ -150,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-standards"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-test-support",
@@ -160,14 +160,14 @@ dependencies = [
 
 [[package]]
 name = "azoth-test-support"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
 ]
 
 [[package]]
 name = "azoth-thermal"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-test-support",
@@ -176,7 +176,7 @@ dependencies = [
 
 [[package]]
 name = "azoth-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "azoth-core",
  "azoth-process",
