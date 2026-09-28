@@ -82,24 +82,29 @@ def test_a_capture_has_one_block_per_case(model: str) -> None:
     comparison: the check stays exact, and the block count it holds to is the capture's
     own. The blocks the cases *do* name are checked one by one below, so the two together
     say which rows the cases cover and not merely how many.
+
+    **A model may read more than one capture**, so the count is taken per capture rather
+    than per model: a probe that prints a second state under settings the first does not
+    have is its own file, and `process.rate_based_packed_column` reads two - the ten
+    solver states on one cubic and the two mass-transfer correlations on the other. Held
+    per model, the second file's blocks would have had to be counted against the first
+    file's cases.
     """
-    declared = next(m for m in _models_gen.MODELS if m["id"] == model)["cases"]
-    captures = {c.capture for c in layers.LAYER_CASES if c.model == model}
-    assert len(captures) == 1, f"{model} reads more than one capture: {sorted(captures)}"
-    capture = captures.pop()
-    blocks = layers.capture_blocks(capture)
-    uncased = layers.UNCASED_ROWS.get(capture, 0)
-    assert len(blocks) == len(declared) + uncased, (
-        f"{capture} has {len(blocks)} block(s), {model} has {len(declared)} case(s) and "
-        f"{uncased} block(s) are declared uncased; the pairing is positional, so the "
-        f"three move together"
-    )
-    named = [c.block for c in layers.LAYER_CASES if c.model == model]
-    assert len(set(named)) == len(named), f"{model} names a block twice: {named}"
-    assert len(set(range(len(blocks))) - set(named)) == uncased, (
-        f"{capture} has {sorted(set(range(len(blocks))) - set(named))} block(s) no case "
-        f"names and {uncased} are declared uncased"
-    )
+    mine = [layer_case for layer_case in layers.LAYER_CASES if layer_case.model == model]
+    for capture in sorted({layer_case.capture for layer_case in mine}):
+        blocks = layers.capture_blocks(capture)
+        named = [layer_case.block for layer_case in mine if layer_case.capture == capture]
+        uncased = layers.UNCASED_ROWS.get(capture, 0)
+        assert len(set(named)) == len(named), f"{capture}: {model} names a block twice: {named}"
+        assert len(blocks) == len(named) + uncased, (
+            f"{capture} has {len(blocks)} block(s), {model} names {len(named)} of them and "
+            f"{uncased} block(s) are declared uncased; the pairing is positional, so the "
+            f"three move together"
+        )
+        assert len(set(range(len(blocks))) - set(named)) == uncased, (
+            f"{capture} has {sorted(set(range(len(blocks))) - set(named))} block(s) no case "
+            f"names and {uncased} are declared uncased"
+        )
 
 
 @pytest.mark.parametrize(

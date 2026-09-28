@@ -654,28 +654,51 @@ fn neither_refused_solver_converges_on_the_classs_own_state() {
     );
 }
 
-/// **The refusals name the measurement**, so a caller who states one of the two hears where the
-/// number behind the refusal is rather than that the port declined.
+/// **A refusal reads the declaration rather than carrying its own sentence**, and what it
+/// reads is the row the spec's `[[unported]]` array declares.
+///
+/// The numbers behind the refusal - `1.76` mol/s against a `1e-9` gate, `65.9` against
+/// `1e-6` - are the spec's own `description` of the two inputs, and the capture measures
+/// them. What travels through the code is the key, the class and the capture, which is
+/// what makes the two implementations comparable at all.
 #[test]
-fn both_refusals_name_the_capture_that_measures_them() {
+fn both_refusals_read_the_row_their_spec_declares() {
     use azoth_process::kernels::rate_based_packed_column::{ColumnSolver, SegmentSolver};
+    use azoth_process::unported;
 
-    let segment = SegmentSolver::parse("simultaneous_residual").expect_err("refused");
-    let segment = segment.to_string();
+    for (key, class) in [
+        (
+            "segment_solver=simultaneous_residual",
+            "RateBasedPackedColumn.SegmentSolver.SIMULTANEOUS_RESIDUAL",
+        ),
+        (
+            "column_solver=equation_oriented",
+            "RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED",
+        ),
+    ] {
+        let row = unported::row(key).unwrap_or_else(|| panic!("`{key}` has no declared row"));
+        assert_eq!(row.class, class, "the row for `{key}` names its class");
+        assert_eq!(row.model, "process.rate_based_packed_column");
+        assert!(
+            row.capture.ends_with("process_rate_based_solvers.tsv"),
+            "the row for `{key}` points at the capture"
+        );
+    }
+
+    let segment = SegmentSolver::parse("simultaneous_residual")
+        .expect_err("refused")
+        .to_string();
     assert!(
-        segment.contains("process_rate_based_solvers.tsv"),
-        "the segment refusal points at the capture: {segment}"
-    );
-    assert!(
-        segment.contains("1.76"),
-        "and carries the residual: {segment}"
+        segment.contains("SIMULTANEOUS_RESIDUAL")
+            && segment.contains("process_rate_based_solvers.tsv"),
+        "the segment refusal names the class and the capture: {segment}"
     );
 
-    let column = ColumnSolver::parse("equation_oriented").expect_err("refused");
-    let column = column.to_string();
+    let column = ColumnSolver::parse("equation_oriented")
+        .expect_err("refused")
+        .to_string();
     assert!(
-        column.contains("process_rate_based_solvers.tsv"),
-        "the column refusal points at the capture: {column}"
+        column.contains("EQUATION_ORIENTED") && column.contains("process_rate_based_solvers.tsv"),
+        "the column refusal names the class and the capture: {column}"
     );
-    assert!(column.contains("65.9"), "and carries the norm: {column}");
 }

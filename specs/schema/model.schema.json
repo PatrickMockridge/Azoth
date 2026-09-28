@@ -40,6 +40,11 @@
     "valid_range": { "$ref": "calc.schema.json#/properties/valid_range" },
     "assumptions": { "$ref": "calc.schema.json#/properties/assumptions" },
     "references": { "$ref": "calc.schema.json#/properties/references" },
+    "unported": {
+      "type": "array",
+      "description": "The values this model's inputs carry and the port does not. A row is held to both implementations: `tools/check_unported.py` refuses a declared row no code refuses, and a refusal no row declares. A value the port *does* carry needs no row - the absence is the statement.",
+      "items": { "$ref": "calc.schema.json#/$defs/unported" }
+    },
     "implementations": { "$ref": "calc.schema.json#/properties/implementations" }
   },
 

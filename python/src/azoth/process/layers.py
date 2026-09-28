@@ -1238,6 +1238,29 @@ LAYER_CASES: tuple[LayerCase, ...] = (
         block=7,
         identified_by=("#label", "zero_packed_height"),
     ),
+    # **The second capture this model reads**, and the one that holds the other mass-transfer
+    # correlation. `billet_onda` is the same state as `co2_water_absorber` on the same cubic,
+    # so it is declared uncased and the pair's ratio is what the model's own test reads;
+    # `billet_schultes` is the case, and it is what holds the two implementations to carrying
+    # the value at all - Python refused it until `check_unported.py` was built.
+    LayerCase(
+        model="process.rate_based_packed_column",
+        case="billet_schultes",
+        capture="process_rate_based_billet.tsv",
+        block=1,
+        identified_by=("#label", "billet_schultes"),
+        # The same band the Onda row takes and for the same reason, measured on this row:
+        # the four segments differ from the capture by between `1.6e-4` and `6.1e-4`
+        # relative - the largest of any dumped key - because the heat step's capacity rates
+        # go through the *phase mass* and the class's own `getMass()` carries the flash's
+        # rounding. A watt on a rate of order 2731 W is `3.7e-4` relative.
+        diagnostic=(
+            ("segment1_heat_transfer_rate_W", 1.0),
+            ("segment2_heat_transfer_rate_W", 1.0),
+            ("segment3_heat_transfer_rate_W", 1.0),
+            ("segment4_heat_transfer_rate_W", 1.0),
+        ),
+    ),
     # The specification rows. **Four are cases and three are declared uncased**, and the split
     # is the measurement: a purity, a flow rate, a duty and a purity at the *bottom* location
     # converge, while a recovery specification does not converge in NeqSim at all, a reflux
@@ -1742,6 +1765,10 @@ UNCASED_ROWS: dict[str, int] = {
     # three remaining CO2/water rows are the stripper and the two heights, which the port's own
     # test asserts as *directions* rather than as digits.
     "process_rate_based_packed_column.tsv": 7,
+    # And the correlation capture's one: `billet_onda` is `co2_water_absorber`'s state
+    # again, kept beside `billet_schultes` so the pair measures the multiplier, and it is
+    # evidence rather than an oracle because the port already reaches that state.
+    "process_rate_based_billet.tsv": 1,
     "process_heat_exchanger.tsv": 2,
     # The shortcut column's two degenerate rows. **Both are evidence rather than oracles**:
     # a reflux multiplier of exactly one leaves Gilliland's `X` at zero and the class returns

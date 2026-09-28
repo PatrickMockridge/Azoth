@@ -344,3 +344,14 @@ rationale = "likewise\n"
 [implementations]
 python = "azoth.process.rate_based_packed_column"
 rust = "azoth_process::rate_based_packed_column"
+
+[[unported]]
+parameter = "segment_solver"
+value = "simultaneous_residual"
+class = "RateBasedPackedColumn.SegmentSolver.SIMULTANEOUS_RESIDUAL"
+capture = "validation/neqsim/captures/process_rate_based_solvers.tsv"
+[[unported]]
+parameter = "column_solver"
+value = "equation_oriented"
+class = "RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED"
+capture = "validation/neqsim/captures/process_rate_based_solvers.tsv"

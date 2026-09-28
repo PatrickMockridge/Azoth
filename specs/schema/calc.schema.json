@@ -187,6 +187,60 @@
       "type": "string",
       "description": "Where a value came from, for a reader. Optional everywhere and validated nowhere: the engineer supplying data is responsible for knowing its provenance and whether they may use it."
     },
+    "unported_condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameter", "value"],
+      "properties": {
+        "parameter": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A declared input of the same spec, whose value decides whether the row applies."
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The member of that input's `values` that makes the row apply."
+        }
+      }
+    },
+    "unported": {
+      "type": "object",
+      "description": "One value the port does not carry, named so that both implementations can be held to it. A row is a symbol rather than a sentence on purpose: a fact that cannot be spelled as a member of a closed vocabulary is a fact this field does not declare.",
+      "additionalProperties": false,
+      "required": ["parameter", "class"],
+      "properties": {
+        "parameter": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The declared input that carries the value. `spec_lint` proves it is one."
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The refused member of that input's `values`, for an input whose values are enumerated. Absent when the refusal is unconditional, in which case the input is refused whatever it is given."
+        },
+        "class": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9_.]*$",
+          "description": "The NeqSim class or member that would close the gap, as a symbol with no sentence around it. This is the field that makes the row a declaration rather than an argument."
+        },
+        "capture": {
+          "type": "string",
+          "description": "The probe capture that measures the refusal. Nothing validates its truth; `check_doc_claims.py` proves the file exists."
+        },
+        "when": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/unported_condition" },
+          "description": "The other inputs whose values the refusal depends on. Used instead of `value` when the row applies to a state rather than to a member of one enumeration."
+        }
+      },
+      "oneOf": [
+        { "required": ["value"], "not": { "required": ["when"] } },
+        { "required": ["when"], "not": { "required": ["value"] } }
+      ]
+    },
     "value": {
       "description": "A scalar quantity, a flag, a symbolic value for an enum or string input, or a list of identifiers for list-valued inputs such as a fitting list.",
       "oneOf": [

@@ -27,6 +27,8 @@ pub mod recycle;
 pub mod segment;
 pub mod stream;
 pub mod unit_op;
+pub mod unported;
+pub mod unported_gen;
 
 pub use channel::{Direction, FieldType, Multiplicity, Port, Shape};
 pub use check::{

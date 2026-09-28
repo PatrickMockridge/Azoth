@@ -72,6 +72,12 @@ jobs:
       # `docs/claims.toml` declares the claims and holds no measured value, so a failure
       # is fixed on the page or in the tree and never by editing the declaration.
       - run: python tools/check_doc_claims.py
+      # What the port does not carry, held between the three places it is written: the
+      # spec's `[[unported]]` rows, the Rust refusals and the Python refusals. Measured,
+      # `billet_schultes_1999` was refused by the Python half, carried by the Rust half
+      # and declared ported by the spec, and no test could see it - the cross-language
+      # test compares cases, and no case stated that value.
+      - run: python tools/check_unported.py
       # The skill catalog against the SKILL.md files it points at, and each SKILL.md
       # against the required sections. Needs no `azoth` import, so it runs before the
       # library is built.

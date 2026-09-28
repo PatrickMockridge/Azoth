@@ -10,6 +10,7 @@ use crate::segment::{
     Fallbacks, ProfileSettings, SegmentResult, SnapshotSettings, solve_fixed_point_profile,
 };
 use crate::stream::Stream;
+use crate::unported;
 
 /// `MassTransferCorrelation`: which correlation the wetted area and the film coefficients come
 /// from.
@@ -59,17 +60,6 @@ pub enum ColumnSolver {
     /// `EQUATION_ORIENTED`, **not ported**: the column-wide damped Newton with homotopy
     /// continuation.
     EquationOriented,
-}
-
-/// A value the class carries but this port does not, named with the class behind it.
-fn refused(parameter: &str, value: &str, class: &str, detail: &str) -> AzothError {
-    AzothError::invalid_input(
-        parameter,
-        format!(
-            "`{value}` is not ported: `RateBasedPackedColumn.{class}` is the class that would \
-             close it. {detail}"
-        ),
-    )
 }
 
 impl MassTransferCorrelation {
@@ -131,17 +121,9 @@ impl SegmentSolver {
     pub fn parse(value: &str) -> Result<Self> {
         match value {
             "sequential_explicit" => Ok(Self::SequentialExplicit),
-            "simultaneous_residual" => Err(refused(
-                "segment_solver",
-                value,
-                "SegmentSolver.SIMULTANEOUS_RESIDUAL",
-                "It solves the flux residuals and the interfacial heat balance together, and \
-                 **NeqSim disables its own test** for the branch: `@Disabled(\"TODO: not working \
-                 per 19.06.2060\")`. **This port measured the branch rather than repeat the \
-                 comment**: on the class's own state it takes the full 20-pass cap at a `1.76` \
-                 mol/s outlet residual against a `1e-9` gate, with the vapour at `2.2e-29` K and \
-                 the liquid at `1.7` K - see `process_rate_based_solvers.tsv`.",
-            )),
+            "simultaneous_residual" => {
+                Err(unported::refuse("segment_solver=simultaneous_residual"))
+            }
             other => Err(AzothError::invalid_input(
                 "segment_solver",
                 format!("`{other}` is not one of sequential_explicit or simultaneous_residual"),
@@ -158,17 +140,7 @@ impl ColumnSolver {
     pub fn parse(value: &str) -> Result<Self> {
         match value {
             "fixed_point_profile" => Ok(Self::FixedPointProfile),
-            "equation_oriented" => Err(refused(
-                "column_solver",
-                value,
-                "ColumnSolver.EQUATION_ORIENTED",
-                "It is a column-wide damped Newton with homotopy continuation \
-                 (`solveEquationOrientedProfile`). **This port measured the branch**: it stalls \
-                 after two passes at a residual of `65.9` against its own `1e-6` gate and \
-                 publishes a `153` K vapour beside a `454` K liquid, and at the settings of the \
-                 class's own test for it the norm is `30.5` against `1e-5` - a test that asserts \
-                 finiteness rather than convergence. See `process_rate_based_solvers.tsv`.",
-            )),
+            "equation_oriented" => Err(unported::refuse("column_solver=equation_oriented")),
             other => Err(AzothError::invalid_input(
                 "column_solver",
                 format!("`{other}` is not one of fixed_point_profile or equation_oriented"),

@@ -50,7 +50,9 @@ from azoth.eos.reference.phase_transport import phase_transport
 from azoth.eos.reference.pr_mass_density import pr_mass_density
 from azoth.eos.reference.pr_molar_volume import pr_molar_volume
 from azoth.eos.reference.pt_flash import pt_flash
+from azoth.hydraulics.packing import packing_or_default
 from azoth.hydraulics.reference.packing_hydraulics import packing_hydraulics
+from azoth.process.reference import _unported
 
 #: The class's own ``DEFAULT_*`` constants: the value each property falls back to.
 DEFAULT_GAS_DIFFUSIVITY = 1.5e-5
@@ -98,39 +100,6 @@ DEFAULTS: dict[str, Any] = {
     "heat_transfer_model": "chilton_colburn_analogy",
     "segment_solver": "sequential_explicit",
     "column_solver": "fixed_point_profile",
-}
-
-#: The four values the port does not carry, with the class behind each.
-REFUSED = {
-    "mass_transfer_correlation": {
-        "billet_schultes_1999": (
-            "`RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999` is the "
-            "class that "
-            "would close it, and it is not a correlation: it is a constant multiplier, "
-            "`max(0.1, Ch/0.4)` on `kGa` and `max(0.1, Cp)` on `kLa`."
-        )
-    },
-    "segment_solver": {
-        "simultaneous_residual": (
-            "`RateBasedPackedColumn.SegmentSolver.SIMULTANEOUS_RESIDUAL` is the class that would "
-            "close it, and NeqSim disables its own test for the branch: "
-            '`@Disabled("TODO: not working per 19.06.2060")`. **This port measured the branch**: '
-            "on the class's own state it takes the full 20-pass cap at a `1.76` mol/s outlet "
-            "residual against a `1e-9` gate, with the vapour at `2.2e-29` K and the liquid at "
-            "`1.7` K - see `process_rate_based_solvers.tsv`."
-        )
-    },
-    "column_solver": {
-        "equation_oriented": (
-            "`RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED` is the class that would close "
-            "it - a column-wide damped Newton with homotopy continuation. **This port measured "
-            "the branch**: it stalls after two passes at a residual of `65.9` against its own "
-            "`1e-6` gate and publishes a `153` K vapour beside a `454` K liquid, and at the "
-            "settings of the class's own test for it the norm is `30.5` against `1e-5` - a test "
-            "that asserts finiteness rather than convergence. See "
-            "`process_rate_based_solvers.tsv`."
-        )
-    },
 }
 
 #: The class's own ``validateSetup`` conditions, as (parameter, predicate, message) so the
@@ -625,8 +594,23 @@ def _transport_snapshot(
         quantity(liquid_diffusivity, "m**2/s"),
         1.0,
     )
-    k_ga = _non_negative(hydraulics.k_ga, 0.0) * settings["mass_transfer_correction"]
-    k_la = _non_negative(hydraulics.k_la, 0.0) * settings["mass_transfer_correction"]
+    # **`billet_schultes_1999` is a constant of the packing, not a correlation.** The class
+    # takes two numbers off the packing specification and floors each at `0.1`; both are on
+    # the registry row already, and `onda_1968` leaves the pair at one.
+    packing = packing_or_default(settings["packing_type"])
+    if settings["billet_schultes"]:
+        gas_multiplier = max(packing.billet_gas_constant / 0.4, 0.1)
+        liquid_multiplier = max(packing.billet_liquid_constant, 0.1)
+    else:
+        gas_multiplier = liquid_multiplier = 1.0
+    k_ga = (
+        _non_negative(hydraulics.k_ga, 0.0) * gas_multiplier * settings["mass_transfer_correction"]
+    )
+    k_la = (
+        _non_negative(hydraulics.k_la, 0.0)
+        * liquid_multiplier
+        * settings["mass_transfer_correction"]
+    )
 
     none = settings["heat_transfer_model"] == "none"
     gas_heat = _volumetric_heat_transfer_coefficient(
@@ -920,14 +904,13 @@ def _states(
     ``layers.py`` imports this rather than recomputing anything: a layer computed by a route the
     kernel does not take would be a second implementation.
     """
-    for parameter, value in (
-        ("mass_transfer_correlation", mass_transfer_correlation),
-        ("segment_solver", segment_solver),
-        ("column_solver", column_solver),
-    ):
-        refused = REFUSED.get(parameter, {}).get(value)
-        if refused is not None:
-            raise InvalidInputError(parameter, f"`{value}` is not ported: {refused}")
+    # **A refusal names the declaration, not a sentence.** The keys below are the
+    # `[[unported]]` rows of this id's spec, and `tools/check_unported.py` holds them to
+    # the same set the Rust half refuses by.
+    if segment_solver == "simultaneous_residual":
+        raise _unported.refuse("segment_solver=simultaneous_residual")
+    if column_solver == "equation_oriented":
+        raise _unported.refuse("column_solver=equation_oriented")
     if column_diameter <= 0.0:
         raise InvalidInputError("column_diameter", "Column diameter must be positive")
     if packed_height < 0.0:
@@ -962,6 +945,7 @@ def _states(
         "heat_transfer_correction": 1.0,
         "heat_transfer_model": heat_transfer_model,
         "film_model": film_model,
+        "billet_schultes": mass_transfer_correlation == "billet_schultes_1999",
     }
     segment_height = packed_height / number_of_segments
     segment_volume = math.pi * column_diameter * column_diameter / 4.0 * segment_height
@@ -1094,7 +1078,8 @@ def rate_based_packed_column(
             reaches it publishes its last iterate.
         convergence_tolerance: the outlet gate, mol/s; the class defaults it to 1e-8.
         mass_transfer_correction: a scale on both film coefficients.
-        mass_transfer_correlation: ``onda_1968``; ``billet_schultes_1999`` is refused.
+        mass_transfer_correlation: ``onda_1968``, or ``billet_schultes_1999``, which scales
+            the two film coefficients by constants of the packing.
         film_model: ``maxwell_stefan_matrix`` or ``overall_two_resistance``.
         heat_transfer_model: ``chilton_colburn_analogy`` or ``none``, which is exactly zero.
         segment_solver: ``sequential_explicit``; ``simultaneous_residual`` is refused.
