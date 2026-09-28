@@ -48,6 +48,42 @@ DESIGN_MIN_FLOOD, DESIGN_MAX_FLOOD = 40.0, 80.0
 MIN_HETP_M = 0.1
 
 
+def eckert_flooding_velocity(
+    packing_factor: float,
+    hydraulic_capacity_factor: float,
+    vapor_mass_flow: float,
+    liquid_mass_flow: float,
+    vapor_density: float,
+    liquid_density: float,
+    liquid_viscosity: float,
+) -> float:
+    """The Eckert GPDC fit, over the seven numbers it reads, so both calcs that need it share it.
+
+    **Shared rather than stated twice**, because a second transcription of these four constants
+    is exactly the twin this library's spec tranche exists to remove: two spellings of one
+    correlation drift, and nothing compares them. ``hydraulics.packing_sizing`` calls this
+    directly, which is also what the class does - ``sizeColumnDiameter`` calls the same
+    ``calculateFloodingVelocity`` the full report does.
+
+    The trial diameter the class sets before the call is **inert**: this fit reads no diameter
+    and no area, so sizing is a closed form.
+    """
+    flow_parameter = 0.0
+    if vapor_mass_flow > 0.0:
+        flow_parameter = (liquid_mass_flow / vapor_mass_flow) * math.sqrt(
+            vapor_density / liquid_density
+        )
+    flow_parameter = min(max(flow_parameter, MIN_FLOW_PARAMETER), MAX_FLOW_PARAMETER)
+    x = math.log10(flow_parameter)
+    y_flood = math.pow(10.0, ECKERT_C0 + ECKERT_C1 * x + ECKERT_C2 * x * x)
+    rho_factor = vapor_density / (G * (liquid_density - vapor_density))
+    mu_factor = math.pow(liquid_viscosity / WATER_VISCOSITY, 0.1)
+    return (
+        math.sqrt(max(y_flood / (packing_factor * rho_factor * mu_factor), 0.0))
+        * hydraulic_capacity_factor
+    )
+
+
 def packing_hydraulics(
     packing: str,
     column_diameter: Q,
@@ -125,21 +161,14 @@ def packing_hydraulics(
     area = math.pi / 4.0 * values["column_diameter"] ** 2
 
     # ---- The flooding velocity: the Eckert fit, solved for the velocity.
-    flow_parameter = 0.0
-    if values["vapor_mass_flow"] > 0.0:
-        flow_parameter = (values["liquid_mass_flow"] / values["vapor_mass_flow"]) * math.sqrt(
-            values["vapor_density"] / values["liquid_density"]
-        )
-    flow_parameter = min(max(flow_parameter, MIN_FLOW_PARAMETER), MAX_FLOW_PARAMETER)
-    x = math.log10(flow_parameter)
-    y_flood = math.pow(10.0, ECKERT_C0 + ECKERT_C1 * x + ECKERT_C2 * x * x)
-    rho_factor = values["vapor_density"] / (
-        G * (values["liquid_density"] - values["vapor_density"])
-    )
-    mu_factor = math.pow(values["liquid_viscosity"] / WATER_VISCOSITY, 0.1)
-    flooding_velocity = (
-        math.sqrt(max(y_flood / (resolved.packing_factor * rho_factor * mu_factor), 0.0))
-        * hydraulic_capacity_factor
+    flooding_velocity = eckert_flooding_velocity(
+        resolved.packing_factor,
+        hydraulic_capacity_factor,
+        values["vapor_mass_flow"],
+        values["liquid_mass_flow"],
+        values["vapor_density"],
+        values["liquid_density"],
+        values["liquid_viscosity"],
     )
 
     vapor_velocity = (values["vapor_mass_flow"] / values["vapor_density"]) / area

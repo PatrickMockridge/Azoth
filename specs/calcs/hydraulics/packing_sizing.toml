@@ -1,0 +1,227 @@
+id = "hydraulics.packing_sizing"
+name = "A packed bed's required column diameter from its flooding velocity"
+equation = "u_design = u_flood * f; q_v = m_v / max(rho_v, 0.01); A = q_v / u_design; d_raw = sqrt(4 A / pi); then d is rounded **up** to the next standard vessel size. `roundToStandardDiameter`'s table is `0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0` - thirty-one sizes, in hundredths to 1.2, then in fifths and tenths, then in halves - and `ceil(2 d)/2` above 8.0."
+latex = '''d = \operatorname{round}_{\mathrm{std}}\!\left(\sqrt{\frac{4\,m_v}{\pi\,\rho_v\,u_{\mathrm{flood}}\,f}}\right)'''
+assumptions = ["**the trial diameter does not enter the flooding velocity.** The class sets `columnDiameter = 1.0` and then calls `calculateFloodingVelocity`, which reads neither the diameter nor any area - so the trial is inert and the sizing is a closed form rather than an iteration.\n", "**the rounding is up, over a fixed table of thirty-one sizes** - the one the equation lists - so a raw `0.3717` m answers `0.4` m and never `0.3717`. The vessel is bought rather than machined, and the raw diameter is reported beside it.\n", "**the table's floor is `0.3` m, and it is reached.** A raw diameter of `0.1195` m answers `0.3` m - the capture's light-load row - so the floor is a real bound on the answer rather than a formality.\n", "**`FLV` is clamped to `[0.005, 5.0]`, and the ceiling binds.** The capture's high-liquid row (`L/V = 34.3`) and its light-load row (`L/V = 175`) saturate at `5.0` and answer the same flooding velocity to sixteen digits.\n", "**the sizing reads the packing's factor and the liquid's viscosity, and nothing else.** The capture carries the vapour's viscosity and the surface tension because the same probe prints the full hydraulics beside the size; this method reads neither.\n", "**a zero vapour flow does not reach the guard, and a zero capacity factor does.** `FLV` clamps to `0.005` rather than to zero, so no vapour still gets a positive flood, an area of zero and the `0.3` m floor; only a zero capacity factor makes `uDesign <= 0`, and there the class answers its `1.0` m trial.\n", "the vapour density is floored at `0.01` kg/m**3 in the volumetric flow, and the mass flows are the tray's own: a packing does not change them.\n", "**the sizing is not a design check.** It returns the narrowest standard vessel that keeps the vapour at the design fraction of flood; whether that is a *good* design is `hydraulics.packing_hydraulics`'s `design_ok`.\n"]
+references = ["Eckert, J. S. (1975). \"How tower packings behave.\" Chem. Eng. 82(8), 70-76. The generalized pressure-drop correlation the flooding velocity is fitted from.", "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/internals/PackingHydraulicsCalculator.java`'s `sizeColumnDiameter` and `roundToStandardDiameter` are the port source, over `PackingSpecificationLibrary`'s table.", "`validation/neqsim/captures/packing_sizing_probe.tsv` - five states, each printing the resolved packing, the flooding velocity, all four intermediate steps and the rounded diameter.\n"]
+[source]
+standard = "NeqSim master `PackingHydraulicsCalculator`"
+edition = "`sizeColumnDiameter` and `roundToStandardDiameter`, ported verbatim, over the packing table `hydraulics.packing_hydraulics` already carries. The class returns only the diameter; the four intermediates are the arithmetic it performs inline, which the probe prints as derived."
+[inputs]
+[inputs.packing]
+type = "string"
+description = "the packing's name or an alias, which the library resolves; a name nothing matches is `Pall-Ring-50`. Only its factor is read here.\n"
+[inputs.design_flood_fraction]
+unit = "dimensionless"
+description = "the fraction of the flooding velocity the column is designed to run at, so the design velocity is `u_flood * f`.\n"
+[inputs.vapor_mass_flow]
+unit = "kg/s"
+description = "the vapour's mass flow at the sizing state.\n"
+[inputs.liquid_mass_flow]
+unit = "kg/s"
+description = "the liquid's mass flow at the sizing state, which enters only through `FLV`.\n"
+[inputs.vapor_density]
+unit = "kg/m**3"
+description = "the vapour's mass density, which the volumetric flow divides by.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid's mass density, which `FLV` and the density factor read.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid's dynamic viscosity, which the `(mu_L/mu_water)**0.1` factor reads.\n"
+[inputs.hydraulic_capacity_factor]
+unit = "dimensionless"
+description = "the packing's relative hydraulic capacity factor, which scales the flooding velocity. One is the class's default.\n"
+[outputs]
+[outputs.flooding_velocity]
+unit = "m/s"
+description = "the vapour velocity at flooding, from the Eckert GPDC fit.\n"
+[outputs.design_velocity]
+unit = "m/s"
+description = "`u_flood * f`, the velocity the column is sized to run at.\n"
+[outputs.vapor_volumetric_flow]
+unit = "m**3/s"
+description = "the vapour's volumetric flow, `m_v / max(rho_v, 0.01)`.\n"
+[outputs.required_area]
+unit = "m**2"
+description = "the cross-sectional area the vapour needs at the design velocity.\n"
+[outputs.required_diameter]
+unit = "m"
+description = "`sqrt(4 A / pi)`, **before** rounding - the number the standard size is chosen from.\n"
+[outputs.column_diameter]
+unit = "m"
+description = "the required internal diameter, rounded up to the next standard vessel size.\n"
+[outputs.packing_name]
+type = "string"
+description = "the packing the name resolved to, which is `Pall-Ring-50` where nothing matched - so a misspelt packing is visible rather than silent.\n"
+[outputs.packing_factor]
+unit = "1/m"
+description = "the resolved packing factor, the only geometry this calculation reads.\n"
+[[valid_range]]
+quantity = "design_flood_fraction"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    a design fraction of zero sizes the column for a velocity of zero, which is an infinite \
+    area. The class answers that state with its `1.0` m trial rather than an error, and a \
+    caller asking for an unphysical column should be told rather than handed the trial.\n\
+    """
+[[valid_range]]
+quantity = "vapor_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    the volumetric flow divides by the vapour density. The class floors it at `0.01` \
+    kg/m**3 so the division is defined, which is a guard rather than a physical range; a \
+    non-positive density is a state no gas is in.\n\
+    """
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = """\
+    the density factor is `rho_v / (g (rho_l - rho_v))`, so a liquid no denser than the \
+    vapour makes it singular or negative - physically not a two-phase contactor.\n\
+    """
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a dynamic viscosity is a positive quantity; it is used as a ratio to water raised to a fractional power.\n"
+[[valid_range]]
+quantity = "vapor_mass_flow"
+min = 0
+severity = "warning"
+rationale = """\
+    no vapour flow gives an area of zero and therefore the table's `0.3` m floor: a real \
+    answer to a degenerate question, so this is a warning rather than an error.\n\
+    """
+[worked_example]
+source = "derived from the equation above"
+derivation = "The absorber state of the capture's first row: Pall-Ring-50, 0.35 kg/s of vapour at 45 kg/m**3, 3.5 kg/s of liquid at 990 kg/m**3 and 6.5e-4 Pa*s, designed at 70% of flood. The flooding velocity from the Eckert fit at this state is 0.10238615607703111 m/s.\n\n  u_design = 0.10238615607703111 * 0.7   = 0.07167030925392177 m/s\n  q_v      = 0.35 / 45.0                = 0.0077777777777777776 m**3/s\n  A        = 0.0077777777777777776 / 0.07167030925392177 = 0.10852161597659327 m**2\n  d_raw    = sqrt(4 * 0.10852161597659327 / pi)          = 0.3717176521500718 m\n  d        = the first standard size >= 0.3717176521500718 = 0.4 m\n\nThe raw diameter is 0.3717 m and the vessel is bought at 0.4 m; the pair is reported separately because the rounding is the class's, not the caller's."
+tolerance = 1e-9
+[worked_example.inputs]
+packing = "Pall-Ring-50"
+design_flood_fraction = 0.7
+vapor_mass_flow = 0.35
+liquid_mass_flow = 3.5
+vapor_density = 45.0
+liquid_density = 990.0
+liquid_viscosity = 6.5e-4
+hydraulic_capacity_factor = 1.0
+[worked_example.expected]
+flooding_velocity = 0.10238615607703111
+design_velocity = 0.07167030925392177
+vapor_volumetric_flow = 0.0077777777777777776
+required_area = 0.10852161597659327
+required_diameter = 0.3717176521500718
+column_diameter = 0.4
+[implementations]
+python = "azoth.hydraulics.packing_sizing"
+rust = "azoth_hydraulics::packing_sizing"
+[[tests]]
+id = "pall_ring_50_absorber_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "a_structured_packing_sizes_on_its_own_factor"
+type = "reference"
+status = "active"
+source = "The capture's `mellapak_250y_absorber_sized` row: a **structured** packing, whose factor comes from its own row of the table rather than Pall-Ring-50's. Its raw diameter is `0.2973` m, below the table's floor, so the answer is the floor `0.3` m - a port that sized on the raw number would report a vessel `0.2973` m across, which is not a vessel.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Mellapak-250Y"
+design_flood_fraction = 0.7
+vapor_mass_flow = 0.28
+liquid_mass_flow = 4.0
+vapor_density = 30.0
+liquid_density = 1000.0
+liquid_viscosity = 5.5e-4
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.19205538362277813
+design_velocity = 0.1344387685359447
+vapor_volumetric_flow = 0.009333333333333334
+required_area = 0.06942441852878097
+required_diameter = 0.29731114180448814
+column_diameter = 0.3
+[[tests]]
+id = "more_liquid_raises_flood_and_widens_the_column"
+type = "reference"
+status = "active"
+source = "The capture's `pall_ring_50_high_liquid_sized` row: the absorber state with 12 kg/s of liquid instead of 3.5. `FLV` rises from `2.13` to `7.31` and **both saturate the fit's `5.0` ceiling**, so the flooding velocity is bit-identical to the light-load row's `0.05661349698882555`. The column answers `0.5` m against the absorber's `0.4`.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Pall-Ring-50"
+design_flood_fraction = 0.7
+vapor_mass_flow = 0.35
+liquid_mass_flow = 12.0
+vapor_density = 45.0
+liquid_density = 990.0
+liquid_viscosity = 6.5e-4
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.05661349698882555
+design_velocity = 0.03962944789217788
+vapor_volumetric_flow = 0.0077777777777777776
+required_area = 0.1962625822832361
+required_diameter = 0.4998892686534238
+column_diameter = 0.5
+[[tests]]
+id = "a_light_vapour_load_reaches_the_table_floor"
+type = "reference"
+status = "active"
+source = "The capture's `pall_ring_50_light_load_sized` row: 0.02 kg/s of vapour, which is a twentieth of the absorber's. The raw diameter falls to `0.1195` m and the answer is the table's `0.3` m floor - **the same answer as the structured row**, from a different raw number, which is what a floor does.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Pall-Ring-50"
+design_flood_fraction = 0.7
+vapor_mass_flow = 0.02
+liquid_mass_flow = 3.5
+vapor_density = 45.0
+liquid_density = 990.0
+liquid_viscosity = 6.5e-4
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.05661349698882555
+design_velocity = 0.03962944789217788
+vapor_volumetric_flow = 4.4444444444444447e-4
+required_area = 0.011215004701899206
+required_diameter = 0.11949639107876378
+column_diameter = 0.3
+[[tests]]
+id = "the_flood_fraction_moves_the_size_and_not_the_report"
+type = "reference"
+status = "active"
+source = "The capture's `pall_ring_50_absorber_sized_half_flood` row: **the absorber state again with the design fraction at `0.5` instead of `0.7`.** The flooding velocity is identical - the fraction does not enter the fit - and the design velocity halves, so the raw diameter grows from `0.3717` to `0.4398` m and the answer crosses from `0.4` m to `0.5` m. This is the row that says the flood fraction sizes the vessel rather than describing it.\n"
+tolerance = 1e-9
+[tests.inputs]
+packing = "Pall-Ring-50"
+design_flood_fraction = 0.5
+vapor_mass_flow = 0.35
+liquid_mass_flow = 3.5
+vapor_density = 45.0
+liquid_density = 990.0
+liquid_viscosity = 6.5e-4
+hydraulic_capacity_factor = 1.0
+[tests.expected]
+flooding_velocity = 0.10238615607703111
+design_velocity = 0.051193078038515555
+vapor_volumetric_flow = 0.0077777777777777776
+required_area = 0.15193026236723056
+required_diameter = 0.439822257381259
+column_diameter = 0.5
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
+[[tests]]
+id = "monotonic"
+type = "property"
+property = "monotonic"
+status = "active"

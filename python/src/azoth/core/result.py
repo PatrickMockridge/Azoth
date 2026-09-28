@@ -1933,6 +1933,38 @@ class PackingHydraulicsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PackingSizingResult(_HasWarnings):
+    """Result of ``hydraulics.packing_sizing``.
+
+    **The raw and the rounded diameter are both reported**, because the gap between them is the
+    answer to a question a caller will ask: ``required_diameter`` is what the vapour needs and
+    ``column_diameter`` is what a vessel can be bought at. Keeping only the second would hide that
+    a ``0.1195`` m requirement and a ``0.2973`` m one both answer ``0.3`` m.
+    """
+
+    CALC_ID: ClassVar[str] = "hydraulics.packing_sizing"
+
+    #: The packing the name resolved to, which is ``Pall-Ring-50`` where nothing matched.
+    packing_name: str
+    #: The resolved packing factor, in 1/m - the only geometry this calculation reads.
+    packing_factor: float
+    #: The vapour velocity at flooding, in m/s.
+    flooding_velocity: float
+    #: ``flooding_velocity * design_flood_fraction``, in m/s.
+    design_velocity: float
+    #: The vapour's volumetric flow, in m**3/s.
+    vapor_volumetric_flow: float
+    #: The cross-sectional area the vapour needs.
+    required_area: Q
+    #: ``sqrt(4 A / pi)``, **before** the standard-size rounding.
+    required_diameter: Q
+    #: The required internal diameter, rounded up to the next standard vessel size.
+    column_diameter: Q
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PhaseTransportResult(_HasWarnings):
     """Result of ``eos.phase_transport``."""
 

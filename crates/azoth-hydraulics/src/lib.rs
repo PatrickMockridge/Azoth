@@ -41,6 +41,7 @@ pub mod friction_factor_swamee_jain;
 pub mod orifice_flow;
 pub mod packing;
 pub mod packing_hydraulics;
+pub mod packing_sizing;
 pub mod provenance;
 pub mod pump_power;
 pub mod results;
