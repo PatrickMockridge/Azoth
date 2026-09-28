@@ -114,13 +114,21 @@ REFUSED = {
         "simultaneous_residual": (
             "`RateBasedPackedColumn.SegmentSolver.SIMULTANEOUS_RESIDUAL` is the class that would "
             "close it, and NeqSim disables its own test for the branch: "
-            '`@Disabled("TODO: not working per 19.06.2060")`.'
+            '`@Disabled("TODO: not working per 19.06.2060")`. **This port measured the branch**: '
+            "on the class's own state it takes the full 20-pass cap at a `1.76` mol/s outlet "
+            "residual against a `1e-9` gate, with the vapour at `2.2e-29` K and the liquid at "
+            "`1.7` K - see `process_rate_based_solvers.tsv`."
         )
     },
     "column_solver": {
         "equation_oriented": (
             "`RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED` is the class that would close "
-            "it - a column-wide damped Newton with homotopy continuation."
+            "it - a column-wide damped Newton with homotopy continuation. **This port measured "
+            "the branch**: it stalls after two passes at a residual of `65.9` against its own "
+            "`1e-6` gate and publishes a `153` K vapour beside a `454` K liquid, and at the "
+            "settings of the class's own test for it the norm is `30.5` against `1e-5` - a test "
+            "that asserts finiteness rather than convergence. See "
+            "`process_rate_based_solvers.tsv`."
         )
     },
 }

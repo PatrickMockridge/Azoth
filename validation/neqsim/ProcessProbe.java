@@ -54,6 +54,8 @@
 //       > captures/process_rate_based_packed_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
 //       > captures/process_rate_based_billet.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_solvers \
+//       > captures/process_rate_based_solvers.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column_efficiency \
 //       > captures/process_column_efficiency.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe absorber_efficiency \
@@ -202,6 +204,9 @@ public class ProcessProbe {
         break;
       case "rate_based_billet":
         rateBasedBilletRows();
+        break;
+      case "rate_based_solvers":
+        rateBasedSolverRows();
         break;
       case "column_efficiency":
         murphreeStageRows();
@@ -3979,6 +3984,118 @@ public class ProcessProbe {
         neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.ONDA_1968);
     rateBasedCo2WaterRow("billet_schultes", 0.10, 0.0, 6.0, "Pall-Ring-50", true, false,
         neqsim.process.equipment.distillation.RateBasedPackedColumn.MassTransferCorrelation.BILLET_SCHULTES_1999);
+  }
+
+  /// **The two solvers this port does not carry, run on the state it does.**
+  ///
+  /// `billet_onda`'s own state - the PR row `process_rate_based_packed_column.tsv` holds and the
+  /// port reproduces to `1e-4` - is run four ways: this port's pair as the control, then each of
+  /// `SegmentSolver.SIMULTANEOUS_RESIDUAL` and `ColumnSolver.EQUATION_ORIENTED` alone, then both.
+  /// **What decides whether either is a port or a non-port is not the class's source but this
+  /// capture**: `EQUATION_ORIENTED` seeds from the fixed-point profile and then calls
+  /// `acceptSolution` unconditionally, so it never reports a failure - the readable thing is
+  /// `lastColumnResidualNorm` against `columnResidualTolerance`. A branch that lands above its own
+  /// tolerance is a number with no oracle, and `SIMULTANEOUS_RESIDUAL` carries `@Disabled` on its
+  /// own test upstream.
+  static void rateBasedSolverRows() {
+    neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentSolver sequential =
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentSolver.SEQUENTIAL_EXPLICIT;
+    neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentSolver simultaneous =
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentSolver.SIMULTANEOUS_RESIDUAL;
+    neqsim.process.equipment.distillation.RateBasedPackedColumn.ColumnSolver fixedPoint =
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.ColumnSolver.FIXED_POINT_PROFILE;
+    neqsim.process.equipment.distillation.RateBasedPackedColumn.ColumnSolver equationOriented =
+        neqsim.process.equipment.distillation.RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED;
+    rateBasedSolverRow("sequential_fixed_point", sequential, fixedPoint);
+    rateBasedSolverRow("simultaneous_fixed_point", simultaneous, fixedPoint);
+    rateBasedSolverRow("sequential_equation_oriented", sequential, equationOriented);
+    rateBasedSolverRow("simultaneous_equation_oriented", simultaneous, equationOriented);
+    // **The class's own equation-oriented test state**, which is `configuredColumn` at three
+    // segments with the Newton capped and the homotopy removed - `testEquationOriented-
+    // ColumnSolverSolvesColumnWideResiduals`' own four settings. It is here because that test
+    // asserts a direction, a component balance and *finiteness*, and never that the norm met the
+    // tolerance: if it does not converge at its own settings either, the branch is one no upstream
+    // test holds to a residual.
+    rateBasedSolverRow("equation_oriented_test_settings", sequential, equationOriented, 3, 2, 1,
+        1.0e-5);
+  }
+
+  /// `billet_onda`'s state - `configuredColumn`'s, re-cased on PR - under one solver pair.
+  static void rateBasedSolverRow(String label,
+      neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentSolver segmentSolver,
+      neqsim.process.equipment.distillation.RateBasedPackedColumn.ColumnSolver columnSolver) {
+    rateBasedSolverRow(label, segmentSolver, columnSolver, 4, 8, 3, 1.0e-6);
+  }
+
+  /// The same row with the column-wide Newton's own knobs stated rather than left at the class's
+  /// defaults - `maxColumnResidualIterations`, `columnHomotopySteps` and `columnResidualTolerance`.
+  static void rateBasedSolverRow(String label,
+      neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentSolver segmentSolver,
+      neqsim.process.equipment.distillation.RateBasedPackedColumn.ColumnSolver columnSolver,
+      int segments, int maxColumnResidualIterations, int homotopySteps,
+      double columnResidualTolerance) {
+    Stream gas = rateFeed("gas in", true, 313.15, 50.0, 1000.0, new String[] { "methane", "CO2" },
+        new double[] { 0.9, 0.1 });
+    Stream liquid = rateFeed("lean liquid", true, 303.15, 50.0, 2000.0,
+        new String[] { "water", "CO2" }, new double[] { 1.0, 0.0 });
+    neqsim.process.equipment.distillation.RateBasedPackedColumn column =
+        new neqsim.process.equipment.distillation.RateBasedPackedColumn("rate based column", gas,
+            liquid);
+    column.setColumnDiameter(1.0);
+    column.setPackedHeight(6.0);
+    column.setNumberOfSegments(segments);
+    column.setMaxIterations(20);
+    column.setPackingType("Pall-Ring-50");
+    column.setTransferComponents("CO2");
+    column.setMassTransferCorrectionFactor(3.0);
+    column.setConvergenceTolerance(1.0e-9);
+    column.setMaxColumnResidualIterations(maxColumnResidualIterations);
+    column.setColumnHomotopySteps(homotopySteps);
+    column.setColumnResidualTolerance(columnResidualTolerance);
+    column.setSegmentSolver(segmentSolver);
+    column.setColumnSolver(columnSolver);
+    String exception = "";
+    try {
+      column.run();
+    } catch (RuntimeException ex) {
+      exception = ex.getClass().getName() + ": " + ex.getMessage();
+    }
+    System.out.println(label);
+    System.out.println("segment_solver=" + segmentSolver.name());
+    System.out.println("column_solver=" + columnSolver.name());
+    System.out.println("max_iterations=" + column.getMaxIterations());
+    System.out.println("convergence_tolerance_mol_per_s=" + column.getConvergenceTolerance());
+    System.out.println("max_column_residual_iterations=" + column.getMaxColumnResidualIterations());
+    System.out.println("column_homotopy_steps=" + column.getColumnHomotopySteps());
+    System.out.println("column_residual_tolerance=" + column.getColumnResidualTolerance());
+    System.out.println("exception=" + exception);
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("convergence_residual=" + column.getLastConvergenceResidual());
+    System.out.println("column_residual_norm=" + column.getLastColumnResidualNorm());
+    System.out.println("column_residual_iterations=" + column.getLastColumnResidualIterations());
+    System.out.println("gas_component_balance_residual="
+        + column.getLastGasComponentBalanceResidual());
+    System.out.println("liquid_component_balance_residual="
+        + column.getLastLiquidComponentBalanceResidual());
+    System.out.println("column_energy_balance_residual="
+        + column.getLastColumnEnergyBalanceResidual());
+    System.out.println("total_absolute_molar_transfer_mol_per_s="
+        + column.getTotalAbsoluteMolarTransfer());
+    print("gas_out", column.getGasOutStream());
+    print("liquid_out", column.getLiquidOutStream());
+    System.out.println("segment_count=" + column.getSegmentResults().size());
+    for (neqsim.process.equipment.distillation.RateBasedPackedColumn.SegmentResult segment : column
+        .getSegmentResults()) {
+      String prefix = "segment" + segment.getSegmentNumber() + "_";
+      System.out.println(prefix + "segment_solver=" + segment.getSegmentSolver());
+      System.out.println(prefix + "residual_iterations=" + segment.getResidualIterations());
+      System.out.println(prefix + "max_flux_residual_mol_per_s="
+          + segment.getMaxFluxResidualMolPerSec());
+      System.out.println(
+          prefix + "heat_balance_residual_W=" + segment.getHeatBalanceResidualW());
+      System.out.println(prefix + "net_molar_transfer_mol_per_s=" + segment.getNetMolarTransfer());
+    }
+    System.out.println();
   }
 
   /// `configuredColumn`'s own state and settings - the four segments, the 3.0 correction, the

@@ -488,3 +488,194 @@ fn the_billet_schultes_multiplier_is_the_packings_own_two_constants() {
         "billet CO2 total",
     );
 }
+
+/// One block of a capture, by its first line.
+fn capture_row(capture: &str, label: &str) -> std::collections::BTreeMap<String, String> {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../validation/neqsim/captures")
+        .join(capture);
+    let text = std::fs::read_to_string(&path).expect("the capture is committed");
+    text.split("\n\n")
+        .find(|block| block.lines().next() == Some(label))
+        .unwrap_or_else(|| panic!("{capture} has no `{label}` row"))
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect()
+}
+
+fn row_number(row: &std::collections::BTreeMap<String, String>, key: &str) -> f64 {
+    row.get(key)
+        .unwrap_or_else(|| panic!("the row has no `{key}`"))
+        .parse()
+        .unwrap_or_else(|_| panic!("`{key}` is not a number"))
+}
+
+/// **The two solvers this port refuses do not converge, and the capture is the measurement
+/// rather than the class's own comment about itself.**
+///
+/// `process_rate_based_solvers.tsv` runs `configuredColumn`'s own state - the PR row
+/// [`the_classs_absorber_state_is_reproduced_on_pr`] holds - five ways. The first is the pair
+/// this port carries, and it is the control: it lands on the port's own fifteen passes and
+/// `6.009670053264138e-10`, so what the other four show is a statement about the two solvers and
+/// not about a mis-built state.
+///
+/// What they show is not that the branches are slow. **They are refused because neither
+/// publishes a state anything can be held to**: `SIMULTANEOUS_RESIDUAL` takes the whole twenty
+/// pass cap and its vapour leaves at `2.2e-29` K, and `EQUATION_ORIENTED` stalls after two Newton
+/// passes with a residual six orders above its own gate and freezes the gas at `153` K beside a
+/// `454` K liquid. In both equation-oriented rows the component balances close **exactly** and
+/// the energy balance does not - the stall is the energy equation alone.
+///
+/// **The class's own test of that Newton is the reason this is a recorded non-port rather than a
+/// tranche.** It caps the Newton at two iterations and the homotopy at one, and asserts
+/// `Double.isFinite` on the residual rather than that the norm met the tolerance; its companion
+/// caps them at one. A branch no upstream test holds to a residual has no oracle to port against.
+#[test]
+fn neither_refused_solver_converges_on_the_classs_own_state() {
+    const CAPTURE: &str = "process_rate_based_solvers.tsv";
+
+    // The control: this port's own pair, and the numbers the port's own test asserts.
+    let control = capture_row(CAPTURE, "sequential_fixed_point");
+    assert_eq!(
+        control.get("segment_solver").map(String::as_str),
+        Some("SEQUENTIAL_EXPLICIT"),
+        "the control runs the pair this port carries"
+    );
+    assert_eq!(
+        control.get("column_solver").map(String::as_str),
+        Some("FIXED_POINT_PROFILE")
+    );
+    let (profile, snapshot) = settings(6.0, false, false);
+    let outcome = solve_fixed_point_profile(
+        &configured(6.0),
+        &lean(6.0),
+        &profile,
+        &snapshot,
+        &["CO2".to_string()],
+        true,
+    )
+    .expect("the profile solves");
+    assert_eq!(
+        row_number(&control, "iterations") as usize,
+        outcome.iterations,
+        "the control row is this port's own pass count"
+    );
+    relative(
+        outcome.convergence_residual,
+        row_number(&control, "convergence_residual"),
+        1.0e-4,
+        "the control row's residual, against this port's",
+    );
+
+    // `SIMULTANEOUS_RESIDUAL`: the cap, nine orders above the gate, and a vapour that is not a
+    // temperature.
+    let simultaneous = capture_row(CAPTURE, "simultaneous_fixed_point");
+    assert_eq!(
+        row_number(&simultaneous, "convergence_tolerance_mol_per_s"),
+        1.0e-9
+    );
+    assert_eq!(
+        row_number(&simultaneous, "iterations"),
+        row_number(&simultaneous, "max_iterations"),
+        "the segment solve takes the whole cap"
+    );
+    assert!(
+        row_number(&simultaneous, "convergence_residual") > 1.0,
+        "and ends nine orders above its gate: {} mol/s",
+        row_number(&simultaneous, "convergence_residual")
+    );
+    assert!(
+        row_number(&simultaneous, "gas_out_T") < 1.0,
+        "publishing a vapour at {} K",
+        row_number(&simultaneous, "gas_out_T")
+    );
+
+    // `EQUATION_ORIENTED` alone: stalls in two passes, publishes a `153` K gas beside a `454` K
+    // liquid, closes both component balances exactly and leaves the energy balance at `1.1e8` J.
+    let equation_oriented = capture_row(CAPTURE, "sequential_equation_oriented");
+    assert_eq!(
+        row_number(&equation_oriented, "column_residual_tolerance"),
+        1.0e-6
+    );
+    assert_eq!(row_number(&equation_oriented, "iterations"), 2.0);
+    assert!(
+        row_number(&equation_oriented, "column_residual_norm") > 1.0,
+        "the norm is {} against a 1e-6 gate",
+        row_number(&equation_oriented, "column_residual_norm")
+    );
+    assert_eq!(
+        row_number(&equation_oriented, "gas_component_balance_residual"),
+        0.0
+    );
+    assert_eq!(
+        row_number(&equation_oriented, "liquid_component_balance_residual"),
+        0.0
+    );
+    assert!(
+        row_number(&equation_oriented, "column_energy_balance_residual") > 1.0e7,
+        "and the energy balance is what stalled: {} J",
+        row_number(&equation_oriented, "column_energy_balance_residual")
+    );
+    assert!(row_number(&equation_oriented, "gas_out_T") < 200.0);
+    assert!(row_number(&equation_oriented, "liquid_out_T") > 400.0);
+
+    // Both together, which is worse on both counts: a larger norm and a transfer two orders below
+    // the control's.
+    let both = capture_row(CAPTURE, "simultaneous_equation_oriented");
+    assert!(
+        row_number(&both, "column_residual_norm") > 1.0,
+        "the pair is no better: {}",
+        row_number(&both, "column_residual_norm")
+    );
+    relative(
+        row_number(&both, "total_absolute_molar_transfer_mol_per_s"),
+        1.6818984914629715e-4,
+        1.0e-6,
+        "the pair's transfer",
+    );
+    assert!(
+        row_number(&both, "total_absolute_molar_transfer_mol_per_s")
+            < row_number(&control, "total_absolute_molar_transfer_mol_per_s"),
+        "the pair transfers less than the control, not more"
+    );
+
+    // **And the class's own equation-oriented test state, at its own four settings.** The two
+    // settings that matter are the cap and the homotopy: the test supplies both, which is what
+    // makes its assertions reachable without the Newton ever converging.
+    let own = capture_row(CAPTURE, "equation_oriented_test_settings");
+    assert_eq!(row_number(&own, "max_column_residual_iterations"), 2.0);
+    assert_eq!(row_number(&own, "column_homotopy_steps"), 1.0);
+    assert_eq!(row_number(&own, "column_residual_tolerance"), 1.0e-5);
+    assert!(
+        row_number(&own, "column_residual_norm") > 1.0,
+        "and it does not converge there either: {} against 1e-5",
+        row_number(&own, "column_residual_norm")
+    );
+}
+
+/// **The refusals name the measurement**, so a caller who states one of the two hears where the
+/// number behind the refusal is rather than that the port declined.
+#[test]
+fn both_refusals_name_the_capture_that_measures_them() {
+    use azoth_process::kernels::rate_based_packed_column::{ColumnSolver, SegmentSolver};
+
+    let segment = SegmentSolver::parse("simultaneous_residual").expect_err("refused");
+    let segment = segment.to_string();
+    assert!(
+        segment.contains("process_rate_based_solvers.tsv"),
+        "the segment refusal points at the capture: {segment}"
+    );
+    assert!(
+        segment.contains("1.76"),
+        "and carries the residual: {segment}"
+    );
+
+    let column = ColumnSolver::parse("equation_oriented").expect_err("refused");
+    let column = column.to_string();
+    assert!(
+        column.contains("process_rate_based_solvers.tsv"),
+        "the column refusal points at the capture: {column}"
+    );
+    assert!(column.contains("65.9"), "and carries the norm: {column}");
+}

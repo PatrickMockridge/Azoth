@@ -8,6 +8,7 @@ binding's balance invariants rather than a reference.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, TypedDict
 
 import pytest
 
@@ -365,8 +366,16 @@ def test_the_document_a_session_holds_writes_and_reads_back() -> None:
 
 
 #: The captured binary column, as the three column siblings' shared base state.
-def _binary_args() -> dict[str, object]:
-    """The binary column's own inputs, which the draw surface is added to."""
+def _binary_args() -> dict[str, Any]:
+    """The binary column's own inputs, which the draw surface is added to.
+
+    **`Any` is a cession, and the only one in this file.** The mapping is heterogeneous -
+    a component list, a composition vector, plain counts, booleans and five quantities -
+    and `mypy` cannot check a heterogeneous `**` splat against a signature whose forty-five
+    parameters `_core.pyi` types from the Rust side. What the cession costs is the *keys*,
+    and the transposition test below is what pays for that: a parameter the kernel never
+    received fails there by name."""
+
     q = azoth.ureg.Quantity
     return dict(
         components=["methane", "n-butane"],
@@ -388,7 +397,15 @@ def _binary_args() -> dict[str, object]:
 #: **The draw surface's three fraction vectors, each drawing from a different tray.** They are
 #: one group because a column reads them together - `split_draws` takes all three - and each is
 #: stated at a tray of its own so that a *transposition* between them is visible in the answer.
-DRAW_VECTORS: dict[str, list[float]] = {
+class _DrawVectors(TypedDict):
+    """The three draw vectors by name, so the splat below is checked and not ceded."""
+
+    gas_side_draw_fractions: list[float]
+    liquid_side_draw_fractions: list[float]
+    pumparound_fractions: list[float]
+
+
+DRAW_VECTORS: _DrawVectors = {
     "gas_side_draw_fractions": [0.0, 0.1, 0.0, 0.0, 0.0, 0.0],
     "liquid_side_draw_fractions": [0.0, 0.0, 0.0, 0.1, 0.0, 0.0],
     "pumparound_fractions": [0.0, 0.0, 0.0, 0.0, 0.1, 0.0],

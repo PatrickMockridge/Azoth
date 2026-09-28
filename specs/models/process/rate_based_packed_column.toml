@@ -9,10 +9,12 @@ assumptions = [
     "**the reference diffusivity is the class's own constant, and that is measured.** `averageDiffusivity` averages a vector NeqSim never populates - every entry of both phases is `0.0` - while the pair matrix on the same state is real. See `segment::fallbacks`.\n",
     "**the profile is not monotone**: on the absorber's own state the three lower segments strip CO2 back out of the liquid and the top one absorbs it, so a port that summed a single direction lands elsewhere.\n",
     "**a bed of no height is a converged solve**: the class accepts it on the first pass, so a warning there would fail its own zero-height test. The profile is still `number_of_segments` records, at a height of zero.\n",
+    "**neither refused solver converges on the class's own state.** `process_rate_based_solvers.tsv` measures it: the segment solve takes the 20-pass cap at a `1.76` mol/s residual against a `1e-9` gate with the vapour at `2.2e-29` K, and the Newton stalls after two passes at `65.9` against `1e-6`.\n",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/RateBasedPackedColumn.java` is the port source; `internals/PackingHydraulicsCalculator.java` is the packing's, and `process.rate_based_packed_column` composes it through `hydraulics.packing_hydraulics`.\n",
     "`validation/neqsim/captures/process_rate_based_packed_column.tsv` - ten rows: the class's own states on SRK and the same states re-cased on PR, with two CPA-Statoil TEG rows as evidence for a refusal. Each row prints the four ports, the convergence pair and the twenty-nine carried segment fields.\n",
+    "`validation/neqsim/captures/process_rate_based_solvers.tsv` - the class's own state under the pair this port carries as a control, under each refused solver alone, under both, and under `EQUATION_ORIENTED` at the settings of the class's own test for it. No refused row converges.\n",
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/RateBasedPackedColumn.java"
@@ -109,12 +111,12 @@ description = "**`none` re-equilibrates the outlets after material transfer alon
 type = "enum"
 values = ["sequential_explicit", "simultaneous_residual"]
 optional = true
-description = "**`sequential_explicit` is ported**; `simultaneous_residual` is refused by name, with `SegmentSolver` behind it, and **NeqSim disables its own test** for that branch.\n"
+description = "**`sequential_explicit` is ported**; `simultaneous_residual` is refused by name. NeqSim disables its own test for the branch, and this port measured why: on the class's own state it takes the 20-pass cap at a `1.76` mol/s residual against a `1e-9` gate, with the vapour at `2.2e-29` K.\n"
 [inputs.column_solver]
 type = "enum"
 values = ["fixed_point_profile", "equation_oriented"]
 optional = true
-description = "**`fixed_point_profile` is ported**; `equation_oriented` is refused by name, with `ColumnSolver` behind it - the column-wide damped Newton with homotopy continuation.\n"
+description = "**`fixed_point_profile` is ported**; `equation_oriented` is refused by name. The column-wide damped Newton stalls after two passes at a residual of `65.9` against its own `1e-6` gate and publishes a `153` K vapour; the class's own test for it asserts finiteness and never convergence.\n"
 [outputs]
 [outputs.gas_out_n]
 unit = "mol/s"

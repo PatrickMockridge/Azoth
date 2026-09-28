@@ -155,6 +155,24 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_billet \
   > captures/process_rate_based_billet.tsv
 ```
 
+**`ProcessProbe rate_based_solvers` measures the two solvers this port refuses.** It runs the
+class's own absorber state - the PR row `process_rate_based_packed_column.tsv` holds and the port
+reproduces to `1e-4` - five ways: the pair this port carries as the control, then
+`SegmentSolver.SIMULTANEOUS_RESIDUAL` and `ColumnSolver.EQUATION_ORIENTED` alone, then both, then
+`EQUATION_ORIENTED` at the settings of the class's own test for it. **No refused row converges**,
+and the control reproduces the baseline exactly (fifteen passes at `6.009670053264138e-10` mol/s),
+which is what makes the rest a reading rather than a mis-set-up state. The segment solve takes the
+full 20-pass cap at a `1.76` mol/s outlet residual against a `1e-9` gate and publishes a vapour at
+`2.2e-29` K; the column-wide Newton stalls after two passes at a residual of `65.9` against its own
+`1e-6` gate and publishes a `153` K vapour beside a `454` K liquid, and at its own test's settings
+the norm is `30.5` against `1e-5`. **That test asserts finiteness and never convergence** - it caps
+the Newton at two iterations and removes the homotopy - and its companion caps them at one.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe rate_based_solvers \
+  > captures/process_rate_based_solvers.tsv
+```
+
 They are committed rather than regenerated in CI because the jar is gitignored, so a gate
 that ran the JVM could not run on a runner that has no NeqSim checkout. Committing the
 output is what lets `tools/gen_neqsim_cases.py --check` be a build gate: it reads a capture

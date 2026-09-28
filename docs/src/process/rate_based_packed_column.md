@@ -49,8 +49,8 @@ not an equation, and both implementations read it from here.
 | `mass_transfer_correlation` | onda_1968 / billet_schultes_1999 | *Optional.* **Both are ported.** `billet_schultes_1999` is not a correlation: it multiplies `kGa` by `max(0.1, Ch/0.4)` and `kLa` by `max(0.1, Cp)`, the two constants the packing's own row carries. |
 | `film_model` | overall_two_resistance / maxwell_stefan_matrix | *Optional.* the scalar gas/liquid film pair, or the Maxwell-Stefan matrix correction. **Both are ported**, and the class defaults to the matrix. |
 | `heat_transfer_model` | none / chilton_colburn_analogy | *Optional.* **`none` re-equilibrates the outlets after material transfer alone**, and both coefficients are then exactly zero; `chilton_colburn_analogy` takes them from the packed-bed films. The class defaults to the analogy. |
-| `segment_solver` | sequential_explicit / simultaneous_residual | *Optional.* **`sequential_explicit` is ported**; `simultaneous_residual` is refused by name, with `SegmentSolver` behind it, and **NeqSim disables its own test** for that branch. |
-| `column_solver` | fixed_point_profile / equation_oriented | *Optional.* **`fixed_point_profile` is ported**; `equation_oriented` is refused by name, with `ColumnSolver` behind it - the column-wide damped Newton with homotopy continuation. |
+| `segment_solver` | sequential_explicit / simultaneous_residual | *Optional.* **`sequential_explicit` is ported**; `simultaneous_residual` is refused by name. NeqSim disables its own test for the branch, and this port measured why: on the class's own state it takes the 20-pass cap at a `1.76` mol/s residual against a `1e-9` gate, with the vapour at `2.2e-29` K. |
+| `column_solver` | fixed_point_profile / equation_oriented | *Optional.* **`fixed_point_profile` is ported**; `equation_oriented` is refused by name. The column-wide damped Newton stalls after two passes at a residual of `65.9` against its own `1e-6` gate and publishes a `153` K vapour; the class's own test for it asserts finiteness and never convergence. |
 
 
 ## Outputs
@@ -125,6 +125,8 @@ not an equation, and both implementations read it from here.
 
 - **a bed of no height is a converged solve**: the class accepts it on the first pass, so a warning there would fail its own zero-height test. The profile is still `number_of_segments` records, at a height of zero.
 
+- **neither refused solver converges on the class's own state.** `process_rate_based_solvers.tsv` measures it: the segment solve takes the 20-pass cap at a `1.76` mol/s residual against a `1e-9` gate with the vapour at `2.2e-29` K, and the Newton stalls after two passes at `65.9` against `1e-6`.
+
 
 ## Cases
 
@@ -149,4 +151,6 @@ declared checks *that call* could not evaluate.
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/RateBasedPackedColumn.java` is the port source; `internals/PackingHydraulicsCalculator.java` is the packing's, and `process.rate_based_packed_column` composes it through `hydraulics.packing_hydraulics`.
 
 - `validation/neqsim/captures/process_rate_based_packed_column.tsv` - ten rows: the class's own states on SRK and the same states re-cased on PR, with two CPA-Statoil TEG rows as evidence for a refusal. Each row prints the four ports, the convergence pair and the twenty-nine carried segment fields.
+
+- `validation/neqsim/captures/process_rate_based_solvers.tsv` - the class's own state under the pair this port carries as a control, under each refused solver alone, under both, and under `EQUATION_ORIENTED` at the settings of the class's own test for it. No refused row converges.
 
