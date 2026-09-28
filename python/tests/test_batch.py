@@ -222,6 +222,9 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # `packing` names a row in the packing table, and the answer changes with which row it
         # is: a categorical choice rather than a scale factor, like the others here.
         "hydraulics.packing_hydraulics",
+        # The same `packing` input, read for its factor alone rather than for its whole
+        # geometry - so the same categorical reason, and no column to vary it down.
+        "hydraulics.packing_sizing",
         # `eos` names the cubic the reference liquid is built from, the same categorical
         # input the other two carry.
         "eos.solid_fugacity",

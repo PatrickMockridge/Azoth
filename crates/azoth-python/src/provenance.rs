@@ -24,12 +24,19 @@ use pyo3::prelude::pyfunction;
 /// # Errors
 /// [`PyValueError`] for a code this build does not know. `None` rather than an error for an
 /// id it does not ship, which is what the by-id lookup means.
+/// The block's four halves as the extension hands them across: the status, the codes, the
+/// fields each code names, and whether a witness was recorded.
+///
+/// Named rather than written inline because the tuple is long enough that `clippy` refuses it
+/// written out - and a name says what the four parts are, which four types in a row do not.
+type ProvenanceBlockParts = (String, Vec<String>, Vec<String>, bool);
+
 #[pyfunction]
 #[pyo3(name = "provenance_block")]
 pub fn provenance_block(
     calc_id: &str,
     warnings: Vec<(String, Option<String>)>,
-) -> PyResult<Option<(String, Vec<String>, Vec<String>, bool)>> {
+) -> PyResult<Option<ProvenanceBlockParts>> {
     let Some(static_half): Option<&'static ProvenanceStatic> =
         azoth_core::provenance_gen::provenance(calc_id)
     else {

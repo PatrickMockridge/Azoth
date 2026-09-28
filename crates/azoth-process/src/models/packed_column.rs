@@ -280,7 +280,7 @@ pub fn packed_column(
 #[cfg(test)]
 mod surface_tension {
     use azoth_core::units::{
-        kilograms_per_cubic_meter, kilograms_per_second, kelvins, meters, newtons_per_meter,
+        kelvins, kilograms_per_cubic_meter, kilograms_per_second, meters, newtons_per_meter,
         pascal_seconds, pascals,
     };
     use azoth_hydraulics::packing_hydraulics::{PackingState, packing_hydraulics};
@@ -397,10 +397,7 @@ mod surface_tension {
         let liquid_mass = tray.liquid_n * liquid_view.molar_mass;
         println!(
             "  vapour: rho={:.4} kg/m3  M={:.6} kg/mol  mu={:.6e} Pa.s  m={:.6} kg/s",
-            gas_view.density,
-            gas_view.molar_mass,
-            gas_view.transport.mu.value,
-            gas_mass
+            gas_view.density, gas_view.molar_mass, gas_view.transport.mu.value, gas_mass
         );
         println!(
             "  liquid: rho={:.4} kg/m3  M={:.6} kg/mol  mu={:.6e} Pa.s  m={:.6} kg/s",
