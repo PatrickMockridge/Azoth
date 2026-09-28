@@ -21,6 +21,26 @@ use crate::stream::Stream;
 /// and never feeds it back, so this guess is what the solved column's stage count is.
 pub const HETP_GUESS_M: f64 = 0.5;
 
+/// The surface tension `ColumnInternalsDesigner.getTrayProperties` falls back to, in N/m.
+///
+/// **A third constant, and it is not the rate-based path's.** The designer asks
+/// `fluid.getInterphaseProperties().getSurfaceTension(0, 1)` and answers `0.02` when that is not
+/// finite and positive - while `RateBasedPackedColumn.estimateSurfaceTension` answers
+/// [`crate::segment::fallbacks::DEFAULT_SURFACE_TENSION`], `0.025`, on the same class of pair.
+/// Two routes, two fallbacks, one physical quantity.
+///
+/// **Settled by measurement, not by reading.** The capture's 2.3 m row pins
+/// `wetted_area = 72.58281335470625`, and Onda's wetted-area expression reads the surface tension
+/// and the liquid side and no diffusivity - so it is the one captured output that separates the
+/// candidates. At the middle tray this constant reproduces it to `3e-7`; `0.025` answers
+/// `63.944` and `0.05` answers `39.804`, both outside any tolerance that admits the first. The
+/// three outputs that read no surface tension at all - flooding velocity, percent flood and
+/// pressure drop - agree with the capture to `1e-6`, which is what says the tray and its state
+/// are the right ones before the reading is taken.
+///
+/// The triangle is asserted in `models::packed_column::tension_experiment`.
+pub const DESIGNER_SURFACE_TENSION_N_PER_M: f64 = 0.02;
+
 /// The stage count `PackedColumn.estimateStages` derives from a packed height.
 ///
 /// `ceil(packed_height / 0.5)` floored at two. **The floor is reached rather than refused, and

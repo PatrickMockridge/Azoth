@@ -276,3 +276,237 @@ pub fn packed_column(
 
     Ok(out.into())
 }
+
+#[cfg(test)]
+mod surface_tension {
+    use azoth_core::units::{
+        kilograms_per_cubic_meter, kilograms_per_second, kelvins, meters, newtons_per_meter,
+        pascal_seconds, pascals,
+    };
+    use azoth_hydraulics::packing_hydraulics::{PackingState, packing_hydraulics};
+
+    use crate::kernels::packed_column::{DESIGNER_SURFACE_TENSION_N_PER_M, stage_count};
+    use crate::models::distillation_column::distillation_column_outcome;
+    use crate::segment::phase::{Pick, phase_view};
+    use crate::stream::Stream;
+
+    /// **Which surface tension the packed column's report takes, settled against the capture.**
+    ///
+    /// `ColumnInternalsDesigner.getTrayProperties` reads
+    /// `fluid.getInterphaseProperties().getSurfaceTension(0, 1)` and answers `0.02` when that is
+    /// not finite and positive, while `RateBasedPackedColumn.estimateSurfaceTension` answers
+    /// `0.025` on the same class of pair. Two routes, two fallbacks, one quantity, and the
+    /// capture decides: `wetted_area = 72.58281335470625` on the 2.3 m row.
+    ///
+    /// **The control runs first and it is what makes the reading trustworthy.** Onda's
+    /// wetted-area expression reads sigma and the liquid side and no diffusivity, so it is the
+    /// one captured output that separates the candidates; but flooding velocity, percent flood
+    /// and pressure drop read **no sigma at all**, so if they did not reproduce the capture the
+    /// tray or its state would be wrong and the sigma reading would be meaningless. They agree to
+    /// `1e-6`, which is what says the middle tray is index 3 of 7 and its state is the capture's.
+    ///
+    /// The answer is `0.02` - the designer's own fallback, and a third constant distinct from the
+    /// rate-based path's. `0.025` gives `63.944` and `0.05` gives `39.804`, both asserted *not* to
+    /// reproduce, so the capture is shown to decide rather than merely to agree.
+    ///
+    /// The residual `3e-7` is the port's own tray density and viscosity rather than NeqSim's: the
+    /// capture prints this row's per-tray temperature, pressure and two flows and nothing else,
+    /// so those two properties are the port's numbers and are the limit on this reading's
+    /// precision. Extending the probe to print them is what would tighten it.
+    #[test]
+    #[allow(clippy::too_many_lines)] // one measurement, kept linear so it reads as one
+    fn the_designers_fallback_reproduces_the_capture_and_the_rate_based_constant_does_not() {
+        let components = vec!["methane".to_string(), "n-butane".to_string()];
+        let (outcome, _) = distillation_column_outcome(
+            &components,
+            7.490704036290964,
+            &[0.5, 0.5],
+            pascals(2.0e6),
+            kelvins(300.0),
+            stage_count(2.3),
+            2,
+            true,
+            true,
+            pascals(1.9e6),
+            pascals(2.0e6),
+            Some(kelvins(373.15)),
+            Some(kelvins(253.15)),
+            1.0e-6,
+            200,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .expect("the capture's 2.3 m state solves");
+
+        println!("\ntrays = {}", outcome.trays.len());
+        for (index, tray) in outcome.trays.iter().enumerate() {
+            println!(
+                "  tray {index}: T={:.4} P={:.1} gas_n={:.6} liquid_n={:.6}",
+                tray.temperature.value, tray.pressure.value, tray.gas_n, tray.liquid_n
+            );
+        }
+
+        let middle = outcome.trays.len() / 2;
+        let tray = &outcome.trays[middle];
+        println!("\nMIDDLE = tray {middle}");
+
+        let gas = Stream::from_pt(
+            components.clone(),
+            tray.gas_z.clone(),
+            tray.gas_n,
+            tray.pressure,
+            tray.temperature,
+        )
+        .expect("the tray's vapour rebuilds");
+        let liquid = Stream::from_pt(
+            components.clone(),
+            tray.liquid_z.clone(),
+            tray.liquid_n,
+            tray.pressure,
+            tray.temperature,
+        )
+        .expect("the tray's liquid rebuilds");
+        let gas_view = phase_view(&gas, Pick::Gas).expect("a gas phase");
+        let liquid_view = phase_view(&liquid, Pick::Liquid).expect("a liquid phase");
+
+        let gas_mass = tray.gas_n * gas_view.molar_mass;
+        let liquid_mass = tray.liquid_n * liquid_view.molar_mass;
+        println!(
+            "  vapour: rho={:.4} kg/m3  M={:.6} kg/mol  mu={:.6e} Pa.s  m={:.6} kg/s",
+            gas_view.density,
+            gas_view.molar_mass,
+            gas_view.transport.mu.value,
+            gas_mass
+        );
+        println!(
+            "  liquid: rho={:.4} kg/m3  M={:.6} kg/mol  mu={:.6e} Pa.s  m={:.6} kg/s",
+            liquid_view.density,
+            liquid_view.molar_mass,
+            liquid_view.transport.mu.value,
+            liquid_mass
+        );
+
+        println!(
+            "\n  sigma   wetted_area          u_flood              percent_flood        dp                   hetp"
+        );
+        for (label, sigma) in [("0.02 ", 0.02), ("0.025", 0.025), ("0.05 ", 0.05)] {
+            let out = packing_hydraulics(
+                "Pall-Ring-50",
+                PackingState {
+                    column_diameter: meters(0.3),
+                    packed_height: 2.3,
+                    vapor_mass_flow: kilograms_per_second(gas_mass),
+                    liquid_mass_flow: kilograms_per_second(liquid_mass),
+                    vapor_density: kilograms_per_cubic_meter(gas_view.density),
+                    liquid_density: kilograms_per_cubic_meter(liquid_view.density),
+                    vapor_viscosity: pascal_seconds(gas_view.transport.mu.value),
+                    liquid_viscosity: pascal_seconds(liquid_view.transport.mu.value),
+                    surface_tension: newtons_per_meter(sigma),
+                    vapor_diffusivity: 3.3e-7,
+                    liquid_diffusivity: 1.9e-9,
+                    hydraulic_capacity_factor: 1.0,
+                },
+            )
+            .expect("the packing hydraulics runs");
+            println!(
+                "  {label}  {:.12}  {:.12}  {:.12}  {:.12}  {:.6}",
+                out.wetted_area,
+                out.flooding_velocity,
+                out.percent_flood,
+                out.total_pressure_drop.value,
+                out.hetp.value
+            );
+        }
+
+        println!(
+            "\n  CAPTURE 72.58281335470625  0.5080730231464395  15.053642072827294  0.6408295279845977  1.44"
+        );
+        println!(
+            "  (u_flood, percent_flood and dp read no sigma: they are the control on the tray state)"
+        );
+
+        // **The control first: three outputs that read no sigma pin the tray and the state.**
+        // They agree to ~3e-7, so the middle tray is index 3 of 7 and the state it is read at is
+        // the capture's. Only then is the sigma reading meaningful.
+        let hydraulics = |sigma: f64| {
+            packing_hydraulics(
+                "Pall-Ring-50",
+                PackingState {
+                    column_diameter: meters(0.3),
+                    packed_height: 2.3,
+                    vapor_mass_flow: kilograms_per_second(gas_mass),
+                    liquid_mass_flow: kilograms_per_second(liquid_mass),
+                    vapor_density: kilograms_per_cubic_meter(gas_view.density),
+                    liquid_density: kilograms_per_cubic_meter(liquid_view.density),
+                    vapor_viscosity: pascal_seconds(gas_view.transport.mu.value),
+                    liquid_viscosity: pascal_seconds(liquid_view.transport.mu.value),
+                    surface_tension: newtons_per_meter(sigma),
+                    vapor_diffusivity: 3.3e-7,
+                    liquid_diffusivity: 1.9e-9,
+                    hydraulic_capacity_factor: 1.0,
+                },
+            )
+            .expect("the packing hydraulics runs")
+        };
+        let close = |got: f64, want: f64| (got - want).abs() / want.abs() < 1e-5;
+        let control = hydraulics(DESIGNER_SURFACE_TENSION_N_PER_M);
+        assert!(
+            close(control.flooding_velocity, 0.508_073_023_146_439_5),
+            "the flooding velocity pins the tray state: {}",
+            control.flooding_velocity
+        );
+        assert!(
+            close(control.percent_flood, 15.053_642_072_827_294),
+            "the load pins the tray state: {}",
+            control.percent_flood
+        );
+        assert!(
+            close(control.total_pressure_drop.value, 0.640_829_527_984_597_7),
+            "the pressure drop pins the tray state: {}",
+            control.total_pressure_drop.value
+        );
+
+        // **And then the reading: `wetted_area` is the one output that separates the candidates,
+        // because Onda's expression reads sigma and the liquid side and no diffusivity.**
+        assert!(
+            close(control.wetted_area, 72.582_813_354_706_25),
+            "the designer's own 0.02 fallback reproduces the capture's wetted area: {}",
+            control.wetted_area
+        );
+        for (rival, label) in [
+            (0.025, "the rate-based path's DEFAULT_SURFACE_TENSION"),
+            (0.05, "a mid-range value"),
+        ] {
+            let out = hydraulics(rival);
+            assert!(
+                !close(out.wetted_area, 72.582_813_354_706_25),
+                "{label} must NOT reproduce it, or the capture cannot decide: {}",
+                out.wetted_area
+            );
+        }
+    }
+}
