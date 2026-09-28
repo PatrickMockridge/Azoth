@@ -109,6 +109,35 @@ strategies and the deethanizer under `NAPHTALI_SANDHOLM`, which is the only one 
 it. Two of the ten are left out of the deethanizer rows on purpose, and the probe says which:
 `MESH_RESIDUAL` takes 594 s for the pair and `AUTO` had not returned after 900 s.
 
+**`ProcessProbe packed_column` is the equilibrium packed column, and it prints the report's
+inputs as well as its outputs.** Sixteen rows: eleven stage-count rows, where the height's
+`ceil(h / 0.5)` rule and its two-tray floor are visible, and five solved ones. **Every solved row
+prints, per tray, the four properties `ColumnInternalsDesigner.getTrayProperties` reads** - the
+vapour's and the liquid's density, the liquid's viscosity, and the interphase surface tension -
+plus the calculator's own verdicts beside the column's.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe packed_column \
+  > captures/process_packed_column.tsv
+```
+
+**Four things those keys pin, and each was unread before.** `isDesignOk()`, `isWettingOk()` and
+the column's `isHydraulicsOk()` are three predicates that all read as "the hydraulics are fine",
+and on these rows **all three are false**, so the row alone cannot tell them apart - which is
+what makes publishing one under another's name a way to reproduce every row while answering a
+different question. `getPressureDropPerMeter()` beside the column's `getPackingPressureDrop()`
+settles a name that does not say which it is: on the 2.3 m row they are `0.27862153390634686` and
+`0.6408295279845977`, **a ratio of exactly the bed height**, so the column's is the total.
+`resolved_packing` and `resolved_packing_factor` (`Pall-Ring-50`, `180.0`) and
+`calculated_diameter_m` (`0.3`) are the geometry and the sized diameter the report used.
+
+**And `interphase_surface_tension_N_per_m` is `0.0` on every tray**, which is the measurement
+behind the surface tension the report takes: `getTrayProperties` asks
+`fluid.getInterphaseProperties().getSurfaceTension(0, 1)` and answers its own `0.02` fallback when
+that is not finite and positive. So the route is the fallback, shown at the call rather than
+inferred from the wetted area - and it is a **hydrocarbon** pair here, not the gas-and-aqueous one
+the rate-based column's `estimateSurfaceTension` meets, so the `0.0` is not specific to water.
+
 **`PackingProbe` drives `PackingHydraulicsCalculator` directly, on states of its own.** The
 equilibrium packed column's capture prints the calculator's *outputs* and not the inputs it
 reads - the two mass flows, the four transport properties, the two diffusivities and the

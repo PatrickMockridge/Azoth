@@ -1311,6 +1311,10 @@ public class ProcessProbe {
           + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
       System.out.println("tray" + i + "_liquid_n="
           + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+      // **What the designer reads off this tray**, printed per tray so the port's own numbers
+      // become a measurement rather than an assumption - and so the middle tray the report
+      // actually reads can be identified rather than assumed to be `size() / 2`.
+      printTrayProperties(column, i);
     }
     print("gas_out", column.getGasOutStream());
     print("liquid_out", column.getLiquidOutStream());
@@ -1405,6 +1409,10 @@ public class ProcessProbe {
           + column.getTray(i).getGasOutStream().getFlowRate("mol/sec"));
       System.out.println("tray" + i + "_liquid_n="
           + column.getTray(i).getLiquidOutStream().getFlowRate("mol/sec"));
+      // **What the designer reads off this tray**, printed per tray so the port's own numbers
+      // become a measurement rather than an assumption - and so the middle tray the report
+      // actually reads can be identified rather than assumed to be `size() / 2`.
+      printTrayProperties(column, i);
     }
     print("distillate", column.getGasOutStream());
     print("bottoms", column.getLiquidOutStream());
@@ -1435,6 +1443,59 @@ public class ProcessProbe {
       System.out.println("htu_g_m=" + hydraulics.getHtuG());
       System.out.println("htu_l_m=" + hydraulics.getHtuL());
       System.out.println("htu_og_m=" + hydraulics.getHtuOG());
+      // **The calculator's own verdicts, printed beside the column's.** `isHydraulicsOk()` above
+      // and `isDesignOk()` here are *different predicates* that both read as "the hydraulics are
+      // fine" - and every row of this capture has both false, so a port that published one under
+      // the other's name would reproduce every row while answering a different question.
+      System.out.println("design_ok=" + hydraulics.isDesignOk());
+      System.out.println("wetting_ok=" + hydraulics.isWettingOk());
+      // **Per metre or in total, which the name does not say.** The column's
+      // `getPackingPressureDrop()` is printed above and this is the calculator's own; over a
+      // 2.3 m bed the two differ by exactly the height, so the pair settles which is which.
+      System.out.println("pressure_drop_per_meter_Pa=" + hydraulics.getPressureDropPerMeter());
+      // The geometry the calculator resolved and the diameter it sized, which is what the
+      // sizing calc's state has to match.
+      System.out.println("resolved_packing=" + hydraulics.getPackingName());
+      System.out.println("resolved_packing_factor=" + hydraulics.getPackingFactor());
+      System.out.println("calculated_diameter_m=" + hydraulics.getColumnDiameter());
+    }
+  }
+
+  /// The properties `ColumnInternalsDesigner.getTrayProperties` reads off one tray, with the same
+  /// phase selection it makes, plus the interphase call itself.
+  ///
+  /// **`interphase_surface_tension_N_per_m` is the decisive one.** The designer asks
+  /// `fluid.getInterphaseProperties().getSurfaceTension(0, 1)` and answers `0.02` when that is not
+  /// finite and positive, so printing what this call returns shows the fallback being taken rather
+  /// than leaving it to be inferred from the wetted area. The four properties around it are what
+  /// the report's inputs have never been printed as, and they are what turns the port's own
+  /// density and viscosity from an assumption into a measured number.
+  static void printTrayProperties(neqsim.process.equipment.distillation.PackedColumn column,
+      int index) {
+    try {
+      neqsim.thermo.system.SystemInterface fluid = column.getTray(index).getFluid();
+      if (fluid == null) {
+        return;
+      }
+      int phases = fluid.getNumberOfPhases();
+      System.out.println("tray" + index + "_phase_count=" + phases);
+      if (phases < 2) {
+        return;
+      }
+      fluid.initProperties();
+      double gasDensity = fluid.hasPhaseType("gas")
+          ? fluid.getPhase("gas").getDensity("kg/m3") : fluid.getPhase(0).getDensity("kg/m3");
+      int liquidPhase = fluid.hasPhaseType("oil") ? fluid.getPhaseNumberOfPhase("oil")
+          : (fluid.hasPhaseType("aqueous") ? fluid.getPhaseNumberOfPhase("aqueous") : 1);
+      double liquidDensity = fluid.getPhase(liquidPhase).getDensity("kg/m3");
+      double liquidViscosity = fluid.getPhase(liquidPhase).getViscosity("kg/msec");
+      double sigma = fluid.getInterphaseProperties().getSurfaceTension(0, 1);
+      System.out.println("tray" + index + "_gas_density_kg_per_m3=" + gasDensity);
+      System.out.println("tray" + index + "_liquid_density_kg_per_m3=" + liquidDensity);
+      System.out.println("tray" + index + "_liquid_viscosity_Pa_s=" + liquidViscosity);
+      System.out.println("tray" + index + "_interphase_surface_tension_N_per_m=" + sigma);
+    } catch (Exception ex) {
+      System.out.println("tray" + index + "_properties_error=" + ex.getClass().getSimpleName());
     }
   }
 
