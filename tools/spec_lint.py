@@ -41,9 +41,14 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "specs" / "calcs"
 MODEL_DIR = ROOT / "specs" / "models"
 CASE_DIR = ROOT / "specs" / "cases"
+#: **The one spec tree that had no schema**, and so the one whose `notes` grew to five
+#: thousand characters with nothing reading them. `docs/src/architecture/spec-files.md`
+#: states the format for every spec; this is what makes that true of the palette too.
+PALETTE_DIR = ROOT / "specs" / "unit_ops"
 SCHEMA_PATH = ROOT / "specs" / "schema" / "calc.schema.json"
 MODEL_SCHEMA_PATH = ROOT / "specs" / "schema" / "model.schema.json"
 CASE_SCHEMA_PATH = ROOT / "specs" / "schema" / "case.schema.json"
+PALETTE_SCHEMA_PATH = ROOT / "specs" / "schema" / "unit_ops.schema.json"
 
 # Quantities that name a state rather than a number. These have no units and are
 # not function parameters, so they are allowed in range checks without appearing
@@ -510,6 +515,60 @@ def check_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     check_range_checks(report, rel, spec)
     check_model_cases(report, rel, spec)
     check_prose_length(report, rel, spec)
+
+
+def check_palette(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """The semantic checks a palette entry needs beyond schema validation.
+
+    Three, and each mirrors a rule the loader already enforces at run time, so the
+    two say the same thing in the two places a reader looks - `crates/azoth-process/
+    src/check.rs`'s `validate_palette` for the first two, and the exclusivity of the
+    porting fact for the third.
+    """
+    # A port's name is how a flowsheet's connection reaches it, so two ports of one
+    # entry sharing a name is a connection nothing can resolve.
+    names = [port["name"] for port in spec["ports"]]
+    if len(set(names)) != len(names):
+        report.error(str(rel), f"two ports share a name: {sorted(names)}")
+
+    # Every field's dimension is a vocabulary id, because the checker resolves it and
+    # a name the vocabulary does not carry is a field no stream can be held to.
+    vocabulary = _vocabulary_dimensions()
+    for port in spec["ports"]:
+        for name, declared in port["fields"].items():
+            if declared["dimension"] not in vocabulary:
+                report.error(
+                    str(rel),
+                    f"port '{port['name']}' field '{name}' names the dimension "
+                    f"'{declared['dimension']}', which the vocabulary does not carry",
+                )
+
+    # **The porting fact is stated once**, in the spec that has an implementation:
+    # `specs/models/process/<leaf>.toml`. A palette entry declares one only where no
+    # model spec of that leaf exists, so the two can never disagree - which is how a
+    # claim corrected in one file left its twin lying in the other.
+    leaf = spec["id"].split(".", 1)[1]
+    has_model = (MODEL_DIR / "process" / f"{leaf}.toml").exists()
+    if "unported" in spec and has_model:
+        report.error(
+            str(rel),
+            f"declares `unported`, and specs/models/process/{leaf}.toml is the spec "
+            f"with the implementation - so the fact belongs there and stating it here "
+            f"is the second place it can go stale",
+        )
+
+
+#: Every dimension id the vocabulary declares, read once.
+_VOCABULARY_DIMENSIONS: set[str] | None = None
+
+
+def _vocabulary_dimensions() -> set[str]:
+    """The dimension ids `specs/vocabulary/vocabulary.toml` declares."""
+    global _VOCABULARY_DIMENSIONS
+    if _VOCABULARY_DIMENSIONS is None:
+        document = tomllib.loads((ROOT / "specs" / "vocabulary" / "vocabulary.toml").read_text())
+        _VOCABULARY_DIMENSIONS = {row["id"] for row in document.get("dimensions", [])}
+    return _VOCABULARY_DIMENSIONS
 
 
 def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
@@ -1008,6 +1067,15 @@ def main() -> int:
             "suite can lint a synthetic spec that is not part of the registry."
         ),
     )
+    parser.add_argument(
+        "--palette-dir",
+        type=Path,
+        default=PALETTE_DIR,
+        help=(
+            "tree of palette entries to check (default: specs/unit_ops). The same "
+            "purpose as --spec-dir: a synthetic entry the suite can break on purpose."
+        ),
+    )
     args = parser.parse_args()
 
     # Every schema under specs/schema/ in one registry, keyed by `$id`: the calc
@@ -1050,6 +1118,19 @@ def main() -> int:
                     f"file under specs/cases/, or nothing verifies it.",
                 )
             check_model(report, rel, spec)
+
+    # The palette, against the schema it did not have. Its prose is held to the same
+    # 300-character rule a calc's is, which is what makes `spec-files.md`'s "no prose
+    # fields" true of the tree that had been exempt by omission.
+    if PALETTE_SCHEMA_PATH.exists():
+        palette_schema = schema_registry.load("unit_ops.schema.json")
+        Draft202012Validator.check_schema(palette_schema)
+        palette_validator = Draft202012Validator(
+            palette_schema, registry=schema_registry.registry()
+        )
+        for rel, spec in check_schema(report, palette_validator, args.palette_dir):
+            check_prose_length(report, rel, spec)
+            check_palette(report, rel, spec)
 
     if not args.quiet:
         print(f"spec_lint: {len(parsed)} spec(s) checked against {SCHEMA_PATH.name}")

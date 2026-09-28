@@ -1,6 +1,5 @@
 id = "unit_ops.stirred_tank_reactor"
 name = "Stirred-tank reactor"
-notes = "**This entry declared no parameters at all, and `run` reads seven.** The reaction, its limiting reactant, the conversion, the isothermal flag, the held temperature and pressure and the pressure drop are every one of them `run`'s own, and a form built from an entry with none of them could not configure the vessel. The omission is the one the tier keeps finding: a declaration that describes what the class *is* rather than what it *reads*."
 [source]
 standard = "NeqSim process/equipment/reactor/StirredTankReactor.java"
 [parameters.reaction]

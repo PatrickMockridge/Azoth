@@ -19,6 +19,22 @@ use crate::channel::Port;
 /// recent table header, so a `notes =` written one line too low lands in `[source]` — and
 /// serde's default is to drop it without a word, which is an assertion nothing reads. This
 /// was found by writing exactly that line into `unit_ops.ejector`.
+/// The NeqSim capability a palette entry with no model spec does not carry.
+///
+/// A symbol and the capture that measures the refusal, and no room for a clause: the
+/// argument belongs in the book and the measurement in the capture. This is the shape
+/// `specs/models/**`'s `[[unported]]` rows take, reduced to the one thing an entry with
+/// no parameters can say.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UnportedEntry {
+    /// The NeqSim class that would close the gap.
+    pub class: String,
+    /// The probe capture that measures the refusal, where one does.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capture: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Source {
@@ -65,16 +81,15 @@ pub struct UnitOpSpec {
     #[serde(default)]
     pub parameters: BTreeMap<String, Param>,
     pub ports: Vec<Port>,
-    /// What the declaration cannot say by itself, where there is such a thing.
+    /// The NeqSim capability this entry does not carry, where no model spec can say it.
     ///
-    /// **The palette entry has no `assumptions` block the way a calc spec does**, and a
-    /// unit operation that is *not ported* needs somewhere to say so: the calculus's rule
-    /// is that a thing is not "out of scope", it is not ported with the class that would
-    /// close it named. `unit_ops.simple_absorber` is the one today — its NeqSim class is a
-    /// fixed-point loop over MDEA/CO₂ loading rather than the stage-wise absorber its name
-    /// and its ports describe, and the chemistry that would close it is unported.
+    /// **A palette entry declares one only when `specs/models/process/<leaf>.toml` does
+    /// not exist**, and `spec_lint.py` refuses the pair. The entry with no model is
+    /// `unit_ops.simple_absorber`: its NeqSim class is a fixed-point loop over MDEA/CO₂
+    /// loading rather than the stage-wise absorber its name and its ports describe, so
+    /// there is no `process.` id for the row to live in.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub notes: Option<String>,
+    pub unported: Option<UnportedEntry>,
     /// The palette directory this entry was read from, e.g. `two_port`.
     ///
     /// **Not a declaration: the loader's own fact.** An entry's file lives in a directory that

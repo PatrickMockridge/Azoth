@@ -171,6 +171,8 @@ holds the declaration and the two languages to each other.
 - **both recycles are ported, and the pair is refused on a measurement.** A specified draw *flow* is a candidate search and a pumparound return is a fixed point; stating both puts the class on `solveWithColumnTearVariables`' coordinated loop, which `process_column_tear.tsv` shows does not converge.
 - **the coordinated loop fails by orders**: 18 of 30 candidates rejected and a `4.4e-4` residual on the draw alone, against `0.447` with an empty candidate history once the pumparound is beside it.
 - **the class's own liquid-and-pumparound row is where its balance does not close**: `RECONCILED_PRODUCTS`, a `2.449` kg/hr imbalance, and products `0.0200` mol/s above this port's, which closes to `9.7e-9`.
+- **the tray hydraulics and the mechanical design are not ported**: `TrayHydraulicsCalculator` and `DistillationColumnMechanicalDesign` are the classes that would close them, and neither is a parameter this entry declares.
+
 
 ## Cases
 

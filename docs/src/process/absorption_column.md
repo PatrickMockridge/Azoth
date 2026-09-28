@@ -122,6 +122,11 @@ holds the declaration and the two languages to each other.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
 
+- **the tray hydraulics and the mechanical design are not ported**: `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them, and this entry declares no parameter they read.
+
+- **it is not the refused family**: `SimpleAbsorber`, `SimpleTEGAbsorber`, `SimpleAmineAbsorber` and `WaterStripperColumn` carry the MDEA/CO2 and TEG/water chemistry, which is unported, and porting this id closes nothing about that.
+
+
 ## Cases
 
 | Case | Inputs | Expected |

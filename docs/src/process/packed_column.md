@@ -125,6 +125,8 @@ not an equation, and both implementations read it from here.
 - **the class's own test state is captured and is not an oracle.** Run as its test runs it, the column has no internal traffic, the feed passes through the empty trays below it, and the class still reports `RIGOROUS_CONVERGED` with residuals of exactly zero.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
+- **the packing's report is mechanical design and is deferred with the tree that closes it**: `DistillationColumnMechanicalDesign`, shared with four other entries, is where `ColumnInternalsDesigner`'s flood, sizing and `TrayHydraulicsCalculator` would land.
+
 
 ## Cases
 

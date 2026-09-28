@@ -1,10 +1,9 @@
 id = "unit_ops.stripping_column"
 name = "Stripping column"
-notes = "**`AbsorptionColumn` with the two feeds renamed, and that is the whole class.** `StrippingColumn extends AbsorptionColumn` and its 90 lines add nothing to the arithmetic: `addStrippingGasStream` is `addGasInStream`, `addRichLiquidStream` is `addSolventInStream`, and the two product getters are the base's. The class's own javadoc states the reason - absorption and stripping are the same counter-current equilibrium-stage equations, and the thermodynamic driving force sets the direction of component transfer - so the stripping gas enters stage 0 and the rich liquid the top stage, exactly where an absorber's gas and solvent enter. **Nothing calls it**: measured at the pin `f0c7436c69`, `StrippingColumn` is constructed at no place under `src/main`, and no class extends it. Its declaration is the base's, with the two inlets named for what they carry rather than for what the base calls them."
 [source]
 standard = "NeqSim process/equipment/absorber/StrippingColumn.java"
 [parameters.reactive]
-description = "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash` rather than to the equilibrium one. **An absorber has no ends** - the constructor passes `false, false` - so `setReactive(true)` flags every stage, which the capture's `reactive_tray_flags` prints as `11111`"
+description = "whether the middle trays flash reactively, which `setReactive(true)` sets: a tray that does routes its flash to `ThermodynamicOperations.reactiveTPflash` or `reactivePHflash`. **An absorber has no ends**, so `setReactive(true)` flags every stage - the capture prints `11111`"
 [parameters.reactive_start_tray]
 description = "the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last - `setReactive(true, start, end)`. Both bounds are stated or neither"
 [parameters.reactive_end_tray]

@@ -1,6 +1,5 @@
 id = "unit_ops.separator"
 name = "Separator"
-notes = "**The parameters are `Separator.run`'s own, and the entry used to declare two it does not read.** `temperature` was never a parameter of this class: `run` flashes at the feed's temperature (moving it only through `heatInput`). `efficiency` is a field with a setter that `run` never touches - the class says so at `Separator.java:575`, \"the entrainment applied during `run()` is unaffected\" - and the entrainment fractions are what actually move material, so `gas_in_liquid` is the one of the three a two-phase port can carry. `oil_in_gas` and `water_in_gas` move material between the oil, aqueous and gas phases, which a two-outlet entry has no phases for; they belong to `unit_ops.three_phase_separator`."
 [source]
 standard = "NeqSim process/equipment/separator/Separator.java"
 [parameters.pressure_drop]

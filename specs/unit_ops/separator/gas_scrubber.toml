@@ -1,6 +1,5 @@
 id = "unit_ops.gas_scrubber"
 name = "Gas scrubber"
-notes = "**Its stream side is `unit_ops.separator`'s and the three parameters are the separator's.** `GasScrubber extends Separator` and does **not** override `run`, so the steady state is the separator's flash exactly - which is why an entry declaring no parameters could not describe the machine: the same vessel was statable through `unit_ops.separator` and not through this one. **The Souders-Brown capacity metric is not ported**: `getCapacityUtilization` needs an internal diameter and a design K-factor (`setInternalDiameter`, `setDesignGasLoadFactor`) and lives in `GasScrubberMechanicalDesign`, so it is mechanical design rather than stream arithmetic, and the entry declares neither."
 [source]
 standard = "NeqSim process/equipment/separator/GasScrubber.java"
 [parameters.pressure_drop]

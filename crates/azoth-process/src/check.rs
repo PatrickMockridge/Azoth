@@ -1470,7 +1470,7 @@ mod tests {
                 port("feed", Direction::In, Multiplicity::One),
                 port("discharge", Direction::Out, Multiplicity::One),
             ],
-            notes: None,
+            unported: None,
             family: None,
         }
     }
@@ -1486,7 +1486,7 @@ mod tests {
                 port("feed", Direction::In, Multiplicity::Many),
                 port("product", Direction::Out, Multiplicity::One),
             ],
-            notes: None,
+            unported: None,
             family: None,
         }
     }
@@ -1501,7 +1501,7 @@ mod tests {
                 port("feed", Direction::In, Multiplicity::One),
                 port("products", Direction::Out, Multiplicity::Many),
             ],
-            notes: None,
+            unported: None,
             family: None,
         }
     }

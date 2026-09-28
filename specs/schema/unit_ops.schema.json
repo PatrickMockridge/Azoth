@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/unit_ops.schema.json",
+  "title": "Azoth palette entry",
+  "description": "One unit operation as the palette offers it: the parameters a user types on its form, and the ports a flowsheet connects. Read by `crates/azoth-process/src/unit_op.rs` and by the middleware, and it is the only spec tree that until now had no schema at all - so its `notes` field grew to five thousand characters with nothing validating it, while `docs/src/architecture/spec-files.md` stated the format as \"a spec file declares ... no prose fields\".",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "ports"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^unit_ops\\.[a-z][a-z_0-9]*$",
+      "description": "Dotted identifier, e.g. `unit_ops.throttling_valve`. The leaf names the file and the kernel the executor dispatches to."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The label the palette shows."
+    },
+    "source": {
+      "$ref": "calc.schema.json#/properties/source",
+      "description": "Where the arithmetic came from, as a citation. Optional, and held to the same shape a calc's is."
+    },
+    "parameters": {
+      "type": "object",
+      "description": "The parameters a user types on the form, by name. A parameter the entry does not declare is one the form does not offer - which is the statement, and the reason a withdrawn parameter needs no note.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "unit": {
+            "type": "string",
+            "description": "The parameter's canonical unit, for a quantity. Omitted for an enum, a boolean, a name, or a quantity whose unit follows another parameter's - the distillation column's specification target is the one."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether a kernel can run without it. `false` by default, and the executor reads the two with different families of accessor, so this is a fact about the code rather than a hint."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The declared interface of each side of the unit operation.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "direction",
+          "fields"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "direction": {
+            "enum": [
+              "in",
+              "out"
+            ]
+          },
+          "multiplicity": {
+            "enum": [
+              "one",
+              "many"
+            ],
+            "description": "How many streams the port carries. `one` by default; `many` is a mixer's inlets or a splitter's outlets."
+          },
+          "fields": {
+            "type": "object",
+            "description": "The field record a stream on this port carries, by field name.",
+            "minProperties": 1,
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dimension"
+              ],
+              "properties": {
+                "dimension": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "A dimension id from `specs/vocabulary/vocabulary.toml`, e.g. `pressure`."
+                },
+                "shape": {
+                  "enum": [
+                    "scalar",
+                    "vector"
+                  ],
+                  "description": "Whether the field is one quantity or one entry per component. `scalar` by default."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "unported": {
+      "type": "object",
+      "description": "The NeqSim capability this entry does not carry, for an entry with no model spec to declare it. **`process` models declare their own rows in `[[unported]]`; a palette entry declares one only where no model spec of the same leaf exists**, so the same fact is never written twice - which is how a corrected claim in one file left its twin lying in the other.",
+      "additionalProperties": false,
+      "required": [
+        "class"
+      ],
+      "properties": {
+        "class": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9_.]*$",
+          "description": "The NeqSim class that would close the gap, as a symbol with no sentence around it."
+        },
+        "capture": {
+          "type": "string",
+          "description": "The probe capture that measures the refusal, where one does."
+        }
+      }
+    }
+  }
+}
