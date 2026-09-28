@@ -173,6 +173,7 @@
   - [Swamee-Jain friction factor (explicit)](./hydraulics/friction_factor_swamee_jain.md)
   - [Flow through an orifice from the pressure difference across it](./hydraulics/orifice_flow.md)
   - [A packed bed's flooding, load, pressure drop and film coefficients](./hydraulics/packing_hydraulics.md)
+  - [A packed bed's required column diameter from its flooding velocity](./hydraulics/packing_sizing.md)
   - [Pump shaft power from flow, head and efficiency](./hydraulics/pump_power.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
 - [Unit operations](./process/index.md)

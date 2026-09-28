@@ -137,6 +137,53 @@ impl CalcResult for PackingHydraulicsResult {
     }
 }
 
+/// Result of `hydraulics.packing_sizing`.
+///
+/// **The raw and the rounded diameter are both reported**, because the gap between them is the
+/// answer to a question a caller will ask: `required_diameter` is what the vapour needs and
+/// `column_diameter` is what a vessel can be bought at. A port that kept only the second would
+/// hide that a `0.1195` m requirement and a `0.2973` m one both answer `0.3` m.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PackingSizingResult {
+    /// The packing the name resolved to, which is `Pall-Ring-50` where nothing matched.
+    pub packing_name: String,
+    /// The resolved packing factor, in 1/m - the only geometry this calculation reads.
+    pub packing_factor: f64,
+    /// The vapour velocity at flooding, in m/s.
+    pub flooding_velocity: f64,
+    /// `flooding_velocity * design_flood_fraction`, in m/s.
+    pub design_velocity: f64,
+    /// The vapour's volumetric flow, in m**3/s.
+    pub vapor_volumetric_flow: f64,
+    /// The cross-sectional area the vapour needs, in m**2.
+    pub required_area: Area,
+    /// `sqrt(4 A / pi)`, **before** the standard-size rounding, in m.
+    pub required_diameter: Length,
+    /// The required internal diameter, rounded up to the next standard vessel size.
+    pub column_diameter: Length,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PackingSizingResult {
+    const CALC_ID: &'static str = "hydraulics.packing_sizing";
+    const FIELDS: &'static [&'static str] = &[
+        "packing_name",
+        "packing_factor",
+        "flooding_velocity",
+        "design_velocity",
+        "vapor_volumetric_flow",
+        "required_area",
+        "required_diameter",
+        "column_diameter",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `hydraulics.friction_factor_colebrook`.
 ///
 /// Carries the solver's own report because the answer is only meaningful

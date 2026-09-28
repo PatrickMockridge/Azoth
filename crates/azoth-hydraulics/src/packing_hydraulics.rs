@@ -249,9 +249,39 @@ pub fn packing_hydraulics(name: &str, state: PackingState) -> Result<PackingHydr
 
 /// `calculateFloodingVelocity`: the Eckert GPDC fit, solved for the velocity.
 fn flooding_velocity(state: &PackingState, packing: &PackingSpecification) -> f64 {
-    let mut flow_parameter = if state.vapor_mass_flow.value > 0.0 {
-        (state.liquid_mass_flow.value / state.vapor_mass_flow.value)
-            * (state.vapor_density.value / state.liquid_density.value).sqrt()
+    eckert_flooding_velocity(
+        packing.packing_factor,
+        state.hydraulic_capacity_factor,
+        state.vapor_mass_flow.value,
+        state.liquid_mass_flow.value,
+        state.vapor_density.value,
+        state.liquid_density.value,
+        state.liquid_viscosity.value,
+    )
+}
+
+/// The Eckert GPDC fit, over the seven numbers it reads, so the two calcs that need it share it.
+///
+/// **Shared rather than stated twice**, because a second transcription of these four constants
+/// is exactly the twin this library's spec tranche exists to remove: two spellings of one
+/// correlation drift, and nothing compares them. `hydraulics.packing_sizing` calls this directly,
+/// which is also what the class does - `sizeColumnDiameter` calls the same
+/// `calculateFloodingVelocity` the full report does.
+///
+/// The trial diameter the class sets before the call is **inert**: this fit reads no diameter and
+/// no area, so sizing is a closed form.
+#[allow(clippy::too_many_arguments)] // the fit reads exactly these seven
+pub(crate) fn eckert_flooding_velocity(
+    packing_factor: f64,
+    hydraulic_capacity_factor: f64,
+    vapor_mass_flow: f64,
+    liquid_mass_flow: f64,
+    vapor_density: f64,
+    liquid_density: f64,
+    liquid_viscosity: f64,
+) -> f64 {
+    let mut flow_parameter = if vapor_mass_flow > 0.0 {
+        (liquid_mass_flow / vapor_mass_flow) * (vapor_density / liquid_density).sqrt()
     } else {
         0.0
     };
@@ -260,11 +290,10 @@ fn flooding_velocity(state: &PackingState, packing: &PackingSpecification) -> f6
     let x = flow_parameter.log10();
     let y_flood = 10f64.powf(ECKERT_C0 + ECKERT_C1 * x + ECKERT_C2 * x * x);
 
-    let rho_factor =
-        state.vapor_density.value / (G * (state.liquid_density.value - state.vapor_density.value));
-    let mu_factor = (state.liquid_viscosity.value / WATER_VISCOSITY).powf(0.1);
-    let velocity_squared = y_flood / (packing.packing_factor * rho_factor * mu_factor);
-    velocity_squared.max(0.0).sqrt() * state.hydraulic_capacity_factor
+    let rho_factor = vapor_density / (G * (liquid_density - vapor_density));
+    let mu_factor = (liquid_viscosity / WATER_VISCOSITY).powf(0.1);
+    let velocity_squared = y_flood / (packing_factor * rho_factor * mu_factor);
+    velocity_squared.max(0.0).sqrt() * hydraulic_capacity_factor
 }
 
 /// `calculatePressureDrop`: Leva's dry form with its liquid-loading correction.

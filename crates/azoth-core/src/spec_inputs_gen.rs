@@ -152,6 +152,7 @@
 //!   - specs/calcs/hydraulics/friction_factor_swamee_jain.toml
 //!   - specs/calcs/hydraulics/orifice_flow.toml
 //!   - specs/calcs/hydraulics/packing_hydraulics.toml
+//!   - specs/calcs/hydraulics/packing_sizing.toml
 //!   - specs/calcs/hydraulics/pump_power.toml
 //!   - specs/calcs/hydraulics/reynolds_number.toml
 //!   - specs/models/process/absorption_column.toml
@@ -1043,6 +1044,29 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     (
         "hydraulics.packing_hydraulics",
+        "hydraulic_capacity_factor",
+        "dimensionless",
+    ),
+    (
+        "hydraulics.packing_sizing",
+        "design_flood_fraction",
+        "dimensionless",
+    ),
+    ("hydraulics.packing_sizing", "vapor_mass_flow", "mass_rate"),
+    ("hydraulics.packing_sizing", "liquid_mass_flow", "mass_rate"),
+    ("hydraulics.packing_sizing", "vapor_density", "mass_density"),
+    (
+        "hydraulics.packing_sizing",
+        "liquid_density",
+        "mass_density",
+    ),
+    (
+        "hydraulics.packing_sizing",
+        "liquid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "hydraulics.packing_sizing",
         "hydraulic_capacity_factor",
         "dimensionless",
     ),

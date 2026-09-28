@@ -1425,6 +1425,18 @@ class PackingHydraulicsResult:
     warnings: list[Warning]
 
 @final
+class PackingSizingResult:
+    packing_name: str
+    packing_factor: float
+    flooding_velocity: float
+    design_velocity: float
+    vapor_volumetric_flow: float
+    required_area: Qty
+    required_diameter: Qty
+    column_diameter: Qty
+    warnings: list[Warning]
+
+@final
 class PumpPowerResult:
     power: Qty
     warnings: list[Warning]
@@ -3112,6 +3124,16 @@ def packing_hydraulics(
     liquid_diffusivity: float,
     hydraulic_capacity_factor: float,
 ) -> PackingHydraulicsResult: ...
+def packing_sizing(
+    packing: str,
+    design_flood_fraction: float,
+    vapor_mass_flow: float,
+    liquid_mass_flow: float,
+    vapor_density: float,
+    liquid_density: float,
+    liquid_viscosity: float,
+    hydraulic_capacity_factor: float,
+) -> PackingSizingResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
 def absorption_column(
