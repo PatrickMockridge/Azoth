@@ -1,0 +1,100 @@
+src/main/java/neqsim/chemicalreactions/chemicalequilibrium/ChemicalEquilibrium.java
+  :1095   if (step < 0 || step > 1 || Double.isNaN(step) || Double.isInfinite(step))   ->   step = 1.0
+src/main/java/neqsim/fluidmechanics/util/FlowRegimeDetector.java
+  :91   if (sigma <= 0 || Double.isNaN(sigma))   ->   sigma = 0.02
+src/main/java/neqsim/mcp/runners/ProcessRunner.java
+  :769   if (!Double.isFinite(safetyFactor) || safetyFactor <= 0.0)   ->   safetyFactor = 1.2
+src/main/java/neqsim/physicalproperties/methods/liquidphysicalproperties/diffusivity/HaydukMinhasDiffusivity.java
+  :173   if (etaCp <= 0 || Double.isNaN(etaCp))   ->   etaCp = 0.5
+src/main/java/neqsim/process/controllerdevice/ModelPredictiveController.java
+  :1209   if (!Double.isFinite(sampleTime) || sampleTime <= 0.0)   ->   sampleTime = 1.0
+  :1227   if (!Double.isFinite(controlWeight) || controlWeight < 0.0)   ->   controlWeight = 0.0
+  :1230   if (!Double.isFinite(moveWeight) || moveWeight < 0.0)   ->   moveWeight = 0.0
+src/main/java/neqsim/process/design/template/CO2CaptureTemplate.java
+  :182   if (Double.isNaN(feedPressure) || feedPressure <= 0)   ->   feedPressure = 1.5
+src/main/java/neqsim/process/design/template/DehydrationTemplate.java
+  :92   if (Double.isNaN(feedPressure) || feedPressure <= 0)   ->   feedPressure = 70.0
+src/main/java/neqsim/process/design/template/GasCompressionTemplate.java
+  :83   if (Double.isNaN(inletPressure) || inletPressure <= 0)   ->   inletPressure = 5.0
+src/main/java/neqsim/process/equipment/distillation/NaphtaliSandholmSolver.java
+  :1116   if (Double.isNaN(eta) || eta <= 0.0)   ->   eta = 1.0e-6
+src/main/java/neqsim/process/equipment/distillation/internals/ColumnInternalsDesigner.java
+  :508   if (surfaceTension <= 0 || Double.isNaN(surfaceTension))   ->   surfaceTension = 0.02
+src/main/java/neqsim/process/equipment/expander/TurboExpanderCompressor.java
+  :1006   if (!Double.isFinite(opening) || opening < 0.0)   ->   opening = 0.0
+src/main/java/neqsim/process/equipment/heatexchanger/Heater.java
+  :880   if (Double.isNaN(cp) || cp <= 0)   ->   cp = 2000.0
+src/main/java/neqsim/process/equipment/pipeline/AdiabaticPipe.java
+  :1014   if (Double.isNaN(currentVelocity) || currentVelocity <= 0)   ->   currentVelocity = 10.0
+  :1017   if (Double.isNaN(currentVolumeFlow) || currentVolumeFlow <= 0)   ->   currentVolumeFlow = 100.0
+src/main/java/neqsim/process/equipment/pipeline/PipeBeggsAndBrills.java
+  :2915   if (U <= 0 || Double.isNaN(U))   ->   U = 25.0
+src/main/java/neqsim/process/equipment/pipeline/TubingPerformance.java
+  :359   if (Double.isNaN(rhoL) || Double.isNaN(rhoG) || rhoL <= 0 || rhoG <= 0)   ->   rhoL = 800.0
+  :363   if (Double.isNaN(rhoG) || rhoG <= 0)   ->   rhoG = 50.0
+src/main/java/neqsim/process/equipment/pipeline/TwoFluidPipe.java
+  :2302   if (Cp <= 0 || Double.isNaN(Cp))   ->   Cp = 2000.0
+  :2809   if (!Double.isFinite(value) || value <= 0.0)   ->   value = 2000.0
+  :6342   if (Double.isNaN(alphaO) || alphaO < 0)   ->   alphaO = 0
+  :6346   if (Double.isNaN(alphaW) || alphaW < 0)   ->   alphaW = 0
+src/main/java/neqsim/process/equipment/pipeline/twophasepipe/LiquidAccumulationTracker.java
+  :193   if (!Double.isFinite(waterDensity) || waterDensity <= 0.0)   ->   waterDensity = 1000.0
+src/main/java/neqsim/process/equipment/pipeline/twophasepipe/TransientPipe.java
+  :1468   if (Double.isNaN(rho_m) || rho_m <= 0)   ->   rho_m = 100.0
+  :1620   if (Double.isNaN(C0) || C0 < 0.9 || C0 > 1.5)   ->   C0 = 1.0
+  :1709   if (Double.isNaN(oldPressure) || oldPressure <= 0)   ->   oldPressure = 1e6
+src/main/java/neqsim/process/equipment/pipeline/twophasepipe/TwoFluidSection.java
+  :349   if (!Double.isFinite(rhoG) || rhoG <= 0.0)   ->   rhoG = 1.0
+  :401   if (Double.isNaN(alphaG) || Double.isNaN(alphaL) || alphaG < 0 || alphaL < 0)   ->   alphaG = 0.5
+  :401   if (Double.isNaN(alphaG) || Double.isNaN(alphaL) || alphaG < 0 || alphaL < 0)   ->   alphaL = 0.5
+src/main/java/neqsim/process/equipment/util/Calculator.java
+  :206   if (!Double.isFinite(controlMargin) || controlMargin < 0.0)   ->   controlMargin = 0.0
+src/main/java/neqsim/process/fielddevelopment/integrated/WellDeliverabilityCurve.java
+  :162   if (Double.isNaN(rateSample) || rateSample < 0.0)   ->   rateSample = 0.0
+src/main/java/neqsim/process/fielddevelopment/screening/ArtificialLiftScreener.java
+  :287   if (!Double.isFinite(method.productionRate) || method.productionRate <= 0.0)   ->   method.productionRate = 0.0
+  :295   if (!Double.isFinite(method.powerConsumption) || method.powerConsumption < 0)   ->   method.powerConsumption = 0.0
+src/main/java/neqsim/process/mechanicaldesign/filter/FilterMechanicalDesign.java
+  :345   if (!Double.isFinite(fluidDensity) || fluidDensity <= 0.0)   ->   fluidDensity = 50.0
+src/main/java/neqsim/process/mechanicaldesign/heatexchanger/HeatExchangerMechanicalDesign.java
+  :282   if (Double.isNaN(approachTemperature) || approachTemperature < 0.0)   ->   approachTemperature = 0.0
+src/main/java/neqsim/process/safety/cfd/CfdSourceTermCase.java
+  :417   if (!Double.isFinite(endpoint) || endpoint <= 0.0)   ->   endpoint = 100.0
+src/main/java/neqsim/process/safety/depressurization/DepressurizationSimulator.java
+  :357   if (z <= 0.0 || Double.isNaN(z))   ->   z = 1.0
+  :378   if (mDot < 0.0 || Double.isNaN(mDot))   ->   mDot = 0.0
+src/main/java/neqsim/process/safety/depressurization/DynamicBlowdownFlareStudyRunner.java
+  :169   if (!Double.isFinite(z) || z <= 0.0)   ->   z = 1.0
+src/main/java/neqsim/process/safety/depressurization/DynamicPsvSizingStudy.java
+  :183   if (z <= 0.0 || Double.isNaN(z))   ->   z = 1.0
+src/main/java/neqsim/process/safety/depressurization/NonEquilibriumBlowdownModel.java
+  :309   if (z <= 0.0 || Double.isNaN(z))   ->   z = 1.0
+  :376   if (mDot < 0.0 || Double.isNaN(mDot))   ->   mDot = 0.0
+src/main/java/neqsim/process/safety/overpressure/BlockedOutletRelief.java
+  :101   if (Double.isNaN(inflowRateKgPerS) || inflowRateKgPerS <= 0.0)   ->   inflowRateKgPerS = 0.0
+src/main/java/neqsim/process/safety/overpressure/FireCaseRelief.java
+  :174   if (Double.isNaN(latent) || latent <= 0.0)   ->   latent = 350000.0
+src/main/java/neqsim/process/safety/overpressure/OverpressureProtectionStudy.java
+  :171   if (Double.isNaN(density) || density <= 0.0)   ->   density = 700.0
+src/main/java/neqsim/process/safety/release/LeakModel.java
+  :123   if (Double.isNaN(MW) || MW <= 0)   ->   MW = 0.016
+  :141   if (Double.isNaN(MW) || MW <= 0)   ->   MW = 16.0
+src/main/java/neqsim/standards/gasquality/GpsaOrificeCalculator.java
+  :141   if (Double.isNaN(y) || y <= 0.0)   ->   y = 1.0
+src/main/java/neqsim/thermo/component/ComponentGePitzer.java
+  :55   if (!(molalityPerMoleFraction > 0.0) || !Double.isFinite(molalityPerMoleFrac)   ->   molalityPerMoleFraction = 1.0
+src/main/java/neqsim/thermo/phase/PhaseHydrate.java
+  :260   if (density <= 0 || Double.isNaN(density))   ->   density = 910.0
+src/main/java/neqsim/thermo/phase/PhaseSolid.java
+  :165   if (compDensity <= 0.0 || Double.isNaN(compDensity) || compDensity > 2000.0 )   ->   compDensity = 1100.0
+  :300   if (density <= 0 || Double.isNaN(density))   ->   density = 1100.0
+src/main/java/neqsim/thermodynamicoperations/flashops/TPHybridEosGeFlash.java
+  :465   if (!Double.isFinite(newMoleFraction) || newMoleFraction <= 0.0)   ->   newMoleFraction = 1.0e-50
+src/main/java/neqsim/thermodynamicoperations/flashops/TPflashSAFT.java
+  :72   if (K[i] <= 0 || Double.isNaN(K[i]))   ->   K[i] = 1.0
+  :237   if (K_LL[i] <= 0 || Double.isNaN(K_LL[i]))   ->   K_LL[i] = 1.0
+src/main/java/neqsim/thermodynamicoperations/flashops/saturationops/CapillaryDewPointFlash.java
+  :286   if (sigma <= 0 || Double.isNaN(sigma))   ->   sigma = 0.005
+  :304   if (vmL <= 0 || vmL > 0.01 || Double.isNaN(vmL))   ->   vmL = 1e-4
+
+STRICT: 58 sites in 40 files
