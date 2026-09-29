@@ -25,7 +25,7 @@ call.
 
 ## Outputs
 
-- A result object with typed fields (`r.dp`, `r.beta`, `r.phase`, ...).
+- A result object with typed fields (`r.dp`, `r.vapour_fraction`, `r.phase`, ...).
 - `r.warnings` — every range check that fired or was skipped.
 - `r.is_clean` — `False` the moment any warning is present.
 
@@ -53,7 +53,7 @@ r.is_clean  # False
 
 fluid = azoth.eos.from_names(["methane", "n-butane"])
 flash = azoth.eos.pt_flash(fluid, T=q(330.0, "K"), P=q(2.5e6, "Pa"), z=[0.6, 0.4])
-flash.beta, flash.phase
+flash.vapour_fraction, flash.phase
 ```
 
 ## The keycard

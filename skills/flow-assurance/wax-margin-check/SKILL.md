@@ -23,7 +23,7 @@ forms sticks to a wall.
 
 ## Outputs
 
-- `eos.tp_multiflash_wax` — `wax_fraction`, `phase_count`, `beta`, `x`, `converged`.
+- `eos.tp_multiflash_wax` — `wax_fraction`, `phase_count`, `phase_fractions`, `x`, `converged`.
 - `eos.tbp_fraction_properties` — `tc`, `pc`, `boiling_temperature`, `acentric_factor`,
   `attraction_exponent`.
 - `eos.wax_solid_fugacity` — `fugacity_coefficient`, the solid's own.

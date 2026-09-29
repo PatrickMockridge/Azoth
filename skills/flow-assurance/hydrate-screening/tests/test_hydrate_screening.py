@@ -25,5 +25,5 @@ def test_the_fraction_closes_the_material_balance() -> None:
     formed = azoth.eos.hydrate_fraction(
         COMPONENTS, T=Q(283.15, "K"), P=Q(100.0, "bar"), z=Z, eos="srk"
     )
-    assert formed.beta == pytest.approx(0.1153, rel=1e-3)
+    assert formed.hydrate_fraction == pytest.approx(0.1153, rel=1e-3)
     assert abs(formed.balance_error) < 1e-9

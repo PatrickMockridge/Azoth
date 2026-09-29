@@ -14,6 +14,6 @@ print(f"at 285 K it starts at {pressure.pressure.to('bar').magnitude:.3f} bar")
 
 formed = azoth.eos.hydrate_fraction(components, T=q(283.15, "K"), P=q(100.0, "bar"), z=z, eos="srk")
 print(
-    f"inside it, {formed.beta:.4f} of the feed is hydrate ({formed.structure}), "
+    f"inside it, {formed.hydrate_fraction:.4f} of the feed is hydrate ({formed.structure}), "
     f"balance error {formed.balance_error:.2e}"
 )

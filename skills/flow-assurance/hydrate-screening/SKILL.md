@@ -23,7 +23,7 @@ amount (`eos.hydrate_fraction`).
 
 - `eos.hydrate_formation_temperature` — `temperature`, `structure`.
 - `eos.hydrate_formation_pressure` — `pressure`, `structure`.
-- `eos.hydrate_fraction` — `beta`, `structure`, and `balance_error`.
+- `eos.hydrate_fraction` — `hydrate_fraction`, `structure`, and `balance_error`.
 
 ## How a calculation runs
 
@@ -50,7 +50,7 @@ z = [0.7810182896688087, 0.09985170538803756, 0.020266930301532374, 0.0988630746
 
 print(azoth.eos.hydrate_formation_pressure(components, T=q(285.0, "K"), z=z, eos="srk").pressure)
 formed = azoth.eos.hydrate_fraction(components, T=q(283.15, "K"), P=q(100.0, "bar"), z=z, eos="srk")
-print(formed.beta, formed.structure, formed.balance_error)
+print(formed.hydrate_fraction, formed.structure, formed.balance_error)
 ```
 
 ## The keycard
@@ -74,7 +74,7 @@ names. A keycard overrides a component's own constants, not the cavity geometry.
 
 ## Limitations
 
-An inhibitor, a salt correction and a kinetic induction time are not modelled. `beta` is
+An inhibitor, a salt correction and a kinetic induction time are not modelled. `hydrate_fraction` is
 thermodynamic: it says how much hydrate is stable, not how much has formed.
 
 ## Related Azoth functionality

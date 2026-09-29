@@ -17,7 +17,7 @@ is how an agent runs a temperature-pressure flash and its companions.
 
 ## Outputs
 
-- `beta` (the vapour fraction), `x` and `y` (the two compositions), `phase`, and the
+- `vapour_fraction`, `x` and `y` (the two compositions), `phase`, and the
   `ln_phi` columns.
 
 ## How a calculation runs
@@ -36,7 +36,7 @@ fluid = azoth.eos.from_names(["methane", "n-butane"])
 r = azoth.eos.pt_flash(
     fluid, T=azoth.ureg.Quantity(330.0, "K"), P=azoth.ureg.Quantity(2.5e6, "Pa"), z=[0.6, 0.4]
 )
-r.beta, r.phase  # 0.842…, two_phase
+r.vapour_fraction, r.phase  # 0.842…, two_phase
 ```
 
 ## The keycard
@@ -47,7 +47,7 @@ per pair). A keycard's `models` section names the cubic variant the flash runs o
 ## Validation checklist
 
 - [ ] `z` sums to one; it is checked rather than renormalised.
-- [ ] Read `phase`, not `beta`: `beta` is `None` where there is no vapour fraction.
+- [ ] Read `phase`, not `vapour_fraction`: it is `None` where there is no vapour fraction.
 - [ ] A flash is not a stability proof — run `stability_test` for that.
 
 ## Common mistakes
@@ -55,13 +55,13 @@ per pair). A keycard's `models` section names the cubic variant the flash runs o
 | Symptom | Cause | Fix |
 |---|---|---|
 | `InvalidInputError` | `z` does not sum to one | It is refused, not silently corrected |
-| A wrong split | Reading `beta` when the feed is single-phase | Read `phase` |
+| A wrong split | Reading `vapour_fraction` when the feed is single-phase | Read `phase` |
 | A false single-phase verdict | The flash converged to `x = y = z` | Run `stability_test` |
 
 ## Limitations
 
 There is no stability test inside the flash: a converged split is a stationary point,
-not a proof the feed was unstable. A negative flash (`beta` outside `[0, 1]`) is a
+not a proof the feed was unstable. A negative flash (`vapour_fraction` outside `[0, 1]`) is a
 real reading, reported with `OUT_OF_VALID_RANGE`.
 
 ## Related Azoth functionality
