@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/absorber/AbsorptionColumn.java**
 
-Its constructor and its two inlet methods. The class adds no arithmetic to `DistillationColumn.run`; what it adds is a gas-load-factor design surface, which `ROADMAP.md` records among the classes still owed.
+Its constructor and its two inlet methods. The class adds no arithmetic to `DistillationColumn.run`; what it adds is the gas-load-factor design surface, which this entry now publishes as `gas_load_factor` and its three siblings, read after the solve.
 
 
 ## What this model is
@@ -124,7 +124,7 @@ holds the declaration and the two languages to each other.
 - **the column has no ends and two fixed inlets.** The constructor passes `false, false`; `addGasInStream` is `addFeedStream(stream, 0)` and `addSolventInStream` is `addFeedStream(stream, getNumberOfTrays() - 1)`, each refusing a second assignment.
 - **the arithmetic is `DistillationColumn`'s own**, which this port already carries: the same stage, the same sweeps, the same terminal products. Nothing in the class overrides `run`, and the one method it does override - `applyMurphreeCorrection` - is refused by name here.
 - **the class's own tests solve an isothermal column, and that is a one-sweep one.** Pinning every stage makes the base's gate - the mean tray-temperature change - exactly zero, so the solve stops after its **first** sweep: the captured rows report one iteration and a temperature residual of `0.0`.
-- **the gas load factor does not enter the solve.** `isGasLoadFactorWithinDesignLimit`, `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit` read it and none is on the run path, so the model carries it as a declaration.
+- **the gas load factor does not enter the solve, and that is about the solve, not the parameter.** Its three getters are on no run path, so both limits are read *after* the solve, beside the diameter, and published with the Fs family.
 - **the products are the class's own getters**: `getGasOutStream` is the treated gas leaving the top stage and `getLiquidOutStream` the loaded solvent leaving the bottom, which is what the terminal trays publish when there are no ends.
 - **both inlets carry the same substances in the same order.** The class indexes every tray's components by one list built from its first feed, so a solvent naming different substances is a different fluid rather than an inlet, and this refuses it.
 - **the fluid is PR with the classic mixing rule**, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
@@ -132,7 +132,7 @@ holds the declaration and the two languages to each other.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
 
-- **the tray hydraulics and the mechanical design are owed**: `TrayHydraulicsCalculator` and `AbsorberMechanicalDesign` are the classes that would close them, this entry declares no parameter they read, and `ROADMAP.md` names both.
+- **the trayed internals and the mechanical design are owed**: `ColumnInternalsDesigner.calculateTrayed` - the calculator it calls is the registered `hydraulics.tray_hydraulics` - and `AbsorberMechanicalDesign`, which `ROADMAP.md` names.
 
 - **it is not the refused family**: `SimpleAbsorber`, `SimpleTEGAbsorber`, `SimpleAmineAbsorber` and `WaterStripperColumn` carry the MDEA/CO2 and TEG/water chemistry, and porting this id closes nothing about that.
 

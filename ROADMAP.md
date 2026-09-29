@@ -489,15 +489,28 @@ a claim nothing holds.
 
 - **The mechanical-design tree** — `process/mechanicaldesign/` and the `*MechanicalDesign`
   class beside each equipment class — is where most of them are, and no entry declares a
-  parameter any of them read. **`TrayHydraulicsCalculator`**, the tray hydraulics of
-  `process.distillation_column`, `process.absorption_column` and `process.stripping_column`;
-  **`DistillationColumnMechanicalDesign`** and **`AbsorberMechanicalDesign`**; and
-  **`ReactorMechanicalDesign`** for `process.gibbs_reactor` and `process.plug_flow_reactor`.
-- **`ColumnInternalsDesigner`** is two things, and both are owed. The first is
-  `process.packed_column`'s packing report. The second is the **sizing** —
-  `calculatePacked`, `sizeColumnDiameter`, `roundToStandardDiameter` — that
-  `calcPackingHydraulics` takes whenever `column_diameter` is left at its `-1.0` default, which
-  is every state the current capture probes.
+  parameter any of them read. **`DistillationColumnMechanicalDesign`** and
+  **`AbsorberMechanicalDesign`**; and **`ReactorMechanicalDesign`** for
+  `process.gibbs_reactor` and `process.plug_flow_reactor`. **`TrayHydraulicsCalculator` is no
+  longer one of them**: its arithmetic is the registered `hydraulics.tray_hydraulics` id, and
+  what the column still owes is the *designer* that calls it, below.
+- **`ColumnInternalsDesigner`** is two halves and one of them is in. Its **packing** side is
+  done twice over: the report is `process.packed_column`'s own outputs, and the **sizing** —
+  `calculatePacked`, `sizeColumnDiameter`, `roundToStandardDiameter` — is
+  `hydraulics.packing_sizing`, which `calcPackingHydraulics`'s branch on a non-positive
+  `column_diameter` now takes. What is owed is the **trayed** half: `calculateTrayed` and the
+  getters it feeds — `getRequiredDiameter`, `getMaxPercentFlood`, `getTotalPressureDrop`,
+  `getAverageTrayEfficiency`, `getTrayResults`, `getPackingResult` and
+  `getControllingTrayIndex` — plus `toJson`'s assembly, and the pressure-drop coupling
+  `DistillationColumn.updatePressureProfileFromHydraulics` performs when
+  `hydraulicPressureDropCouplingEnabled` is set, which changes the tear's shape and not only
+  its outputs.
+- **`GravityDrainageMargin` and `PackingFoulingModel` are recorded as non-ports**, and the
+  measurement is the record: `git grep` over `f0c7436:src/main` answers **one file for each,
+  the class itself**, so neither has a `src/main` caller at the pin, and each has a single test
+  of its own in `src/test`. **Neither name appears anywhere in the pinned jar**, which is where
+  every capture in this tree came from, so neither is in the artifact the oracle was read from.
+  A port would be a class nothing calls.
 - **`MechanicalDesign`** — `process.ejector`'s own size, whose areas, diameters, lengths and
   volumes `updateDesign` fills. They are absent rather than guessed.
 - **`FilterPressureDropModel`** — `FLOW_SCALED`, `TABULATED` and `ERGUN`, which replace

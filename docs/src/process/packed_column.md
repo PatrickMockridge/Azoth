@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/distillation/PackedColumn.java**
 
-Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed - `TrayHydraulicsCalculator` and the mechanical design - is named in `ROADMAP.md`.
+Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed is `calculateTrayed`, the trayed half of the designer, and the mechanical design; `ROADMAP.md` names both.
 
 
 ## Algorithm
@@ -45,7 +45,7 @@ not an equation, and both implementations read it from here.
 | `condenser_temperature` | K | *Optional.* the condenser's temperature, which pins the top tray's flash. Absent as the reboiler's is. **A pin wins over a directly-applied duty.** |
 | `packing_type` | - | *Optional.* the packing's name, which `PackingSpecificationLibrary` resolves and the hydraulics reads. **It does not enter the solve.** The class defaults it to Pall-Ring-50. |
 | `structured_packing` | - | *Optional.* whether the packing is structured or random, which selects the hydraulic correlation. **It does not enter the solve.** |
-| `design_flood_fraction` | dimensionless | *Optional.* the fraction of flood the packing is sized to. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does. The class defaults it to 0.70. |
+| `design_flood_fraction` | dimensionless | *Optional.* the fraction of flood the packing is sized to. **It does not enter the solve**: it is read by the sizing branch and by no part of `run`. The class defaults it to 0.70. |
 | `packing_hydraulic_capacity_factor` | dimensionless | *Optional.* the selected packing's relative hydraulic capacity factor, which the hydraulics reads. **Refused where it is not positive and finite**, which is `setPackingHydraulicCapacityFactor`'s own check. The class defaults it to 1.0. |
 | `column_diameter` | m | *Optional.* the column's internal diameter. **It does not enter the solve**: a value at or below zero auto-sizes it from the hydraulics through `setInternalDiameter`. The class defaults it to -1.0. |
 | `murphree_efficiency` | dimensionless | *Optional.* the column-wide Murphree tray efficiency, applied to each interior stage's vapour. **Omitted means the ideal stage.** Refused with `solver_type = naphtali_sandholm`, whose solver carries a different correction. |

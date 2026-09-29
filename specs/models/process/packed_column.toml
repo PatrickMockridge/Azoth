@@ -24,7 +24,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/PackedColumn.java"
-edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed - `TrayHydraulicsCalculator` and the mechanical design - is named in `ROADMAP.md`."
+edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed is `calculateTrayed`, the trayed half of the designer, and the mechanical design; `ROADMAP.md` names both."
 [algorithm]
 scheme = "sequential_substitution_sweeps"
 initialisation = "linear_temperature_profile"
@@ -92,7 +92,7 @@ description = "whether the packing is structured or random, which selects the hy
 [inputs.design_flood_fraction]
 unit = "dimensionless"
 optional = true
-description = "the fraction of flood the packing is sized to. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does. The class defaults it to 0.70.\n"
+description = "the fraction of flood the packing is sized to. **It does not enter the solve**: it is read by the sizing branch and by no part of `run`. The class defaults it to 0.70.\n"
 [inputs.packing_hydraulic_capacity_factor]
 unit = "dimensionless"
 optional = true
