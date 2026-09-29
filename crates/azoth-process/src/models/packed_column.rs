@@ -309,13 +309,20 @@ mod surface_tension {
     /// rate-based path's. `0.025` gives `63.944` and `0.05` gives `39.804`, both asserted *not* to
     /// reproduce, so the capture is shown to decide rather than merely to agree.
     ///
-    /// The residual `3e-7` is the port's own tray density and viscosity rather than NeqSim's: the
-    /// capture prints this row's per-tray temperature, pressure and two flows and nothing else,
-    /// so those two properties are the port's numbers and are the limit on this reading's
-    /// precision. Extending the probe to print them is what would tighten it.
+    /// **The residual `3e-7` is the solve's own precision, not a missing input**, and the probe is
+    /// what says so: it prints this row's per-tray densities and liquid viscosity
+    /// (`tray3_gas_density_kg_per_m3 = 20.114298690411445`,
+    /// `tray3_liquid_density_kg_per_m3 = 539.7743778643678`,
+    /// `tray3_liquid_viscosity_Pa_s = 1.3121756675386467e-4`) and the port's middle tray agrees with
+    /// all three to six or seven digits. That is what makes the tray state NeqSim's rather than the
+    /// port's, and it is what the second reading below rests on.
+    ///
+    /// **The second reading is the calculator's three unset constants.** `k_ga` and `k_la` are the
+    /// one part of this report nothing asserted, and they read the values
+    /// `ColumnInternalsDesigner.calculatePacked` never sets.
     #[test]
     #[allow(clippy::too_many_lines)] // one measurement, kept linear so it reads as one
-    fn the_designers_fallback_reproduces_the_capture_and_the_rate_based_constant_does_not() {
+    fn the_designers_fallback_and_the_calculator_defaults_are_what_the_capture_reproduces() {
         let components = vec!["methane".to_string(), "n-butane".to_string()];
         let (outcome, _) = distillation_column_outcome(
             &components,
@@ -503,6 +510,93 @@ mod surface_tension {
                 !close(out.wetted_area, 72.582_813_354_706_25),
                 "{label} must NOT reproduce it, or the capture cannot decide: {}",
                 out.wetted_area
+            );
+        }
+
+        // **And the five columns the capture prints and nothing asserted.** `k_ga` and `k_la` read
+        // the three values `ColumnInternalsDesigner.calculatePacked` never sets: `javap` shows it
+        // calling twelve calculator setters and none of `setVaporViscosity`,
+        // `setVaporDiffusivity` or `setLiquidDiffusivity`, so the constructor's `1.0e-5`, `1.0e-5`
+        // and `1.0e-9` stand - while this test's `PackingState` feeds the tray's own gas viscosity
+        // with `3.3e-7` and `1.9e-9` instead. `re_v` and `sc_v` both read them, so the capture
+        // decides, and it decides against this test's own constants.
+        let transfer =
+            |label: &str, vapor_viscosity: f64, vapor_diffusivity: f64, liquid_diffusivity: f64| {
+                let out = packing_hydraulics(
+                    "Pall-Ring-50",
+                    PackingState {
+                        column_diameter: meters(0.3),
+                        packed_height: 2.3,
+                        vapor_mass_flow: kilograms_per_second(gas_mass),
+                        liquid_mass_flow: kilograms_per_second(liquid_mass),
+                        vapor_density: kilograms_per_cubic_meter(gas_view.density),
+                        liquid_density: kilograms_per_cubic_meter(liquid_view.density),
+                        vapor_viscosity: pascal_seconds(vapor_viscosity),
+                        liquid_viscosity: pascal_seconds(liquid_view.transport.mu.value),
+                        surface_tension: newtons_per_meter(DESIGNER_SURFACE_TENSION_N_PER_M),
+                        vapor_diffusivity,
+                        liquid_diffusivity,
+                        hydraulic_capacity_factor: 1.0,
+                    },
+                )
+                .expect("the packing hydraulics runs");
+                println!(
+                    "  {label}  k_ga={:>20.12}  k_la={:>22.12}  htu_g={:>16.12}  htu_l={:>16.12}  \
+                 htu_og={:>16.12}",
+                    out.k_ga, out.k_la, out.htu_g, out.htu_l, out.htu_og
+                );
+                out
+            };
+        println!(
+            "\n  CAPTURE     k_ga={:>20.12}  k_la={:>22.12}  htu_g={:>16.12}  htu_l={:>16.12}  \
+             htu_og={:>16.12}",
+            135.121_699_175_671_7,
+            0.010_007_052_407_738_408,
+            5.679_317_012_502_443e-4,
+            60.641_213_252_983_76,
+            60.641_781_184_685_01
+        );
+        let experiment = transfer("experiment", gas_view.transport.mu.value, 3.3e-7, 1.9e-9);
+        let defaults = transfer("defaults  ", 1.0e-5, 1.0e-5, 1.0e-9);
+
+        // The two film coefficients reproduce on the designer's own defaults - `k_ga` to `2.5e-7`
+        // and `k_la` to `1.2e-9`, which is the tray state's own precision rather than a tolerance.
+        assert!(
+            close(defaults.k_ga, 135.121_699_175_671_7),
+            "the calculator's own defaults reproduce k_ga: {}",
+            defaults.k_ga
+        );
+        assert!(
+            close(defaults.k_la, 0.010_007_052_407_738_408),
+            "and the default liquid diffusivity reproduces k_la: {}",
+            defaults.k_la
+        );
+        // **And the constants this test used to carry do not, by a factor of ten on the gas side.**
+        // `k_ga` reads the vapour viscosity through `re_v^-0.7` and the vapour diffusivity through
+        // `D_v^(1/3)`, so the tray's own `1.12e-5` Pa.s with `3.3e-7` m2/s answers `13.34` where
+        // the capture says `135.12`. A wiring that copied those two numbers out of this test would
+        // publish a coefficient ten times too small, and nothing else committed would notice.
+        assert!(
+            !close(experiment.k_ga, 135.121_699_175_671_7),
+            "the tray viscosity and 3.3e-7 must NOT reproduce k_ga: {}",
+            experiment.k_ga
+        );
+        // **The three HTUs are within a percent and cannot be closer**, and the bound is worth
+        // asserting because it is what catches the mistake above. `htu_g = g_v/(k_ga rho_v)` and
+        // `htu_l = g_l/k_la` where `g` is the tray's mass *flux*: NeqSim carries the tray's mass
+        // flow as its own state variable, and this port reconstructs it as molar flow times the
+        // phase's molar mass, so the numerator runs `0.35 %` high on the vapour side and `0.60 %`
+        // on the liquid. Nothing in the capture closes that - it is the same reconstruction the
+        // sigma reading above pays, at `3e-7` there because `wetted_area` reads no flow at all.
+        for (got, want, what) in [
+            (defaults.htu_g, 5.679_317_012_502_443e-4, "htu_g"),
+            (defaults.htu_l, 60.641_213_252_983_76, "htu_l"),
+            (defaults.htu_og, 60.641_781_184_685_01, "htu_og"),
+        ] {
+            let residual = (got - want).abs() / want.abs();
+            assert!(
+                residual < 1e-2,
+                "{what} must be inside the mass-flow reconstruction's percent ({residual:e}): {got}"
             );
         }
     }
