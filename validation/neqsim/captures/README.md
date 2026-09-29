@@ -186,6 +186,53 @@ at every load - the verdict is the *type's*. And a stated weir length is read ba
 none of the flood, the pressure drop or the turndown, so the class reads the field and the
 arithmetic does not.
 
+**`ProcessProbe capacity` is the two capacity-limit families, on solved columns.**
+`DistillationColumn` computes `Fs = u·sqrt(rho_g)` over the **total** cross-section against
+`maxAllowableFsFactor` (`2.5`), with a utilization, a within-limit verdict and a minimum-diameter
+inverse; `AbsorptionColumn` adds the Souders-Brown `Ks = u·sqrt(rho_g/(rho_l - rho_g))` against
+`maxAllowableGasLoadFactor` (`0.15`) and overrides the Fs limit to `3.0`. **No capture in this
+directory measured either family before**: `distillation_column`, `absorption_column` and
+`stripping_column` all declare `max_allowable_gas_load_factor` and refuse it rather than reading
+it, and the Fs family is declared nowhere.
+
+Seventeen rows: the port's own `binary_methane_butane_4_stages` at three diameters and two stated Fs
+limits, the lean-oil absorber and the hydrocarbon stripper, three stated limits on the absorber,
+three rows whose *outlet* is reflashed - because the outlet is what both families read - and three
+on a solved `PackedColumn`, whose two diameters are not one.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe capacity > captures/process_column_capacity.tsv
+```
+
+**Five things the rows carry that one row would not.** `getPhase(0)` of an outlet is not the phase
+a reader expects: on the solved absorber the **liquid** outlet is two-phase and its phase 0 is the
+*gas* it carries (`11.576297622897625` against the system's `645.1739799825267`), so `rho_l - rho_g`
+is `0.30`, the class's `10.0` floor is met and its `DEFAULT_LIQUID_DENSITY = 1000.0` is substituted
+on the ordinary row. The reflashed-to-one-liquid row is the control: `K` is
+`0.00826846105398939` against the fallback's `0.006694885232955643`, a factor of `1.235`, so the
+substitution and not the field is what the answer rests on - and reflashing the same outlet to a
+*gas* reproduces the fallback row to the last digit. Second, the two families read different
+densities, which the two-phase gas-out row separates: the Fs family takes the system's
+`15.34351809893286` and the K family phase 0's `14.4273646532561`. Third, `getFlowRate("m3/sec")`
+is `n·M/rho` on every row - `_mass_over_density_m3_per_s` equals `_volumetric_flow_m3_per_s` to the
+last digit - which is the identity the port spells a volumetric flow with. And fourth, both
+verdicts are in the capture: `fs_factor_within_design_limit=false` at a stated `0.01` and
+`gas_load_factor_within_design_limit=false` at a stated `0.005`.
+
+The three minimum diameters are invariant under the diameter they are compared against
+(`0.09032514302269502` on all three binary rows), since they are functions of the flow, the
+density and the limit alone.
+
+**A `PackedColumn` has two diameters and the Fs family reads only one of them.**
+`setColumnDiameter` writes the class's own `columnDiameter`; `calcPackingHydraulics` *ends* by
+writing the inherited `internalDiameter` from it, or from the designer's `getRequiredDiameter` when
+it is not stated - so an unstated packed column carries `0.3` m, the diameter the sizing resolved,
+and `fs_factor=0.22662865172417535` is measured against that and not against a caller's number. The
+stated `0.5` row reads back `0.5` and moves the factor to `0.08158631462070312`, which is the
+*distillation* column's own `diameter_0_5` row exactly: the packing's height is what makes that
+column's stage count, and the capacity family is indifferent to the packing. Both packed rows also
+read `max_allowable_fs_factor=2.5`, so `PackedColumn` overrides neither default.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are

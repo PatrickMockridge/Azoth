@@ -60,6 +60,8 @@
 //       > captures/process_column_efficiency.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe absorber_efficiency \
 //       > captures/process_absorber_efficiency.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe capacity \
+//       > captures/process_column_capacity.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -179,6 +181,9 @@ public class ProcessProbe {
         break;
       case "absorber_efficiency":
         absorberEfficiencyRows();
+        break;
+      case "capacity":
+        capacityRows();
         break;
       case "packed_column":
         packedColumnRows();
@@ -4373,6 +4378,309 @@ public class ProcessProbe {
       }
     }
     System.out.println();
+  }
+
+  /// **The two capacity-limit families the columns carry, on solved states.**
+  ///
+  /// `DistillationColumn` computes `Fs = u·sqrt(rho_g)` against `maxAllowableFsFactor` (its own
+  /// `2.5`); `AbsorptionColumn` computes the Souders-Brown `Ks = u·sqrt(rho_g/(rho_l - rho_g))`
+  /// against `maxAllowableGasLoadFactor` (`0.15`) and overrides the Fs limit to `3.0` in its
+  /// constructor. Neither family was measured before this probe: `absorption_column`,
+  /// `stripping_column` and `distillation_column` all declare `max_allowable_gas_load_factor` and
+  /// refuse it rather than reading it, and `getFsFactor()` is the quantity that would answer it.
+  ///
+  /// **Both families read the outlet streams, not a tray**, and both velocities are superficial
+  /// over the **total** cross-section `pi·D^2/4` - which is what separates them from
+  /// `TrayHydraulicsCalculator.getFsFactor()`, whose area is the net one less a downcomer. The
+  /// volumetric flow is the *gas outlet's*, `getFlowRate("m3/sec")`; the Fs family takes the
+  /// system's density and the K family `getPhase(0)`'s, so both are printed beside the lines they
+  /// come from, along with `n·M/rho` as the port's own spelling of the same flow.
+  ///
+  /// **Rows that move one thing at a time**: the diameter (both velocities and the areas with it,
+  /// the minimum diameters against), each stated limit (the utilizations and the inverses, not the
+  /// factors, and one limit each side of the factor so both verdicts are in the capture), and
+  /// rows that reflash an outlet, because the outlet is what both families read.
+  static void capacityRows() {
+    // The distillation column the port is already held to, at the class's own diameter of 1.0 m.
+    capacityBinaryRow("binary_methane_butane_default_diameter", 1.0, null);
+    // The same solved state at another diameter: both factors fall with the area, both minimum
+    // diameters are invariant (they are what the factors are held to, not functions of D).
+    capacityBinaryRow("binary_methane_butane_diameter_2", 2.0, null);
+    capacityBinaryRow("binary_methane_butane_diameter_half", 0.5, null);
+    // A stated limit either side of the factor the default diameter produces, so the capture
+    // carries both verdicts.
+    capacityBinaryRow("binary_methane_butane_fs_limit_5", 1.0, 5.0);
+    capacityBinaryRow("binary_methane_butane_fs_limit_0_01", 1.0, 0.01);
+    // The absorber, which carries both families and the subclass's own two defaults.
+    capacityAbsorberRow("lean_oil_absorber_default_diameter", 1.0, null, null, false, "");
+    capacityAbsorberRow("lean_oil_absorber_diameter_2", 2.0, null, null, false, "");
+    capacityAbsorberRow("lean_oil_absorber_k_limit_0_30", 1.0, 0.30, null, false, "");
+    capacityAbsorberRow("lean_oil_absorber_k_limit_0_005", 1.0, 0.005, null, false, "");
+    capacityAbsorberRow("lean_oil_absorber_fs_limit_2_5", 1.0, null, 2.5, false, "");
+    // **The same solved state with its liquid outlet reflashed to a single liquid**, which is the
+    // two-sided control for the K family's density: on the row above, `getPhase(0)` of that outlet
+    // is the *gas* it carries, `rho_l - rho_g` is `0.3` and the `10.0` fallback substitutes
+    // `1000.0` - so closing the outlet to one liquid phase is what makes the real density visible.
+    capacityAbsorberRow("lean_oil_absorber_liquid_out_liquid", 1.0, null, null, false, "liquid");
+    // And the same outlet reflashed the other way, to a gas, which trips the fallback for the
+    // opposite reason.
+    capacityAbsorberRow("lean_oil_absorber_liquid_out_gas", 1.0, null, null, false, "gas");
+    // **A two-phase gas outlet**, which separates the two families' density conventions: the Fs
+    // family takes the system's, the K family `getPhase(0)`'s.
+    capacityAbsorberRow("lean_oil_absorber_gas_out_two_phase", 1.0, null, null, false,
+        "gas_two_phase");
+    // The stripper, which is the same class under another name and inherits both defaults.
+    capacityAbsorberRow("hydrocarbon_stripper_default_diameter", 1.0, null, null, true, "");
+    // **The packed column, whose two diameters are not one.** `setColumnDiameter` writes the
+    // class's own `columnDiameter` and `calcPackingHydraulics` *ends* by writing the inherited
+    // `internalDiameter` from it - or from `getRequiredDiameter` when it is not stated - so the
+    // Fs family reads a diameter the caller may never have named.
+    capacityPackedRow("packed_distillation_binary_unstated", 2.0, "Pall-Ring-50", null, null);
+    capacityPackedRow("packed_distillation_binary_column_diameter_0_5", 2.0, "Pall-Ring-50", 0.5,
+        null);
+    capacityPackedRow("packed_distillation_binary_fs_limit_5", 2.0, "Pall-Ring-50", 0.5, 5.0);
+  }
+
+  static void capacityPackedRow(String label, double packedHeightM, String packingType,
+      Double columnDiameterM, Double fsLimit) {
+    String[] names = new String[] { "methane", "n-butane" };
+    double[] z = new double[] { 0.5, 0.5 };
+    SystemInterface fluid = new SystemPrEos(300.0, 20.0);
+    for (int i = 0; i < names.length; i++) {
+      fluid.addComponent(names[i], z[i]);
+    }
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("feed", fluid);
+    inlet.setFlowRate(1000.0, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.PackedColumn column =
+        new neqsim.process.equipment.distillation.PackedColumn(label, packedHeightM, packingType,
+            true, true);
+    column.addFeedStream(inlet, 2);
+    column.setCondenserTemperature(-20.0, "C");
+    column.setReboilerTemperature(100.0, "C");
+    column.setTopPressure(19.0);
+    column.setBottomPressure(20.0);
+    column.setTemperatureTolerance(1.0e-6);
+    column.setMaxNumberOfIterations(200, true);
+    if (columnDiameterM != null) {
+      column.setColumnDiameter(columnDiameterM);
+    }
+    if (fsLimit != null) {
+      column.setMaxAllowableFsFactor(fsLimit);
+    }
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(inlet);
+    process.add(column);
+    process.run();
+    // The inherited diameter is passed as the row's own, because that is what the Fs family
+    // reads; `column_diameter_stated_m` is the class's other field, which does not reach it.
+    printCapacity(label, "packed_column", column, column.getInternalDiameter(), columnDiameterM,
+        fsLimit, null, "");
+  }
+
+  static void capacityBinaryRow(String label, double diameterM, Double fsLimit) {
+    SystemInterface fluid = new SystemPrEos(300.0, 20.0);
+    fluid.addComponent("methane", 0.5);
+    fluid.addComponent("n-butane", 0.5);
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(1000.0, "kg/hr");
+    inlet.run();
+
+    // `binary_methane_butane_4_stages`, the row `process_column.tsv` carries and the port
+    // reproduces exactly - so the capacity family is measured on a state that is already an
+    // oracle rather than on a column of this probe's own.
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", 4, true, true);
+    column.addFeedStream(inlet, 2);
+    column.setCondenserTemperature(-20.0, "C");
+    column.setReboilerTemperature(100.0, "C");
+    column.setTopPressure(19.0);
+    column.setBottomPressure(20.0);
+    column.setTemperatureTolerance(1.0e-6);
+    column.setMaxNumberOfIterations(200, true);
+    column.setInternalDiameter(diameterM);
+    if (fsLimit != null) {
+      column.setMaxAllowableFsFactor(fsLimit);
+    }
+    column.run();
+    printCapacity(label, "distillation_column", column, diameterM, null, fsLimit, null, "");
+  }
+
+  static void capacityAbsorberRow(String label, double diameterM, Double kLimit, Double fsLimit,
+      boolean stripper, String perturb) {
+    // The stripper's own five-component pair of streams, which is what its class test states.
+    String[] names = stripper
+        ? new String[] { "methane", "propane", "n-butane", "n-pentane", "n-heptane" }
+        : new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane", "n-heptane" };
+    double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
+    double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    double[] stripZ = new double[] { 0.9900, 0.0080, 0.0015, 0.0005, 0.0 };
+    double[] richZ = new double[] { 0.02, 0.08, 0.12, 0.15, 0.63 };
+
+    // `lean_oil_absorber` and `hydrocarbon_stripper`, the two unpinned rows of the class's own
+    // tests, at the tolerances that capture solved them to.
+    double bara = stripper ? 12.0 : 15.0;
+    double tolerance = 1.0e-4;
+    Stream gas = feedMass("gas", names, stripper ? stripZ : gasZ, stripper ? 343.15 : 303.15, bara,
+        stripper ? 150.0 : 2000.0);
+    Stream solvent = feedMass("solvent", names, stripper ? richZ : pureHeptane,
+        stripper ? 343.15 : 293.15, bara, stripper ? 900.0 : 600.0);
+
+    neqsim.process.equipment.absorber.AbsorptionColumn column = stripper
+        ? new neqsim.process.equipment.absorber.StrippingColumn(label, 5)
+        : new neqsim.process.equipment.absorber.AbsorptionColumn(label, 5);
+    if (stripper) {
+      ((neqsim.process.equipment.absorber.StrippingColumn) column).addStrippingGasStream(gas);
+      ((neqsim.process.equipment.absorber.StrippingColumn) column).addRichLiquidStream(solvent);
+    } else {
+      column.addGasInStream(gas);
+      column.addSolventInStream(solvent);
+    }
+    column.setTopPressure(bara);
+    column.setBottomPressure(bara);
+    column.setTemperatureTolerance(tolerance);
+    column.setMassBalanceTolerance(5.0e-2);
+    column.setEnthalpyBalanceTolerance(5.0e-2);
+    column.setMaxNumberOfIterations(80, true);
+    column.setSolverType(
+        neqsim.process.equipment.distillation.DistillationColumn.SolverType.DIRECT_SUBSTITUTION);
+    column.setInternalDiameter(diameterM);
+    // **The K setter refuses a non-positive limit** rather than storing it, so a row that states
+    // one is stating something the class accepted.
+    if (kLimit != null) {
+      column.setMaxAllowableGasLoadFactor(kLimit);
+    }
+    if (fsLimit != null) {
+      column.setMaxAllowableFsFactor(fsLimit);
+    }
+    // Through a `ProcessSystem`, which is how the class's own tests drive it.
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(gas);
+    process.add(solvent);
+    process.add(column);
+    process.run();
+
+    // **An outlet reflashed on its own**, which is the class's own state as it reads it: both
+    // families take their ingredients from the outlet streams, so moving one is how the branch
+    // that reads it is measured rather than read. `StreamInterface.run()` is the flash -
+    // `SystemInterface` carries none in this revision.
+    StreamInterface reflashed = null;
+    if (perturb.equals("liquid")) {
+      reflashed = column.getLiquidOutStream();
+      reflashed.setTemperature(280.0);
+      reflashed.setPressure(bara);
+      reflashed.run();
+    } else if (perturb.equals("gas")) {
+      reflashed = column.getLiquidOutStream();
+      reflashed.setTemperature(500.0);
+      reflashed.setPressure(1.0);
+      reflashed.run();
+    } else if (perturb.equals("gas_two_phase")) {
+      reflashed = column.getGasOutStream();
+      reflashed.setTemperature(235.0);
+      reflashed.setPressure(bara);
+      reflashed.run();
+    }
+    printCapacity(label, stripper ? "stripping_column" : "absorption_column", column, diameterM,
+        null, fsLimit, kLimit, reflashed == null ? "" : perturb);
+  }
+
+  static void printCapacity(String label, String machine,
+      neqsim.process.equipment.distillation.DistillationColumn column, double statedDiameterM,
+      Double statedColumnDiameterM, Double statedFsLimit, Double statedKLimit,
+      String perturbedOutlet) {
+    StreamInterface gasOut = column.getGasOutStream();
+    StreamInterface liquidOut = column.getLiquidOutStream();
+    SystemInterface gas = gasOut == null ? null : gasOut.getThermoSystem();
+    SystemInterface liquid = liquidOut == null ? null : liquidOut.getThermoSystem();
+    // The two property inits both K getters perform before they read, so the ingredients printed
+    // below are the ones those getters see.
+    if (gas != null) {
+      gas.initPhysicalProperties(neqsim.physicalproperties.PhysicalPropertyType.MASS_DENSITY);
+    }
+    if (liquid != null) {
+      liquid.initPhysicalProperties(neqsim.physicalproperties.PhysicalPropertyType.MASS_DENSITY);
+    }
+
+    boolean gasLoad = column instanceof neqsim.process.equipment.absorber.AbsorptionColumn;
+    System.out.println(label);
+    System.out.println("machine=" + machine);
+    System.out.println("trays=" + column.getNumberOfTrays());
+    System.out.println("internal_diameter_stated_m=" + statedDiameterM);
+    System.out.println("internal_diameter_m=" + column.getInternalDiameter());
+    System.out.println("column_diameter_stated_m=" + statedColumnDiameterM);
+    System.out.println("max_allowable_fs_factor_stated=" + statedFsLimit);
+    System.out.println("max_allowable_fs_factor=" + column.getMaxAllowableFsFactor());
+    if (gasLoad) {
+      neqsim.process.equipment.absorber.AbsorptionColumn absorber =
+          (neqsim.process.equipment.absorber.AbsorptionColumn) column;
+      System.out.println("max_allowable_gas_load_factor_stated=" + statedKLimit);
+      System.out.println("max_allowable_gas_load_factor=" + absorber.getMaxAllowableGasLoadFactor());
+    }
+    System.out.println("reflashed_outlet=" + perturbedOutlet);
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    printCapacitySide("gas_out", gas);
+    printCapacitySide("liquid_out", liquid);
+    System.out.println("gas_superficial_velocity_m_per_s=" + superficialVelocity(column, gas));
+    // ---- The class's own answers, which the port is held to.
+    System.out.println("fs_factor=" + column.getFsFactor());
+    System.out.println("fs_factor_utilization=" + column.getFsFactorUtilization());
+    System.out.println("fs_factor_within_design_limit=" + column.isFsFactorWithinDesignLimit());
+    System.out.println("minimum_diameter_for_fs_limit_m=" + column.getMinimumDiameterForFsLimit());
+    if (gasLoad) {
+      neqsim.process.equipment.absorber.AbsorptionColumn absorber =
+          (neqsim.process.equipment.absorber.AbsorptionColumn) column;
+      System.out.println("gas_load_factor=" + absorber.getGasLoadFactor());
+      System.out.println("gas_load_factor_utilization=" + absorber.getGasLoadFactorUtilization());
+      System.out.println("gas_load_factor_within_design_limit="
+          + absorber.isGasLoadFactorWithinDesignLimit());
+      System.out.println("minimum_diameter_for_gas_load_limit_m="
+          + absorber.getMinimumDiameterForGasLoadLimit());
+    }
+    System.out.println();
+  }
+
+  /// The two outlet states the capacity families read, as ingredients rather than as answers:
+  /// the volumetric flow both velocities divide, and the two densities the Fs and K families each
+  /// take their own copy of.
+  static void printCapacitySide(String port, SystemInterface side) {
+    if (side == null) {
+      System.out.println(port + "=null");
+      return;
+    }
+    double n = side.getFlowRate("mol/sec");
+    double mass = n * side.getMolarMass();
+    double density = side.getDensity("kg/m3");
+    System.out.println(port + "_T_K=" + side.getTemperature());
+    System.out.println(port + "_P_bara=" + side.getPressure());
+    System.out.println(port + "_phases=" + side.getNumberOfPhases());
+    System.out.println(port + "_phase0_type=" + side.getPhase(0).getPhaseTypeName());
+    System.out.println(port + "_n_mol_per_s=" + n);
+    System.out.println(port + "_molar_mass_kg_per_mol=" + side.getMolarMass());
+    System.out.println(port + "_mass_flow_kg_per_s=" + mass);
+    System.out.println(port + "_density_kg_per_m3=" + density);
+    System.out.println(port + "_phase0_density_kg_per_m3="
+        + side.getPhase(0).getPhysicalProperties().getDensity());
+    System.out.println(port + "_volumetric_flow_m3_per_s=" + side.getFlowRate("m3/sec"));
+    System.out.println(port + "_mass_over_density_m3_per_s=" + mass / density);
+  }
+
+  /// `pi·D^2/4` under the gas outlet's volumetric flow - the same quantity
+  /// `getGasSuperficialVelocity` returns, printed from the ingredients so a row still carries a
+  /// velocity if the getter is what moved.
+  static double superficialVelocity(
+      neqsim.process.equipment.distillation.DistillationColumn column, SystemInterface gas) {
+    if (gas == null) {
+      return 0.0;
+    }
+    return gas.getFlowRate("m3/sec") / (Math.PI * column.getInternalDiameter()
+        * column.getInternalDiameter() / 4.0);
   }
 
   static void print(String port, StreamInterface stream) {
