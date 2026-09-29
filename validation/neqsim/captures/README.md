@@ -241,6 +241,33 @@ stated `0.5` row reads back `0.5` and moves the factor to `0.08158631462070312`,
 column's stage count, and the capacity family is indifferent to the packing. Both packed rows also
 read `max_allowable_fs_factor=2.5`, so `PackedColumn` overrides neither default.
 
+**`ProcessProbe designer` is `ColumnInternalsDesigner`'s trayed half - the class the tray
+calculator is driven *by*.** It walks the column's trays, picks the **controlling** one by the
+largest vapour mass flow, sizes a diameter off that one and runs a calculator per tray at the
+diameter it resolved, summing them. **No capture in this directory held it before**: it is the
+class `DistillationColumn.updatePressureProfileFromHydraulics` builds inside its tear loop, and
+`hydraulics.tray_hydraulics` is its arithmetic rather than its report.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe designer > captures/process_internals_designer.tsv
+```
+
+Seven rows: the binary column at the designer's own defaults, at the other two tray types, at a
+stated `columnDiameterOverride`, at a looser flood fraction, and at a different geometry - then
+the lean-oil absorber, which is the no-ends case.
+
+**Four things the rows carry.** `getTrays()` **includes the ends**: the binary column's four
+stages walk as six trays and the absorber's five as five, so a port that read the middle trays
+would miss the reboiler and the condenser. **The controlling tray's calculator is discarded** -
+it exists only to size the diameter - and it is built **without a relative volatility** while
+every tray in the summation loop carries one, so the sizing branch runs at the class's own
+default `2.0` on a state whose trays read `9.25` and `20.0`. **The relative volatility is a
+spread and not a K-value**: `getTrayProperties` takes `getPhase(0)`'s mole fraction over the
+liquid phase's for every component, divides the largest ratio by the smallest and **caps the
+result at `20.0`**, which two of the binary column's six trays reach. And `design_ok` is false on
+all seven rows while the sized diameter is `0.5` m on every binary row - the standard-diameter
+table's granularity, which a stated `0.5` override reproduces to the last digit.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are

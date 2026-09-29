@@ -62,6 +62,8 @@
 //       > captures/process_absorber_efficiency.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe capacity \
 //       > captures/process_column_capacity.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe designer \
+//       > captures/process_internals_designer.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -184,6 +186,9 @@ public class ProcessProbe {
         break;
       case "capacity":
         capacityRows();
+        break;
+      case "designer":
+        designerRows();
         break;
       case "packed_column":
         packedColumnRows();
@@ -4478,6 +4483,209 @@ public class ProcessProbe {
     // reads; `column_diameter_stated_m` is the class's other field, which does not reach it.
     printCapacity(label, "packed_column", column, column.getInternalDiameter(), columnDiameterM,
         fsLimit, null, "");
+  }
+
+  /// **`ColumnInternalsDesigner`, the trayed half, on solved columns of this probe's own.**
+  ///
+  /// **This is the class `TrayHydraulicsCalculator` is driven *by* - and it is not the tray
+  /// calculator.** It walks the column's trays, picks the **controlling** one by the largest
+  /// vapour mass flow, sizes a diameter off that tray, then runs one calculator per tray at the
+  /// diameter it resolved and sums them: the total pressure drop, the two percent-flood extremes,
+  /// the average efficiency and the per-tray results all come from that second loop, and the
+  /// first calculator - the one the diameter was sized from - is discarded.
+  ///
+  /// **Three of its own lines are the port's, not the capture's, and each is measured here.**
+  /// The pre-loop calculator is built **without a relative volatility** while the loop's carries
+  /// one per tray, so the sizing branch runs at the class's default `2.0`. `getTrayProperties`
+  /// takes the phase-0 composition for the gas side of the spread - the array is gas-first - and
+  /// falls back to `600.0` for the liquid density when the fluid's phase 0 is a gas on a
+  /// single-phase tray. And the spread itself is capped at `20.0`.
+  ///
+  /// **The ingredients are printed per tray beside every answer**, because the class's two
+  /// extraction helpers are private: what they read off a tray is its two outlet streams and its
+  /// own fluid's phases, and both are printed here as the class reads them.
+  static void designerRows() {
+    // The port's own oracle column, at the designer's own defaults.
+    designerColumnRow("binary_designer_defaults", "sieve", 0.6, 0.05, 12.7, 0.1, 0.1, 0.8, -1.0);
+    // The other two types the tray calculator names, at that same state.
+    designerColumnRow("binary_designer_valve", "valve", 0.6, 0.05, 12.7, 0.1, 0.1, 0.8, -1.0);
+    designerColumnRow("binary_designer_bubble_cap", "bubble-cap", 0.6, 0.05, 12.7, 0.1, 0.1, 0.8,
+        -1.0);
+    // A stated override, which replaces the sizing branch entirely.
+    designerColumnRow("binary_designer_diameter_override_0_5", "sieve", 0.6, 0.05, 12.7, 0.1, 0.1,
+        0.8, 0.5);
+    // A looser flood fraction, which moves the sized diameter and every per-tray load with it.
+    designerColumnRow("binary_designer_flood_0_7", "sieve", 0.6, 0.05, 12.7, 0.1, 0.1, 0.7, -1.0);
+    // A different geometry, on the same state.
+    designerColumnRow("binary_designer_wider_trays", "sieve", 0.75, 0.075, 6.0, 0.12, 0.15, 0.75,
+        -1.0);
+    // **The absorber, which has no ends**: its five trays are all middle trays, so the designer
+    // walks five rather than the column's six.
+    designerAbsorberRow("absorber_designer_defaults", "sieve", 0.6, 0.05, 12.7, 0.1, 0.1, 0.8,
+        -1.0);
+  }
+
+  /// The binary column `process_column_capacity.tsv` already holds, driven by the designer.
+  static void designerColumnRow(String label, String internalsType, double traySpacingM,
+      double weirHeightM, double holeDiameterMm, double holeAreaFraction,
+      double downcommerAreaFraction, double designFloodFraction, double diameterOverrideM) {
+    SystemInterface fluid = new SystemPrEos(300.0, 20.0);
+    fluid.addComponent("methane", 0.5);
+    fluid.addComponent("n-butane", 0.5);
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(1000.0, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", 4, true, true);
+    column.addFeedStream(inlet, 2);
+    column.setCondenserTemperature(-20.0, "C");
+    column.setReboilerTemperature(100.0, "C");
+    column.setTopPressure(19.0);
+    column.setBottomPressure(20.0);
+    column.setTemperatureTolerance(1.0e-6);
+    column.setMaxNumberOfIterations(200, true);
+    column.run();
+    designerRow(label, "distillation_column", column, internalsType, traySpacingM, weirHeightM,
+        holeDiameterMm, holeAreaFraction, downcommerAreaFraction, designFloodFraction,
+        diameterOverrideM);
+  }
+
+  /// The lean-oil absorber, which is a column with no ends at all.
+  static void designerAbsorberRow(String label, String internalsType, double traySpacingM,
+      double weirHeightM, double holeDiameterMm, double holeAreaFraction,
+      double downcommerAreaFraction, double designFloodFraction, double diameterOverrideM) {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
+        "n-heptane" };
+    double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
+    double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    double bara = 15.0;
+    Stream gas = feedMass("gas", names, gasZ, 303.15, bara, 2000.0);
+    Stream solvent = feedMass("solvent", names, pureHeptane, 293.15, bara, 600.0);
+
+    neqsim.process.equipment.absorber.AbsorptionColumn column =
+        new neqsim.process.equipment.absorber.AbsorptionColumn(label, 5);
+    column.addGasInStream(gas);
+    column.addSolventInStream(solvent);
+    column.setTopPressure(bara);
+    column.setBottomPressure(bara);
+    column.setTemperatureTolerance(1.0e-4);
+    column.setMassBalanceTolerance(5.0e-2);
+    column.setEnthalpyBalanceTolerance(5.0e-2);
+    column.setMaxNumberOfIterations(80, true);
+    column.setSolverType(
+        neqsim.process.equipment.distillation.DistillationColumn.SolverType.DIRECT_SUBSTITUTION);
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(gas);
+    process.add(solvent);
+    process.add(column);
+    process.run();
+    designerRow(label, "absorption_column", column, internalsType, traySpacingM, weirHeightM,
+        holeDiameterMm, holeAreaFraction, downcommerAreaFraction, designFloodFraction,
+        diameterOverrideM);
+  }
+
+  static void designerRow(String label, String machine,
+      neqsim.process.equipment.distillation.DistillationColumn column, String internalsType,
+      double traySpacingM, double weirHeightM, double holeDiameterMm, double holeAreaFraction,
+      double downcommerAreaFraction, double designFloodFraction, double diameterOverrideM) {
+    neqsim.process.equipment.distillation.internals.ColumnInternalsDesigner designer =
+        new neqsim.process.equipment.distillation.internals.ColumnInternalsDesigner(column);
+    designer.setInternalsType(internalsType);
+    designer.setTraySpacing(traySpacingM);
+    designer.setWeirHeight(weirHeightM);
+    designer.setHoleDiameter(holeDiameterMm);
+    designer.setHoleAreaFraction(holeAreaFraction);
+    designer.setDowncommerAreaFraction(downcommerAreaFraction);
+    designer.setDesignFloodFraction(designFloodFraction);
+    designer.setColumnDiameterOverride(diameterOverrideM);
+    designer.calculate();
+
+    System.out.println(label);
+    System.out.println("machine=" + machine);
+    System.out.println("internals_type=" + internalsType);
+    System.out.println("tray_spacing_m=" + traySpacingM);
+    System.out.println("weir_height_m=" + weirHeightM);
+    System.out.println("hole_diameter_mm=" + holeDiameterMm);
+    System.out.println("hole_area_fraction=" + holeAreaFraction);
+    System.out.println("downcommer_area_fraction=" + downcommerAreaFraction);
+    System.out.println("design_flood_fraction=" + designFloodFraction);
+    System.out.println("column_diameter_override_m=" + diameterOverrideM);
+    System.out.println("column_tray_count=" + column.getTrays().size());
+    System.out.println("column_stage_count=" + column.getNumberOfTrays());
+    // **What the designer reads off each tray, and what it resolves from it.** The two flows are
+    // `getTrayFlows`'s own `kg/hr` over 3600; the five properties are `getTrayProperties`'s.
+    for (int i = 0; i < column.getTrays().size(); i++) {
+      neqsim.process.equipment.distillation.SimpleTray tray = column.getTrays().get(i);
+      SystemInterface trayFluid = tray.getFluid();
+      System.out.println("tray" + i + "_temperature_K=" + tray.getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + tray.getPressure());
+      System.out.println("tray" + i + "_vapor_mass_flow_kg_per_s="
+          + tray.getGasOutStream().getFlowRate("kg/hr") / 3600.0);
+      System.out.println("tray" + i + "_liquid_mass_flow_kg_per_s="
+          + tray.getLiquidOutStream().getFlowRate("kg/hr") / 3600.0);
+      System.out.println("tray" + i + "_phases=" + trayFluid.getNumberOfPhases());
+      trayFluid.initProperties();
+      System.out.println("tray" + i + "_vapor_density_kg_per_m3="
+          + (trayFluid.hasPhaseType("gas") ? trayFluid.getPhase("gas").getDensity("kg/m3")
+              : trayFluid.getPhase(0).getDensity("kg/m3")));
+      int liquidIndex = trayFluid.hasPhaseType("oil") ? trayFluid.getPhaseNumberOfPhase("oil")
+          : (trayFluid.hasPhaseType("aqueous") ? trayFluid.getPhaseNumberOfPhase("aqueous") : 1);
+      System.out.println("tray" + i + "_liquid_density_kg_per_m3="
+          + trayFluid.getPhase(liquidIndex).getDensity("kg/m3"));
+      System.out.println("tray" + i + "_liquid_viscosity_kg_per_msec="
+          + trayFluid.getPhase(liquidIndex).getViscosity("kg/msec"));
+      System.out.println("tray" + i + "_interphase_surface_tension_N_per_m="
+          + trayFluid.getInterphaseProperties().getSurfaceTension(0, 1));
+      System.out.println(
+          "tray" + i + "_relative_volatility=" + relativeVolatility(trayFluid, liquidIndex));
+    }
+    // ---- The class's own answers.
+    System.out.println("required_diameter_m=" + designer.getRequiredDiameter());
+    System.out.println("controlling_tray_index=" + designer.getControllingTrayIndex());
+    System.out.println("design_ok=" + designer.isDesignOk());
+    System.out.println("max_percent_flood=" + designer.getMaxPercentFlood());
+    System.out.println("min_percent_flood=" + designer.getMinPercentFlood());
+    System.out.println("average_tray_efficiency=" + designer.getAverageTrayEfficiency());
+    System.out.println("total_pressure_drop_Pa=" + designer.getTotalPressureDrop());
+    System.out.println("total_pressure_drop_mbar=" + designer.getTotalPressureDropMbar());
+    for (int i = 0; i < designer.getTrayResults().size(); i++) {
+      neqsim.process.equipment.distillation.internals.TrayHydraulicsCalculator result =
+          designer.getTrayResults().get(i);
+      System.out.println("result" + i + "_percent_flood=" + result.getPercentFlood());
+      System.out
+          .println("result" + i + "_total_pressure_drop_Pa=" + result.getTotalTrayPressureDrop());
+      System.out.println("result" + i + "_tray_efficiency=" + result.getTrayEfficiency());
+      System.out.println("result" + i + "_design_ok=" + result.isDesignOk());
+    }
+    System.out.println();
+  }
+
+  /// `getTrayProperties`'s own relative-volatility spread, at a tray's fluid.
+  ///
+  /// The gas side is **phase 0**'s mole fraction - the class reads `getPhase(0)` and not the gas
+  /// phase's - so on a gas-first system the two agree and on an all-liquid one they do not. The
+  /// ratio is the largest `y_i/x_i` over the smallest, capped at `20.0`, and the default `2.0`
+  /// stands wherever no component clears both `1e-10` thresholds.
+  static double relativeVolatility(SystemInterface fluid, int liquidIndex) {
+    double maxRatio = 0.0;
+    double minRatio = 1.0e10;
+    for (int i = 0; i < fluid.getPhase(0).getNumberOfComponents(); i++) {
+      double xGas = fluid.getPhase(0).getComponent(i).getx();
+      double xLiquid = fluid.getPhase(liquidIndex).getComponent(i).getx();
+      if (xLiquid > 1.0e-10 && xGas > 1.0e-10) {
+        double ratio = xGas / xLiquid;
+        if (ratio > maxRatio) {
+          maxRatio = ratio;
+        }
+        if (ratio < minRatio) {
+          minRatio = ratio;
+        }
+      }
+    }
+    double relative = minRatio > 0.0 ? maxRatio / minRatio : 2.0;
+    return Math.min(relative, 20.0);
   }
 
   static void capacityBinaryRow(String label, double diameterM, Double fsLimit) {
