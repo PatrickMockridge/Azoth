@@ -163,6 +163,29 @@ java -cp .:neqsim-f0c7436.jar PackingProbe size \
   > captures/packing_sizing_probe.tsv
 ```
 
+**`TrayHydraulicsProbe` drives `TrayHydraulicsCalculator` directly, on states of its own.** This is
+the tray hydraulics of `distillation_column`, `absorption_column` and `stripping_column`, and **none
+of their captures holds its output**: all three declare `max_allowable_gas_load_factor` and refuse it
+rather than reading it, and `getFsFactor()` is the quantity that would answer it. So this probe states
+the geometry and the load and prints both sides - sixteen inputs and twenty-four answers - which is
+what makes the port's case set an oracle rather than a self-consistency check.
+
+Eight states: the class's own defaults, the other two tray types it names (`valve` and `bubble-cap`)
+at that same state, a load above flood and a load where weeping trips, the weeping state again on a
+`valve` tray, a stated weir length where the class's own is `-1.0`, and a wider column so the areas
+are not all one diameter's.
+
+```bash
+java -cp .:neqsim-f0c7436.jar TrayHydraulicsProbe > captures/tray_hydraulics_probe.tsv
+```
+
+**Two behaviours the rows carry that a single state would not show.** A `bubble-cap` tray's minimum
+vapour velocity is `0.0`, so `isWeepingOk` can never go false for it and its turndown ratio is `0.0`
+at every load - the verdict is the *type's*. And a stated weir length is read back
+(`calculated_weir_length_m` answers the stated `0.7` rather than the derived `0.73`) while moving
+none of the flood, the pressure drop or the turndown, so the class reads the field and the
+arithmetic does not.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are
