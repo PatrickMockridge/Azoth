@@ -1,0 +1,51 @@
+=== component_splitter near_total_separation ===
+split_factors=0.98 0.05 0.02
+reported_overhead                  h=551.702267664934 s=-20.881898579255 total_h=551.702267664934 phases=1 types=gas betas=1.000000
+overhead_flow_mol_per_sec=0.509
+-- overhead repairs --
+fresh_fluid (via Stream)           h=586.249904635023 s=-20.766739789355 total_h=586.249904635023 phases=1 types=gas betas=1.000000
+control: init(0)+TPflash           h=691.826571994352 s=-20.414817564824 total_h=691.826571994352 phases=1 types=gas betas=1.000000
+clone + TPflash                    h=551.702267664934 s=-20.881898579255 total_h=551.702267664934 phases=1 types=gas betas=1.000000
+clone + init(0) + TPflash          h=551.702267664934 s=-20.881898579255 total_h=551.702267664934 phases=1 types=gas betas=1.000000
+clone + init(1)                    h=551.702267664934 s=-20.881898579255 total_h=551.702267664934 phases=1 types=gas betas=1.000000
+clone + init(2)                    h=586.249904635023 s=-20.766739789355 total_h=586.249904635023 phases=1 types=gas betas=1.000000
+clone + initProperties()           h=586.249904635023 s=-20.766739789355 total_h=586.249904635023 phases=1 types=gas betas=1.000000
+clone + initThermoProperties()     h=586.249904635023 s=-20.766739789355 total_h=586.249904635023 phases=1 types=gas betas=1.000000
+clone + setT + init(2)             h=586.249904635023 s=-20.766739789355 total_h=586.249904635023 phases=1 types=gas betas=1.000000
+
+reported_bottoms                   h=-14431.317370970110 s=-45.831897907409 total_h=-14431.317370970110 phases=1 types=oil betas=1.000000
+bottoms_flow_mol_per_sec=0.491
+-- bottoms repairs --
+fresh_fluid (via Stream)           h=-20309.248329140763 s=-65.425001101312 total_h=-20309.248329140763 phases=1 types=oil betas=1.000000
+control: init(0)+TPflash           h=-13252.448215495684 s=-41.902334055828 total_h=-13252.448215495684 phases=1 types=oil betas=1.000000
+clone + TPflash                    h=-14431.317370970110 s=-45.831897907409 total_h=-14431.317370970110 phases=1 types=oil betas=1.000000
+clone + init(0) + TPflash          h=-14431.317370970110 s=-45.831897907409 total_h=-14431.317370970110 phases=1 types=oil betas=1.000000
+clone + init(1)                    h=-14431.317370970110 s=-45.831897907409 total_h=-14431.317370970110 phases=1 types=oil betas=1.000000
+clone + init(2)                    h=-20309.248329140766 s=-65.425001101312 total_h=-20309.248329140766 phases=1 types=oil betas=1.000000
+clone + initProperties()           h=-20309.248329140766 s=-65.425001101312 total_h=-20309.248329140766 phases=1 types=oil betas=1.000000
+clone + initThermoProperties()     h=-20309.248329140766 s=-65.425001101312 total_h=-20309.248329140766 phases=1 types=oil betas=1.000000
+clone + setT + init(2)             h=-20309.248329140766 s=-65.425001101312 total_h=-20309.248329140766 phases=1 types=oil betas=1.000000
+
+=== heat_exchanger out_temperature_pins_the_cold_side ===
+reported_hot_out                   h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+reported_cold_out                  h=-18386.463788954290 s=-57.585483330626 total_h=-18386.463788954290 phases=1 types=oil betas=1.000000
+-- hot_out repairs --
+fresh_fluid (via Stream)           h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+control: init(0)+TPflash           h=3486.839528803039 s=-8.804913545415 total_h=3486.839528803039 phases=1 types=gas betas=1.000000
+clone + TPflash                    h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+clone + init(0) + TPflash          h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+clone + init(1)                    h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+clone + init(2)                    h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+clone + initProperties()           h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+clone + initThermoProperties()     h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+clone + setT + init(2)             h=3332.644562938384 s=-9.242934575809 total_h=3332.644562938384 phases=1 types=gas betas=1.000000
+-- cold_out repairs --
+fresh_fluid (via Stream)           h=-18022.512210530170 s=-56.448134648050 total_h=-18022.512210530170 phases=1 types=oil betas=1.000000
+control: init(0)+TPflash           h=-10818.838544906400 s=-33.936654442976 total_h=-10818.838544906400 phases=1 types=oil betas=1.000000
+clone + TPflash                    h=-18386.463788954290 s=-57.585483330626 total_h=-18386.463788954290 phases=1 types=oil betas=1.000000
+clone + init(0) + TPflash          h=-18386.463788954290 s=-57.585483330626 total_h=-18386.463788954290 phases=1 types=oil betas=1.000000
+clone + init(1)                    h=-18386.463788954290 s=-57.585483330626 total_h=-18386.463788954290 phases=1 types=oil betas=1.000000
+clone + init(2)                    h=-18022.512210530170 s=-56.448134648050 total_h=-18022.512210530170 phases=1 types=oil betas=1.000000
+clone + initProperties()           h=-18022.512210530170 s=-56.448134648050 total_h=-18022.512210530170 phases=1 types=oil betas=1.000000
+clone + initThermoProperties()     h=-18022.512210530170 s=-56.448134648050 total_h=-18022.512210530170 phases=1 types=oil betas=1.000000
+clone + setT + init(2)             h=-18022.512210530170 s=-56.448134648050 total_h=-18022.512210530170 phases=1 types=oil betas=1.000000
