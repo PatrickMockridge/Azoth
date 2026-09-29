@@ -8,7 +8,7 @@ use azoth_core::units::{Pressure, ThermodynamicTemperature, kilograms_per_mole, 
 use azoth_core::{AzothError, Result};
 use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
 use azoth_eos::phase_transport::{PhaseKind, phase_transport};
-use azoth_eos::results::PhaseTransportResult;
+use azoth_eos::results::{PhaseTransportResult, PtFlashResult};
 use azoth_eos::{
     Cubic, Mixture, Phase, databank, molar_enthalpy_entropy, pr_mass_density, pr_molar_volume,
     pt_flash,
@@ -67,40 +67,13 @@ pub fn index_of(components: &[String], name: &str) -> Option<usize> {
 pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
     let (mixture, ideal_gas) = stream.mixture()?;
     let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
-    let reduced = mixture.reduced_parameters(stream.t, stream.p)?;
 
     // **The phase, and it is the label rule that names it, not `beta`.** `getGasPhase` and
     // `getLiquidPhase` look for a `PhaseType`, and `PhaseEos.init` is what assigns one - the
     // volume ratio past `1.75` is the gas, and of the two liquids the one whose hydrocarbons
     // outweigh its aqueous components is the oil. It is the same rule `three_phase_separator`
     // and `pipe` already read, and it is public in `azoth-eos` for exactly this reason.
-    let labelled: Vec<(PhaseLabel, Vec<f64>, f64)> = match flash.phase {
-        // **A single phase has the system's composition, and the flash's own `x` or `y` is not
-        // it.** The flash answers a trial phase there - `column/tray.rs` records the
-        // measurement - so the one phase *is* the system.
-        Phase::AllVapour => vec![(PhaseLabel::Gas, stream.z.clone(), flash.z_vapour)],
-        Phase::AllLiquid | Phase::Trivial => vec![(
-            label(&mixture, &reduced, &stream.z, flash.z_liquid)?,
-            stream.z.clone(),
-            flash.z_liquid,
-        )],
-        Phase::TwoPhase => {
-            if flash.vapour_fraction.is_none() {
-                return Err(AzothError::invalid_input(
-                    "flash",
-                    "a two-phase answer with no vapour fraction, so neither phase's share is known",
-                ));
-            }
-            vec![
-                (PhaseLabel::Gas, flash.y.clone(), flash.z_vapour),
-                (
-                    label(&mixture, &reduced, &flash.x, flash.z_liquid)?,
-                    flash.x.clone(),
-                    flash.z_liquid,
-                ),
-            ]
-        }
-    };
+    let labelled = labelled_phases(stream, &mixture, &flash)?;
 
     let chosen = match pick {
         // `getGasPhase` asks for the gas phase and falls back to phase zero, which on a system
@@ -177,6 +150,93 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
         kind: phase_kind(kind),
         transport,
     })
+}
+
+/// The stream's phases, labelled by the class's own rule and in the order its system carries
+/// them: **the gas first, then the liquids**. That order is what makes [`Pick::Gas`] the spelling
+/// of `getPhase(0)` - the class indexes its phase array, and the array is gas-first.
+fn labelled_phases(
+    stream: &Stream,
+    mixture: &Mixture,
+    flash: &PtFlashResult,
+) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
+    let reduced = mixture.reduced_parameters(stream.t, stream.p)?;
+    Ok(match flash.phase {
+        // **A single phase has the system's composition, and the flash's own `x` or `y` is not
+        // it.** The flash answers a trial phase there - `column/tray.rs` records the
+        // measurement - so the one phase *is* the system.
+        Phase::AllVapour => vec![(PhaseLabel::Gas, stream.z.clone(), flash.z_vapour)],
+        Phase::AllLiquid | Phase::Trivial => vec![(
+            label(mixture, &reduced, &stream.z, flash.z_liquid)?,
+            stream.z.clone(),
+            flash.z_liquid,
+        )],
+        Phase::TwoPhase => {
+            if flash.vapour_fraction.is_none() {
+                return Err(AzothError::invalid_input(
+                    "flash",
+                    "a two-phase answer with no vapour fraction, so neither phase's share is known",
+                ));
+            }
+            vec![
+                (PhaseLabel::Gas, flash.y.clone(), flash.z_vapour),
+                (
+                    label(mixture, &reduced, &flash.x, flash.z_liquid)?,
+                    flash.x.clone(),
+                    flash.z_liquid,
+                ),
+            ]
+        }
+    })
+}
+
+/// The whole system's mass and volume, per mole of the system: `(kg/mol, m³/mol)`.
+///
+/// **The sum over the phases, and every capacity-limit reading needs it.** `getDensity("kg/m3")`
+/// and `getFlowRate("m3/sec")` are *system* quantities in NeqSim, not phase ones, and on a
+/// two-phase outlet neither is either phase's: the capture's over-cooled overhead row reads a
+/// system density of `15.34351809893286` beside a gas phase of `14.4273646532561`.
+fn system_per_mole(stream: &Stream) -> Result<(f64, f64)> {
+    let (mixture, _) = stream.mixture()?;
+    let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
+    let phases = labelled_phases(stream, &mixture, &flash)?;
+    let mut mass = 0.0;
+    let mut volume = 0.0;
+    for (kind, z, root) in &phases {
+        let share = if phases.len() == 1 {
+            1.0
+        } else if *kind == PhaseLabel::Gas {
+            flash.vapour_fraction.unwrap_or(1.0)
+        } else {
+            1.0 - flash.vapour_fraction.unwrap_or(0.0)
+        };
+        let molar_mass = molar_mass_of(&mixture, z)?;
+        let density = mass_density(&mixture, stream.t, stream.p, z, *root, molar_mass)?;
+        mass += share * molar_mass;
+        volume += share * molar_mass / density;
+    }
+    Ok((mass, volume))
+}
+
+/// The stream's mass density, kg/m³ - `SystemInterface.getDensity("kg/m3")`.
+///
+/// # Errors
+/// Whatever the flash, the label rule or a phase's own density raises.
+pub fn system_mass_density(stream: &Stream) -> Result<f64> {
+    let (mass, volume) = system_per_mole(stream)?;
+    Ok(mass / volume)
+}
+
+/// The whole stream's volumetric flow, m³/s - `SystemInterface.getFlowRate("m3/sec")`.
+///
+/// **The identity the capacity capture holds**: `n*M/rho` equals NeqSim's own `m3/sec` on every
+/// one of its rows, and this is that identity summed over the phases.
+///
+/// # Errors
+/// Whatever the flash, the label rule or a phase's own density raises.
+pub fn system_volumetric_flow(stream: &Stream) -> Result<f64> {
+    let (_, volume) = system_per_mole(stream)?;
+    Ok(stream.n * volume)
 }
 
 /// The three kinds `eos.phase_transport` dispatches on, from the label rule's three.

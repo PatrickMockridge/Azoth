@@ -1428,6 +1428,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pumparound_max_iterations",
         "dimensionless",
     ),
+    ("process.distillation_column", "column_diameter", "length"),
+    (
+        "process.distillation_column",
+        "max_allowable_fs_factor",
+        "dimensionless",
+    ),
     ("process.ejector", "motive_n", "molar_flow"),
     ("process.ejector", "motive_z", "dimensionless"),
     ("process.ejector", "motive_p", "pressure"),
@@ -1675,6 +1681,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "process.packed_column",
         "pumparound_max_iterations",
+        "dimensionless",
+    ),
+    (
+        "process.packed_column",
+        "max_allowable_fs_factor",
         "dimensionless",
     ),
     ("process.pipe", "inlet_n", "molar_flow"),

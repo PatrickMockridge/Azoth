@@ -83,6 +83,12 @@ description = "the target value, in the unit its type implies, as the top specif
 description = "the component a purity or a recovery constrains; unread by the other three types"
 [parameters.solver_type]
 description = "which of the class's ten solving strategies runs - direct_substitution, damped_substitution, inside_out, matrix_inside_out, wegstein, sum_rates, newton, naphtali_sandholm, mesh_residual or auto - where auto is a ladder and not one method"
+[parameters.column_diameter]
+unit = "m"
+description = "the column's internal diameter, which the Fs capacity limit divides the gas outlet's volumetric flow by; the class defaults it to 1.0 m and the solve is indifferent to it"
+[parameters.max_allowable_fs_factor]
+unit = "dimensionless"
+description = "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 2.5"
 [[ports]]
 name = "feed"
 direction = "in"

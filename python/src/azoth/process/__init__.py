@@ -227,6 +227,8 @@ def distillation_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -294,6 +296,8 @@ def distillation_column(
         pumparound_temperature_drop=pumparound_temperature_drop,
         pumparound_tolerance=pumparound_tolerance,
         pumparound_max_iterations=pumparound_max_iterations,
+        column_diameter=column_diameter,
+        max_allowable_fs_factor=max_allowable_fs_factor,
     )
 
 
@@ -450,6 +454,7 @@ def packed_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> PackedColumnResult:
     """Solve a packed column.
 
@@ -513,6 +518,7 @@ def packed_column(
         pumparound_temperature_drop=pumparound_temperature_drop,
         pumparound_tolerance=pumparound_tolerance,
         pumparound_max_iterations=pumparound_max_iterations,
+        max_allowable_fs_factor=max_allowable_fs_factor,
     )
 
 

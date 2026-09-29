@@ -491,5 +491,8 @@ fn model(
         None,
         None,
         None,
+        // The two capacity inputs, unstated: this test is about the mesh ladder.
+        None,
+        None,
     )
 }

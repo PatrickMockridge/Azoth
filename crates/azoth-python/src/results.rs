@@ -11325,6 +11325,18 @@ pub struct PyDistillationColumnResult {
     /// The enthalpy closure.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// `getFsFactor`, in `Pa**0.5` and carried dimensionless.
+    #[pyo3(get)]
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`.
+    #[pyo3(get)]
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    #[pyo3(get)]
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    #[pyo3(get)]
+    pub minimum_diameter_for_fs_limit: PyQty,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -11483,6 +11495,18 @@ pub struct PyPackedColumnResult {
     /// The enthalpy closure.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// `getFsFactor`, at the diameter the report resolved.
+    #[pyo3(get)]
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`.
+    #[pyo3(get)]
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    #[pyo3(get)]
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    #[pyo3(get)]
+    pub minimum_diameter_for_fs_limit: PyQty,
     /// The height equivalent to a theoretical plate.
     #[pyo3(get)]
     pub hetp: PyQty,
@@ -11572,6 +11596,10 @@ impl From<&PackedColumnResult> for PyPackedColumnResult {
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            fs_factor: r.fs_factor,
+            fs_factor_utilization: r.fs_factor_utilization,
+            fs_factor_within_design_limit: r.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: quantity(r.minimum_diameter_for_fs_limit.value, "m"),
             hetp: quantity(r.hetp.value, "m"),
             theoretical_stages: r.theoretical_stages,
             percent_flood: r.percent_flood,
@@ -11795,6 +11823,10 @@ impl From<&DistillationColumnResult> for PyDistillationColumnResult {
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            fs_factor: r.fs_factor,
+            fs_factor_utilization: r.fs_factor_utilization,
+            fs_factor_within_design_limit: r.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: quantity(r.minimum_diameter_for_fs_limit.value, "m"),
             warnings: transport(&r.warnings),
         }
     }

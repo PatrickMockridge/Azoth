@@ -19,6 +19,7 @@
 
 pub mod absorber_murphree;
 pub mod block_tridiagonal;
+pub mod capacity;
 pub mod condenser;
 pub mod murphree;
 pub mod naphtali_sandholm;

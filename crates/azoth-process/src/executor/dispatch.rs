@@ -25,7 +25,7 @@
 use std::collections::BTreeMap;
 
 use azoth_core::unit_vocab_gen;
-use azoth_core::units::{kelvins, pascals, watts};
+use azoth_core::units::{kelvins, meters, pascals, watts};
 use azoth_core::{AzothError, Result};
 
 use crate::kernels;
@@ -832,10 +832,22 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
 
 fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::distillation_column::distillation_column(&column_setup(inlets, p)?)?;
-    // **The whole tray profile, both duties and the three residuals cross here**, which is the
-    // difference between a column a front end can show and one it can only draw.
+    // **The whole tray profile, both duties, the three residuals and the capacity family cross
+    // here**, which is the difference between a column a front end can show and one it can only
+    // draw.
     let warnings = out.warnings.clone();
-    let result = crate::models::DistillationColumnResult::of(&out, warnings);
+    let limits = crate::column::capacity::capacity_limits(
+        &out.distillate,
+        &out.bottoms,
+        meters(
+            p.optional_si("column_diameter")?
+                .unwrap_or(crate::models::distillation_column::DEFAULT_INTERNAL_DIAMETER_M),
+        ),
+        p.optional_number("max_allowable_fs_factor")?
+            .unwrap_or(crate::column::capacity::DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
+        None,
+    )?;
+    let result = crate::models::DistillationColumnResult::of(&out, &limits, warnings);
     KernelOutcome::publishing(vec![out.distillate, out.bottoms], &result)
 }
 

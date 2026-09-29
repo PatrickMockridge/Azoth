@@ -4803,6 +4803,14 @@ class PackedColumnResult(_HasWarnings):
     mass_residual: float
     #: ``|H_feed + duties - H_products| / |H_feed|``.
     energy_residual: float
+    #: ``getFsFactor``, at the diameter the report resolved rather than at a caller's number.
+    fs_factor: float
+    #: ``getFsFactorUtilization``, against this id's ``max_allowable_fs_factor``.
+    fs_factor_utilization: float
+    #: ``isFsFactorWithinDesignLimit``.
+    fs_factor_within_design_limit: bool
+    #: ``getMinimumDiameterForFsLimit``.
+    minimum_diameter_for_fs_limit: Q
     #: The height equivalent to a theoretical plate, computed after the solve.
     hetp: Q
     #: **The packed height over the HETP, describing a different column from the one solved.**
@@ -4939,6 +4947,16 @@ class DistillationColumnResult(_HasWarnings):
     mass_residual: float
     #: ``|H_feed + duties - H_products| / |H_feed|``.
     energy_residual: float
+    #: ``getFsFactor``: the gas outlet's superficial velocity over the **total** cross-section
+    #: times the square root of its system density, in ``Pa**0.5``.
+    fs_factor: float
+    #: ``getFsFactorUtilization``: the factor over the limit.
+    fs_factor_utilization: float
+    #: ``isFsFactorWithinDesignLimit``.
+    fs_factor_within_design_limit: bool
+    #: ``getMinimumDiameterForFsLimit``, which is invariant under the diameter the factor is read
+    #: at because it is a function of the flow, the density and the limit alone.
+    minimum_diameter_for_fs_limit: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 

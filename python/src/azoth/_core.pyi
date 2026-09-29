@@ -1555,6 +1555,10 @@ class DistillationColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    fs_factor: float
+    fs_factor_utilization: float
+    fs_factor_within_design_limit: bool
+    minimum_diameter_for_fs_limit: Qty
     warnings: list[Warning]
 
 @final
@@ -1703,6 +1707,10 @@ class PackedColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    fs_factor: float
+    fs_factor_utilization: float
+    fs_factor_within_design_limit: bool
+    minimum_diameter_for_fs_limit: Qty
     hetp: Qty
     theoretical_stages: float
     percent_flood: float

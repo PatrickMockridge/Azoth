@@ -2244,6 +2244,16 @@
           ]
         },
         {
+          "description": "the column's internal diameter, which the Fs capacity limit divides the gas outlet's volumetric flow by; the class defaults it to 1.0 m and the solve is indifferent to it",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "column_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
           "description": "the condenser's temperature, which with the top specification is what pins the top of the column; the class defaults it to 270.15 K",
           "dimension": "thermodynamic_temperature",
           "kind": "quantity",
@@ -2301,6 +2311,16 @@
           "range": [],
           "required": false,
           "unit": null,
+          "values": []
+        },
+        {
+          "description": "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 2.5",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_allowable_fs_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
           "values": []
         },
         {

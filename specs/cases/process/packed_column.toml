@@ -42,6 +42,9 @@ percent_flood = 14.978802584364676
 flooding_velocity = 0.5105560169692432
 packing_pressure_drop = 0.551991634248378
 internal_diameter = 0.3
+fs_factor = 0.22662865172417535
+fs_factor_utilization = 0.09065146068967014
+minimum_diameter_for_fs_limit = 0.09032514302269502
 [[cases]]
 id = "packed_binary_2m3_is_one_stage_more"
 tolerance = 0.0002

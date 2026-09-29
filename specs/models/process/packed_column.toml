@@ -218,6 +218,10 @@ description = "the relative return-flow change the outer loop stops at. **Omitte
 unit = "dimensionless"
 optional = true
 description = "the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser.\n"
+[inputs.max_allowable_fs_factor]
+unit = "dimensionless"
+optional = true
+description = "the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `2.5`**, the base class's own; `PackedColumn` overrides neither default. Read by the limit family alone.\n"
 
 [outputs]
 [outputs.tray_temperature]
@@ -328,6 +332,18 @@ description = "**`PackedColumn.isHydraulicsOk()`**, which the pinned jar shows i
 [outputs.internal_diameter]
 unit = "m"
 description = "the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.\n"
+[outputs.fs_factor]
+unit = "dimensionless"
+description = "`getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5`, declared dimensionless. **At the diameter the sizing resolved**, which is the one `calcPackingHydraulics` writes back.\n"
+[outputs.fs_factor_utilization]
+unit = "dimensionless"
+description = "`getFsFactorUtilization`: the factor over the limit, and **zero where the limit is not positive** rather than an infinity.\n"
+[outputs.fs_factor_within_design_limit]
+type = "boolean"
+description = "`isFsFactorWithinDesignLimit`: `Fs <= max_allowable_fs_factor`.\n"
+[outputs.minimum_diameter_for_fs_limit]
+unit = "m"
+description = "`getMinimumDiameterForFsLimit`: the diameter at which the factor would reach its limit, `sqrt(4*Q*sqrt(rho)/(pi*limit))`. **A function of the flow, the density and the limit alone**.\n"
 [[valid_range]]
 quantity = "top_pressure"
 min = 0

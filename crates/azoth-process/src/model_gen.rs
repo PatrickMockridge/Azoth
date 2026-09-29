@@ -840,6 +840,9 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
             ("bottoms_h", -6818.722955062241),
             ("condenser_duty", -21323.042789303567),
             ("reboiler_duty", 47786.58389381015),
+            ("fs_factor", 0.02039657865517578),
+            ("fs_factor_utilization", 0.008158631462070312),
+            ("minimum_diameter_for_fs_limit", 0.09032514302269502),
         ],
         expected_vectors: &[
             (
@@ -3840,6 +3843,9 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
             ("flooding_velocity", 0.5105560169692432),
             ("packing_pressure_drop", 0.551991634248378),
             ("internal_diameter", 0.3),
+            ("fs_factor", 0.22662865172417535),
+            ("fs_factor_utilization", 0.09065146068967014),
+            ("minimum_diameter_for_fs_limit", 0.09032514302269502),
         ],
         expected_vectors: &[
             (

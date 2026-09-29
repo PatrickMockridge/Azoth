@@ -23,6 +23,7 @@ from azoth.core.result import PackedColumnResult
 from azoth.core.units import Q, quantity
 from azoth.hydraulics.reference.packing_hydraulics import _packing_hydraulics
 from azoth.hydraulics.reference.packing_sizing import packing_sizing as _packing_sizing
+from azoth.process.reference.capacity import DEFAULT_MAX_ALLOWABLE_FS_FACTOR
 from azoth.process.reference.distillation_column import (
     _distillation_column_states,
     _record,
@@ -134,6 +135,7 @@ def packed_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> PackedColumnResult:
     """Solve a packed column.
 
@@ -261,8 +263,6 @@ def packed_column(
         pumparound_tolerance,
         pumparound_max_iterations,
     )
-    base = _record(states, warnings)
-
     # ---- The report, at the middle tray: `trays.size() / 2`, the class's own index.
     middle = len(states.tray_temperature) // 2
     vapor = _phase_view(
@@ -320,6 +320,20 @@ def packed_column(
         ).column_diameter
     )
 
+    # **The record is built at the diameter the sizing just resolved**, which is the class's own
+    # order: `calcPackingHydraulics` ends by writing the inherited `internalDiameter` from the
+    # stated `columnDiameter` where it is positive and from the designer's sizing otherwise, so a
+    # caller that stated none gets its Fs factor at the diameter the bed was sized to.
+    base = _record(
+        states,
+        list(components),
+        internal_diameter,
+        DEFAULT_MAX_ALLOWABLE_FS_FACTOR
+        if max_allowable_fs_factor is None
+        else float(max_allowable_fs_factor),
+        warnings,
+    )
+
     hydraulics = _packing_hydraulics(
         name,
         internal_diameter,
@@ -363,6 +377,10 @@ def packed_column(
         temperature_residual=base.temperature_residual,
         mass_residual=base.mass_residual,
         energy_residual=base.energy_residual,
+        fs_factor=base.fs_factor,
+        fs_factor_utilization=base.fs_factor_utilization,
+        fs_factor_within_design_limit=base.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit=base.minimum_diameter_for_fs_limit,
         hetp=hydraulics.hetp,
         theoretical_stages=hydraulics.theoretical_stages,
         percent_flood=hydraulics.percent_flood,

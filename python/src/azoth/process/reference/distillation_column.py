@@ -44,8 +44,9 @@ from typing import NamedTuple
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import DistillationColumnResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
+from azoth.process.kernels import Stream
 from azoth.process.reference import _column_stage as _stage
 from azoth.process.reference import _unported
 from azoth.process.reference._column_stage import (
@@ -54,6 +55,11 @@ from azoth.process.reference._column_stage import (
     split_draws,
     stage,
     validate_draws,
+)
+from azoth.process.reference.capacity import (
+    DEFAULT_INTERNAL_DIAMETER_M,
+    DEFAULT_MAX_ALLOWABLE_FS_FACTOR,
+    capacity_limits,
 )
 
 _DrawVector = tuple[float, ...] | None
@@ -491,14 +497,39 @@ def _distillation_column_states(
     return states, warnings
 
 
-def _record(states: _States, warnings: list[Warning]) -> DistillationColumnResult:
-    """The base column's record, from the stages that solved it.
+def _record(
+    states: _States,
+    components: list[str],
+    internal_diameter: Q,
+    max_allowable_fs_factor: float,
+    warnings: list[Warning],
+) -> DistillationColumnResult:
+    """The base column's record, from the stages that solved it and the capacity family.
 
     **One construction with two callers.** `distillation_column` is this and
     `_distillation_column_states` together; `process.packed_column`'s reference solves the same
     column and needs the stages as well as the record, so it reads them once and comes through
     here rather than transcribing the mapping a second time.
+
+    **The two capacity inputs are the caller's**, because neither is read by the solve: the
+    diameter is the column's internal one and the packed twin states the diameter its own sizing
+    resolved.
     """
+    gas_out = Stream.from_pt(
+        components,
+        list(states.distillate_z),
+        states.distillate_n,
+        from_si(states.distillate_p, "Pa"),
+        from_si(states.distillate_t, "K"),
+    )
+    liquid_out = Stream.from_pt(
+        components,
+        list(states.bottoms_z),
+        states.bottoms_n,
+        from_si(states.bottoms_p, "Pa"),
+        from_si(states.bottoms_t, "K"),
+    )
+    limits = capacity_limits(gas_out, liquid_out, internal_diameter, max_allowable_fs_factor, None)
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
         tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
@@ -523,6 +554,10 @@ def _record(states: _States, warnings: list[Warning]) -> DistillationColumnResul
         temperature_residual=states.temperature_residual,
         mass_residual=states.mass_residual,
         energy_residual=states.energy_residual,
+        fs_factor=limits["fs_factor"],
+        fs_factor_utilization=limits["fs_factor_utilization"],
+        fs_factor_within_design_limit=limits["fs_factor_within_design_limit"],
+        minimum_diameter_for_fs_limit=from_si(limits["minimum_diameter_for_fs_limit"], "m"),
         warnings=tuple(warnings),
     )
 
@@ -569,6 +604,8 @@ def distillation_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -618,9 +655,12 @@ def distillation_column(
         pumparound_temperature_drop: the cooler's drop on the way back.
         pumparound_tolerance: the relative residual the return's loop stops at.
         pumparound_max_iterations: the cap on that loop.
+        column_diameter: the column's internal diameter, which the capacity limits divide the
+            gas outlet's volumetric flow by. **The solve is indifferent to it.**
+        max_allowable_fs_factor: the ``Fs`` limit the family is checked against.
 
     Returns:
-        The tray profile, both products, both duties and the three residuals.
+        The tray profile, both products, both duties, the three residuals and the Fs family.
 
     Raises:
         InvalidInputError: for a stage or a feed stage outside the column, for any declared
@@ -670,7 +710,17 @@ def distillation_column(
         pumparound_tolerance,
         pumparound_max_iterations,
     )
-    return _record(states, warnings)
+    return _record(
+        states,
+        components,
+        column_diameter
+        if column_diameter is not None
+        else quantity(DEFAULT_INTERNAL_DIAMETER_M, "m"),
+        max_allowable_fs_factor
+        if max_allowable_fs_factor is not None
+        else DEFAULT_MAX_ALLOWABLE_FS_FACTOR,
+        warnings,
+    )
 
 
 def reactive_section(

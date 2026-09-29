@@ -585,7 +585,11 @@ fn the_generated_input_table_is_the_models_own() {
             walked += 1;
         }
     }
-    assert_eq!(walked, 398, "the inputs this test walked");
+    // `398` through the rate-based column's tranche, then `column_diameter` and
+    // `max_allowable_fs_factor` on `process.distillation_column` and `max_allowable_fs_factor`
+    // on `process.packed_column`. The table is the *models'* own inputs, so the packed column's
+    // moves it even though `unit_ops.packed_column` - a streams-only entry - declares no limit.
+    assert_eq!(walked, 401, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

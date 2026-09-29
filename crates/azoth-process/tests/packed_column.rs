@@ -105,6 +105,7 @@ fn the_packed_column_is_the_base_column_at_the_heights_stage_count() {
         None,
         None,
         None,
+        None,
     )
     .expect("the packed column converges");
 
@@ -127,6 +128,8 @@ fn the_packed_column_is_the_base_column_at_the_heights_stage_count() {
         None,
         None,
         // No per-stage efficiency overrides: this state states neither field.
+        None,
+        None,
         None,
         None,
         None,
@@ -184,6 +187,7 @@ fn the_packed_binary_row_reaches_neqsims_profile() {
         Some(kelvins(253.15)),
         1.0e-6,
         200,
+        None,
         None,
         None,
         None,
@@ -318,6 +322,7 @@ fn the_height_moves_the_stage_count_and_the_profile() {
         None,
         None,
         None,
+        None,
     )
     .expect("the packed column converges");
 
@@ -372,6 +377,7 @@ fn a_non_positive_capacity_factor_is_refused() {
             None,
             None,
             Some(factor),
+            None,
             None,
             None,
             None,
@@ -460,6 +466,7 @@ fn the_packing_parameters_do_not_move_the_solve() {
         None,
         None,
         None,
+        None,
     )
     .expect("the packed column converges");
 
@@ -484,6 +491,7 @@ fn the_packing_parameters_do_not_move_the_solve() {
         Some(0.75),
         Some(1.30),
         Some(1.5),
+        None,
         None,
         None,
         None,
@@ -586,6 +594,7 @@ fn the_reactive_section_is_the_delegations_own_on_a_fluid_that_does_not_react() 
             None,
             None,
             None,
+            None,
         )
         .expect("the packed column converges")
     };
@@ -663,6 +672,7 @@ fn half_a_reactive_section_is_refused() {
         None,
         Some(true),
         Some(1),
+        None,
         None,
         None,
         None,

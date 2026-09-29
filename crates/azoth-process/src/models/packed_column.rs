@@ -10,6 +10,7 @@
 use azoth_core::units::{Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
+use crate::column::capacity::{DEFAULT_MAX_ALLOWABLE_FS_FACTOR, capacity_limits};
 use crate::kernels::packed_column::{PackedReport, PackingInputs, packing_report, stage_count};
 use crate::models::distillation_column::{DistillationColumnResult, distillation_column_outcome};
 
@@ -70,6 +71,14 @@ pub struct PackedColumnResult {
     pub mass_residual: f64,
     /// The enthalpy closure.
     pub energy_residual: f64,
+    /// `getFsFactor`, at the diameter the report resolved.
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`, against this id's own `max_allowable_fs_factor`.
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    pub minimum_diameter_for_fs_limit: Length,
     /// The height equivalent to a theoretical plate, m.
     pub hetp: Length,
     /// The packed height over the HETP.
@@ -129,6 +138,10 @@ impl PackedColumnResult {
             temperature_residual: base.temperature_residual,
             mass_residual: base.mass_residual,
             energy_residual: base.energy_residual,
+            fs_factor: base.fs_factor,
+            fs_factor_utilization: base.fs_factor_utilization,
+            fs_factor_within_design_limit: base.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: base.minimum_diameter_for_fs_limit,
             hetp: report.hetp,
             theoretical_stages: report.theoretical_stages,
             percent_flood: report.percent_flood,
@@ -167,6 +180,10 @@ impl CalcResult for PackedColumnResult {
         "temperature_residual",
         "mass_residual",
         "energy_residual",
+        "fs_factor",
+        "fs_factor_utilization",
+        "fs_factor_within_design_limit",
+        "minimum_diameter_for_fs_limit",
         "hetp",
         "theoretical_stages",
         "percent_flood",
@@ -239,6 +256,7 @@ pub fn packed_column(
     pumparound_temperature_drop: Option<f64>,
     pumparound_tolerance: Option<f64>,
     pumparound_max_iterations: Option<usize>,
+    max_allowable_fs_factor: Option<f64>,
 ) -> Result<PackedColumnResult> {
     // **The class's own check, on the one packing parameter it does not simply read.**
     // `setPackingHydraulicCapacityFactor` throws for a value that is not positive and finite, so
@@ -341,8 +359,20 @@ pub fn packed_column(
         pumparound_max_iterations,
     )?;
 
-    let base = DistillationColumnResult::of(&outcome, warnings);
     let report = packing_report(&outcome, components, packed_height, &packing)?;
+    // **The diameter the Fs family reads is the report's resolved one, and that is the class's
+    // own order**: `calcPackingHydraulics` ends by writing the inherited `internalDiameter` from
+    // the stated `columnDiameter` where it is positive and from the designer's sizing otherwise,
+    // so a caller that stated none gets its factor at the diameter the bed was sized to - the
+    // capture's unstated row reads `0.3` m back.
+    let limits = capacity_limits(
+        &outcome.distillate,
+        &outcome.bottoms,
+        report.internal_diameter,
+        max_allowable_fs_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
+        None,
+    )?;
+    let base = DistillationColumnResult::of(&outcome, &limits, warnings);
     Ok(PackedColumnResult::of(base, report))
 }
 
@@ -419,6 +449,8 @@ mod report {
             None,
             None,
             None,
+            // The Fs limit, unstated, so the class's own `2.5` answers.
+            None,
         )
         .expect("the capture's 2.3 m row solves");
 
@@ -456,6 +488,35 @@ mod report {
             close(out.internal_diameter.value, 0.3),
             "internal_diameter: {}",
             out.internal_diameter.value
+        );
+        // **The Fs family, at the diameter the sizing resolved**, from the same capture's
+        // `packed_distillation_binary_unstated` row of `process_column_capacity.tsv`. The
+        // diameter matters here: this row states none, so the class writes `0.3` m back and the
+        // factor is read against that rather than against the caller's absent number.
+        assert!(
+            close(out.fs_factor, 0.226_628_651_724_175_35),
+            "fs_factor: {}",
+            out.fs_factor
+        );
+        assert!(
+            close(out.fs_factor_utilization, 0.090_651_460_689_670_14),
+            "fs_factor_utilization: {}",
+            out.fs_factor_utilization
+        );
+        assert!(
+            close(
+                out.minimum_diameter_for_fs_limit.value,
+                0.090_325_143_022_695_02
+            ),
+            "minimum_diameter_for_fs_limit: {}",
+            out.minimum_diameter_for_fs_limit.value
+        );
+        // **The verdict is held here rather than in the case file**, as `hydraulics_ok` is and
+        // for the same reason: `TestCase` carries a boolean for an input and not for an
+        // expectation, so a flag asserted nowhere would read as verified.
+        assert!(
+            out.fs_factor_within_design_limit,
+            "the row is inside the class's own 2.5 limit"
         );
     }
 }

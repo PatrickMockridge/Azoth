@@ -228,6 +228,14 @@ description = "the relative return-flow change the outer loop stops at. **Omitte
 unit = "dimensionless"
 optional = true
 description = "the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser.\n"
+[inputs.column_diameter]
+unit = "m"
+optional = true
+description = "the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by. **Absent is the class's own `1.0` m**; a value at or below zero is the \"no area\" it answers a zero factor from. The solve is indifferent to it.\n"
+[inputs.max_allowable_fs_factor]
+unit = "dimensionless"
+optional = true
+description = "the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `2.5`**, this class's own; the absorber pair defaults it to `3.0`. Read by the limit family alone.\n"
 
 [outputs]
 [outputs.tray_temperature]
@@ -317,6 +325,18 @@ description = "the products' worst component imbalance against the feed, relativ
 [outputs.energy_residual]
 unit = "dimensionless"
 description = "`|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.\n"
+[outputs.fs_factor]
+unit = "dimensionless"
+description = "`getFsFactor`: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5` - dimensionless because no vocabulary unit expresses it. **Not the tray calculator's own `Fs`**.\n"
+[outputs.fs_factor_utilization]
+unit = "dimensionless"
+description = "`getFsFactorUtilization`: the factor over the limit, and **zero where the limit is not positive** rather than an infinity.\n"
+[outputs.fs_factor_within_design_limit]
+type = "boolean"
+description = "`isFsFactorWithinDesignLimit`: `Fs <= max_allowable_fs_factor`.\n"
+[outputs.minimum_diameter_for_fs_limit]
+unit = "m"
+description = "`getMinimumDiameterForFsLimit`: the diameter at which the factor would reach its limit, `sqrt(4*Q*sqrt(rho)/(pi*limit))`. **A function of the flow, the density and the limit alone**.\n"
 [[valid_range]]
 quantity = "number_of_stages"
 min = 1
