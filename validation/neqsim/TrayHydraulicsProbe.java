@@ -120,6 +120,11 @@ public class TrayHydraulicsProbe {
     System.out.println("hole_area_m2=" + tray.getHoleArea());
     System.out.println("downcommer_area_m2=" + tray.getDowncommerArea());
     System.out.println("design_ok=" + tray.isDesignOk());
+    // **Last, because it is the one call that changes the object it is read from.**
+    // `sizeColumnDiameter` writes the trial `1.0` m into `columnDiameter`, re-derives the areas
+    // and the flooding velocity there, and leaves the *sized* value behind - so every line above
+    // is read at the diameter this row stated and this line is the only one that is not.
+    System.out.println("sized_column_diameter_m=" + tray.sizeColumnDiameter());
     System.out.println();
   }
 }

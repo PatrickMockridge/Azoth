@@ -4,13 +4,19 @@
 //! The capture drives `TrayHydraulicsCalculator` directly on eight states, printing the sixteen
 //! inputs it was given and all twenty-four answers - so the cases hold the numbers and this file
 //! holds the four verdicts a case cannot carry.
+//!
+//! **And a twenty-fifth line the spec declares no output for**: `sizeColumnDiameter` mutates the
+//! object it is read from, so the probe prints it last and the sizing is a *companion* of the
+//! calculation rather than one of its results. This file holds its eight values.
 
 use azoth_core::units::{
     kilograms_per_cubic_meter, kilograms_per_second, meters, millimeters, newtons_per_meter,
     pascal_seconds,
 };
 use azoth_hydraulics::spec_gen;
-use azoth_hydraulics::tray_hydraulics::{TrayHydraulicsState, tray_hydraulics};
+use azoth_hydraulics::tray_hydraulics::{
+    TrayHydraulicsState, size_column_diameter, tray_hydraulics,
+};
 use azoth_test_support as common;
 
 const CALC_ID: &str = "hydraulics.tray_hydraulics";
@@ -176,6 +182,53 @@ fn every_case_in_the_spec() {
 /// measurement rather than a reading: `sieve` and `valve` differ in the hole area, the flooding
 /// factor and the orifice coefficient at once, and `bubble-cap` takes the `else` of the first two
 /// while being the only type the weeping check returns for.
+/// **`sizeColumnDiameter` on the capture's eight states**, in its own order.
+///
+/// The sizing is a *companion* of the calculation rather than one of its outputs: it mutates the
+/// object it is read from - writing the trial `1.0` m and leaving the sized value behind - so the
+/// probe prints it last, after every other line, and the spec declares no output for it.
+///
+/// **Every value is a standard table entry and no two rows agree by accident.** The eight cover
+/// the table's `0.5`, `0.8`, `0.9`, `1.1` and `1.4`; the two `0.5` rows are the two low-vapour
+/// ones, whose flooding velocity is `0.089` times the default's, and the two `0.8` rows include
+/// the stated-weir row - because a stated weir length moves nothing, which the capture says in
+/// the same breath.
+const SIZED_DIAMETERS_M: &[(&str, f64)] = &[
+    ("sieve_default", 0.8),
+    ("valve_tray", 0.8),
+    ("bubble_cap_tray", 0.9),
+    ("sieve_high_vapor", 1.1),
+    ("sieve_low_vapor", 0.5),
+    ("valve_low_vapor", 0.5),
+    ("sieve_stated_weir", 0.8),
+    ("sieve_wide", 1.4),
+    // The worked example is the first captured row, so it sizes with it.
+    ("sieve_default_worked_example", 0.8),
+];
+
+#[test]
+fn the_sized_diameter_is_the_standard_table_over_the_captures_rows() {
+    let spec = common::spec(spec_gen::specs(), CALC_ID);
+    for case in spec.all_tests() {
+        if !case.is_active() {
+            continue;
+        }
+        let Some((_, expected)) = SIZED_DIAMETERS_M
+            .iter()
+            .find(|(label, _)| *label == case.id)
+        else {
+            panic!("no captured sizing for `{}`", case.id);
+        };
+        let sized = size_column_diameter(&state(case))
+            .unwrap_or_else(|e| panic!("`{}` should size but failed: {e}", case.id));
+        assert_eq!(
+            sized, *expected,
+            "{}::{}: the sized diameter is {sized} against the capture's {expected}",
+            spec.id, case.id
+        );
+    }
+}
+
 #[test]
 fn the_tray_type_moves_four_things_at_one_state() {
     let run = |tray_type: &str| {

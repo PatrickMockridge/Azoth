@@ -167,8 +167,19 @@ java -cp .:neqsim-f0c7436.jar PackingProbe size \
 the tray hydraulics of `distillation_column`, `absorption_column` and `stripping_column`, and **none
 of their captures holds its output**: all three declare `max_allowable_gas_load_factor` and refuse it
 rather than reading it, and `getFsFactor()` is the quantity that would answer it. So this probe states
-the geometry and the load and prints both sides - sixteen inputs and twenty-four answers - which is
-what makes the port's case set an oracle rather than a self-consistency check.
+the geometry and the load and prints both sides - sixteen inputs, twenty-four answers and one
+**sizing** - which is what makes the port's case set an oracle rather than a self-consistency
+check.
+
+**The twenty-fifth line is `sized_column_diameter_m`, and it is printed last because it is the
+one call that changes the object it is read from**: `sizeColumnDiameter` writes the trial `1.0` m
+into `columnDiameter`, re-derives the areas and the flooding velocity there, and leaves the sized
+value behind - so every line above a row is read at the diameter that row stated. The eight
+answers are `0.8`, `0.8`, `0.9`, `1.1`, `0.5`, `0.5`, `0.8` and `1.4` m, **every one of them an
+entry of the class's own thirty-one-size table**: the two `0.5`s are the two low-vapour rows and
+the two `0.8`s include the stated-weir row, because a stated weir length moves nothing. The spec
+declares no output for it - it is a companion of `hydraulics.tray_hydraulics` rather than one of
+its results - so the two languages hold it in their own tests instead.
 
 Eight states: the class's own defaults, the other two tray types it names (`valve` and `bubble-cap`)
 at that same state, a load above flood and a load where weeping trips, the weeping state again on a

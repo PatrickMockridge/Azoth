@@ -40,6 +40,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.06283185307179587
 downcommer_area_m2=0.07853981633974483
 design_ok=false
+sized_column_diameter_m=0.8
 
 valve_tray
 tray_type=valve
@@ -83,6 +84,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.08796459430051422
 downcommer_area_m2=0.07853981633974483
 design_ok=false
+sized_column_diameter_m=0.8
 
 bubble_cap_tray
 tray_type=bubble-cap
@@ -126,6 +128,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.07539822368615504
 downcommer_area_m2=0.07853981633974483
 design_ok=true
+sized_column_diameter_m=0.9
 
 sieve_high_vapor
 tray_type=sieve
@@ -169,6 +172,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.06283185307179587
 downcommer_area_m2=0.07853981633974483
 design_ok=false
+sized_column_diameter_m=1.1
 
 sieve_low_vapor
 tray_type=sieve
@@ -212,6 +216,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.06283185307179587
 downcommer_area_m2=0.07853981633974483
 design_ok=false
+sized_column_diameter_m=0.5
 
 valve_low_vapor
 tray_type=valve
@@ -255,6 +260,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.08796459430051422
 downcommer_area_m2=0.07853981633974483
 design_ok=false
+sized_column_diameter_m=0.5
 
 sieve_stated_weir
 tray_type=sieve
@@ -298,6 +304,7 @@ total_area_m2=0.7853981633974483
 hole_area_m2=0.06283185307179587
 downcommer_area_m2=0.07853981633974483
 design_ok=false
+sized_column_diameter_m=0.8
 
 sieve_wide
 tray_type=sieve
@@ -341,4 +348,5 @@ total_area_m2=2.5446900494077327
 hole_area_m2=0.20357520395261863
 downcommer_area_m2=0.2544690049407733
 design_ok=false
+sized_column_diameter_m=1.4
 

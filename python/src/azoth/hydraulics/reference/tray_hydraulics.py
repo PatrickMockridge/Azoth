@@ -24,13 +24,53 @@ from itertools import pairwise
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import TrayHydraulicsResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 
 CALC_ID = "hydraulics.tray_hydraulics"
 
 #: The gravitational acceleration the class writes inline, in m/s**2.
 G = 9.81
+
+#: The diameter ``sizeColumnDiameter`` sizes *from*: the class writes ``1.0`` into
+#: ``columnDiameter``, re-derives the areas and the flooding velocity there, and sizes from that.
+TRIAL_DIAMETER_M = 1.0
+#: The floor on the vapour's density in that sizing, ``max(vaporDensity, 0.01)``.
+VAPOR_DENSITY_FLOOR = 0.01
+#: ``roundToStandardDiameter``'s table, m - the class's own thirty-one sizes.
+STANDARD_DIAMETERS_M = (
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1.0,
+    1.1,
+    1.2,
+    1.4,
+    1.5,
+    1.6,
+    1.8,
+    2.0,
+    2.2,
+    2.4,
+    2.6,
+    2.8,
+    3.0,
+    3.2,
+    3.4,
+    3.6,
+    3.8,
+    4.0,
+    4.5,
+    5.0,
+    5.5,
+    6.0,
+    7.0,
+    8.0,
+    9.0,
+    10.0,
+)
 
 #: The surface tension the flooding velocity's correction is referenced to, in N/m.
 REFERENCE_SURFACE_TENSION = 0.020
@@ -82,6 +122,113 @@ CAPACITY_FACTOR_TABLE = (
     (0.61, 0.085),
     (0.91, 0.105),
 )
+
+
+def round_to_standard_diameter(diameter: float) -> float:
+    """``roundToStandardDiameter``: the first standard size at or above ``diameter``, m.
+
+    **Past the table's end the class rounds to the nearest half metre** rather than refusing, so
+    a column wider than ``10`` m answers ``ceil(2 d) / 2`` - its own arithmetic, not a policy.
+    """
+    for standard in STANDARD_DIAMETERS_M:
+        if standard >= diameter:
+            return standard
+    return math.ceil(diameter * 2.0) / 2.0
+
+
+def size_column_diameter(
+    tray_type: str,
+    column_diameter: Q,
+    tray_spacing: Q,
+    weir_height: Q,
+    weir_length: Q,
+    downcommer_area_fraction: float,
+    hole_diameter: Q,
+    hole_area_fraction: float,
+    design_flood_fraction: float,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    liquid_viscosity: Q,
+    surface_tension: Q,
+    relative_volatility: float,
+) -> Q:
+    """``TrayHydraulicsCalculator.sizeColumnDiameter``: the diameter a tray sizes to.
+
+    **The trial diameter is ``1.0`` m, and it is not a guess at the answer.** The class writes
+    ``1.0`` into ``columnDiameter``, re-derives the areas and the **flooding velocity** there, and
+    sizes from *that* velocity - so the flooding velocity this reads is the one at a ``1.0`` m
+    tray and not at the diameter it resolves. The rest is the class's own arithmetic: the vapour's
+    volumetric flow at ``max(rho_v, 0.01)``, the design velocity at ``designFloodFraction``, the
+    area from the two, the **net** area by dividing out ``1 - downcommerAreaFraction``, and the
+    round up to the standard table.
+
+    **A design velocity that is not positive answers ``1.0`` and leaves the trial diameter
+    behind**, which is the class's own early return rather than a refusal.
+
+    Args:
+        tray_type: the tray type, which the flooding velocity's factor and the orifice read.
+        column_diameter: the stated diameter, which **the trial overwrites before anything is
+            sized** - carried so that these are the calculation's own sixteen inputs and read by
+            nothing.
+        tray_spacing: the tray spacing.
+        weir_height: the weir height.
+        weir_length: at or below zero derives ``0.73 D``.
+        downcommer_area_fraction: the downcomer fraction the net area is taken over.
+        hole_diameter: the hole diameter, in millimetres.
+        hole_area_fraction: the hole area over the active area.
+        design_flood_fraction: the fraction of flood the design velocity is.
+        vapor_mass_flow: the vapour's mass flow.
+        liquid_mass_flow: the liquid's mass flow.
+        vapor_density: the vapour's mass density.
+        liquid_density: the liquid's mass density.
+        liquid_viscosity: the liquid's dynamic viscosity.
+        surface_tension: the interfacial surface tension.
+        relative_volatility: the relative volatility of the key components.
+
+    Returns:
+        The standard diameter the tray sizes to, m.
+
+    See :func:`azoth.hydraulics.reference.tray_hydraulics.tray_hydraulics`.
+    """
+    # **The stated diameter is overwritten and never read**: the class writes `1.0` into
+    # `columnDiameter` before it sizes, so a caller's own diameter changes nothing here.
+    _ = column_diameter
+    # **The trial run is the whole calculation at that diameter**, which is what the class does
+    # too: it re-derives the areas and the flooding velocity there and sizes from *that*
+    # velocity rather than from the one it resolves.
+    trial = tray_hydraulics(
+        tray_type,
+        quantity(TRIAL_DIAMETER_M, "m"),
+        tray_spacing,
+        weir_height,
+        weir_length,
+        downcommer_area_fraction,
+        hole_diameter,
+        hole_area_fraction,
+        design_flood_fraction,
+        vapor_mass_flow,
+        liquid_mass_flow,
+        vapor_density,
+        liquid_density,
+        liquid_viscosity,
+        surface_tension,
+        relative_volatility,
+    )
+    # **The result carries its velocities as plain m/s floats**, which is the shape the
+    # dataclass declares for them, so this reads the number and not a quantity.
+    flooding_velocity = float(trial.flooding_velocity)
+    density = float(vapor_density.to("kg/m**3").magnitude)
+    volumetric_flow = float(vapor_mass_flow.to("kg/s").magnitude) / max(
+        density, VAPOR_DENSITY_FLOOR
+    )
+    design_velocity = flooding_velocity * float(design_flood_fraction)
+    if not design_velocity > 0.0:
+        return from_si(TRIAL_DIAMETER_M, "m")
+    area = volumetric_flow / design_velocity
+    net_area = area / (1.0 - float(downcommer_area_fraction))
+    return from_si(round_to_standard_diameter(math.sqrt(4.0 * net_area / math.pi)), "m")
 
 
 def capacity_factor(spacing: float, flv: float) -> float:

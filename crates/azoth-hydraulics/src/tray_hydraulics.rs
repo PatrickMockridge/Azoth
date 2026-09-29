@@ -10,7 +10,7 @@
 //! answer it. The oracle is `validation/neqsim/captures/tray_hydraulics_probe.tsv`, eight states
 //! driven through the class directly.
 
-use azoth_core::units::{DynamicViscosity, Length, MassDensity, MassRate, SurfaceTension};
+use azoth_core::units::{DynamicViscosity, Length, MassDensity, MassRate, SurfaceTension, meters};
 use azoth_core::{Result, apply_checks};
 
 use crate::results::TrayHydraulicsResult;
@@ -18,6 +18,19 @@ use crate::spec_gen;
 
 /// The gravitational acceleration the class writes inline, in m/s**2.
 const G: f64 = 9.81;
+
+/// The diameter `sizeColumnDiameter` sizes *from*: the class writes `1.0` into `columnDiameter`,
+/// re-derives the areas and the flooding velocity there, and sizes from that.
+const TRIAL_DIAMETER_M: f64 = 1.0;
+
+/// The floor on the vapour's density in that sizing, `Math.max(vaporDensity, 0.01)`.
+const VAPOR_DENSITY_FLOOR: f64 = 0.01;
+
+/// `roundToStandardDiameter`'s table, m - the class's own thirty-one sizes.
+const STANDARD_DIAMETERS_M: [f64; 31] = [
+    0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2,
+    3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0, 9.0, 10.0,
+];
 
 /// The surface tension the flooding velocity's correction is referenced to, in N/m.
 const REFERENCE_SURFACE_TENSION: f64 = 0.020;
@@ -378,6 +391,56 @@ pub fn tray_hydraulics(state: TrayHydraulicsState) -> Result<TrayHydraulicsResul
         design_ok,
         warnings,
     })
+}
+
+/// `TrayHydraulicsCalculator.sizeColumnDiameter`: the diameter a tray sizes to, m.
+///
+/// **The trial diameter is `1.0` m, and it is not a guess at the answer.** The class writes
+/// `1.0` into `columnDiameter`, re-derives the areas and the **flooding velocity** there, and
+/// sizes from *that* velocity - so the flooding velocity this reads is the one at a `1.0` m
+/// tray and not at the diameter it resolves. The rest is the class's own arithmetic: the vapour's
+/// volumetric flow at `max(rho_v, 0.01)`, the design velocity at `designFloodFraction`, the area
+/// from the two, the **net** area by dividing out `1 - downcommerAreaFraction`, and the round up
+/// to the standard table.
+///
+/// **A design velocity that is not positive answers `1.0` and leaves the trial diameter behind**,
+/// which is the class's own early return rather than a refusal.
+///
+/// # Errors
+/// Whatever [`tray_hydraulics`] raises at the trial diameter - the range checks its declared
+/// inputs carry are the same ones here, because the same kernel runs.
+pub fn size_column_diameter(state: &TrayHydraulicsState) -> Result<f64> {
+    // The trial, which is what the flooding velocity below is taken at.
+    let mut trial = state.clone();
+    trial.column_diameter = meters(TRIAL_DIAMETER_M);
+    let flooding_velocity = tray_hydraulics(trial)?.flooding_velocity;
+
+    let volumetric_flow =
+        state.vapor_mass_flow.value / state.vapor_density.value.max(VAPOR_DENSITY_FLOOR);
+    let design_velocity = flooding_velocity * state.design_flood_fraction;
+    // The class's own `!(designVelocity > 0.0)`, spelled out because a `NaN` fails it too.
+    if design_velocity.is_nan() || design_velocity <= 0.0 {
+        return Ok(TRIAL_DIAMETER_M);
+    }
+    let area = volumetric_flow / design_velocity;
+    let net_area = area / (1.0 - state.downcommer_area_fraction);
+    Ok(round_to_standard_diameter(
+        (4.0 * net_area / std::f64::consts::PI).sqrt(),
+    ))
+}
+
+/// `roundToStandardDiameter`: the first standard size at or above `diameter`, m.
+///
+/// **Past the table's end the class rounds to the nearest half metre** rather than refusing, so
+/// a column wider than `10` m answers `ceil(2 d) / 2` - its own arithmetic and not a policy.
+#[must_use]
+pub fn round_to_standard_diameter(diameter: f64) -> f64 {
+    for standard in STANDARD_DIAMETERS_M {
+        if standard >= diameter {
+            return standard;
+        }
+    }
+    (diameter * 2.0).ceil() / 2.0
 }
 
 /// `getCapacityFactor`: the tabulated Fair factors interpolated over spacing, then corrected.
