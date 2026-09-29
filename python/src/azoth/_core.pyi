@@ -1567,6 +1567,17 @@ class DistillationColumnResult:
     fs_factor_utilization: float
     fs_factor_within_design_limit: bool
     minimum_diameter_for_fs_limit: Qty
+    required_diameter: Qty
+    controlling_tray_index: int
+    internals_design_ok: bool
+    max_percent_flood: float
+    min_percent_flood: float
+    average_tray_efficiency: float
+    total_pressure_drop: Qty
+    total_pressure_drop_mbar: float
+    tray_percent_flood: list[float]
+    tray_pressure_drop: list[Qty]
+    tray_efficiency: list[float]
     warnings: list[Warning]
 
 @final
@@ -3326,6 +3337,14 @@ def distillation_column(
     pumparound_max_iterations: float | None = None,
     column_diameter: float | None = None,
     max_allowable_fs_factor: float | None = None,
+    internals_type: str | None = None,
+    tray_spacing: float | None = None,
+    weir_height: float | None = None,
+    hole_diameter: float | None = None,
+    hole_area_fraction: float | None = None,
+    downcommer_area_fraction: float | None = None,
+    design_flood_fraction: float | None = None,
+    column_diameter_override: float | None = None,
 ) -> DistillationColumnResult: ...
 def ejector(
     motive_components: list[str],

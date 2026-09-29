@@ -7,6 +7,7 @@
 
 use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+    millimeters,
 };
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
@@ -14,12 +15,25 @@ use serde::Serialize;
 use crate::column::capacity::{
     DEFAULT_INTERNAL_DIAMETER_M, DEFAULT_MAX_ALLOWABLE_FS_FACTOR, FsLimits, fs_limits,
 };
+use crate::column::designer::{
+    DesignerGeometry, DesignerReport, UNSIZED_COLUMN_DIAMETER_M, designer_report,
+};
 use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::distillation_column as kernel;
 use crate::kernels::distillation_column::{Specification, SpecificationKind};
 use crate::stream::Stream;
 use crate::unported;
+
+/// `ColumnInternalsDesigner`'s own constructor defaults, one per geometry input. Each is the
+/// class's initialiser rather than a correlated value, and none is read by the solve.
+pub const DEFAULT_INTERNALS_TYPE: &str = "sieve";
+pub const DEFAULT_TRAY_SPACING_M: f64 = 0.6;
+pub const DEFAULT_WEIR_HEIGHT_M: f64 = 0.05;
+pub const DEFAULT_HOLE_DIAMETER_MM: f64 = 12.7;
+pub const DEFAULT_HOLE_AREA_FRACTION: f64 = 0.1;
+pub const DEFAULT_DOWNCOMMER_AREA_FRACTION: f64 = 0.1;
+pub const DEFAULT_DESIGNER_FLOOD_FRACTION: f64 = 0.8;
 
 /// Result of `process.distillation_column`.
 ///
@@ -94,6 +108,32 @@ pub struct DistillationColumnResult {
     /// `getMinimumDiameterForFsLimit`: the diameter at which the factor would reach the limit.
     #[serde(serialize_with = "scalar")]
     pub minimum_diameter_for_fs_limit: Length,
+    /// **`ColumnInternalsDesigner`'s own report**, which is the trayed internals tree: the
+    /// diameter it resolved, the tray it sized from, and every tray's load and efficiency at that
+    /// diameter. The first three are read *after* the solve, from the trays it left behind.
+    #[serde(serialize_with = "scalar")]
+    pub required_diameter: Length,
+    /// The tray the diameter was sized from: the largest vapour mass flow, the first of equals.
+    pub controlling_tray_index: usize,
+    /// Every tray's own verdict, and-ed together.
+    pub internals_design_ok: bool,
+    /// The largest per-tray load, in per cent of flood.
+    pub max_percent_flood: f64,
+    /// The smallest load above zero, which is not the smallest: an exact zero is skipped.
+    pub min_percent_flood: f64,
+    /// The mean of the per-tray efficiencies, or the class's own `0.65` with no tray walked.
+    pub average_tray_efficiency: f64,
+    /// The trays' pressure drops, summed.
+    #[serde(serialize_with = "scalar")]
+    pub total_pressure_drop: Pressure,
+    /// The same sum in millibars, which the class publishes beside it.
+    pub total_pressure_drop_mbar: f64,
+    /// Each tray's load, in per cent of flood, at the diameter the sizing resolved.
+    pub tray_percent_flood: Vec<f64>,
+    /// Each tray's own total pressure drop, Pa - the entries `total_pressure_drop` sums.
+    pub tray_pressure_drop: Vec<f64>,
+    /// Each tray's efficiency - the entries `average_tray_efficiency` means.
+    pub tray_efficiency: Vec<f64>,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -109,7 +149,12 @@ impl DistillationColumnResult {
     /// not: the diameter and the limit. [`fs_limits`] is what computes it, and both callers - this
     /// id's own function and the dispatcher - hand the same value in.
     #[must_use]
-    pub fn of(outcome: &kernel::ColumnOutcome, limits: &FsLimits, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        outcome: &kernel::ColumnOutcome,
+        limits: &FsLimits,
+        internals: &DesignerReport,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             tray_temperature: outcome.trays.iter().map(|t| t.temperature).collect(),
             tray_pressure: outcome.trays.iter().map(|t| t.pressure).collect(),
@@ -150,6 +195,21 @@ impl DistillationColumnResult {
             fs_factor_utilization: limits.fs_factor_utilization,
             fs_factor_within_design_limit: limits.fs_factor_within_design_limit,
             minimum_diameter_for_fs_limit: limits.minimum_diameter_for_fs_limit,
+            required_diameter: internals.required_diameter,
+            controlling_tray_index: internals.controlling_tray_index,
+            internals_design_ok: internals.design_ok,
+            max_percent_flood: internals.max_percent_flood,
+            min_percent_flood: internals.min_percent_flood,
+            average_tray_efficiency: internals.average_tray_efficiency,
+            total_pressure_drop: internals.total_pressure_drop,
+            total_pressure_drop_mbar: internals.total_pressure_drop_mbar,
+            tray_percent_flood: internals.trays.iter().map(|t| t.percent_flood).collect(),
+            tray_pressure_drop: internals
+                .trays
+                .iter()
+                .map(|t| t.total_pressure_drop.value)
+                .collect(),
+            tray_efficiency: internals.trays.iter().map(|t| t.tray_efficiency).collect(),
             warnings,
         }
     }
@@ -185,6 +245,17 @@ impl CalcResult for DistillationColumnResult {
         "fs_factor_utilization",
         "fs_factor_within_design_limit",
         "minimum_diameter_for_fs_limit",
+        "required_diameter",
+        "controlling_tray_index",
+        "internals_design_ok",
+        "max_percent_flood",
+        "min_percent_flood",
+        "average_tray_efficiency",
+        "total_pressure_drop",
+        "total_pressure_drop_mbar",
+        "tray_percent_flood",
+        "tray_pressure_drop",
+        "tray_efficiency",
         "warnings",
     ];
 
@@ -478,6 +549,14 @@ pub fn distillation_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
+    internals_type: Option<&str>,
+    tray_spacing: Option<f64>,
+    weir_height: Option<f64>,
+    hole_diameter: Option<f64>,
+    hole_area_fraction: Option<f64>,
+    downcommer_area_fraction: Option<f64>,
+    design_flood_fraction: Option<f64>,
+    column_diameter_override: Option<f64>,
 ) -> Result<DistillationColumnResult> {
     let (out, warnings) = distillation_column_outcome(
         components,
@@ -531,7 +610,29 @@ pub fn distillation_column(
         diameter,
         max_allowable_fs_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
     )?;
-    Ok(DistillationColumnResult::of(&out, &limits, warnings))
+    // **The internals tree, read after the solve and from the trays it left.** Its own geometry
+    // inputs reach nothing on the run path, which is the class's own split: `calculateTrayed`
+    // walks `getTrays()` and reads the profile the solve published.
+    let internals = designer_report(
+        &out.trays,
+        components,
+        &DesignerGeometry {
+            internals_type: internals_type.unwrap_or(DEFAULT_INTERNALS_TYPE).to_string(),
+            tray_spacing: meters(tray_spacing.unwrap_or(DEFAULT_TRAY_SPACING_M)),
+            weir_height: meters(weir_height.unwrap_or(DEFAULT_WEIR_HEIGHT_M)),
+            hole_diameter: millimeters(hole_diameter.unwrap_or(DEFAULT_HOLE_DIAMETER_MM)),
+            hole_area_fraction: hole_area_fraction.unwrap_or(DEFAULT_HOLE_AREA_FRACTION),
+            downcommer_area_fraction: downcommer_area_fraction
+                .unwrap_or(DEFAULT_DOWNCOMMER_AREA_FRACTION),
+            design_flood_fraction: design_flood_fraction.unwrap_or(DEFAULT_DESIGNER_FLOOD_FRACTION),
+            column_diameter_override: meters(
+                column_diameter_override.unwrap_or(UNSIZED_COLUMN_DIAMETER_M),
+            ),
+        },
+    )?;
+    Ok(DistillationColumnResult::of(
+        &out, &limits, &internals, warnings,
+    ))
 }
 
 /// **The one side-draw flow specification this model declares**, or an empty vector.

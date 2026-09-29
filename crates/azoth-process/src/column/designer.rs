@@ -31,7 +31,7 @@ use azoth_hydraulics::tray_hydraulics::{
 };
 
 use crate::kernels::distillation_column::{TrayProfile, tray_streams};
-use crate::segment::phase::{Pick, phase_view};
+use crate::segment::phase::{liquid_view, vapour_view};
 
 /// The relative volatility the class's own default stands at, and the one the *sizing* branch
 /// runs at because its calculator is never given the tray's.
@@ -128,9 +128,11 @@ struct TrayReadings {
 /// zero's density as the vapour's, and **`600.0`** as the liquid's where that phase is a gas.
 fn readings(tray: &TrayProfile, components: &[String]) -> Result<TrayReadings> {
     let (vapour_stream, liquid_stream) = tray_streams(tray, components)?;
-    // `getGasPhase` and `getLiquidPhase`'s own picks, which fall back to phase zero.
-    let vapour = phase_view(&vapour_stream, Pick::Gas)?;
-    let liquid = phase_view(&liquid_stream, Pick::Liquid)?;
+    // **The phase each stream carries, and not what a re-flash of it answers.** A pinned end is
+    // saturated by construction, so a re-flash of either side lands on the knife edge - see
+    // `vapour_view` and `liquid_view`, whose doc says what that cost before they existed.
+    let vapour = vapour_view(&vapour_stream)?;
+    let liquid = liquid_view(&liquid_stream)?;
 
     let vapor_mass_flow = tray.gas_n * vapour.molar_mass;
     let liquid_mass_flow = tray.liquid_n * liquid.molar_mass;

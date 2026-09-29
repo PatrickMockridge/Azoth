@@ -89,6 +89,29 @@ description = "the column's internal diameter, which the Fs capacity limit divid
 [parameters.max_allowable_fs_factor]
 unit = "dimensionless"
 description = "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 2.5"
+[parameters.internals_type]
+description = "which tray the internals tree is designed as - sieve, valve or bubble-cap; the class defaults it to sieve"
+[parameters.tray_spacing]
+unit = "m"
+description = "the tray spacing the internals are designed at; the class defaults it to 0.6 m"
+[parameters.weir_height]
+unit = "m"
+description = "the weir height the internals are designed at; the class defaults it to 0.05 m"
+[parameters.hole_diameter]
+unit = "mm"
+description = "the sieve hole diameter, in millimetres; the class defaults it to 12.7 mm"
+[parameters.hole_area_fraction]
+unit = "dimensionless"
+description = "the hole area over the active area; the class defaults it to 0.1"
+[parameters.downcommer_area_fraction]
+unit = "dimensionless"
+description = "the downcomer area over the total; the class defaults it to 0.1"
+[parameters.design_flood_fraction]
+unit = "dimensionless"
+description = "the fraction of flood the internals are sized to; the designer defaults it to 0.8, unlike the packed column's 0.70"
+[parameters.column_diameter_override]
+unit = "m"
+description = "a stated internal diameter for the internals tree, which replaces its sizing branch entirely; the class's own -1.0 sizes it off the controlling tray"
 [[ports]]
 name = "feed"
 direction = "in"

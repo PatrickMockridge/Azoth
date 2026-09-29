@@ -491,7 +491,16 @@ fn model(
         None,
         None,
         None,
-        // The two capacity inputs, unstated: this test is about the mesh ladder.
+        // The two capacity inputs and the designer's eight geometry inputs, unstated: this test
+        // is about the mesh ladder.
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
     )

@@ -236,6 +236,39 @@ description = "the column's internal diameter, which both capacity-limit familie
 unit = "dimensionless"
 optional = true
 description = "the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `2.5`**, this class's own; the absorber pair defaults it to `3.0`. Read by the limit family alone.\n"
+[inputs.internals_type]
+type = "enum"
+values = ["sieve", "valve", "bubble-cap"]
+optional = true
+description = "which tray the internals tree is designed as, read by the tray calculator's four branches. **Absent is `sieve`**, the class's own constructor default. Read after the solve and by nothing on the run path.\n"
+[inputs.tray_spacing]
+unit = "m"
+optional = true
+description = "the tray spacing the internals are designed at. **Absent is `0.6`**, `ColumnInternalsDesigner`'s own initialiser.\n"
+[inputs.weir_height]
+unit = "m"
+optional = true
+description = "the weir height the internals are designed at. **Absent is `0.05` m**, the designer's own initialiser.\n"
+[inputs.hole_diameter]
+unit = "mm"
+optional = true
+description = "the sieve hole diameter, **in millimetres**, which is the designer's own field. **Absent is `12.7` mm**.\n"
+[inputs.hole_area_fraction]
+unit = "dimensionless"
+optional = true
+description = "the hole area over the active area. **Absent is `0.1`**, the designer's own initialiser.\n"
+[inputs.downcommer_area_fraction]
+unit = "dimensionless"
+optional = true
+description = "the downcomer area over the total. **Absent is `0.1`.**\n"
+[inputs.design_flood_fraction]
+unit = "dimensionless"
+optional = true
+description = "the fraction of flood the internals are sized to, which fixes the design velocity the sizing divides by. **Absent is `0.8`**, the designer's own initialiser - and not the packed column's `0.70`, which is a different parameter under the same name.\n"
+[inputs.column_diameter_override]
+unit = "m"
+optional = true
+description = "a stated internal diameter, which **replaces the sizing branch entirely**. **Absent, or at or below zero, is the class's own `-1.0`** - the value that sizes the internals off the controlling tray.\n"
 
 [outputs]
 [outputs.tray_temperature]
@@ -337,6 +370,45 @@ description = "`isFsFactorWithinDesignLimit`: `Fs <= max_allowable_fs_factor`.\n
 [outputs.minimum_diameter_for_fs_limit]
 unit = "m"
 description = "`getMinimumDiameterForFsLimit`: the diameter at which the factor would reach its limit, `sqrt(4*Q*sqrt(rho)/(pi*limit))`. **A function of the flow, the density and the limit alone**.\n"
+[outputs.required_diameter]
+unit = "m"
+description = "`getRequiredDiameter`: the diameter `ColumnInternalsDesigner` resolved for the trayed internals - **the stated override where it is positive, and otherwise the round up of the diameter the controlling tray sizes to**. Not the column's own `column_diameter`, which is what the solve ran at.\n"
+[outputs.controlling_tray_index]
+unit = "dimensionless"
+description = "`getControllingTrayIndex`: **the tray with the largest vapour mass flow, the first such where two are equal**, counted from the reboiler at 0 - the tray the diameter was sized from.\n"
+[outputs.internals_design_ok]
+type = "boolean"
+description = "`isDesignOk`: every tray's own verdict and-ed together, so one tray outside its window is the report's answer and not a warning. **The per-tray verdicts are not published beside it**: they are flags, and this schema has no vector of booleans.\n"
+[outputs.max_percent_flood]
+unit = "dimensionless"
+description = "`getMaxPercentFlood`: the largest per-tray load, in per cent of flood.\n"
+[outputs.min_percent_flood]
+unit = "dimensionless"
+description = "`getMinPercentFlood`: **the smallest load above zero** - a tray reading exactly zero is skipped rather than taken - starting from the class's own `100`.\n"
+[outputs.average_tray_efficiency]
+unit = "dimensionless"
+description = "`getAverageTrayEfficiency`: the mean of the per-tray efficiencies, or the class's own `0.65` where its loop walked no tray at all.\n"
+[outputs.total_pressure_drop]
+unit = "Pa"
+description = "`getTotalPressureDrop`: the trays' own pressure drops, summed over every tray the designer walked.\n"
+[outputs.total_pressure_drop_mbar]
+unit = "dimensionless"
+description = "`getTotalPressureDropMbar`, which the class publishes beside it: the same sum over `100`, in mbar. **Declared dimensionless because no vocabulary unit expresses mbar**, the spelling `hydraulics.tray_hydraulics`' own millibar output already takes.\n"
+[outputs.tray_percent_flood]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray, the reboiler at index 0"
+description = "`getTrayResults`' own per-tray load, one entry per tray in the column's order - **at the diameter the sizing resolved**, so every entry is a tray at the controlling one's answer rather than at its own.\n"
+[outputs.tray_pressure_drop]
+type = "vector"
+unit = "Pa"
+length = "one per tray"
+description = "The per-tray total pressure drop, which `total_pressure_drop` sums.\n"
+[outputs.tray_efficiency]
+type = "vector"
+unit = "dimensionless"
+length = "one per tray"
+description = "The per-tray efficiency, which `average_tray_efficiency` means - O'Connell's, from the tray's own relative volatility and liquid viscosity.\n"
 [[valid_range]]
 quantity = "number_of_stages"
 min = 1

@@ -4325,6 +4325,16 @@ def distillation_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: object | None = None,
+    max_allowable_fs_factor: float | None = None,
+    internals_type: str | None = None,
+    tray_spacing: object | None = None,
+    weir_height: object | None = None,
+    hole_diameter: object | None = None,
+    hole_area_fraction: float | None = None,
+    downcommer_area_fraction: float | None = None,
+    design_flood_fraction: float | None = None,
+    column_diameter_override: object | None = None,
 ) -> DistillationColumnResult:
     """`process.distillation_column`, computed in Rust.
 
@@ -4389,6 +4399,20 @@ def distillation_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         None if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        # **The capacity limits and the internals tree follow the same rule**: each crosses as
+        # `None` or its SI magnitude, so the Rust half owns every default.
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        max_allowable_fs_factor,
+        internals_type,
+        None if tray_spacing is None else input_to_si(spec, "tray_spacing", tray_spacing),
+        None if weir_height is None else input_to_si(spec, "weir_height", weir_height),
+        None if hole_diameter is None else input_to_si(spec, "hole_diameter", hole_diameter),
+        hole_area_fraction,
+        downcommer_area_fraction,
+        design_flood_fraction,
+        None
+        if column_diameter_override is None
+        else input_to_si(spec, "column_diameter_override", column_diameter_override),
     )
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -4427,6 +4451,23 @@ def distillation_column(
             result.minimum_diameter_for_fs_limit.magnitude_si,
             result.minimum_diameter_for_fs_limit.unit,
         ),
+        required_diameter=from_si(
+            result.required_diameter.magnitude_si, result.required_diameter.unit
+        ),
+        controlling_tray_index=int(result.controlling_tray_index),
+        internals_design_ok=bool(result.internals_design_ok),
+        max_percent_flood=float(result.max_percent_flood),
+        min_percent_flood=float(result.min_percent_flood),
+        average_tray_efficiency=float(result.average_tray_efficiency),
+        total_pressure_drop=from_si(
+            result.total_pressure_drop.magnitude_si, result.total_pressure_drop.unit
+        ),
+        total_pressure_drop_mbar=float(result.total_pressure_drop_mbar),
+        tray_percent_flood=tuple(float(value) for value in result.tray_percent_flood),
+        tray_pressure_drop=tuple(
+            from_si(value.magnitude_si, value.unit) for value in result.tray_pressure_drop
+        ),
+        tray_efficiency=tuple(float(value) for value in result.tray_efficiency),
         warnings=_warnings(result.warnings),
     )
 

@@ -4991,6 +4991,29 @@ class DistillationColumnResult(_HasWarnings):
     #: ``getMinimumDiameterForFsLimit``, which is invariant under the diameter the factor is read
     #: at because it is a function of the flow, the density and the limit alone.
     minimum_diameter_for_fs_limit: Q
+    #: ``ColumnInternalsDesigner``'s own report: the diameter its internals tree resolved, which
+    #: is the stated override or the round up of what the controlling tray sizes to.
+    required_diameter: Q
+    #: The tray the diameter was sized from - the largest vapour mass flow, counted from stage 0.
+    controlling_tray_index: int
+    #: Every tray's own verdict, and-ed together.
+    internals_design_ok: bool
+    #: The largest per-tray load, in per cent of flood.
+    max_percent_flood: float
+    #: The smallest load above zero, which is not the smallest.
+    min_percent_flood: float
+    #: The mean of the per-tray efficiencies.
+    average_tray_efficiency: float
+    #: The trays' pressure drops, summed.
+    total_pressure_drop: Q
+    #: The same sum in millibars.
+    total_pressure_drop_mbar: float
+    #: Each tray's load, in per cent of flood, at the diameter the sizing resolved.
+    tray_percent_flood: tuple[float, ...]
+    #: Each tray's own total pressure drop - the entries ``total_pressure_drop`` sums.
+    tray_pressure_drop: tuple[Q, ...]
+    #: Each tray's efficiency - the entries ``average_tray_efficiency`` means.
+    tray_efficiency: tuple[float, ...]
     #: Caveats.
     warnings: tuple[Warning, ...]
 

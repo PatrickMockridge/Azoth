@@ -61,6 +61,13 @@ from azoth.process.reference.capacity import (
     DEFAULT_MAX_ALLOWABLE_FS_FACTOR,
     fs_limits,
 )
+from azoth.process.reference.designer import (
+    DEFAULT_TRAY_SPACING_M,
+    DEFAULT_WEIR_HEIGHT_M,
+    DesignerGeometry,
+    DesignerReport,
+    designer_report,
+)
 
 _DrawVector = tuple[float, ...] | None
 _Draws = tuple[_DrawVector, _DrawVector, _DrawVector] | None
@@ -74,6 +81,14 @@ PumparoundInlets = tuple[StreamRecord | None, ...]
 #: One side-draw flow specification, as the helper returns it: tray, phase, target, tolerance,
 #: cap.
 SideDrawSpecification = tuple[int, str, float, float, int]
+
+#: `ColumnInternalsDesigner`'s own constructor defaults, one per geometry input.
+DEFAULT_INTERNALS_TYPE = "sieve"
+DEFAULT_HOLE_DIAMETER_MM = 12.7
+DEFAULT_HOLE_AREA_FRACTION = 0.1
+DEFAULT_DOWNCOMMER_AREA_FRACTION = 0.1
+DEFAULT_DESIGNER_FLOOD_FRACTION = 0.8
+UNSIZED_COLUMN_DIAMETER_M = -1.0
 
 #: The class's own adaptive-relaxation constants, from `DistillationColumn`'s initialisers.
 MIN_SEQUENTIAL_RELAXATION = 0.5
@@ -502,18 +517,19 @@ def _record(
     components: list[str],
     internal_diameter: Q,
     max_allowable_fs_factor: float,
+    internals: DesignerReport,
     warnings: list[Warning],
 ) -> DistillationColumnResult:
-    """The base column's record, from the stages that solved it and the capacity family.
+    """The base column's record, from the stages that solved it and its two reports.
 
-    **One construction with two callers.** `distillation_column` is this and
-    `_distillation_column_states` together; `process.packed_column`'s reference solves the same
-    column and needs the stages as well as the record, so it reads them once and comes through
-    here rather than transcribing the mapping a second time.
+    **One construction with one caller.** `distillation_column` is this and
+    `_distillation_column_states` together.
 
-    **The two capacity inputs are the caller's**, because neither is read by the solve: the
-    diameter is the column's internal one and the packed twin states the diameter its own sizing
-    resolved.
+    **The two capacity inputs and the internals report are the caller's**, because none is read
+    by the solve: the diameter is the column's internal one and the geometry reaches nothing on
+    the run path. **`process.packed_column` does not come through here** - its class builds the
+    designer with `internalsType = "packed"`, so `calculateTrayed` never runs for it and there is
+    no trayed report to carry.
     """
     gas_out = Stream.from_pt(
         components,
@@ -551,6 +567,19 @@ def _record(
         fs_factor_utilization=limits["fs_factor_utilization"],
         fs_factor_within_design_limit=limits["fs_factor_within_design_limit"],
         minimum_diameter_for_fs_limit=from_si(limits["minimum_diameter_for_fs_limit"], "m"),
+        required_diameter=from_si(internals.required_diameter_m, "m"),
+        controlling_tray_index=internals.controlling_tray_index,
+        internals_design_ok=internals.design_ok,
+        max_percent_flood=internals.max_percent_flood,
+        min_percent_flood=internals.min_percent_flood,
+        average_tray_efficiency=internals.average_tray_efficiency,
+        total_pressure_drop=from_si(internals.total_pressure_drop_pa, "Pa"),
+        total_pressure_drop_mbar=internals.total_pressure_drop_pa / 100.0,
+        tray_percent_flood=tuple(tray.percent_flood for tray in internals.trays),
+        tray_pressure_drop=tuple(
+            from_si(tray.total_pressure_drop_pa, "Pa") for tray in internals.trays
+        ),
+        tray_efficiency=tuple(tray.tray_efficiency for tray in internals.trays),
         warnings=tuple(warnings),
     )
 
@@ -599,6 +628,14 @@ def distillation_column(
     pumparound_max_iterations: int | None = None,
     column_diameter: Q | None = None,
     max_allowable_fs_factor: float | None = None,
+    internals_type: str | None = None,
+    tray_spacing: Q | None = None,
+    weir_height: Q | None = None,
+    hole_diameter: Q | None = None,
+    hole_area_fraction: float | None = None,
+    downcommer_area_fraction: float | None = None,
+    design_flood_fraction: float | None = None,
+    column_diameter_override: Q | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -651,9 +688,19 @@ def distillation_column(
         column_diameter: the column's internal diameter, which the capacity limits divide the
             gas outlet's volumetric flow by. **The solve is indifferent to it.**
         max_allowable_fs_factor: the ``Fs`` limit the family is checked against.
+        internals_type: which tray the internals tree is designed as.
+        tray_spacing: the tray spacing the internals are designed at.
+        weir_height: the weir height.
+        hole_diameter: the sieve hole diameter, **in millimetres**.
+        hole_area_fraction: the hole area over the active area.
+        downcommer_area_fraction: the downcomer area over the total.
+        design_flood_fraction: the fraction of flood the internals are sized to.
+        column_diameter_override: a stated diameter for the internals tree, which replaces its
+            sizing branch entirely.
 
     Returns:
-        The tray profile, both products, both duties, the three residuals and the Fs family.
+        The tray profile, both products, both duties, the three residuals, the Fs family and the
+        internals tree.
 
     Raises:
         InvalidInputError: for a stage or a feed stage outside the column, for any declared
@@ -703,6 +750,52 @@ def distillation_column(
         pumparound_tolerance,
         pumparound_max_iterations,
     )
+    # **The internals tree, read after the solve and from the trays it left.** Its geometry
+    # reaches nothing on the run path, which is the class's own split.
+    internals = designer_report(
+        states,
+        components,
+        DesignerGeometry(
+            internals_type=(
+                DEFAULT_INTERNALS_TYPE if internals_type is None else str(internals_type)
+            ),
+            tray_spacing_m=(
+                DEFAULT_TRAY_SPACING_M
+                if tray_spacing is None
+                else float(tray_spacing.to("m").magnitude)
+            ),
+            weir_height_m=(
+                DEFAULT_WEIR_HEIGHT_M
+                if weir_height is None
+                else float(weir_height.to("m").magnitude)
+            ),
+            hole_diameter_m=(
+                DEFAULT_HOLE_DIAMETER_MM / 1000.0
+                if hole_diameter is None
+                else float(hole_diameter.to("mm").magnitude) / 1000.0
+            ),
+            hole_area_fraction=(
+                DEFAULT_HOLE_AREA_FRACTION
+                if hole_area_fraction is None
+                else float(hole_area_fraction)
+            ),
+            downcommer_area_fraction=(
+                DEFAULT_DOWNCOMMER_AREA_FRACTION
+                if downcommer_area_fraction is None
+                else float(downcommer_area_fraction)
+            ),
+            design_flood_fraction=(
+                DEFAULT_DESIGNER_FLOOD_FRACTION
+                if design_flood_fraction is None
+                else float(design_flood_fraction)
+            ),
+            column_diameter_override_m=(
+                UNSIZED_COLUMN_DIAMETER_M
+                if column_diameter_override is None
+                else float(column_diameter_override.to("m").magnitude)
+            ),
+        ),
+    )
     return _record(
         states,
         components,
@@ -712,6 +805,7 @@ def distillation_column(
         max_allowable_fs_factor
         if max_allowable_fs_factor is not None
         else DEFAULT_MAX_ALLOWABLE_FS_FACTOR,
+        internals,
         warnings,
     )
 

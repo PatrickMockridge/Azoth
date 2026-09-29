@@ -11337,6 +11337,39 @@ pub struct PyDistillationColumnResult {
     /// `getMinimumDiameterForFsLimit`.
     #[pyo3(get)]
     pub minimum_diameter_for_fs_limit: PyQty,
+    /// `ColumnInternalsDesigner`'s own report: the diameter its internals tree resolved.
+    #[pyo3(get)]
+    pub required_diameter: PyQty,
+    /// The tray the diameter was sized from.
+    #[pyo3(get)]
+    pub controlling_tray_index: usize,
+    /// Every tray's own verdict, and-ed together.
+    #[pyo3(get)]
+    pub internals_design_ok: bool,
+    /// The largest per-tray load, in per cent of flood.
+    #[pyo3(get)]
+    pub max_percent_flood: f64,
+    /// The smallest load above zero.
+    #[pyo3(get)]
+    pub min_percent_flood: f64,
+    /// The mean of the per-tray efficiencies.
+    #[pyo3(get)]
+    pub average_tray_efficiency: f64,
+    /// The trays' pressure drops, summed.
+    #[pyo3(get)]
+    pub total_pressure_drop: PyQty,
+    /// The same sum in millibars.
+    #[pyo3(get)]
+    pub total_pressure_drop_mbar: f64,
+    /// Each tray's load, in per cent of flood.
+    #[pyo3(get)]
+    pub tray_percent_flood: Vec<f64>,
+    /// Each tray's own total pressure drop.
+    #[pyo3(get)]
+    pub tray_pressure_drop: Vec<PyQty>,
+    /// Each tray's efficiency.
+    #[pyo3(get)]
+    pub tray_efficiency: Vec<f64>,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -11897,6 +11930,21 @@ impl From<&DistillationColumnResult> for PyDistillationColumnResult {
             fs_factor_utilization: r.fs_factor_utilization,
             fs_factor_within_design_limit: r.fs_factor_within_design_limit,
             minimum_diameter_for_fs_limit: quantity(r.minimum_diameter_for_fs_limit.value, "m"),
+            required_diameter: quantity(r.required_diameter.value, "m"),
+            controlling_tray_index: r.controlling_tray_index,
+            internals_design_ok: r.internals_design_ok,
+            max_percent_flood: r.max_percent_flood,
+            min_percent_flood: r.min_percent_flood,
+            average_tray_efficiency: r.average_tray_efficiency,
+            total_pressure_drop: quantity(r.total_pressure_drop.value, "Pa"),
+            total_pressure_drop_mbar: r.total_pressure_drop_mbar,
+            tray_percent_flood: r.tray_percent_flood.clone(),
+            tray_pressure_drop: r
+                .tray_pressure_drop
+                .iter()
+                .map(|value| quantity(*value, "Pa"))
+                .collect(),
+            tray_efficiency: r.tray_efficiency.clone(),
             warnings: transport(&r.warnings),
         }
     }

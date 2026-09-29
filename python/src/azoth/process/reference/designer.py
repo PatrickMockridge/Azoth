@@ -26,11 +26,21 @@ single-phase and substitute ``600.0`` for a liquid whose density is its own.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from azoth.core.units import quantity
 from azoth.hydraulics.reference.tray_hydraulics import size_column_diameter, tray_hydraulics
-from azoth.process.reference.distillation_column import _States
+
+if TYPE_CHECKING:
+    # **The solved column's own record, imported for its type alone.** The column imports this
+    # module's report, so a runtime import here would be a cycle - and every function below
+    # duck-types the record rather than constructing one.
+    from azoth.process.reference.distillation_column import _States
+
+#: The tray spacing and the weir height the class's own constructor carries, one per geometry
+#: input. They are `ColumnInternalsDesigner`'s initialisers and not correlated values.
+DEFAULT_TRAY_SPACING_M = 0.6
+DEFAULT_WEIR_HEIGHT_M = 0.05
 
 #: The relative volatility the class's own default stands at, and the one the *sizing* branch runs
 #: at because its calculator is never given the tray's.
@@ -59,9 +69,9 @@ class DesignerGeometry:
     #: ``sieve``, ``valve`` or ``bubble-cap``. The class's own constructor default is ``sieve``.
     internals_type: str = "sieve"
     #: The tray spacing, m. The class's own default is ``0.6``.
-    tray_spacing_m: float = 0.6
+    tray_spacing_m: float = DEFAULT_TRAY_SPACING_M
     #: The weir height, m. The class's own default is ``0.05``.
-    weir_height_m: float = 0.05
+    weir_height_m: float = DEFAULT_WEIR_HEIGHT_M
     #: The hole diameter, m. The class's field is millimetres.
     hole_diameter_m: float = 12.7e-3
     #: The hole area over the active area. The class's own default is ``0.1``.
@@ -162,12 +172,17 @@ def _readings(states: _States, index: int, components: list[str]) -> TrayReading
 
 
 def _phase(components: list[str], states: _States, index: int, pick: str) -> dict[str, Any]:
-    """One phase of one tray, through the segment model's own view."""
-    from azoth.process.reference.rate_based_packed_column import _phase_view
+    """The phase one tray's stream **carries**, and not what a re-flash of it answers.
 
-    return _phase_view(
+    A pinned end is saturated by construction, so a re-flash of either side lands on the knife
+    edge - the segment model's own readers, stated for that case and measured on the capture's
+    reboiler.
+    """
+    from azoth.process.reference.rate_based_packed_column import _liquid_view, _vapour_view
+
+    view = _vapour_view if pick == "gas" else _liquid_view
+    return view(
         components,
-        pick,
         states.tray_temperature[index],
         states.tray_pressure[index],
         list(states.tray_gas_z[index] if pick == "gas" else states.tray_liquid_z[index]),

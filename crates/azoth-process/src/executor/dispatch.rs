@@ -885,7 +885,45 @@ fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOu
         p.optional_number("max_allowable_fs_factor")?
             .unwrap_or(crate::column::capacity::DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
     )?;
-    let result = crate::models::DistillationColumnResult::of(&out, &limits, warnings);
+    // **And the internals tree, whose geometry inputs reach nothing on the run path.** Every one
+    // is read here rather than dropped: a form that offered a weir height this arm ignored would
+    // be a parameter the palette declares and nothing honours.
+    let internals = crate::column::designer::designer_report(
+        &out.trays,
+        &out.distillate.components,
+        &crate::column::designer::DesignerGeometry {
+            internals_type: p.optional_text("internals_type")?.unwrap_or_else(|| {
+                crate::models::distillation_column::DEFAULT_INTERNALS_TYPE.into()
+            }),
+            tray_spacing: meters(
+                p.optional_si("tray_spacing")?
+                    .unwrap_or(crate::models::distillation_column::DEFAULT_TRAY_SPACING_M),
+            ),
+            weir_height: meters(
+                p.optional_si("weir_height")?
+                    .unwrap_or(crate::models::distillation_column::DEFAULT_WEIR_HEIGHT_M),
+            ),
+            hole_diameter: meters(
+                p.optional_si("hole_diameter")?
+                    .unwrap_or(crate::models::distillation_column::DEFAULT_HOLE_DIAMETER_MM)
+                    / 1000.0,
+            ),
+            hole_area_fraction: p
+                .optional_number("hole_area_fraction")?
+                .unwrap_or(crate::models::distillation_column::DEFAULT_HOLE_AREA_FRACTION),
+            downcommer_area_fraction: p
+                .optional_number("downcommer_area_fraction")?
+                .unwrap_or(crate::models::distillation_column::DEFAULT_DOWNCOMMER_AREA_FRACTION),
+            design_flood_fraction: p
+                .optional_number("design_flood_fraction")?
+                .unwrap_or(crate::models::distillation_column::DEFAULT_DESIGNER_FLOOD_FRACTION),
+            column_diameter_override: meters(
+                p.optional_si("column_diameter_override")?
+                    .unwrap_or(crate::column::designer::UNSIZED_COLUMN_DIAMETER_M),
+            ),
+        },
+    )?;
+    let result = crate::models::DistillationColumnResult::of(&out, &limits, &internals, warnings);
     KernelOutcome::publishing(vec![out.distillate, out.bottoms], &result)
 }
 

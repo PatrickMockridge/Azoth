@@ -20,14 +20,12 @@ import math
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.result import PackedColumnResult
-from azoth.core.units import Q, quantity
+from azoth.core.units import Q, from_si, quantity
 from azoth.hydraulics.reference.packing_hydraulics import _packing_hydraulics
 from azoth.hydraulics.reference.packing_sizing import packing_sizing as _packing_sizing
-from azoth.process.reference.capacity import DEFAULT_MAX_ALLOWABLE_FS_FACTOR
-from azoth.process.reference.distillation_column import (
-    _distillation_column_states,
-    _record,
-)
+from azoth.process.kernels import Stream
+from azoth.process.reference.capacity import DEFAULT_MAX_ALLOWABLE_FS_FACTOR, fs_limits
+from azoth.process.reference.distillation_column import _distillation_column_states
 from azoth.process.reference.rate_based_packed_column import _phase_view
 
 #: The HETP guess ``PackedColumn``'s constructors divide a packed height by.
@@ -320,18 +318,26 @@ def packed_column(
         ).column_diameter
     )
 
-    # **The record is built at the diameter the sizing just resolved**, which is the class's own
-    # order: `calcPackingHydraulics` ends by writing the inherited `internalDiameter` from the
-    # stated `columnDiameter` where it is positive and from the designer's sizing otherwise, so a
-    # caller that stated none gets its Fs factor at the diameter the bed was sized to.
-    base = _record(
-        states,
-        list(components),
+    # **The Fs family is read at the diameter the sizing just resolved**, which is the class's
+    # own order: `calcPackingHydraulics` ends by writing the inherited `internalDiameter` from
+    # the stated `columnDiameter` where it is positive and from the designer's sizing otherwise.
+    #
+    # **And the base's record is not built here.** `PackedColumn.calcPackingHydraulics` builds its
+    # designer with `internalsType = "packed"`, so `calculateTrayed` never runs for this class:
+    # there is no trayed internals report, and this result carries the base's own quantities
+    # without one - the same split the Rust half has.
+    limits = fs_limits(
+        Stream.from_pt(
+            list(components),
+            list(states.distillate_z),
+            states.distillate_n,
+            from_si(states.distillate_p, "Pa"),
+            from_si(states.distillate_t, "K"),
+        ),
         internal_diameter,
         DEFAULT_MAX_ALLOWABLE_FS_FACTOR
         if max_allowable_fs_factor is None
         else float(max_allowable_fs_factor),
-        warnings,
     )
 
     hydraulics = _packing_hydraulics(
@@ -354,33 +360,33 @@ def packed_column(
     )
 
     return PackedColumnResult(
-        tray_temperature=base.tray_temperature,
-        tray_pressure=base.tray_pressure,
-        tray_gas_n=base.tray_gas_n,
-        tray_liquid_n=base.tray_liquid_n,
-        distillate_n=base.distillate_n,
-        distillate_z=base.distillate_z,
-        distillate_p=base.distillate_p,
-        distillate_t=base.distillate_t,
-        distillate_h=base.distillate_h,
-        bottoms_n=base.bottoms_n,
-        bottoms_z=base.bottoms_z,
-        bottoms_p=base.bottoms_p,
-        bottoms_t=base.bottoms_t,
-        bottoms_h=base.bottoms_h,
-        gas_side_draw_n=base.gas_side_draw_n,
-        liquid_side_draw_n=base.liquid_side_draw_n,
-        pumparound_n=base.pumparound_n,
-        condenser_duty=base.condenser_duty,
-        reboiler_duty=base.reboiler_duty,
-        iterations=base.iterations,
-        temperature_residual=base.temperature_residual,
-        mass_residual=base.mass_residual,
-        energy_residual=base.energy_residual,
-        fs_factor=base.fs_factor,
-        fs_factor_utilization=base.fs_factor_utilization,
-        fs_factor_within_design_limit=base.fs_factor_within_design_limit,
-        minimum_diameter_for_fs_limit=base.minimum_diameter_for_fs_limit,
+        tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
+        tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
+        tray_gas_n=tuple(from_si(value, "mol/s") for value in states.tray_gas_n),
+        tray_liquid_n=tuple(from_si(value, "mol/s") for value in states.tray_liquid_n),
+        distillate_n=from_si(states.distillate_n, "mol/s"),
+        distillate_z=states.distillate_z,
+        distillate_p=from_si(states.distillate_p, "Pa"),
+        distillate_t=from_si(states.distillate_t, "K"),
+        distillate_h=from_si(states.distillate_h, "J/mol"),
+        bottoms_n=from_si(states.bottoms_n, "mol/s"),
+        bottoms_z=states.bottoms_z,
+        bottoms_p=from_si(states.bottoms_p, "Pa"),
+        bottoms_t=from_si(states.bottoms_t, "K"),
+        bottoms_h=from_si(states.bottoms_h, "J/mol"),
+        gas_side_draw_n=tuple(from_si(value, "mol/s") for value in states.gas_side_draw_n),
+        liquid_side_draw_n=tuple(from_si(value, "mol/s") for value in states.liquid_side_draw_n),
+        pumparound_n=tuple(from_si(value, "mol/s") for value in states.pumparound_n),
+        condenser_duty=from_si(states.condenser_duty, "W"),
+        reboiler_duty=from_si(states.reboiler_duty, "W"),
+        iterations=states.iterations,
+        temperature_residual=states.temperature_residual,
+        mass_residual=states.mass_residual,
+        energy_residual=states.energy_residual,
+        fs_factor=limits["fs_factor"],
+        fs_factor_utilization=limits["fs_factor_utilization"],
+        fs_factor_within_design_limit=limits["fs_factor_within_design_limit"],
+        minimum_diameter_for_fs_limit=from_si(limits["minimum_diameter_for_fs_limit"], "m"),
         hetp=hydraulics.hetp,
         theoretical_stages=hydraulics.theoretical_stages,
         percent_flood=hydraulics.percent_flood,
@@ -388,7 +394,7 @@ def packed_column(
         packing_pressure_drop=hydraulics.total_pressure_drop,
         hydraulics_ok=hydraulics.design_ok,
         internal_diameter=internal_diameter,
-        warnings=base.warnings,
+        warnings=tuple(warnings),
     )
 
 

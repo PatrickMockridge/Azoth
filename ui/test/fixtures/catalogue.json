@@ -2274,6 +2274,16 @@
           "values": []
         },
         {
+          "description": "a stated internal diameter for the internals tree, which replaces its sizing branch entirely; the class's own -1.0 sizes it off the controlling tray",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "column_diameter_override",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
           "description": "the condenser's temperature, which with the top specification is what pins the top of the column; the class defaults it to 270.15 K",
           "dimension": "thermodynamic_temperature",
           "kind": "quantity",
@@ -2281,6 +2291,26 @@
           "range": [],
           "required": false,
           "unit": "K",
+          "values": []
+        },
+        {
+          "description": "the fraction of flood the internals are sized to; the designer defaults it to 0.8, unlike the packed column's 0.70",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "design_flood_fraction",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the downcomer area over the total; the class defaults it to 0.1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "downcommer_area_fraction",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
           "values": []
         },
         {
@@ -2322,6 +2352,40 @@
           "required": true,
           "unit": null,
           "values": []
+        },
+        {
+          "description": "the hole area over the active area; the class defaults it to 0.1",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "hole_area_fraction",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the sieve hole diameter, in millimetres; the class defaults it to 12.7 mm",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "hole_diameter",
+          "range": [],
+          "required": false,
+          "unit": "mm",
+          "values": []
+        },
+        {
+          "description": "which tray the internals tree is designed as - sieve, valve or bubble-cap; the class defaults it to sieve",
+          "dimension": null,
+          "kind": "enum",
+          "name": "internals_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "sieve",
+            "valve",
+            "bubble-cap"
+          ]
         },
         {
           "description": "the same for the liquid, which a pumparound draws from too - the two are bounded together and may not sum above one",
@@ -2616,6 +2680,26 @@
             "product_flow_rate",
             "duty"
           ]
+        },
+        {
+          "description": "the tray spacing the internals are designed at; the class defaults it to 0.6 m",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "tray_spacing",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
+          "description": "the weir height the internals are designed at; the class defaults it to 0.05 m",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "weir_height",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
         }
       ],
       "ports": [

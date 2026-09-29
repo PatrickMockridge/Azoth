@@ -229,6 +229,14 @@ def distillation_column(
     pumparound_max_iterations: int | None = None,
     column_diameter: Q | None = None,
     max_allowable_fs_factor: float | None = None,
+    internals_type: str | None = None,
+    tray_spacing: Q | None = None,
+    weir_height: Q | None = None,
+    hole_diameter: Q | None = None,
+    hole_area_fraction: float | None = None,
+    downcommer_area_fraction: float | None = None,
+    design_flood_fraction: float | None = None,
+    column_diameter_override: Q | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -298,6 +306,14 @@ def distillation_column(
         pumparound_max_iterations=pumparound_max_iterations,
         column_diameter=column_diameter,
         max_allowable_fs_factor=max_allowable_fs_factor,
+        internals_type=internals_type,
+        tray_spacing=tray_spacing,
+        weir_height=weir_height,
+        hole_diameter=hole_diameter,
+        hole_area_fraction=hole_area_fraction,
+        downcommer_area_fraction=downcommer_area_fraction,
+        design_flood_fraction=design_flood_fraction,
+        column_diameter_override=column_diameter_override,
     )
 
 

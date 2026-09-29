@@ -585,12 +585,13 @@ fn the_generated_input_table_is_the_models_own() {
             walked += 1;
         }
     }
-    // `398` through the rate-based column's tranche, then the capacity limits' two inputs: on
-    // `process.distillation_column` (`column_diameter`, `max_allowable_fs_factor`), on
-    // `process.packed_column` (`max_allowable_fs_factor` only - it already had the diameter) and
-    // on the absorber pair (both, beside a `max_allowable_gas_load_factor` that was already
-    // declared). `398 + 2 + 1 + 2 + 2 = 405`, and every one is a deliberate move.
-    assert_eq!(walked, 405, "the inputs this test walked");
+    // `398` through the rate-based column's tranche, then the capacity limits' inputs - two on
+    // `process.distillation_column`, one on `process.packed_column` and two on each of the
+    // absorber pair, `398 + 2 + 1 + 2 + 2 = 405`. **And then the internals tree's eight**, all on
+    // `process.distillation_column`: `internals_type`, `tray_spacing`, `weir_height`,
+    // `hole_diameter`, `hole_area_fraction`, `downcommer_area_fraction`, `design_flood_fraction`
+    // and `column_diameter_override`. `405 + 8 = 413`, and every one is a deliberate move.
+    assert_eq!(walked, 413, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

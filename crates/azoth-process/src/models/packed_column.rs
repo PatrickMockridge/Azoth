@@ -7,20 +7,24 @@
 //! from a packed height, the refusal of the one packing parameter the class itself refuses, and
 //! the seven quantities `ColumnInternalsDesigner` reports on the far side of the solve.
 
-use azoth_core::units::{Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature};
+use azoth_core::units::{
+    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole,
+};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
-use crate::column::capacity::{DEFAULT_MAX_ALLOWABLE_FS_FACTOR, fs_limits};
+use crate::column::capacity::{DEFAULT_MAX_ALLOWABLE_FS_FACTOR, FsLimits, fs_limits};
+use crate::kernels::distillation_column as kernel;
 use crate::kernels::packed_column::{PackedReport, PackingInputs, packing_report, stage_count};
-use crate::models::distillation_column::{DistillationColumnResult, distillation_column_outcome};
+use crate::models::distillation_column::distillation_column_outcome;
 
 /// Result of `process.packed_column`.
 ///
 /// **The base column's record, plus the seven quantities the packing's report adds.** The packing
-/// parameters reach the *separation* only through the stage count, which is why the first
-/// twenty-four fields are [`DistillationColumnResult`]'s unchanged; everything the packing
+/// parameters reach the *separation* only through the stage count, which is why the profile, both
+/// products, both duties and the three residuals are the base's unchanged; everything the packing
 /// contributes is `ColumnInternalsDesigner`'s report on the far side of the solve, and those are
-/// the seven at the end.
+/// the seven at the end. **The trayed half of that designer is not here**: this class builds it
+/// with `internalsType = "packed"`, so `calculateTrayed` never runs for it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackedColumnResult {
     /// Each tray's temperature, K.
@@ -112,36 +116,60 @@ impl PackedColumnResult {
     /// read at the middle tray's state on the far side of the solve, so it is a second input and
     /// not a re-projection of the first - the shape `DistillationColumnResult::of` and
     /// `RateBasedPackedColumnResult::of` already have.
+    ///
+    /// **It takes the *outcome* rather than a base `DistillationColumnResult`, and that is the
+    /// class's own split.** `PackedColumn.calcPackingHydraulics` builds one designer with
+    /// `internalsType = "packed"`, so `calculateTrayed` **never runs** for this class and there is
+    /// no trayed internals report to copy: a packed column that published one would be publishing
+    /// a tree NeqSim does not build for it. The base's own quantities are re-read from the outcome
+    /// here instead, which is what its 29 fields were.
     #[must_use]
-    pub fn of(base: DistillationColumnResult, report: PackedReport) -> Self {
+    pub fn of(
+        outcome: &kernel::ColumnOutcome,
+        limits: &FsLimits,
+        report: PackedReport,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
-            tray_temperature: base.tray_temperature,
-            tray_pressure: base.tray_pressure,
-            tray_gas_n: base.tray_gas_n,
-            tray_liquid_n: base.tray_liquid_n,
-            distillate_n: base.distillate_n,
-            distillate_z: base.distillate_z,
-            distillate_p: base.distillate_p,
-            distillate_t: base.distillate_t,
-            distillate_h: base.distillate_h,
-            bottoms_n: base.bottoms_n,
-            bottoms_z: base.bottoms_z,
-            bottoms_p: base.bottoms_p,
-            bottoms_t: base.bottoms_t,
-            bottoms_h: base.bottoms_h,
-            gas_side_draw_n: base.gas_side_draw_n,
-            liquid_side_draw_n: base.liquid_side_draw_n,
-            pumparound_n: base.pumparound_n,
-            condenser_duty: base.condenser_duty,
-            reboiler_duty: base.reboiler_duty,
-            iterations: base.iterations,
-            temperature_residual: base.temperature_residual,
-            mass_residual: base.mass_residual,
-            energy_residual: base.energy_residual,
-            fs_factor: base.fs_factor,
-            fs_factor_utilization: base.fs_factor_utilization,
-            fs_factor_within_design_limit: base.fs_factor_within_design_limit,
-            minimum_diameter_for_fs_limit: base.minimum_diameter_for_fs_limit,
+            tray_temperature: outcome.trays.iter().map(|t| t.temperature).collect(),
+            tray_pressure: outcome.trays.iter().map(|t| t.pressure).collect(),
+            tray_gas_n: outcome.trays.iter().map(|t| t.gas_n).collect(),
+            tray_liquid_n: outcome.trays.iter().map(|t| t.liquid_n).collect(),
+            distillate_n: outcome.distillate.n,
+            distillate_z: outcome.distillate.z.clone(),
+            distillate_p: outcome.distillate.p,
+            distillate_t: outcome.distillate.t,
+            distillate_h: joules_per_mole(outcome.distillate.h.value),
+            bottoms_n: outcome.bottoms.n,
+            bottoms_z: outcome.bottoms.z.clone(),
+            bottoms_p: outcome.bottoms.p,
+            bottoms_t: outcome.bottoms.t,
+            bottoms_h: joules_per_mole(outcome.bottoms.h.value),
+            gas_side_draw_n: outcome
+                .gas_side_draws
+                .iter()
+                .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+                .collect(),
+            liquid_side_draw_n: outcome
+                .liquid_side_draws
+                .iter()
+                .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+                .collect(),
+            pumparound_n: outcome
+                .pumparounds
+                .iter()
+                .map(|draw| draw.as_ref().map_or(0.0, |draw| draw.n))
+                .collect(),
+            condenser_duty: outcome.condenser_duty,
+            reboiler_duty: outcome.reboiler_duty,
+            iterations: outcome.iterations,
+            temperature_residual: outcome.temperature_residual,
+            mass_residual: outcome.mass_residual,
+            energy_residual: outcome.energy_residual,
+            fs_factor: limits.fs_factor,
+            fs_factor_utilization: limits.fs_factor_utilization,
+            fs_factor_within_design_limit: limits.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: limits.minimum_diameter_for_fs_limit,
             hetp: report.hetp,
             theoretical_stages: report.theoretical_stages,
             percent_flood: report.percent_flood,
@@ -149,7 +177,7 @@ impl PackedColumnResult {
             packing_pressure_drop: report.packing_pressure_drop,
             hydraulics_ok: report.hydraulics_ok,
             internal_diameter: report.internal_diameter,
-            warnings: base.warnings,
+            warnings,
         }
     }
 }
@@ -370,8 +398,7 @@ pub fn packed_column(
         report.internal_diameter,
         max_allowable_fs_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
     )?;
-    let base = DistillationColumnResult::of(&outcome, &limits, warnings);
-    Ok(PackedColumnResult::of(base, report))
+    Ok(PackedColumnResult::of(&outcome, &limits, report, warnings))
 }
 
 #[cfg(test)]

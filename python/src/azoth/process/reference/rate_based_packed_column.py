@@ -128,14 +128,10 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
-def _phase_view(
-    components: list[str], pick: str, t: float, p: float, z: list[float], n: float
-) -> dict[str, Any]:
-    """One phase of a flashed system: the class's ``PhaseInterface``, as a value.
-
-    ``pick`` is ``"gas"`` or ``"liquid"``, and the phase is chosen by ``PhaseEos.init``'s label
-    rule rather than by ``beta`` - the same rule ``three_phase_separator`` reads.
-    """
+def _labelled(
+    components: list[str], t: float, p: float, z: list[float]
+) -> tuple[Any, Any, Any, Any]:
+    """The phases, labelled and in the order the class's own system carries them: gas first."""
     mixture, ideal_gas = _components.mixture_of(components, eos="pr")
     flash = pt_flash(mixture, quantity(t, "K"), quantity(p, "Pa"), z)
     reduced = reduced_parameters(mixture, t, p)
@@ -155,36 +151,26 @@ def _phase_view(
                 flash.z_liquid,
             ),
         ]
+    return mixture, ideal_gas, flash, labelled
 
-    if pick == "gas":
-        matches = [entry for entry in labelled if entry[0] == GAS]
-    else:
-        # `getLiquidPhase`'s own ladder: AQUEOUS, then OIL, then the first phase that is not
-        # the gas, then phase zero.
-        matches = (
-            [entry for entry in labelled if entry[0] == AQUEOUS]
-            or [entry for entry in labelled if entry[0] == OIL]
-            or [entry for entry in labelled if entry[0] != GAS]
-        )
-    chosen = matches[0] if matches else labelled[0]
 
+def _phase_dict(
+    components: list[str],
+    mixture: Any,
+    ideal_gas: Any,
+    chosen: tuple[str, list[float], float],
+    share: float,
+    t: float,
+    p: float,
+    n: float,
+) -> dict[str, Any]:
+    """One labelled entry, built into the value the segment model and the designer read."""
     label, phase_z, root = chosen
-    if len(labelled) == 1:
-        share = 1.0
-    elif label == GAS:
-        share = flash.vapour_fraction if flash.vapour_fraction is not None else 1.0
-    else:
-        share = 1.0 - (flash.vapour_fraction if flash.vapour_fraction is not None else 0.0)
-
     molar_mass = sum(
         (component.molar_mass.to("kg/mol").magnitude if component.molar_mass else 0.0) * fraction
         for component, fraction in zip(mixture.components, phase_z, strict=True)
     )
     transport = phase_transport(components, label, quantity(t, "K"), quantity(p, "Pa"), phase_z)
-
-    # `getDensity("kg/m3")`: the cubic's volume at the phase's own root, with the Peneloux
-    # shift. **The root is the flash's own** - a phase of a split sits on the root the split put
-    # it on, and asking the cubic again from its composition can answer a different one.
     volume = pr_molar_volume(root, quantity(t, "K"), quantity(p, "Pa")).v.to("m**3/mol").magnitude
     shift = mixture.volume_shift(phase_z)
     density = (
@@ -212,6 +198,93 @@ def _phase_view(
         "transport": transport,
         "components": components,
     }
+
+
+def _vapour_view(
+    components: list[str], t: float, p: float, z: list[float], n: float
+) -> dict[str, Any]:
+    """The **vapour** of a stream that carries one, where a re-flash of a saturated composition
+    can answer a single liquid phase.
+
+    **A pinned end is saturated by construction**: the reboiler boils at the temperature it is
+    pinned to, so its vapour sits on the dew point and a re-flash of it can land on the other side
+    of the knife edge. ``_phase_view``'s ``"gas"`` pick falls back to phase zero there and would
+    hand back the liquid; this builds the vapour from the flash's own **vapour root**.
+    """
+    mixture, ideal_gas, flash, labelled = _labelled(components, t, p, z)
+    for entry in labelled:
+        if entry[0] == GAS:
+            share = 1.0 if len(labelled) == 1 else (flash.vapour_fraction or 1.0)
+            return _phase_dict(components, mixture, ideal_gas, entry, share, t, p, n)
+    return _phase_dict(
+        components,
+        mixture,
+        ideal_gas,
+        (GAS, list(z), flash.z_vapour),
+        1.0,
+        t,
+        p,
+        n,
+    )
+
+
+def _liquid_view(
+    components: list[str], t: float, p: float, z: list[float], n: float
+) -> dict[str, Any]:
+    """The **liquid** of a stream that carries one, on ``_vapour_view``'s reasoning.
+
+    **The capture's reboiler is the case.** Its liquid composition flashes all-vapour in one
+    implementation and all-liquid in the other, so the ``"liquid"`` ladder falls through to the
+    gas and answers the *vapour's* density - which is a factor of `208` on that tray's flood.
+    """
+    mixture, ideal_gas, flash, labelled = _labelled(components, t, p, z)
+    for entry in labelled:
+        if entry[0] != GAS:
+            share = 1.0 if len(labelled) == 1 else (1.0 - (flash.vapour_fraction or 0.0))
+            return _phase_dict(components, mixture, ideal_gas, entry, share, t, p, n)
+    return _phase_dict(
+        components,
+        mixture,
+        ideal_gas,
+        (OIL, list(z), flash.z_liquid),
+        1.0,
+        t,
+        p,
+        n,
+    )
+
+
+def _phase_view(
+    components: list[str], pick: str, t: float, p: float, z: list[float], n: float
+) -> dict[str, Any]:
+    """One phase of a flashed system: the class's ``PhaseInterface``, as a value.
+
+    ``pick`` is ``"gas"`` or ``"liquid"``, and the phase is chosen by ``PhaseEos.init``'s label
+    rule rather than by ``beta`` - the same rule ``three_phase_separator`` reads.
+    """
+    mixture, ideal_gas, flash, labelled = _labelled(components, t, p, z)
+
+    if pick == "gas":
+        matches = [entry for entry in labelled if entry[0] == GAS]
+    else:
+        # `getLiquidPhase`'s own ladder: AQUEOUS, then OIL, then the first phase that is not
+        # the gas, then phase zero.
+        matches = (
+            [entry for entry in labelled if entry[0] == AQUEOUS]
+            or [entry for entry in labelled if entry[0] == OIL]
+            or [entry for entry in labelled if entry[0] != GAS]
+        )
+    chosen = matches[0] if matches else labelled[0]
+
+    label, _phase_z, _root = chosen
+    if len(labelled) == 1:
+        share = 1.0
+    elif label == GAS:
+        share = flash.vapour_fraction if flash.vapour_fraction is not None else 1.0
+    else:
+        share = 1.0 - (flash.vapour_fraction if flash.vapour_fraction is not None else 0.0)
+
+    return _phase_dict(components, mixture, ideal_gas, chosen, share, t, p, n)
 
 
 def _mole_fraction(view: dict[str, Any], name: str) -> float:

@@ -10,8 +10,8 @@ use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
 use azoth_eos::phase_transport::{PhaseKind, phase_transport};
 use azoth_eos::results::{PhaseTransportResult, PtFlashResult};
 use azoth_eos::{
-    Cubic, Mixture, Phase, databank, molar_enthalpy_entropy, pr_mass_density, pr_molar_volume,
-    pt_flash,
+    Cubic, IdealGasModel, Mixture, Phase, databank, molar_enthalpy_entropy, pr_mass_density,
+    pr_molar_volume, pt_flash,
 };
 
 use crate::stream::Stream;
@@ -113,6 +113,19 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
         1.0 - flash.vapour_fraction.unwrap_or(0.0)
     };
 
+    view(&mixture, &ideal_gas, stream, kind, z, root, share)
+}
+
+/// One phase, built from its label, its composition and its cubic root.
+fn view(
+    mixture: &Mixture,
+    ideal_gas: &IdealGasModel,
+    stream: &Stream,
+    kind: PhaseLabel,
+    z: Vec<f64>,
+    root: f64,
+    share: f64,
+) -> Result<PhaseView> {
     let count = mixture.components().len();
     if z.len() != count {
         return Err(AzothError::invalid_input(
@@ -124,17 +137,10 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
         ));
     }
 
-    let molar_mass = molar_mass_of(&mixture, &z)?;
-    let transport = phase_transport(
-        &mixture,
-        &ideal_gas,
-        phase_kind(kind),
-        stream.t,
-        stream.p,
-        &z,
-    )?;
-    let density = mass_density(&mixture, stream.t, stream.p, &z, root, molar_mass)?;
-    let cp_mass = molar_enthalpy_entropy(&mixture, &ideal_gas, stream.t, stream.p, &z, root)?
+    let molar_mass = molar_mass_of(mixture, &z)?;
+    let transport = phase_transport(mixture, ideal_gas, phase_kind(kind), stream.t, stream.p, &z)?;
+    let density = mass_density(mixture, stream.t, stream.p, &z, root, molar_mass)?;
+    let cp_mass = molar_enthalpy_entropy(mixture, ideal_gas, stream.t, stream.p, &z, root)?
         .cp
         .value
         / molar_mass;
@@ -150,6 +156,92 @@ pub fn phase_view(stream: &Stream, pick: Pick) -> Result<PhaseView> {
         kind: phase_kind(kind),
         transport,
     })
+}
+
+/// The **vapour** of a stream that carries one, where a re-flash of a saturated composition can
+/// answer a single *liquid* phase.
+///
+/// **The class reads a tray's own system and asks `hasPhaseType("gas")`, and a tray with a vapour
+/// flow has a gas phase whatever a re-flash of its composition answers.** A pinned end is where
+/// that matters: the reboiler boils at the temperature it is pinned to, so its vapour's
+/// composition sits on the dew point *by construction*, and a re-flash of it can land on the
+/// other side of the knife edge. [`phase_view`]'s `Pick::Gas` falls back to phase zero there and
+/// would hand back the liquid; this builds the vapour from the flash's own **vapour root**.
+///
+/// # Errors
+/// Whatever the flash, the label rule or the phase's own properties raise.
+pub fn vapour_view(stream: &Stream) -> Result<PhaseView> {
+    let (mixture, ideal_gas) = stream.mixture()?;
+    let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
+    let labelled = labelled_phases(stream, &mixture, &flash)?;
+    if let Some((_, z, root)) = labelled
+        .iter()
+        .find(|(kind, _, _)| *kind == PhaseLabel::Gas)
+    {
+        let share = if labelled.len() == 1 {
+            1.0
+        } else {
+            flash.vapour_fraction.unwrap_or(1.0)
+        };
+        return view(
+            &mixture,
+            &ideal_gas,
+            stream,
+            PhaseLabel::Gas,
+            z.clone(),
+            *root,
+            share,
+        );
+    }
+    // A single phase the label rule did not call a gas, on a tray that has vapour all the same.
+    view(
+        &mixture,
+        &ideal_gas,
+        stream,
+        PhaseLabel::Gas,
+        stream.z.clone(),
+        flash.z_vapour,
+        1.0,
+    )
+}
+
+/// The **liquid** of a stream that carries one, on [`vapour_view`]'s reasoning and measured on
+/// the same tray.
+///
+/// **The capture's reboiler is the case.** Its liquid composition flashes all-vapour in one
+/// implementation and all-liquid in the other, so `Pick::Liquid`'s ladder falls through to the
+/// gas and answers the *vapour's* density - `44.17832800507808` against the oil's
+/// `435.74535196919646` on `spec_top_flow_rate`'s state - which is a factor of `208` on that
+/// tray's flood and moves the report's maximum from `11.67` to `2427.5`.
+///
+/// # Errors
+/// Whatever the flash, the label rule or the phase's own properties raise.
+pub fn liquid_view(stream: &Stream) -> Result<PhaseView> {
+    let (mixture, ideal_gas) = stream.mixture()?;
+    let flash = pt_flash(&mixture, stream.t, stream.p, &stream.z)?;
+    let labelled = labelled_phases(stream, &mixture, &flash)?;
+    if let Some((kind, z, root)) = labelled
+        .iter()
+        .find(|(kind, _, _)| *kind != PhaseLabel::Gas)
+    {
+        let share = if labelled.len() == 1 {
+            1.0
+        } else {
+            1.0 - flash.vapour_fraction.unwrap_or(0.0)
+        };
+        return view(&mixture, &ideal_gas, stream, *kind, z.clone(), *root, share);
+    }
+    // A single *vapour* phase where the caller knows the tray carries liquid: the class's own
+    // system would have its oil phase here, and the flash's liquid root is still its own.
+    view(
+        &mixture,
+        &ideal_gas,
+        stream,
+        PhaseLabel::Oil,
+        stream.z.clone(),
+        flash.z_liquid,
+        1.0,
+    )
 }
 
 /// The stream's phases, labelled by the class's own rule and in the order its system carries
