@@ -1263,6 +1263,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "pumparound_max_iterations",
         "dimensionless",
     ),
+    ("process.absorption_column", "column_diameter", "length"),
+    (
+        "process.absorption_column",
+        "max_allowable_fs_factor",
+        "dimensionless",
+    ),
     ("process.component_splitter", "feed_n", "molar_flow"),
     ("process.component_splitter", "feed_z", "dimensionless"),
     ("process.component_splitter", "feed_p", "pressure"),
@@ -2048,6 +2054,12 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
         "process.stripping_column",
         "pumparound_max_iterations",
+        "dimensionless",
+    ),
+    ("process.stripping_column", "column_diameter", "length"),
+    (
+        "process.stripping_column",
+        "max_allowable_fs_factor",
         "dimensionless",
     ),
     ("process.tank", "feed_n", "molar_flow"),

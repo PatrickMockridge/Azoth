@@ -10,7 +10,7 @@
 use azoth_core::units::{Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
-use crate::column::capacity::{DEFAULT_MAX_ALLOWABLE_FS_FACTOR, capacity_limits};
+use crate::column::capacity::{DEFAULT_MAX_ALLOWABLE_FS_FACTOR, fs_limits};
 use crate::kernels::packed_column::{PackedReport, PackingInputs, packing_report, stage_count};
 use crate::models::distillation_column::{DistillationColumnResult, distillation_column_outcome};
 
@@ -365,12 +365,10 @@ pub fn packed_column(
     // the stated `columnDiameter` where it is positive and from the designer's sizing otherwise,
     // so a caller that stated none gets its factor at the diameter the bed was sized to - the
     // capture's unstated row reads `0.3` m back.
-    let limits = capacity_limits(
+    let limits = fs_limits(
         &outcome.distillate,
-        &outcome.bottoms,
         report.internal_diameter,
         max_allowable_fs_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
-        None,
     )?;
     let base = DistillationColumnResult::of(&outcome, &limits, warnings);
     Ok(PackedColumnResult::of(base, report))

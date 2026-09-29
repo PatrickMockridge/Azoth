@@ -15,13 +15,22 @@ holds those rows as evidence and the unpinned columns as the oracles.
 
 from __future__ import annotations
 
+from typing import Any
+
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import AbsorptionColumnResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
+from azoth.process.kernels import Stream
 from azoth.process.reference import _unported
 from azoth.process.reference._column_stage import StreamRecord
+from azoth.process.reference.capacity import (
+    DEFAULT_INTERNAL_DIAMETER_M,
+    DEFAULT_MAX_ALLOWABLE_FS_FACTOR_ABSORBER,
+    fs_limits,
+    gas_load_limits,
+)
 from azoth.process.reference.distillation_column import (
     UNPORTED_SOLVERS,
     Draws,
@@ -81,6 +90,8 @@ def absorption_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber.
 
@@ -106,11 +117,16 @@ def absorption_column(
         murphree_efficiency: **not ported**; `SimpleTray.setMurphreeEfficiency` would close it.
         component_murphree_efficiency: **not ported**; the per-component override
             `applyMurphreeCorrection` applies.
-        max_allowable_gas_load_factor: a design limit the solve does not read.
+        max_allowable_gas_load_factor: the Souders-Brown limit the K family is checked against.
+            **It does not enter the solve.**
         solver_type: the base's strategy, by `process.distillation_column`'s own names.
+        column_diameter: the column's internal diameter, which both capacity families divide the
+            gas outlet's volumetric flow by. **The solve is indifferent to it.**
+        max_allowable_fs_factor: the `Fs` limit, which this class defaults to `3.0` rather than
+            the base's `2.5`.
 
     Returns:
-        The tray profile, the treated gas and the loaded solvent.
+        The tray profile, the treated gas, the loaded solvent and both capacity families.
 
     Raises:
         InvalidInputError: for a declared parameter whose arithmetic is not ported, or an inlet
@@ -119,7 +135,6 @@ def absorption_column(
 
     See :func:`azoth.process.reference.distillation_column._states`.
     """
-    _refuse_unported(max_allowable_gas_load_factor)
     # **The two efficiency fields, resolved and clamped.** `AbsorptionColumn` inherits the
     # base's two setters and adds `setComponentMurphreeEfficiency`'s map, so the correction reads
     # component, then per-tray, then column-wide; the per-tray-per-component map the class's
@@ -330,8 +345,79 @@ def absorption_column(
         temperature_residual=states.temperature_residual,
         mass_residual=states.mass_residual,
         energy_residual=states.energy_residual,
+        **capacity_fields(
+            states,
+            list(gas_components),
+            column_diameter,
+            max_allowable_fs_factor,
+            max_allowable_gas_load_factor,
+        ),
         warnings=tuple(warnings),
     )
+
+
+def capacity_fields(
+    states: _States,
+    components: list[str],
+    column_diameter: Q | None,
+    max_allowable_fs_factor: float | None,
+    max_allowable_gas_load_factor: float | None,
+) -> dict[str, Any]:
+    """Both capacity families at the two products, as this class's eight getters answer them.
+
+    **One resolution for the two ids**, because `StrippingColumn` extends this class and inherits
+    every one of the eight - so a stripper's limits and an absorber's are the same computation
+    under two names, and stating them once is what keeps them one.
+
+    **The gas-load family's second density is the bottom tray's vapour and not the liquid
+    product.** A NeqSim `getLiquidOutStream` carries the *tray's* two-phase system, so its phase 0
+    is the vapour it leaves with; `process.absorption_column`'s Rust side says why that is a factor
+    of `1.26` on the stripper rather than a formality.
+    """
+    gas = Stream.from_pt(
+        components,
+        list(states.distillate_z),
+        states.distillate_n,
+        from_si(states.distillate_p, "Pa"),
+        from_si(states.distillate_t, "K"),
+    )
+    liquid_out_vapour = Stream.from_pt(
+        components,
+        list(states.tray_gas_z[0]),
+        states.tray_gas_n[0],
+        from_si(states.tray_pressure[0], "Pa"),
+        from_si(states.tray_temperature[0], "K"),
+    )
+    diameter = (
+        quantity(DEFAULT_INTERNAL_DIAMETER_M, "m") if column_diameter is None else column_diameter
+    )
+    fs = fs_limits(
+        gas,
+        diameter,
+        DEFAULT_MAX_ALLOWABLE_FS_FACTOR_ABSORBER
+        if max_allowable_fs_factor is None
+        else float(max_allowable_fs_factor),
+    )
+    gas_load = gas_load_limits(
+        gas,
+        liquid_out_vapour,
+        diameter,
+        DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR
+        if max_allowable_gas_load_factor is None
+        else float(max_allowable_gas_load_factor),
+    )
+    return {
+        "fs_factor": fs["fs_factor"],
+        "fs_factor_utilization": fs["fs_factor_utilization"],
+        "fs_factor_within_design_limit": fs["fs_factor_within_design_limit"],
+        "minimum_diameter_for_fs_limit": from_si(fs["minimum_diameter_for_fs_limit"], "m"),
+        "gas_load_factor": gas_load["gas_load_factor"],
+        "gas_load_factor_utilization": gas_load["gas_load_factor_utilization"],
+        "gas_load_factor_within_design_limit": gas_load["gas_load_factor_within_design_limit"],
+        "minimum_diameter_for_gas_load_limit": from_si(
+            gas_load["minimum_diameter_for_gas_load_limit"], "m"
+        ),
+    }
 
 
 def _spec() -> dict[str, object]:
@@ -339,17 +425,6 @@ def _spec() -> dict[str, object]:
     import azoth._models_gen as models
 
     return models.model("process.absorption_column")
-
-
-def _refuse_unported(max_allowable_gas_load_factor: float | None) -> None:
-    """The one parameter still declared and refused: the gas-load factor.
-
-    The class *accepts* it and no part of ``run`` reads it - read by
-    ``isGasLoadFactorWithinDesignLimit``, ``getGasLoadFactorUtilization`` and
-    ``getMinimumDiameterForGasLoadLimit`` alone - so the model carries it as a declaration the
-    solve is indifferent to.
-    """
-    _ = max_allowable_gas_load_factor
 
 
 __all__ = ["DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR", "UNPORTED_SOLVERS", "absorption_column"]

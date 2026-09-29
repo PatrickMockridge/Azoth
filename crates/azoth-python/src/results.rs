@@ -11414,6 +11414,30 @@ pub struct PyAbsorptionColumnResult {
     /// The enthalpy closure.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// `getFsFactor`, which this class inherits from the base column.
+    #[pyo3(get)]
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`.
+    #[pyo3(get)]
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    #[pyo3(get)]
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    #[pyo3(get)]
+    pub minimum_diameter_for_fs_limit: PyQty,
+    /// `getGasLoadFactor`: the Souders-Brown `Ks`.
+    #[pyo3(get)]
+    pub gas_load_factor: f64,
+    /// `getGasLoadFactorUtilization`.
+    #[pyo3(get)]
+    pub gas_load_factor_utilization: f64,
+    /// `isGasLoadFactorWithinDesignLimit`.
+    #[pyo3(get)]
+    pub gas_load_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForGasLoadLimit`.
+    #[pyo3(get)]
+    pub minimum_diameter_for_gas_load_limit: PyQty,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -11671,6 +11695,30 @@ pub struct PyStrippingColumnResult {
     /// The enthalpy closure.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// `getFsFactor`, which this class inherits from the base column.
+    #[pyo3(get)]
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`.
+    #[pyo3(get)]
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    #[pyo3(get)]
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    #[pyo3(get)]
+    pub minimum_diameter_for_fs_limit: PyQty,
+    /// `getGasLoadFactor`: the Souders-Brown `Ks`.
+    #[pyo3(get)]
+    pub gas_load_factor: f64,
+    /// `getGasLoadFactorUtilization`.
+    #[pyo3(get)]
+    pub gas_load_factor_utilization: f64,
+    /// `isGasLoadFactorWithinDesignLimit`.
+    #[pyo3(get)]
+    pub gas_load_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForGasLoadLimit`.
+    #[pyo3(get)]
+    pub minimum_diameter_for_gas_load_limit: PyQty,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -11713,6 +11761,17 @@ impl From<&StrippingColumnResult> for PyStrippingColumnResult {
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            fs_factor: r.fs_factor,
+            fs_factor_utilization: r.fs_factor_utilization,
+            fs_factor_within_design_limit: r.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: quantity(r.minimum_diameter_for_fs_limit.value, "m"),
+            gas_load_factor: r.gas_load_factor,
+            gas_load_factor_utilization: r.gas_load_factor_utilization,
+            gas_load_factor_within_design_limit: r.gas_load_factor_within_design_limit,
+            minimum_diameter_for_gas_load_limit: quantity(
+                r.minimum_diameter_for_gas_load_limit.value,
+                "m",
+            ),
             warnings: transport(&r.warnings),
         }
     }
@@ -11755,6 +11814,17 @@ impl From<&AbsorptionColumnResult> for PyAbsorptionColumnResult {
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            fs_factor: r.fs_factor,
+            fs_factor_utilization: r.fs_factor_utilization,
+            fs_factor_within_design_limit: r.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: quantity(r.minimum_diameter_for_fs_limit.value, "m"),
+            gas_load_factor: r.gas_load_factor,
+            gas_load_factor_utilization: r.gas_load_factor_utilization,
+            gas_load_factor_within_design_limit: r.gas_load_factor_within_design_limit,
+            minimum_diameter_for_gas_load_limit: quantity(
+                r.minimum_diameter_for_gas_load_limit.value,
+                "m",
+            ),
             warnings: transport(&r.warnings),
         }
     }

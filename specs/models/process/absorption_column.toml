@@ -91,7 +91,7 @@ description = "one efficiency per component, which `setComponentMurphreeEfficien
 [inputs.max_allowable_gas_load_factor]
 unit = "dimensionless"
 optional = true
-description = "the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit`, `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit` read it and none of them is on the run path. The class defaults it to 0.15.\n"
+description = "the limit `isGasLoadFactorWithinDesignLimit` and its two siblings read, which is a **Souders-Brown `Ks`** and not an `Fs` factor. **It does not enter the solve.** The class defaults it to 0.15.\n"
 [inputs.reactive]
 type = "boolean"
 optional = true
@@ -179,6 +179,14 @@ description = "the relative return-flow change the outer loop stops at. **Omitte
 unit = "dimensionless"
 optional = true
 description = "the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser.\n"
+[inputs.column_diameter]
+unit = "m"
+optional = true
+description = "the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by. **Absent is the class's own `1.0` m**; a value at or below zero is the \"no area\" it answers a zero factor from. The solve is indifferent to it.\n"
+[inputs.max_allowable_fs_factor]
+unit = "dimensionless"
+optional = true
+description = "the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `3.0`**, `AbsorptionColumn`'s own `DEFAULT_MAX_ALLOWABLE_FS_FACTOR` and not the base's `2.5`. Read by the limit family alone.\n"
 
 [outputs]
 [outputs.tray_temperature]
@@ -247,6 +255,30 @@ description = "the products' worst component imbalance against both feeds, relat
 [outputs.energy_residual]
 unit = "dimensionless"
 description = "`|H_feeds - H_products| / |H_feeds|`, the enthalpy closure.\n"
+[outputs.fs_factor]
+unit = "dimensionless"
+description = "`getFsFactor`, which this class inherits from the base column: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5`.\n"
+[outputs.fs_factor_utilization]
+unit = "dimensionless"
+description = "`getFsFactorUtilization`, against this class's own `3.0` limit.\n"
+[outputs.fs_factor_within_design_limit]
+type = "boolean"
+description = "`isFsFactorWithinDesignLimit`.\n"
+[outputs.minimum_diameter_for_fs_limit]
+unit = "m"
+description = "`getMinimumDiameterForFsLimit`, a function of the flow, the density and the limit alone.\n"
+[outputs.gas_load_factor]
+unit = "m/s"
+description = "`getGasLoadFactor`: the Souders-Brown `Ks = u*sqrt(rho_g/(rho_l - rho_g))`, whose two densities are **`getPhase(0)` of the two outlets**.\n"
+[outputs.gas_load_factor_utilization]
+unit = "dimensionless"
+description = "`getGasLoadFactorUtilization`.\n"
+[outputs.gas_load_factor_within_design_limit]
+type = "boolean"
+description = "`isGasLoadFactorWithinDesignLimit`.\n"
+[outputs.minimum_diameter_for_gas_load_limit]
+unit = "m"
+description = "`getMinimumDiameterForGasLoadLimit`.\n"
 [[valid_range]]
 quantity = "number_of_stages"
 min = 1

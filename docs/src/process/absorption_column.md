@@ -37,7 +37,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `max_iterations` | dimensionless | the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named. |
 | `murphree_efficiency` | dimensionless | *Optional.* the column-wide Murphree tray efficiency. **`AbsorptionColumn.applyMurphreeCorrection` is an override**, not the base's: both phases are blended and the flash's vapour moles are re-allocated across the components. |
 | `component_murphree_efficiency` | dimensionless | *Optional.* one efficiency per component, which `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair - the class's other overload writes a per-tray-per-component map this entry has no spelling for. |
-| `max_allowable_gas_load_factor` | dimensionless | *Optional.* the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit`, `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit` read it and none of them is on the run path. The class defaults it to 0.15. |
+| `max_allowable_gas_load_factor` | dimensionless | *Optional.* the limit `isGasLoadFactorWithinDesignLimit` and its two siblings read, which is a **Souders-Brown `Ks`** and not an `Fs` factor. **It does not enter the solve.** The class defaults it to 0.15. |
 | `reactive` | - | *Optional.* **whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`, inherited and not overridden. The ends never do. Measured: the section is either the plain flash or a divergence - see the notes. |
 | `reactive_start_tray` | dimensionless | *Optional.* the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last. **Both bounds or neither.** An absorber has no ends, so every stage is a middle tray. |
 | `reactive_end_tray` | dimensionless | *Optional.* the last reactive middle tray, inclusive. |
@@ -57,6 +57,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `pumparound_temperature_drop` | K | *Optional.* the drop from the draw to the return, which `updateReturnStream` subtracts before re-flashing. **The cooler's duty is the enthalpy between the two streams.** |
 | `pumparound_tolerance` | dimensionless | *Optional.* the relative return-flow change the outer loop stops at. **Omitted means `1e-4`**, which is `pumparoundTolerance`'s own field initialiser. |
 | `pumparound_max_iterations` | dimensionless | *Optional.* the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser. |
+| `column_diameter` | m | *Optional.* the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by. **Absent is the class's own `1.0` m**; a value at or below zero is the "no area" it answers a zero factor from. The solve is indifferent to it. |
+| `max_allowable_fs_factor` | dimensionless | *Optional.* the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `3.0`**, `AbsorptionColumn`'s own `DEFAULT_MAX_ALLOWABLE_FS_FACTOR` and not the base's `2.5`. Read by the limit family alone. |
 
 
 ## Outputs
@@ -81,6 +83,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `temperature_residual` | K | the mean tray-temperature change at the last iteration - the gate the solve was held to. |
 | `mass_residual` | dimensionless | the products' worst component imbalance against both feeds, relative. |
 | `energy_residual` | dimensionless | `|H_feeds - H_products| / |H_feeds|`, the enthalpy closure. |
+| `fs_factor` | dimensionless | `getFsFactor`, which this class inherits from the base column: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5`. |
+| `fs_factor_utilization` | dimensionless | `getFsFactorUtilization`, against this class's own `3.0` limit. |
+| `fs_factor_within_design_limit` | - | `isFsFactorWithinDesignLimit`. |
+| `minimum_diameter_for_fs_limit` | m | `getMinimumDiameterForFsLimit`, a function of the flow, the density and the limit alone. |
+| `gas_load_factor` | m/s | `getGasLoadFactor`: the Souders-Brown `Ks = u*sqrt(rho_g/(rho_l - rho_g))`, whose two densities are **`getPhase(0)` of the two outlets**. |
+| `gas_load_factor_utilization` | dimensionless | `getGasLoadFactorUtilization`. |
+| `gas_load_factor_within_design_limit` | - | `isGasLoadFactorWithinDesignLimit`. |
+| `minimum_diameter_for_gas_load_limit` | m | `getMinimumDiameterForGasLoadLimit`. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -131,7 +141,7 @@ holds the declaration and the two languages to each other.
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `lean_oil_absorber` | gas_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], gas_n = 30.852602094576984, gas_z = [0.92, 0.04, 0.025, 0.01, 0.005, 0.0], gas_p = 1500000.0, gas_t = 303.15, solvent_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], solvent_n = 1.6632569898375, solvent_z = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], solvent_p = 1500000.0, solvent_t = 293.15, number_of_stages = 5, top_pressure = 1500000.0, bottom_pressure = 1500000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [299.10907966626354, 299.7940316636134, 300.49322271941304, 301.26748639388506, 301.7126561904438], tray_pressure = [1500000.0, 1500000.0, 1500000.0, 1500000.0, 1500000.0], tray_gas_n = [31.02657698982344, 30.994044668451405, 30.961128515891744, 30.91441340721759, 30.587796968266012], tray_liquid_n = [1.9280715291956925, 2.1020464244421477, 2.069511412099089, 2.0365923915807302, 1.9898748368771202], gas_out_n = 30.58779316625974, gas_out_z = [0.9232019625988978, 0.03925797304019808, 0.02291858320152024, 0.0070019486397466715, 0.0009070802787657044, 0.006712452240871433], gas_out_p = 1500000.0, gas_out_t = 301.7126561904438, gas_out_h = 757.4203577777466, liquid_out_n = 1.928065918154764, liquid_out_z = [0.075559265364807, 0.01726565673374861, 0.03645423585925705, 0.04893601577830049, 0.0656188283447739, 0.756165997919113], liquid_out_p = 1500000.0, liquid_out_t = 299.10907966626354, liquid_out_h = -27387.776830145922 |
+| `lean_oil_absorber` | gas_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], gas_n = 30.852602094576984, gas_z = [0.92, 0.04, 0.025, 0.01, 0.005, 0.0], gas_p = 1500000.0, gas_t = 303.15, solvent_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], solvent_n = 1.6632569898375, solvent_z = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], solvent_p = 1500000.0, solvent_t = 293.15, number_of_stages = 5, top_pressure = 1500000.0, bottom_pressure = 1500000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [299.10907966626354, 299.7940316636134, 300.49322271941304, 301.26748639388506, 301.7126561904438], tray_pressure = [1500000.0, 1500000.0, 1500000.0, 1500000.0, 1500000.0], tray_gas_n = [31.02657698982344, 30.994044668451405, 30.961128515891744, 30.91441340721759, 30.587796968266012], tray_liquid_n = [1.9280715291956925, 2.1020464244421477, 2.069511412099089, 2.0365923915807302, 1.9898748368771202], gas_out_n = 30.58779316625974, gas_out_z = [0.9232019625988978, 0.03925797304019808, 0.02291858320152024, 0.0070019486397466715, 0.0009070802787657044, 0.006712452240871433], gas_out_p = 1500000.0, gas_out_t = 301.7126561904438, gas_out_h = 757.4203577777466, liquid_out_n = 1.928065918154764, liquid_out_z = [0.075559265364807, 0.01726565673374861, 0.03645423585925705, 0.04893601577830049, 0.0656188283447739, 0.756165997919113], liquid_out_p = 1500000.0, liquid_out_t = 299.10907966626354, liquid_out_h = -27387.776830145922, fs_factor = 0.21051436885536753, fs_factor_utilization = 0.07017145628512252, minimum_diameter_for_fs_limit = 0.26489895485849413, gas_load_factor = 0.006694885232955643, gas_load_factor_utilization = 0.04463256821970429, minimum_diameter_for_gas_load_limit = 0.21126421424298125 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

@@ -28,7 +28,13 @@ unit = "dimensionless"
 description = "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone"
 [parameters.max_allowable_gas_load_factor]
 unit = "dimensionless"
-description = "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15"
+description = "the limit `isGasLoadFactorWithinDesignLimit` reads, a Souders-Brown `Ks` and not an `Fs` factor, which the solve does not; the class defaults it to 0.15"
+[parameters.column_diameter]
+unit = "m"
+description = "the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by; the class defaults it to 1.0 m and the solve is indifferent to it"
+[parameters.max_allowable_fs_factor]
+unit = "dimensionless"
+description = "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; the absorber this class extends defaults it to 3.0"
 [parameters.solver_type]
 description = "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares"
 [[ports]]

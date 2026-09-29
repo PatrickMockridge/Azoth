@@ -1,10 +1,13 @@
 //! The absorber and the stripper, against `validation/neqsim/captures/process_absorber.tsv`.
 
-use azoth_core::units::{kelvins, pascals};
+use azoth_core::units::{kelvins, meters, pascals};
 use azoth_process::Stream;
 use azoth_process::column::absorber_murphree::AbsorberMurphree;
+use azoth_process::column::capacity::{fs_limits, gas_load_limits};
 use azoth_process::column::murphree::Murphree;
-use azoth_process::kernels::distillation_column::{ColumnSetup, SolverType, distillation_column};
+use azoth_process::kernels::distillation_column::{
+    ColumnSetup, SolverType, distillation_column, tray_streams,
+};
 
 fn relative(actual: f64, expected: f64, tolerance: f64, what: &str) {
     let scale = 1.0 + actual.abs().max(expected.abs());
@@ -95,6 +98,37 @@ fn the_lean_oil_absorber_solves_unpinned() {
         out.bottoms.z[3] * out.bottoms.n > 0.0,
         "the rich oil must gain n-butane"
     );
+
+    // **The two capacity families on the same state**, which the case file holds as numbers and
+    // cannot hold as flags: `TestCase` carries a boolean for an *input* and not for an
+    // expectation, so the two verdicts are asserted here, as the packed column's own flag is.
+    // The K value is the capture's `lean_oil_absorber_default_diameter` row, and it is the
+    // **fallback's**: `getPhase(0)` of the liquid outlet's own system is the vapour the bottom
+    // tray carries, so `rho_l - rho_g` is negative and `1000.0` is substituted. Without the
+    // fallback the same state reads `0.00826846105398939`, a factor of `1.235` - which is what
+    // makes this assertion a measurement of the branch rather than of the arithmetic alone.
+    let (bottom_vapour, _) = tray_streams(&out.trays[0], &out.distillate.components)
+        .expect("the bottom tray's vapour rebuilds");
+    let fs = fs_limits(&out.distillate, meters(1.0), 3.0).expect("the Fs family evaluates");
+    let gas_load = gas_load_limits(&out.distillate, &bottom_vapour, meters(1.0), 0.15)
+        .expect("the K evaluates");
+    assert!(
+        gas_load.gas_load_factor_within_design_limit,
+        "the K of {:.9} is inside the class's own 0.15",
+        gas_load.gas_load_factor
+    );
+    assert!(
+        fs.fs_factor_within_design_limit,
+        "the Fs of {:.9} is inside the absorber's own 3.0",
+        fs.fs_factor
+    );
+    relative(
+        gas_load.gas_load_factor,
+        0.006694885232955643,
+        1.0e-4,
+        "the gas-load factor",
+    );
+    relative(fs.fs_factor, 0.21051436885536753, 1.0e-4, "the Fs factor");
 }
 
 /// **The hydrocarbon stripper of `StrippingColumnTest`, unpinned**, whose own case states
@@ -332,6 +366,9 @@ fn the_stripping_column_id_reaches_the_absorber_model() {
         None,
         None,
         None,
+        None,
+        None,
+        // The two capacity inputs, unstated: this test is about the product names and numbers.
         None,
         None,
     )

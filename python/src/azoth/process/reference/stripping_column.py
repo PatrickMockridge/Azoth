@@ -56,6 +56,8 @@ def stripping_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper.
 
@@ -78,11 +80,16 @@ def stripping_column(
         max_iterations: the iteration cap.
         murphree_efficiency: **not ported**.
         component_murphree_efficiency: **not ported**.
-        max_allowable_gas_load_factor: a design limit the solve does not read.
+        max_allowable_gas_load_factor: the Souders-Brown limit the K family is checked against.
+            **It does not enter the solve.**
         solver_type: the base's strategy, by ``process.distillation_column``'s own names.
+        column_diameter: the column's internal diameter, which both capacity families divide the
+            gas outlet's volumetric flow by.
+        max_allowable_fs_factor: the ``Fs`` limit, which the absorber this class extends
+            defaults to ``3.0``.
 
     Returns:
-        The tray profile, the stripped gas and the lean liquid.
+        The tray profile, the stripped gas, the lean liquid and both capacity families.
 
     See :func:`azoth.process.reference.absorption_column.absorption_column`.
     """
@@ -128,6 +135,8 @@ def stripping_column(
         pumparound_temperature_drop,
         pumparound_tolerance,
         pumparound_max_iterations,
+        column_diameter,
+        max_allowable_fs_factor,
     )
     return StrippingColumnResult(
         tray_temperature=out.tray_temperature,
@@ -148,5 +157,15 @@ def stripping_column(
         temperature_residual=out.temperature_residual,
         mass_residual=out.mass_residual,
         energy_residual=out.energy_residual,
+        # **The base's own capacity answers, inherited and overridden in no part**: the
+        # absorber's delegation already computed them at this id's two inputs.
+        fs_factor=out.fs_factor,
+        fs_factor_utilization=out.fs_factor_utilization,
+        fs_factor_within_design_limit=out.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit=out.minimum_diameter_for_fs_limit,
+        gas_load_factor=out.gas_load_factor,
+        gas_load_factor_utilization=out.gas_load_factor_utilization,
+        gas_load_factor_within_design_limit=out.gas_load_factor_within_design_limit,
+        minimum_diameter_for_gas_load_limit=out.minimum_diameter_for_gas_load_limit,
         warnings=out.warnings,
     )

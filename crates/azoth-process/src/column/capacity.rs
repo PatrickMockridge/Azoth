@@ -26,6 +26,9 @@ use azoth_core::units::{Length, meters};
 use crate::segment::phase::{Pick, phase_view, system_mass_density, system_volumetric_flow};
 use crate::stream::Stream;
 
+/// `DistillationColumn`'s own constructor default for `internalDiameter`, which the whole family
+/// inherits and none of the three overrides.
+pub const DEFAULT_INTERNAL_DIAMETER_M: f64 = 1.0;
 /// `DistillationColumn`'s own default for `maxAllowableFsFactor`, from its constructor.
 pub const DEFAULT_MAX_ALLOWABLE_FS_FACTOR: f64 = 2.5;
 /// `AbsorptionColumn`'s, set in its constructor - so the absorber pair reads `3.0` where the
@@ -39,13 +42,9 @@ pub const MIN_LIQUID_GAS_DENSITY_DIFFERENCE: f64 = 10.0;
 /// `AbsorptionColumn.DEFAULT_LIQUID_DENSITY`: what that floor substitutes.
 pub const DEFAULT_LIQUID_DENSITY: f64 = 1000.0;
 
-/// The two families at one solved state, as the class's four getters per family answer them.
-///
-/// **The gas-load half is `Option` because only the absorber pair has it.** `getGasLoadFactor` is
-/// `AbsorptionColumn`'s own method, not the base's, so a distillation or packed column publishes
-/// the Fs family alone - and a `None` here is that absence rather than a refused reading.
+/// The Fs family at one solved state, as the class's four getters answer it.
 #[derive(Debug, Clone, PartialEq)]
-pub struct CapacityLimits {
+pub struct FsLimits {
     /// `getFsFactor`: `u·sqrt(rho_g)` over the total cross-section.
     pub fs_factor: f64,
     /// `getFsFactorUtilization`: the factor over the limit, or zero where the limit is not
@@ -58,32 +57,35 @@ pub struct CapacityLimits {
     /// **A function of the flow, the density and the limit alone**, so it is invariant under the
     /// diameter the factor is read at - the capture's three binary rows share one value.
     pub minimum_diameter_for_fs_limit: Length,
-    /// `getGasLoadFactor`, on the absorber pair only.
-    pub gas_load_factor: Option<f64>,
-    /// `getGasLoadFactorUtilization`, on the absorber pair only.
-    pub gas_load_factor_utilization: Option<f64>,
-    /// `isGasLoadFactorWithinDesignLimit`, on the absorber pair only.
-    pub gas_load_factor_within_design_limit: Option<bool>,
-    /// `getMinimumDiameterForGasLoadLimit`, on the absorber pair only.
-    pub minimum_diameter_for_gas_load_limit: Option<Length>,
 }
 
-/// Both families at the products of a solved column.
+/// The Souders-Brown family, which `AbsorptionColumn` has and the base class does not.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GasLoadLimits {
+    /// `getGasLoadFactor`.
+    pub gas_load_factor: f64,
+    /// `getGasLoadFactorUtilization`.
+    pub gas_load_factor_utilization: f64,
+    /// `isGasLoadFactorWithinDesignLimit`.
+    pub gas_load_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForGasLoadLimit`.
+    pub minimum_diameter_for_gas_load_limit: Length,
+}
+
+/// `getFsFactor` and its three siblings, at the products of a solved column.
 ///
-/// `gas_out` and `liquid_out` are the class's `getGasOutStream()` and `getLiquidOutStream()`, and
-/// `gas_load_limit` is `Some` exactly where the class has the method - the absorber pair.
+/// **The Fs family is the base class's**, so every column has it - and `PackedColumn`'s diameter
+/// is the one its own sizing resolved rather than the one a caller stated.
 ///
 /// # Errors
-/// Whatever the two outlets' flashes, their label rules or their densities raise. **No guard
-/// here is a refusal the class makes**: its own zero answers (a non-positive area, a non-positive
-/// limit, a missing outlet) are reproduced as zeros.
-pub fn capacity_limits(
+/// Whatever the gas outlet's flash, its label rule or its density raises. **No guard here is a
+/// refusal the class makes**: its own zero answers (a non-positive area, a non-positive limit) are
+/// reproduced as zeros.
+pub fn fs_limits(
     gas_out: &Stream,
-    liquid_out: &Stream,
     internal_diameter: Length,
     max_allowable_fs_factor: f64,
-    gas_load_limit: Option<f64>,
-) -> Result<CapacityLimits> {
+) -> Result<FsLimits> {
     let diameter = internal_diameter.value;
     let area = std::f64::consts::PI * diameter * diameter / 4.0;
 
@@ -105,66 +107,97 @@ pub fn capacity_limits(
         meters(0.0)
     };
 
-    let mut limits = CapacityLimits {
+    Ok(FsLimits {
         fs_factor,
         fs_factor_utilization: utilization(fs_factor, max_allowable_fs_factor),
         fs_factor_within_design_limit: fs_factor <= max_allowable_fs_factor,
         minimum_diameter_for_fs_limit,
-        gas_load_factor: None,
-        gas_load_factor_utilization: None,
-        gas_load_factor_within_design_limit: None,
-        minimum_diameter_for_gas_load_limit: None,
+    })
+}
+
+/// `getGasLoadFactor` and its three siblings, on the absorber pair.
+///
+/// **`getPhase(0)` of both outlets, and the second one is not the liquid.** `getLiquidOutStream`
+/// answers a stream whose thermo system is the *tray's*, so its phase 0 - the array is gas-first -
+/// is the **vapour that tray carries**, and that is what `rho_l` is taken from. So the class's
+/// `MIN_LIQUID_GAS_DENSITY_DIFFERENCE` floor is met on every solved state and
+/// `DEFAULT_LIQUID_DENSITY = 1000.0` is substituted: **the fallback is the ordinary path rather
+/// than an edge case.**
+///
+/// **The difference is measurable rather than a formality.** On the capture's stripper the field
+/// density is `9.221459471348782` against a gas of `11.267630874486859`, so `rho_l - rho_g` is
+/// negative and the `10.0` floor is what answers - while the *liquid's* own density on that state
+/// would give `0.0011870273688000244` against the class's `0.0009402581113639056`, a factor of
+/// `1.26`. `liquid_out_vapour` is therefore the tray's vapour and not the liquid product: a port
+/// that read the product would be 26 per cent out on this row and exact on the absorber's, which
+/// is why one row cannot settle it and two can.
+///
+/// # Errors
+/// Whatever the two flashes, their label rules or their densities raise.
+pub fn gas_load_limits(
+    gas_out: &Stream,
+    liquid_out_vapour: &Stream,
+    internal_diameter: Length,
+    max_allowable_gas_load_factor: f64,
+) -> Result<GasLoadLimits> {
+    let diameter = internal_diameter.value;
+    let area = std::f64::consts::PI * diameter * diameter / 4.0;
+
+    // `getGasSuperficialVelocity`: the same total area, and the same guard as the Fs family's.
+    let velocity = if area <= 0.0 {
+        0.0
+    } else {
+        system_volumetric_flow(gas_out)? / area
     };
 
-    if let Some(limit) = gas_load_limit {
-        // `getGasSuperficialVelocity`: the same total area, and the same guard.
-        let velocity = if area <= 0.0 {
+    let gas_load_factor = if not_positive(velocity) {
+        0.0
+    } else {
+        let (gas_density, liquid_density) = densities(gas_out, liquid_out_vapour)?;
+        if not_positive(gas_density) || liquid_density.is_nan() {
             0.0
         } else {
-            system_volumetric_flow(gas_out)? / area
-        };
-        let gas_load_factor = if not_positive(velocity) {
-            0.0
-        } else {
-            // **`getPhase(0)` of both outlets**, which is what `Pick::Gas` spells: the gas phase
-            // where there is one and the single phase otherwise.
-            let gas_density = phase_view(gas_out, Pick::Gas)?.density;
-            let liquid_density =
-                resolve_liquid_density(gas_density, phase_view(liquid_out, Pick::Gas)?.density);
-            if not_positive(gas_density) || liquid_density.is_nan() {
-                0.0
-            } else {
-                velocity * (gas_density / (liquid_density - gas_density)).sqrt()
-            }
-        };
-        let minimum = if limit > 0.0 {
-            let gas_density = phase_view(gas_out, Pick::Gas)?.density;
-            let liquid_density =
-                resolve_liquid_density(gas_density, phase_view(liquid_out, Pick::Gas)?.density);
-            if not_positive(gas_density) || liquid_density.is_nan() {
-                meters(0.0)
-            } else {
-                let permissible = limit * ((liquid_density - gas_density) / gas_density).sqrt();
-                if permissible > 0.0 {
-                    meters(
-                        (4.0 * system_volumetric_flow(gas_out)?
-                            / (std::f64::consts::PI * permissible))
-                            .sqrt(),
-                    )
-                } else {
-                    meters(0.0)
-                }
-            }
-        } else {
-            meters(0.0)
-        };
-        limits.gas_load_factor = Some(gas_load_factor);
-        limits.gas_load_factor_utilization = Some(utilization(gas_load_factor, limit));
-        limits.gas_load_factor_within_design_limit = Some(gas_load_factor <= limit);
-        limits.minimum_diameter_for_gas_load_limit = Some(minimum);
-    }
+            velocity * (gas_density / (liquid_density - gas_density)).sqrt()
+        }
+    };
 
-    Ok(limits)
+    let minimum_diameter_for_gas_load_limit = if max_allowable_gas_load_factor > 0.0 {
+        let (gas_density, liquid_density) = densities(gas_out, liquid_out_vapour)?;
+        if not_positive(gas_density) || liquid_density.is_nan() {
+            meters(0.0)
+        } else {
+            let permissible = max_allowable_gas_load_factor
+                * ((liquid_density - gas_density) / gas_density).sqrt();
+            if permissible > 0.0 {
+                meters(
+                    (4.0 * system_volumetric_flow(gas_out)? / (std::f64::consts::PI * permissible))
+                        .sqrt(),
+                )
+            } else {
+                meters(0.0)
+            }
+        }
+    } else {
+        meters(0.0)
+    };
+
+    Ok(GasLoadLimits {
+        gas_load_factor,
+        gas_load_factor_utilization: utilization(gas_load_factor, max_allowable_gas_load_factor),
+        gas_load_factor_within_design_limit: gas_load_factor <= max_allowable_gas_load_factor,
+        minimum_diameter_for_gas_load_limit,
+    })
+}
+
+/// The two densities both gas-load getters read: `getPhase(0)` of the gas outlet and of the
+/// liquid outlet's own system, with the near-dry fallback applied to the second.
+fn densities(gas_out: &Stream, liquid_out_vapour: &Stream) -> Result<(f64, f64)> {
+    let gas_density = phase_view(gas_out, Pick::Gas)?.density;
+    let liquid_density = resolve_liquid_density(
+        gas_density,
+        phase_view(liquid_out_vapour, Pick::Gas)?.density,
+    );
+    Ok((gas_density, liquid_density))
 }
 
 /// `getFsFactorUtilization` and `getGasLoadFactorUtilization`, which share one shape: a limit that

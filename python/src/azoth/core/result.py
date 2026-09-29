@@ -4738,6 +4738,23 @@ class StrippingColumnResult(_HasWarnings):
     mass_residual: float
     #: ``|H_feeds - H_products| / |H_feeds|``.
     energy_residual: float
+    #: ``getFsFactor``, which this class inherits from the base column.
+    fs_factor: float
+    #: ``getFsFactorUtilization``.
+    fs_factor_utilization: float
+    #: ``isFsFactorWithinDesignLimit``.
+    fs_factor_within_design_limit: bool
+    #: ``getMinimumDiameterForFsLimit``.
+    minimum_diameter_for_fs_limit: Q
+    #: ``getGasLoadFactor``: the Souders-Brown ``Ks``, whose two densities are ``getPhase(0)``
+    #: of the two outlets - which is why the class's near-dry fallback is the ordinary path.
+    gas_load_factor: float
+    #: ``getGasLoadFactorUtilization``.
+    gas_load_factor_utilization: float
+    #: ``isGasLoadFactorWithinDesignLimit``.
+    gas_load_factor_within_design_limit: bool
+    #: ``getMinimumDiameterForGasLoadLimit``.
+    minimum_diameter_for_gas_load_limit: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -4882,6 +4899,23 @@ class AbsorptionColumnResult(_HasWarnings):
     mass_residual: float
     #: ``|H_feeds - H_products| / |H_feeds|``.
     energy_residual: float
+    #: ``getFsFactor``, which this class inherits from the base column.
+    fs_factor: float
+    #: ``getFsFactorUtilization``.
+    fs_factor_utilization: float
+    #: ``isFsFactorWithinDesignLimit``.
+    fs_factor_within_design_limit: bool
+    #: ``getMinimumDiameterForFsLimit``.
+    minimum_diameter_for_fs_limit: Q
+    #: ``getGasLoadFactor``: the Souders-Brown ``Ks``, whose two densities are ``getPhase(0)``
+    #: of the two outlets - which is why the class's near-dry fallback is the ordinary path.
+    gas_load_factor: float
+    #: ``getGasLoadFactorUtilization``.
+    gas_load_factor_utilization: float
+    #: ``isGasLoadFactorWithinDesignLimit``.
+    gas_load_factor_within_design_limit: bool
+    #: ``getMinimumDiameterForGasLoadLimit``.
+    minimum_diameter_for_gas_load_limit: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 

@@ -1915,6 +1915,16 @@
           "values": []
         },
         {
+          "description": "the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by; the class defaults it to 1.0 m and the solve is indifferent to it",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "column_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
           "description": "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone",
           "dimension": "dimensionless",
           "kind": "vector",
@@ -1925,7 +1935,17 @@
           "values": []
         },
         {
-          "description": "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15",
+          "description": "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; this class defaults it to 3.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_allowable_fs_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the limit `isGasLoadFactorWithinDesignLimit` reads, a Souders-Brown `Ks` and not an `Fs` factor, which the solve does not; the class defaults it to 0.15",
           "dimension": "dimensionless",
           "kind": "quantity",
           "name": "max_allowable_gas_load_factor",
@@ -3822,6 +3842,16 @@
           "values": []
         },
         {
+          "description": "the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by; the class defaults it to 1.0 m and the solve is indifferent to it",
+          "dimension": "length",
+          "kind": "quantity",
+          "name": "column_diameter",
+          "range": [],
+          "required": false,
+          "unit": "m",
+          "values": []
+        },
+        {
           "description": "the Murphree efficiency of one named component, one entry per component, which overrides the column-wide value for that component alone",
           "dimension": "dimensionless",
           "kind": "vector",
@@ -3832,7 +3862,17 @@
           "values": []
         },
         {
-          "description": "the `Fs`-factor the gas load is checked against, which `isGasLoadFactorWithinDesignLimit` reads and the solve does not; the class defaults it to 0.15",
+          "description": "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; the absorber this class extends defaults it to 3.0",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_allowable_fs_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the limit `isGasLoadFactorWithinDesignLimit` reads, a Souders-Brown `Ks` and not an `Fs` factor, which the solve does not; the class defaults it to 0.15",
           "dimension": "dimensionless",
           "kind": "quantity",
           "name": "max_allowable_gas_load_factor",

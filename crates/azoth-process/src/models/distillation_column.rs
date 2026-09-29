@@ -11,7 +11,9 @@ use azoth_core::units::{
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
 
-use crate::column::capacity::{CapacityLimits, DEFAULT_MAX_ALLOWABLE_FS_FACTOR, capacity_limits};
+use crate::column::capacity::{
+    DEFAULT_INTERNAL_DIAMETER_M, DEFAULT_MAX_ALLOWABLE_FS_FACTOR, FsLimits, fs_limits,
+};
 use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::distillation_column as kernel;
@@ -104,14 +106,10 @@ impl DistillationColumnResult {
     /// are the checker's, which report through the envelope rather than through a result.
     ///
     /// **The capacity family is the caller's too**, because it reads two inputs the solve does
-    /// not: the diameter and the limit. [`capacity_limits`] is what computes it, and both callers
-    /// - this id's own function and the dispatcher - hand the same value in.
+    /// not: the diameter and the limit. [`fs_limits`] is what computes it, and both callers - this
+    /// id's own function and the dispatcher - hand the same value in.
     #[must_use]
-    pub fn of(
-        outcome: &kernel::ColumnOutcome,
-        limits: &CapacityLimits,
-        warnings: Vec<Warning>,
-    ) -> Self {
+    pub fn of(outcome: &kernel::ColumnOutcome, limits: &FsLimits, warnings: Vec<Warning>) -> Self {
         Self {
             tray_temperature: outcome.trays.iter().map(|t| t.temperature).collect(),
             tray_pressure: outcome.trays.iter().map(|t| t.pressure).collect(),
@@ -528,18 +526,13 @@ pub fn distillation_column(
     // A stated one that is not positive is the class's own "not stated" value, so it is the
     // default that answers rather than a refusal.
     let diameter = meters(column_diameter.unwrap_or(DEFAULT_INTERNAL_DIAMETER_M));
-    let limits = capacity_limits(
+    let limits = fs_limits(
         &out.distillate,
-        &out.bottoms,
         diameter,
         max_allowable_fs_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
-        None,
     )?;
     Ok(DistillationColumnResult::of(&out, &limits, warnings))
 }
-
-/// `DistillationColumn`'s own constructor default for `internalDiameter`.
-pub const DEFAULT_INTERNAL_DIAMETER_M: f64 = 1.0;
 
 /// **The one side-draw flow specification this model declares**, or an empty vector.
 ///

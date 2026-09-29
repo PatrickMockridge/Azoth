@@ -4681,6 +4681,20 @@ def absorption_column(
         temperature_residual=result.temperature_residual,
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
+        fs_factor=float(result.fs_factor),
+        fs_factor_utilization=float(result.fs_factor_utilization),
+        fs_factor_within_design_limit=bool(result.fs_factor_within_design_limit),
+        minimum_diameter_for_fs_limit=from_si(
+            result.minimum_diameter_for_fs_limit.magnitude_si,
+            result.minimum_diameter_for_fs_limit.unit,
+        ),
+        gas_load_factor=float(result.gas_load_factor),
+        gas_load_factor_utilization=float(result.gas_load_factor_utilization),
+        gas_load_factor_within_design_limit=bool(result.gas_load_factor_within_design_limit),
+        minimum_diameter_for_gas_load_limit=from_si(
+            result.minimum_diameter_for_gas_load_limit.magnitude_si,
+            result.minimum_diameter_for_gas_load_limit.unit,
+        ),
         warnings=_warnings(result.warnings),
     )
 
@@ -4960,6 +4974,20 @@ def stripping_column(
         temperature_residual=result.temperature_residual,
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
+        fs_factor=float(result.fs_factor),
+        fs_factor_utilization=float(result.fs_factor_utilization),
+        fs_factor_within_design_limit=bool(result.fs_factor_within_design_limit),
+        minimum_diameter_for_fs_limit=from_si(
+            result.minimum_diameter_for_fs_limit.magnitude_si,
+            result.minimum_diameter_for_fs_limit.unit,
+        ),
+        gas_load_factor=float(result.gas_load_factor),
+        gas_load_factor_utilization=float(result.gas_load_factor_utilization),
+        gas_load_factor_within_design_limit=bool(result.gas_load_factor_within_design_limit),
+        minimum_diameter_for_gas_load_limit=from_si(
+            result.minimum_diameter_for_gas_load_limit.magnitude_si,
+            result.minimum_diameter_for_gas_load_limit.unit,
+        ),
         warnings=_warnings(result.warnings),
     )
 

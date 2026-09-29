@@ -37,7 +37,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `max_iterations` | dimensionless | the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named. |
 | `murphree_efficiency` | dimensionless | *Optional.* the column-wide Murphree tray efficiency. `StrippingColumn extends AbsorptionColumn`, so this is the same override: both phases corrected, through a limiting-component allocator. |
 | `component_murphree_efficiency` | dimensionless | *Optional.* one efficiency per component, which the inherited `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair. |
-| `max_allowable_gas_load_factor` | dimensionless | *Optional.* the `Fs`-factor the gas load is checked against. **It does not enter the solve**: `isGasLoadFactorWithinDesignLimit` reads it and no part of `run` does. |
+| `max_allowable_gas_load_factor` | dimensionless | *Optional.* the limit `isGasLoadFactorWithinDesignLimit` and its two siblings read, which is a **Souders-Brown `Ks`** and not an `Fs` factor. **It does not enter the solve.** |
 | `reactive` | - | *Optional.* **whether the middle trays flash reactively** - `DistillationColumn.setReactive(true)`, inherited and not overridden. The ends never do. Measured: the section is either the plain flash or a divergence - see the notes. |
 | `reactive_start_tray` | dimensionless | *Optional.* the first reactive middle tray, 0-based among the middle trays, with `reactive_end_tray` its inclusive last. **Both bounds or neither.** An absorber has no ends, so every stage is a middle tray. |
 | `reactive_end_tray` | dimensionless | *Optional.* the last reactive middle tray, inclusive. |
@@ -57,6 +57,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `pumparound_temperature_drop` | K | *Optional.* the drop from the draw to the return, which `updateReturnStream` subtracts before re-flashing. **The cooler's duty is the enthalpy between the two streams.** |
 | `pumparound_tolerance` | dimensionless | *Optional.* the relative return-flow change the outer loop stops at. **Omitted means `1e-4`**, which is `pumparoundTolerance`'s own field initialiser. |
 | `pumparound_max_iterations` | dimensionless | *Optional.* the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser. |
+| `column_diameter` | m | *Optional.* the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by. **Absent is the class's own `1.0` m**; a value at or below zero is the "no area" it answers a zero factor from. The solve is indifferent to it. |
+| `max_allowable_fs_factor` | dimensionless | *Optional.* the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `3.0`**, the absorber's own `DEFAULT_MAX_ALLOWABLE_FS_FACTOR`. Read by the limit family alone. |
 
 
 ## Outputs
@@ -81,6 +83,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `temperature_residual` | K | the mean tray-temperature change at the last iteration - the gate the solve was held to. |
 | `mass_residual` | dimensionless | the products' worst component imbalance against both feeds, relative. |
 | `energy_residual` | dimensionless | `|H_feeds - H_products| / |H_feeds|`, the enthalpy closure. |
+| `fs_factor` | dimensionless | `getFsFactor`, which this class inherits from the base column: the gas outlet's superficial velocity over the **total** `pi*D^2/4` times the square root of its system density, in `Pa**0.5`. |
+| `fs_factor_utilization` | dimensionless | `getFsFactorUtilization`, against the absorber's own `3.0` limit. |
+| `fs_factor_within_design_limit` | - | `isFsFactorWithinDesignLimit`. |
+| `minimum_diameter_for_fs_limit` | m | `getMinimumDiameterForFsLimit`, a function of the flow, the density and the limit alone. |
+| `gas_load_factor` | m/s | `getGasLoadFactor`: the Souders-Brown `Ks = u*sqrt(rho_g/(rho_l - rho_g))`, whose two densities are **`getPhase(0)` of the two outlets**. |
+| `gas_load_factor_utilization` | dimensionless | `getGasLoadFactorUtilization`. |
+| `gas_load_factor_within_design_limit` | - | `isGasLoadFactorWithinDesignLimit`. |
+| `minimum_diameter_for_gas_load_limit` | m | `getMinimumDiameterForGasLoadLimit`. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -110,7 +120,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `hydrocarbon_stripper` | stripping_gas_components = ['methane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], rich_liquid_components = ['methane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], stripping_gas_n = 2.547079374624363, stripping_gas_z = [0.99, 0.008, 0.0015, 0.0005, 0.0], stripping_gas_p = 1200000.0, stripping_gas_t = 343.15, rich_liquid_n = 2.9489815574232177, rich_liquid_z = [0.02, 0.08, 0.12, 0.15, 0.63], rich_liquid_p = 1200000.0, rich_liquid_t = 343.15, number_of_stages = 5, top_pressure = 1200000.0, bottom_pressure = 1200000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [321.706608455782, 325.7629838093825, 329.5399755743931, 333.18535921380345, 337.4756767231461], tray_pressure = [1200000.0, 1200000.0, 1200000.0, 1200000.0, 1200000.0], tray_gas_n = [2.7279541990373932, 2.802590567757772, 2.8794915186188894, 2.983269506121942, 3.0863681590312635], tray_liquid_n = [2.40966121118395, 2.590537094838872, 2.665180172095894, 2.7420904284327983, 2.845876882580072], overhead_gas_n = 3.086389912429422, overhead_gas_z = [0.7933252789771452, 0.07619406979290001, 0.06873841855655499, 0.0361693602046566, 0.025572872468743128], overhead_gas_p = 1200000.0, overhead_gas_t = 337.4756906481115, overhead_gas_h = 2822.7677411042864, lean_liquid_n = 2.4096710196150735, lean_liquid_z = [0.05487713716722947, 0.00880774500850238, 0.06025358305292857, 0.13783328942864104, 0.7382282453426986], lean_liquid_p = 1200000.0, lean_liquid_t = 321.70664969208974, lean_liquid_h = -23614.26232543406 |
+| `hydrocarbon_stripper` | stripping_gas_components = ['methane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], rich_liquid_components = ['methane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], stripping_gas_n = 2.547079374624363, stripping_gas_z = [0.99, 0.008, 0.0015, 0.0005, 0.0], stripping_gas_p = 1200000.0, stripping_gas_t = 343.15, rich_liquid_n = 2.9489815574232177, rich_liquid_z = [0.02, 0.08, 0.12, 0.15, 0.63], rich_liquid_p = 1200000.0, rich_liquid_t = 343.15, number_of_stages = 5, top_pressure = 1200000.0, bottom_pressure = 1200000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [321.706608455782, 325.7629838093825, 329.5399755743931, 333.18535921380345, 337.4756767231461], tray_pressure = [1200000.0, 1200000.0, 1200000.0, 1200000.0, 1200000.0], tray_gas_n = [2.7279541990373932, 2.802590567757772, 2.8794915186188894, 2.983269506121942, 3.0863681590312635], tray_liquid_n = [2.40966121118395, 2.590537094838872, 2.665180172095894, 2.7420904284327983, 2.845876882580072], overhead_gas_n = 3.086389912429422, overhead_gas_z = [0.7933252789771452, 0.07619406979290001, 0.06873841855655499, 0.0361693602046566, 0.025572872468743128], overhead_gas_p = 1200000.0, overhead_gas_t = 337.4756906481115, overhead_gas_h = 2822.7677411042864, lean_liquid_n = 2.4096710196150735, lean_liquid_z = [0.05487713716722947, 0.00880774500850238, 0.06025358305292857, 0.13783328942864104, 0.7382282453426986], lean_liquid_p = 1200000.0, lean_liquid_t = 321.70664969208974, lean_liquid_h = -23614.26232543406, fs_factor = 0.029565584198245412, fs_factor_utilization = 0.00985519473274847, minimum_diameter_for_fs_limit = 0.09927333344231205, gas_load_factor = 0.0009402581113639056, gas_load_factor_utilization = 0.006268387409092704, minimum_diameter_for_gas_load_limit = 0.07917314828332081 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

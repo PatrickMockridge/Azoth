@@ -1495,6 +1495,14 @@ class AbsorptionColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    fs_factor: float
+    fs_factor_utilization: float
+    fs_factor_within_design_limit: bool
+    minimum_diameter_for_fs_limit: Qty
+    gas_load_factor: float
+    gas_load_factor_utilization: float
+    gas_load_factor_within_design_limit: bool
+    minimum_diameter_for_gas_load_limit: Qty
     warnings: list[Warning]
 
 @final
@@ -1876,6 +1884,14 @@ class StrippingColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    fs_factor: float
+    fs_factor_utilization: float
+    fs_factor_within_design_limit: bool
+    minimum_diameter_for_fs_limit: Qty
+    gas_load_factor: float
+    gas_load_factor_utilization: float
+    gas_load_factor_within_design_limit: bool
+    minimum_diameter_for_gas_load_limit: Qty
     warnings: list[Warning]
 
 @final
@@ -3236,6 +3252,8 @@ def absorption_column(
     pumparound_temperature_drop: float | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: float | None = None,
+    column_diameter: float | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> AbsorptionColumnResult: ...
 def component_splitter(
     components: list[str],
@@ -3306,6 +3324,8 @@ def distillation_column(
     pumparound_temperature_drop: float | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: float | None = None,
+    column_diameter: float | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> DistillationColumnResult: ...
 def ejector(
     motive_components: list[str],
@@ -3459,6 +3479,7 @@ def packed_column(
     pumparound_temperature_drop: float | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: float | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> PackedColumnResult: ...
 def pipe(
     components: list[str],
@@ -3620,6 +3641,8 @@ def stripping_column(
     pumparound_temperature_drop: float | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: float | None = None,
+    column_diameter: float | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> StrippingColumnResult: ...
 def tank(
     components: list[str],

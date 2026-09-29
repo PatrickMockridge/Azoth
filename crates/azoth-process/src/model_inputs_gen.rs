@@ -350,6 +350,20 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("dimensionless"),
             },
+            ModelInput {
+                name: "column_diameter",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
+                name: "max_allowable_fs_factor",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
         ],
     },
     ModelInputs {
@@ -2919,6 +2933,20 @@ static ALL: &[ModelInputs] = &[
             },
             ModelInput {
                 name: "pumparound_max_iterations",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("dimensionless"),
+            },
+            ModelInput {
+                name: "column_diameter",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
+                name: "max_allowable_fs_factor",
                 kind: "quantity",
                 values: &[],
                 optional: true,

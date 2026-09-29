@@ -219,6 +219,14 @@ last digit - which is the identity the port spells a volumetric flow with. And f
 verdicts are in the capture: `fs_factor_within_design_limit=false` at a stated `0.01` and
 `gas_load_factor_within_design_limit=false` at a stated `0.005`.
 
+**And the stripper row is what settles which vapour that is.** `getLiquidOutStream` answers a
+stream carrying the *tray's* two-phase system, so its phase 0 is the vapour that tray leaves with -
+`9.221459471348782` against the gas outlet's `11.267630874486859` on `hydrocarbon_stripper`, a
+*negative* difference the class's `10.0` floor turns into the substitution. The liquid product's
+own density would answer `0.0011870273688000244` against the class's `0.0009402581113639056`: a
+port that read the product is exact on the absorber row and 26 per cent out on the stripper's,
+which is why one row cannot settle it and two can.
+
 The three minimum diameters are invariant under the diameter they are compared against
 (`0.09032514302269502` on all three binary rows), since they are functions of the flow, the
 density and the limit alone.

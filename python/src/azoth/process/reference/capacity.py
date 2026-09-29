@@ -154,17 +154,15 @@ def resolve_liquid_density(gas_density: float, liquid_density_field: float) -> f
     return float("nan") if density <= gas_density else density
 
 
-def capacity_limits(
+def fs_limits(
     gas_out: Stream,
-    liquid_out: Stream,
     internal_diameter: Q,
     max_allowable_fs_factor: float,
-    gas_load_limit: float | None = None,
 ) -> dict[str, Any]:
-    """Both families at the products of a solved column.
+    """``getFsFactor`` and its three siblings, at the products of a solved column.
 
-    ``gas_load_limit`` is stated exactly where the class has the method - the absorber pair - and
-    the gas-load half of the answer is ``None`` everywhere else.
+    **The Fs family is the base class's**, so every column has it - and ``PackedColumn``'s
+    diameter is the one its own sizing resolved rather than the one a caller stated.
     """
     components = list(gas_out.components)
     diameter = internal_diameter.to("m").magnitude
@@ -179,91 +177,118 @@ def capacity_limits(
     if area <= 0.0:
         fs_factor = 0.0
     else:
-        _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
-        system_density = _mass / volume_per_mole
-        fs_factor = (gas_n * volume_per_mole) / area * math.sqrt(system_density)
+        mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+        fs_factor = (gas_n * volume_per_mole) / area * math.sqrt(mass / volume_per_mole)
 
     # ``getMinimumDiameterForFsLimit`` **does not consult the area at all** - its own guard is the
     # limit's - so a column with no diameter still owes this number.
     if max_allowable_fs_factor > 0.0:
         mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
-        system_density = mass / volume_per_mole
         minimum_fs = math.sqrt(
             4.0
             * (gas_n * volume_per_mole)
-            * math.sqrt(system_density)
+            * math.sqrt(mass / volume_per_mole)
             / (math.pi * max_allowable_fs_factor)
         )
     else:
         minimum_fs = 0.0
 
-    limits: dict[str, Any] = {
+    return {
         "fs_factor": fs_factor,
         "fs_factor_utilization": _utilization(fs_factor, max_allowable_fs_factor),
         "fs_factor_within_design_limit": fs_factor <= max_allowable_fs_factor,
         "minimum_diameter_for_fs_limit": minimum_fs,
-        "gas_load_factor": None,
-        "gas_load_factor_utilization": None,
-        "gas_load_factor_within_design_limit": None,
-        "minimum_diameter_for_gas_load_limit": None,
     }
 
-    if gas_load_limit is not None:
-        # ``getGasSuperficialVelocity``: the same total area, and the same guard.
-        if area <= 0.0:
-            velocity = 0.0
-        else:
-            _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
-            velocity = (gas_n * volume_per_mole) / area
 
-        if velocity <= 0.0:
+def gas_load_limits(
+    gas_out: Stream,
+    liquid_out_vapour: Stream,
+    internal_diameter: Q,
+    max_allowable_gas_load_factor: float,
+) -> dict[str, Any]:
+    """``getGasLoadFactor`` and its three siblings, on the absorber pair.
+
+    **``getPhase(0)`` of both outlets, and the second one is not the liquid.** A NeqSim
+    ``getLiquidOutStream`` answers a stream whose thermo system is the *tray's*, so its phase 0 -
+    the array is gas-first - is the **vapour that tray carries**. ``liquid_out_vapour`` is
+    therefore the tray's vapour and not the liquid product: on the capture's stripper the field
+    density is ``9.221459471348782`` against a gas of ``11.267630874486859``, so
+    ``rho_l - rho_g`` is negative and the ``10.0`` floor is what answers - while the liquid's own
+    density would give ``0.0011870273688000244`` against the class's ``0.0009402581113639056``, a
+    factor of ``1.26``.
+    """
+    components = list(gas_out.components)
+    diameter = internal_diameter.to("m").magnitude
+    area = math.pi * diameter * diameter / 4.0
+
+    gas_t = gas_out.t.to("K").magnitude
+    gas_p = gas_out.p.to("Pa").magnitude
+    gas_z = list(gas_out.z)
+    gas_n = gas_out.n
+
+    # ``getGasSuperficialVelocity``: the same total area, and the same guard as the Fs family's.
+    if area <= 0.0:
+        velocity = 0.0
+    else:
+        _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+        velocity = (gas_n * volume_per_mole) / area
+
+    if _not_positive(velocity):
+        gas_load_factor = 0.0
+    else:
+        gas_density, liquid_density = _densities(gas_out, liquid_out_vapour)
+        if _not_positive(gas_density) or math.isnan(liquid_density):
             gas_load_factor = 0.0
         else:
-            # **``getPhase(0)`` of both outlets.** The liquid outlet's own phase zero is the gas
-            # it carries, which is what makes the class's fallback the ordinary path.
-            gas_density = _phase_zero_density(components, gas_t, gas_p, gas_z)
-            liquid_density = resolve_liquid_density(
-                gas_density,
-                _phase_zero_density(
-                    components,
-                    liquid_out.t.to("K").magnitude,
-                    liquid_out.p.to("Pa").magnitude,
-                    list(liquid_out.z),
-                ),
-            )
-            if gas_density <= 0.0 or math.isnan(liquid_density):
-                gas_load_factor = 0.0
-            else:
-                gas_load_factor = velocity * math.sqrt(gas_density / (liquid_density - gas_density))
+            gas_load_factor = velocity * math.sqrt(gas_density / (liquid_density - gas_density))
 
-        minimum_gas_load = 0.0
-        if gas_load_limit > 0.0:
-            gas_density = _phase_zero_density(components, gas_t, gas_p, gas_z)
-            liquid_density = resolve_liquid_density(
-                gas_density,
-                _phase_zero_density(
-                    components,
-                    liquid_out.t.to("K").magnitude,
-                    liquid_out.p.to("Pa").magnitude,
-                    list(liquid_out.z),
-                ),
+    minimum_gas_load = 0.0
+    if max_allowable_gas_load_factor > 0.0:
+        gas_density, liquid_density = _densities(gas_out, liquid_out_vapour)
+        if not _not_positive(gas_density) and not math.isnan(liquid_density):
+            permissible = max_allowable_gas_load_factor * math.sqrt(
+                (liquid_density - gas_density) / gas_density
             )
-            if gas_density > 0.0 and not math.isnan(liquid_density):
-                permissible = gas_load_limit * math.sqrt(
-                    (liquid_density - gas_density) / gas_density
+            if permissible > 0.0:
+                _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
+                minimum_gas_load = math.sqrt(
+                    4.0 * (gas_n * volume_per_mole) / (math.pi * permissible)
                 )
-                if permissible > 0.0:
-                    _mass, volume_per_mole = _system_per_mole(components, gas_t, gas_p, gas_z)
-                    minimum_gas_load = math.sqrt(
-                        4.0 * (gas_n * volume_per_mole) / (math.pi * permissible)
-                    )
 
-        limits["gas_load_factor"] = gas_load_factor
-        limits["gas_load_factor_utilization"] = _utilization(gas_load_factor, gas_load_limit)
-        limits["gas_load_factor_within_design_limit"] = gas_load_factor <= gas_load_limit
-        limits["minimum_diameter_for_gas_load_limit"] = minimum_gas_load
+    return {
+        "gas_load_factor": gas_load_factor,
+        "gas_load_factor_utilization": _utilization(gas_load_factor, max_allowable_gas_load_factor),
+        "gas_load_factor_within_design_limit": (gas_load_factor <= max_allowable_gas_load_factor),
+        "minimum_diameter_for_gas_load_limit": minimum_gas_load,
+    }
 
-    return limits
+
+def _densities(gas_out: Stream, liquid_out_vapour: Stream) -> tuple[float, float]:
+    """The two densities both gas-load getters read: ``getPhase(0)`` of the gas outlet and of the
+    liquid outlet's own system, with the near-dry fallback applied to the second."""
+    components = list(gas_out.components)
+    gas_density = _phase_zero_density(
+        components,
+        gas_out.t.to("K").magnitude,
+        gas_out.p.to("Pa").magnitude,
+        list(gas_out.z),
+    )
+    liquid_density = resolve_liquid_density(
+        gas_density,
+        _phase_zero_density(
+            components,
+            liquid_out_vapour.t.to("K").magnitude,
+            liquid_out_vapour.p.to("Pa").magnitude,
+            list(liquid_out_vapour.z),
+        ),
+    )
+    return gas_density, liquid_density
+
+
+def _not_positive(value: float) -> bool:
+    """The class's own ``!(x > 0.0)`` guard, which a ``NaN`` also fails."""
+    return math.isnan(value) or value <= 0.0
 
 
 def _utilization(value: float, limit: float) -> float:

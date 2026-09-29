@@ -739,8 +739,47 @@ fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
     // The kernel's own warnings, which are the *solver's* - a column that hit its iteration cap
     // says so here, and that is a fact about this run and not a document the checker can rule on.
     let warnings = out.warnings.clone();
-    let result = crate::models::AbsorptionColumnResult::of(&out, warnings);
+    let (fs, gas_load) = absorber_capacity(&out, p)?;
+    let result = crate::models::AbsorptionColumnResult::of(&out, &fs, &gas_load, warnings);
     KernelOutcome::publishing(vec![out.gas_out, out.liquid_out], &result)
+}
+
+/// **The absorber pair's two capacity families, from a form's own parameters.** One helper for
+/// both arms, because the stripper inherits all eight getters and overrides none - and one
+/// resolution, so a flowsheet and a case read the same two limits.
+fn absorber_capacity(
+    out: &kernels::absorption_column::AbsorberOutcome,
+    p: &Parameters<'_>,
+) -> Result<(
+    crate::column::capacity::FsLimits,
+    crate::column::capacity::GasLoadLimits,
+)> {
+    let diameter = meters(
+        p.optional_si("column_diameter")?
+            .unwrap_or(crate::column::capacity::DEFAULT_INTERNAL_DIAMETER_M),
+    );
+    // **The liquid outlet's own system, which the class reads phase 0 of**: `getLiquidOutStream`
+    // carries the bottom tray's two-phase system rather than this port's liquid product, so its
+    // phase 0 is the vapour the tray leaves with. `absorption_column`'s model says why that is a
+    // factor of `1.26` and not a formality.
+    let components = out.gas_out.components.clone();
+    let (bottom_vapour, _) =
+        kernels::distillation_column::tray_streams(&out.trays[0], &components)?;
+    Ok((
+        crate::column::capacity::fs_limits(
+            &out.gas_out,
+            diameter,
+            p.optional_number("max_allowable_fs_factor")?
+                .unwrap_or(crate::column::capacity::DEFAULT_MAX_ALLOWABLE_FS_FACTOR_ABSORBER),
+        )?,
+        crate::column::capacity::gas_load_limits(
+            &out.gas_out,
+            &bottom_vapour,
+            diameter,
+            p.optional_number("max_allowable_gas_load_factor")?
+                .unwrap_or(crate::column::capacity::DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR),
+        )?,
+    ))
 }
 
 fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
@@ -776,7 +815,8 @@ fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
         },
     )?;
     let warnings = out.warnings.clone();
-    let result = crate::models::StrippingColumnResult::of(&out, warnings);
+    let (fs, gas_load) = absorber_capacity(&out, p)?;
+    let result = crate::models::StrippingColumnResult::of(&out, &fs, &gas_load, warnings);
     KernelOutcome::publishing(vec![out.gas_out, out.liquid_out], &result)
 }
 
@@ -836,16 +876,14 @@ fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOu
     // here**, which is the difference between a column a front end can show and one it can only
     // draw.
     let warnings = out.warnings.clone();
-    let limits = crate::column::capacity::capacity_limits(
+    let limits = crate::column::capacity::fs_limits(
         &out.distillate,
-        &out.bottoms,
         meters(
             p.optional_si("column_diameter")?
-                .unwrap_or(crate::models::distillation_column::DEFAULT_INTERNAL_DIAMETER_M),
+                .unwrap_or(crate::column::capacity::DEFAULT_INTERNAL_DIAMETER_M),
         ),
         p.optional_number("max_allowable_fs_factor")?
             .unwrap_or(crate::column::capacity::DEFAULT_MAX_ALLOWABLE_FS_FACTOR),
-        None,
     )?;
     let result = crate::models::DistillationColumnResult::of(&out, &limits, warnings);
     KernelOutcome::publishing(vec![out.distillate, out.bottoms], &result)

@@ -190,6 +190,12 @@ static ABSORPTION_COLUMN_CASES: &[TestCase] = &[TestCase {
         ("liquid_out_p", 1500000.0),
         ("liquid_out_t", 299.10907966626354),
         ("liquid_out_h", -27387.776830145922),
+        ("fs_factor", 0.21051436885536753),
+        ("fs_factor_utilization", 0.07017145628512252),
+        ("minimum_diameter_for_fs_limit", 0.26489895485849413),
+        ("gas_load_factor", 0.006694885232955643),
+        ("gas_load_factor_utilization", 0.04463256821970429),
+        ("minimum_diameter_for_gas_load_limit", 0.21126421424298125),
     ],
     expected_vectors: &[
         (
@@ -5991,6 +5997,12 @@ static STRIPPING_COLUMN_CASES: &[TestCase] = &[TestCase {
         ("lean_liquid_p", 1200000.0),
         ("lean_liquid_t", 321.70664969208974),
         ("lean_liquid_h", -23614.26232543406),
+        ("fs_factor", 0.029565584198245412),
+        ("fs_factor_utilization", 0.00985519473274847),
+        ("minimum_diameter_for_fs_limit", 0.09927333344231205),
+        ("gas_load_factor", 0.0009402581113639056),
+        ("gas_load_factor_utilization", 0.006268387409092704),
+        ("minimum_diameter_for_gas_load_limit", 0.07917314828332081),
     ],
     expected_vectors: &[
         (

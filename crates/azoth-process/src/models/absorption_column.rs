@@ -5,17 +5,23 @@
 //! what is here is the boundary a case and a cross-impl test address, and the refusal of every
 //! parameter the palette declares and this stage does not implement.
 
-use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
+use azoth_core::units::{
+    Length, MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+};
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::column::absorber_murphree::AbsorberMurphree;
+use crate::column::capacity::{
+    DEFAULT_INTERNAL_DIAMETER_M, DEFAULT_MAX_ALLOWABLE_FS_FACTOR_ABSORBER,
+    DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR, FsLimits, GasLoadLimits, fs_limits, gas_load_limits,
+};
 use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::kernels::absorption_column::AbsorberSetup;
 use crate::kernels::absorption_column::absorption_column as kernel;
-use crate::kernels::distillation_column::SolverType;
+use crate::kernels::distillation_column::{SolverType, tray_streams};
 use crate::models::distillation_column::{build_pumparound_returns, build_side_draw_flow};
 use crate::stream::Stream;
 use crate::unported;
@@ -71,6 +77,24 @@ pub struct AbsorptionColumnResult {
     pub mass_residual: f64,
     /// The enthalpy closure.
     pub energy_residual: f64,
+    /// `getFsFactor`: the Fs family is the base class's, so an absorber carries it too.
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`, against this class's own `3.0` limit.
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    #[serde(serialize_with = "scalar")]
+    pub minimum_diameter_for_fs_limit: Length,
+    /// `getGasLoadFactor`: the Souders-Brown `Ks`, which is `AbsorptionColumn`'s own method.
+    pub gas_load_factor: f64,
+    /// `getGasLoadFactorUtilization`.
+    pub gas_load_factor_utilization: f64,
+    /// `isGasLoadFactorWithinDesignLimit`.
+    pub gas_load_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForGasLoadLimit`.
+    #[serde(serialize_with = "scalar")]
+    pub minimum_diameter_for_gas_load_limit: Length,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -81,8 +105,16 @@ impl AbsorptionColumnResult {
     ///
     /// **The warnings are the caller's**: a case's are the spec's `apply_checks` and a flowsheet's
     /// are the checker's, which report through the envelope rather than through a result.
+    ///
+    /// **Both capacity families are the caller's too**, because they read two inputs the solve
+    /// does not: the diameter and the two limits.
     #[must_use]
-    pub fn of(outcome: &AbsorberOutcome, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        outcome: &AbsorberOutcome,
+        fs: &FsLimits,
+        gas_load: &GasLoadLimits,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             tray_temperature: outcome.trays.iter().map(|tray| tray.temperature).collect(),
             tray_pressure: outcome.trays.iter().map(|tray| tray.pressure).collect(),
@@ -102,6 +134,14 @@ impl AbsorptionColumnResult {
             temperature_residual: outcome.temperature_residual,
             mass_residual: outcome.mass_residual,
             energy_residual: outcome.energy_residual,
+            fs_factor: fs.fs_factor,
+            fs_factor_utilization: fs.fs_factor_utilization,
+            fs_factor_within_design_limit: fs.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: fs.minimum_diameter_for_fs_limit,
+            gas_load_factor: gas_load.gas_load_factor,
+            gas_load_factor_utilization: gas_load.gas_load_factor_utilization,
+            gas_load_factor_within_design_limit: gas_load.gas_load_factor_within_design_limit,
+            minimum_diameter_for_gas_load_limit: gas_load.minimum_diameter_for_gas_load_limit,
             warnings,
         }
     }
@@ -128,6 +168,14 @@ impl CalcResult for AbsorptionColumnResult {
         "temperature_residual",
         "mass_residual",
         "energy_residual",
+        "fs_factor",
+        "fs_factor_utilization",
+        "fs_factor_within_design_limit",
+        "minimum_diameter_for_fs_limit",
+        "gas_load_factor",
+        "gas_load_factor_utilization",
+        "gas_load_factor_within_design_limit",
+        "minimum_diameter_for_gas_load_limit",
         "warnings",
     ];
 
@@ -182,8 +230,9 @@ pub fn absorption_column(
     pumparound_temperature_drop: Option<f64>,
     pumparound_tolerance: Option<f64>,
     pumparound_max_iterations: Option<usize>,
+    column_diameter: Option<f64>,
+    max_allowable_fs_factor: Option<f64>,
 ) -> Result<AbsorptionColumnResult> {
-    refuse_unported(max_allowable_gas_load_factor)?;
     // **The two efficiency fields, resolved and clamped.** `AbsorptionColumn` inherits the
     // base's two setters and adds `setComponentMurphreeEfficiency`'s map, so the correction
     // reads component → per-tray → column-wide in that order; the per-tray-per-component map
@@ -308,23 +357,28 @@ pub fn absorption_column(
 
     warnings.extend(out.warnings.iter().cloned());
 
-    Ok(AbsorptionColumnResult::of(&out, warnings))
-}
+    // **The two limits are read after the solve, and one of them used to be discarded here.**
+    // `max_allowable_gas_load_factor` was declared by the palette and accepted inertly, because
+    // nothing on the run path reads it - which is true and is not a reason to answer nothing
+    // with it: `getGasLoadFactor` is the quantity it is the limit *of*.
+    let diameter = meters(column_diameter.unwrap_or(DEFAULT_INTERNAL_DIAMETER_M));
+    let fs = fs_limits(
+        &out.gas_out,
+        diameter,
+        max_allowable_fs_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_FS_FACTOR_ABSORBER),
+    )?;
+    // **The liquid outlet's own system, which the class reads phase 0 of.** `getLiquidOutStream`
+    // answers a stream carrying the *tray's* two-phase system, so its phase 0 is the vapour the
+    // bottom tray leaves with - not this port's liquid product, which is that tray's liquid phase
+    // alone. `column/tray_streams` rebuilds the vapour from the profile, which is what makes the
+    // reading available at all.
+    let (bottom_vapour, _) = tray_streams(&out.trays[0], gas_components)?;
+    let gas_load = gas_load_limits(
+        &out.gas_out,
+        &bottom_vapour,
+        diameter,
+        max_allowable_gas_load_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR),
+    )?;
 
-/// Refuse every parameter the palette declares and this stage does not implement.
-///
-/// **The one parameter still declared and refused.**
-///
-/// The two Murphree efficiencies are now ported, so this is what is left: the gas-load factor,
-/// which the class *accepts* and no part of `run` reads - so the model carries it as a
-/// declaration the solve is indifferent to.
-///
-/// # Errors
-/// Never, which is the point: the argument is read and discarded.
-fn refuse_unported(max_allowable_gas_load_factor: Option<f64>) -> Result<()> {
-    // The design limit: read by `isGasLoadFactorWithinDesignLimit`, \
-    // `getGasLoadFactorUtilization` and `getMinimumDiameterForGasLoadLimit`, and by nothing on
-    // the run path - so it is accepted and the separation is indifferent to it.
-    let _ = max_allowable_gas_load_factor;
-    Ok(())
+    Ok(AbsorptionColumnResult::of(&out, &fs, &gas_load, warnings))
 }

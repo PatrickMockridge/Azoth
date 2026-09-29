@@ -5,10 +5,11 @@
 //! AbsorptionColumn` and adds no equations - only the names of its two inlets and of its two
 //! products. What is here is the boundary with those names, and the refusals the base carries.
 
-use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
+use azoth_core::units::{Length, MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::{CalcResult, Result, Warning};
 use serde::Serialize;
 
+use crate::column::capacity::{FsLimits, GasLoadLimits};
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::models::absorption_column::absorption_column as absorber;
@@ -64,6 +65,24 @@ pub struct StrippingColumnResult {
     pub mass_residual: f64,
     /// The enthalpy closure.
     pub energy_residual: f64,
+    /// `getFsFactor`, which the class inherits from the base column.
+    pub fs_factor: f64,
+    /// `getFsFactorUtilization`, against `AbsorptionColumn`'s own `3.0`.
+    pub fs_factor_utilization: f64,
+    /// `isFsFactorWithinDesignLimit`.
+    pub fs_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForFsLimit`.
+    #[serde(serialize_with = "scalar")]
+    pub minimum_diameter_for_fs_limit: Length,
+    /// `getGasLoadFactor`, which the class inherits from the absorber.
+    pub gas_load_factor: f64,
+    /// `getGasLoadFactorUtilization`.
+    pub gas_load_factor_utilization: f64,
+    /// `isGasLoadFactorWithinDesignLimit`.
+    pub gas_load_factor_within_design_limit: bool,
+    /// `getMinimumDiameterForGasLoadLimit`.
+    #[serde(serialize_with = "scalar")]
+    pub minimum_diameter_for_gas_load_limit: Length,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -74,8 +93,16 @@ impl StrippingColumnResult {
     ///
     /// **The warnings are the caller's**: a case's are `apply_checks`'s and a flowsheet's are the
     /// checker's, which report through the envelope rather than through a result.
+    ///
+    /// **Both capacity families are the caller's too**, and they are the base's: this class
+    /// inherits the four getters of each and overrides none of them.
     #[must_use]
-    pub fn of(outcome: &AbsorberOutcome, warnings: Vec<Warning>) -> Self {
+    pub fn of(
+        outcome: &AbsorberOutcome,
+        fs: &FsLimits,
+        gas_load: &GasLoadLimits,
+        warnings: Vec<Warning>,
+    ) -> Self {
         Self {
             tray_temperature: outcome.trays.iter().map(|tray| tray.temperature).collect(),
             tray_pressure: outcome.trays.iter().map(|tray| tray.pressure).collect(),
@@ -95,6 +122,14 @@ impl StrippingColumnResult {
             temperature_residual: outcome.temperature_residual,
             mass_residual: outcome.mass_residual,
             energy_residual: outcome.energy_residual,
+            fs_factor: fs.fs_factor,
+            fs_factor_utilization: fs.fs_factor_utilization,
+            fs_factor_within_design_limit: fs.fs_factor_within_design_limit,
+            minimum_diameter_for_fs_limit: fs.minimum_diameter_for_fs_limit,
+            gas_load_factor: gas_load.gas_load_factor,
+            gas_load_factor_utilization: gas_load.gas_load_factor_utilization,
+            gas_load_factor_within_design_limit: gas_load.gas_load_factor_within_design_limit,
+            minimum_diameter_for_gas_load_limit: gas_load.minimum_diameter_for_gas_load_limit,
             warnings,
         }
     }
@@ -121,6 +156,14 @@ impl CalcResult for StrippingColumnResult {
         "temperature_residual",
         "mass_residual",
         "energy_residual",
+        "fs_factor",
+        "fs_factor_utilization",
+        "fs_factor_within_design_limit",
+        "minimum_diameter_for_fs_limit",
+        "gas_load_factor",
+        "gas_load_factor_utilization",
+        "gas_load_factor_within_design_limit",
+        "minimum_diameter_for_gas_load_limit",
         "warnings",
     ];
 
@@ -177,6 +220,8 @@ pub fn stripping_column(
     pumparound_temperature_drop: Option<f64>,
     pumparound_tolerance: Option<f64>,
     pumparound_max_iterations: Option<usize>,
+    column_diameter: Option<f64>,
+    max_allowable_fs_factor: Option<f64>,
 ) -> Result<StrippingColumnResult> {
     let out = absorber(
         stripping_gas_components,
@@ -217,6 +262,8 @@ pub fn stripping_column(
         pumparound_temperature_drop,
         pumparound_tolerance,
         pumparound_max_iterations,
+        column_diameter,
+        max_allowable_fs_factor,
     )?;
 
     Ok(StrippingColumnResult {
@@ -238,6 +285,15 @@ pub fn stripping_column(
         temperature_residual: out.temperature_residual,
         mass_residual: out.mass_residual,
         energy_residual: out.energy_residual,
+        // **The base's own capacity answers, which this class inherits and overrides none of.**
+        fs_factor: out.fs_factor,
+        fs_factor_utilization: out.fs_factor_utilization,
+        fs_factor_within_design_limit: out.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit: out.minimum_diameter_for_fs_limit,
+        gas_load_factor: out.gas_load_factor,
+        gas_load_factor_utilization: out.gas_load_factor_utilization,
+        gas_load_factor_within_design_limit: out.gas_load_factor_within_design_limit,
+        minimum_diameter_for_gas_load_limit: out.minimum_diameter_for_gas_load_limit,
         warnings: out.warnings,
     })
 }

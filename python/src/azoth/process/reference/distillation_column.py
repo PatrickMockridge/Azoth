@@ -59,7 +59,7 @@ from azoth.process.reference._column_stage import (
 from azoth.process.reference.capacity import (
     DEFAULT_INTERNAL_DIAMETER_M,
     DEFAULT_MAX_ALLOWABLE_FS_FACTOR,
-    capacity_limits,
+    fs_limits,
 )
 
 _DrawVector = tuple[float, ...] | None
@@ -522,14 +522,7 @@ def _record(
         from_si(states.distillate_p, "Pa"),
         from_si(states.distillate_t, "K"),
     )
-    liquid_out = Stream.from_pt(
-        components,
-        list(states.bottoms_z),
-        states.bottoms_n,
-        from_si(states.bottoms_p, "Pa"),
-        from_si(states.bottoms_t, "K"),
-    )
-    limits = capacity_limits(gas_out, liquid_out, internal_diameter, max_allowable_fs_factor, None)
+    limits = fs_limits(gas_out, internal_diameter, max_allowable_fs_factor)
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
         tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
