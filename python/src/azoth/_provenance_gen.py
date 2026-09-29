@@ -1709,6 +1709,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'hydraulics.tray_hydraulics': {
+        "calc_id": 'hydraulics.tray_hydraulics',
+        "name": "A tray's flooding, weeping, entrainment, pressure drop and efficiency",
+        "spec": {'path': 'specs/calcs/hydraulics/tray_hydraulics.toml', 'sha256': 'c90cc3246df9716155f78de9580689f9eb42f64d8447eefd9fb7efe93b640614'},
+        "code": [{'path': 'python/src/azoth/hydraulics/reference/tray_hydraulics.py', 'sha256': 'f75c1714daf468c1622dc7573d34b8fc341219cf467c8284cbd412bd4df7ef91'}, {'path': 'crates/azoth-hydraulics/src/tray_hydraulics.rs', 'sha256': 'be395ac29900e93199cbbea3282f1062b695300abd87273c6ba49e16ea9870d6'}],
+        "source": 'NeqSim master `TrayHydraulicsCalculator`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 9,
+        "tests_skipped": 0,
+    },
     'process.absorption_column': {
         "calc_id": 'process.absorption_column',
         "name": 'Absorption column',

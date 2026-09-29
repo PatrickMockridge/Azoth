@@ -197,6 +197,7 @@ from azoth.core.result import (
     TpMultiflashResult,
     TpMultiflashWaxResult,
     TpSolidFlashResult,
+    TrayHydraulicsResult,
     TsFlashResult,
     TuFlashResult,
     TvFlashResult,
@@ -397,6 +398,88 @@ def packing_hydraulics(
         wetting_rate=result.wetting_rate,
         minimum_wetting_rate=result.minimum_wetting_rate,
         wetting_ok=result.wetting_ok,
+        design_ok=result.design_ok,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tray_hydraulics(
+    tray_type: str,
+    column_diameter: Q,
+    tray_spacing: Q,
+    weir_height: Q,
+    weir_length: Q,
+    downcommer_area_fraction: float,
+    hole_diameter: Q,
+    hole_area_fraction: float,
+    design_flood_fraction: float,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    liquid_viscosity: Q,
+    surface_tension: Q,
+    relative_volatility: float,
+) -> TrayHydraulicsResult:
+    """A tray's hydraulics, computed in Rust."""
+    spec = _spec_for("hydraulics.tray_hydraulics")
+    result = _core.tray_hydraulics(
+        tray_type,
+        input_to_si(spec, "column_diameter", column_diameter),
+        input_to_si(spec, "tray_spacing", tray_spacing),
+        input_to_si(spec, "weir_height", weir_height),
+        input_to_si(spec, "weir_length", weir_length),
+        downcommer_area_fraction,
+        # **Millimetres on both sides of the wire**, because the spec declares millimetres and
+        # the two correlations that read it are written in them.
+        input_to_si(spec, "hole_diameter", hole_diameter) * 1000.0,
+        hole_area_fraction,
+        design_flood_fraction,
+        input_to_si(spec, "vapor_mass_flow", vapor_mass_flow),
+        input_to_si(spec, "liquid_mass_flow", liquid_mass_flow),
+        input_to_si(spec, "vapor_density", vapor_density),
+        input_to_si(spec, "liquid_density", liquid_density),
+        input_to_si(spec, "liquid_viscosity", liquid_viscosity),
+        input_to_si(spec, "surface_tension", surface_tension),
+        relative_volatility,
+    )
+    return TrayHydraulicsResult(
+        flooding_velocity=result.flooding_velocity,
+        actual_vapor_velocity=result.actual_vapor_velocity,
+        percent_flood=result.percent_flood,
+        minimum_vapor_velocity=result.minimum_vapor_velocity,
+        fs_factor=result.fs_factor,
+        weeping_ok=result.weeping_ok,
+        entrainment=result.entrainment,
+        entrainment_ok=result.entrainment_ok,
+        downcommer_backup=from_si(
+            result.downcommer_backup.magnitude_si, result.downcommer_backup.unit
+        ),
+        downcommer_backup_fraction=result.downcommer_backup_fraction,
+        downcommer_backup_ok=result.downcommer_backup_ok,
+        total_tray_pressure_drop=from_si(
+            result.total_tray_pressure_drop.magnitude_si, result.total_tray_pressure_drop.unit
+        ),
+        total_tray_pressure_drop_mbar=result.total_tray_pressure_drop_mbar,
+        dry_tray_pressure_drop=from_si(
+            result.dry_tray_pressure_drop.magnitude_si, result.dry_tray_pressure_drop.unit
+        ),
+        liquid_head_pressure_drop=from_si(
+            result.liquid_head_pressure_drop.magnitude_si, result.liquid_head_pressure_drop.unit
+        ),
+        residual_head_pressure_drop=from_si(
+            result.residual_head_pressure_drop.magnitude_si,
+            result.residual_head_pressure_drop.unit,
+        ),
+        tray_efficiency=result.tray_efficiency,
+        turndown_ratio=result.turndown_ratio,
+        calculated_weir_length=from_si(
+            result.calculated_weir_length.magnitude_si, result.calculated_weir_length.unit
+        ),
+        active_area=from_si(result.active_area.magnitude_si, result.active_area.unit),
+        total_area=from_si(result.total_area.magnitude_si, result.total_area.unit),
+        hole_area=from_si(result.hole_area.magnitude_si, result.hole_area.unit),
+        downcommer_area=from_si(result.downcommer_area.magnitude_si, result.downcommer_area.unit),
         design_ok=result.design_ok,
         warnings=_warnings(result.warnings),
     )

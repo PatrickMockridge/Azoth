@@ -47,6 +47,7 @@ pub mod pump_power;
 pub mod results;
 pub mod reynolds_number;
 pub mod spec_gen;
+pub mod tray_hydraulics;
 
 // Reading the shared data files. Private: the format both loaders share - a `#`
 // banner to strip and empty fields that mean absent - written once because it was

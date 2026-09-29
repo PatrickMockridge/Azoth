@@ -1965,6 +1965,69 @@ class PackingSizingResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TrayHydraulicsResult(_HasWarnings):
+    """Result of ``hydraulics.tray_hydraulics``.
+
+    **The class's own spellings, including ``downcommer`` for the downcomer**, so that a reader
+    can find ``getDowncommerBackup`` from the field name. Four of the twenty-four are verdicts,
+    and the design verdict is five conditions rather than one.
+    """
+
+    CALC_ID: ClassVar[str] = "hydraulics.tray_hydraulics"
+
+    #: The Souders-Brown flooding velocity, in m/s.
+    flooding_velocity: float
+    #: The vapour's velocity over the net area, in m/s.
+    actual_vapor_velocity: float
+    #: The actual velocity as a percentage of the flooding one.
+    percent_flood: float
+    #: The weeping minimum on a net-area basis, in m/s.
+    minimum_vapor_velocity: float
+    #: The vapour's F-factor, in Pa**0.5.
+    fs_factor: float
+    #: Whether the actual **hole** velocity reaches Sinnott's minimum.
+    weeping_ok: bool
+    #: The fractional entrainment.
+    entrainment: float
+    #: Whether the entrainment is under ``0.1``.
+    entrainment_ok: bool
+    #: The downcomer backup.
+    downcommer_backup: Q
+    #: The backup over ``tray_spacing + weir_height``.
+    downcommer_backup_fraction: float
+    #: Whether the backup is under half that allowance.
+    downcommer_backup_ok: bool
+    #: The dry, liquid-head and residual terms summed.
+    total_tray_pressure_drop: Q
+    #: The same total in mbar - the total over ``100``, which is the class's own second getter.
+    total_tray_pressure_drop_mbar: float
+    #: The orifice term.
+    dry_tray_pressure_drop: Q
+    #: The weir height plus the crest.
+    liquid_head_pressure_drop: Q
+    #: The surface tension at the hole rim.
+    residual_head_pressure_drop: Q
+    #: O'Connell's efficiency as a fraction.
+    tray_efficiency: float
+    #: The actual velocity over the weeping minimum.
+    turndown_ratio: float
+    #: The stated weir length, or the derived ``0.73 D``.
+    calculated_weir_length: Q
+    #: The bubbling area.
+    active_area: Q
+    #: The column's cross-section.
+    total_area: Q
+    #: The holes' area.
+    hole_area: Q
+    #: One downcomer's area.
+    downcommer_area: Q
+    #: **Five conditions**: the three verdicts and a flood inside 50 to 85 per cent.
+    design_ok: bool
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PhaseTransportResult(_HasWarnings):
     """Result of ``eos.phase_transport``."""
 

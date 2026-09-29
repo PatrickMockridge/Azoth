@@ -55,6 +55,7 @@ from azoth.core.result import (
     PumpPowerResult,
     ReynoldsNumberResult,
     SwameeJainResult,
+    TrayHydraulicsResult,
 )
 from azoth.core.units import Q
 from azoth.keycard import Keycard
@@ -72,6 +73,7 @@ __all__ = [
     "packing_sizing",
     "pump_power",
     "reynolds_number",
+    "tray_hydraulics",
 ]
 
 _REYNOLDS_NUMBER = "hydraulics.reynolds_number"
@@ -86,6 +88,7 @@ _PUMP_POWER = "hydraulics.pump_power"
 _ORIFICE_FLOW = "hydraulics.orifice_flow"
 _CONTROL_VALVE_CV = "hydraulics.control_valve_cv"
 _CHOKED_FLOW_AREA = "hydraulics.choked_flow_area"
+_TRAY_HYDRAULICS = "hydraulics.tray_hydraulics"
 
 
 def reynolds_number(rho: Q, v: Q, D: Q, mu: Q) -> ReynoldsNumberResult:
@@ -357,4 +360,54 @@ def darcy_weisbach(
     """
     return resolve(_DARCY_WEISBACH)(  # type: ignore[no-any-return]
         f=f, L=L, D=D, rho=rho, v=v, mu=mu
+    )
+
+
+def tray_hydraulics(
+    tray_type: str,
+    column_diameter: Q,
+    tray_spacing: Q,
+    weir_height: Q,
+    weir_length: Q,
+    downcommer_area_fraction: float,
+    hole_diameter: Q,
+    hole_area_fraction: float,
+    design_flood_fraction: float,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    liquid_viscosity: Q,
+    surface_tension: Q,
+    relative_volatility: float,
+) -> TrayHydraulicsResult:
+    """A tray's flooding, weeping, entrainment, pressure drop and efficiency.
+
+    **Fair's capacity factor for the flood, Sinnott's minimum for the weeping, Fair's fit for the
+    entrainment, O'Connell's for the efficiency**, and a three-term tray pressure drop. The tray
+    type is read at four sites and its fallback differs at each, so an unrecognised type is not
+    uniformly a bubble-cap.
+
+    Raises:
+        OutOfRangeError: for any input outside the range its own division requires.
+
+    See :func:`azoth.hydraulics.reference.tray_hydraulics`.
+    """
+    return resolve(_TRAY_HYDRAULICS)(  # type: ignore[no-any-return]
+        tray_type=tray_type,
+        column_diameter=column_diameter,
+        tray_spacing=tray_spacing,
+        weir_height=weir_height,
+        weir_length=weir_length,
+        downcommer_area_fraction=downcommer_area_fraction,
+        hole_diameter=hole_diameter,
+        hole_area_fraction=hole_area_fraction,
+        design_flood_fraction=design_flood_fraction,
+        vapor_mass_flow=vapor_mass_flow,
+        liquid_mass_flow=liquid_mass_flow,
+        vapor_density=vapor_density,
+        liquid_density=liquid_density,
+        liquid_viscosity=liquid_viscosity,
+        surface_tension=surface_tension,
+        relative_volatility=relative_volatility,
     )

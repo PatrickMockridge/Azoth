@@ -85,6 +85,7 @@ use azoth_hydraulics::results::{
     ChokedFlowAreaResult, ColebrookResult, ControlValveCvResult, DarcyWeisbachResult,
     HaalandResult, KComponent, KFactorsResult, OrificeFlowResult, PackingHydraulicsResult,
     PackingSizingResult, PumpPowerResult, ReynoldsNumberResult, SwameeJainResult,
+    TrayHydraulicsResult,
 };
 use pyo3::prelude::*;
 
@@ -9582,6 +9583,131 @@ impl From<&PackingSizingResult> for PyPackingSizingResult {
     }
 }
 
+/// Result of `hydraulics.tray_hydraulics`, transported.
+///
+/// **The class's own spellings**, including `downcommer` for the downcomer, so that a field name
+/// still finds `getDowncommerBackup` in the Java.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TrayHydraulicsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTrayHydraulicsResult {
+    /// The Souders-Brown flooding velocity, in m/s.
+    #[pyo3(get)]
+    pub flooding_velocity: f64,
+    /// The vapour's velocity over the net area.
+    #[pyo3(get)]
+    pub actual_vapor_velocity: f64,
+    /// The actual velocity as a percentage of the flooding one.
+    #[pyo3(get)]
+    pub percent_flood: f64,
+    /// The weeping minimum on a net-area basis.
+    #[pyo3(get)]
+    pub minimum_vapor_velocity: f64,
+    /// The vapour's F-factor, in Pa**0.5.
+    #[pyo3(get)]
+    pub fs_factor: f64,
+    /// Whether the actual hole velocity reaches Sinnott's minimum.
+    #[pyo3(get)]
+    pub weeping_ok: bool,
+    /// The fractional entrainment.
+    #[pyo3(get)]
+    pub entrainment: f64,
+    /// Whether the entrainment is under `0.1`.
+    #[pyo3(get)]
+    pub entrainment_ok: bool,
+    /// The downcomer backup.
+    #[pyo3(get)]
+    pub downcommer_backup: PyQty,
+    /// The backup over `tray_spacing + weir_height`.
+    #[pyo3(get)]
+    pub downcommer_backup_fraction: f64,
+    /// Whether the backup is under half that allowance.
+    #[pyo3(get)]
+    pub downcommer_backup_ok: bool,
+    /// The three pressure-drop terms summed.
+    #[pyo3(get)]
+    pub total_tray_pressure_drop: PyQty,
+    /// The same total in mbar.
+    #[pyo3(get)]
+    pub total_tray_pressure_drop_mbar: f64,
+    /// The orifice term.
+    #[pyo3(get)]
+    pub dry_tray_pressure_drop: PyQty,
+    /// The weir height plus the crest.
+    #[pyo3(get)]
+    pub liquid_head_pressure_drop: PyQty,
+    /// The surface tension at the hole rim.
+    #[pyo3(get)]
+    pub residual_head_pressure_drop: PyQty,
+    /// O'Connell's efficiency as a fraction.
+    #[pyo3(get)]
+    pub tray_efficiency: f64,
+    /// The actual velocity over the weeping minimum.
+    #[pyo3(get)]
+    pub turndown_ratio: f64,
+    /// The stated weir length, or the derived `0.73 D`.
+    #[pyo3(get)]
+    pub calculated_weir_length: PyQty,
+    /// The bubbling area.
+    #[pyo3(get)]
+    pub active_area: PyQty,
+    /// The column's cross-section.
+    #[pyo3(get)]
+    pub total_area: PyQty,
+    /// The holes' area.
+    #[pyo3(get)]
+    pub hole_area: PyQty,
+    /// One downcomer's area.
+    #[pyo3(get)]
+    pub downcommer_area: PyQty,
+    /// Five conditions: the three verdicts and a flood inside 50 to 85 per cent.
+    #[pyo3(get)]
+    pub design_ok: bool,
+    /// Caveats.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+impl From<&TrayHydraulicsResult> for PyTrayHydraulicsResult {
+    fn from(r: &TrayHydraulicsResult) -> Self {
+        let quantity = |magnitude_si: f64, unit: &str| PyQty {
+            magnitude_si,
+            unit: unit.to_string(),
+        };
+        Self {
+            flooding_velocity: r.flooding_velocity,
+            actual_vapor_velocity: r.actual_vapor_velocity,
+            percent_flood: r.percent_flood,
+            minimum_vapor_velocity: r.minimum_vapor_velocity,
+            fs_factor: r.fs_factor,
+            weeping_ok: r.weeping_ok,
+            entrainment: r.entrainment,
+            entrainment_ok: r.entrainment_ok,
+            downcommer_backup: quantity(r.downcommer_backup.value, "m"),
+            downcommer_backup_fraction: r.downcommer_backup_fraction,
+            downcommer_backup_ok: r.downcommer_backup_ok,
+            total_tray_pressure_drop: quantity(r.total_tray_pressure_drop.value, "Pa"),
+            total_tray_pressure_drop_mbar: r.total_tray_pressure_drop_mbar,
+            dry_tray_pressure_drop: quantity(r.dry_tray_pressure_drop.value, "Pa"),
+            liquid_head_pressure_drop: quantity(r.liquid_head_pressure_drop.value, "Pa"),
+            residual_head_pressure_drop: quantity(r.residual_head_pressure_drop.value, "Pa"),
+            tray_efficiency: r.tray_efficiency,
+            turndown_ratio: r.turndown_ratio,
+            calculated_weir_length: quantity(r.calculated_weir_length.value, "m"),
+            active_area: quantity(r.active_area.value, "m**2"),
+            total_area: quantity(r.total_area.value, "m**2"),
+            hole_area: quantity(r.hole_area.value, "m**2"),
+            downcommer_area: quantity(r.downcommer_area.value, "m**2"),
+            design_ok: r.design_ok,
+            warnings: r.warnings.iter().map(PyWarning::from).collect(),
+        }
+    }
+}
+
 /// Result of `hydraulics.darcy_weisbach`, transported.
 #[pyclass(
     frozen,
@@ -10080,6 +10206,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         // a calculation.
         PackingHydraulicsResult::CALC_ID => PackingHydraulicsResult::FIELDS.to_vec(),
         PackingSizingResult::CALC_ID => PackingSizingResult::FIELDS.to_vec(),
+        TrayHydraulicsResult::CALC_ID => TrayHydraulicsResult::FIELDS.to_vec(),
         PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
         KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
         DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
@@ -10102,6 +10229,7 @@ pub fn calc_ids() -> Vec<String> {
         OrificeFlowResult::CALC_ID.to_string(),
         PackingHydraulicsResult::CALC_ID.to_string(),
         PackingSizingResult::CALC_ID.to_string(),
+        TrayHydraulicsResult::CALC_ID.to_string(),
         ControlValveCvResult::CALC_ID.to_string(),
         ChokedFlowAreaResult::CALC_ID.to_string(),
         ConductionPlaneWallResult::CALC_ID.to_string(),

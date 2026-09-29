@@ -242,6 +242,7 @@ Five sections, and the difference between them is the point:
 - [`hydraulics.packing_sizing`](./hydraulics/packing_sizing.md)
 - [`hydraulics.pump_power`](./hydraulics/pump_power.md)
 - [`hydraulics.reynolds_number`](./hydraulics/reynolds_number.md)
+- [`hydraulics.tray_hydraulics`](./hydraulics/tray_hydraulics.md)
 
 **Unit operations** - [`process/index.md`](./process/index.md):
 

@@ -70,6 +70,13 @@
 //! merely descriptive. Each calc reads its own range checks from here, so a
 //! bound changed in a spec file changes the code's behaviour with no second
 //! edit - and `cargo test` fails if the two ever disagree.
+//
+// A case's expected values are **recorded measurements**, so a literal that lands on
+// a mathematical constant is a coincidence of the state rather than a hand-written
+// approximation of one - `tray_hydraulics`' 1 m column answers an area of pi/4, and
+// `clippy::approx_constant` reads that as a constant written out by hand.
+#![allow(clippy::approx_constant)]
+
 use azoth_core::{
     Band, CalcSpec, RangeCheck, Severity, SolverSpec, SpecCheck, TestCase, WarningCode,
 };

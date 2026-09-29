@@ -1448,6 +1448,34 @@ class ReynoldsNumberResult:
     warnings: list[Warning]
 
 @final
+class TrayHydraulicsResult:
+    flooding_velocity: float
+    actual_vapor_velocity: float
+    percent_flood: float
+    minimum_vapor_velocity: float
+    fs_factor: float
+    weeping_ok: bool
+    entrainment: float
+    entrainment_ok: bool
+    downcommer_backup: Qty
+    downcommer_backup_fraction: float
+    downcommer_backup_ok: bool
+    total_tray_pressure_drop: Qty
+    total_tray_pressure_drop_mbar: float
+    dry_tray_pressure_drop: Qty
+    liquid_head_pressure_drop: Qty
+    residual_head_pressure_drop: Qty
+    tray_efficiency: float
+    turndown_ratio: float
+    calculated_weir_length: Qty
+    active_area: Qty
+    total_area: Qty
+    hole_area: Qty
+    downcommer_area: Qty
+    design_ok: bool
+    warnings: list[Warning]
+
+@final
 class AbsorptionColumnResult:
     tray_temperature: list[Qty]
     tray_pressure: list[Qty]
@@ -3143,6 +3171,24 @@ def packing_sizing(
 ) -> PackingSizingResult: ...
 def pump_power(rho: float, q: float, H: float, eta: float) -> PumpPowerResult: ...
 def reynolds_number(rho: float, v: float, D: float, mu: float) -> ReynoldsNumberResult: ...
+def tray_hydraulics(
+    tray_type: str,
+    column_diameter: float,
+    tray_spacing: float,
+    weir_height: float,
+    weir_length: float,
+    downcommer_area_fraction: float,
+    hole_diameter: float,
+    hole_area_fraction: float,
+    design_flood_fraction: float,
+    vapor_mass_flow: float,
+    liquid_mass_flow: float,
+    vapor_density: float,
+    liquid_density: float,
+    liquid_viscosity: float,
+    surface_tension: float,
+    relative_volatility: float,
+) -> TrayHydraulicsResult: ...
 def absorption_column(
     gas_components: list[str],
     solvent_components: list[str],

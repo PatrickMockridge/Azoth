@@ -184,6 +184,100 @@ impl CalcResult for PackingSizingResult {
     }
 }
 
+/// Result of `hydraulics.tray_hydraulics`.
+///
+/// **Twenty-four answers to sixteen inputs, and four of them are verdicts.** The class's own
+/// spelling is kept, including `downcommer` for the downcomer - a port that renamed the field
+/// would be a port whose reader cannot find the class's getter.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TrayHydraulicsResult {
+    /// The Souders-Brown flooding velocity, in m/s.
+    pub flooding_velocity: f64,
+    /// The vapour's velocity over the net area, in m/s.
+    pub actual_vapor_velocity: f64,
+    /// The actual velocity as a percentage of the flooding one.
+    pub percent_flood: f64,
+    /// The weeping minimum on a net-area basis, in m/s.
+    pub minimum_vapor_velocity: f64,
+    /// The vapour's F-factor, in Pa**0.5.
+    pub fs_factor: f64,
+    /// Whether the actual **hole** velocity reaches Sinnott's minimum.
+    pub weeping_ok: bool,
+    /// The fractional entrainment.
+    pub entrainment: f64,
+    /// Whether the entrainment is under `0.1`.
+    pub entrainment_ok: bool,
+    /// The downcomer backup.
+    pub downcommer_backup: Length,
+    /// The backup over `tray_spacing + weir_height`.
+    pub downcommer_backup_fraction: f64,
+    /// Whether the backup is under half that allowance.
+    pub downcommer_backup_ok: bool,
+    /// The dry, liquid-head and residual terms summed.
+    pub total_tray_pressure_drop: Pressure,
+    /// The same total in mbar, which is the class's own second getter.
+    pub total_tray_pressure_drop_mbar: f64,
+    /// The orifice term.
+    pub dry_tray_pressure_drop: Pressure,
+    /// The weir height plus the crest.
+    pub liquid_head_pressure_drop: Pressure,
+    /// The surface tension at the hole rim.
+    pub residual_head_pressure_drop: Pressure,
+    /// O'Connell's efficiency as a fraction.
+    pub tray_efficiency: f64,
+    /// The actual velocity over the weeping minimum.
+    pub turndown_ratio: f64,
+    /// The stated weir length, or the derived `0.73 D`.
+    pub calculated_weir_length: Length,
+    /// The bubbling area.
+    pub active_area: Area,
+    /// The column's cross-section.
+    pub total_area: Area,
+    /// The holes' area.
+    pub hole_area: Area,
+    /// One downcomer's area.
+    pub downcommer_area: Area,
+    /// **Five conditions**: the three verdicts and a flood inside 50 to 85 per cent.
+    pub design_ok: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TrayHydraulicsResult {
+    const CALC_ID: &'static str = "hydraulics.tray_hydraulics";
+    const FIELDS: &'static [&'static str] = &[
+        "flooding_velocity",
+        "actual_vapor_velocity",
+        "percent_flood",
+        "minimum_vapor_velocity",
+        "fs_factor",
+        "weeping_ok",
+        "entrainment",
+        "entrainment_ok",
+        "downcommer_backup",
+        "downcommer_backup_fraction",
+        "downcommer_backup_ok",
+        "total_tray_pressure_drop",
+        "total_tray_pressure_drop_mbar",
+        "dry_tray_pressure_drop",
+        "liquid_head_pressure_drop",
+        "residual_head_pressure_drop",
+        "tray_efficiency",
+        "turndown_ratio",
+        "calculated_weir_length",
+        "active_area",
+        "total_area",
+        "hole_area",
+        "downcommer_area",
+        "design_ok",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `hydraulics.friction_factor_colebrook`.
 ///
 /// Carries the solver's own report because the answer is only meaningful

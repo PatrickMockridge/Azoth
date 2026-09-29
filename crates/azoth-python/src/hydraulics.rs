@@ -18,7 +18,7 @@
 
 use azoth_core::units::{
     DynamicViscosity, cubic_meters_per_second, kilograms_per_cubic_meter, kilograms_per_second,
-    meters, meters_per_second, newtons_per_meter, pascal_seconds, pascals,
+    meters, meters_per_second, millimeters, newtons_per_meter, pascal_seconds, pascals,
 };
 use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
@@ -246,6 +246,56 @@ pub fn packing_hydraulics(
         },
     )
     .map(|r| crate::results::PyPackingHydraulicsResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// A tray's flooding, weeping, entrainment, pressure drop and efficiency.
+#[pyfunction]
+#[pyo3(signature = (tray_type, column_diameter, tray_spacing, weir_height, weir_length, downcommer_area_fraction, hole_diameter, hole_area_fraction, design_flood_fraction, vapor_mass_flow, liquid_mass_flow, vapor_density, liquid_density, liquid_viscosity, surface_tension, relative_volatility))]
+#[pyo3(
+    text_signature = "(tray_type, column_diameter, tray_spacing, weir_height, weir_length, downcommer_area_fraction, hole_diameter, hole_area_fraction, design_flood_fraction, vapor_mass_flow, liquid_mass_flow, vapor_density, liquid_density, liquid_viscosity, surface_tension, relative_volatility)"
+)]
+#[allow(clippy::too_many_arguments)] // One per declared input, and a tray reads many.
+pub fn tray_hydraulics(
+    py: Python<'_>,
+    tray_type: &str,
+    column_diameter: f64,
+    tray_spacing: f64,
+    weir_height: f64,
+    weir_length: f64,
+    downcommer_area_fraction: f64,
+    hole_diameter: f64,
+    hole_area_fraction: f64,
+    design_flood_fraction: f64,
+    vapor_mass_flow: f64,
+    liquid_mass_flow: f64,
+    vapor_density: f64,
+    liquid_density: f64,
+    liquid_viscosity: f64,
+    surface_tension: f64,
+    relative_volatility: f64,
+) -> PyResult<crate::results::PyTrayHydraulicsResult> {
+    hyd::tray_hydraulics::tray_hydraulics(hyd::tray_hydraulics::TrayHydraulicsState {
+        tray_type: tray_type.to_string(),
+        column_diameter: meters(column_diameter),
+        tray_spacing: meters(tray_spacing),
+        weir_height: meters(weir_height),
+        weir_length: meters(weir_length),
+        downcommer_area_fraction,
+        // **Millimetres in the spec, metres on the wire**, which is the same conversion every
+        // other length crosses with.
+        hole_diameter: millimeters(hole_diameter),
+        hole_area_fraction,
+        design_flood_fraction,
+        vapor_mass_flow: kilograms_per_second(vapor_mass_flow),
+        liquid_mass_flow: kilograms_per_second(liquid_mass_flow),
+        vapor_density: kilograms_per_cubic_meter(vapor_density),
+        liquid_density: kilograms_per_cubic_meter(liquid_density),
+        liquid_viscosity: pascal_seconds(liquid_viscosity),
+        surface_tension: newtons_per_meter(surface_tension),
+        relative_volatility,
+    })
+    .map(|r| crate::results::PyTrayHydraulicsResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

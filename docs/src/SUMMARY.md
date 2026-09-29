@@ -176,6 +176,7 @@
   - [A packed bed's required column diameter from its flooding velocity](./hydraulics/packing_sizing.md)
   - [Pump shaft power from flow, head and efficiency](./hydraulics/pump_power.md)
   - [Reynolds number for pipe flow](./hydraulics/reynolds_number.md)
+  - [A tray's flooding, weeping, entrainment, pressure drop and efficiency](./hydraulics/tray_hydraulics.md)
 - [Unit operations](./process/index.md)
   - [Absorption column](./process/absorption_column.md)
   - [Component splitter](./process/component_splitter.md)

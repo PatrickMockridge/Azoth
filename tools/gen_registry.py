@@ -441,6 +441,14 @@ def emit_rust(specs: list[dict[str, Any]], source_files: list[str], namespace: s
 //! edit - and `cargo test` fails if the two ever disagree.
 """
     )
+    header.append(
+        "//\n"
+        "// A case's expected values are **recorded measurements**, so a literal that lands on\n"
+        "// a mathematical constant is a coincidence of the state rather than a hand-written\n"
+        "// approximation of one - `tray_hydraulics`' 1 m column answers an area of pi/4, and\n"
+        "// `clippy::approx_constant` reads that as a constant written out by hand.\n"
+        "#![allow(clippy::approx_constant)]\n\n"
+    )
     # Per-calc statics.
     for spec in specs:
         ident = spec["id"].split(".")[-1].upper()

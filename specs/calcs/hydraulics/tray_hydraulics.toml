@@ -1,0 +1,615 @@
+id = "hydraulics.tray_hydraulics"
+name = "A tray's flooding, weeping, entrainment, pressure drop and efficiency"
+equation = "The Fair capacity factor `K` interpolated over tray spacing and corrected by `exp(-1.463 FLV**0.842) / exp(-1.463 0.1**0.842)` and by `(sigma/0.020)**0.2`; Souders-Brown `u_flood = K sqrt((rho_l - rho_v)/rho_v)`; Sinnott's weeping minimum `u_min = [K_w - 0.90 (25.4 - d_h)] / sqrt(rho_v)` with `K_w = 7 + 0.27 sqrt(h_w + h_ow)`; Fair's entrainment `psi = a (percent_flood/100)**b`; and a tray pressure drop of a dry orifice term `51 (u_h/C_o)**2 rho_v/rho_l`, the liquid head `h_w + h_ow`, and a residual head `6 sigma/(rho_l g d_h)`, all in mm of liquid."
+latex = '''u_{\mathrm{flood}} = K(S,\mathrm{FLV})\left(\frac{\sigma}{\sigma_0}\right)^{0.2} f_t \sqrt{\frac{\rho_\ell-\rho_v}{\rho_v}}, \qquad K(S,\mathrm{FLV}) = \frac{k(S)\,e^{-1.463\,\mathrm{FLV}^{0.842}}}{e^{-1.463\,(0.1)^{0.842}}}'''
+assumptions = ["**the five correlations are the class's own, with its constants**: the Fair table and its `-1.463`/`0.842` correction, the `1.05`/`0.85` tray factors, Sinnott's `0.90 (25.4 - d_h)`, Fair's three `(a, b)` entrainment pairs, the three orifice coefficients and O'Connell's `51 - 32.5 log10(alpha mu)`.", "**the tray type is read at four sites and its fallback differs at each**: the hole area is `holeAreaFraction` / `0.14` / `0.12`, the flooding factor `1.0` / `1.05` / `0.85`, the orifice coefficient `0.73` / `0.80` / `0.65`, and only the weeping check returns for `bubble-cap` alone.", "**`activeAreaFraction` is derived and not an input**, so the class has no setter for it: `1 - 2 downcommerAreaFraction` is recomputed on every `calculate`, and the field's own `0.80` initialiser survives only until then.", "**`turndownRatio` is written twice and the second write is the same number.** The weeping check's `actualHoleVelocity/uMinHole` and the turndown pass's `actualVaporVelocity/minimumVaporVelocity` are equal wherever both are defined, so a bubble-cap tray keeps the field's `0.0`.", "**the design verdict is five conditions**: `weepingOk && entrainmentOk && downcommerBackupOk && percentFlood >= 50 && percentFlood <= 85`, so a well-behaved tray at 46 per cent of flood is not a design.", "**`total_tray_pressure_drop_mbar` is the same number in another unit** - `totalTrayPressureDrop / 100`, since 1 mbar is 100 Pa - and is published because the class publishes it.\n"]
+references = ["Fair, J. R. (1961). \\\"How to predict sieve tray entrainment and flooding.\\\" Petro/Chem Engineer 33(10), 45-52. The capacity-factor chart the flooding velocity is fitted from, and the entrainment correlation.", "Sinnott, R. K. (2005). \\\"Chemical Engineering Design\\\", 4th ed., Butterworth-Heinemann, ch. 11. The weeping minimum vapour velocity and the weir-crest formula.", "O'Connell, H. E. (1946). \\\"Plate efficiency of fractionating and absorbing columns and absorbers.\\\" Trans. AIChE 42, 741-755. The tray efficiency.", "Kister, H. Z. (1992). \\\"Distillation Design\\\", McGraw-Hill, Table 6.3. The tabulated capacity factors the Fair chart is read at.", "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/distillation/internals/TrayHydraulicsCalculator.java` is the port source.", "`validation/neqsim/captures/tray_hydraulics_probe.tsv` - eight states driven through the calculator directly, each printing the sixteen inputs it was given and all twenty-four answers.\n"]
+[source]
+standard = "NeqSim master `TrayHydraulicsCalculator`"
+edition = "`calculateAreas` through `assessDesign`, the class's ten calculation methods, ported in its own order. **`sizeColumnDiameter` is a separate entry point of the class and is outside this calculation's inputs.**"
+[inputs]
+[inputs.tray_type]
+type = "enum"
+values = ["sieve", "valve", "bubble-cap"]
+description = "the tray type, which the hole area, the flooding velocity's factor, the orifice coefficient and the weeping check all branch on. An unrecognised type reads as a bubble-cap.\n"
+[inputs.column_diameter]
+unit = "m"
+description = "the column's internal diameter, which the four areas are computed from.\n"
+[inputs.tray_spacing]
+unit = "m"
+description = "the tray spacing, which the Fair capacity factor and the downcomer backup's allowance read.\n"
+[inputs.weir_height]
+unit = "m"
+description = "the weir height, which the liquid head and the weeping chart take in millimetres.\n"
+[inputs.weir_length]
+unit = "m"
+description = "the weir length. **At or below zero means the class derives it** as `0.73 D`, and that derived value is what is reported and what every crest term reads.\n"
+[inputs.downcommer_area_fraction]
+unit = "dimensionless"
+description = "the downcomer area as a fraction of the total, which fixes the active area as `1 - 2` of it.\n"
+[inputs.hole_diameter]
+unit = "mm"
+description = "the hole diameter, which the weeping minimum and the residual head both read. **In millimetres**, which is the unit the class's two correlations are written in.\n"
+[inputs.hole_area_fraction]
+unit = "dimensionless"
+description = "the hole area as a fraction of the active area, read for a `sieve` tray alone.\n"
+[inputs.design_flood_fraction]
+unit = "dimensionless"
+description = "the design flooding fraction. **Stored and never read** by any of the twenty-four answers, which is the class's own state rather than this port's omission.\n"
+[inputs.vapor_mass_flow]
+unit = "kg/s"
+description = "the vapour's mass flow.\n"
+[inputs.liquid_mass_flow]
+unit = "kg/s"
+description = "the liquid's mass flow.\n"
+[inputs.vapor_density]
+unit = "kg/m**3"
+description = "the vapour's mass density, which divides the mass flow into a volumetric one and appears in the F-factor.\n"
+[inputs.liquid_density]
+unit = "kg/m**3"
+description = "the liquid's mass density, which every head in millimetres of liquid is converted by.\n"
+[inputs.liquid_viscosity]
+unit = "Pa*s"
+description = "the liquid's dynamic viscosity, which O'Connell's efficiency takes in centipoise.\n"
+[inputs.surface_tension]
+unit = "N/m"
+description = "the interfacial surface tension, which corrects the flooding velocity against a `0.020` N/m reference and enters the residual head.\n"
+[inputs.relative_volatility]
+unit = "dimensionless"
+description = "the relative volatility of the key components, which O'Connell's efficiency reads beside the liquid viscosity.\n"
+[outputs]
+[outputs.flooding_velocity]
+unit = "m/s"
+description = "the Souders-Brown flooding velocity at the capacity factor the spacing and the flow parameter give, corrected for surface tension and tray type.\n"
+[outputs.actual_vapor_velocity]
+unit = "m/s"
+description = "the vapour's velocity over the **net** area, which is the total less one downcomer.\n"
+[outputs.percent_flood]
+unit = "dimensionless"
+description = "the actual velocity as a percentage of the flooding one, and zero where the flooding velocity is not positive.\n"
+[outputs.minimum_vapor_velocity]
+unit = "m/s"
+description = "the weeping minimum on a **net-area** basis: Sinnott's hole minimum scaled by `hole_area / net_area`. **Zero for a bubble-cap tray**, and zero where there is no hole area.\n"
+[outputs.fs_factor]
+unit = "dimensionless"
+description = "`u_v sqrt(rho_v)`, in Pa**0.5**, declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.weeping_ok]
+type = "boolean"
+description = "whether the actual **hole** velocity reaches the hole minimum. **Always true for a bubble-cap tray**, which returns before the check.\n"
+[outputs.entrainment]
+unit = "dimensionless"
+description = "the fractional entrainment, from Fair's fit at the flow parameter's band, capped at one.\n"
+[outputs.entrainment_ok]
+type = "boolean"
+description = "whether the entrainment is under `0.1`.\n"
+[outputs.downcommer_backup]
+unit = "m"
+description = "the tray pressure drop as liquid head, plus the head in the downcomer, plus the apron loss.\n"
+[outputs.downcommer_backup_fraction]
+unit = "dimensionless"
+description = "the backup over `tray_spacing + weir_height`, which is the allowance it is judged against.\n"
+[outputs.downcommer_backup_ok]
+type = "boolean"
+description = "whether the backup is under half that allowance.\n"
+[outputs.total_tray_pressure_drop]
+unit = "Pa"
+description = "the dry, liquid-head and residual terms summed.\n"
+[outputs.total_tray_pressure_drop_mbar]
+unit = "dimensionless"
+description = "the same total in mbar - the total over `100` - declared dimensionless because no vocabulary unit expresses it.\n"
+[outputs.dry_tray_pressure_drop]
+unit = "Pa"
+description = "the orifice term: `51 (u_h/C_o)**2 rho_v/rho_l` in millimetres of liquid, converted.\n"
+[outputs.liquid_head_pressure_drop]
+unit = "Pa"
+description = "the weir height plus the crest, converted.\n"
+[outputs.residual_head_pressure_drop]
+unit = "Pa"
+description = "the surface tension at the hole rim, `6 sigma/(rho_l g d_h)`, converted.\n"
+[outputs.tray_efficiency]
+unit = "dimensionless"
+description = "O'Connell's efficiency as a fraction, clamped to `[0.1, 1]`.\n"
+[outputs.turndown_ratio]
+unit = "dimensionless"
+description = "the actual velocity over the weeping minimum, and **`0.0` for a bubble-cap tray**, whose minimum is zero and whose early return leaves the field alone.\n"
+[outputs.calculated_weir_length]
+unit = "m"
+description = "the stated weir length, or `0.73 D` where the stated one is at or below zero.\n"
+[outputs.active_area]
+unit = "m**2"
+description = "the bubbling area: the total less two downcomers.\n"
+[outputs.total_area]
+unit = "m**2"
+description = "the column's cross-section.\n"
+[outputs.hole_area]
+unit = "m**2"
+description = "the holes' area, which is the tray type's fraction of the active area.\n"
+[outputs.downcommer_area]
+unit = "m**2"
+description = "one downcomer's area.\n"
+[outputs.design_ok]
+type = "boolean"
+description = "**five conditions, not one**: wetting, entrainment and backup verdicts, and a flood inside 50 to 85 per cent. A tray at 46 per cent of flood is not a design.\n"
+[worked_example]
+source = "derived from the equation above"
+derivation = "The class's own geometry at 1.0 kg/s of vapour, which is the first captured row. The four areas and the weir length come first, then the Fair capacity factor at the flow parameter, then Souders-Brown.\n\n  A_total  = pi/4 * 1.0**2                                   = 0.7853981633974483 m**2\n  A_down   = A_total * 0.10                                  = 0.07853981633974483 m**2\n  A_active = A_total * (1 - 2 * 0.10)                        = 0.6283185307179586 m**2\n  A_hole   = A_active * 0.10                                 = 0.06283185307179587 m**2\n  L_w      = 0.73 * 1.0                                      = 0.73 m   (the input was -1.0)\n  FLV      = (3.0 / 1.0) * sqrt(2.0 / 800.0)                 = 0.15000000000000002\n  k(0.6)   = 0.070 + (0.6 - 0.46)/(0.61 - 0.46) * (0.085 - 0.070) = 0.084\n  corr     = exp(-1.463 * 0.15**0.842)                       = 0.7436751434586581\n  norm     = exp(-1.463 * 0.1**0.842)                        = 0.8101821079147267\n  K        = 0.084 * 0.7436751434586581 / 0.8101821079147267 = 0.07710453173461373\n  u_flood  = K * (0.02/0.020)**0.2 * 1.0 * sqrt(798/2)       = 1.5401618151322958 m/s\n  A_net    = 0.7853981633974483 - 0.07853981633974483        = 0.7068583470577035 m**2\n  u_v      = (1.0 / 2.0) / 0.7068583470577035                = 0.7073553026306459 m/s\n  flood    = 0.7073553026306459 / 1.5401618151322958 * 100   = 45.9273367045453 %\n\nThe tray type is `sieve`, so its flooding factor is `1.0` and its orifice coefficient is `0.73`; the surface tension is the correction's own reference, so that factor is exactly one. **The design verdict is false on one condition alone**: 45.9 per cent of flood is under the window's lower bound of `50`, while all three verdicts before it are true."
+tolerance = 1e-9
+[worked_example.inputs]
+tray_type = "sieve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 1.0
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[worked_example.expected]
+flooding_velocity = 1.5401618151322958
+actual_vapor_velocity = 0.7073553026306459
+percent_flood = 45.9273367045453
+minimum_vapor_velocity = 0.03142696805273545
+fs_factor = 1.0003514623967846
+entrainment = 0.002599206586176727
+downcommer_backup = 0.16802167023115
+downcommer_backup_fraction = 0.2584948772786923
+total_tray_pressure_drop = 695.9918297514104
+total_tray_pressure_drop_mbar = 6.959918297514104
+dry_tray_pressure_drop = 118.9059893697176
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 22.507907903927652
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.06283185307179587
+downcommer_area = 0.07853981633974483
+
+[[tests]]
+id = "sieve_default_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "sieve_default"
+type = "reference"
+status = "active"
+source = "The class's own geometry at 1.0 kg/s of vapour - the state every other row moves one thing from.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "sieve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 1.0
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 1.5401618151322958
+actual_vapor_velocity = 0.7073553026306459
+percent_flood = 45.9273367045453
+minimum_vapor_velocity = 0.03142696805273545
+fs_factor = 1.0003514623967846
+entrainment = 0.002599206586176727
+downcommer_backup = 0.16802167023115
+downcommer_backup_fraction = 0.2584948772786923
+total_tray_pressure_drop = 695.9918297514104
+total_tray_pressure_drop_mbar = 6.959918297514104
+dry_tray_pressure_drop = 118.9059893697176
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 22.507907903927652
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.06283185307179587
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "valve_tray"
+type = "reference"
+status = "active"
+source = "The same state on a **valve** tray, which reads `0.14` for the hole area, `1.05` for the flooding factor and `0.80` for the orifice coefficient.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "valve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 1.0
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 1.6171699058889109
+actual_vapor_velocity = 0.7073553026306459
+percent_flood = 43.740320670995516
+minimum_vapor_velocity = 0.043997755273829625
+fs_factor = 1.0003514623967846
+entrainment = 0.002159342150706642
+downcommer_backup = 0.1593071190161311
+downcommer_backup_fraction = 0.24508787540943244
+total_tray_pressure_drop = 627.6000318159421
+total_tray_pressure_drop_mbar = 6.276000318159421
+dry_tray_pressure_drop = 50.514191434249426
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 16.077077074234037
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.08796459430051422
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "bubble_cap_tray"
+type = "reference"
+status = "active"
+source = "The same state on a **bubble-cap** tray, the class's fallback for an unrecognised type: `0.12` hole area, `0.85` flooding factor, `0.65` orifice coefficient, and a weeping minimum of `0.0`.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "bubble-cap"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 1.0
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 1.3091375428624514
+actual_vapor_velocity = 0.7073553026306459
+percent_flood = 54.03216082887682
+minimum_vapor_velocity = 0.0
+fs_factor = 1.0003514623967846
+entrainment = 0.004820020452860944
+downcommer_backup = 0.16614147700918194
+downcommer_backup_fraction = 0.25560227232181837
+total_tray_pressure_drop = 681.236073345405
+total_tray_pressure_drop_mbar = 6.8123607334540495
+dry_tray_pressure_drop = 104.15023296371221
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 0.0
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.07539822368615504
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "sieve_high_vapor"
+type = "reference"
+status = "active"
+source = "A heavier vapour load, at 94 per cent of flood - above the design window's ceiling.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "sieve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 2.4
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 1.7973919219429215
+actual_vapor_velocity = 1.6976527263135504
+percent_flood = 94.45089329646278
+minimum_vapor_velocity = 0.03142696805273545
+fs_factor = 2.400843509752283
+entrainment = 0.04024881230326607
+downcommer_backup = 0.24014100119443438
+downcommer_backup_fraction = 0.36944769414528367
+total_tray_pressure_drop = 1261.984339151266
+total_tray_pressure_drop_mbar = 12.619843391512662
+dry_tray_pressure_drop = 684.8984987695734
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 54.018978969426364
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.06283185307179587
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "sieve_low_vapor"
+type = "reference"
+status = "active"
+source = "A light vapour load where the actual **hole** velocity falls below Sinnott's minimum, so weeping trips.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "sieve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 0.03
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 0.1504028523376681
+actual_vapor_velocity = 0.021220659078919377
+percent_flood = 14.109213189173477
+minimum_vapor_velocity = 0.03142696805273545
+fs_factor = 0.030010543871903536
+entrainment = 3.1650533843357646E-5
+downcommer_backup = 0.1528841862888354
+downcommer_backup_fraction = 0.23520644044436215
+total_tray_pressure_drop = 577.1928557721254
+total_tray_pressure_drop_mbar = 5.771928557721254
+dry_tray_pressure_drop = 0.10701539043274584
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 0.6752372371178295
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.06283185307179587
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "valve_low_vapor"
+type = "reference"
+status = "active"
+source = "The same light load on a valve tray, whose minimum is higher, so the weeping verdict is the type's and not the load's.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "valve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 0.03
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 0.15792299495455148
+actual_vapor_velocity = 0.021220659078919377
+percent_flood = 13.437345894450933
+minimum_vapor_velocity = 0.043997755273829625
+fs_factor = 0.030010543871903536
+entrainment = 2.6682006942310994E-5
+downcommer_backup = 0.1528763431927419
+downcommer_backup_fraction = 0.23519437414267985
+total_tray_pressure_drop = 577.1313031539836
+total_tray_pressure_drop_mbar = 5.771313031539836
+dry_tray_pressure_drop = 0.04546277229082449
+liquid_head_pressure_drop = 567.6370214840549
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 0.4823123122270211
+calculated_weir_length = 0.73
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.08796459430051422
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "sieve_stated_weir"
+type = "reference"
+status = "active"
+source = "A stated weir length where the class's own is `-1.0`: read back as the calculated one, and moving none of the flood, the pressure drop or the turndown.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "sieve"
+column_diameter = 1.0
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = 0.7
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 1.0
+liquid_mass_flow = 3.0
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 1.5401618151322958
+actual_vapor_velocity = 0.7073553026306459
+percent_flood = 45.9273367045453
+minimum_vapor_velocity = 0.03142696805273545
+fs_factor = 1.0003514623967846
+entrainment = 0.002599206586176727
+downcommer_backup = 0.16990229088537892
+downcommer_backup_fraction = 0.2613881398236599
+total_tray_pressure_drop = 700.9635037719863
+total_tray_pressure_drop_mbar = 7.009635037719863
+dry_tray_pressure_drop = 118.9059893697176
+liquid_head_pressure_drop = 572.6086955046309
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 22.507907903927652
+calculated_weir_length = 0.7
+active_area = 0.6283185307179586
+total_area = 0.7853981633974483
+hole_area = 0.06283185307179587
+downcommer_area = 0.07853981633974483
+[[tests]]
+id = "sieve_wide"
+type = "reference"
+status = "active"
+source = "A wider column at a proportionally larger load, so the four areas are not all one diameter's.\n"
+tolerance = 1e-9
+[tests.inputs]
+tray_type = "sieve"
+column_diameter = 1.8
+tray_spacing = 0.6
+weir_height = 0.05
+weir_length = -1.0
+downcommer_area_fraction = 0.1
+hole_diameter = 12.7
+hole_area_fraction = 0.1
+design_flood_fraction = 0.8
+vapor_mass_flow = 3.2
+liquid_mass_flow = 9.7
+vapor_density = 2.0
+liquid_density = 800.0
+liquid_viscosity = 0.001
+surface_tension = 0.02
+relative_volatility = 2.0
+[tests.expected]
+flooding_velocity = 1.5361697205923206
+actual_vapor_velocity = 0.6986225211166874
+percent_flood = 45.478211928777675
+minimum_vapor_velocity = 0.03142696805273545
+fs_factor = 0.9880014443425035
+entrainment = 0.0025039338581161973
+downcommer_backup = 0.20458914207168336
+downcommer_backup_fraction = 0.31475252626412825
+total_tray_pressure_drop = 776.7841570842593
+total_tray_pressure_drop_mbar = 7.7678415708425925
+dry_tray_pressure_drop = 115.9881621652481
+liquid_head_pressure_drop = 651.3471760213733
+residual_head_pressure_drop = 9.448818897637794
+tray_efficiency = 0.41216525140920607
+turndown_ratio = 22.230032497706326
+calculated_weir_length = 1.314
+active_area = 2.0357520395261863
+total_area = 2.5446900494077327
+hole_area = 0.20357520395261863
+downcommer_area = 0.2544690049407733
+
+[[valid_range]]
+quantity = "column_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the four areas are its square\n"
+[[valid_range]]
+quantity = "tray_spacing"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the capacity factor is read at it and the backup is judged against it\n"
+[[valid_range]]
+quantity = "weir_height"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a weir of no height is a tray with no liquid head, which is degenerate but readable\n"
+[[valid_range]]
+quantity = "hole_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the weeping minimum and the residual head both read it, and the latter divides by it\n"
+[[valid_range]]
+quantity = "hole_area_fraction"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the hole area is the active area times it, and both hole velocities divide by that\n"
+[[valid_range]]
+quantity = "downcommer_area_fraction"
+min = 0
+min_inclusive = true
+max = 0.5
+max_inclusive = false
+severity = "error"
+rationale = "the active area is `1 - 2` of it, so half leaves no bubbling area\n"
+[[valid_range]]
+quantity = "vapor_mass_flow"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flow parameter and both velocities divide by it\n"
+[[valid_range]]
+quantity = "liquid_mass_flow"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the weir crest and the flow parameter both read it\n"
+[[valid_range]]
+quantity = "vapor_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the volumetric flow, the F-factor and the flooding velocity all divide by it\n"
+[[valid_range]]
+quantity = "liquid_density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "every head in millimetres of liquid is converted by it\n"
+[[valid_range]]
+quantity = "liquid_viscosity"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "O'Connell's efficiency takes its logarithm\n"
+[[valid_range]]
+quantity = "surface_tension"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the flooding correction raises it to the 0.2\n"
+[[valid_range]]
+quantity = "relative_volatility"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "O'Connell's efficiency takes its logarithm too\n"
+[implementations]
+python = "azoth.hydraulics.tray_hydraulics"
+rust = "azoth_hydraulics::tray_hydraulics"

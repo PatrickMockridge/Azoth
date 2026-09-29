@@ -155,6 +155,7 @@
 //!   - specs/calcs/hydraulics/packing_sizing.toml
 //!   - specs/calcs/hydraulics/pump_power.toml
 //!   - specs/calcs/hydraulics/reynolds_number.toml
+//!   - specs/calcs/hydraulics/tray_hydraulics.toml
 //!   - specs/models/process/absorption_column.toml
 //!   - specs/models/process/component_splitter.toml
 //!   - specs/models/process/compressor.toml
@@ -1078,6 +1079,57 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("hydraulics.reynolds_number", "v", "velocity"),
     ("hydraulics.reynolds_number", "D", "length"),
     ("hydraulics.reynolds_number", "mu", "dynamic_viscosity"),
+    ("hydraulics.tray_hydraulics", "column_diameter", "length"),
+    ("hydraulics.tray_hydraulics", "tray_spacing", "length"),
+    ("hydraulics.tray_hydraulics", "weir_height", "length"),
+    ("hydraulics.tray_hydraulics", "weir_length", "length"),
+    (
+        "hydraulics.tray_hydraulics",
+        "downcommer_area_fraction",
+        "dimensionless",
+    ),
+    ("hydraulics.tray_hydraulics", "hole_diameter", "length"),
+    (
+        "hydraulics.tray_hydraulics",
+        "hole_area_fraction",
+        "dimensionless",
+    ),
+    (
+        "hydraulics.tray_hydraulics",
+        "design_flood_fraction",
+        "dimensionless",
+    ),
+    ("hydraulics.tray_hydraulics", "vapor_mass_flow", "mass_rate"),
+    (
+        "hydraulics.tray_hydraulics",
+        "liquid_mass_flow",
+        "mass_rate",
+    ),
+    (
+        "hydraulics.tray_hydraulics",
+        "vapor_density",
+        "mass_density",
+    ),
+    (
+        "hydraulics.tray_hydraulics",
+        "liquid_density",
+        "mass_density",
+    ),
+    (
+        "hydraulics.tray_hydraulics",
+        "liquid_viscosity",
+        "dynamic_viscosity",
+    ),
+    (
+        "hydraulics.tray_hydraulics",
+        "surface_tension",
+        "surface_tension",
+    ),
+    (
+        "hydraulics.tray_hydraulics",
+        "relative_volatility",
+        "dimensionless",
+    ),
     ("process.absorption_column", "gas_n", "molar_flow"),
     ("process.absorption_column", "gas_z", "dimensionless"),
     ("process.absorption_column", "gas_p", "pressure"),

@@ -18,3 +18,4 @@ Every calculation in this section is generated from its specification. Each page
 | [`hydraulics.packing_sizing`](./packing_sizing.md) | $d = \operatorname{round}_{\mathrm{std}}\!\left(\sqrt{\frac{4\,m_v}{\pi\,\rho_v\,u_{\mathrm{flood}}\,f}}\right)$ | NeqSim master `PackingHydraulicsCalculator` |
 | [`hydraulics.pump_power`](./pump_power.md) | $P = \frac{\rho\,g\,Q\,H}{\eta}$ | standard pump hydraulics; the hydraulic-power relation in any fluids text |
 | [`hydraulics.reynolds_number`](./reynolds_number.md) | $Re = \frac{\rho v D}{\mu}$ | Crane TP-410 |
+| [`hydraulics.tray_hydraulics`](./tray_hydraulics.md) | $u_{\mathrm{flood}} = K(S,\mathrm{FLV})\left(\frac{\sigma}{\sigma_0}\right)^{0.2} f_t \sqrt{\frac{\rho_\ell-\rho_v}{\rho_v}}, \qquad K(S,\mathrm{FLV}) = \frac{k(S)\,e^{-1.463\,\mathrm{FLV}^{0.842}}}{e^{-1.463\,(0.1)^{0.842}}}$ | NeqSim master `TrayHydraulicsCalculator` |
