@@ -1,0 +1,101 @@
+components 2
+system_phases 2
+T_K 356.000000000000
+P_bara 1.00000000000000
+n_water 0.600000000000000
+step_h 1.00000000000000e-06
+
+--- phase 0 (PhaseSrkCPA, gas) ---
+moles_in_phase                             1.00000000000000
+total_volume_m3                            2810.82412895803
+covolume_B                                 2.11002000000000
+b_0 1.45150000000000   n_0 0.600000000000000
+b_1 3.09780000000000   n_1 0.400000000000000
+calc_lngi(0) at base                       0.000322814509676737
+closed form at base                        0.000322814509676737
+pin holds?                                 0.00000000000000
+calc_lngij(0) at base4.58511125347245e-08 / 0.000322814509676737
+calc_lngij(1) at base9.78557191939853e-08 / 0.000322814509676737
+
+=== j = 0 ===
+V(n_j + h) after pin                       2810.82697436703
+V(n_j - h) after pin                       2810.82128354902
+B(n_j + h)                                 2.11002145150000
+B(n_j - h)                                 2.11001854850000
+dB/dn_j (FD)                               1.45149999997152
+b_j                                        1.45150000000000
+d_lngi_dn_j, V free (phase FD)             -0.000326808098269869
+d_lngi_dn_j, V held at V0                  4.58511267148465e-08
+calc_lngij(j)                              4.58511125347245e-08
+difference (lngij - FD)                    0.000326853949382404
+ratio lngij / FD                           -0.000140299805229618
+
+=== j = 1 ===
+V(n_j + h) after pin                       2810.82688790484
+V(n_j - h) after pin                       2810.82137001121
+B(n_j + h)                                 2.11002309780000
+B(n_j - h)                                 2.11001690220000
+dB/dn_j (FD)                               3.09780000007365
+b_j                                        3.09780000000000
+d_lngi_dn_j, V free (phase FD)             -0.000316824126802380
+d_lngi_dn_j, V held at V0                  9.78557512798517e-08
+calc_lngij(j)                              9.78557191939853e-08
+difference (lngij - FD)                    0.000316921982521574
+ratio lngij / FD                           -0.000308864480055912
+
+--- phase 1 (PhaseSrkCPA, aqueous) ---
+moles_in_phase                             1.00000000000000
+total_volume_m3                            2.76927552497278
+covolume_B                                 2.11002000000000
+b_0 1.45150000000000   n_0 0.600000000000000
+b_1 3.09780000000000   n_1 0.400000000000000
+calc_lngi(0) at base                       0.413194451549674
+closed form at base                        0.413194451549674
+pin holds?                                 0.00000000000000
+calc_lngij(0) at base0.0733615845005645 / 0.413194451549674
+calc_lngij(1) at base0.156568733355735 / 0.413194451549674
+
+=== j = 0 ===
+V(n_j + h) after pin                       2.76927734038113
+V(n_j - h) after pin                       2.76927370956453
+B(n_j + h)                                 2.11002145150000
+B(n_j - h)                                 2.11001854850000
+dB/dn_j (FD)                               1.45149999997152
+b_j                                        1.45150000000000
+d_lngi_dn_j, V free (phase FD)             -0.267420630112314
+d_lngi_dn_j, V held at V0                  0.0733615845016633
+calc_lngij(j)                              0.0733615845005645
+difference (lngij - FD)                    0.340782214612878
+ratio lngij / FD                           -0.274330310528972
+
+=== j = 1 ===
+V(n_j + h) after pin                       2.76927972504926
+V(n_j - h) after pin                       2.76927132489653
+B(n_j + h)                                 2.11002309780000
+B(n_j - h)                                 2.11001690220000
+dB/dn_j (FD)                               3.09780000007365
+b_j                                        3.09780000000000
+d_lngi_dn_j, V free (phase FD)             -0.631855183869101
+d_lngi_dn_j, V held at V0                  0.156568733450380
+calc_lngij(j)                              0.156568733355735
+difference (lngij - FD)                    0.788423917224836
+ratio lngij / FD                           -0.247792116536897
+
+=== convergence: |FD - calc_lngij| / |calc_lngij| ===
+h          phase            j                relative gap
+1e-04      0                0                4.047e-09
+1e-04      0                1                1.729e-09
+1e-04      1                0                2.798e-10
+1e-04      1                1                1.260e-09
+1e-05      0                0                1.369e-08
+1e-05      0                1                4.498e-09
+1e-05      1                0                5.281e-11
+1e-05      1                1                1.949e-11
+1e-06      0                0                3.093e-07
+1e-06      0                1                3.279e-07
+1e-06      1                0                1.498e-11
+1e-06      1                1                6.045e-10
+1e-07      0                0                1.492e-06
+1e-07      0                1                3.279e-07
+1e-07      1                0                1.250e-08
+1e-07      1                1                6.364e-10
