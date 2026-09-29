@@ -80,12 +80,25 @@ composition into large or concurrent simulations; Python for the ecosystem, basi
 calculations and the data-science and AI-SDK tooling. That there are two means they are
 compared case by case, and that comparison is a test, not the reason there are two.
 
-**Everything that names them is generated.** A new calculation used to cost eleven hand
-edits across Rust and Python on top of its two kernels — result structs, transport
-classes, registration lines, `__all__` entries, dispatch wrappers. Each of those is a
-function of the spec's `inputs:`, `outputs:` and the id, and is now derived from the id or
-emitted by a generator, which reduces a ported calculation to **four hand-written files**:
-the spec, the Rust kernel, the Python kernel, and the test.
+**Everything that names them is generated, and that is not the same as cheap.** A new
+calculation used to cost eleven hand edits across Rust and Python on top of its two
+kernels — result structs, transport classes, registration lines, `__all__` entries,
+dispatch wrappers. Each of those is a function of the spec's `inputs:`, `outputs:` and the
+id, and is now derived from the id or emitted by a generator. **Four is a count of *kinds*
+of file and not of files.** Measured on `hydraulics.tray_hydraulics`, whose commit touched
+thirty-one paths: **ten** were emitted by four generators, and **thirteen** were
+hand-maintained — the spec, the two kernels, the test, the crate's result type and its
+`lib.rs` line, the pyo3 wrapper and its two registration sites, the transported result
+struct and its `From`, the bridge adapter, the Python result dataclass, and
+`tools/gen_registry.py`'s own id table. The rest of those thirty-one are prose, a link and
+an existing test's expectation.
+
+**A `process.*` model is dearer again**, because both languages carry a result record and a
+public wrapper of their own: measured over the four columns' capacity limits, **ten sites per
+model** — its model spec, its case file and its palette entry, its model and its reference
+twin, plus a line each in the pyo3 wrapper, the transported results, the bridge, the Python
+result dataclass and the public package. Making the count below true is the
+registration-hardening tranche's subject and not this page's.
 
 **A spec declares every result field, in both directions.** A field the spec does not name
 cannot be emitted by a generator, and a declared output with no field is a promise the
