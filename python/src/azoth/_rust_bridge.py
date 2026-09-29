@@ -4736,6 +4736,17 @@ def packed_column(
         temperature_residual=result.temperature_residual,
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
+        hetp=from_si(result.hetp.magnitude_si, result.hetp.unit),
+        theoretical_stages=result.theoretical_stages,
+        percent_flood=result.percent_flood,
+        flooding_velocity=result.flooding_velocity,
+        packing_pressure_drop=from_si(
+            result.packing_pressure_drop.magnitude_si, result.packing_pressure_drop.unit
+        ),
+        hydraulics_ok=result.hydraulics_ok,
+        internal_diameter=from_si(
+            result.internal_diameter.magnitude_si, result.internal_diameter.unit
+        ),
         warnings=_warnings(result.warnings),
     )
 

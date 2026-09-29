@@ -12,7 +12,9 @@ use azoth_core::units::{
 use azoth_hydraulics::packing::{
     critical_surface_tension, display_name, normalize, packing, packing_or_default,
 };
-use azoth_hydraulics::packing_hydraulics::{PackingState, packing_hydraulics};
+use azoth_hydraulics::packing_hydraulics::{
+    PackingState, packing_hydraulics, packing_hydraulics_with,
+};
 use azoth_hydraulics::spec_gen;
 use azoth_test_support as common;
 
@@ -196,5 +198,70 @@ fn the_verdicts_are_the_classs_thresholds() {
     assert_eq!(
         pascals(wet.total_pressure_drop.value).value,
         wet.total_pressure_drop.value
+    );
+}
+
+/// **The category override reaches every place the category is read, and `None` is the name's own
+/// row.**
+///
+/// `PackedColumn.setStructuredPacking` states the category on the *column* rather than selecting a
+/// differently-named table row by it, so a port that could only state it by name would need one row
+/// per packing per category. The override is held to the capture's own structured row
+/// (`mellapak_250y_absorber`): `Mellapak-250Y` at `Some(true)` reproduces it, `Some(false)` does
+/// not, and the geometry is the same row either way - what moves is the category's four reads.
+///
+/// **`None` being bit-identical is the load-bearing assertion.** It is what says the two functions
+/// cannot state different numbers, so the four existing oracles cannot tell which one ran and the
+/// new path costs them nothing.
+#[test]
+fn the_category_override_reaches_every_read_and_none_is_the_names_own_row() {
+    let state = || PackingState {
+        column_diameter: meters(1.2),
+        packed_height: 8.0,
+        vapor_mass_flow: kilograms_per_second(0.28),
+        liquid_mass_flow: kilograms_per_second(4.0),
+        vapor_density: kilograms_per_cubic_meter(30.0),
+        liquid_density: kilograms_per_cubic_meter(1000.0),
+        vapor_viscosity: pascal_seconds(1.7e-5),
+        liquid_viscosity: pascal_seconds(5.5e-4),
+        surface_tension: newtons_per_meter(0.065),
+        vapor_diffusivity: 4.0e-7,
+        liquid_diffusivity: 2.2e-9,
+        hydraulic_capacity_factor: 1.0,
+    };
+
+    // `None` is the plain call, to the bit.
+    let plain = packing_hydraulics("Mellapak-250Y", state()).expect("the state computes");
+    let none = packing_hydraulics_with("Mellapak-250Y", state(), None).expect("the state computes");
+    assert_eq!(plain, none, "`None` must be the name's own row exactly");
+
+    // The name's own row is structured already, so `Some(true)` is the capture's row.
+    let structured =
+        packing_hydraulics_with("Mellapak-250Y", state(), Some(true)).expect("the state computes");
+    assert_eq!(structured.packing_category, "structured");
+    assert!((structured.wetted_area - 137.257_721_106_356_9).abs() < 1e-9);
+    assert!((structured.hetp.value - 1.0).abs() < 1e-12);
+
+    // `Some(false)` is the same geometry under the random category's coefficients.
+    let random =
+        packing_hydraulics_with("Mellapak-250Y", state(), Some(false)).expect("the state computes");
+    assert_eq!(random.packing_category, "random");
+    assert!(
+        (random.specific_surface_area - structured.specific_surface_area).abs() < 1e-12,
+        "the override moves the category, not the row's geometry"
+    );
+    // The three reads that branch, each named: the wetting minimum, the Leva exponent through the
+    // pressure drop, and the HETP's rule of thumb.
+    assert!(
+        (random.minimum_wetting_rate - structured.minimum_wetting_rate).abs() > 1e-12,
+        "the wetting minimum branches on the category"
+    );
+    assert!(
+        (random.total_pressure_drop.value - structured.total_pressure_drop.value).abs() > 1e-12,
+        "the Leva exponent branches on the category"
+    );
+    assert!(
+        (random.hetp.value - structured.hetp.value).abs() > 1e-12,
+        "the HETP's rule of thumb branches on the category"
     );
 }

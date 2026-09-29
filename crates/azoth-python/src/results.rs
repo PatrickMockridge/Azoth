@@ -11281,9 +11281,9 @@ pub struct PyAbsorptionColumnResult {
 
 /// Result of `process.packed_column`, transported.
 ///
-/// **The base column's own record under this id**, because the packing does not change the
-/// separation: the class's `run` is `super.run(id)`, and what the packing adds is a hydraulics
-/// report on the far side of the solve, which is not ported.
+/// **The base column's own record under this id, plus the packing's report.** The packing does not
+/// change the separation - the class's `run` is `super.run(id)` - and what it adds is
+/// `ColumnInternalsDesigner`'s report on the far side of the solve: the seven fields at the end.
 #[pyclass(module = "azoth._core")]
 pub struct PyPackedColumnResult {
     /// Each tray's temperature.
@@ -11355,6 +11355,27 @@ pub struct PyPackedColumnResult {
     /// The enthalpy closure.
     #[pyo3(get)]
     pub energy_residual: f64,
+    /// The height equivalent to a theoretical plate.
+    #[pyo3(get)]
+    pub hetp: PyQty,
+    /// The packed height over the HETP.
+    #[pyo3(get)]
+    pub theoretical_stages: f64,
+    /// The middle tray's load, in per cent of flood.
+    #[pyo3(get)]
+    pub percent_flood: f64,
+    /// The velocity at which the bed floods, in m/s.
+    #[pyo3(get)]
+    pub flooding_velocity: f64,
+    /// The bed's total pressure drop.
+    #[pyo3(get)]
+    pub packing_pressure_drop: PyQty,
+    /// Whether the bed is inside the design window.
+    #[pyo3(get)]
+    pub hydraulics_ok: bool,
+    /// The column's internal diameter.
+    #[pyo3(get)]
+    pub internal_diameter: PyQty,
     /// Caveats.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -11423,6 +11444,13 @@ impl From<&PackedColumnResult> for PyPackedColumnResult {
             temperature_residual: r.temperature_residual,
             mass_residual: r.mass_residual,
             energy_residual: r.energy_residual,
+            hetp: quantity(r.hetp.value, "m"),
+            theoretical_stages: r.theoretical_stages,
+            percent_flood: r.percent_flood,
+            flooding_velocity: r.flooding_velocity,
+            packing_pressure_drop: quantity(r.packing_pressure_drop.value, "Pa"),
+            hydraulics_ok: r.hydraulics_ok,
+            internal_diameter: quantity(r.internal_diameter.value, "m"),
             warnings: r.warnings.iter().map(PyWarning::from).collect(),
         }
     }

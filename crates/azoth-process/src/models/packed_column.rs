@@ -4,21 +4,22 @@
 //! [`crate::models::distillation_column`]'s**, because the class's is: `PackedColumn extends
 //! `DistillationColumn`, its `run` is `super.run(id)` and the packing is read by a hydraulics
 //! report afterwards. What this module adds is the stage count the class's constructor derives
-//! from a packed height, and the refusal of the one packing parameter the class itself refuses.
+//! from a packed height, the refusal of the one packing parameter the class itself refuses, and
+//! the seven quantities `ColumnInternalsDesigner` reports on the far side of the solve.
 
-use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature};
-use azoth_core::{AzothError, CalcResult, Result, Warning};
+use azoth_core::units::{Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature};
+use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 
-use crate::kernels::packed_column::stage_count;
-use crate::models::distillation_column::{DistillationColumnResult, distillation_column};
+use crate::kernels::packed_column::{PackedReport, PackingInputs, packing_report, stage_count};
+use crate::models::distillation_column::{DistillationColumnResult, distillation_column_outcome};
 
 /// Result of `process.packed_column`.
 ///
-/// **The same record as [`DistillationColumnResult`], and that is the id's claim rather than a
-/// convenience**: the packing parameters reach the separation only through the stage count, and
-/// the three quantities a caller would look for here instead - HETP, the theoretical stages and
-/// the percent flood - are `ColumnInternalsDesigner`'s report on the far side of the solve and
-/// are not ported.
+/// **The base column's record, plus the seven quantities the packing's report adds.** The packing
+/// parameters reach the *separation* only through the stage count, which is why the first
+/// twenty-four fields are [`DistillationColumnResult`]'s unchanged; everything the packing
+/// contributes is `ColumnInternalsDesigner`'s report on the far side of the solve, and those are
+/// the seven at the end.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackedColumnResult {
     /// Each tray's temperature, K.
@@ -68,37 +69,73 @@ pub struct PackedColumnResult {
     pub mass_residual: f64,
     /// The enthalpy closure.
     pub energy_residual: f64,
+    /// The height equivalent to a theoretical plate, m.
+    pub hetp: Length,
+    /// The packed height over the HETP.
+    ///
+    /// **It describes a different column from the one solved, and it is published that way.** The
+    /// constructor fixes the stage count on a `0.5` m HETP guess and the report computes the real
+    /// one afterwards: the capture's 2.3 m case solves five middle trays and reports `1.597`
+    /// theoretical stages. Asserted rather than corrected, and filed upstream.
+    pub theoretical_stages: f64,
+    /// The load, in per cent of flood.
+    pub percent_flood: f64,
+    /// The velocity at which the bed floods, m/s.
+    pub flooding_velocity: f64,
+    /// The bed's total pressure drop, Pa.
+    pub packing_pressure_drop: Pressure,
+    /// Whether the bed is inside the design window.
+    ///
+    /// **`PackedColumn.isHydraulicsOk`, which the jar shows is the calculator's `isDesignOk`** -
+    /// there is one predicate and not two, so this is the hydraulics calculation's own verdict.
+    pub hydraulics_ok: bool,
+    /// The column's internal diameter, m - the stated one, or the sized one where none was stated.
+    pub internal_diameter: Length,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
 
-impl From<DistillationColumnResult> for PackedColumnResult {
-    fn from(out: DistillationColumnResult) -> Self {
+impl PackedColumnResult {
+    /// The record of one solve: the base column's answer, plus the packing's report.
+    ///
+    /// **`of` rather than `From`, because the report does not follow from the base record.** It is
+    /// read at the middle tray's state on the far side of the solve, so it is a second input and
+    /// not a re-projection of the first - the shape `DistillationColumnResult::of` and
+    /// `RateBasedPackedColumnResult::of` already have.
+    #[must_use]
+    pub fn of(base: DistillationColumnResult, report: PackedReport) -> Self {
         Self {
-            tray_temperature: out.tray_temperature,
-            tray_pressure: out.tray_pressure,
-            tray_gas_n: out.tray_gas_n,
-            tray_liquid_n: out.tray_liquid_n,
-            distillate_n: out.distillate_n,
-            distillate_z: out.distillate_z,
-            distillate_p: out.distillate_p,
-            distillate_t: out.distillate_t,
-            distillate_h: out.distillate_h,
-            bottoms_n: out.bottoms_n,
-            bottoms_z: out.bottoms_z,
-            bottoms_p: out.bottoms_p,
-            bottoms_t: out.bottoms_t,
-            bottoms_h: out.bottoms_h,
-            gas_side_draw_n: out.gas_side_draw_n,
-            liquid_side_draw_n: out.liquid_side_draw_n,
-            pumparound_n: out.pumparound_n,
-            condenser_duty: out.condenser_duty,
-            reboiler_duty: out.reboiler_duty,
-            iterations: out.iterations,
-            temperature_residual: out.temperature_residual,
-            mass_residual: out.mass_residual,
-            energy_residual: out.energy_residual,
-            warnings: out.warnings,
+            tray_temperature: base.tray_temperature,
+            tray_pressure: base.tray_pressure,
+            tray_gas_n: base.tray_gas_n,
+            tray_liquid_n: base.tray_liquid_n,
+            distillate_n: base.distillate_n,
+            distillate_z: base.distillate_z,
+            distillate_p: base.distillate_p,
+            distillate_t: base.distillate_t,
+            distillate_h: base.distillate_h,
+            bottoms_n: base.bottoms_n,
+            bottoms_z: base.bottoms_z,
+            bottoms_p: base.bottoms_p,
+            bottoms_t: base.bottoms_t,
+            bottoms_h: base.bottoms_h,
+            gas_side_draw_n: base.gas_side_draw_n,
+            liquid_side_draw_n: base.liquid_side_draw_n,
+            pumparound_n: base.pumparound_n,
+            condenser_duty: base.condenser_duty,
+            reboiler_duty: base.reboiler_duty,
+            iterations: base.iterations,
+            temperature_residual: base.temperature_residual,
+            mass_residual: base.mass_residual,
+            energy_residual: base.energy_residual,
+            hetp: report.hetp,
+            theoretical_stages: report.theoretical_stages,
+            percent_flood: report.percent_flood,
+            flooding_velocity: report.flooding_velocity,
+            packing_pressure_drop: report.packing_pressure_drop,
+            hydraulics_ok: report.hydraulics_ok,
+            internal_diameter: report.internal_diameter,
+            warnings: base.warnings,
         }
     }
 }
@@ -129,6 +166,13 @@ impl CalcResult for PackedColumnResult {
         "temperature_residual",
         "mass_residual",
         "energy_residual",
+        "hetp",
+        "theoretical_stages",
+        "percent_flood",
+        "flooding_velocity",
+        "packing_pressure_drop",
+        "hydraulics_ok",
+        "internal_diameter",
         "warnings",
     ];
 
@@ -142,8 +186,10 @@ impl CalcResult for PackedColumnResult {
 /// # Errors
 /// [`AzothError::InvalidInput`] for a `packing_hydraulic_capacity_factor` that is not positive
 /// and finite, which is `setPackingHydraulicCapacityFactor`'s own check and the one parameter of
-/// the packing group the class refuses rather than reads; and every error
-/// [`distillation_column`] raises, which this id inherits because the solve is the base's.
+/// the packing group the class refuses rather than reads; every error
+/// [`distillation_column_outcome`] raises, which this id inherits because the solve is the base's;
+/// and every error the packing's report raises, which is [`packing_report`]'s - the middle tray
+/// failing to rebuild as a two-phase fluid, or the hydraulics refusing the state it is given.
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-six
 pub fn packed_column(
     components: &[String],
@@ -209,19 +255,39 @@ pub fn packed_column(
             ));
         }
     }
-    // **The other four are declarations the solve is indifferent to.** The class accepts them
-    // and every one of them is read by `ColumnInternalsDesigner` after the column has
-    // converged, so the model carries them rather than reading them - the shape
-    // `process.absorption_column` gives `max_allowable_gas_load_factor`.
-    let _ = (
-        packing_type,
-        structured_packing,
+    // **The declared bounds, which nothing was running.** The base column applies its own spec's
+    // four, and this id repeats them because it declares them: until this call existed, the packed
+    // spec's `top_pressure`, `bottom_pressure`, `temperature_tolerance` and `feed_t` rows were a
+    // declaration no code read.
+    let spec = &crate::model_gen::PACKED_COLUMN_SPEC;
+    let mut warnings = Vec::new();
+    apply_checks(
+        spec.input_checks(),
+        |quantity| match quantity {
+            "top_pressure" => Some(top_pressure.value),
+            "bottom_pressure" => Some(bottom_pressure.value),
+            "temperature_tolerance" => Some(temperature_tolerance),
+            "feed_t" => Some(feed_t.value),
+            _ => None,
+        },
+        &mut warnings,
+    )?;
+
+    // **The other four are declarations the solve is indifferent to, and the report is not.** The
+    // class accepts them, every one is read by `ColumnInternalsDesigner` after the column has
+    // converged, and this id publishes seven of its quantities - so they are carried to the report
+    // instead of being discarded. That is the split `PackedColumn.run` makes: `super.run(id)`
+    // first, `calcPackingHydraulics()` afterwards.
+    let packing = PackingInputs {
+        name: packing_type.map(str::to_string),
+        structured: structured_packing,
         design_flood_fraction,
+        hydraulic_capacity_factor: packing_hydraulic_capacity_factor,
         column_diameter,
-    );
+    };
 
     let stages = stage_count(packed_height);
-    let out = distillation_column(
+    let (outcome, warnings) = distillation_column_outcome(
         components,
         feed_n,
         feed_z,
@@ -274,7 +340,117 @@ pub fn packed_column(
         pumparound_max_iterations,
     )?;
 
-    Ok(out.into())
+    let base = DistillationColumnResult::of(&outcome, warnings);
+    let report = packing_report(&outcome, components, packed_height, &packing)?;
+    Ok(PackedColumnResult::of(base, report))
+}
+
+#[cfg(test)]
+mod report {
+    use azoth_core::units::{kelvins, pascals};
+
+    use crate::models::packed_column::packed_column;
+
+    /// **The wired report reproduces the capture's own seven, on the row the class solved.**
+    ///
+    /// The capture's `packed_distillation_binary_2m3` block, end to end: the column is solved from
+    /// the row's own inputs and the seven quantities `ColumnInternalsDesigner` reports are held to
+    /// what the class printed. `packing_pressure_drop` is the one that discriminates - it reads the
+    /// packing factor, the void fraction and the tray's vapour density through Leva's form, so a
+    /// port that read the wrong tray or the wrong row's geometry would move it.
+    ///
+    /// `internal_diameter` goes through the **sizing** branch, because the class's own
+    /// `columnDiameter` is `-1.0` on this row: the diameter is not stated, so it is sized and the
+    /// sized value is what the report then runs at.
+    #[test]
+    #[allow(clippy::too_many_lines)] // one call, one parameter per declared input
+    fn the_report_reproduces_the_captures_seven() {
+        let out = packed_column(
+            &["methane".to_string(), "n-butane".to_string()],
+            7.490_704_036_290_964,
+            &[0.5, 0.5],
+            pascals(2.0e6),
+            kelvins(300.0),
+            2.3,
+            2,
+            true,
+            true,
+            pascals(1.9e6),
+            pascals(2.0e6),
+            Some(kelvins(373.15)),
+            Some(kelvins(253.15)),
+            1.0e-6,
+            200,
+            Some("Pall-Ring-50"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .expect("the capture's 2.3 m row solves");
+
+        let close = |got: f64, want: f64| (got - want).abs() / want.abs() < 1e-5;
+        assert!(
+            close(out.hetp.value, 1.44),
+            "hetp: {} against the capture's 1.44",
+            out.hetp.value
+        );
+        assert!(
+            close(out.theoretical_stages, 1.597_222_222_222_222),
+            "theoretical_stages: {}",
+            out.theoretical_stages
+        );
+        assert!(
+            close(out.percent_flood, 15.053_642_072_827_294),
+            "percent_flood: {}",
+            out.percent_flood
+        );
+        assert!(
+            close(out.flooding_velocity, 0.508_073_023_146_439_5),
+            "flooding_velocity: {}",
+            out.flooding_velocity
+        );
+        assert!(
+            close(out.packing_pressure_drop.value, 0.640_829_527_984_597_7),
+            "packing_pressure_drop: {}",
+            out.packing_pressure_drop.value
+        );
+        assert!(
+            !out.hydraulics_ok,
+            "the class's own row is outside the 40-to-80-per-cent window"
+        );
+        assert!(
+            close(out.internal_diameter.value, 0.3),
+            "internal_diameter: {}",
+            out.internal_diameter.value
+        );
+    }
 }
 
 #[cfg(test)]

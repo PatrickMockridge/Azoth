@@ -209,7 +209,7 @@ class _States(NamedTuple):
     energy_residual: float
 
 
-def distillation_column(
+def _distillation_column_states(
     components: list[str],
     feed_n: Q,
     feed_z: list[float],
@@ -251,8 +251,8 @@ def distillation_column(
     pumparound_temperature_drop: Q | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
-) -> DistillationColumnResult:
-    """Solve a distillation column by sequential substitution.
+) -> tuple[_States, list[Warning]]:
+    """Solve a distillation column by sequential substitution, and hand back its stages.
 
     Args:
         components: the feed's substances, by name.
@@ -292,7 +292,11 @@ def distillation_column(
         bottom_specification_component: the component a purity or a recovery constrains.
 
     Returns:
-        The tray profile, both products, both duties and the three residuals.
+        The solved stages, in SI magnitudes, and the warnings their own fallbacks raised.
+        **The stages and not only the record, because `process.packed_column`'s reference needs
+        the middle tray's compositions** - the profile the record carries is temperatures and
+        flows, and the packing's report is read at a tray's own fluid. `distillation_column` is
+        this and `_record` together, and a caller wanting the record reads that.
 
     Raises:
         InvalidInputError: for a stage or a feed stage outside the column, for any declared
@@ -484,6 +488,17 @@ def distillation_column(
         )
     warnings.extend(states.warnings)
 
+    return states, warnings
+
+
+def _record(states: _States, warnings: list[Warning]) -> DistillationColumnResult:
+    """The base column's record, from the stages that solved it.
+
+    **One construction with two callers.** `distillation_column` is this and
+    `_distillation_column_states` together; `process.packed_column`'s reference solves the same
+    column and needs the stages as well as the record, so it reads them once and comes through
+    here rather than transcribing the mapping a second time.
+    """
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
         tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
@@ -510,6 +525,152 @@ def distillation_column(
         energy_residual=states.energy_residual,
         warnings=tuple(warnings),
     )
+
+
+def distillation_column(
+    components: list[str],
+    feed_n: Q,
+    feed_z: list[float],
+    feed_p: Q,
+    feed_t: Q,
+    number_of_stages: int,
+    feed_stage: int,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: Q,
+    bottom_pressure: Q,
+    temperature_tolerance: float = 1.0e-6,
+    max_iterations: int = 200,
+    reboiler_temperature: Q | None = None,
+    condenser_temperature: Q | None = None,
+    murphree_efficiency: float | None = None,
+    tray_murphree_efficiency: list[float] | None = None,
+    solver_type: str | None = None,
+    top_specification_type: str | None = None,
+    top_specification_target: float | None = None,
+    top_specification_component: str | None = None,
+    bottom_specification_type: str | None = None,
+    bottom_specification_target: float | None = None,
+    bottom_specification_component: str | None = None,
+    reactive: bool | None = None,
+    reactive_start_tray: int | None = None,
+    reactive_end_tray: int | None = None,
+    gas_side_draw_fractions: list[float] | None = None,
+    liquid_side_draw_fractions: list[float] | None = None,
+    pumparound_fractions: list[float] | None = None,
+    side_draw_flow_tray: int | None = None,
+    side_draw_flow_phase: str | None = None,
+    side_draw_flow_target: Q | None = None,
+    side_draw_flow_tolerance: float | None = None,
+    side_draw_flow_max_iterations: int | None = None,
+    pumparound_return_tray: int | None = None,
+    pumparound_draw_tray: int | None = None,
+    pumparound_draw_fraction: float | None = None,
+    pumparound_temperature_drop: Q | None = None,
+    pumparound_tolerance: float | None = None,
+    pumparound_max_iterations: int | None = None,
+) -> DistillationColumnResult:
+    """Solve a distillation column by sequential substitution.
+
+    The reference implementation of ``process.distillation_column``, and the record its spec
+    declares. **The arithmetic and the argument list are `_distillation_column_states`'s**; this
+    adds the mapping from the solved stages onto the record, which is `_record`'s.
+
+    Args:
+        components: the feed's substances, by name.
+        feed_n: the feed's molar flow.
+        feed_z: the feed composition.
+        feed_p: the feed's pressure, which is its own.
+        feed_t: the feed's temperature.
+        number_of_stages: the stage count, the reboiler at stage 0 where there is one.
+        feed_stage: the stage the feed enters, 0-based over the trays including the ends.
+        has_reboiler: whether stage 0 is a reboiler.
+        has_condenser: whether the top stage is a condenser.
+        top_pressure: the pressure at the top stage.
+        bottom_pressure: the pressure at stage 0.
+        temperature_tolerance: the gate on the mean tray-temperature change.
+        max_iterations: the iteration cap.
+        reboiler_temperature: the reboiler's temperature, which pins the bottom tray.
+        condenser_temperature: the condenser's temperature, which pins the top tray.
+        murphree_efficiency: the column-wide Murphree tray efficiency.
+        tray_murphree_efficiency: one override per stage, ``NaN`` where a stage falls through.
+        solver_type: **only ``direct_substitution`` and ``naphtali_sandholm`` are ported**.
+        top_specification_type: the top product's degree of freedom.
+        top_specification_target: its target value.
+        top_specification_component: the component a purity or a recovery constrains.
+        bottom_specification_type: the bottom product's degree of freedom, as the top's.
+        bottom_specification_target: its target, in the unit its type implies.
+        bottom_specification_component: the component a purity or a recovery constrains.
+        reactive: whether the middle trays flash reactively.
+        reactive_start_tray: the first reactive middle tray.
+        reactive_end_tray: the last reactive middle tray, inclusive.
+        gas_side_draw_fractions: the vapour each tray withdraws.
+        liquid_side_draw_fractions: the liquid each tray withdraws as a side draw.
+        pumparound_fractions: the liquid each tray withdraws as a pumparound.
+        side_draw_flow_tray: the tray whose draw flow is specified.
+        side_draw_flow_phase: which of that tray's phases the specification controls.
+        side_draw_flow_target: the mass flow the draw must deliver.
+        side_draw_flow_tolerance: the relative residual that search stops at.
+        side_draw_flow_max_iterations: the candidate cap for that search.
+        pumparound_return_tray: the tray a pumparound's liquid comes back to.
+        pumparound_draw_tray: the tray it leaves.
+        pumparound_draw_fraction: the fraction of that tray's liquid withdrawn.
+        pumparound_temperature_drop: the cooler's drop on the way back.
+        pumparound_tolerance: the relative residual the return's loop stops at.
+        pumparound_max_iterations: the cap on that loop.
+
+    Returns:
+        The tray profile, both products, both duties and the three residuals.
+
+    Raises:
+        InvalidInputError: for a stage or a feed stage outside the column, for any declared
+            parameter whose arithmetic is not ported, and for a ratio that is not one.
+        SolverNotConvergedError: when the solve misses its gate.
+    """
+    states, warnings = _distillation_column_states(
+        components,
+        feed_n,
+        feed_z,
+        feed_p,
+        feed_t,
+        number_of_stages,
+        feed_stage,
+        has_reboiler,
+        has_condenser,
+        top_pressure,
+        bottom_pressure,
+        temperature_tolerance,
+        max_iterations,
+        reboiler_temperature,
+        condenser_temperature,
+        murphree_efficiency,
+        tray_murphree_efficiency,
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
+        gas_side_draw_fractions,
+        liquid_side_draw_fractions,
+        pumparound_fractions,
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
+    )
+    return _record(states, warnings)
 
 
 def reactive_section(

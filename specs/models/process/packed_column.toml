@@ -5,7 +5,7 @@ assumptions = [
     "**the packing does not change the separation.** `PackedColumn extends DistillationColumn` and its `run` is `super.run(id)` then `calcPackingHydraulics()`, so the equations are `process.distillation_column`'s, unchanged.",
     "**what the packing changes is the stage count, at construction**: `estimateStages(packed_height, 0.5)` is `ceil(packed_height / 0.5)` floored at two, so `packed_height` replaces `number_of_stages` here.",
     "**the floor is reached rather than refused.** The capture's stage-count rows report two middle trays for `0.2` m, `0.0` m and `-1.0` m alike, because `estimateStages` and `setPackedHeight` have no domain check.",
-    "**the five packing parameters are the excluded report's.** `ColumnInternalsDesigner` and `PackingHydraulicsCalculator` read them after the column has converged, and no part of the solve reads them.",
+    "**the five packing parameters reach the report and not the solve.** `ColumnInternalsDesigner` reads them after the column has converged, so `PackedColumn.run` is `super.run(id)` then a report: the last seven `[outputs]` are it.",
     "**the class's report describes a different column from the one it solved.** The constructor fixes the stage count on a `0.5` m HETP guess and the hydraulics computes the real one afterwards: the capture's own case solves ten middle trays and reports `1.597` theoretical stages.",
     "**`packing_hydraulic_capacity_factor` is refused where the class refuses it**: `setPackingHydraulicCapacityFactor` throws for a value that is not positive and finite, so the port holds to that rather than carrying it inertly.",
     "**the contactor constructor is not this id.** `PackedColumn(name, gasInStream)` fixes ten middle trays with no ends and never reads the height, so that machine is `process.absorption_column` at `number_of_stages = 10`.",
@@ -14,7 +14,9 @@ assumptions = [
     "**the class's own test state is captured and is not an oracle.** Run as its test runs it, the column has no internal traffic, the feed passes through the empty trays below it, and the class still reports `RIGOROUS_CONVERGED` with residuals of exactly zero.",
     "**`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.",
     "**On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.",
-    "**the packing's report is mechanical design and is deferred with the tree that closes it**: `DistillationColumnMechanicalDesign`, shared with four other entries, is where `ColumnInternalsDesigner`'s flood, sizing and `TrayHydraulicsCalculator` would land.\n",
+    "**the report is read at the middle tray, `trays.len() / 2`.** That is the class's own `trays.size() / 2`: on the capture's seven-tray row it is tray 3, and the three report quantities that read no surface tension reproduce the capture there to `1e-6`.",
+    "**the report's surface tension is the designer's `0.02` fallback**, because the interface route answers nothing here: the capture prints `getSurfaceTension(0, 1)` as `0.0` on every tray. A third constant, distinct from the rate-based path's `0.025`.",
+    "**seven of the report's quantities are published and the rest are owed.** The capture prints fourteen keys in two blocks: the first seven from `PackedColumn`'s accessors, the second from its calculator, which `packing_hydraulics` already publishes. `ROADMAP.md` names what closes the rest.\n",
 ]
 references = [
     "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and `ROADMAP.md` names it.",
@@ -22,7 +24,7 @@ references = [
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/PackedColumn.java"
-edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`. Everything the packing adds is read by `ColumnInternalsDesigner` after the solve, which is owed with its sizing branch - see `ROADMAP.md`."
+edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed - `TrayHydraulicsCalculator` and the mechanical design - is named in `ROADMAP.md`."
 [algorithm]
 scheme = "sequential_substitution_sweeps"
 initialisation = "linear_temperature_profile"
@@ -273,13 +275,19 @@ description = "the bottoms' temperature, which is the reboiler's own.\n"
 unit = "J/mol"
 description = "the bottoms' molar enthalpy at its own state.\n"
 [outputs.gas_side_draw_n]
+type = "vector"
 unit = "mol/s"
+length = "one per tray, a zero where a tray draws none"
 description = "the vapour each tray withdrew. **Empty on every state of this id**, which declares no draw fraction: `PackedColumn extends DistillationColumn`, so the base's three draw parameters are what a packed column draws by, and `process.distillation_column` is where a draw is stated.\n"
 [outputs.liquid_side_draw_n]
+type = "vector"
 unit = "mol/s"
+length = "one per tray"
 description = "the liquid each tray withdrew as a side draw, empty because this id declares no draw fraction.\n"
 [outputs.pumparound_n]
+type = "vector"
 unit = "mol/s"
+length = "one per tray"
 description = "the liquid each tray withdrew as a pumparound, empty for the same reason.\n"
 [outputs.condenser_duty]
 unit = "W"
@@ -299,6 +307,27 @@ description = "the products' worst component imbalance against the feed, relativ
 [outputs.energy_residual]
 unit = "dimensionless"
 description = "`|H_feed + duties - H_products| / |H_feed|`, the enthalpy closure. As the mass residual, not the class's norm.\n"
+[outputs.hetp]
+unit = "m"
+description = "the height equivalent to a theoretical plate, which `ColumnInternalsDesigner` computes **after** the solve. It is clamped to `[0.1, 2 estimate]` and every captured row sits at the estimate's own two-fold ceiling, so it is `1.44` m on the 2.3 m row.\n"
+[outputs.theoretical_stages]
+unit = "dimensionless"
+description = "**the packed height over the HETP, and it describes a different column from the one solved.** The constructor fixes the stage count on a `0.5` m guess and this is the real HETP read after: the capture's 2.3 m case solves five middle trays and reports `1.597` stages.\n"
+[outputs.percent_flood]
+unit = "dimensionless"
+description = "the middle tray's vapour velocity as a percentage of the flooding velocity, which is the load the design window is judged on.\n"
+[outputs.flooding_velocity]
+unit = "m/s"
+description = "the velocity at which the bed floods, from the Eckert fit at the middle tray's state.\n"
+[outputs.packing_pressure_drop]
+unit = "Pa"
+description = "the bed's total pressure drop: Leva's dry form with its liquid-loading correction, per metre, times the packed height.\n"
+[outputs.hydraulics_ok]
+type = "boolean"
+description = "**`PackedColumn.isHydraulicsOk()`**, which the pinned jar shows is the calculator's own `isDesignOk` - a field assigned from it, with no second predicate behind it. True when wetted and between 40 and 80 per cent of flood; every captured row prints false.\n"
+[outputs.internal_diameter]
+unit = "m"
+description = "the column's internal diameter: the stated one, or the one `hydraulics.packing_sizing` answers where `column_diameter` is absent or at or below zero. **The capture's four solved rows all take the sizing branch**, so this is the sized value there and not an echo of the input.\n"
 [[valid_range]]
 quantity = "top_pressure"
 min = 0

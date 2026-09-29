@@ -4683,12 +4683,11 @@ class StrippingColumnResult(_HasWarnings):
 class PackedColumnResult(_HasWarnings):
     """Result of ``process.packed_column``.
 
-    **`DistillationColumnResult` under this class's own id**, and that is the id's claim rather
-    than a convenience: ``PackedColumn extends DistillationColumn``, its ``run`` is
-    ``super.run(id)``, and the packing parameters reach the separation only through the stage
-    count a constructor derives from the packed height. The three quantities a caller would look
-    for here instead - HETP, the theoretical stages and the percent flood - are
-    ``ColumnInternalsDesigner``'s report on the far side of the solve and are not ported.
+    **`DistillationColumnResult` under this class's own id, plus the packing's report.** The
+    packing parameters reach the *separation* only through the stage count a constructor derives
+    from the packed height, which is why the first twenty-four fields are the base's unchanged;
+    everything the packing contributes is ``ColumnInternalsDesigner``'s report on the far side of
+    the solve, and those are the seven at the end.
     """
 
     CALC_ID: ClassVar[str] = "process.packed_column"
@@ -4741,6 +4740,25 @@ class PackedColumnResult(_HasWarnings):
     mass_residual: float
     #: ``|H_feed + duties - H_products| / |H_feed|``.
     energy_residual: float
+    #: The height equivalent to a theoretical plate, computed after the solve.
+    hetp: Q
+    #: **The packed height over the HETP, describing a different column from the one solved.**
+    #: The constructor fixes the stage count on a ``0.5`` m guess and this is the real HETP read
+    #: after: the capture's 2.3 m case solves five middle trays and reports ``1.597`` stages.
+    theoretical_stages: float
+    #: The middle tray's vapour velocity as a percentage of the flooding velocity.
+    percent_flood: float
+    #: The velocity at which the bed floods, from the Eckert fit at the middle tray's state, in
+    #: m/s - a bare magnitude, as it is in ``hydraulics.packing_hydraulics``.
+    flooding_velocity: float
+    #: The bed's total pressure drop: Leva's form per metre times the packed height.
+    packing_pressure_drop: Q
+    #: **``PackedColumn.isHydraulicsOk()``**, which the pinned jar shows is the calculator's own
+    #: ``isDesignOk``. True when wetted and between 40 and 80 per cent of flood.
+    hydraulics_ok: bool
+    #: The column's internal diameter: the stated one, or the one ``hydraulics.packing_sizing``
+    #: answers where ``column_diameter`` is absent or at or below zero.
+    internal_diameter: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 

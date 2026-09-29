@@ -27,6 +27,7 @@ answering a different question.
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 from azoth._registry_gen import spec as _spec_for
 from azoth.core.range import apply_checks, checks_for
@@ -134,6 +135,50 @@ def packing_hydraulics(
         >>> round(r.wetted_area, 10)
         47.6320858192
     """
+    return _packing_hydraulics(
+        packing,
+        column_diameter,
+        packed_height,
+        vapor_mass_flow,
+        liquid_mass_flow,
+        vapor_density,
+        liquid_density,
+        vapor_viscosity,
+        liquid_viscosity,
+        surface_tension,
+        vapor_diffusivity,
+        liquid_diffusivity,
+        hydraulic_capacity_factor,
+        structured=None,
+    )
+
+
+def _packing_hydraulics(
+    packing: str,
+    column_diameter: Q,
+    packed_height: Q,
+    vapor_mass_flow: Q,
+    liquid_mass_flow: Q,
+    vapor_density: Q,
+    liquid_density: Q,
+    vapor_viscosity: Q,
+    liquid_viscosity: Q,
+    surface_tension: Q,
+    vapor_diffusivity: Q,
+    liquid_diffusivity: Q,
+    hydraulic_capacity_factor: float,
+    *,
+    structured: bool | None,
+) -> PackingHydraulicsResult:
+    """The arithmetic, with the packing's category overridable.
+
+    **Private because the category is not a declared input of this calculation.**
+    ``PackedColumn.setStructuredPacking`` states it on the *column*, and
+    ``process.packed_column``'s reference reads the four branches through here rather than
+    offering a name-shaped parameter this calculation's spec does not declare. ``None`` is the
+    name's own row, which is what ``packing_hydraulics`` passes - so the two cannot state
+    different numbers.
+    """
     spec = _spec_for(CALC_ID)
     checks = checks_for(spec)
     warnings: list[Warning] = []
@@ -158,6 +203,13 @@ def packing_hydraulics(
     )
 
     resolved = packing_or_default(packing)
+    # **The category override, which the four reads below all branch on.** `setStructuredPacking`
+    # states it on the column rather than selecting a differently-named row by it, so a caller
+    # that has stated one must reach the wetting minimum, the Leva exponent, the HETP estimate
+    # and the reported category - without a second table row per packing per category. `None` is
+    # the name's own row, so the two paths cannot state different numbers.
+    if structured is not None:
+        resolved = replace(resolved, category="structured" if structured else "random")
     area = math.pi / 4.0 * values["column_diameter"] ** 2
 
     # ---- The flooding velocity: the Eckert fit, solved for the velocity.

@@ -122,6 +122,27 @@ pub struct PackingState {
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
 pub fn packing_hydraulics(name: &str, state: PackingState) -> Result<PackingHydraulicsResult> {
+    packing_hydraulics_with(name, state, None)
+}
+
+/// [`packing_hydraulics`] with the packing's category overridden.
+///
+/// **The category is the one input a name alone cannot state for every caller.**
+/// `PackedColumn.setStructuredPacking` sets the category on the *column* rather than selecting a
+/// table row by it, so a column that has stated one must reach the four places the category is
+/// read - the wetting minimum, the Leva exponent, the HETP estimate and the reported category
+/// itself - without the table carrying a second row for every packing in both categories.
+///
+/// `None` is exactly [`packing_hydraulics`]: the name's own row answers, so the two cannot state
+/// different numbers and an existing oracle cannot tell which one ran.
+///
+/// # Errors
+/// As [`packing_hydraulics`].
+pub fn packing_hydraulics_with(
+    name: &str,
+    state: PackingState,
+    structured: Option<bool>,
+) -> Result<PackingHydraulicsResult> {
     let spec = &spec_gen::PACKING_HYDRAULICS_SPEC;
     let mut warnings = Vec::new();
 
@@ -145,7 +166,13 @@ pub fn packing_hydraulics(name: &str, state: PackingState) -> Result<PackingHydr
         &mut warnings,
     )?;
 
-    let packing = packing_or_default(name);
+    let resolved = packing_or_default(name);
+    let overridden = structured.map(|flag| {
+        let mut row = resolved.clone();
+        row.category = if flag { "structured" } else { "random" }.to_string();
+        row
+    });
+    let packing: &PackingSpecification = overridden.as_ref().unwrap_or(resolved);
     let area =
         std::f64::consts::PI / 4.0 * state.column_diameter.value * state.column_diameter.value;
     if area <= 0.0 {

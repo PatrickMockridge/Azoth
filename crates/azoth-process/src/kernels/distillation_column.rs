@@ -188,20 +188,9 @@ impl ColumnState {
         let mut liquid = Vec::with_capacity(outcome.trays.len());
         let mut temperatures = Vec::with_capacity(outcome.trays.len());
         for tray in &outcome.trays {
-            gas.push(Stream::from_pt(
-                components.to_vec(),
-                tray.gas_z.clone(),
-                tray.gas_n,
-                tray.pressure,
-                tray.temperature,
-            )?);
-            liquid.push(Stream::from_pt(
-                components.to_vec(),
-                tray.liquid_z.clone(),
-                tray.liquid_n,
-                tray.pressure,
-                tray.temperature,
-            )?);
+            let (vapour, downcomer) = tray_streams(tray, components)?;
+            gas.push(vapour);
+            liquid.push(downcomer);
             temperatures.push(tray.temperature.value);
         }
         Ok(Self {
@@ -210,6 +199,32 @@ impl ColumnState {
             temperatures,
         })
     }
+}
+
+/// One tray's leaving vapour and liquid, rebuilt from the six quantities a profile carries.
+///
+/// **The one transcription of that rebuild.** [`ColumnState::of`] calls it per tray and the packed
+/// column's report calls it for the single tray `ColumnInternalsDesigner` reads; a second copy is
+/// what would let the two state different streams for one tray.
+///
+/// # Errors
+/// Whatever [`Stream::from_pt`] refuses for the tray's composition, flows and state.
+pub fn tray_streams(tray: &TrayProfile, components: &[String]) -> Result<(Stream, Stream)> {
+    let vapour = Stream::from_pt(
+        components.to_vec(),
+        tray.gas_z.clone(),
+        tray.gas_n,
+        tray.pressure,
+        tray.temperature,
+    )?;
+    let liquid = Stream::from_pt(
+        components.to_vec(),
+        tray.liquid_z.clone(),
+        tray.liquid_n,
+        tray.pressure,
+        tray.temperature,
+    )?;
+    Ok((vapour, liquid))
 }
 
 /// What a column solve hands back.

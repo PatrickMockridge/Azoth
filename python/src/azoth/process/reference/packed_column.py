@@ -8,10 +8,10 @@ DistillationColumn`` in 463 lines and its ``run`` is ``super.run(id)`` followed 
 ``calcPackingHydraulics()``. What this module adds is the stage count a constructor derives from
 a packed height, and the refusal of the one packing parameter the class itself refuses.
 
-**The packing group is the excluded report's**, so four of its five parameters are carried
-inertly: ``packing_type``, ``structured_packing``, ``design_flood_fraction`` and
-``column_diameter`` are read by ``ColumnInternalsDesigner`` after the column has converged, and
-no part of the solve reads them.
+**The packing group reaches the report and not the solve.** ``packing_type``,
+``structured_packing``, ``design_flood_fraction`` and ``column_diameter`` are read by
+``ColumnInternalsDesigner`` after the column has converged, so ``PackedColumn.run`` is
+``super.run(id)`` then a report - and the last seven fields of the record are that report.
 """
 
 from __future__ import annotations
@@ -20,13 +20,50 @@ import math
 
 from azoth.core.errors import InvalidInputError
 from azoth.core.result import PackedColumnResult
-from azoth.core.units import Q
+from azoth.core.units import Q, quantity
+from azoth.hydraulics.reference.packing_hydraulics import _packing_hydraulics
+from azoth.hydraulics.reference.packing_sizing import packing_sizing as _packing_sizing
 from azoth.process.reference.distillation_column import (
-    distillation_column as _distillation_column,
+    _distillation_column_states,
+    _record,
 )
+from azoth.process.reference.rate_based_packed_column import _phase_view
 
 #: The HETP guess ``PackedColumn``'s constructors divide a packed height by.
 HETP_GUESS_M = 0.5
+
+#: The packing name ``PackedColumn`` carries when none is stated.
+DEFAULT_PACKING_NAME = "Pall-Ring-50"
+#: The fraction of flood the class sizes a bed to when none is stated.
+DEFAULT_DESIGN_FLOOD_FRACTION = 0.70
+#: The relative hydraulic capacity factor the class carries when none is stated.
+DEFAULT_HYDRAULIC_CAPACITY_FACTOR = 1.0
+#: The internal diameter ``PackedColumn`` carries when none is stated.
+#:
+#: **At or below zero rather than absent**, which is what makes it the sizing branch.
+UNSIZED_COLUMN_DIAMETER_M = -1.0
+
+#: The surface tension ``ColumnInternalsDesigner.getTrayProperties`` falls back to, in N/m.
+#:
+#: **A third constant, and it is not the rate-based path's.** The designer asks
+#: ``fluid.getInterphaseProperties().getSurfaceTension(0, 1)`` and answers ``0.02`` when that is
+#: not finite and positive, while ``RateBasedPackedColumn.estimateSurfaceTension`` answers
+#: ``0.025`` on the same class of pair. The capture prints both interface readings as ``0.0`` on
+#: every tray, so this constant is what answers.
+DESIGNER_SURFACE_TENSION_N_PER_M = 0.02
+
+#: The vapour viscosity ``PackingHydraulicsCalculator`` holds when nobody sets one, in Pa*s.
+#:
+#: **The designer does not set it, and that is read from the jar rather than guessed.**
+#: Disassembling the pinned jar shows ``ColumnInternalsDesigner`` calling exactly
+#: ``setPackingPreset``, ``setDesignFloodFraction``, ``setVaporDensity``, ``setLiquidDensity``,
+#: ``setLiquidViscosity``, ``setSurfaceTension`` and ``setColumnDiameter`` on the calculator, so
+#: this field keeps its constructor initialiser. No published quantity reads it.
+CALCULATOR_VAPOR_VISCOSITY_PA_S = 1.0e-5
+#: The vapour diffusivity the calculator holds when nobody sets one, in m**2/s.
+CALCULATOR_VAPOR_DIFFUSIVITY_M2_S = 1.0e-5
+#: The liquid diffusivity the calculator holds when nobody sets one, in m**2/s.
+CALCULATOR_LIQUID_DIFFUSIVITY_M2_S = 1.0e-9
 
 
 def stage_count(packed_height_m: float) -> int:
@@ -169,11 +206,10 @@ def packed_column(
             "positive and finite, which `PackedColumn.setPackingHydraulicCapacityFactor` refuses "
             "with an `IllegalArgumentException`",
         )
-    # The other four are declarations the solve is indifferent to: the class accepts them and
-    # `ColumnInternalsDesigner` reads each one after the column has converged.
-    del packing_type, structured_packing, design_flood_fraction, column_diameter
-
-    out = _distillation_column(
+    # **The stages, not the record alone**, because the report is read at a tray's own fluid and
+    # the record's profile carries no compositions. `_record` is the same construction
+    # `distillation_column` uses, so this is one solve and one mapping.
+    states, warnings = _distillation_column_states(
         components,
         feed_n,
         feed_z,
@@ -225,31 +261,116 @@ def packed_column(
         pumparound_tolerance,
         pumparound_max_iterations,
     )
+    base = _record(states, warnings)
+
+    # ---- The report, at the middle tray: `trays.size() / 2`, the class's own index.
+    middle = len(states.tray_temperature) // 2
+    vapor = _phase_view(
+        list(components),
+        "gas",
+        states.tray_temperature[middle],
+        states.tray_pressure[middle],
+        list(states.tray_gas_z[middle]),
+        states.tray_gas_n[middle],
+    )
+    liquid = _phase_view(
+        list(components),
+        "liquid",
+        states.tray_temperature[middle],
+        states.tray_pressure[middle],
+        list(states.tray_liquid_z[middle]),
+        states.tray_liquid_n[middle],
+    )
+    vapor_mass_flow = states.tray_gas_n[middle] * vapor["molar_mass"]
+    liquid_mass_flow = states.tray_liquid_n[middle] * liquid["molar_mass"]
+    vapor_density = quantity(vapor["density"], "kg/m**3")
+    liquid_density = quantity(liquid["density"], "kg/m**3")
+
+    flood_fraction = (
+        DEFAULT_DESIGN_FLOOD_FRACTION
+        if design_flood_fraction is None
+        else float(design_flood_fraction)
+    )
+    capacity_factor = (
+        DEFAULT_HYDRAULIC_CAPACITY_FACTOR
+        if packing_hydraulic_capacity_factor is None
+        else float(packing_hydraulic_capacity_factor)
+    )
+    stated_diameter = (
+        UNSIZED_COLUMN_DIAMETER_M
+        if column_diameter is None
+        else float(column_diameter.to("m").magnitude)
+    )
+    name = DEFAULT_PACKING_NAME if packing_type is None else str(packing_type)
+
+    # **The sizing branch first, then the hydraulics at the diameter it resolved**, which is the
+    # composition `calcPackingHydraulics` performs.
+    internal_diameter = (
+        quantity(stated_diameter, "m")
+        if stated_diameter > 0.0
+        else _packing_sizing(
+            name,
+            flood_fraction,
+            quantity(vapor_mass_flow, "kg/s"),
+            quantity(liquid_mass_flow, "kg/s"),
+            vapor_density,
+            liquid_density,
+            liquid["transport"].mu,
+            capacity_factor,
+        ).column_diameter
+    )
+
+    hydraulics = _packing_hydraulics(
+        name,
+        internal_diameter,
+        packed_height,
+        quantity(vapor_mass_flow, "kg/s"),
+        quantity(liquid_mass_flow, "kg/s"),
+        vapor_density,
+        liquid_density,
+        # **The tray's liquid viscosity and the calculator's own vapour viscosity**, which is the
+        # asymmetry the jar shows: the designer sets the first and not the second.
+        quantity(CALCULATOR_VAPOR_VISCOSITY_PA_S, "Pa*s"),
+        liquid["transport"].mu,
+        quantity(DESIGNER_SURFACE_TENSION_N_PER_M, "N/m"),
+        quantity(CALCULATOR_VAPOR_DIFFUSIVITY_M2_S, "m**2/s"),
+        quantity(CALCULATOR_LIQUID_DIFFUSIVITY_M2_S, "m**2/s"),
+        capacity_factor,
+        structured=structured_packing,
+    )
+
     return PackedColumnResult(
-        tray_temperature=out.tray_temperature,
-        tray_pressure=out.tray_pressure,
-        tray_gas_n=out.tray_gas_n,
-        tray_liquid_n=out.tray_liquid_n,
-        distillate_n=out.distillate_n,
-        distillate_z=out.distillate_z,
-        distillate_p=out.distillate_p,
-        distillate_t=out.distillate_t,
-        distillate_h=out.distillate_h,
-        bottoms_n=out.bottoms_n,
-        bottoms_z=out.bottoms_z,
-        bottoms_p=out.bottoms_p,
-        bottoms_t=out.bottoms_t,
-        bottoms_h=out.bottoms_h,
-        gas_side_draw_n=out.gas_side_draw_n,
-        liquid_side_draw_n=out.liquid_side_draw_n,
-        pumparound_n=out.pumparound_n,
-        condenser_duty=out.condenser_duty,
-        reboiler_duty=out.reboiler_duty,
-        iterations=out.iterations,
-        temperature_residual=out.temperature_residual,
-        mass_residual=out.mass_residual,
-        energy_residual=out.energy_residual,
-        warnings=out.warnings,
+        tray_temperature=base.tray_temperature,
+        tray_pressure=base.tray_pressure,
+        tray_gas_n=base.tray_gas_n,
+        tray_liquid_n=base.tray_liquid_n,
+        distillate_n=base.distillate_n,
+        distillate_z=base.distillate_z,
+        distillate_p=base.distillate_p,
+        distillate_t=base.distillate_t,
+        distillate_h=base.distillate_h,
+        bottoms_n=base.bottoms_n,
+        bottoms_z=base.bottoms_z,
+        bottoms_p=base.bottoms_p,
+        bottoms_t=base.bottoms_t,
+        bottoms_h=base.bottoms_h,
+        gas_side_draw_n=base.gas_side_draw_n,
+        liquid_side_draw_n=base.liquid_side_draw_n,
+        pumparound_n=base.pumparound_n,
+        condenser_duty=base.condenser_duty,
+        reboiler_duty=base.reboiler_duty,
+        iterations=base.iterations,
+        temperature_residual=base.temperature_residual,
+        mass_residual=base.mass_residual,
+        energy_residual=base.energy_residual,
+        hetp=hydraulics.hetp,
+        theoretical_stages=hydraulics.theoretical_stages,
+        percent_flood=hydraulics.percent_flood,
+        flooding_velocity=hydraulics.flooding_velocity,
+        packing_pressure_drop=hydraulics.total_pressure_drop,
+        hydraulics_ok=hydraulics.design_ok,
+        internal_diameter=internal_diameter,
+        warnings=base.warnings,
     )
 
 

@@ -1675,6 +1675,13 @@ class PackedColumnResult:
     temperature_residual: float
     mass_residual: float
     energy_residual: float
+    hetp: Qty
+    theoretical_stages: float
+    percent_flood: float
+    flooding_velocity: float
+    packing_pressure_drop: Qty
+    hydraulics_ok: bool
+    internal_diameter: Qty
     warnings: list[Warning]
 
 @final
