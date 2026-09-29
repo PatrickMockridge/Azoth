@@ -53,12 +53,19 @@ class Tree(NamedTuple):
     python: Path
 
     def check(self) -> list[str]:
-        # The tool is loaded by path, so its functions are `Any` to mypy. `specs_root` is
-        # passed explicitly: a default would sweep this checkout instead of the tree under
-        # test, which is the one way these cases could pass without checking anything.
+        # The tool is loaded by path, so its functions are `Any` to mypy. `specs_root` and
+        # `source_roots` are passed explicitly: a default would sweep this checkout instead of
+        # the tree under test, which is the one way these cases could pass without checking
+        # anything.
         return cast(
             "list[str]",
-            check_unported.check(self.models, self.rust_root, self.python_root, self.specs),
+            check_unported.check(
+                self.models,
+                self.rust_root,
+                self.python_root,
+                self.specs,
+                (self.rust_root, self.python_root),
+            ),
         )
 
 
@@ -226,3 +233,96 @@ def test_the_alternation_is_the_whole_claim(tree: Tree, claim: str) -> None:
     )
     failures = tree.check()
     assert any(claim.lower() in f.lower() for f in failures), failures
+
+
+# --- the same rule, over code: the sentinel is confined --------------------------
+
+
+def test_a_refusal_spelled_as_a_message_is_refused(tree: Tree) -> None:
+    """**The rule the sentinel is named for.** A refusal goes *through* the helper, because that
+    is what a declared row can hold; a sentence written beside it is held to nothing."""
+    tree.rust.write_text(RUST_SITE + '\n\nfn f() { let _ = "this is not ported here"; }\n')
+    failures = tree.check()
+    assert any("in a message" in f and "not ported" in f for f in failures), failures
+
+
+def test_a_refusal_as_a_message_is_refused_in_python_too(tree: Tree) -> None:
+    tree.python.write_text(PYTHON_SITE + '\nraise ValueError("this is not carried either")\n')
+    failures = tree.check()
+    assert any("in a message" in f for f in failures), failures
+
+
+def test_the_phrase_in_a_rust_doc_comment_is_documentation(tree: Tree) -> None:
+    """**The carve-out that makes the rule usable.** `///` and `//` are where this phrase
+    legitimately lives - it is how the tree explains a refusal - and neither is a string."""
+    tree.rust.write_text(
+        RUST_SITE + "\n/// A wetting floor the class is not ported with.\n// not ported either.\n"
+    )
+    assert tree.check() == []
+
+
+def test_the_phrase_in_a_python_docstring_is_documentation(tree: Tree) -> None:
+    """The Python half of the same carve-out. This one needs an **AST** rather than lines: a
+    docstring is a string literal, and the tree has twenty-odd of them explaining refusals."""
+    tree.python.write_text(
+        PYTHON_SITE + '\n\ndef f() -> None:\n    """A rule that is not ported here."""\n'
+    )
+    assert tree.check() == []
+
+
+def test_the_field_name_is_not_a_claim_in_code_either(tree: Tree) -> None:
+    """**`UNPORTED_SOLVERS` and `'unported': [...]` are a name and a key.**
+    The boundaries are what separate the word from the fragment of an identifier."""
+    tree.python.write_text(PYTHON_SITE + '\n__all__ = ["UNPORTED_SOLVERS"]\n')
+    assert tree.check() == []
+
+
+def test_a_generated_file_is_not_swept(tree: Tree) -> None:
+    """A `*_gen.py` is emitted from the specs, so its prose is the specs' prose and the `unported`
+    key it carries is the field's own name. Checking it would ask a generator to stop emitting
+    the name it must emit."""
+    generated = tree.python_root / "azoth" / "_models_gen.py"
+    generated.write_text('MODELS = [{"unported": [{"parameter": "mode"}]}]\n', encoding="utf-8")
+    assert tree.check() == []
+
+
+def test_the_rule_sees_a_message_continued_across_lines(tree: Tree) -> None:
+    """**The correction this rule needed, and why its first draft was worse than no rule.**
+
+    Every refusal in this tree is a `format!` whose text is backslash-continued onto the next
+    line, so the phrase sits on a line holding no `"` at all. The per-line scan this replaced
+    found **none** of the three Rust sites the rule exists to confine, while still passing a
+    sabotage probe written on one line - and it missed a seventh site outright
+    (`crates/azoth-eos/src/databank.rs`), where the phrase is wrapped between its own two words.
+    """
+    tree.rust.write_text(RUST_SITE + '\nfn f() { let _ = "this is not \\\n  ported here"; }\n')
+    failures = tree.check()
+    assert any("in a message" in f and "not ported" in f for f in failures), failures
+
+
+def test_a_trailing_comment_after_code_is_still_a_comment(tree: Tree) -> None:
+    """The case a quote count was only a proxy for: a `//` on a line that also holds a literal is
+    a comment, not a message. The lexer decides that now rather than the parity of the quotes."""
+    tree.rust.write_text(RUST_SITE + '\nfn f() { let x = "ok"; } // this is not ported\n')
+    assert tree.check() == []
+
+
+def test_the_phrase_in_a_python_comment_is_documentation(tree: Tree) -> None:
+    """Python's `#` needs no carve-out of its own - an AST never sees a comment - which is the
+    whole reason that side reads the tree instead of the text."""
+    tree.python.write_text(PYTHON_SITE + "\n# this is not ported either\n")
+    assert tree.check() == []
+
+
+def test_the_two_sentinels_are_the_only_files_allowed_to_say_it() -> None:
+    """**The exemption, proved against the real tree, because nothing synthetic can prove it.**
+
+    `SENTINELS` holds repo-relative paths, so no fixture can name one: from inside a synthetic
+    tree, the exemption and a sweep that never opens those files look identical. So the assertion
+    is the pair - the sentinels *do* spell the sentence they are sentinel for, and the real sweep
+    is clean - which is what makes the exemption load-bearing rather than vacuous.
+    """
+    for sentinel in check_unported.SENTINELS:
+        text = (ROOT / sentinel).read_text(encoding="utf-8")
+        assert "not ported" in text, f"{sentinel} no longer builds the sentence it stands for"
+    assert check_unported.source_prose() == []

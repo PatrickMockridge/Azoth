@@ -56,9 +56,9 @@ fn refuse_end_draws(setup: &ColumnSetup, tray_count: usize) -> Result<()> {
                 return Err(AzothError::invalid_input(
                     DRAW_FIELDS[which],
                     format!(
-                        "a draw is stated on {name}, which is not ported: the ends here are \
-                         `column::reboiler` and `column::condenser` rather than stages, so there \
-                         is no tray outlet for a fraction to split"
+                        "a draw is stated on {name}: the ends here are `column::reboiler` and \
+                         `column::condenser` rather than stages, so there is no tray outlet for a \
+                         fraction to split"
                     ),
                 ));
             }

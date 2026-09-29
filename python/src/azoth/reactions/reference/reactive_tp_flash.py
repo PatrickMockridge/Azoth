@@ -213,7 +213,8 @@ def reactive_tp_flash(
         if charge != 0.0:
             raise InvalidInputError(
                 "components",
-                f"`{name}` is charged, and the RAND solve's ionic branch is not ported",
+                f"`{name}` is charged, and the RAND solve here is the neutral one: "
+                f"`ModifiedRANDSolver`'s ionic branch is what would carry it",
             )
 
     fluid = from_names(list(components), eos="srk" if cubic is None else cubic)

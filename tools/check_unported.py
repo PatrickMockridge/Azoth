@@ -33,6 +33,26 @@ deliberate duplication rather than a second source of truth: this tool has to ru
 That rule is what makes the first one meaningful: the row is held to both
 implementations, while a sentence beside it is held to nothing.
 
+**And neither does any refusal in code, outside the two sentinels.** `crates/**/*.rs` and
+`python/src/**/*.py` are swept the same way, so a refusal that spelled its own sentence -
+"Methane is charged, and the RAND solve's ionic branch is not ported" - is an error where
+it stands. That rule is what makes the helper *the* shape rather than one shape: a refusal
+the checker can count goes through `refuse`, and one written as prose beside it is a
+refusal nothing holds.
+
+Three carve-outs, and each is a distinction rather than a convenience. **Comments are not
+strings**: `///` and `//` are where this phrase legitimately lives - it is how the tree
+explains a refusal to a reader - and so is a Python docstring, which is why that side reads
+an AST rather than lines (twenty-odd of this tree's hits are docstrings, all documentation).
+**Generated files are not swept**: a `*_gen.py` is emitted from the specs, so its prose is
+the specs' prose, already held, and the `unported` key it carries is the *field's name*.
+And **the phrase is bounded**: `UNPORTED_SOLVERS` is an identifier a reader looks up, not a
+claim about the tree.
+
+**The boundary matters on the specification side too**, where the field's own name
+`[[unported]]` is a table key rather than a string - a rule that read keys would forbid the
+declaration it exists to protect.
+
 # The comparison is per spec, by file stem
 
 A refusal site is attributed to a spec by the stem of the file it sits in -
@@ -49,9 +69,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import sys
 import tomllib
+from collections.abc import Iterator
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -100,9 +122,14 @@ SPECS = ROOT / "specs"
 #: because it reads as coverage. What is *not* in the list is deliberate:
 #: `not implemented` is excluded because `specs/models/eos/water_phase.toml` uses it of
 #: *NeqSim's* own missing regions, which is not a porting claim at all.
+#:
+#: **Bounded, because the field has a name and the name is not a claim.** `UNPORTED_SOLVERS` in an
+#: `__all__` list is an identifier a reader looks up, and `'unported': [...]` is a dict key - both
+#: survive an unbounded `unported` and neither says anything about the tree. The boundaries are
+#: what separate the word from the fragment.
 PORTING_PROSE = re.compile(
-    r"not ported|unported|not carried"
-    r"|none (?:is |are )?ported|neither (?:is |are )?ported",
+    r"\bnot ported\b|\bunported\b|\bnot carried\b"
+    r"|\bnone (?:is |are )?ported\b|\bneither (?:is |are )?ported\b",
     re.IGNORECASE,
 )
 
@@ -139,6 +166,172 @@ def porting_prose(specs_root: Path = SPECS) -> list[str]:
                     f"`[[unported]]` row in a model spec, or a `ROADMAP.md` bullet, or "
                     f"absent from this spec's inputs because the port does not carry it."
                 )
+    return failures
+
+
+#: Where a refusal is written in code, in each language.
+SOURCE_SUFFIXES = (".rs", ".py")
+
+#: The two helper modules, which are the only places the phrase is allowed: they are what a
+#: refusal goes *through*, and each has to spell the sentence it builds.
+SENTINELS = (
+    "crates/azoth-process/src/unported.rs",
+    "python/src/azoth/process/reference/_unported.py",
+)
+
+
+#: A Rust `\` at the end of a line inside a literal: the newline and the next line's leading
+#: whitespace are not part of the string's value. Removed before the phrase is looked for, so a
+#: message that wrapped between the two words of a phrase is still the phrase.
+_LINE_CONTINUATION = re.compile(r"\\\n[ \t]*")
+
+
+def _rust_without_comments(text: str) -> str:
+    """`text` with every `//` and `/* */` comment blanked out, at unchanged offsets.
+
+    **Blanked rather than deleted**, so an offset into the result is an offset into the argument
+    and a line number can still be counted. Block comments nest in Rust, so their depth is tracked
+    rather than the first `*/` sought.
+
+    **Strings are skipped rather than scanned**, and that is what lets a `//` inside a message mean
+    nothing. The phrase this rule looks for legitimately lives in a comment - that is how this tree
+    explains a refusal to a reader - so the two are told apart by the lexer's own rule instead of a
+    heuristic about how many quotes are on the line. A `'` is not tracked, so a char literal
+    holding a double quote (`'"'`) would desynchronise this; none is used in this tree.
+    """
+    out = list(text)
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char == '"':
+            index += 1
+            while index < length:
+                if text[index] == "\\":
+                    index += 2
+                    continue
+                if text[index] == '"':
+                    index += 1
+                    break
+                index += 1
+            continue
+        if text.startswith("//", index):
+            while index < length and text[index] != "\n":
+                out[index] = " "
+                index += 1
+            continue
+        if text.startswith("/*", index):
+            depth = 0
+            while index < length:
+                if text.startswith("/*", index):
+                    depth += 1
+                    index += 2
+                    continue
+                if text.startswith("*/", index):
+                    depth -= 1
+                    index += 2
+                    if depth == 0:
+                        break
+                    continue
+                if text[index] != "\n":
+                    out[index] = " "
+                index += 1
+            continue
+        index += 1
+    return "".join(out)
+
+
+def _rust_literals(text: str) -> Iterator[tuple[int, str]]:
+    """Every ordinary string literal in a Rust file, with its line.
+
+    **Read whole, and that is the correction this needed.** Every refusal in this tree is a
+    `format!` whose text is backslash-continued across lines, so the phrase sits on a line holding
+    no `"` at all: the per-line scan this replaced found **none** of the three Rust sites the rule
+    exists to confine, while still passing a sabotage probe written on one line. A rule whose whole
+    purpose is confinement cannot be blind to the shape its own tree writes.
+
+    Comments are blanked first, because a doc comment is where this phrase legitimately lives:
+    `/// ... is not ported ...` is documentation and a `"..."` is a message. The value yielded is
+    the literal's own, with its line continuations resolved, so a phrase wrapped between two of its
+    words is still caught - the same reason the alternation is wide. Raw strings are not handled
+    and none is used here.
+    """
+    code = _rust_without_comments(text)
+    for match in re.finditer(r'"((?:[^"\\]|\\.)*)"', code, re.DOTALL):
+        line = code.count("\n", 0, match.start()) + 1
+        yield line, _LINE_CONTINUATION.sub("", match.group(1))
+
+
+def _python_literals(text: str, where: str) -> Iterator[tuple[int, str]]:
+    """Every string literal in a Python file that is not a docstring, with its line.
+
+    **Docstrings are excluded deliberately, and they are the whole reason this reads an AST
+    rather than lines.** Twenty-odd of this tree's prose hits are docstrings - parameter
+    documentation, module headers - and they are documentation in exactly the sense a Rust `///`
+    is. A docstring is the first statement of a module, class or function; everything else that is
+    a string is a message or a lookup key.
+    """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError as error:  # a tree this cannot read is a tree it must not pass silently
+        raise SyntaxError(f"{where}: {error}") from error
+
+    docstrings: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        body = getattr(node, "body", [])
+        if not body or not isinstance(body[0], ast.Expr):
+            continue
+        value = body[0].value
+        if isinstance(value, ast.Constant) and isinstance(value.value, str):
+            docstrings.add(id(value))
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and id(node) not in docstrings
+        ):
+            yield node.lineno, node.value
+
+
+#: Where hand-written source lives. `python/src` rather than `python`, so the tests are not swept.
+SOURCE_ROOTS = (ROOT / "crates", ROOT / "python" / "src")
+
+
+def source_prose(roots: tuple[Path, ...] = SOURCE_ROOTS) -> list[str]:
+    """Every refusal in code that states the porting fact as a sentence, outside the sentinels.
+
+    **Hand-written source only, and that is the same rule the specs already have.** A `*_gen.py`
+    or `*_gen.rs` is emitted from the specs, so its prose is the specs' prose: the `unported` key
+    a generated table carries is the *field's name*, and the sentence beside it was already held
+    by `porting_prose` over the file it came from. Sweeping a generated file would check one fact
+    twice and, worse, ask a generator to stop emitting a name it must emit.
+    """
+    failures: list[str] = []
+    for root in roots:
+        for suffix in SOURCE_SUFFIXES:
+            for path in sorted(root.rglob(f"*{suffix}")):
+                if "/target/" in str(path) or "/vendor/" in str(path):
+                    continue
+                if path.stem.endswith("_gen"):
+                    continue
+                # A synthetic tree is not under `ROOT`, so the path is reported as it stands -
+                # the same guard `porting_prose` makes, and for the same reason.
+                where = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+                if where in SENTINELS:
+                    continue
+                text = path.read_text(encoding="utf-8")
+                found = _python_literals(text, where) if suffix == ".py" else _rust_literals(text)
+                for line, literal in found:
+                    match = PORTING_PROSE.search(literal)
+                    if match:
+                        failures.append(
+                            f"{where}:{line} states {match.group(0)!r} in a message. A refusal "
+                            f"goes through `unported::refuse`/`_unported.refuse`, which is what a "
+                            f"declared row can hold; a sentence beside it is held to nothing."
+                        )
     return failures
 
 
@@ -222,6 +415,7 @@ def check(
     rust_root: Path = RUST_SITES,
     python_root: Path = PYTHON_SITES,
     specs_root: Path | None = None,
+    source_roots: tuple[Path, ...] | None = None,
 ) -> list[str]:
     """Every disagreement between the declaration and the two implementations."""
     declared_rows, failures = declared(model_dir)
@@ -229,6 +423,7 @@ def check(
     # suite's synthetic tree has to be swept instead of it. A default here would make
     # every test below pass by reading this checkout.
     failures.extend(porting_prose(SPECS if specs_root is None else specs_root))
+    failures.extend(source_prose(SOURCE_ROOTS if source_roots is None else source_roots))
 
     stems: dict[str, list[str]] = {}
     for path, spec in model_specs(model_dir):

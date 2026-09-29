@@ -3141,9 +3141,9 @@ fn phase_antoine(names: &[&str], overlay: Option<&Overlay>) -> Result<Vec<Antoin
                 format!(
                     "`{}` is tagged `referenceStateType = {}` in NeqSim's component \
                      database, so `ComponentGE.fugcoef` gives it a Henry's-law fugacity \
-                     coefficient rather than `gamma_i P0_i / P`. That branch is not \
-                     ported, and this phase is the Raoult one. The substances the \
-                     databank tags `solvent` - water, the alcohols, the glycols - are \
+                     coefficient rather than `gamma_i P0_i / P`. That branch is the \
+                     Henry's-law one, and this phase is the Raoult one. The substances \
+                     the databank tags `solvent` - water, the alcohols, the glycols - are \
                      the ones it describes.",
                     entry.name, entry.reference_state
                 ),

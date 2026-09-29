@@ -997,9 +997,9 @@ impl Mixture {
                     "mixture",
                     "this mixture carries both the Wertheim association and the Fürst \
                      electrolyte term. NeqSim's `PhaseElectrolyteCPA` is the model that \
-                     has both, and it is not ported - so a mixture naming two terms is a \
-                     request for a model that does not exist here rather than a phase \
-                     whose pressure is the sum of the two",
+                     has both, and it is not one this library carries - so a mixture naming \
+                     two terms is a request for a model that does not exist here rather than \
+                     a phase whose pressure is the sum of the two",
                 ));
             }
             (Some(association), None) => self.associating_root(reduced, x, &association, side)?,

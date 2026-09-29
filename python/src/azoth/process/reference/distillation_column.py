@@ -842,8 +842,8 @@ def _states(
                 if exists and vector[index] != 0.0:
                     raise InvalidInputError(
                         name,
-                        f"a draw is stated on {where}, which is not ported: the ends here are "
-                        f"`column::reboiler` and `column::condenser` rather than stages",
+                        f"a draw is stated on {where}: the ends here are `column::reboiler` and "
+                        f"`column::condenser` rather than stages",
                     )
         for i in range(tray_count):
             validate_draws(draws_at(i))

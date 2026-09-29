@@ -2577,8 +2577,8 @@ def _phase_antoine(names: Sequence[str], card: keycard.Keycard | None) -> _Phase
                 f"`{record.name}` is tagged `referenceStateType = "
                 f"{record.reference_state}` in NeqSim's component database, so "
                 f"`ComponentGE.fugcoef` gives it a Henry's-law fugacity coefficient "
-                f"rather than `gamma_i P0_i / P`. That branch is not ported, and this "
-                f"phase is the Raoult one. The substances the databank tags `solvent` - "
+                f"rather than `gamma_i P0_i / P`. That branch is the Henry's-law one, and "
+                f"this phase is the Raoult one. The substances the databank tags `solvent` - "
                 f"water, the alcohols, the glycols - are the ones it describes.",
             )
         if record.antoine == (0.0, 0.0, 0.0, 0.0, 0.0):

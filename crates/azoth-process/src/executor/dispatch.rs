@@ -864,8 +864,9 @@ fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome>
             return Err(AzothError::invalid_input(
                 "solver_type",
                 format!(
-                    "`{other}` is not ported: `ColumnSolverFactory` names ten strategies and this \
-                     port carries `direct_substitution` and `naphtali_sandholm`"
+                    "`{other}` is not one of the two strategies this dispatcher carries, which \
+                     are `direct_substitution` and `naphtali_sandholm`; `ColumnSolverFactory` \
+                     names ten"
                 ),
             ));
         }
