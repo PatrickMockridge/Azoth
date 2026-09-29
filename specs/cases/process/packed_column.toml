@@ -41,7 +41,6 @@ theoretical_stages = 1.3888888888888888
 percent_flood = 14.978802584364676
 flooding_velocity = 0.5105560169692432
 packing_pressure_drop = 0.551991634248378
-hydraulics_ok = false
 internal_diameter = 0.3
 [[cases]]
 id = "packed_binary_2m3_is_one_stage_more"
@@ -85,7 +84,6 @@ theoretical_stages = 1.597222222222222
 percent_flood = 15.053642072827294
 flooding_velocity = 0.5080730231464395
 packing_pressure_drop = 0.6408295279845977
-hydraulics_ok = false
 internal_diameter = 0.3
 
 [[cases]]
@@ -131,5 +129,4 @@ theoretical_stages = 1.3888888888888888
 percent_flood = 14.978802584364676
 flooding_velocity = 0.5105560169692432
 packing_pressure_drop = 0.551991634248378
-hydraulics_ok = false
 internal_diameter = 0.3

@@ -3834,6 +3834,12 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
             ("bottoms_h", -6818.722955062241),
             ("condenser_duty", -21323.042789303567),
             ("reboiler_duty", 47786.58389381015),
+            ("hetp", 1.44),
+            ("theoretical_stages", 1.3888888888888888),
+            ("percent_flood", 14.978802584364676),
+            ("flooding_velocity", 0.5105560169692432),
+            ("packing_pressure_drop", 0.551991634248378),
+            ("internal_diameter", 0.3),
         ],
         expected_vectors: &[
             (
@@ -3921,6 +3927,12 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
             ("bottoms_h", -6818.722955061937),
             ("condenser_duty", -21283.206254634413),
             ("reboiler_duty", 47746.755608869134),
+            ("hetp", 1.44),
+            ("theoretical_stages", 1.597222222222222),
+            ("percent_flood", 15.053642072827294),
+            ("flooding_velocity", 0.5080730231464395),
+            ("packing_pressure_drop", 0.6408295279845977),
+            ("internal_diameter", 0.3),
         ],
         expected_vectors: &[
             (
@@ -4016,6 +4028,12 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
             ("bottoms_h", -6818.722955062241),
             ("condenser_duty", -21323.042789303567),
             ("reboiler_duty", 47786.58389381015),
+            ("hetp", 1.44),
+            ("theoretical_stages", 1.3888888888888888),
+            ("percent_flood", 14.978802584364676),
+            ("flooding_velocity", 0.5105560169692432),
+            ("packing_pressure_drop", 0.551991634248378),
+            ("internal_diameter", 0.3),
         ],
         expected_vectors: &[
             (

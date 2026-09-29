@@ -50,8 +50,9 @@ pub struct PackedColumnResult {
     pub bottoms_t: ThermodynamicTemperature,
     /// Bottoms molar enthalpy.
     pub bottoms_h: MolarEnergy,
-    /// **The vapour each tray withdrew**, which is empty for this id: the packing does not change
-    /// a draw, and the three fractions are the base column's own inputs rather than this id's.
+    /// **The vapour each tray withdrew**, zero where a tray drew none. The packing does not change
+    /// a draw, and the three fractions are this id's own declared inputs - inherited from the base
+    /// and overridden in no part - so a stated one draws here as it does there.
     pub gas_side_draw_n: Vec<f64>,
     /// The liquid each tray withdrew as a liquid side draw.
     pub liquid_side_draw_n: Vec<f64>,
@@ -362,6 +363,12 @@ mod report {
     /// `internal_diameter` goes through the **sizing** branch, because the class's own
     /// `columnDiameter` is `-1.0` on this row: the diameter is not stated, so it is sized and the
     /// sized value is what the report then runs at.
+    ///
+    /// **`hydraulics_ok` is held here rather than in the case file.** `TestCase` carries a boolean
+    /// for an *input* and not for an expectation - `gen_registry`'s `collect_numbers` excludes
+    /// flags deliberately, so that a reader cannot mistake one for a quantity - and no spec-driven
+    /// runner exists for this model to read one back through `case.flag`. The three cases hold the
+    /// other six; this holds the flag, against the same capture.
     #[test]
     #[allow(clippy::too_many_lines)] // one call, one parameter per declared input
     fn the_report_reproduces_the_captures_seven() {
