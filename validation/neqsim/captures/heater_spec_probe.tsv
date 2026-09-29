@@ -1,0 +1,83 @@
+=== one specification at a time (the capture's rows) ===
+outlet_temperature_380
+outlet_T_K=380.000000000000
+duty_W=2924.27124826432
+reported_specified_T_K=380.000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=false
+
+duty_5000_W
+outlet_T_K=420.457637389336
+duty_W=4999.99999860866
+reported_specified_T_K=0.00000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=true
+
+=== two specifications, both orders ===
+temperature_380_then_duty_5000
+outlet_T_K=420.457637389336
+duty_W=4999.99999860866
+reported_specified_T_K=380.000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=true
+
+duty_5000_then_temperature_380
+outlet_T_K=380.000000000000
+duty_W=2924.27124826432
+reported_specified_T_K=380.000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=false
+
+=== the energy-input spelling, both orders ===
+temperature_380_then_energy_input_5000
+outlet_T_K=420.457637389336
+duty_W=4999.99999860866
+reported_specified_T_K=380.000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=true
+
+energy_input_5000_then_temperature_380
+outlet_T_K=380.000000000000
+duty_W=2924.27124826432
+reported_specified_T_K=380.000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=false
+
+=== the unit-carrying overload and the zero-Celsius setpoint ===
+temperature_380K_by_unit_then_duty_5000
+outlet_T_K=420.457637389336
+duty_W=4999.99999860866
+reported_specified_T_K=380.000000000000
+reported_specified_T_unit=K
+isSetEnergyInput=true
+
+temperature_0C_by_unit_then_duty_5000
+outlet_T_K=420.457637389336
+duty_W=4999.99999860866
+reported_specified_T_K=0.00000000000000
+reported_specified_T_unit=C
+isSetEnergyInput=true
+
+temperature_0C_by_unit_alone
+outlet_T_K=273.150000000000
+duty_W=-3122.30780704166
+reported_specified_T_K=0.00000000000000
+reported_specified_T_unit=C
+isSetEnergyInput=false
+
+temperature_273_15K_alone
+outlet_T_K=273.150000000000
+duty_W=-3122.30780704166
+reported_specified_T_K=273.150000000000
+reported_specified_T_unit=K
+isSetEnergyInput=false
+
+=== the dropped specification after a repeated run ===
+temperature_380_then_duty_5000, run twice
+outlet_T_K=420.457637362851
+reported_specified_T_K=380.000000000000
+
+duty_5000_then_temperature_380, run twice
+outlet_T_K=380.000000000000
+reported_specified_T_K=380.000000000000
+
