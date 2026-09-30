@@ -4850,7 +4850,16 @@ public class ProcessProbe {
   /// **No capture in this directory held it**, and the class is 1,348 lines with a public surface
   /// of forty-odd getters, so what is printed here is the surface rather than a sample of it.
   static void mechanicalRows() {
-    mechanicalBinaryRow("binary_mechanical_defaults");
+    mechanicalBinaryRow("binary_mechanical_defaults", null, null);
+    // **The stated-diameter and the valve rows exist to make two of the class's own branches
+    // measurable.** A diameter override replaces the rating diameter the designer is driven at,
+    // and that is the *only* thing it replaces: `floodingFactor`, `weirLength` and `weirLoading`
+    // were computed one statement earlier, at the Souders-Brown diameter the override throws
+    // away - so this row's three quantities are the defaults row's, to the last digit, beside a
+    // `getColumnDiameter()` of `2.0`. A tray type of `valve` moves the Souders-Brown `kFactor`
+    // from `0.1` to `0.12` and the designer's own internals type with it.
+    mechanicalBinaryRow("binary_mechanical_override", 2.0, null);
+    mechanicalBinaryRow("binary_mechanical_valve", null, "valve");
     mechanicalAbsorberRow("absorber_mechanical");
     // **`AbsorberMechanicalDesign` has no row, and the reason is measured**: its only constructor
     // call site in `src/main` is `SimpleAbsorber.getMechanicalDesign()` (`:383`), and
@@ -4861,7 +4870,7 @@ public class ProcessProbe {
   }
 
   /// The port's own binary column, at the class's own constructor defaults.
-  static void mechanicalBinaryRow(String label) {
+  static void mechanicalBinaryRow(String label, Double diameterOverride, String trayType) {
     SystemInterface fluid = new SystemPrEos(300.0, 20.0);
     fluid.addComponent("methane", 0.5);
     fluid.addComponent("n-butane", 0.5);
@@ -4883,7 +4892,7 @@ public class ProcessProbe {
     process.add(inlet);
     process.add(column);
     process.run();
-    mechanicalRow(label, "distillation_column", column);
+    mechanicalRow(label, "distillation_column", column, diameterOverride, trayType);
   }
 
   /// The lean-oil absorber, which is the same class on a column with no ends.
@@ -4913,13 +4922,20 @@ public class ProcessProbe {
     process.add(solvent);
     process.add(column);
     process.run();
-    mechanicalRow(label, "absorption_column", column);
+    mechanicalRow(label, "absorption_column", column, null, null);
   }
 
   static void mechanicalRow(String label, String machine,
-      neqsim.process.equipment.distillation.DistillationColumn column) {
+      neqsim.process.equipment.distillation.DistillationColumn column, Double diameterOverride,
+      String trayType) {
     neqsim.process.mechanicaldesign.distillation.DistillationColumnMechanicalDesign design =
         new neqsim.process.mechanicaldesign.distillation.DistillationColumnMechanicalDesign(column);
+    if (diameterOverride != null) {
+      design.setColumnDiameterOverride(diameterOverride);
+    }
+    if (trayType != null) {
+      design.setTrayType(trayType);
+    }
     design.calcDesign();
 
     System.out.println(label);
@@ -4958,13 +4974,23 @@ public class ProcessProbe {
     System.out.println("column_diameter_m=" + design.getColumnDiameter());
     System.out.println("column_height_m=" + design.getColumnHeight());
     System.out.println("column_wall_thickness_m=" + design.getColumnWallThickness());
+    // **The `_m`, `_Pa` and `_W` suffixes on this block are the probe's, not the class's**, and
+    // the three keys beside them state the class's own documented unit for the same number:
+    // `getColumnWallThickness` is mm, `getTrayPressureDrop` mbar/tray, `getTotalPressureDrop` bar
+    // and both duties kW. Reading the suffix as the class's unit is what made an earlier version
+    // of the README entry claim four unit slips that were this file's own labels.
+    System.out.println("column_wall_thickness_mm=" + design.getColumnWallThickness());
     System.out.println("flooding_factor=" + design.getFloodingFactor());
     System.out.println("max_flooding_factor=" + design.getMaxFloodingFactor());
     System.out.println("weir_loading=" + design.getWeirLoading());
     System.out.println("tray_pressure_drop_Pa=" + design.getTrayPressureDrop());
+    System.out.println("tray_pressure_drop_mbar_per_tray=" + design.getTrayPressureDrop());
     System.out.println("total_pressure_drop_Pa=" + design.getTotalPressureDrop());
+    System.out.println("total_pressure_drop_bar=" + design.getTotalPressureDrop());
     System.out.println("reboiler_duty_W=" + design.getReboilerDuty());
+    System.out.println("reboiler_duty_kw=" + design.getReboilerDuty());
     System.out.println("condenser_duty_W=" + design.getCondenserDuty());
+    System.out.println("condenser_duty_kw=" + design.getCondenserDuty());
     System.out.println("material_grade=" + design.getMaterialGrade());
     // ---- The four quantities the wall-thickness formula is built from, so its own arithmetic
     // is checkable from this capture rather than from the source alone.
@@ -4974,6 +5000,13 @@ public class ProcessProbe {
     System.out.println("corrosion_allowance=" + design.getCorrosionAllowance());
     System.out.println("design_pressure_times_1_1=" + design.getMaxOperationPressure() * 1.1);
     System.out.println("contactor_internals_type=" + design.getContactorInternalsType());
+    // ---- And the designer it built, so the two halves of `calcDesign` are separated here: the
+    // Souders-Brown pass above and the internals tree below, which is what replaces its diameter.
+    neqsim.process.equipment.distillation.internals.ColumnInternalsDesigner internals =
+        design.getContactorInternalsDesigner();
+    System.out.println("internals_required_diameter_m=" + internals.getRequiredDiameter());
+    System.out.println("internals_max_percent_flood=" + internals.getMaxPercentFlood());
+    System.out.println("internals_total_pressure_drop_pa=" + internals.getTotalPressureDrop());
     System.out.println("column_diameter_override_m=" + design.getColumnDiameterOverride());
     System.out.println("max_contactor_pressure_drop_bar=" + design.getMaxContactorPressureDropBar());
     System.out.println();

@@ -315,13 +315,35 @@ visible in the sweep count rather than in the answer.
 **`ProcessProbe mechanical` is `DistillationColumnMechanicalDesign`, and it found one defect
 upstream.** `calcDesign` reads **tray 0** and nothing else - the vapour outlet's molar flow and
 its fluid's density and molar mass, then the liquid outlet's - and from those sizes the diameter,
-the height and the wall thickness. Two rows: the binary column this port already reproduces, and
-the lean-oil absorber. **No capture in this directory held the class**, which is 1,348 lines with
-a public surface of forty-odd getters.
+the height and the wall thickness. Four rows: the binary column this port already reproduces, the
+same column at a stated `2.0` m diameter override, the same column with a `valve` tray, and the
+lean-oil absorber. **No capture in this directory held the class**, which is 1,348 lines with a
+public surface of forty-odd getters.
 
 ```bash
 java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
 ```
+
+**`calcDesign` runs two sizings and publishes the second one's diameter beside the first one's
+numbers, and the override row is what makes that a measurement rather than a reading of the
+source.** The Souders-Brown pass fixes the diameter, recomputes a flooding factor at it and takes
+a weir loading from `0.7 D`; then `calculateContactorCapacity` builds the internals designer,
+hands it `resolveRatingDiameter` as an override, and **replaces the diameter with the designer's**
+- while the flooding factor and the weir loading keep the value they were computed at. So the
+`2.0` m row reports `column_diameter_m=2.0` beside a `flooding_factor` of
+`0.029981966003039984` and a `weir_loading` of `4.992709047038033`, **which are the defaults
+row's, to the last digit**, while `column_wall_thickness_m` moves to `864.7798742138365`. The
+`valve` row moves the Souders-Brown `kFactor` from `0.1` to `0.12` and the designer's internals
+type with it, which is one tray type answering in two places.
+
+**Four keys were added to every row so the class's own units are in the capture rather than in
+this entry.** The `_m`, `_Pa` and `_W` labels on the block *below* them are the probe's and are
+wrong for three of the quantities; `column_wall_thickness_mm`, `total_pressure_drop_bar`,
+`tray_pressure_drop_mbar_per_tray` and the two `_kw` keys state the same numbers in the unit each
+getter's javadoc gives. **And three keys name what the designer inside `calcDesign` answered**
+(`internals_required_diameter_m`, `internals_max_percent_flood`,
+`internals_total_pressure_drop_pa`), so the two halves of the call are separable in the record
+rather than only in the source.
 
 **The two density reads never ask the fluid to initialise, and on the absorber the liquid one
 answers `0.0`.** `getWeirLoading()` is then **`Infinity`** - the volume flow is a mass flow over
