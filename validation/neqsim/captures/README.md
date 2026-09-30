@@ -334,6 +334,15 @@ the absorber's `0.0`, and the same read after one `initProperties()` - `645.1756
 [equinor/neqsim#4140](https://github.com/equinor/neqsim/issues/4140)**, with the minimal
 reproduction and the class's own test as its starting point.
 
+**The plan's second item, `AbsorberMechanicalDesign`, is not a port target, and that is measured
+rather than assumed.** Its only constructor call site in `src/main` is
+`SimpleAbsorber.getMechanicalDesign()` (`SimpleAbsorber.java:383`) - and `SimpleAbsorber extends
+Separator`, so driving the class on an `AbsorptionColumn` (a `DistillationColumn`) throws
+`ClassCastException` from `PressureVesselDesignStandard.java:36` through
+`SeparatorMechanicalDesign.readDesignSpecifications:271`. It is the separator family's sizing for
+a machine this port already refuses, which is why `process.absorption_column`'s mechanical design
+is the *column's* own design and nothing here has a row for it.
+
 **Three quantities of the same class are *not* defects, and an earlier version of this entry said
 they were.** `getTotalPressureDrop()` is in **bar**, `getReboilerDuty()` in **kW** and
 `getColumnWallThickness()` in **mm**, each as its javadoc says; the `_Pa`, `_W` and metre labels

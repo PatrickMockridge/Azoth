@@ -4852,6 +4852,12 @@ public class ProcessProbe {
   static void mechanicalRows() {
     mechanicalBinaryRow("binary_mechanical_defaults");
     mechanicalAbsorberRow("absorber_mechanical");
+    // **`AbsorberMechanicalDesign` has no row, and the reason is measured**: its only constructor
+    // call site in `src/main` is `SimpleAbsorber.getMechanicalDesign()` (`:383`), and
+    // `SimpleAbsorber extends Separator` - so driving it on an `AbsorptionColumn`, which extends
+    // `DistillationColumn`, throws `ClassCastException` from `PressureVesselDesignStandard:36`.
+    // The class is the separator family's sizing for a machine this port does not carry, which is
+    // why `process.absorption_column`'s mechanical design is the *column's* design and not this.
   }
 
   /// The port's own binary column, at the class's own constructor defaults.
