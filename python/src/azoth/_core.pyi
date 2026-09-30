@@ -3345,6 +3345,8 @@ def distillation_column(
     downcommer_area_fraction: float | None = None,
     design_flood_fraction: float | None = None,
     column_diameter_override: float | None = None,
+    hydraulic_pressure_drop_coupling: bool | None = None,
+    hydraulic_pressure_drop_internals_type: str | None = None,
 ) -> DistillationColumnResult: ...
 def ejector(
     motive_components: list[str],

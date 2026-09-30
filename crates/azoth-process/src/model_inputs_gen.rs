@@ -915,6 +915,20 @@ static ALL: &[ModelInputs] = &[
                 optional: true,
                 dimension: Some("length"),
             },
+            ModelInput {
+                name: "hydraulic_pressure_drop_coupling",
+                kind: "boolean",
+                values: &[],
+                optional: true,
+                dimension: None,
+            },
+            ModelInput {
+                name: "hydraulic_pressure_drop_internals_type",
+                kind: "enum",
+                values: &["sieve", "valve", "bubble-cap"],
+                optional: true,
+                dimension: None,
+            },
         ],
     },
     ModelInputs {

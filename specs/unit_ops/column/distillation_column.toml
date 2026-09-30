@@ -112,6 +112,11 @@ description = "the fraction of flood the internals are sized to; the designer de
 [parameters.column_diameter_override]
 unit = "m"
 description = "a stated internal diameter for the internals tree, which replaces its sizing branch entirely; the class's own -1.0 sizes it off the controlling tray"
+[parameters.hydraulic_pressure_drop_coupling]
+description = "whether the column's pressure profile is rewritten from its own tray hydraulics, which puts the solve on the class's outer tear loop; the class defaults it to false"
+[parameters.hydraulic_pressure_drop_internals_type]
+description = "which tray the coupling's own designer is built as - sieve, valve or bubble-cap; the class defaults it to sieve, and its geometry is not a degree of freedom"
+
 [[ports]]
 name = "feed"
 direction = "in"

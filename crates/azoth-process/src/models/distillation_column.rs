@@ -28,6 +28,7 @@ use crate::unported;
 /// **The internals geometry's own defaults, re-stated from the designer's module** so a caller
 /// of this id has one import: they are `ColumnInternalsDesigner`'s initialisers, none is read by
 /// the solve, and [`crate::column::designer`] is where they are defined.
+use crate::column::coupling::HydraulicCoupling;
 pub use crate::column::designer::{
     DEFAULT_DESIGNER_FLOOD_FRACTION, DEFAULT_DOWNCOMMER_AREA_FRACTION, DEFAULT_HOLE_AREA_FRACTION,
     DEFAULT_HOLE_DIAMETER_MM, DEFAULT_INTERNALS_TYPE, DEFAULT_TRAY_SPACING_M,
@@ -308,6 +309,7 @@ pub fn build_murphree(
 /// its gate.
 #[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
 pub(crate) fn distillation_column_outcome(
+    coupling: Option<&crate::column::coupling::HydraulicCoupling>,
     components: &[String],
     feed_n: f64,
     feed_z: &[f64],
@@ -458,7 +460,7 @@ pub(crate) fn distillation_column_outcome(
     }
 
     let feed = Stream::from_pt(components.to_vec(), feed_z.to_vec(), feed_n, feed_p, feed_t)?;
-    let out = kernel(&kernel::ColumnSetup {
+    let setup = kernel::ColumnSetup {
         feed,
         feed_stage,
         number_of_stages,
@@ -489,7 +491,31 @@ pub(crate) fn distillation_column_outcome(
         liquid_side_draw_fractions: liquid_side_draw_fractions.map(|v| v.to_vec()),
         pumparound_fractions: pumparound_fractions.map(|v| v.to_vec()),
         reactive,
-    })?;
+    };
+    // **The coupling is the outer loop and the kernel call is its inner solve**, so the flag
+    // decides which entry runs rather than adding a step inside either.
+    let out = match coupling {
+        Some(coupling) => {
+            let (mut out, tear) =
+                crate::column::coupling::distillation_column_coupled(&setup, coupling)?;
+            out.tear = Some(kernel::TearDiagnostics {
+                iterations: tear.iterations as usize,
+                residual: tear.residual,
+                converged: tear.converged,
+                rejected_candidates: 0,
+                rollbacks: 0,
+                inner_iterations: tear.inner_iterations,
+                // **The coupling's tear has no candidate search and no specified flow**, which
+                // the capture's every coupled row states: zero rejections, zero rollbacks, an
+                // empty candidate history and no draw fraction.
+                fraction: 0.0,
+                actual_flow: 0.0,
+                history: String::new(),
+            });
+            out
+        }
+        None => kernel(&setup)?,
+    };
 
     // **What the stages had to fall back on joins what the checks found.** A reactive tray's
     // fallback is the kernel's own caveat, and a caller that asked for reactive trays learns
@@ -556,8 +582,22 @@ pub fn distillation_column(
     downcommer_area_fraction: Option<f64>,
     design_flood_fraction: Option<f64>,
     column_diameter_override: Option<f64>,
+    hydraulic_pressure_drop_coupling: Option<bool>,
+    hydraulic_pressure_drop_internals_type: Option<&str>,
 ) -> Result<DistillationColumnResult> {
+    // **The coupling's own settings, resolved from the two declared inputs.** The flag decides
+    // whether the outer loop runs at all; the type is `hydraulicPressureDropInternalsType`, whose
+    // class default is `sieve` and which `calcColumnInternals` passes to the designer alone.
+    let coupling = hydraulic_pressure_drop_coupling
+        .unwrap_or(false)
+        .then(|| HydraulicCoupling {
+            internals_type: hydraulic_pressure_drop_internals_type
+                .unwrap_or(DEFAULT_INTERNALS_TYPE)
+                .to_string(),
+            ..HydraulicCoupling::default()
+        });
     let (out, warnings) = distillation_column_outcome(
+        coupling.as_ref(),
         components,
         feed_n,
         feed_z,

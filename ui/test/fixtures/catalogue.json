@@ -2374,6 +2374,30 @@
           "values": []
         },
         {
+          "description": "whether the column's pressure profile is rewritten from its own tray hydraulics, which puts the solve on the class's outer tear loop; the class defaults it to false",
+          "dimension": null,
+          "kind": "boolean",
+          "name": "hydraulic_pressure_drop_coupling",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
+          "description": "which tray the coupling's own designer is built as - sieve, valve or bubble-cap; the class defaults it to sieve, and its geometry is not a degree of freedom",
+          "dimension": null,
+          "kind": "enum",
+          "name": "hydraulic_pressure_drop_internals_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "sieve",
+            "valve",
+            "bubble-cap"
+          ]
+        },
+        {
           "description": "which tray the internals tree is designed as - sieve, valve or bubble-cap; the class defaults it to sieve",
           "dimension": null,
           "kind": "enum",

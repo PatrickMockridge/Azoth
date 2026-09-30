@@ -871,7 +871,35 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
 }
 
 fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
-    let out = kernels::distillation_column::distillation_column(&column_setup(inlets, p)?)?;
+    // **The coupling is the outer loop, so the flag picks the kernel entry rather than adding a
+    // step.** A form that set it and got the uncoupled profile would be a parameter the palette
+    // declares and nothing honours.
+    let setup = column_setup(inlets, p)?;
+    let out = match p.optional_flag("hydraulic_pressure_drop_coupling")? {
+        Some(true) => {
+            let coupling = crate::column::coupling::HydraulicCoupling {
+                internals_type: p
+                    .optional_text("hydraulic_pressure_drop_internals_type")?
+                    .unwrap_or_else(|| crate::column::designer::DEFAULT_INTERNALS_TYPE.to_string()),
+                ..crate::column::coupling::HydraulicCoupling::default()
+            };
+            let (mut out, tear) =
+                crate::column::coupling::distillation_column_coupled(&setup, &coupling)?;
+            out.tear = Some(kernels::distillation_column::TearDiagnostics {
+                iterations: tear.iterations as usize,
+                residual: tear.residual,
+                converged: tear.converged,
+                rejected_candidates: 0,
+                rollbacks: 0,
+                inner_iterations: tear.inner_iterations,
+                history: String::new(),
+                actual_flow: 0.0,
+                fraction: 0.0,
+            });
+            out
+        }
+        _ => kernels::distillation_column::distillation_column(&setup)?,
+    };
     // **The whole tray profile, both duties, the three residuals and the capacity family cross
     // here**, which is the difference between a column a front end can show and one it can only
     // draw.

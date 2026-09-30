@@ -269,6 +269,15 @@ description = "the fraction of flood the internals are sized to, which fixes the
 unit = "m"
 optional = true
 description = "a stated internal diameter, which **replaces the sizing branch entirely**. **Absent, or at or below zero, is the class's own `-1.0`** - the value that sizes the internals off the controlling tray.\n"
+[inputs.hydraulic_pressure_drop_coupling]
+type = "boolean"
+optional = true
+description = "**whether the profile is rewritten from the column's own tray hydraulics.** It is a *solver* change and not a report: the flag is one of `hasActiveColumnTearVariables`' own terms, so setting it puts the column on the outer tear loop. **Absent is `false`.**\n"
+[inputs.hydraulic_pressure_drop_internals_type]
+type = "enum"
+values = ["sieve", "valve", "bubble-cap"]
+optional = true
+description = "which tray the coupling's own designer is built as. **Absent is `sieve`**, the class's own default. **The geometry is not a degree of freedom here**: `calcColumnInternals` sets the type alone.\n"
 
 [outputs]
 [outputs.tray_temperature]

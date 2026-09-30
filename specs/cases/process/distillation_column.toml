@@ -478,3 +478,35 @@ bottoms_p = 2000000.0
 bottoms_t = 373.15
 bottoms_h = -6818.72295505568
 
+[[cases]]
+id = "binary_coupled"
+tolerance = 0.0002
+source = "**The same binary column with the pressure-drop coupling on**, from `validation/neqsim/captures/process_hydraulic_coupling.tsv`: `enableHydraulicPressureDropCoupling(\"sieve\")`, which is the class's own coordinated tear - `hasActiveColumnTearVariables` counts the flag - and it converges where the side-draw row of `process_column_tear.tsv` does not: **2 tear iterations, 0 rejected candidates, 0 rollbacks**, a residual of `7.564364502033816E-7`. **The answer is the rewritten profile**: the bottom rises from the stated `20.0` to `19.017815747452257` bara - the top's `19.0` plus the designer's `1781.574745225591` Pa over `1e5` - and the products move with it, the distillate from `3.7915` to `3.8100` mol/s. **The sweep counts are not expected values**: the capture's `22` and its inner `59` are NeqSim's, and this port's own solve takes fewer on the same states, which this case's `source` records rather than asserts.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+hydraulic_pressure_drop_coupling = true
+[cases.expected]
+tray_temperature = [373.15, 340.4673642171471, 303.77250294322175, 303.0373191773709, 297.78498084429447, 253.14999999999998]
+tray_pressure = [1901781.5747452257, 1901425.2597961807, 1901068.9448471354, 1900712.6298980904, 1900356.314949045, 1900000.0]
+distillate_n = 3.810001514912726
+distillate_z = [0.9659098958672256, 0.034090104132774364]
+distillate_p = 1900000.0
+distillate_t = 253.14999999999998
+bottoms_n = 3.6807025213745574
+bottoms_z = [0.017723206709389927, 0.9822767932906101]
+bottoms_p = 1901781.5747452257
+bottoms_t = 373.15

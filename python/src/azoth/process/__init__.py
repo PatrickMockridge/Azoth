@@ -237,6 +237,8 @@ def distillation_column(
     downcommer_area_fraction: float | None = None,
     design_flood_fraction: float | None = None,
     column_diameter_override: Q | None = None,
+    hydraulic_pressure_drop_coupling: bool | None = None,
+    hydraulic_pressure_drop_internals_type: str | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -314,6 +316,8 @@ def distillation_column(
         downcommer_area_fraction=downcommer_area_fraction,
         design_flood_fraction=design_flood_fraction,
         column_diameter_override=column_diameter_override,
+        hydraulic_pressure_drop_coupling=hydraulic_pressure_drop_coupling,
+        hydraulic_pressure_drop_internals_type=hydraulic_pressure_drop_internals_type,
     )
 
 

@@ -386,6 +386,7 @@ mod report {
     #[allow(clippy::too_many_lines)] // one call, one assertion per captured quantity
     fn the_report_reproduces_the_captures_row() {
         let (outcome, _warnings) = distillation_column_outcome(
+            None,
             &["methane".to_string(), "n-butane".to_string()],
             7.490_704_036_290_964,
             &[0.5, 0.5],

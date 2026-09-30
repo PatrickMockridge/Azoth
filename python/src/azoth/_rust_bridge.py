@@ -4335,6 +4335,8 @@ def distillation_column(
     downcommer_area_fraction: float | None = None,
     design_flood_fraction: float | None = None,
     column_diameter_override: object | None = None,
+    hydraulic_pressure_drop_coupling: bool | None = None,
+    hydraulic_pressure_drop_internals_type: str | None = None,
 ) -> DistillationColumnResult:
     """`process.distillation_column`, computed in Rust.
 
@@ -4413,6 +4415,8 @@ def distillation_column(
         None
         if column_diameter_override is None
         else input_to_si(spec, "column_diameter_override", column_diameter_override),
+        hydraulic_pressure_drop_coupling,
+        hydraulic_pressure_drop_internals_type,
     )
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),

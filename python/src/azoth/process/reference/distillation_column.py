@@ -97,6 +97,14 @@ RELAXATION_INCREASE_FACTOR = 1.2
 RELAXATION_DECREASE_FACTOR = 0.5
 #: The floor on the *temperature* update's step, a different clamp from the streams'.
 MIN_TEMPERATURE_RELAXATION = 0.2
+#: `DistillationColumn`'s own tear settings, which the coupling's outer loop runs at.
+COLUMN_TEAR_TOLERANCE = 1.0e-4
+MAX_COLUMN_TEAR_ITERATIONS = 12
+#: `maxPumparoundIterations`' initialiser, which the tear's limit is taken against.
+MAX_PUMPAROUND_ITERATIONS = 8
+#: The residual above which the tear's variables count as changed.
+CHANGED_RESIDUAL = 1.0e-12
+
 #: `DEFAULT_MASS_BALANCE_TOLERANCE` and `DEFAULT_ENTHALPY_BALANCE_TOLERANCE`.
 MASS_BALANCE_TOLERANCE = 1.6e-2
 ENTHALPY_BALANCE_TOLERANCE = 1.6e-2
@@ -512,6 +520,68 @@ def _distillation_column_states(
     return states, warnings
 
 
+#: The floor `applyHydraulicPressureDrop` clamps a rewritten top pressure to, Pa (1e-6 bara).
+MIN_TOP_PRESSURE_PA = 0.1
+
+
+def _coupled(
+    solve: Callable[[Q, Q], tuple[_States, list[Warning]]],
+    components: list[str],
+    top_pressure: Q,
+    bottom_pressure: Q,
+    internals_type: str,
+) -> tuple[_States, list[Warning]]:
+    """``hydraulicPressureDropCouplingEnabled``'s outer loop, mirroring ``column/coupling.rs``.
+
+    **It is a solver change and not a report**: `hasActiveColumnTearVariables` counts the flag, so
+    setting it is what puts the column on `solveWithColumnTearVariables`. Each pass re-solves the
+    column and rewrites **one end** so the difference between the two equals the designer's summed
+    drop - `bottom = top + drop` where the top is positive, `top = max(1e-6 bara, bottom - drop)`
+    otherwise - and converges on the relative change it made.
+    """
+    from azoth.process.reference.designer import DesignerGeometry, designer_report
+
+    limit = max(MAX_COLUMN_TEAR_ITERATIONS, MAX_PUMPAROUND_ITERATIONS, 1)
+    top = float(top_pressure.to("Pa").magnitude)
+    bottom = float(bottom_pressure.to("Pa").magnitude)
+    residual = float("inf")
+    states: _States | None = None
+    warnings: list[Warning] = []
+    for _ in range(limit):
+        states, warnings = solve(quantity(top, "Pa"), quantity(bottom, "Pa"))
+        report = designer_report(
+            states, components, DesignerGeometry(internals_type=internals_type)
+        )
+        drop = max(0.0, float(report.total_pressure_drop_pa))
+        if math.isfinite(top) and top > 0.0:
+            previous = bottom
+            bottom = top + drop
+            if not (math.isfinite(previous) and previous > 0.0):
+                residual = 1.0
+            else:
+                residual = abs(bottom - previous) / max(CHANGED_RESIDUAL, abs(previous))
+        elif math.isfinite(bottom) and bottom > 0.0:
+            previous_top = top
+            top = max(MIN_TOP_PRESSURE_PA, bottom - drop)
+            if not (math.isfinite(previous_top) and previous_top > 0.0):
+                residual = 1.0
+            else:
+                residual = abs(top - previous_top) / max(CHANGED_RESIDUAL, abs(previous_top))
+        else:
+            residual = 0.0
+
+        if residual <= COLUMN_TEAR_TOLERANCE:
+            # **A last solve where the update moved something**, which is the class's own
+            # re-solve inside its convergence branch.
+            if residual > CHANGED_RESIDUAL:
+                return solve(quantity(top, "Pa"), quantity(bottom, "Pa"))
+            return states, warnings
+        if residual <= CHANGED_RESIDUAL:
+            return states, warnings
+
+    return solve(quantity(top, "Pa"), quantity(bottom, "Pa"))
+
+
 def _record(
     states: _States,
     components: list[str],
@@ -636,6 +706,8 @@ def distillation_column(
     downcommer_area_fraction: float | None = None,
     design_flood_fraction: float | None = None,
     column_diameter_override: Q | None = None,
+    hydraulic_pressure_drop_coupling: bool | None = None,
+    hydraulic_pressure_drop_internals_type: str | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -707,49 +779,68 @@ def distillation_column(
             parameter whose arithmetic is not ported, and for a ratio that is not one.
         SolverNotConvergedError: when the solve misses its gate.
     """
-    states, warnings = _distillation_column_states(
-        components,
-        feed_n,
-        feed_z,
-        feed_p,
-        feed_t,
-        number_of_stages,
-        feed_stage,
-        has_reboiler,
-        has_condenser,
-        top_pressure,
-        bottom_pressure,
-        temperature_tolerance,
-        max_iterations,
-        reboiler_temperature,
-        condenser_temperature,
-        murphree_efficiency,
-        tray_murphree_efficiency,
-        solver_type,
-        top_specification_type,
-        top_specification_target,
-        top_specification_component,
-        bottom_specification_type,
-        bottom_specification_target,
-        bottom_specification_component,
-        reactive,
-        reactive_start_tray,
-        reactive_end_tray,
-        gas_side_draw_fractions,
-        liquid_side_draw_fractions,
-        pumparound_fractions,
-        side_draw_flow_tray,
-        side_draw_flow_phase,
-        side_draw_flow_target,
-        side_draw_flow_tolerance,
-        side_draw_flow_max_iterations,
-        pumparound_return_tray,
-        pumparound_draw_tray,
-        pumparound_draw_fraction,
-        pumparound_temperature_drop,
-        pumparound_tolerance,
-        pumparound_max_iterations,
-    )
+
+    def solve(top: Q, bottom: Q) -> tuple[_States, list[Warning]]:
+        """One pass: the column's own solve at the two pressures the loop currently holds."""
+        return _distillation_column_states(
+            components,
+            feed_n,
+            feed_z,
+            feed_p,
+            feed_t,
+            number_of_stages,
+            feed_stage,
+            has_reboiler,
+            has_condenser,
+            top,
+            bottom,
+            temperature_tolerance,
+            max_iterations,
+            reboiler_temperature,
+            condenser_temperature,
+            murphree_efficiency,
+            tray_murphree_efficiency,
+            solver_type,
+            top_specification_type,
+            top_specification_target,
+            top_specification_component,
+            bottom_specification_type,
+            bottom_specification_target,
+            bottom_specification_component,
+            reactive,
+            reactive_start_tray,
+            reactive_end_tray,
+            gas_side_draw_fractions,
+            liquid_side_draw_fractions,
+            pumparound_fractions,
+            side_draw_flow_tray,
+            side_draw_flow_phase,
+            side_draw_flow_target,
+            side_draw_flow_tolerance,
+            side_draw_flow_max_iterations,
+            pumparound_return_tray,
+            pumparound_draw_tray,
+            pumparound_draw_fraction,
+            pumparound_temperature_drop,
+            pumparound_tolerance,
+            pumparound_max_iterations,
+        )
+
+    # **The coupling is the outer loop and the solve above is its inner one**, which is the
+    # class's own split: the flag decides which entry runs rather than adding a step inside
+    # either.
+    if hydraulic_pressure_drop_coupling:
+        states, warnings = _coupled(
+            solve,
+            components,
+            top_pressure,
+            bottom_pressure,
+            hydraulic_pressure_drop_internals_type
+            if hydraulic_pressure_drop_internals_type is not None
+            else DEFAULT_INTERNALS_TYPE,
+        )
+    else:
+        states, warnings = solve(top_pressure, bottom_pressure)
     # **The internals tree, read after the solve and from the trays it left.** Its geometry
     # reaches nothing on the run path, which is the class's own split.
     internals = designer_report(
@@ -796,6 +887,7 @@ def distillation_column(
             ),
         ),
     )
+
     return _record(
         states,
         components,

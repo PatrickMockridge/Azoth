@@ -335,6 +335,7 @@ pub fn packed_column(
 
     let stages = stage_count(packed_height);
     let (outcome, warnings) = distillation_column_outcome(
+        None,
         components,
         feed_n,
         feed_z,
@@ -587,6 +588,7 @@ mod surface_tension {
     fn the_designers_fallback_reproduces_the_capture_and_the_rate_based_constant_does_not() {
         let components = vec!["methane".to_string(), "n-butane".to_string()];
         let (outcome, _) = distillation_column_outcome(
+            None,
             &components,
             7.490704036290964,
             &[0.5, 0.5],

@@ -590,8 +590,10 @@ fn the_generated_input_table_is_the_models_own() {
     // absorber pair, `398 + 2 + 1 + 2 + 2 = 405`. **And then the internals tree's eight**, all on
     // `process.distillation_column`: `internals_type`, `tray_spacing`, `weir_height`,
     // `hole_diameter`, `hole_area_fraction`, `downcommer_area_fraction`, `design_flood_fraction`
-    // and `column_diameter_override`. `405 + 8 = 413`, and every one is a deliberate move.
-    assert_eq!(walked, 413, "the inputs this test walked");
+    // and `column_diameter_override`. `405 + 8 = 413`. **And then the coupling's two**, on the
+    // same entry: `hydraulic_pressure_drop_coupling` and `hydraulic_pressure_drop_internals_type`.
+    // `413 + 2 = 415`, and every one is a deliberate move.
+    assert_eq!(walked, 415, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`
