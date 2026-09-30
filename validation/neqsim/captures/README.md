@@ -312,6 +312,31 @@ binary column's stated `20.0` bara becomes `19.017815747452257`, which is `19.0`
 the loop's three solves - `15 + 22 + 22 = 59` - which is what makes the tear's two iterations
 visible in the sweep count rather than in the answer.
 
+**`ProcessProbe mechanical` is `DistillationColumnMechanicalDesign`, and what it answers is the
+finding.** `calcDesign` reads **tray 0** and nothing else - the vapour outlet's molar flow and its
+fluid's density and molar mass, then the liquid outlet's - and from those sizes the diameter, the
+height and the wall thickness. Two rows: the binary column this port already reproduces, and the
+lean-oil absorber. **No capture in this directory held the class**, which is 1,348 lines with a
+public surface of forty-odd getters.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
+```
+
+**Four of its quantities are unit-slipped and one is read off an uninitialised fluid, and the
+capture prints each.** `getColumnWallThickness()` answers `216.19496855345912` beside a `0.5` m
+diameter; `getTotalPressureDrop()` answers `0.017801361694102846` where the designer's own sum of
+the same trays is `1780.1361694102848` Pa - the **same number in bar**; `getReboilerDuty()`
+answers `47.78658389381015` where the column's own duty is the **same number in kW**; and
+`getColumnHeight()` answers `10.0` m for six trays at `0.6` m spacing. On the absorber,
+`tray0_liquid_density_kg_per_m3` is **`0.0`** - the outlet stream's fluid is never asked to
+initialise its properties before the density is read - and the weir loading that divides by it is
+**`Infinity`**, so the sizing runs against a liquid that is not there.
+
+**That is a record rather than an oracle for the port**, and it is why the port's own decision is
+a decision: a faithful port publishes each of those numbers under the class's own name, and
+correcting one would be the silent improvement this tree's rule forbids.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are

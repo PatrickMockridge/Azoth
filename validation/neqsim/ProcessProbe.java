@@ -66,6 +66,8 @@
 //       > captures/process_internals_designer.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe coupling \
 //       > captures/process_hydraulic_coupling.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical \
+//       > captures/process_column_mechanical_design.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -194,6 +196,9 @@ public class ProcessProbe {
         break;
       case "coupling":
         couplingRows();
+        break;
+      case "mechanical":
+        mechanicalRows();
         break;
       case "packed_column":
         packedColumnRows();
@@ -4830,6 +4835,123 @@ public class ProcessProbe {
     }
     print("gas_out", column.getGasOutStream());
     print("liquid_out", column.getLiquidOutStream());
+    System.out.println();
+  }
+
+  /// **`DistillationColumnMechanicalDesign`, which is the trayed column's own sizing.**
+  ///
+  /// `calcDesign` reads **tray 0** - the bottom end - and nothing else: the vapour outlet's molar
+  /// flow and its fluid's density and molar mass, then the liquid outlet's. From those it sizes
+  /// the diameter and the height, takes the wall thickness, and reports the tray efficiency, the
+  /// two flooding factors, the weir loading and the two duties. **It is the class the designer's
+  /// report feeds**: it reads the same internals tree the coupling does, so this capture and
+  /// `process_internals_designer.tsv` are the two halves of one machine.
+  ///
+  /// **No capture in this directory held it**, and the class is 1,348 lines with a public surface
+  /// of forty-odd getters, so what is printed here is the surface rather than a sample of it.
+  static void mechanicalRows() {
+    mechanicalBinaryRow("binary_mechanical_defaults");
+    mechanicalAbsorberRow("absorber_mechanical");
+  }
+
+  /// The port's own binary column, at the class's own constructor defaults.
+  static void mechanicalBinaryRow(String label) {
+    SystemInterface fluid = new SystemPrEos(300.0, 20.0);
+    fluid.addComponent("methane", 0.5);
+    fluid.addComponent("n-butane", 0.5);
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(1000.0, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", 4, true, true);
+    column.addFeedStream(inlet, 2);
+    column.setCondenserTemperature(-20.0, "C");
+    column.setReboilerTemperature(100.0, "C");
+    column.setTopPressure(19.0);
+    column.setBottomPressure(20.0);
+    column.setTemperatureTolerance(1.0e-6);
+    column.setMaxNumberOfIterations(200, true);
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(inlet);
+    process.add(column);
+    process.run();
+    mechanicalRow(label, "distillation_column", column);
+  }
+
+  /// The lean-oil absorber, which is the same class on a column with no ends.
+  static void mechanicalAbsorberRow(String label) {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
+        "n-heptane" };
+    double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
+    double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    double bara = 15.0;
+    Stream gas = feedMass("gas", names, gasZ, 303.15, bara, 2000.0);
+    Stream solvent = feedMass("solvent", names, pureHeptane, 293.15, bara, 600.0);
+
+    neqsim.process.equipment.absorber.AbsorptionColumn column =
+        new neqsim.process.equipment.absorber.AbsorptionColumn(label, 5);
+    column.addGasInStream(gas);
+    column.addSolventInStream(solvent);
+    column.setTopPressure(bara);
+    column.setBottomPressure(bara);
+    column.setTemperatureTolerance(1.0e-4);
+    column.setMassBalanceTolerance(5.0e-2);
+    column.setEnthalpyBalanceTolerance(5.0e-2);
+    column.setMaxNumberOfIterations(80, true);
+    column.setSolverType(
+        neqsim.process.equipment.distillation.DistillationColumn.SolverType.DIRECT_SUBSTITUTION);
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(gas);
+    process.add(solvent);
+    process.add(column);
+    process.run();
+    mechanicalRow(label, "absorption_column", column);
+  }
+
+  static void mechanicalRow(String label, String machine,
+      neqsim.process.equipment.distillation.DistillationColumn column) {
+    neqsim.process.mechanicaldesign.distillation.DistillationColumnMechanicalDesign design =
+        new neqsim.process.mechanicaldesign.distillation.DistillationColumnMechanicalDesign(column);
+    design.calcDesign();
+
+    System.out.println(label);
+    System.out.println("machine=" + machine);
+    // ---- What it reads: tray 0's two outlets, which is the whole of its input surface.
+    neqsim.process.equipment.distillation.SimpleTray bottom = column.getTray(0);
+    System.out.println("tray0_vapor_mol_per_hr="
+        + bottom.getGasOutStream().getFlowRate("mol/hr"));
+    System.out.println("tray0_vapor_density_kg_per_m3="
+        + bottom.getGasOutStream().getFluid().getDensity("kg/m3"));
+    System.out.println("tray0_vapor_molar_mass_kg_per_mol="
+        + bottom.getGasOutStream().getFluid().getMolarMass() );
+    System.out.println("tray0_liquid_mol_per_hr="
+        + bottom.getLiquidOutStream().getFlowRate("mol/hr"));
+    System.out.println("tray0_liquid_density_kg_per_m3="
+        + bottom.getLiquidOutStream().getFluid().getDensity("kg/m3"));
+    System.out.println("tray0_liquid_molar_mass_kg_per_mol="
+        + bottom.getLiquidOutStream().getFluid().getMolarMass());
+    // ---- And what it answers.
+    System.out.println("number_of_trays=" + design.getNumberOfTrays());
+    System.out.println("actual_trays=" + design.getActualTrays());
+    System.out.println("tray_efficiency=" + design.getTrayEfficiency());
+    System.out.println("tray_spacing_m=" + design.getTraySpacing());
+    System.out.println("tray_type=" + design.getTrayType());
+    System.out.println("column_diameter_m=" + design.getColumnDiameter());
+    System.out.println("column_height_m=" + design.getColumnHeight());
+    System.out.println("column_wall_thickness_m=" + design.getColumnWallThickness());
+    System.out.println("flooding_factor=" + design.getFloodingFactor());
+    System.out.println("max_flooding_factor=" + design.getMaxFloodingFactor());
+    System.out.println("weir_loading=" + design.getWeirLoading());
+    System.out.println("tray_pressure_drop_Pa=" + design.getTrayPressureDrop());
+    System.out.println("total_pressure_drop_Pa=" + design.getTotalPressureDrop());
+    System.out.println("reboiler_duty_W=" + design.getReboilerDuty());
+    System.out.println("condenser_duty_W=" + design.getCondenserDuty());
+    System.out.println("material_grade=" + design.getMaterialGrade());
+    System.out.println("contactor_internals_type=" + design.getContactorInternalsType());
+    System.out.println("column_diameter_override_m=" + design.getColumnDiameterOverride());
+    System.out.println("max_contactor_pressure_drop_bar=" + design.getMaxContactorPressureDropBar());
     System.out.println();
   }
 
