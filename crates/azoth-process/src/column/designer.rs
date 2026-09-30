@@ -33,6 +33,18 @@ use azoth_hydraulics::tray_hydraulics::{
 use crate::kernels::distillation_column::{TrayProfile, tray_streams};
 use crate::segment::phase::{liquid_view, vapour_view};
 
+/// `ColumnInternalsDesigner`'s own constructor defaults, one per geometry input. **They are the
+/// class's initialisers and not correlated values**, and `calcColumnInternals` sets none of
+/// them: what a coupling pass designs against is these.
+pub const DEFAULT_TRAY_SPACING_M: f64 = 0.6;
+pub const DEFAULT_WEIR_HEIGHT_M: f64 = 0.05;
+pub const DEFAULT_HOLE_DIAMETER_MM: f64 = 12.7;
+pub const DEFAULT_HOLE_AREA_FRACTION: f64 = 0.1;
+pub const DEFAULT_DOWNCOMMER_AREA_FRACTION: f64 = 0.1;
+pub const DEFAULT_DESIGNER_FLOOD_FRACTION: f64 = 0.8;
+/// The internals type the class's own constructor carries.
+pub const DEFAULT_INTERNALS_TYPE: &str = "sieve";
+
 /// The relative volatility the class's own default stands at, and the one the *sizing* branch
 /// runs at because its calculator is never given the tray's.
 pub const DEFAULT_RELATIVE_VOLATILITY: f64 = 2.0;

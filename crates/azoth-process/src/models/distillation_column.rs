@@ -25,15 +25,14 @@ use crate::kernels::distillation_column::{Specification, SpecificationKind};
 use crate::stream::Stream;
 use crate::unported;
 
-/// `ColumnInternalsDesigner`'s own constructor defaults, one per geometry input. Each is the
-/// class's initialiser rather than a correlated value, and none is read by the solve.
-pub const DEFAULT_INTERNALS_TYPE: &str = "sieve";
-pub const DEFAULT_TRAY_SPACING_M: f64 = 0.6;
-pub const DEFAULT_WEIR_HEIGHT_M: f64 = 0.05;
-pub const DEFAULT_HOLE_DIAMETER_MM: f64 = 12.7;
-pub const DEFAULT_HOLE_AREA_FRACTION: f64 = 0.1;
-pub const DEFAULT_DOWNCOMMER_AREA_FRACTION: f64 = 0.1;
-pub const DEFAULT_DESIGNER_FLOOD_FRACTION: f64 = 0.8;
+/// **The internals geometry's own defaults, re-stated from the designer's module** so a caller
+/// of this id has one import: they are `ColumnInternalsDesigner`'s initialisers, none is read by
+/// the solve, and [`crate::column::designer`] is where they are defined.
+pub use crate::column::designer::{
+    DEFAULT_DESIGNER_FLOOD_FRACTION, DEFAULT_DOWNCOMMER_AREA_FRACTION, DEFAULT_HOLE_AREA_FRACTION,
+    DEFAULT_HOLE_DIAMETER_MM, DEFAULT_INTERNALS_TYPE, DEFAULT_TRAY_SPACING_M,
+    DEFAULT_WEIR_HEIGHT_M,
+};
 
 /// Result of `process.distillation_column`.
 ///
