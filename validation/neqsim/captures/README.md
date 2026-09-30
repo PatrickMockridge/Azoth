@@ -279,6 +279,39 @@ result at `20.0`**, which two of the binary column's six trays reach. And `desig
 all seven rows while the sized diameter is `0.5` m on every binary row - the standard-diameter
 table's granularity, which a stated `0.5` override reproduces to the last digit.
 
+**`ProcessProbe coupling` is the pressure-drop coupling, and it refutes the premise it was built
+to test.** `setHydraulicPressureDropCouplingEnabled(true)` makes `updatePressureProfileFromHydraulics`
+run inside `updateColumnTearVariables`: it builds a designer at the stated internals type, takes
+its `getTotalPressureDrop`, and rewrites one end so the *difference* between the two equals that
+drop - `bottomTrayPressure = topTrayPressure + drop/1e5` where the top is positive,
+`topTrayPressure = max(1e-6, bottomTrayPressure - drop/1e5)` otherwise - then rebuilds the
+profile. Six rows: the captured binary column with the coupling off and on, on at a looser tear
+tolerance and under another internals type, and the lean-oil absorber with it off and on.
+
+```bash
+java -cp .:neqsim-f0c7436.jar ProcessProbe coupling > captures/process_hydraulic_coupling.tsv
+```
+
+**The flag does not gate the coupling alone.** `hasActiveColumnTearVariables` is
+`!sideDrawSpecifications.isEmpty() || !pumparounds.isEmpty() || hydraulicPressureDropCouplingEnabled`,
+so **turning the coupling on is what puts the column on `solveWithColumnTearVariables`** - the
+coordinated loop `process_column_tear.tsv` measured as not converging on a side-draw flow
+specification and a pumparound, which is why this capture was written before anything was ported.
+
+**It converges on every row, and that is the finding.** `binary_coupling_on` reaches
+`RIGOROUS_CONVERGED` in **2 tear iterations with 0 rejected candidates and 0 rollbacks**, a tear
+residual of `7.564364502033816E-7`, and the same for the valve type, a looser tolerance and the
+absorber (`2`, `51` inner iterations, residual `3.285096581696264E-7`). So this tear is **not**
+the coordinated one of the side-draw row: that one searches a *candidate list* over several
+coupled variables and rejects 18 of 30, while this one is a single scalar - the end pressure -
+updated by a contraction, so two passes suffice.
+
+**And it reproduces `applyHydraulicPressureDrop`'s own arithmetic to the last digit**: the
+binary column's stated `20.0` bara becomes `19.017815747452257`, which is `19.0` plus the
+`1781.574745225591` Pa the designer summed over `1e5`. The inner-iteration count is the sum over
+the loop's three solves - `15 + 22 + 22 = 59` - which is what makes the tear's two iterations
+visible in the sweep count rather than in the answer.
+
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
 `devtools/generate_water_caloric_alpha_reference.py` fits for water - and 130 of those rows are

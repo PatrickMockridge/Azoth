@@ -64,6 +64,8 @@
 //       > captures/process_column_capacity.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe designer \
 //       > captures/process_internals_designer.tsv
+//     java -cp .:neqsim-f0c7436.jar ProcessProbe coupling \
+//       > captures/process_hydraulic_coupling.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe column > captures/process_column.tsv
 //     java -cp .:neqsim-f0c7436.jar ProcessProbe condenser \
 //       > captures/process_column_condenser.tsv
@@ -189,6 +191,9 @@ public class ProcessProbe {
         break;
       case "designer":
         designerRows();
+        break;
+      case "coupling":
+        couplingRows();
         break;
       case "packed_column":
         packedColumnRows();
@@ -4686,6 +4691,146 @@ public class ProcessProbe {
     }
     double relative = minRatio > 0.0 ? maxRatio / minRatio : 2.0;
     return Math.min(relative, 20.0);
+  }
+
+  /// **`hydraulicPressureDropCouplingEnabled`, which is a *solver* change and not a report.**
+  ///
+  /// `updatePressureProfileFromHydraulics` runs inside `updateColumnTearVariables`, the tear's
+  /// own update: it builds a designer at the stated internals type, takes its
+  /// **`getTotalPressureDrop`**, and calls `applyHydraulicPressureDrop`, which rewrites one end
+  /// so the *difference* between the two equals that drop - `bottomTrayPressure =
+  /// topTrayPressure + drop/1e5` where the top is positive, and `topTrayPressure =
+  /// max(1e-6, bottomTrayPressure - drop/1e5)` otherwise - then rebuilds the profile. The
+  /// residual it returns is the relative change it made to the end it rewrote.
+  ///
+  /// **The flag does not gate the coupling alone.** `hasActiveColumnTearVariables` is
+  /// `!sideDrawSpecifications.isEmpty() || !pumparounds.isEmpty() ||
+  /// hydraulicPressureDropCouplingEnabled` - so **turning the coupling on is what puts the
+  /// column on `solveWithColumnTearVariables`' coordinated loop**, the same loop
+  /// `process_column_tear.tsv` measured as not converging on a side-draw flow specification and
+  /// a pumparound. The rows here are that measurement's twin, on states this port already
+  /// reproduces.
+  static void couplingRows() {
+    // The control: the captured binary column with the coupling off, at the class's own tear
+    // settings.
+    couplingColumnRow("binary_coupling_off", false, "sieve", 1.0e-4, 30);
+    // **And on**, which is the coordinated loop.
+    couplingColumnRow("binary_coupling_on", true, "sieve", 1.0e-4, 30);
+    // On at a looser tear tolerance, to see whether the loop converges when asked for less.
+    couplingColumnRow("binary_coupling_on_tear_1e2", true, "sieve", 1.0e-2, 30);
+    // On under the other internals type, whose per-tray drop is a different number.
+    couplingColumnRow("binary_coupling_on_valve", true, "valve", 1.0e-4, 30);
+    // **The absorber**, which is the same machine with no ends: its trays are all middle ones
+    // and its two ends are not reboiler and condenser.
+    couplingAbsorberRow("absorber_coupling_off", false, "sieve", 1.0e-4, 30);
+    couplingAbsorberRow("absorber_coupling_on", true, "sieve", 1.0e-4, 30);
+  }
+
+  /// The captured binary column, driven with the coupling on or off.
+  static void couplingColumnRow(String label, boolean enabled, String internalsType,
+      double tearTolerance, int tearIterations) {
+    SystemInterface fluid = new SystemPrEos(300.0, 20.0);
+    fluid.addComponent("methane", 0.5);
+    fluid.addComponent("n-butane", 0.5);
+    fluid.setMixingRule(2);
+    Stream inlet = new Stream("column feed", fluid);
+    inlet.setFlowRate(1000.0, "kg/hr");
+    inlet.run();
+
+    neqsim.process.equipment.distillation.DistillationColumn column =
+        new neqsim.process.equipment.distillation.DistillationColumn("col1", 4, true, true);
+    column.addFeedStream(inlet, 2);
+    column.setCondenserTemperature(-20.0, "C");
+    column.setReboilerTemperature(100.0, "C");
+    column.setTopPressure(19.0);
+    column.setBottomPressure(20.0);
+    column.setTemperatureTolerance(1.0e-6);
+    column.setMaxNumberOfIterations(200, true);
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(inlet);
+    process.add(column);
+    couplingRow(label, "distillation_column", column, process, enabled, internalsType,
+        tearTolerance, tearIterations);
+  }
+
+  /// The lean-oil absorber, which is the same class with two inlets and no ends.
+  static void couplingAbsorberRow(String label, boolean enabled, String internalsType,
+      double tearTolerance, int tearIterations) {
+    String[] names = new String[] { "methane", "ethane", "propane", "n-butane", "n-pentane",
+        "n-heptane" };
+    double[] gasZ = new double[] { 0.920, 0.040, 0.025, 0.010, 0.005, 0.0 };
+    double[] pureHeptane = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 };
+    double bara = 15.0;
+    Stream gas = feedMass("gas", names, gasZ, 303.15, bara, 2000.0);
+    Stream solvent = feedMass("solvent", names, pureHeptane, 293.15, bara, 600.0);
+
+    neqsim.process.equipment.absorber.AbsorptionColumn column =
+        new neqsim.process.equipment.absorber.AbsorptionColumn(label, 5);
+    column.addGasInStream(gas);
+    column.addSolventInStream(solvent);
+    column.setTopPressure(bara);
+    column.setBottomPressure(bara);
+    column.setTemperatureTolerance(1.0e-4);
+    column.setMassBalanceTolerance(5.0e-2);
+    column.setEnthalpyBalanceTolerance(5.0e-2);
+    column.setMaxNumberOfIterations(80, true);
+    column.setSolverType(
+        neqsim.process.equipment.distillation.DistillationColumn.SolverType.DIRECT_SUBSTITUTION);
+    neqsim.process.processmodel.ProcessSystem process = new neqsim.process.processmodel.ProcessSystem();
+    process.add(gas);
+    process.add(solvent);
+    process.add(column);
+    couplingRow(label, "absorption_column", column, process, enabled, internalsType, tearTolerance,
+        tearIterations);
+  }
+
+  static void couplingRow(String label, String machine,
+      neqsim.process.equipment.distillation.DistillationColumn column,
+      neqsim.process.processmodel.ProcessSystem process, boolean enabled, String internalsType,
+      double tearTolerance, int tearIterations) {
+    double statedTop = column.getTopPressure();
+    double statedBottom = column.getBottomPressure();
+    if (enabled) {
+      column.enableHydraulicPressureDropCoupling(internalsType);
+    }
+    column.setColumnTearTolerance(tearTolerance);
+    column.setMaxColumnTearIterations(tearIterations);
+    process.run();
+
+    System.out.println(label);
+    System.out.println("machine=" + machine);
+    System.out.println("coupling_enabled=" + enabled);
+    System.out.println("internals_type=" + internalsType);
+    System.out.println("tear_tolerance=" + tearTolerance);
+    System.out.println("max_tear_iterations=" + tearIterations);
+    System.out.println("top_pressure_stated_bara=" + statedTop);
+    System.out.println("bottom_pressure_stated_bara=" + statedBottom);
+    System.out.println("top_pressure_bara=" + column.getTopPressure());
+    System.out.println("bottom_pressure_bara=" + column.getBottomPressure());
+    System.out.println("solved=" + column.solved());
+    System.out.println("iterations=" + column.getLastIterationCount());
+    System.out.println("status=" + column.getLastSolveStatus());
+    System.out.println("temperature_residual=" + column.getLastTemperatureResidual());
+    System.out.println("mass_residual=" + column.getLastMassResidual());
+    System.out.println("energy_residual=" + column.getLastEnergyResidual());
+    // ---- The tear's own reporting, which is where a coupled solve says what it did.
+    System.out.println("tear_converged=" + column.isLastColumnTearConverged());
+    System.out.println("tear_iterations=" + column.getLastColumnTearIterationCount());
+    System.out.println("tear_residual=" + column.getLastColumnTearResidual());
+    System.out.println("tear_rejected_candidates=" + column.getLastColumnTearRejectedCandidateCount());
+    System.out.println("tear_rollbacks=" + column.getLastColumnTearRollbackCount());
+    System.out.println("tear_inner_iterations=" + column.getLastColumnTearInnerIterationCount());
+    System.out.println("tear_candidate_history=" + column.getLastColumnTearCandidateHistory());
+    System.out.println("last_hydraulic_pressure_drop_Pa=" + column.getLastHydraulicPressureDropPa());
+    System.out.println("last_hydraulic_pressure_drop_residual="
+        + column.getLastHydraulicPressureDropResidual());
+    for (int i = 0; i < column.getNumberOfTrays(); i++) {
+      System.out.println("tray" + i + "_temperature_K=" + column.getTray(i).getTemperature());
+      System.out.println("tray" + i + "_pressure_bara=" + column.getTray(i).getPressure());
+    }
+    print("gas_out", column.getGasOutStream());
+    print("liquid_out", column.getLiquidOutStream());
+    System.out.println();
   }
 
   static void capacityBinaryRow(String label, double diameterM, Double fsLimit) {
