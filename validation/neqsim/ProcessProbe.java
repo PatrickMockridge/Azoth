@@ -4932,6 +4932,17 @@ public class ProcessProbe {
         + bottom.getLiquidOutStream().getFluid().getDensity("kg/m3"));
     System.out.println("tray0_liquid_molar_mass_kg_per_mol="
         + bottom.getLiquidOutStream().getFluid().getMolarMass());
+    // **And the same read after the fluid is asked to initialise**, which is the mechanism the
+    // zero above is. Nothing else changes: the same stream, the same getter, one call apart.
+    bottom.getLiquidOutStream().getFluid().initProperties();
+    System.out.println("tray0_liquid_density_after_init_kg_per_m3="
+        + bottom.getLiquidOutStream().getFluid().getDensity("kg/m3"));
+    neqsim.process.mechanicaldesign.distillation.DistillationColumnMechanicalDesign again =
+        new neqsim.process.mechanicaldesign.distillation.DistillationColumnMechanicalDesign(column);
+    again.calcDesign();
+    System.out.println("weir_loading_after_init=" + again.getWeirLoading());
+    System.out.println("tray_pressure_drop_after_init_Pa=" + again.getTrayPressureDrop());
+    System.out.println("column_diameter_after_init_m=" + again.getColumnDiameter());
     // ---- And what it answers.
     System.out.println("number_of_trays=" + design.getNumberOfTrays());
     System.out.println("actual_trays=" + design.getActualTrays());
@@ -4949,6 +4960,13 @@ public class ProcessProbe {
     System.out.println("reboiler_duty_W=" + design.getReboilerDuty());
     System.out.println("condenser_duty_W=" + design.getCondenserDuty());
     System.out.println("material_grade=" + design.getMaterialGrade());
+    // ---- The four quantities the wall-thickness formula is built from, so its own arithmetic
+    // is checkable from this capture rather than from the source alone.
+    System.out.println("max_operation_pressure=" + design.getMaxOperationPressure());
+    System.out.println("tensile_strength=" + design.getTensileStrength());
+    System.out.println("joint_efficiency=" + design.getJointEfficiency());
+    System.out.println("corrosion_allowance=" + design.getCorrosionAllowance());
+    System.out.println("design_pressure_times_1_1=" + design.getMaxOperationPressure() * 1.1);
     System.out.println("contactor_internals_type=" + design.getContactorInternalsType());
     System.out.println("column_diameter_override_m=" + design.getColumnDiameterOverride());
     System.out.println("max_contactor_pressure_drop_bar=" + design.getMaxContactorPressureDropBar());

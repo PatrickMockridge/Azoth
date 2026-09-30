@@ -312,30 +312,37 @@ binary column's stated `20.0` bara becomes `19.017815747452257`, which is `19.0`
 the loop's three solves - `15 + 22 + 22 = 59` - which is what makes the tear's two iterations
 visible in the sweep count rather than in the answer.
 
-**`ProcessProbe mechanical` is `DistillationColumnMechanicalDesign`, and what it answers is the
-finding.** `calcDesign` reads **tray 0** and nothing else - the vapour outlet's molar flow and its
-fluid's density and molar mass, then the liquid outlet's - and from those sizes the diameter, the
-height and the wall thickness. Two rows: the binary column this port already reproduces, and the
-lean-oil absorber. **No capture in this directory held the class**, which is 1,348 lines with a
-public surface of forty-odd getters.
+**`ProcessProbe mechanical` is `DistillationColumnMechanicalDesign`, and it found one defect
+upstream.** `calcDesign` reads **tray 0** and nothing else - the vapour outlet's molar flow and
+its fluid's density and molar mass, then the liquid outlet's - and from those sizes the diameter,
+the height and the wall thickness. Two rows: the binary column this port already reproduces, and
+the lean-oil absorber. **No capture in this directory held the class**, which is 1,348 lines with
+a public surface of forty-odd getters.
 
 ```bash
 java -cp .:neqsim-f0c7436.jar ProcessProbe mechanical > captures/process_column_mechanical_design.tsv
 ```
 
-**Four of its quantities are unit-slipped and one is read off an uninitialised fluid, and the
-capture prints each.** `getColumnWallThickness()` answers `216.19496855345912` beside a `0.5` m
-diameter; `getTotalPressureDrop()` answers `0.017801361694102846` where the designer's own sum of
-the same trays is `1780.1361694102848` Pa - the **same number in bar**; `getReboilerDuty()`
-answers `47.78658389381015` where the column's own duty is the **same number in kW**; and
-`getColumnHeight()` answers `10.0` m for six trays at `0.6` m spacing. On the absorber,
-`tray0_liquid_density_kg_per_m3` is **`0.0`** - the outlet stream's fluid is never asked to
-initialise its properties before the density is read - and the weir loading that divides by it is
-**`Infinity`**, so the sizing runs against a liquid that is not there.
+**The two density reads never ask the fluid to initialise, and on the absorber the liquid one
+answers `0.0`.** `getWeirLoading()` is then **`Infinity`** - the volume flow is a mass flow over
+that zero - and `getTrayPressureDrop()` collapses to its own `5.0` mbar constant, dropping the
+liquid head without a word. **The library's own `ColumnInternalsDesigner.getTrayProperties` reads
+the same tray and does call `fluid.initProperties()`**, which is what makes it an omission rather
+than a convention. The capture carries both sides: the binary row's `435.74537901070215` against
+the absorber's `0.0`, and the same read after one `initProperties()` - `645.1756172849634`, with
+`2.664675513235188` and `8.164586402782746` after a second `calcDesign()`. **Filed as
+[equinor/neqsim#4140](https://github.com/equinor/neqsim/issues/4140)**, with the minimal
+reproduction and the class's own test as its starting point.
 
-**That is a record rather than an oracle for the port**, and it is why the port's own decision is
-a decision: a faithful port publishes each of those numbers under the class's own name, and
-correcting one would be the silent improvement this tree's rule forbids.
+**Three quantities of the same class are *not* defects, and an earlier version of this entry said
+they were.** `getTotalPressureDrop()` is in **bar**, `getReboilerDuty()` in **kW** and
+`getColumnWallThickness()` in **mm**, each as its javadoc says; the `_Pa`, `_W` and metre labels
+beside them in this capture are **the probe's**, and reading them as the class's units is what
+produced the false claim. **And the `216.19496855345912` mm wall is the probe's own artefact**:
+`DistillationColumn` sets the design pressure from `getEconomicDesignPressure()` before it calls
+`calcDesign`, and this row constructs the design directly and so sizes against the base class's
+`100.0` bara initialiser - a property of the measurement, not of the class. Both corrections are
+in the issue's own "what I am not claiming" section.
 
 **`WaterCpSentinel` asks a question about the *data* rather than about a model.** `COMP.csv`
 gives 131 of its 389 rows the whole of water's ideal-gas Cp polynomial - the same five numbers
