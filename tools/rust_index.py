@@ -327,6 +327,45 @@ def string_accessor(type_name: str) -> str:
     return accessor
 
 
+#: The crate a spec's `implementations.rust` names, to the module of the binding that carries
+#: the `#[pyfunction]` wrapping it. Exhaustive by intent: a seventh crate is a refusal, because a
+#: calculation this map could not place is one the extension does not register.
+NAMESPACES = {
+    "azoth_hydraulics": "hydraulics",
+    "azoth_eos": "eos",
+    "azoth_thermal": "thermal",
+    "azoth_reactions": "reactions",
+    "azoth_standards": "standards",
+    "azoth_process": "process",
+}
+
+
+@lru_cache(maxsize=1)
+def implementations() -> tuple[tuple[str, str, str], ...]:
+    """Every registered id as `(calc_id, module, function)`, in id order.
+
+    The function name is the last segment of the spec's own Rust path, which is the name the
+    `#[pyfunction]` carries - written once in the spec and once in the module, with this the
+    reader that asserts they are the same word rather than assuming a naming rule.
+    """
+    out: list[tuple[str, str, str]] = []
+    for namespace in ("calcs", "models"):
+        for path in sorted((ROOT / "specs" / namespace).rglob("*.toml")):
+            document = tomllib.loads(path.read_text(encoding="utf-8"))
+            calc_id = document["id"]
+            crate, _, rest = document["implementations"]["rust"].partition("::")
+            module = NAMESPACES.get(crate)
+            if module is None:
+                sys.exit(
+                    f"rust_index: {calc_id} names the crate {crate!r}, which is not one of the "
+                    f"six namespaces {sorted(NAMESPACES)}"
+                )
+            if not rest:
+                sys.exit(f"rust_index: {calc_id}'s rust path has no item after the crate")
+            out.append((calc_id, module, rest.split("::")[-1]))
+    return tuple(sorted(out))
+
+
 @lru_cache(maxsize=1)
 def spec_ids() -> tuple[str, ...]:
     """Every id the specs register, which is what `result_types()` must account for exactly."""

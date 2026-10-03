@@ -316,6 +316,7 @@ jobs:
           .venv/bin/python tools/gen_python_registry.py
           .venv/bin/python tools/gen_python_transport.py
           .venv/bin/python tools/gen_python_register.py
+          .venv/bin/python tools/gen_python_wrappers.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -326,6 +327,7 @@ jobs:
             echo "::error::  python tools/gen_python_registry.py"
             echo "::error::  python tools/gen_python_transport.py"
             echo "::error::  python tools/gen_python_register.py"
+            echo "::error::  python tools/gen_python_wrappers.py"
             exit 1
           fi
 

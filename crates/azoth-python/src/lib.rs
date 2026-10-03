@@ -46,6 +46,7 @@ mod results;
 mod standards;
 mod thermal;
 mod transport_gen;
+mod wrappers_gen;
 
 use results::{PyKComponent, PyQty, PyWarning};
 

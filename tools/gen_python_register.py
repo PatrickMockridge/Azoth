@@ -32,47 +32,11 @@ import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gen_python_wrappers
 import rust_index
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "crates" / "azoth-python" / "src" / "register_gen.rs"
-
-#: The crate a spec's `implementations.rust` names, to the module of this crate that carries the
-#: `#[pyfunction]` it wraps. Exhaustive by intent: a seventh crate is a refusal, because a
-#: function this file could not place would be a calculation the extension does not register.
-NAMESPACES = {
-    "azoth_hydraulics": "hydraulics",
-    "azoth_eos": "eos",
-    "azoth_thermal": "thermal",
-    "azoth_reactions": "reactions",
-    "azoth_standards": "standards",
-    "azoth_process": "process",
-}
-
-
-def implementations() -> list[tuple[str, str, str]]:
-    """Every registered id as `(calc_id, module, function)`, in id order.
-
-    The function name is the last segment of the spec's own Rust path, which is the name the
-    `#[pyfunction]` carries - the two are written once, in the spec and in the module, and this
-    asserts they are the same word rather than assuming a naming rule.
-    """
-    out: list[tuple[str, str, str]] = []
-    for namespace in ("calcs", "models"):
-        for path in sorted((ROOT / "specs" / namespace).rglob("*.toml")):
-            document = tomllib.loads(path.read_text(encoding="utf-8"))
-            calc_id = document["id"]
-            crate, _, rest = document["implementations"]["rust"].partition("::")
-            module = NAMESPACES.get(crate)
-            if module is None:
-                sys.exit(
-                    f"gen_python_register: {calc_id} names the crate {crate!r}, which is not one "
-                    f"of the six namespaces {sorted(NAMESPACES)}"
-                )
-            if not rest:
-                sys.exit(f"gen_python_register: {calc_id}'s rust path has no item after the crate")
-            out.append((calc_id, module, rest.split("::")[-1]))
-    return sorted(out)
 
 
 def emit() -> str:
@@ -80,7 +44,7 @@ def emit() -> str:
     rust_index.check()
     results = rust_index.result_types()
     known = {result.calc_id for result in results}
-    functions = implementations()
+    functions = list(rust_index.implementations())
     unknown = [calc_id for calc_id, _, _ in functions if calc_id not in known]
     if unknown:
         sys.exit(f"gen_python_register: no result type for {unknown}")
@@ -88,9 +52,15 @@ def emit() -> str:
     classes = "".join(
         f"    m.add_class::<crate::transport_gen::Py{result.rust_name}>()?;\n" for result in results
     )
+    generated = gen_python_wrappers.covered_ids()
     registrations = "".join(
-        f"    m.add_function(wrap_pyfunction!(crate::{module}::{function}, m)?)?;\n"
+        f"    m.add_function(wrap_pyfunction!(crate::{path}, m)?)?;\n"
         for _, module, function in functions
+        for path in [
+            f"wrappers_gen::{function}"
+            if (module, function) in generated
+            else f"{module}::{function}"
+        ]
     )
     header = (
         "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"

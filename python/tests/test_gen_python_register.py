@@ -77,9 +77,9 @@ def test_every_namespace_carries_a_registered_id() -> None:
     `implementations()` refuses a seventh crate; this is the other direction, and it is what
     stops the map from quietly becoming a list of five with one entry no spec names.
     """
-    generator = _tools_module("gen_python_register")
-    used = {module for _, module, _ in generator.implementations()}
+    rust_index = _tools_module("rust_index")
+    used = {module for _, module, _ in rust_index.implementations()}
 
-    assert used == set(generator.NAMESPACES.values()), (
-        f"namespaces with no registered id: {sorted(set(generator.NAMESPACES.values()) - used)}"
+    assert used == set(rust_index.NAMESPACES.values()), (
+        f"namespaces with no registered id: {sorted(set(rust_index.NAMESPACES.values()) - used)}"
     )
