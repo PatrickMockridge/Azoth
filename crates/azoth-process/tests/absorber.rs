@@ -4,6 +4,11 @@ use azoth_core::units::{kelvins, meters, pascals};
 use azoth_process::Stream;
 use azoth_process::column::absorber_murphree::AbsorberMurphree;
 use azoth_process::column::capacity::{fs_limits, gas_load_limits};
+use azoth_process::column::mechanical::{
+    DEFAULT_CONTACTOR_INTERNALS_TYPE, DEFAULT_MATERIAL_GRADE, DEFAULT_MAX_FLOODING_FACTOR,
+    DEFAULT_MAX_OPERATION_PRESSURE_BARA, DEFAULT_TRAY_EFFICIENCY, DEFAULT_TRAY_TYPE,
+    MechanicalGeometry, mechanical_design,
+};
 use azoth_process::column::murphree::Murphree;
 use azoth_process::kernels::distillation_column::{
     ColumnSetup, SolverType, distillation_column, tray_streams,
@@ -582,4 +587,103 @@ fn the_absorbers_murphree_override_converges_where_the_class_does_not() {
         0.6,
         "and with no component map it is the base's own resolution"
     );
+}
+
+/// The class's own constructor defaults, which every capture row of the mechanical design states.
+fn mechanical_geometry() -> MechanicalGeometry {
+    MechanicalGeometry {
+        tray_type: DEFAULT_TRAY_TYPE.to_string(),
+        contactor_internals_type: DEFAULT_CONTACTOR_INTERNALS_TYPE.to_string(),
+        tray_efficiency: DEFAULT_TRAY_EFFICIENCY,
+        max_flooding_factor: DEFAULT_MAX_FLOODING_FACTOR,
+        material_grade: DEFAULT_MATERIAL_GRADE.to_string(),
+        max_operation_pressure_bara: DEFAULT_MAX_OPERATION_PRESSURE_BARA,
+        tray_spacing: meters(0.6),
+        weir_height: meters(0.05),
+        hole_diameter: meters(12.7e-3),
+        hole_area_fraction: 0.1,
+        downcommer_area_fraction: 0.1,
+        column_diameter_override: meters(-1.0),
+    }
+}
+
+/// **`process_column_mechanical_design.tsv`'s `absorber_mechanical` row — the one claim the
+/// mechanical module's doc comment makes that nothing else holds.**
+///
+/// `DistillationColumnMechanicalDesign.calcDesign` reads tray 0's *liquid-outlet* density from a
+/// fluid it never asks to initialise, so on this column it reads `0.0`, publishes an `Infinity`
+/// weir loading and collapses the tray pressure drop to its own bare `5.0` mbar
+/// (equinor/neqsim#4140). The port publishes the numbers the class *would* read after one
+/// `initProperties()` — `645.1756172849634`, hence `2.664675513235188` and `8.164586402782746` —
+/// and this is where that is held. **If azoth's density for this outlet is not that number the
+/// module's claim is false, and the deviation is a finding rather than a tolerance to widen.**
+#[test]
+fn the_absorber_row_publishes_the_post_init_density() {
+    let out = distillation_column(&lean_oil()).expect("the absorber converges");
+    let components = [
+        "methane",
+        "ethane",
+        "propane",
+        "n-butane",
+        "n-pentane",
+        "n-heptane",
+    ]
+    .map(str::to_string);
+    let report = mechanical_design(
+        &out.trays,
+        &components,
+        &out.distillate,
+        &out.bottoms,
+        None,
+        None,
+        &mechanical_geometry(),
+    )
+    .expect("the mechanical design computes");
+
+    let close = |got: f64, want: f64, what: &str| {
+        assert!(
+            (got - want).abs() / want.abs() < 1e-5,
+            "{what}: {got} against {want}"
+        );
+    };
+    assert_eq!(report.actual_trays, 8, "the actual trays");
+    assert_eq!(report.material_grade, "SA-516-70", "the material grade");
+    close(report.vessel_height.value, 8.8, "vessel_height");
+    // **The capture's block is two designs, and the port publishes the second.** The probe calls
+    // `calcDesign` once *before* it asks the liquid outlet's fluid to initialise and once after,
+    // so the un-suffixed keys are the **first** design's: `column_diameter_m = 1.0`,
+    // `column_wall_thickness_mm = 432.39`, `flooding_factor = 0.6988`, its `total_pressure_drop`
+    // and its four `internals_*`. Only the `_after_init` keys are the repaired one, and only those
+    // (with the block's path-independent keys) are held here.
+    close(report.vessel_diameter.value, 0.5, "vessel_diameter");
+    close(report.weir_loading, 2.664_675_513_235_188, "weir_loading");
+    close(
+        report.tray_pressure_drop_mbar,
+        8.164_586_402_782_746,
+        "tray_pressure_drop_mbar",
+    );
+    // The class's thickness is linear in the diameter and the binary row pins it at `0.5` m, so at
+    // the repaired diameter it is half the `432.38993710691824` the first design took at `1.0` m.
+    close(
+        report.vessel_wall_thickness_mm,
+        216.194_968_553_459_12,
+        "vessel_wall_thickness_mm",
+    );
+    // Not a key of the block, but the block's own tray-0 readings give it: `0.0494` m3/s of vapour
+    // (`111695.677` mol/hr at `0.01843` kg/mol over `11.5763` kg/m3), `u_flood = 0.7398` at the
+    // repaired `645.1756` kg/m3, over the `0.1767` m2 net area of the `0.5` m shell.
+    close(
+        report.flooding_factor,
+        0.377_840_006_003_444_86,
+        "flooding_factor",
+    );
+    // The internals, which the block only carries at the defect path's `1.0` m, are held by their
+    // own oracle instead: `process_internals_designer.tsv`'s `absorber_designer_defaults`.
+    close(
+        report.total_pressure_drop_bar,
+        0.023_629_991_163_397_854,
+        "total_pressure_drop_bar",
+    );
+    assert_eq!(report.reboiler_duty_kw, 0.0, "no reboiler");
+    assert_eq!(report.condenser_duty_kw, 0.0, "no condenser");
 }

@@ -23,6 +23,7 @@ pub mod capacity;
 pub mod condenser;
 pub mod coupling;
 pub mod designer;
+pub mod mechanical;
 pub mod murphree;
 pub mod naphtali_sandholm;
 pub mod pumparound;
