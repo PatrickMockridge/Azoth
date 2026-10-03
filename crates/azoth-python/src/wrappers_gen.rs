@@ -14,6 +14,23 @@ use azoth_core::units::{
 };
 use pyo3::prelude::*;
 
+/// Ammonia reference phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[pyo3(text_signature = "(T, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn ammonia_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyAmmoniaPhaseResult> {
+    azoth_eos::ammonia_phase::ammonia_phase(kelvins(T), pascals(P))
+        .map(|r| crate::transport_gen::PyAmmoniaPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Antoine vapour pressure from NeqSim's correlation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -50,6 +67,23 @@ pub fn antoine_vapor_pressure(
     )
     .map(|r| crate::transport_gen::PyAntoineVaporPressureResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// Solid argon reference phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[pyo3(text_signature = "(T, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn argon_solid_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyArgonSolidPhaseResult> {
+    azoth_eos::argon_solid_phase::argon_solid_phase(kelvins(T), pascals(P))
+        .map(|r| crate::transport_gen::PyArgonSolidPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Gas binary diffusivity from the Chapman-Enskog theory.
@@ -146,6 +180,23 @@ pub fn chung_viscosity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// CO2 reference phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[pyo3(text_signature = "(T, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn co2_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyCo2PhaseResult> {
+    azoth_eos::co2_phase::co2_phase(kelvins(T), pascals(P))
+        .map(|r| crate::transport_gen::PyCo2PhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// CO2-in-water binary diffusivity from the Tammi correlation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -203,6 +254,44 @@ pub fn effective_diffusion(
 ) -> PyResult<crate::transport_gen::PyEffectiveDiffusionResult> {
     azoth_eos::effective_diffusion::effective_diffusion(&binary_diffusion, &x)
         .map(|r| crate::transport_gen::PyEffectiveDiffusionResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// EOS-CG phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z))]
+#[pyo3(text_signature = "(components, T, P, z)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn eos_cg_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyEosCgPhaseResult> {
+    azoth_eos::eos_cg_phase::eos_cg_phase(&components, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyEosCgPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Freezing-point temperature.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, z, solid, P))]
+#[pyo3(text_signature = "(components, z, solid, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn freezing_point(
+    py: Python<'_>,
+    components: Vec<String>,
+    z: Vec<f64>,
+    solid: &str,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyFreezingPointResult> {
+    azoth_eos::freezing_point::freezing_point(&components, &z, solid, pascals(P))
+        .map(|r| crate::transport_gen::PyFreezingPointResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -286,6 +375,25 @@ pub fn furst_electrolyte_phase(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// GERG-2008 phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z))]
+#[pyo3(text_signature = "(components, T, P, z)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn gerg2008_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyGerg2008PhaseResult> {
+    azoth_eos::gerg2008_phase::gerg2008_phase(&components, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyGerg2008PhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Liquid binary diffusivity from the Hayduk-Minhas correlation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -331,6 +439,64 @@ pub fn heat_of_vaporization(
 ) -> PyResult<crate::transport_gen::PyHeatOfVaporizationResult> {
     azoth_eos::heat_of_vaporization::heat_of_vaporization(c0, c1, c2, c3, kelvins(Tc), kelvins(T))
         .map(|r| crate::transport_gen::PyHeatOfVaporizationResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Helium reference phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[pyo3(text_signature = "(T, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn helium_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyHeliumPhaseResult> {
+    azoth_eos::helium_phase::helium_phase(kelvins(T), pascals(P))
+        .map(|r| crate::transport_gen::PyHeliumPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Henry constant of a gas in water, from the IAPWS guideline.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (gas, T))]
+#[pyo3(text_signature = "(gas, T)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn iapws_henry_law(
+    py: Python<'_>,
+    gas: &str,
+    T: f64,
+) -> PyResult<crate::transport_gen::PyIapwsHenryLawResult> {
+    let gas_parsed: azoth_eos::iapws_henry_law::Gas = gas
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::iapws_henry_law::iapws_henry_law(gas_parsed, kelvins(T))
+        .map(|r| crate::transport_gen::PyIapwsHenryLawResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Ideal-gas heat capacity from a polynomial.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (cp_a, cp_b, cp_c, cp_d, cp_e, T))]
+#[pyo3(text_signature = "(cp_a, cp_b, cp_c, cp_d, cp_e, T)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn ideal_gas_cp(
+    py: Python<'_>,
+    cp_a: f64,
+    cp_b: f64,
+    cp_c: f64,
+    cp_d: f64,
+    cp_e: f64,
+    T: f64,
+) -> PyResult<crate::transport_gen::PyIdealGasCpResult> {
+    azoth_eos::ideal_gas_cp::ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(T))
+        .map(|r| crate::transport_gen::PyIdealGasCpResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -575,6 +741,22 @@ pub fn mollerup_alpha(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Pure-component vapour pressures of water, nitric acid and sulfuric acid.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T))]
+#[pyo3(text_signature = "(T)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn nitric_sulfuric_acid_vapor_pressure(
+    py: Python<'_>,
+    T: f64,
+) -> PyResult<crate::transport_gen::PyNitricSulfuricAcidVaporPressureResult> {
+    azoth_eos::nitric_sulfuric_acid_vapor_pressure::nitric_sulfuric_acid_vapor_pressure(kelvins(T))
+        .map(|r| crate::transport_gen::PyNitricSulfuricAcidVaporPressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Interface surface tension from the parachor (Weinaug-Katz).
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -630,6 +812,49 @@ pub fn parachor_surface_tension(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Solid para-hydrogen reference phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[pyo3(text_signature = "(T, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn parahydrogen_solid_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyParahydrogenSolidPhaseResult> {
+    azoth_eos::parahydrogen_solid_phase::parahydrogen_solid_phase(kelvins(T), pascals(P))
+        .map(|r| crate::transport_gen::PyParahydrogenSolidPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// PC-SAFT (Rahmat) phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[pyo3(text_signature = "(components, T, P, z, compressed_phase)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn pcsaft_rahmat_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::transport_gen::PyPcsaftRahmatPhaseResult> {
+    azoth_eos::pcsaft_rahmat_phase::pcsaft_rahmat_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressed_phase,
+    )
+    .map(|r| crate::transport_gen::PyPcsaftRahmatPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Peng-Robinson (1978) attraction-parameter coefficient.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -657,6 +882,26 @@ pub fn pr_alpha_ab(
 ) -> PyResult<crate::transport_gen::PyPrAlphaAbResult> {
     azoth_eos::pr_alpha_ab::pr_alpha_ab(kappa, Tr, Pr)
         .map(|r| crate::transport_gen::PyPrAlphaAbResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Peng-Robinson CPA phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[pyo3(text_signature = "(components, T, P, z, compressed_phase)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn pr_cpa_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::transport_gen::PyPrCpaPhaseResult> {
+    azoth_eos::pr_cpa_phase::pr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
+        .map(|r| crate::transport_gen::PyPrCpaPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -848,6 +1093,23 @@ pub fn prsv_kappa(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Vapour fraction from the Rachford-Rice equation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (z, K))]
+#[pyo3(text_signature = "(z, K)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn rachford_rice(
+    py: Python<'_>,
+    z: Vec<f64>,
+    K: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyRachfordRiceResult> {
+    azoth_eos::rachford_rice::rachford_rice(&z, &K)
+        .map(|r| crate::transport_gen::PyRachfordRiceResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Rachford-Rice vapour fraction, for a binary.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -922,6 +1184,32 @@ pub fn rk_departure(
     azoth_eos::rk_departure::rk_departure(a_reduced, b_reduced, z)
         .map(|r| crate::transport_gen::PyRkDepartureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// SAFT-VR-Mie phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[pyo3(text_signature = "(components, T, P, z, compressed_phase)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn saft_vr_mie_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::transport_gen::PySaftVrMiePhaseResult> {
+    azoth_eos::saft_vr_mie_phase::saft_vr_mie_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressed_phase,
+    )
+    .map(|r| crate::transport_gen::PySaftVrMiePhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Scale precipitation of one mineral.
@@ -1141,6 +1429,32 @@ pub fn srk_alpha_ab(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Soave-Redlich-Kwong CPA phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[pyo3(text_signature = "(components, T, P, z, compressed_phase)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn srk_cpa_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::transport_gen::PySrkCpaPhaseResult> {
+    azoth_eos::srk_cpa_phase::srk_cpa_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressed_phase,
+    )
+    .map(|r| crate::transport_gen::PySrkCpaPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Soave-Redlich-Kwong fugacity coefficient and departure functions.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1220,6 +1534,25 @@ pub fn tbp_fraction_properties(
 ) -> PyResult<crate::transport_gen::PyTbpFractionPropertiesResult> {
     azoth_eos::tbp_fraction_properties::tbp_fraction_properties(molar_mass, density)
         .map(|r| crate::transport_gen::PyTbpFractionPropertiesResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// SAFT-VR-Mie flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z))]
+#[pyo3(text_signature = "(components, T, P, z)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn tp_flash_saft(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+) -> PyResult<crate::transport_gen::PySaftFlashResult> {
+    azoth_eos::tp_flash_saft::tp_flash_saft(&components, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PySaftFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1343,6 +1676,32 @@ pub fn tyn_calus_diffusivity(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// UMR-CPA phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, z, compressed_phase))]
+#[pyo3(text_signature = "(components, T, P, z, compressed_phase)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn umr_cpa_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressed_phase: &str,
+) -> PyResult<crate::transport_gen::PyUmrCpaPhaseResult> {
+    azoth_eos::umr_cpa_phase::umr_cpa_phase(
+        &components,
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressed_phase,
+    )
+    .map(|r| crate::transport_gen::PyUmrCpaPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// UMR-PR alpha function.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1378,6 +1737,60 @@ pub fn vdw1f_mix_binary(
     azoth_eos::vdw1f_mix_binary::vdw1f_mix_binary(z1, a1, a2, b1, b2, k12)
         .map(|r| crate::transport_gen::PyVdw1fMixBinaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Water reference phase state.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T, P))]
+#[pyo3(text_signature = "(T, P)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn water_phase(
+    py: Python<'_>,
+    T: f64,
+    P: f64,
+) -> PyResult<crate::transport_gen::PyWaterPhaseResult> {
+    azoth_eos::water_phase::water_phase(kelvins(T), pascals(P))
+        .map(|r| crate::transport_gen::PyWaterPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Wax solid fugacity coefficient.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos))]
+#[pyo3(
+    text_signature = "(molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn wax_solid_fugacity(
+    py: Python<'_>,
+    molar_mass: f64,
+    tc: f64,
+    pc: f64,
+    omega: f64,
+    heat_of_fusion: f64,
+    triple_point_temperature: f64,
+    T: f64,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::transport_gen::PyWaxSolidFugacityResult> {
+    azoth_eos::wax_solid_fugacity::wax_solid_fugacity(
+        molar_mass,
+        kelvins(tc),
+        pascals(pc),
+        omega,
+        heat_of_fusion,
+        kelvins(triple_point_temperature),
+        kelvins(T),
+        pascals(P),
+        eos,
+    )
+    .map(|r| crate::transport_gen::PyWaxSolidFugacityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Liquid binary diffusivity from the Wilke-Chang correlation.

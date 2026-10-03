@@ -14,59 +14,24 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::transport_gen::{
-    PyAmmoniaPhaseResult, PyAqueousViscosityResult, PyArgonSolidPhaseResult, PyBwrsPhaseResult,
-    PyCapillaryDewPointResult, PyCo2PhaseResult, PyCriticalPointResult, PyDesmukhMatherPhaseResult,
-    PyEosCgPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
+    PyAqueousViscosityResult, PyBwrsPhaseResult, PyCapillaryDewPointResult, PyCriticalPointResult,
+    PyDesmukhMatherPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
     PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult,
-    PyGerg2008PhaseResult, PyHeliumPhaseResult, PyHybridEosGeFlashResult, PyHydrogenPhaseResult,
-    PyIapwsHenryLawResult, PyIdealGasCpResult, PyKentEisenbergPhaseResult,
-    PyMolarEnthalpyEntropyResult, PyNitricSulfuricAcidVaporPressureResult,
-    PyNrtlActivityCoefficientsResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
+    PyHybridEosGeFlashResult, PyHydrogenPhaseResult, PyKentEisenbergPhaseResult,
+    PyMolarEnthalpyEntropyResult, PyNrtlActivityCoefficientsResult, PyPhFlashResult,
     PyPitzerPhaseResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyRachfordRiceResult,
-    PyStabilityTestResult, PyThFlashResult, PyThermalConductivityResult, PyTpMultiflashResult,
-    PyTsFlashResult, PyTuFlashResult, PyTvFlashResult, PyTvFractionFlashResult,
-    PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
-    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
-    PyVanLaarAcidActivityCoefficientsResult, PyVhFlashResult, PyViscosityResult, PyVsFlashResult,
-    PyVuFlashResult, PyVuFlashSingleCompResult, PyWaterPhaseResult,
+    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyStabilityTestResult,
+    PyThFlashResult, PyThermalConductivityResult, PyTpMultiflashResult, PyTsFlashResult,
+    PyTuFlashResult, PyTvFlashResult, PyTvFractionFlashResult, PyUnifacActivityCoefficientsResult,
+    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
+    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult, PyVhFlashResult,
+    PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
     PyWilsonActivityCoefficientsResult,
 };
 use crate::transport_gen::{
     PyBubblePressureResult, PyBubbleTemperatureResult, PyDewPressureResult, PyDewTemperatureResult,
     PyPtPhaseEnvelopeResult,
 };
-
-/// The Rachford-Rice vapour fraction, by NeqSim's own solver.
-///
-/// A *model* rather than a calculation, so the procedure comes from the generated
-/// model table and this function only carries it across the boundary. The root comes
-/// back as the equation gives it: outside `[0, 1]` it is the negative flash, which is
-/// a reading rather than a failure.
-#[pyfunction]
-#[pyo3(signature = (z, K))]
-#[pyo3(text_signature = "(z, K)")]
-#[allow(non_snake_case)] // `K` is the symbol in the published equation
-pub fn rachford_rice(py: Python<'_>, z: Vec<f64>, K: Vec<f64>) -> PyResult<PyRachfordRiceResult> {
-    azoth_eos::rachford_rice::rachford_rice(&z, &K)
-        .map(|r| PyRachfordRiceResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The pure-component vapour pressure, from NeqSim's Antoine correlation.
-/// The three pure-component vapour pressures of the water-nitric-sulfuric acid system.
-#[pyfunction]
-#[pyo3(signature = (T))]
-#[pyo3(text_signature = "(T)")]
-#[allow(non_snake_case)] // `T` is the symbol in the chemistry
-pub fn nitric_sulfuric_acid_vapor_pressure(
-    py: Python<'_>,
-    T: f64,
-) -> PyResult<PyNitricSulfuricAcidVaporPressureResult> {
-    azoth_eos::nitric_sulfuric_acid_vapor_pressure(kelvins(T))
-        .map(|r| PyNitricSulfuricAcidVaporPressureResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
 
 /// The activity coefficients of a mixture, from NRTL. A *model* rather than a
 /// calculation: its resolved parameters cross the boundary flattened row-major.
@@ -2135,31 +2100,6 @@ pub fn dew_temperature(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// The ideal-gas heat capacity from a four-term polynomial.
-///
-/// The first calc in this namespace whose constants are fitted data rather than
-/// coefficients of a published equation, and the first whose arguments include a
-/// caller-supplied coefficient set at all. All four coefficients cross as plain
-/// floats: they are dimensionless by construction, because the polynomial is written
-/// against `T/(1000 K)` and divided through by `R`.
-#[pyfunction]
-#[pyo3(signature = (cp_a, cp_b, cp_c, cp_d, cp_e, T))]
-#[pyo3(text_signature = "(cp_a, cp_b, cp_c, cp_d, cp_e, T)")]
-#[allow(non_snake_case)] // `T` is the symbol in the chemistry
-pub fn ideal_gas_cp(
-    py: Python<'_>,
-    cp_a: f64,
-    cp_b: f64,
-    cp_c: f64,
-    cp_d: f64,
-    cp_e: f64,
-    T: f64,
-) -> PyResult<PyIdealGasCpResult> {
-    azoth_eos::ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(T))
-        .map(|r| PyIdealGasCpResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
 /// The absolute molar enthalpy and entropy of a mixture at a state.
 ///
 /// A `direct` model - vectors in, values out, no iteration - which is why it has no
@@ -2256,36 +2196,6 @@ pub fn bwrs_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// The ammonia reference phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (T, P))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn ammonia_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyAmmoniaPhaseResult> {
-    azoth_eos::ammonia_phase(kelvins(T), pascals(P))
-        .map(|r| PyAmmoniaPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The Span-Wagner CO2 phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (T, P))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn co2_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyCo2PhaseResult> {
-    azoth_eos::co2_phase(kelvins(T), pascals(P))
-        .map(|r| PyCo2PhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The Vega helium phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (T, P))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn helium_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyHeliumPhaseResult> {
-    azoth_eos::helium_phase(kelvins(T), pascals(P))
-        .map(|r| PyHeliumPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
 /// The fixed-role gas-oil-brine flash, computed in Rust.
 ///
 /// The component **names** cross unresolved: the two EoS roles' constants, the seeding's
@@ -2315,23 +2225,6 @@ pub fn hybrid_eos_ge_flash(
     )
     .map(|r| PyHybridEosGeFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
-}
-
-/// The Henry constant of a gas in water, computed in Rust.
-///
-/// `gas` crosses and is resolved by name, so the two backends accept the same vocabulary:
-/// the reference twin resolves it the same way, and a caller who has `methane` rather than
-/// `ch4` gets one answer and not two. The refusal is built here rather than left as a
-/// `ValueError` from the enum's own parser, because an unknown gas is the reference's
-/// `InvalidInputError` and the two backends must raise the same class.
-#[pyfunction]
-#[pyo3(signature = (gas, T))]
-#[allow(non_snake_case)] // `T` is the symbol in the guideline
-pub fn iapws_henry_law(py: Python<'_>, gas: &str, T: f64) -> PyResult<PyIapwsHenryLawResult> {
-    let row = azoth_eos::gas_by_name(gas).map_err(|e| to_pyerr(py, e))?;
-    azoth_eos::iapws_henry_law(row, kelvins(T))
-        .map(|r| PyIapwsHenryLawResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
 }
 
 /// The Leachman hydrogen phase state, computed in Rust.
@@ -2546,38 +2439,6 @@ pub fn hydrate_fraction(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// A wax cut's solid fugacity coefficient, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos = "srk"))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-#[allow(clippy::too_many_arguments)]
-pub fn wax_solid_fugacity(
-    py: Python<'_>,
-    molar_mass: f64,
-    tc: f64,
-    pc: f64,
-    omega: f64,
-    heat_of_fusion: f64,
-    triple_point_temperature: f64,
-    T: f64,
-    P: f64,
-    eos: &str,
-) -> PyResult<crate::transport_gen::PyWaxSolidFugacityResult> {
-    azoth_eos::wax_solid_fugacity(
-        molar_mass,
-        kelvins(tc),
-        pascals(pc),
-        omega,
-        heat_of_fusion,
-        kelvins(triple_point_temperature),
-        kelvins(T),
-        pascals(P),
-        eos,
-    )
-    .map(|r| crate::transport_gen::PyWaxSolidFugacityResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// The wax fraction of a feed at a state, computed in Rust.
 ///
 /// **The component names cross unresolved**, and this side resolves them: the wax flag and
@@ -2628,92 +2489,6 @@ pub fn phase_transport(
         .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::phase_transport(&mixture, &ideal_gas, phase, kelvins(T), pascals(P), &z)
         .map(|r| crate::transport_gen::PyPhaseTransportResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// A fluid's freezing-point temperature, computed in Rust.
-///
-/// **The component names cross unresolved**, and this side resolves them: the tabulated solid
-/// reads the databank's melting point, heat of fusion and density correlations, and the
-/// para-hydrogen route reads the reference equation this crate carries.
-#[pyfunction]
-#[pyo3(signature = (components, z, solid, P))]
-#[allow(non_snake_case)] // `P` is the symbol in the chemistry
-pub fn freezing_point(
-    py: Python<'_>,
-    components: Vec<String>,
-    z: Vec<f64>,
-    solid: String,
-    P: f64,
-) -> PyResult<crate::transport_gen::PyFreezingPointResult> {
-    azoth_eos::freezing_point(&components, &z, &solid, pascals(P))
-        .map(|r| crate::transport_gen::PyFreezingPointResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The IAPWS-IF97 water phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (T, P))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn water_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyWaterPhaseResult> {
-    azoth_eos::water_phase(kelvins(T), pascals(P))
-        .map(|r| PyWaterPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The solid argon phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (T, P))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn argon_solid_phase(py: Python<'_>, T: f64, P: f64) -> PyResult<PyArgonSolidPhaseResult> {
-    azoth_eos::argon_solid_phase(kelvins(T), pascals(P))
-        .map(|r| PyArgonSolidPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The solid para-hydrogen phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (T, P))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn parahydrogen_solid_phase(
-    py: Python<'_>,
-    T: f64,
-    P: f64,
-) -> PyResult<PyParahydrogenSolidPhaseResult> {
-    azoth_eos::parahydrogen_solid_phase(kelvins(T), pascals(P))
-        .map(|r| PyParahydrogenSolidPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The EOS-CG phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn eos_cg_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-) -> PyResult<PyEosCgPhaseResult> {
-    azoth_eos::eos_cg_phase(&components, kelvins(T), pascals(P), &z)
-        .map(|r| PyEosCgPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The GERG-2008 phase state, computed in Rust.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn gerg2008_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-) -> PyResult<PyGerg2008PhaseResult> {
-    azoth_eos::gerg2008_phase(&components, kelvins(T), pascals(P), &z)
-        .map(|r| PyGerg2008PhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2931,141 +2706,6 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
             .unwrap_or_default(),
         None => Vec::new(),
     }
-}
-
-/// The SAFT-VR-Mie flash, computed in Rust.
-///
-/// **The component names cross unresolved**, and this side looks them up in the Rust
-/// databank - the Mie set and the cubic constants the Wilson seed is built from.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn tp_flash_saft(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-) -> PyResult<crate::transport_gen::PySaftFlashResult> {
-    azoth_eos::tp_flash_saft::tp_flash_saft(&components, kelvins(T), pascals(P), &z)
-        .map(|r| crate::transport_gen::PySaftFlashResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The SAFT-VR-Mie phase state, computed in Rust.
-///
-/// **The component names cross unresolved**, and this side looks them up in the Rust
-/// databank - the five Mie columns, whose absence the table spells as zeros in three of
-/// them and not in the exponents.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z, compressed_phase))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn saft_vr_mie_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    compressed_phase: &str,
-) -> PyResult<crate::transport_gen::PySaftVrMiePhaseResult> {
-    azoth_eos::saft_vr_mie_phase::saft_vr_mie_phase(
-        &components,
-        kelvins(T),
-        pascals(P),
-        &z,
-        compressed_phase,
-    )
-    .map(|r| crate::transport_gen::PySaftVrMiePhaseResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// The PC-SAFT phase state, computed in Rust.
-///
-/// **The component names cross unresolved**, and this side looks them up in the Rust
-/// databank - which for this model means the `mSAFT`/`sigmaSAFT`/`epsikSAFT` set, whose
-/// absence the table spells as zeros, and the `KIJPCSAFT` column.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z, compressed_phase))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn pcsaft_rahmat_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    compressed_phase: &str,
-) -> PyResult<crate::transport_gen::PyPcsaftRahmatPhaseResult> {
-    azoth_eos::pcsaft_rahmat_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::transport_gen::PyPcsaftRahmatPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The PR-CPA phase state, computed in Rust.
-///
-/// **The component names cross unresolved**, as they do for the SRK twin, and this side
-/// looks them up in the Rust databank. What that buys here is the family: `Cubic::Pr`
-/// selects the fitted `aCPA_PR`/`bCPA_PR`/`mCPA_PR` set and the `cpakij_PR` column, both of
-/// which this is the first shipped model to read.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z, compressed_phase))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn pr_cpa_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    compressed_phase: &str,
-) -> PyResult<crate::transport_gen::PyPrCpaPhaseResult> {
-    azoth_eos::pr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::transport_gen::PyPrCpaPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The UMR-CPA phase state, computed in Rust.
-///
-/// **The component names cross unresolved**, and this side resolves the UMR-CPA parameter
-/// set, the `UMRCPA_MC1..5` coefficients and the `UNIFACcompUMRPRU` group decomposition
-/// itself. What that buys here is everything the model is: a third fitted set, a
-/// five-parameter alpha and a universal mixing rule, none of which a caller could state as
-/// numbers without reimplementing the model.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z, compressed_phase))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn umr_cpa_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    compressed_phase: &str,
-) -> PyResult<crate::transport_gen::PyUmrCpaPhaseResult> {
-    azoth_eos::umr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::transport_gen::PyUmrCpaPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The SRK-CPA phase state, computed in Rust.
-///
-/// **The component names cross unresolved**, and this side looks them up in the Rust
-/// databank. That is the `eos.eos_cg_phase` precedent, and for this model it is what makes
-/// the two-kernel comparison cover the *resolution* as well as the arithmetic: an
-/// associating mixture mixes with `cpakij_SRK` and a classical one with `KIJPR`, and on
-/// water/methanol those differ by a factor of two.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, z, compressed_phase))]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn srk_cpa_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    compressed_phase: &str,
-) -> PyResult<crate::transport_gen::PySrkCpaPhaseResult> {
-    azoth_eos::srk_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::transport_gen::PySrkCpaPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
 }
 
 /// The generalised gamma-phi flash: a cubic vapour over a named activity-coefficient liquid.

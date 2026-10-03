@@ -290,7 +290,10 @@ def enum_local(kind: str, name: str, resolved: str) -> tuple[list[str], str]:
 def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases: set[str]) -> str:
     calc_id, module, function, spec = entry
     inputs = spec["inputs"]
-    params = dict(kernel)
+    # **The kernel's own spelling, read case-insensitively.** A `uom` quantity is a `t` or a `p`
+    # by the Rust convention where the spec writes the chemistry's `T` and `P`, and the call is
+    # positional - so the case is the kernel's to choose and not a second name to declare.
+    params = {name.lower(): kind for name, kind in kernel}
 
     # What each parameter is, and whether anything about it was refused.
     plan: list[tuple[str, str, str, bool]] = []  # (parameter, kind, argument, is_enum)
@@ -298,11 +301,16 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         is_enum = kind not in PASSTHROUGH and kind not in aliases and not kind.startswith(("&[", "Option<"))
         if kind.startswith("Option<") and kind.endswith(">"):
             is_enum = kind[len("Option<") : -1] not in aliases and kind not in PASSTHROUGH
+        public = next((n for n in inputs if n.lower() == name.lower()), None)
+        if public is None:
+            raise Refusal(f"kernel parameter {name!r} names no declared input")
         try:
-            _declared, argument = convert(kind, inputs[name].get("unit"), name, aliases)
+            # The *declared* name is what the emitted function binds, so the argument expression
+            # reads that; the kernel's own name only decided the kind and the conversion.
+            _declared, argument = convert(kind, inputs[public].get("unit"), public, aliases)
         except Refusal as refusal:
             raise Refusal(str(refusal)) from None
-        plan.append((name, kind, argument if not is_enum else name, is_enum))
+        plan.append((public, kind, argument if not is_enum else public, is_enum))
 
     statements: list[str] = []
     arguments: list[str] = []
@@ -317,7 +325,8 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
     # The declared signature, with the optional ones last, which is `gen_stub`'s rule.
     declarations = []
     for name, decl in gen_stub.ordered_parameters(inputs):
-        declared, _ = convert(dict(kernel)[name], decl.get("unit"), name, aliases)
+        kind = next(kind for key, kind in kernel if key.lower() == name.lower())
+        declared, _ = convert(kind, decl.get("unit"), name, aliases)
         if decl.get("optional") and not declared.startswith("Option<") and declared != "&str" and not declared.startswith("Vec<"):
             declared = f"Option<{declared}>"
         declarations.append(f"{name}: {declared}")
@@ -367,7 +376,7 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
             continue
         kernel, kernel_module, kernel_file = found
         kernel_path = rust_index._item_path(kernel_file, function)
-        if set(n for n, _ in kernel) != set(spec["inputs"]):
+        if {n.lower() for n, _ in kernel} != {n.lower() for n in spec["inputs"]}:
             continue
         try:
             out.append((
