@@ -313,6 +313,7 @@ jobs:
           .venv/bin/python tools/gen_models.py
           .venv/bin/python tools/gen_stub.py
           .venv/bin/python tools/gen_model_inputs.py
+          .venv/bin/python tools/gen_python_registry.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -320,6 +321,7 @@ jobs:
             echo "::error::  python tools/gen_vocabulary.py && python tools/gen_docs.py"
             echo "::error::  python tools/gen_registry.py && python tools/gen_models.py"
             echo "::error::  python tools/gen_stub.py && python tools/gen_model_inputs.py"
+            echo "::error::  python tools/gen_python_registry.py"
             exit 1
           fi
 

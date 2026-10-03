@@ -125,8 +125,8 @@ def test_the_extension_registers_exactly_the_registry() -> None:
     Asserted as an equality in both directions, so a calc dropped from the
     extension is caught alongside one added to the registry and forgotten. The
     generated registry is the source of truth here - it is what the rest of the
-    machinery is built from - so this is the check that makes the hand-maintained
-    list in ``crates/azoth-python/src/results.rs`` self-policing.
+    machinery is built from - so this is the check that makes the generated
+    ``crates/azoth-python/src/registry_tables_gen.rs`` self-policing.
     """
     extension_ids = set(_extension().calc_ids())
     registry_ids = set(CALC_IDS)
@@ -134,7 +134,8 @@ def test_the_extension_registers_exactly_the_registry() -> None:
         f"azoth._core.calc_ids() and the registry differ\n"
         f"  missing from the extension: {sorted(registry_ids - extension_ids)}\n"
         f"  not in the registry: {sorted(extension_ids - registry_ids)}\n"
-        f"Add or remove the entry in crates/azoth-python/src/results.rs (calc_ids), "
+        f"Add or remove the spec under specs/calcs/ and run "
+        f"`python tools/gen_python_registry.py`, "
         f"register the function in crates/azoth-python/src/lib.rs (add_function), "
         f"and declare it in python/src/azoth/_core.pyi."
     )
