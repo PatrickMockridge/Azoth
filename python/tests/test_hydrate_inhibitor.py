@@ -41,7 +41,8 @@ def test_the_plain_cubic_column_reproduces_the_capture(
     # The mole number's bar is looser than the fraction's, and the reason is the secant's own
     # stopping rule: it stops inside 1e-3 K, so the moles it lands on are only fixed to that
     # band divided by dT/dC.
-    assert abs(result.inhibitor_moles / want_moles - 1.0) < 1.0e-6
+    # `inhibitor_moles` is a `mol` quantity, which is the shape the spec declares for it.
+    assert abs(result.inhibitor_moles.to("mol").magnitude / want_moles - 1.0) < 1.0e-6
     assert abs(result.weight_fraction / want_fraction - 1.0) < 1.0e-8
     assert abs(float(result.hydrate_temperature.to("K").magnitude) - target) <= 1.0e-3
 
@@ -68,7 +69,7 @@ def test_the_weight_fraction_dose_reproduces_the_capture(target: float, want: fl
     result = hydrate_inhibitor_wt(
         NAMES, MOLES, "MEG", target, quantity(273.15, "K"), quantity(100.0e5, "Pa"), eos="srk"
     )
-    assert abs(result.inhibitor_moles / want - 1.0) < 1.0e-12
+    assert abs(result.inhibitor_moles.to("mol").magnitude / want - 1.0) < 1.0e-12
     # **The target is met in the aqueous phase**, which is what the secant's residual is on.
     assert abs(result.weight_fraction - target) <= 1.0e-5
     assert result.phases == 2

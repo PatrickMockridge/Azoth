@@ -358,7 +358,9 @@ mod transport_tests {
             assert_eq!(number(result, "z_liquid"), 0.061);
             assert_eq!(number(result, "z_vapour"), 0.062);
             assert_eq!(number(result, "iterations"), 9.0);
-            assert_eq!(number(result, "residual"), 1.5e-11);
+            // `ps_flash`'s residual is an entropy difference, so the spec declares it in
+            // `J/(mol*K)` and it transports as a quantity rather than a bare number.
+            assert_eq!(magnitude(result, "residual"), 1.5e-11);
         });
     }
 }

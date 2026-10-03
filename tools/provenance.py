@@ -66,6 +66,10 @@ SHARED = (
     # are not - see NAMESPACE_SUPPORT.
     "crates/azoth-python/src/data.rs",
     "crates/azoth-python/src/results.rs",
+    # The transport structs every calculation's result crosses the boundary in, emitted by
+    # `tools/gen_python_transport.py`. Listed beside `results.rs` for the same reason: they are
+    # shared by every namespace rather than owned by one.
+    "crates/azoth-python/src/transport_gen.rs",
     # The Python twins of the Rust modules above, and they are listed for the
     # reason the pair exists: this list used to carry `core/result.rs`,
     # `core/warning.rs` and `core/range.rs` while omitting `core/result.py`,
@@ -95,6 +99,7 @@ SHARED = (
     "tools/gen_models.py",
     "tools/gen_registry.py",
     "tools/gen_docs.py",
+    "tools/gen_python_transport.py",
     "tools/spec_lint.py",
     "tools/provenance.py",
     "tools/check_links.py",
