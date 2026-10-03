@@ -492,7 +492,11 @@ a claim nothing holds.
   parameter any of them read. **`DistillationColumnMechanicalDesign` is ported and not
   wired**: `crates/azoth-process/src/column/mechanical.rs` is `calcDesign`, held to
   `validation/neqsim/captures/process_column_mechanical_design.tsv`. What no model declares is
-  its inputs, so it runs behind no id yet. **`AbsorberMechanicalDesign` is a measured
+  its inputs, so it runs behind no id yet. **Wiring it is deliberately deferred**: it is four new
+  inputs and about eight new outputs on `process.distillation_column`, and the same shape across
+  `absorption_column`, `stripping_column` and `packed_column` - ten hand-maintained sites per
+  model, which is the registration-hardening tranche's subject and its first customer.
+  **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the
   separator family's sizing, which this tree already refuses. **`ReactorMechanicalDesign`** for
