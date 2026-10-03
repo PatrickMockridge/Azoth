@@ -24,7 +24,7 @@ use azoth_hydraulics as hyd;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::{
+use crate::transport_gen::{
     PyChokedFlowAreaResult, PyColebrookResult, PyControlValveCvResult, PyDarcyWeisbachResult,
     PyHaalandResult, PyKFactorsResult, PyOrificeFlowResult, PyPumpPowerResult,
     PyReynoldsNumberResult, PySwameeJainResult,
@@ -227,7 +227,7 @@ pub fn packing_hydraulics(
     vapor_diffusivity: f64,
     liquid_diffusivity: f64,
     hydraulic_capacity_factor: f64,
-) -> PyResult<crate::results::PyPackingHydraulicsResult> {
+) -> PyResult<crate::transport_gen::PyPackingHydraulicsResult> {
     hyd::packing_hydraulics::packing_hydraulics(
         packing,
         hyd::packing_hydraulics::PackingState {
@@ -245,7 +245,7 @@ pub fn packing_hydraulics(
             hydraulic_capacity_factor,
         },
     )
-    .map(|r| crate::results::PyPackingHydraulicsResult::from(&r))
+    .map(|r| crate::transport_gen::PyPackingHydraulicsResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -274,7 +274,7 @@ pub fn tray_hydraulics(
     liquid_viscosity: f64,
     surface_tension: f64,
     relative_volatility: f64,
-) -> PyResult<crate::results::PyTrayHydraulicsResult> {
+) -> PyResult<crate::transport_gen::PyTrayHydraulicsResult> {
     hyd::tray_hydraulics::tray_hydraulics(hyd::tray_hydraulics::TrayHydraulicsState {
         tray_type: tray_type.to_string(),
         column_diameter: meters(column_diameter),
@@ -295,7 +295,7 @@ pub fn tray_hydraulics(
         surface_tension: newtons_per_meter(surface_tension),
         relative_volatility,
     })
-    .map(|r| crate::results::PyTrayHydraulicsResult::from(&r))
+    .map(|r| crate::transport_gen::PyTrayHydraulicsResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -316,7 +316,7 @@ pub fn packing_sizing(
     liquid_density: f64,
     liquid_viscosity: f64,
     hydraulic_capacity_factor: f64,
-) -> PyResult<crate::results::PyPackingSizingResult> {
+) -> PyResult<crate::transport_gen::PyPackingSizingResult> {
     hyd::packing_sizing::packing_sizing(
         packing,
         hyd::packing_sizing::PackingSizingState {
@@ -329,7 +329,7 @@ pub fn packing_sizing(
             hydraulic_capacity_factor,
         },
     )
-    .map(|r| crate::results::PyPackingSizingResult::from(&r))
+    .map(|r| crate::transport_gen::PyPackingSizingResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

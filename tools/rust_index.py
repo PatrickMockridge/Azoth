@@ -61,6 +61,7 @@ class ResultType:
     item_path: str
     module_file: Path
     fields: tuple[tuple[str, str], ...]
+    rust_field_types: tuple[str, ...] = ()
 
     @property
     def public_fields(self) -> tuple[str, ...]:
@@ -153,6 +154,34 @@ def _public_fields(body: str) -> list[str]:
     return [match.group(1) for match in _FIELD.finditer(body)]
 
 
+def _field_decls(body: str) -> list[tuple[str, str]]:
+    """A struct body's `pub` fields as `(name, type)`, in declaration order.
+
+    The type runs to the first `,` at bracket depth zero, so `Option<Pressure>` and
+    `Vec<(String, f64)>` come back whole - a line-wise split would stop at the comma inside
+    the brackets. Most of the tree's types are a bare `f64` or a `uom` alias; the container
+    and the alias together are what a transport struct is emitted from.
+    """
+    out: list[tuple[str, str]] = []
+    for match in _FIELD.finditer(body):
+        start = match.end()
+        depth = 0
+        i = start
+        while i < len(body):
+            ch = body[i]
+            if ch in "<([":
+                depth += 1
+            elif ch in ">)]":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif ch == "," and depth == 0:
+                break
+            i += 1
+        out.append((match.group(1), body[start:i].strip()))
+    return out
+
+
 def _item_path(module_file: Path, rust_name: str) -> str:
     """The path the type is reachable at, derived from the file the type is declared in."""
     relative = module_file.relative_to(CRATES)
@@ -164,17 +193,20 @@ def _item_path(module_file: Path, rust_name: str) -> str:
     return "::".join([crate, *parts, rust_name])
 
 
-def _parse_file(path: Path) -> tuple[dict[str, tuple[str, list[str]]], dict[str, list[str]]]:
+def _parse_file(
+    path: Path,
+) -> tuple[dict[str, tuple[str, list[str]]], dict[str, list[tuple[str, str]]]]:
     """One file's `(impls, structs)`, with the result macros it defines expanded in place.
 
-    `impls` maps a Rust type name to `(calc_id, FIELDS)` and `structs` to its `pub` field names -
-    every `pub struct` in the file, since the two are resolved against each other by the caller.
+    `impls` maps a Rust type name to `(calc_id, FIELDS)` and `structs` to its `pub` fields as
+    `(name, type)` - every `pub struct` in the file, since the two are resolved against each
+    other by the caller.
     """
     source = _blank_comments(path.read_text(encoding="utf-8"))
     where = str(path.relative_to(ROOT))
 
     impls: dict[str, tuple[str, list[str]]] = {}
-    structs: dict[str, list[str]] = {}
+    structs: dict[str, list[tuple[str, str]]] = {}
     for match in _IMPL.finditer(source):
         name = match.group(1)
         body = _block(source, match.end() - 1, where)
@@ -198,7 +230,7 @@ def _parse_file(path: Path) -> tuple[dict[str, tuple[str, list[str]]], dict[str,
             )
         if not id_match.group(1).strip().startswith("$"):
             sys.exit(f"rust_index: {where}: macro `{match.group(1)}`'s CALC_ID is not its `$id`")
-        struct_fields = _public_fields(_block(body, struct_match.end() - 1, where))
+        struct_fields = _field_decls(_block(body, struct_match.end() - 1, where))
         fields = _strings(fields_match.group(1))
         invoke = re.compile(
             rf"\b{re.escape(match.group(1))}!\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*,\s*\"([^\"]+)\"\s*\)\s*;"
@@ -211,7 +243,7 @@ def _parse_file(path: Path) -> tuple[dict[str, tuple[str, list[str]]], dict[str,
             structs.setdefault(call.group(1), list(struct_fields))
 
     for match in _STRUCT.finditer(source):
-        structs.setdefault(match.group(1), _public_fields(_block(source, match.end() - 1, where)))
+        structs.setdefault(match.group(1), _field_decls(_block(source, match.end() - 1, where)))
 
     return impls, structs
 
@@ -236,9 +268,10 @@ def result_types() -> tuple[ResultType, ...]:
             if rust_fields is None:
                 sys.exit(f"rust_index: {path}: `{rust_name}` has no `pub struct` body")
             if len(fields) != len(rust_fields):
+                names = [name for name, _ in rust_fields]
                 sys.exit(
                     f"rust_index: {path}: `{rust_name}` declares {len(fields)} `FIELDS` "
-                    f"{fields} against {len(rust_fields)} struct field(s) {rust_fields}; they pair "
+                    f"{fields} against {len(names)} struct field(s) {names}; they pair "
                     "by index and must be the same list in two spellings"
                 )
             found.setdefault(calc_id, []).append(
@@ -247,7 +280,10 @@ def result_types() -> tuple[ResultType, ...]:
                     rust_name=rust_name,
                     item_path=_item_path(path, rust_name),
                     module_file=path,
-                    fields=tuple(zip(fields, rust_fields, strict=True)),
+                    fields=tuple((public, rust) for public, (rust, _) in zip(
+                        fields, rust_fields, strict=True
+                    )),
+                    rust_field_types=tuple(rust_type for _, rust_type in rust_fields),
                 )
             )
 
@@ -257,6 +293,38 @@ def result_types() -> tuple[ResultType, ...]:
             sys.exit(f"rust_index: {calc_id} is claimed by more than one result type: {names}")
 
     return tuple(found[key][0] for key in sorted(found))
+
+
+_IMPL_BLOCK = re.compile(r"impl\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{")
+
+
+@lru_cache(maxsize=1)
+def _string_accessors() -> dict[str, str]:
+    """Each type's own accessor for the string the spec spells an enum as.
+
+    Seven of the eight enums a result can carry expose `as_str`; `PitzerDataset` exposes
+    `name`. Both are the type's own method rather than a shared trait, so the name is read
+    from the source rather than guessed - a convention written into a generator would be a
+    second place to change when a type picks differently.
+    """
+    out: dict[str, str] = {}
+    for path in sorted(CRATES.glob("*/src/**/*.rs")):
+        source = _blank_comments(path.read_text(encoding="utf-8"))
+        where = str(path.relative_to(ROOT))
+        for match in _IMPL_BLOCK.finditer(source):
+            body = _block(source, match.end() - 1, where)
+            for accessor in ("as_str", "name"):
+                if re.search(rf"pub\s+fn\s+{accessor}\s*\(", body):
+                    out.setdefault(match.group(1), accessor)
+    return out
+
+
+def string_accessor(type_name: str) -> str:
+    """How `type_name` renders its own string, refused where it has no such method."""
+    accessor = _string_accessors().get(type_name)
+    if accessor is None:
+        sys.exit(f"rust_index: {type_name} is a spec enum with no `as_str`/`name` accessor")
+    return accessor
 
 
 @lru_cache(maxsize=1)

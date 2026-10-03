@@ -526,10 +526,10 @@ def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelope
     residual = abs(bubble[4][0] - dew[4][0]) if (bubble[4] and dew[4]) else math.nan
 
     return PtPhaseEnvelopeResult(
-        dew_temperature=tuple(dew[0]),
-        dew_pressure=tuple(dew[1]),
-        bubble_temperature=tuple(bubble[0]),
-        bubble_pressure=tuple(bubble[1]),
+        dew_temperature=tuple(from_si(_v, "K") for _v in tuple(dew[0])),
+        dew_pressure=tuple(from_si(_v, "Pa") for _v in tuple(dew[1])),
+        bubble_temperature=tuple(from_si(_v, "K") for _v in tuple(bubble[0])),
+        bubble_pressure=tuple(from_si(_v, "Pa") for _v in tuple(bubble[1])),
         cricondenbar_temperature=from_si(cricondenbar[0], "K"),
         cricondenbar_pressure=from_si(cricondenbar[1], "Pa"),
         cricondentherm_temperature=from_si(cricondentherm[0], "K"),
@@ -537,6 +537,6 @@ def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelope
         critical_temperature=from_si(critical[0], "K"),
         critical_pressure=from_si(critical[1], "Pa"),
         iterations=len(bubble[0]) + len(dew[0]),
-        residual=residual,
+        residual=from_si(residual, "K"),
         warnings=tuple(warnings),
     )

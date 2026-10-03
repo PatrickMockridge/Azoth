@@ -416,9 +416,9 @@ def plug_flow_reactor(
         pressure_drop=from_si(march.pressure_drop_bar * 1.0e5, "Pa"),
         outlet_temperature=from_si(march.outlet_t, "K"),
         heat_duty=from_si(march.heat_duty, "W"),
-        positions=march.positions,
-        temperature_profile=march.temperatures,
-        pressure_profile=tuple(p * 1.0e5 for p in march.pressures),
+        positions=tuple(from_si(_v, "m") for _v in march.positions),
+        temperature_profile=tuple(from_si(_v, "K") for _v in march.temperatures),
+        pressure_profile=tuple(from_si(_v, "Pa") for _v in tuple(p * 1.0e5 for p in march.pressures)),
         conversion_profile=march.conversions,
         warnings=tuple(warnings),
     )

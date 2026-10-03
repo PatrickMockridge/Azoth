@@ -226,7 +226,7 @@ pub fn compressor(
     inlet_t: f64,
     outlet_pressure: f64,
     isentropic_efficiency: f64,
-) -> PyResult<crate::results::PyCompressorResult> {
+) -> PyResult<crate::transport_gen::PyCompressorResult> {
     azoth_process::compressor(
         &components,
         inlet_n,
@@ -236,7 +236,7 @@ pub fn compressor(
         pascals(outlet_pressure),
         isentropic_efficiency,
     )
-    .map(|r| crate::results::PyCompressorResult::from(&r))
+    .map(|r| crate::transport_gen::PyCompressorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -257,7 +257,7 @@ pub fn expander(
     inlet_t: f64,
     outlet_pressure: f64,
     isentropic_efficiency: f64,
-) -> PyResult<crate::results::PyExpanderResult> {
+) -> PyResult<crate::transport_gen::PyExpanderResult> {
     azoth_process::expander(
         &components,
         inlet_n,
@@ -267,7 +267,7 @@ pub fn expander(
         pascals(outlet_pressure),
         isentropic_efficiency,
     )
-    .map(|r| crate::results::PyExpanderResult::from(&r))
+    .map(|r| crate::transport_gen::PyExpanderResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -289,7 +289,7 @@ pub fn filter(
     inlet_p: f64,
     inlet_t: f64,
     pressure_drop: f64,
-) -> PyResult<crate::results::PyFilterResult> {
+) -> PyResult<crate::transport_gen::PyFilterResult> {
     azoth_process::filter(
         &components,
         inlet_n,
@@ -298,7 +298,7 @@ pub fn filter(
         kelvins(inlet_t),
         pascals(pressure_drop),
     )
-    .map(|r| crate::results::PyFilterResult::from(&r))
+    .map(|r| crate::transport_gen::PyFilterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -320,7 +320,7 @@ pub fn pipe(
     length: f64,
     diameter: f64,
     roughness: f64,
-) -> PyResult<crate::results::PyPipeResult> {
+) -> PyResult<crate::transport_gen::PyPipeResult> {
     azoth_process::pipe(
         &components,
         inlet_n,
@@ -331,7 +331,7 @@ pub fn pipe(
         meters(diameter),
         meters(roughness),
     )
-    .map(|r| crate::results::PyPipeResult::from(&r))
+    .map(|r| crate::transport_gen::PyPipeResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -353,7 +353,7 @@ pub fn cooler(
     outlet_temperature: Option<f64>,
     duty: Option<f64>,
     pressure_drop: Option<f64>,
-) -> PyResult<crate::results::PyCoolerResult> {
+) -> PyResult<crate::transport_gen::PyCoolerResult> {
     azoth_process::cooler(
         &components,
         inlet_n,
@@ -364,7 +364,7 @@ pub fn cooler(
         duty.map(watts),
         pressure_drop.map(pascals),
     )
-    .map(|r| crate::results::PyCoolerResult::from(&r))
+    .map(|r| crate::transport_gen::PyCoolerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -391,7 +391,7 @@ pub fn heater(
     outlet_temperature: Option<f64>,
     duty: Option<f64>,
     pressure_drop: Option<f64>,
-) -> PyResult<crate::results::PyHeaterResult> {
+) -> PyResult<crate::transport_gen::PyHeaterResult> {
     azoth_process::heater(
         &components,
         inlet_n,
@@ -402,7 +402,7 @@ pub fn heater(
         duty.map(watts),
         pressure_drop.map(pascals),
     )
-    .map(|r| crate::results::PyHeaterResult::from(&r))
+    .map(|r| crate::transport_gen::PyHeaterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -423,7 +423,7 @@ pub fn pump(
     inlet_t: f64,
     outlet_pressure: f64,
     isentropic_efficiency: f64,
-) -> PyResult<crate::results::PyPumpResult> {
+) -> PyResult<crate::transport_gen::PyPumpResult> {
     azoth_process::pump(
         &components,
         inlet_n,
@@ -433,7 +433,7 @@ pub fn pump(
         pascals(outlet_pressure),
         isentropic_efficiency,
     )
-    .map(|r| crate::results::PyPumpResult::from(&r))
+    .map(|r| crate::transport_gen::PyPumpResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -506,7 +506,7 @@ pub fn distillation_column(
     column_diameter_override: Option<f64>,
     hydraulic_pressure_drop_coupling: Option<bool>,
     hydraulic_pressure_drop_internals_type: Option<String>,
-) -> PyResult<crate::results::PyDistillationColumnResult> {
+) -> PyResult<crate::transport_gen::PyDistillationColumnResult> {
     azoth_process::distillation_column(
         &components,
         feed_n,
@@ -562,7 +562,7 @@ pub fn distillation_column(
         hydraulic_pressure_drop_coupling,
         hydraulic_pressure_drop_internals_type.as_deref(),
     )
-    .map(|r| crate::results::PyDistillationColumnResult::from(&r))
+    .map(|r| crate::transport_gen::PyDistillationColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -626,7 +626,7 @@ pub fn absorption_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
-) -> PyResult<crate::results::PyAbsorptionColumnResult> {
+) -> PyResult<crate::transport_gen::PyAbsorptionColumnResult> {
     azoth_process::absorption_column(
         &gas_components,
         gas_n,
@@ -669,7 +669,7 @@ pub fn absorption_column(
         column_diameter,
         max_allowable_fs_factor,
     )
-    .map(|r| crate::results::PyAbsorptionColumnResult::from(&r))
+    .map(|r| crate::transport_gen::PyAbsorptionColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -736,7 +736,7 @@ pub fn packed_column(
     pumparound_tolerance: Option<f64>,
     pumparound_max_iterations: Option<usize>,
     max_allowable_fs_factor: Option<f64>,
-) -> PyResult<crate::results::PyPackedColumnResult> {
+) -> PyResult<crate::transport_gen::PyPackedColumnResult> {
     azoth_process::packed_column(
         &components,
         feed_n,
@@ -786,7 +786,7 @@ pub fn packed_column(
         pumparound_max_iterations,
         max_allowable_fs_factor,
     )
-    .map(|r| crate::results::PyPackedColumnResult::from(&r))
+    .map(|r| crate::transport_gen::PyPackedColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -846,7 +846,7 @@ pub fn stripping_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
-) -> PyResult<crate::results::PyStrippingColumnResult> {
+) -> PyResult<crate::transport_gen::PyStrippingColumnResult> {
     azoth_process::stripping_column(
         &stripping_gas_components,
         &rich_liquid_components,
@@ -889,7 +889,7 @@ pub fn stripping_column(
         column_diameter,
         max_allowable_fs_factor,
     )
-    .map(|r| crate::results::PyStrippingColumnResult::from(&r))
+    .map(|r| crate::transport_gen::PyStrippingColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -907,7 +907,7 @@ pub fn throttling_valve(
     inlet_p: f64,
     inlet_t: f64,
     outlet_pressure: f64,
-) -> PyResult<crate::results::PyThrottlingValveResult> {
+) -> PyResult<crate::transport_gen::PyThrottlingValveResult> {
     azoth_process::throttling_valve(
         &components,
         inlet_n,
@@ -916,7 +916,7 @@ pub fn throttling_valve(
         kelvins(inlet_t),
         pascals(outlet_pressure),
     )
-    .map(|r| crate::results::PyThrottlingValveResult::from(&r))
+    .map(|r| crate::transport_gen::PyThrottlingValveResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -951,7 +951,7 @@ pub fn heat_exchanger(
     ua: Option<f64>,
     hot_outlet_temperature: Option<f64>,
     cold_outlet_temperature: Option<f64>,
-) -> PyResult<crate::results::PyHeatExchangerResult> {
+) -> PyResult<crate::transport_gen::PyHeatExchangerResult> {
     azoth_process::heat_exchanger(
         &hot_components,
         hot_in_n,
@@ -968,7 +968,7 @@ pub fn heat_exchanger(
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
     )
-    .map(|r| crate::results::PyHeatExchangerResult::from(&r))
+    .map(|r| crate::transport_gen::PyHeatExchangerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -990,7 +990,7 @@ pub fn separator(
     pressure_drop: f64,
     gas_in_liquid: f64,
     heat_input: Option<f64>,
-) -> PyResult<crate::results::PySeparatorResult> {
+) -> PyResult<crate::transport_gen::PySeparatorResult> {
     azoth_process::separator(
         &components,
         feed_n,
@@ -1001,7 +1001,7 @@ pub fn separator(
         gas_in_liquid,
         heat_input.map(watts),
     )
-    .map(|r| crate::results::PySeparatorResult::from(&r))
+    .map(|r| crate::transport_gen::PySeparatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1026,7 +1026,7 @@ pub fn gas_scrubber(
     pressure_drop: f64,
     gas_in_liquid: f64,
     heat_input: Option<f64>,
-) -> PyResult<crate::results::PyGasScrubberResult> {
+) -> PyResult<crate::transport_gen::PyGasScrubberResult> {
     azoth_process::gas_scrubber(
         &components,
         feed_n,
@@ -1037,7 +1037,7 @@ pub fn gas_scrubber(
         gas_in_liquid,
         heat_input.map(watts),
     )
-    .map(|r| crate::results::PyGasScrubberResult::from(&r))
+    .map(|r| crate::transport_gen::PyGasScrubberResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1056,12 +1056,12 @@ pub fn tank(
     feed_z: Vec<Vec<f64>>,
     feed_p: Vec<f64>,
     feed_t: Vec<f64>,
-) -> PyResult<crate::results::PyTankResult> {
+) -> PyResult<crate::transport_gen::PyTankResult> {
     let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
     let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
         feed_t.into_iter().map(kelvins).collect();
     azoth_process::tank(&components, &feed_n, &feed_z, &pressures, &temperatures)
-        .map(|r| crate::results::PyTankResult::from(&r))
+        .map(|r| crate::transport_gen::PyTankResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1091,7 +1091,7 @@ pub fn stirred_tank_reactor(
     reactor_temperature: Option<f64>,
     reactor_pressure: Option<f64>,
     pressure_drop: Option<f64>,
-) -> PyResult<crate::results::PyStirredTankReactorResult> {
+) -> PyResult<crate::transport_gen::PyStirredTankReactorResult> {
     azoth_process::stirred_tank_reactor(
         &components,
         feed_n,
@@ -1106,7 +1106,7 @@ pub fn stirred_tank_reactor(
         reactor_pressure.map(pascals),
         pascals(pressure_drop.unwrap_or(0.0)),
     )
-    .map(|r| crate::results::PyStirredTankReactorResult::from(&r))
+    .map(|r| crate::transport_gen::PyStirredTankReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1155,7 +1155,7 @@ pub fn plug_flow_reactor(
     catalyst_molecular_diffusivity: Option<f64>,
     catalyst_effectiveness_enabled: Option<bool>,
     key_component: Option<String>,
-) -> PyResult<crate::results::PyPlugFlowReactorResult> {
+) -> PyResult<crate::transport_gen::PyPlugFlowReactorResult> {
     azoth_process::plug_flow_reactor(
         &components,
         feed_n,
@@ -1187,7 +1187,7 @@ pub fn plug_flow_reactor(
         catalyst_effectiveness_enabled,
         key_component,
     )
-    .map(|r| crate::results::PyPlugFlowReactorResult::from(&r))
+    .map(|r| crate::transport_gen::PyPlugFlowReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1214,7 +1214,7 @@ pub fn gibbs_reactor(
     max_iterations: f64,
     convergence_tolerance: f64,
     min_iterations: f64,
-) -> PyResult<crate::results::PyGibbsReactorResult> {
+) -> PyResult<crate::transport_gen::PyGibbsReactorResult> {
     azoth_process::gibbs_reactor(
         &components,
         feed_n,
@@ -1227,7 +1227,7 @@ pub fn gibbs_reactor(
         convergence_tolerance,
         min_iterations,
     )
-    .map(|r| crate::results::PyGibbsReactorResult::from(&r))
+    .map(|r| crate::transport_gen::PyGibbsReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1246,7 +1246,7 @@ pub fn flare(
     inlet_z: Vec<f64>,
     inlet_p: f64,
     inlet_t: f64,
-) -> PyResult<crate::results::PyFlareResult> {
+) -> PyResult<crate::transport_gen::PyFlareResult> {
     azoth_process::flare(
         &components,
         inlet_n,
@@ -1254,7 +1254,7 @@ pub fn flare(
         pascals(inlet_p),
         kelvins(inlet_t),
     )
-    .map(|r| crate::results::PyFlareResult::from(&r))
+    .map(|r| crate::transport_gen::PyFlareResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1286,7 +1286,7 @@ pub fn ejector(
     suction_nozzle_efficiency: f64,
     mixing_efficiency: f64,
     diffuser_efficiency: f64,
-) -> PyResult<crate::results::PyEjectorResult> {
+) -> PyResult<crate::transport_gen::PyEjectorResult> {
     azoth_process::ejector(
         &motive_components,
         motive_n,
@@ -1304,7 +1304,7 @@ pub fn ejector(
         mixing_efficiency,
         diffuser_efficiency,
     )
-    .map(|r| crate::results::PyEjectorResult::from(&r))
+    .map(|r| crate::transport_gen::PyEjectorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1334,7 +1334,7 @@ pub fn three_phase_separator(
     aqueous_in_gas: f64,
     aqueous_in_oil: f64,
     heat_input: Option<f64>,
-) -> PyResult<crate::results::PyThreePhaseSeparatorResult> {
+) -> PyResult<crate::transport_gen::PyThreePhaseSeparatorResult> {
     azoth_process::three_phase_separator(
         &components,
         feed_n,
@@ -1350,7 +1350,7 @@ pub fn three_phase_separator(
         aqueous_in_oil,
         heat_input.map(watts),
     )
-    .map(|r| crate::results::PyThreePhaseSeparatorResult::from(&r))
+    .map(|r| crate::transport_gen::PyThreePhaseSeparatorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1382,7 +1382,7 @@ pub fn shortcut_distillation_column(
     reflux_ratio_multiplier: f64,
     condenser_pressure: Option<f64>,
     reboiler_pressure: Option<f64>,
-) -> PyResult<crate::results::PyShortcutDistillationColumnResult> {
+) -> PyResult<crate::transport_gen::PyShortcutDistillationColumnResult> {
     azoth_process::shortcut_distillation_column(
         &components,
         feed_n,
@@ -1397,7 +1397,7 @@ pub fn shortcut_distillation_column(
         condenser_pressure.map(pascals),
         reboiler_pressure.map(pascals),
     )
-    .map(|r| crate::results::PyShortcutDistillationColumnResult::from(&r))
+    .map(|r| crate::transport_gen::PyShortcutDistillationColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1414,7 +1414,7 @@ pub fn mixer(
     feed_p: Vec<f64>,
     feed_t: Vec<f64>,
     outlet_pressure: Option<f64>,
-) -> PyResult<crate::results::PyMixerResult> {
+) -> PyResult<crate::transport_gen::PyMixerResult> {
     let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
     let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
         feed_t.into_iter().map(kelvins).collect();
@@ -1426,7 +1426,7 @@ pub fn mixer(
         &temperatures,
         outlet_pressure.map(pascals),
     )
-    .map(|r| crate::results::PyMixerResult::from(&r))
+    .map(|r| crate::transport_gen::PyMixerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1446,7 +1446,7 @@ pub fn manifold(
     feed_p: Vec<f64>,
     feed_t: Vec<f64>,
     split_factors: Vec<f64>,
-) -> PyResult<crate::results::PyManifoldResult> {
+) -> PyResult<crate::transport_gen::PyManifoldResult> {
     let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
     let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
         feed_t.into_iter().map(kelvins).collect();
@@ -1458,7 +1458,7 @@ pub fn manifold(
         &temperatures,
         &split_factors,
     )
-    .map(|r| crate::results::PyManifoldResult::from(&r))
+    .map(|r| crate::transport_gen::PyManifoldResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1475,7 +1475,7 @@ pub fn splitter(
     feed_p: f64,
     feed_t: f64,
     split_factors: Vec<f64>,
-) -> PyResult<crate::results::PySplitterResult> {
+) -> PyResult<crate::transport_gen::PySplitterResult> {
     azoth_process::splitter(
         &components,
         feed_n,
@@ -1484,7 +1484,7 @@ pub fn splitter(
         kelvins(feed_t),
         &split_factors,
     )
-    .map(|r| crate::results::PySplitterResult::from(&r))
+    .map(|r| crate::transport_gen::PySplitterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1503,7 +1503,7 @@ pub fn component_splitter(
     feed_p: f64,
     feed_t: f64,
     split_factors: Vec<f64>,
-) -> PyResult<crate::results::PyComponentSplitterResult> {
+) -> PyResult<crate::transport_gen::PyComponentSplitterResult> {
     azoth_process::component_splitter(
         &components,
         feed_n,
@@ -1512,7 +1512,7 @@ pub fn component_splitter(
         kelvins(feed_t),
         &split_factors,
     )
-    .map(|r| crate::results::PyComponentSplitterResult::from(&r))
+    .map(|r| crate::transport_gen::PyComponentSplitterResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1740,7 +1740,7 @@ pub fn rate_based_packed_column(
     heat_transfer_model: Option<&str>,
     segment_solver: Option<&str>,
     column_solver: Option<&str>,
-) -> PyResult<crate::results::PyRateBasedPackedColumnResult> {
+) -> PyResult<crate::transport_gen::PyRateBasedPackedColumnResult> {
     azoth_process::rate_based_packed_column(
         &gas_components,
         gas_n,
@@ -1770,6 +1770,6 @@ pub fn rate_based_packed_column(
         segment_solver,
         column_solver,
     )
-    .map(|out| crate::results::PyRateBasedPackedColumnResult::from(&out))
+    .map(|out| crate::transport_gen::PyRateBasedPackedColumnResult::from(&out))
     .map_err(|e| to_pyerr(py, e))
 }

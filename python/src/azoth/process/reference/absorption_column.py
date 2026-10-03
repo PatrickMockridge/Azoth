@@ -342,7 +342,7 @@ def absorption_column(
         liquid_out_t=from_si(states.bottoms_t, "K"),
         liquid_out_h=from_si(states.bottoms_h, "J/mol"),
         iterations=states.iterations,
-        temperature_residual=states.temperature_residual,
+        temperature_residual=from_si(states.temperature_residual, "K"),
         mass_residual=states.mass_residual,
         energy_residual=states.energy_residual,
         **capacity_fields(
@@ -411,7 +411,7 @@ def capacity_fields(
         "fs_factor_utilization": fs["fs_factor_utilization"],
         "fs_factor_within_design_limit": fs["fs_factor_within_design_limit"],
         "minimum_diameter_for_fs_limit": from_si(fs["minimum_diameter_for_fs_limit"], "m"),
-        "gas_load_factor": gas_load["gas_load_factor"],
+        "gas_load_factor": from_si(gas_load["gas_load_factor"], "m/s"),
         "gas_load_factor_utilization": gas_load["gas_load_factor_utilization"],
         "gas_load_factor_within_design_limit": gas_load["gas_load_factor_within_design_limit"],
         "minimum_diameter_for_gas_load_limit": from_si(

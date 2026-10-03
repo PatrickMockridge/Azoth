@@ -16,7 +16,7 @@ from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HydrateInhibitorWtResult, Phase, PtFlashResult
-from azoth.core.units import Q, input_to_si, to_si
+from azoth.core.units import Q, from_si, input_to_si, to_si
 from azoth.core.warnings import Warning
 from azoth.eos.mixture import Mixture
 from azoth.eos.reference._mixture_state import (
@@ -220,7 +220,7 @@ def hydrate_inhibitor_wt(
         raise SolverNotConvergedError(iterations, error, TOLERANCE)
 
     return HydrateInhibitorWtResult(
-        inhibitor_moles=walk[index],
+        inhibitor_moles=from_si(walk[index], "mol"),
         weight_fraction=reached,
         phases=len(_phases_of(flash)),
         iterations=iterations,

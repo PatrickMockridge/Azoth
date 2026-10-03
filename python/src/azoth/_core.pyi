@@ -312,8 +312,8 @@ class DesmukhMatherPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
     molality: list[float]
-    ionic_strength: float
-    solvent_molar_mass: float
+    ionic_strength: Qty
+    solvent_molar_mass: Qty
     ln_phi: list[float]
     warnings: list[Warning]
 
@@ -529,16 +529,16 @@ class HydrateFractionResult:
 
 @final
 class HydrateInhibitorConcentrationResult:
-    inhibitor_moles: float
+    inhibitor_moles: Qty
     weight_fraction: float
     hydrate_temperature: Qty
     iterations: int
-    residual: float
+    residual: Qty
     warnings: list[Warning]
 
 @final
 class HydrateInhibitorWtResult:
-    inhibitor_moles: float
+    inhibitor_moles: Qty
     weight_fraction: float
     phases: int
     iterations: int
@@ -560,7 +560,7 @@ class HydrogenPhaseResult:
 class IapwsHenryLawResult:
     henry: Qty
     ln_henry: float
-    d_ln_henry_d_t: float
+    d_ln_henry_d_t: Qty
     status: str
     rms_log_residual: float
     warnings: list[Warning]
@@ -714,7 +714,7 @@ class PitzerPhaseResult:
     henry: list[Qty]
     gamma_inf: list[float]
     molality: list[float]
-    ionic_strength: float
+    ionic_strength: Qty
     osmotic_coefficient: float
     water_activity: float
     dataset: str
@@ -814,7 +814,7 @@ class PsFlashResult:
     z_liquid: float
     z_vapour: float
     iterations: int
-    residual: float
+    residual: Qty
     warnings: list[Warning]
 
 @final
@@ -846,7 +846,7 @@ class PtPhaseEnvelopeResult:
     critical_temperature: Qty
     critical_pressure: Qty
     iterations: int
-    residual: float
+    residual: Qty
     warnings: list[Warning]
 
 @final
@@ -1403,9 +1403,9 @@ class PackingHydraulicsResult:
     specific_surface_area: float
     void_fraction: float
     packing_factor: float
-    flooding_velocity: float
-    vapor_velocity: float
-    liquid_velocity: float
+    flooding_velocity: Qty
+    vapor_velocity: Qty
+    liquid_velocity: Qty
     f_factor: float
     percent_flood: float
     pressure_drop_per_meter: Qty
@@ -1413,13 +1413,13 @@ class PackingHydraulicsResult:
     wetted_area: float
     k_ga: float
     k_la: float
-    htu_g: float
-    htu_l: float
-    htu_og: float
+    htu_g: Qty
+    htu_l: Qty
+    htu_og: Qty
     hetp: Qty
     theoretical_stages: float
-    wetting_rate: float
-    minimum_wetting_rate: float
+    wetting_rate: Qty
+    minimum_wetting_rate: Qty
     wetting_ok: bool
     design_ok: bool
     warnings: list[Warning]
@@ -1428,9 +1428,9 @@ class PackingHydraulicsResult:
 class PackingSizingResult:
     packing_name: str
     packing_factor: float
-    flooding_velocity: float
-    design_velocity: float
-    vapor_volumetric_flow: float
+    flooding_velocity: Qty
+    design_velocity: Qty
+    vapor_volumetric_flow: Qty
     required_area: Qty
     required_diameter: Qty
     column_diameter: Qty
@@ -1449,10 +1449,10 @@ class ReynoldsNumberResult:
 
 @final
 class TrayHydraulicsResult:
-    flooding_velocity: float
-    actual_vapor_velocity: float
+    flooding_velocity: Qty
+    actual_vapor_velocity: Qty
     percent_flood: float
-    minimum_vapor_velocity: float
+    minimum_vapor_velocity: Qty
     fs_factor: float
     weeping_ok: bool
     entrainment: float
@@ -1492,14 +1492,14 @@ class AbsorptionColumnResult:
     liquid_out_t: Qty
     liquid_out_h: Qty
     iterations: int
-    temperature_residual: float
+    temperature_residual: Qty
     mass_residual: float
     energy_residual: float
     fs_factor: float
     fs_factor_utilization: float
     fs_factor_within_design_limit: bool
     minimum_diameter_for_fs_limit: Qty
-    gas_load_factor: float
+    gas_load_factor: Qty
     gas_load_factor_utilization: float
     gas_load_factor_within_design_limit: bool
     minimum_diameter_for_gas_load_limit: Qty
@@ -1733,7 +1733,7 @@ class PackedColumnResult:
     hetp: Qty
     theoretical_stages: float
     percent_flood: float
-    flooding_velocity: float
+    flooding_velocity: Qty
     packing_pressure_drop: Qty
     hydraulics_ok: bool
     internal_diameter: Qty
@@ -1892,14 +1892,14 @@ class StrippingColumnResult:
     lean_liquid_t: Qty
     lean_liquid_h: Qty
     iterations: int
-    temperature_residual: float
+    temperature_residual: Qty
     mass_residual: float
     energy_residual: float
     fs_factor: float
     fs_factor_utilization: float
     fs_factor_within_design_limit: bool
     minimum_diameter_for_fs_limit: Qty
-    gas_load_factor: float
+    gas_load_factor: Qty
     gas_load_factor_utilization: float
     gas_load_factor_within_design_limit: bool
     minimum_diameter_for_gas_load_limit: Qty

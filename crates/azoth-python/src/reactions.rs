@@ -16,7 +16,7 @@ use azoth_reactions::databank::ReactionDataSource;
 use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
-use crate::results::{
+use crate::transport_gen::{
     PyEquilibriumConstantResult, PyKineticRateLawResult, PyKineticsResult,
     PyReactiveHybridEosGeFlashResult, PyReactivePhFlashResult, PyReactivePhaseEquilibriumResult,
     PyReactiveTpFlashResult,
@@ -60,14 +60,14 @@ pub fn reference_potentials(
     components: Vec<String>,
     source: &str,
     T: f64,
-) -> PyResult<crate::results::PyReferencePotentialsResult> {
+) -> PyResult<crate::transport_gen::PyReferencePotentialsResult> {
     let parsed: ReactionDataSource = source.parse().map_err(|e| to_pyerr(py, e))?;
     azoth_reactions::reference_potentials::reference_potentials(
         &components,
         parsed,
         azoth_core::units::kelvins(T),
     )
-    .map(|r| crate::results::PyReferencePotentialsResult::from(&r))
+    .map(|r| crate::transport_gen::PyReferencePotentialsResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -101,7 +101,7 @@ pub fn chemical_equilibrium(
     solvent_weight: f64,
     solvent_mask: Vec<f64>,
     phase_moles: f64,
-) -> PyResult<crate::results::PyChemicalEquilibriumResult> {
+) -> PyResult<crate::transport_gen::PyChemicalEquilibriumResult> {
     let parsed_basis: ConcentrationBasis =
         concentration_basis.parse().map_err(|e| to_pyerr(py, e))?;
     azoth_reactions::chemical_equilibrium::chemical_equilibrium(
@@ -119,7 +119,7 @@ pub fn chemical_equilibrium(
         &solvent_mask,
         phase_moles,
     )
-    .map(|r| crate::results::PyChemicalEquilibriumResult::from(&r))
+    .map(|r| crate::transport_gen::PyChemicalEquilibriumResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

@@ -125,11 +125,11 @@ def hydrate_inhibitor_concentration(
         raise SolverNotConvergedError(iterations, error, TOLERANCE)
 
     return HydrateInhibitorConcentrationResult(
-        inhibitor_moles=walk[index],
+        inhibitor_moles=from_si(walk[index], "mol"),
         weight_fraction=_weight_fraction(mixture, walk, index, water),
         hydrate_temperature=from_si(hydrate_temperature, "K"),
         iterations=iterations,
-        residual=error,
+        residual=from_si(error, "K"),
         warnings=tuple(warnings),
     )
 

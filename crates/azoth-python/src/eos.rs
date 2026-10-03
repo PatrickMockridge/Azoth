@@ -14,7 +14,7 @@ use azoth_core::units::{
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::{
+use crate::transport_gen::{
     PyAmmoniaPhaseResult, PyAntoineVaporPressureResult, PyAqueousViscosityResult,
     PyArgonSolidPhaseResult, PyBwrsPhaseResult, PyCapillaryDewPointResult,
     PyChungConductivityResult, PyChungViscosityResult, PyCo2PhaseResult,
@@ -29,7 +29,6 @@ use crate::results::{
     PyMatcopPrumrNewAlphaResult, PyMolarEnthalpyEntropyResult, PyMollerupAlphaResult,
     PyNitricSulfuricAcidVaporPressureResult, PyNrtlActivityCoefficientsResult,
     PyParachorSurfaceTensionResult, PyParahydrogenSolidPhaseResult, PyPhFlashResult,
-    PyPhaseBoundaryResult, PyPhaseBoundaryTemperatureResult, PyPhaseEnvelopeResult,
     PyPitzerPhaseResult, PyPr78KappaResult, PyPrAlphaAbResult, PyPrDaneshAlphaResult,
     PyPrDelft1998AlphaResult, PyPrDepartureResult, PyPrGassem2001AlphaResult, PyPrKappaResult,
     PyPrLeeKeslerAlphaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
@@ -49,6 +48,10 @@ use crate::results::{
     PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
     PyWaterPhaseResult, PyWilkeChangDiffusivityResult, PyWilkeViscosityResult,
     PyWilsonActivityCoefficientsResult,
+};
+use crate::transport_gen::{
+    PyBubblePressureResult, PyBubbleTemperatureResult, PyDewPressureResult, PyDewTemperatureResult,
+    PyPtPhaseEnvelopeResult,
 };
 
 /// The Peng-Robinson alpha-function coefficient.
@@ -910,7 +913,7 @@ pub fn parachor_mixture_surface_tension(
     rho_liquid: f64,
     M_liquid: f64,
     x_liquid: Vec<f64>,
-) -> PyResult<crate::results::PyParachorMixtureSurfaceTensionResult> {
+) -> PyResult<crate::transport_gen::PyParachorMixtureSurfaceTensionResult> {
     azoth_eos::parachor_mixture_surface_tension(
         &parachors,
         kilograms_per_cubic_meter(rho_gas),
@@ -920,7 +923,7 @@ pub fn parachor_mixture_surface_tension(
         kilograms_per_mole(M_liquid),
         &x_liquid,
     )
-    .map(|r| crate::results::PyParachorMixtureSurfaceTensionResult::from(&r))
+    .map(|r| crate::transport_gen::PyParachorMixtureSurfaceTensionResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1926,7 +1929,7 @@ pub fn pt_phase_envelope(
     eos: &str,
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyPhaseEnvelopeResult> {
+) -> PyResult<PyPtPhaseEnvelopeResult> {
     let mixture = build_mixture(
         py,
         &Tc,
@@ -1939,7 +1942,7 @@ pub fn pt_phase_envelope(
         alpha_params.as_deref(),
     )?;
     azoth_eos::pt_phase_envelope(&mixture, pascals(P), &z)
-        .map(|r| PyPhaseEnvelopeResult::from(&r))
+        .map(|r| PyPtPhaseEnvelopeResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2860,7 +2863,7 @@ pub fn bubble_pressure(
     eos: &str,
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyPhaseBoundaryResult> {
+) -> PyResult<PyBubblePressureResult> {
     let mixture = build_mixture(
         py,
         &Tc,
@@ -2873,7 +2876,7 @@ pub fn bubble_pressure(
         alpha_params.as_deref(),
     )?;
     azoth_eos::bubble_pressure(&mixture, kelvins(T), &held)
-        .map(|r| PyPhaseBoundaryResult::from(&r))
+        .map(|r| PyBubblePressureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2934,7 +2937,7 @@ pub fn dew_pressure(
     eos: &str,
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyPhaseBoundaryResult> {
+) -> PyResult<PyDewPressureResult> {
     let mixture = build_mixture(
         py,
         &Tc,
@@ -2947,7 +2950,7 @@ pub fn dew_pressure(
         alpha_params.as_deref(),
     )?;
     azoth_eos::dew_pressure(&mixture, kelvins(T), &held)
-        .map(|r| PyPhaseBoundaryResult::from(&r))
+        .map(|r| PyDewPressureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2969,7 +2972,7 @@ pub fn bubble_temperature(
     eos: &str,
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyPhaseBoundaryTemperatureResult> {
+) -> PyResult<PyBubbleTemperatureResult> {
     let mixture = build_mixture(
         py,
         &Tc,
@@ -2982,7 +2985,7 @@ pub fn bubble_temperature(
         alpha_params.as_deref(),
     )?;
     azoth_eos::bubble_temperature(&mixture, pascals(P), &held)
-        .map(|r| PyPhaseBoundaryTemperatureResult::from(&r))
+        .map(|r| PyBubbleTemperatureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3056,7 +3059,7 @@ pub fn dew_temperature(
     eos: &str,
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyPhaseBoundaryTemperatureResult> {
+) -> PyResult<PyDewTemperatureResult> {
     let mixture = build_mixture(
         py,
         &Tc,
@@ -3069,7 +3072,7 @@ pub fn dew_temperature(
         alpha_params.as_deref(),
     )?;
     azoth_eos::dew_temperature(&mixture, pascals(P), &held)
-        .map(|r| PyPhaseBoundaryTemperatureResult::from(&r))
+        .map(|r| PyDewTemperatureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3302,7 +3305,7 @@ pub fn hydrate_formation_temperature(
     z: Vec<f64>,
     eos: &str,
     hydrate_model: &str,
-) -> PyResult<crate::results::PyHydrateFormationTemperatureResult> {
+) -> PyResult<crate::transport_gen::PyHydrateFormationTemperatureResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
@@ -3314,7 +3317,7 @@ pub fn hydrate_formation_temperature(
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_formation_temperature(&mixture, pascals(P), &z)
-        .map(|r| crate::results::PyHydrateFormationTemperatureResult::from(&r))
+        .map(|r| crate::transport_gen::PyHydrateFormationTemperatureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3332,7 +3335,7 @@ pub fn hydrate_formation_pressure(
     z: Vec<f64>,
     eos: &str,
     hydrate_model: &str,
-) -> PyResult<crate::results::PyHydrateFormationPressureResult> {
+) -> PyResult<crate::transport_gen::PyHydrateFormationPressureResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
@@ -3344,7 +3347,7 @@ pub fn hydrate_formation_pressure(
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_formation_pressure(&mixture, kelvins(T), &z)
-        .map(|r| crate::results::PyHydrateFormationPressureResult::from(&r))
+        .map(|r| crate::transport_gen::PyHydrateFormationPressureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3363,7 +3366,7 @@ pub fn hydrate_equilibrium_line(
     z: Vec<f64>,
     eos: &str,
     hydrate_model: &str,
-) -> PyResult<crate::results::PyHydrateEquilibriumLineResult> {
+) -> PyResult<crate::transport_gen::PyHydrateEquilibriumLineResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
@@ -3375,7 +3378,7 @@ pub fn hydrate_equilibrium_line(
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_equilibrium_line(&mixture, pascals(P_min), pascals(P_max), &z)
-        .map(|r| crate::results::PyHydrateEquilibriumLineResult::from(&r))
+        .map(|r| crate::transport_gen::PyHydrateEquilibriumLineResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3397,7 +3400,7 @@ pub fn hydrate_inhibitor_concentration(
     P: f64,
     eos: &str,
     hydrate_model: &str,
-) -> PyResult<crate::results::PyHydrateInhibitorConcentrationResult> {
+) -> PyResult<crate::transport_gen::PyHydrateInhibitorConcentrationResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
@@ -3415,7 +3418,7 @@ pub fn hydrate_inhibitor_concentration(
         kelvins(T_target),
         pascals(P),
     )
-    .map(|r| crate::results::PyHydrateInhibitorConcentrationResult::from(&r))
+    .map(|r| crate::transport_gen::PyHydrateInhibitorConcentrationResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3436,7 +3439,7 @@ pub fn hydrate_inhibitor_wt(
     T: f64,
     P: f64,
     eos: &str,
-) -> PyResult<crate::results::PyHydrateInhibitorWtResult> {
+) -> PyResult<crate::transport_gen::PyHydrateInhibitorWtResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) =
         azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
@@ -3449,7 +3452,7 @@ pub fn hydrate_inhibitor_wt(
         kelvins(T),
         pascals(P),
     )
-    .map(|r| crate::results::PyHydrateInhibitorWtResult::from(&r))
+    .map(|r| crate::transport_gen::PyHydrateInhibitorWtResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3468,7 +3471,7 @@ pub fn hydrate_fraction(
     z: Vec<f64>,
     eos: &str,
     hydrate_model: &str,
-) -> PyResult<crate::results::PyHydrateFractionResult> {
+) -> PyResult<crate::transport_gen::PyHydrateFractionResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) = azoth_eos::hydrate::hydrate_mixture_of(
         &names,
@@ -3480,7 +3483,7 @@ pub fn hydrate_fraction(
     )
     .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::hydrate_fraction(&mixture, kelvins(T), pascals(P), &z)
-        .map(|r| crate::results::PyHydrateFractionResult::from(&r))
+        .map(|r| crate::transport_gen::PyHydrateFractionResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3491,9 +3494,9 @@ pub fn tbp_fraction_properties(
     py: Python<'_>,
     molar_mass: f64,
     density: f64,
-) -> PyResult<crate::results::PyTbpFractionPropertiesResult> {
+) -> PyResult<crate::transport_gen::PyTbpFractionPropertiesResult> {
     azoth_eos::tbp_fraction_properties(molar_mass, density)
-        .map(|r| crate::results::PyTbpFractionPropertiesResult::from(&r))
+        .map(|r| crate::transport_gen::PyTbpFractionPropertiesResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3513,7 +3516,7 @@ pub fn wax_solid_fugacity(
     T: f64,
     P: f64,
     eos: &str,
-) -> PyResult<crate::results::PyWaxSolidFugacityResult> {
+) -> PyResult<crate::transport_gen::PyWaxSolidFugacityResult> {
     azoth_eos::wax_solid_fugacity(
         molar_mass,
         kelvins(tc),
@@ -3525,7 +3528,7 @@ pub fn wax_solid_fugacity(
         pascals(P),
         eos,
     )
-    .map(|r| crate::results::PyWaxSolidFugacityResult::from(&r))
+    .map(|r| crate::transport_gen::PyWaxSolidFugacityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3543,13 +3546,13 @@ pub fn tp_multiflash_wax(
     P: f64,
     z: Vec<f64>,
     eos: &str,
-) -> PyResult<crate::results::PyTpMultiflashWaxResult> {
+) -> PyResult<crate::transport_gen::PyTpMultiflashWaxResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     let (mixture, _) =
         azoth_eos::databank::mixture_of(&names, eos.parse().unwrap_or(azoth_eos::Cubic::Srk), None)
             .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::tp_multiflash_wax(&mixture, kelvins(T), pascals(P), &z)
-        .map(|r| crate::results::PyTpMultiflashWaxResult::from(&r))
+        .map(|r| crate::transport_gen::PyTpMultiflashWaxResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3568,10 +3571,10 @@ pub fn tp_solid_flash(
     P: f64,
     z: Vec<f64>,
     eos: &str,
-) -> PyResult<crate::results::PyTpSolidFlashResult> {
+) -> PyResult<crate::transport_gen::PyTpSolidFlashResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     azoth_eos::tp_solid_flash(&names, solid, kelvins(T), pascals(P), &z, eos)
-        .map(|r| crate::results::PyTpSolidFlashResult::from(&r))
+        .map(|r| crate::transport_gen::PyTpSolidFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3592,7 +3595,7 @@ pub fn scale_saturation_ratio(
     T: f64,
     P: f64,
     h3o_molality: Option<f64>,
-) -> PyResult<crate::results::PyScaleSaturationRatioResult> {
+) -> PyResult<crate::transport_gen::PyScaleSaturationRatioResult> {
     azoth_eos::scale_saturation_ratio(
         salt,
         x1,
@@ -3605,7 +3608,7 @@ pub fn scale_saturation_ratio(
         kelvins(T),
         pascals(P),
     )
-    .map(|r| crate::results::PyScaleSaturationRatioResult::from(&r))
+    .map(|r| crate::transport_gen::PyScaleSaturationRatioResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3623,10 +3626,10 @@ pub fn salt_precipitation(
     salt: &str,
     T: f64,
     P: f64,
-) -> PyResult<crate::results::PySaltPrecipitationResult> {
+) -> PyResult<crate::transport_gen::PySaltPrecipitationResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     azoth_eos::salt_precipitation(&names, salt, kelvins(T), pascals(P), &z)
-        .map(|r| crate::results::PySaltPrecipitationResult::from(&r))
+        .map(|r| crate::transport_gen::PySaltPrecipitationResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3647,7 +3650,7 @@ pub fn solid_fugacity(
     T: f64,
     P: f64,
     eos: &str,
-) -> PyResult<crate::results::PySolidFugacityResult> {
+) -> PyResult<crate::transport_gen::PySolidFugacityResult> {
     azoth_eos::solid_fugacity(
         heat_of_fusion,
         triple_point_temperature,
@@ -3660,7 +3663,7 @@ pub fn solid_fugacity(
         pascals(P),
         eos,
     )
-    .map(|r| crate::results::PySolidFugacityResult::from(&r))
+    .map(|r| crate::transport_gen::PySolidFugacityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3681,7 +3684,7 @@ pub fn phase_transport(
     T: f64,
     P: f64,
     z: Vec<f64>,
-) -> PyResult<crate::results::PyPhaseTransportResult> {
+) -> PyResult<crate::transport_gen::PyPhaseTransportResult> {
     let phase: azoth_eos::phase_transport::PhaseKind = phase
         .parse()
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
@@ -3689,7 +3692,7 @@ pub fn phase_transport(
     let (mixture, ideal_gas) = azoth_eos::databank::mixture_of(&names, azoth_eos::Cubic::Pr, None)
         .map_err(|e| to_pyerr(py, e))?;
     azoth_eos::phase_transport(&mixture, &ideal_gas, phase, kelvins(T), pascals(P), &z)
-        .map(|r| crate::results::PyPhaseTransportResult::from(&r))
+        .map(|r| crate::transport_gen::PyPhaseTransportResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3704,7 +3707,7 @@ pub fn liquid_conductivity_polynom(
     molar_mass: Vec<f64>,
     z: Vec<f64>,
     T: f64,
-) -> PyResult<crate::results::PyLiquidConductivityPolynomResult> {
+) -> PyResult<crate::transport_gen::PyLiquidConductivityPolynomResult> {
     let rows: Vec<[f64; 3]> = liquid_conductivity
         .iter()
         .map(|row| {
@@ -3726,7 +3729,7 @@ pub fn liquid_conductivity_polynom(
         &z,
         kelvins(T),
     )
-    .map(|r| crate::results::PyLiquidConductivityPolynomResult::from(&r))
+    .map(|r| crate::transport_gen::PyLiquidConductivityPolynomResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3749,7 +3752,7 @@ pub fn liquid_viscosity_pure(
     omega: f64,
     T: f64,
     P: f64,
-) -> PyResult<crate::results::PyLiquidViscosityPureResult> {
+) -> PyResult<crate::transport_gen::PyLiquidViscosityPureResult> {
     let form: azoth_eos::liquid_viscosity_pure::LiquidViscosityLadder = form
         .parse()
         .map_err(pyo3::exceptions::PyValueError::new_err)?;
@@ -3766,7 +3769,7 @@ pub fn liquid_viscosity_pure(
         kelvins(T),
         pascals(P),
     )
-    .map(|r| crate::results::PyLiquidViscosityPureResult::from(&r))
+    .map(|r| crate::transport_gen::PyLiquidViscosityPureResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3783,7 +3786,7 @@ pub fn chapman_enskog_diffusivity(
     eps: f64,
     T: f64,
     P: f64,
-) -> PyResult<crate::results::PyChapmanEnskogDiffusivityResult> {
+) -> PyResult<crate::transport_gen::PyChapmanEnskogDiffusivityResult> {
     azoth_eos::chapman_enskog_diffusivity(
         kilograms_per_mole(MA),
         kilograms_per_mole(MB),
@@ -3792,7 +3795,7 @@ pub fn chapman_enskog_diffusivity(
         kelvins(T),
         pascals(P),
     )
-    .map(|r| crate::results::PyChapmanEnskogDiffusivityResult::from(&r))
+    .map(|r| crate::transport_gen::PyChapmanEnskogDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3809,7 +3812,7 @@ pub fn fuller_schettler_giddings_diffusivity(
     VB: f64,
     T: f64,
     P: f64,
-) -> PyResult<crate::results::PyFullerSchettlerGiddingsDiffusivityResult> {
+) -> PyResult<crate::transport_gen::PyFullerSchettlerGiddingsDiffusivityResult> {
     azoth_eos::fuller_schettler_giddings_diffusivity(
         kilograms_per_mole(MA),
         kilograms_per_mole(MB),
@@ -3818,7 +3821,7 @@ pub fn fuller_schettler_giddings_diffusivity(
         kelvins(T),
         pascals(P),
     )
-    .map(|r| crate::results::PyFullerSchettlerGiddingsDiffusivityResult::from(&r))
+    .map(|r| crate::transport_gen::PyFullerSchettlerGiddingsDiffusivityResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -3836,9 +3839,9 @@ pub fn freezing_point(
     z: Vec<f64>,
     solid: String,
     P: f64,
-) -> PyResult<crate::results::PyFreezingPointResult> {
+) -> PyResult<crate::transport_gen::PyFreezingPointResult> {
     azoth_eos::freezing_point(&components, &z, &solid, pascals(P))
-        .map(|r| crate::results::PyFreezingPointResult::from(&r))
+        .map(|r| crate::transport_gen::PyFreezingPointResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4137,9 +4140,9 @@ pub fn tp_flash_saft(
     T: f64,
     P: f64,
     z: Vec<f64>,
-) -> PyResult<crate::results::PyTpFlashSaftResult> {
+) -> PyResult<crate::transport_gen::PySaftFlashResult> {
     azoth_eos::tp_flash_saft::tp_flash_saft(&components, kelvins(T), pascals(P), &z)
-        .map(|r| crate::results::PyTpFlashSaftResult::from(&r))
+        .map(|r| crate::transport_gen::PySaftFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4158,7 +4161,7 @@ pub fn saft_vr_mie_phase(
     P: f64,
     z: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PySaftVrMiePhaseResult> {
+) -> PyResult<crate::transport_gen::PySaftVrMiePhaseResult> {
     azoth_eos::saft_vr_mie_phase::saft_vr_mie_phase(
         &components,
         kelvins(T),
@@ -4166,7 +4169,7 @@ pub fn saft_vr_mie_phase(
         &z,
         compressed_phase,
     )
-    .map(|r| crate::results::PySaftVrMiePhaseResult::from(&r))
+    .map(|r| crate::transport_gen::PySaftVrMiePhaseResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4185,9 +4188,9 @@ pub fn pcsaft_rahmat_phase(
     P: f64,
     z: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PyPcsaftRahmatPhaseResult> {
+) -> PyResult<crate::transport_gen::PyPcsaftRahmatPhaseResult> {
     azoth_eos::pcsaft_rahmat_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::results::PyPcsaftRahmatPhaseResult::from(&r))
+        .map(|r| crate::transport_gen::PyPcsaftRahmatPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4207,9 +4210,9 @@ pub fn pr_cpa_phase(
     P: f64,
     z: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PyPrCpaPhaseResult> {
+) -> PyResult<crate::transport_gen::PyPrCpaPhaseResult> {
     azoth_eos::pr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::results::PyPrCpaPhaseResult::from(&r))
+        .map(|r| crate::transport_gen::PyPrCpaPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4230,9 +4233,9 @@ pub fn umr_cpa_phase(
     P: f64,
     z: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PyUmrCpaPhaseResult> {
+) -> PyResult<crate::transport_gen::PyUmrCpaPhaseResult> {
     azoth_eos::umr_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::results::PyUmrCpaPhaseResult::from(&r))
+        .map(|r| crate::transport_gen::PyUmrCpaPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4253,7 +4256,7 @@ pub fn soreide_whitson_phase(
     x: Vec<f64>,
     salinity: f64,
     compressed_phase: &str,
-) -> PyResult<crate::results::PySoreideWhitsonPhaseResult> {
+) -> PyResult<crate::transport_gen::PySoreideWhitsonPhaseResult> {
     azoth_eos::soreide_whitson_phase(
         &components,
         kelvins(T),
@@ -4262,7 +4265,7 @@ pub fn soreide_whitson_phase(
         salinity,
         compressed_phase,
     )
-    .map(|r| crate::results::PySoreideWhitsonPhaseResult::from(&r))
+    .map(|r| crate::transport_gen::PySoreideWhitsonPhaseResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4281,9 +4284,9 @@ pub fn furst_electrolyte_phase(
     P: f64,
     x: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PyFurstElectrolytePhaseResult> {
+) -> PyResult<crate::transport_gen::PyFurstElectrolytePhaseResult> {
     azoth_eos::furst_electrolyte_phase(&components, kelvins(T), pascals(P), &x, compressed_phase)
-        .map(|r| crate::results::PyFurstElectrolytePhaseResult::from(&r))
+        .map(|r| crate::transport_gen::PyFurstElectrolytePhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4301,7 +4304,7 @@ pub fn furst_electrolyte_mod2004_phase(
     P: f64,
     x: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PyFurstElectrolyteMod2004PhaseResult> {
+) -> PyResult<crate::transport_gen::PyFurstElectrolyteMod2004PhaseResult> {
     azoth_eos::furst_electrolyte_mod2004_phase(
         &components,
         kelvins(T),
@@ -4309,7 +4312,7 @@ pub fn furst_electrolyte_mod2004_phase(
         &x,
         compressed_phase,
     )
-    .map(|r| crate::results::PyFurstElectrolyteMod2004PhaseResult::from(&r))
+    .map(|r| crate::transport_gen::PyFurstElectrolyteMod2004PhaseResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4330,9 +4333,9 @@ pub fn srk_cpa_phase(
     P: f64,
     z: Vec<f64>,
     compressed_phase: &str,
-) -> PyResult<crate::results::PySrkCpaPhaseResult> {
+) -> PyResult<crate::transport_gen::PySrkCpaPhaseResult> {
     azoth_eos::srk_cpa_phase(&components, kelvins(T), pascals(P), &z, compressed_phase)
-        .map(|r| crate::results::PySrkCpaPhaseResult::from(&r))
+        .map(|r| crate::transport_gen::PySrkCpaPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4347,9 +4350,9 @@ pub fn effective_diffusion(
     py: Python<'_>,
     binary_diffusion: Vec<Vec<f64>>,
     x: Vec<f64>,
-) -> PyResult<crate::results::PyEffectiveDiffusionResult> {
+) -> PyResult<crate::transport_gen::PyEffectiveDiffusionResult> {
     azoth_eos::effective_diffusion::effective_diffusion(&binary_diffusion, &x)
-        .map(|r| crate::results::PyEffectiveDiffusionResult::from(&r))
+        .map(|r| crate::transport_gen::PyEffectiveDiffusionResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -4371,9 +4374,9 @@ pub fn ge_flash(
     P: f64,
     z: Vec<f64>,
     cubic: &str,
-) -> PyResult<crate::results::PyGeFlashResult> {
+) -> PyResult<crate::transport_gen::PyGeFlashResult> {
     let names: Vec<&str> = components.iter().map(String::as_str).collect();
     azoth_eos::ge_flash::ge_flash(&names, cubic, liquid_model, kelvins(T), pascals(P), &z)
-        .map(|r| crate::results::PyGeFlashResult::from(&r))
+        .map(|r| crate::transport_gen::PyGeFlashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }

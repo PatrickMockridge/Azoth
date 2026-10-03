@@ -142,7 +142,7 @@ def effective_diffusion(
         effective_diffusion.append(from_si((1.0 - fractions[i]) / total, "m**2/s"))
 
     return EffectiveDiffusionResult(
-        effective_diffusion=tuple(effective_diffusion),
+        effective_diffusion=tuple(from_si(_v, "m**2/s") for _v in tuple(effective_diffusion)),
         warnings=tuple(warnings),
     )
 

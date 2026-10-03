@@ -215,7 +215,7 @@ def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
         # bar figure, so that no two parts of one result are in different scales.
         henry=from_si(henry_pa, "Pa"),
         ln_henry=math.log(henry_pa),
-        d_ln_henry_d_t=derivative_by_tr / WATER_CRITICAL_TEMPERATURE,
+        d_ln_henry_d_t=from_si(derivative_by_tr / WATER_CRITICAL_TEMPERATURE, "1/K"),
         status=status,
         rms_log_residual=rms_log_residual,
         warnings=tuple(warnings),

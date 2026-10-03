@@ -44,20 +44,21 @@ mod registry_tables_gen;
 mod results;
 mod standards;
 mod thermal;
+mod transport_gen;
 
-use results::{
+use results::{PyKComponent, PyQty, PyWarning};
+use transport_gen::{
     PyChokedFlowAreaResult, PyColebrookResult, PyConductionPlaneWallResult, PyControlValveCvResult,
     PyCriticalPointResult, PyDarcyWeisbachResult, PyFreezingPointResult, PyHaalandResult,
     PyHydrateFormationPressureResult, PyHydrateFormationTemperatureResult, PyHydrateFractionResult,
-    PyKComponent, PyKFactorsResult, PyOrificeFlowResult, PyPhFlashResult, PyPr78KappaResult,
-    PyPrAlphaAbResult, PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult,
-    PyPrMolarVolumeResult, PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult,
-    PyPumpPowerResult, PyPureSaturationResult, PyQty, PyRachfordRiceBinaryResult,
-    PyReynoldsNumberResult, PyRkAlphaAbResult, PyRkDepartureResult, PySaltPrecipitationResult,
-    PyScaleSaturationRatioResult, PySolidFugacityResult, PySrkAlphaAbResult, PySrkDepartureResult,
-    PySrkKappaResult, PySrkZFactorResult, PySwameeJainResult, PyTbpFractionPropertiesResult,
-    PyTpMultiflashWaxResult, PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWarning,
-    PyWaxSolidFugacityResult,
+    PyKFactorsResult, PyOrificeFlowResult, PyPhFlashResult, PyPr78KappaResult, PyPrAlphaAbResult,
+    PyPrDepartureResult, PyPrKappaResult, PyPrMassDensityResult, PyPrMolarVolumeResult,
+    PyPrZFactorResult, PyPrsvKappaResult, PyPsFlashResult, PyPumpPowerResult,
+    PyPureSaturationResult, PyRachfordRiceBinaryResult, PyReynoldsNumberResult, PyRkAlphaAbResult,
+    PyRkDepartureResult, PySaltPrecipitationResult, PyScaleSaturationRatioResult,
+    PySolidFugacityResult, PySrkAlphaAbResult, PySrkDepartureResult, PySrkKappaResult,
+    PySrkZFactorResult, PySwameeJainResult, PyTbpFractionPropertiesResult, PyTpMultiflashWaxResult,
+    PyTwuKappaResult, PyVdw1fMixBinaryResult, PyWaxSolidFugacityResult,
 };
 
 #[pymodule]

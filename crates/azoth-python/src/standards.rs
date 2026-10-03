@@ -6,7 +6,7 @@ use azoth_core::units::kelvins;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::PyIso6976Result;
+use crate::transport_gen::PyIso6976Result;
 
 /// `standards.iso6976` - the calorific values and density of a natural gas.
 ///

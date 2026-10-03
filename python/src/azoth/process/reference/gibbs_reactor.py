@@ -630,11 +630,11 @@ def gibbs_reactor(
         converged=state.converged,
         iterations=float(state.iterations),
         final_error=state.final_error,
-        lagrange_multipliers=tuple(value * 1000.0 for value in state.lambdas),
+        lagrange_multipliers=tuple(from_si(_v, "J/mol") for _v in tuple(value * 1000.0 for value in state.lambdas)),
         element_balance_difference=tuple(
-            state.element_out[j] - state.element_in[j] for j in range(7)
+            from_si(state.element_out[j] - state.element_in[j], "mol/s") for j in range(7)
         ),
-        gibbs_energy_history=tuple(value * 1000.0 for value in state.gibbs_history),
+        gibbs_energy_history=tuple(from_si(_v, "W") for _v in tuple(value * 1000.0 for value in state.gibbs_history)),
         warnings=tuple(warnings),
     )
 
