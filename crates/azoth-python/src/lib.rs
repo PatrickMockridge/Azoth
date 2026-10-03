@@ -40,6 +40,7 @@ mod overlay;
 mod process;
 mod provenance;
 mod reactions;
+mod registry_tables_gen;
 mod results;
 mod standards;
 mod thermal;
@@ -346,8 +347,8 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(eos::model_ids, m)?)?;
     m.add_function(wrap_pyfunction!(eos::model_schemes, m)?)?;
     m.add_function(wrap_pyfunction!(eos::model_kind, m)?)?;
-    m.add_function(wrap_pyfunction!(results::result_fields, m)?)?;
-    m.add_function(wrap_pyfunction!(results::calc_ids, m)?)?;
+    m.add_function(wrap_pyfunction!(registry_tables_gen::result_fields, m)?)?;
+    m.add_function(wrap_pyfunction!(registry_tables_gen::calc_ids, m)?)?;
     m.add_function(wrap_pyfunction!(provenance::provenance_block, m)?)?;
     m.add_function(wrap_pyfunction!(results::version, m)?)?;
 

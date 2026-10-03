@@ -12,11 +12,9 @@
 //! because a mismatch is invisible to every numerical test: the numbers agree
 //! perfectly and only the attribute name differs.
 
-use azoth_core::CalcResult;
 use azoth_core::solver::SolverKind;
 use azoth_core::units::UNIT_NAMES;
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_eos::EffectiveDiffusionResult as KernelEffectiveDiffusionResult;
 use azoth_eos::results::AqueousViscosityResult as KernelAqueousViscosityResult;
 use azoth_eos::results::{
     AmmoniaPhaseResult, AntoineVaporPressureResult, ArgonSolidPhaseResult, BubblePressureResult,
@@ -25,11 +23,11 @@ use azoth_eos::results::{
     Co2WaterDiffusivityResult, CostaldMolarVolumeResult, CriticalPointResult,
     DesmukhMatherPhaseResult, DewPressureResult, DewTemperatureResult, EosCgPhaseResult,
     FreezingPointResult, FullerSchettlerGiddingsDiffusivityResult,
-    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeFlashResult,
-    GeNrtlFlashResult, GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult, GeWilsonPhaseResult, Gerg2008PhaseResult,
-    HaydukMinhasDiffusivityResult, HeatOfVaporizationResult, HeliumPhaseResult,
-    HybridEosGeFlashResult, HydrateEquilibriumLineResult, HydrateFormationPressureResult,
+    FurstElectrolyteMod2004PhaseResult, FurstElectrolytePhaseResult, GeNrtlFlashResult,
+    GeNrtlPhaseResult, GeUnifacPhaseResult, GeUniquacPhaseResult, GeVanLaarAcidPhaseResult,
+    GeWilsonPhaseResult, Gerg2008PhaseResult, HaydukMinhasDiffusivityResult,
+    HeatOfVaporizationResult, HeliumPhaseResult, HybridEosGeFlashResult,
+    HydrateEquilibriumLineResult, HydrateFormationPressureResult,
     HydrateFormationTemperatureResult, HydrateFractionResult, HydrateInhibitorConcentrationResult,
     HydrateInhibitorWtResult, HydrogenPhaseResult, IapwsHenryLawResult, IdealGasCpResult,
     KentEisenbergPhaseResult, LiquidConductivityPolynomResult, LiquidHeatCapacityResult,
@@ -37,23 +35,21 @@ use azoth_eos::results::{
     MatcopAlphaResult, MatcopPrAlphaResult, MatcopPrumrAlphaResult, MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult, MollerupAlphaResult, NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult, ParachorMixtureSurfaceTensionResult,
-    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PcsaftRahmatPhaseResult,
-    PhFlashResult, PhaseTransportResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult,
-    PrCpaPhaseResult, PrDaneshAlphaResult, PrDelft1998AlphaResult, PrDepartureResult,
-    PrGassem2001AlphaResult, PrKappaResult, PrLeeKeslerAlphaResult, PrMassDensityResult,
-    PrMolarVolumeResult, PrPenelouxShiftResult, PrZFactorResult, PrsvKappaResult, PsFlashResult,
-    PtFlashResult, PtPhaseEnvelopeResult, PuFlashResult, PureSaturationResult, PvFlashResult,
-    PvRefluxFlashResult, PvfFlashResult, RachfordRiceBinaryResult, RachfordRiceResult,
-    RackettMolarVolumeResult, RkAlphaAbResult, RkDepartureResult, SaftFlashResult,
-    SaftVrMiePhaseResult, SaltPrecipitationResult, ScaleSaturationRatioResult,
+    ParachorSurfaceTensionResult, ParahydrogenSolidPhaseResult, PhFlashResult,
+    PhaseTransportResult, PitzerPhaseResult, Pr78KappaResult, PrAlphaAbResult, PrDaneshAlphaResult,
+    PrDelft1998AlphaResult, PrDepartureResult, PrGassem2001AlphaResult, PrKappaResult,
+    PrLeeKeslerAlphaResult, PrMassDensityResult, PrMolarVolumeResult, PrPenelouxShiftResult,
+    PrZFactorResult, PrsvKappaResult, PsFlashResult, PtFlashResult, PtPhaseEnvelopeResult,
+    PuFlashResult, PureSaturationResult, PvFlashResult, PvRefluxFlashResult, PvfFlashResult,
+    RachfordRiceBinaryResult, RachfordRiceResult, RackettMolarVolumeResult, RkAlphaAbResult,
+    RkDepartureResult, SaltPrecipitationResult, ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult, SiddiqiLucasDiffusivityResult, SolidFugacityResult,
-    SoreideWhitsonAlphaResult, SoreideWhitsonPhaseResult, SrkAlphaAbResult, SrkCpaPhaseResult,
-    SrkDepartureResult, SrkKappaResult, SrkPenelouxShiftResult, SrkZFactorResult,
-    StabilityTestResult, TbpFractionPropertiesResult, ThFlashResult, ThermalConductivityResult,
-    TpMultiflashResult, TpMultiflashWaxResult, TpSolidFlashResult, TsFlashResult, TuFlashResult,
-    TvFlashResult, TvFractionFlashResult, TwuKappaResult, TwucoonAlphaResult,
-    TwucoonParamAlphaResult, TwucoonStatoilAlphaResult, TynCalusDiffusivityResult,
-    UmrCpaPhaseResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
+    SoreideWhitsonAlphaResult, SrkAlphaAbResult, SrkDepartureResult, SrkKappaResult,
+    SrkPenelouxShiftResult, SrkZFactorResult, StabilityTestResult, TbpFractionPropertiesResult,
+    ThFlashResult, ThermalConductivityResult, TpMultiflashResult, TpMultiflashWaxResult,
+    TpSolidFlashResult, TsFlashResult, TuFlashResult, TvFlashResult, TvFractionFlashResult,
+    TwuKappaResult, TwucoonAlphaResult, TwucoonParamAlphaResult, TwucoonStatoilAlphaResult,
+    TynCalusDiffusivityResult, UmrprAlphaResult, UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult, UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult, VanLaarAcidActivityCoefficientsResult, Vdw1fMixBinaryResult,
     VhFlashResult, ViscosityResult, VsFlashResult, VuFlashResult, VuFlashSingleCompResult,
@@ -71,8 +67,6 @@ use azoth_process::{
 };
 use azoth_reactions::chemical_equilibrium::ChemicalEquilibriumResult;
 use azoth_reactions::equilibrium_constant::EquilibriumConstantResult;
-use azoth_reactions::kinetic_rate_law::KineticRateLawResult as KernelKineticRateLawResult;
-use azoth_reactions::kinetics::KineticsResult as KernelKineticsResult;
 use azoth_reactions::reactive_hybrid_eos_ge_flash::ReactiveHybridEosGeFlashResult;
 use azoth_reactions::reactive_ph_flash::ReactivePhFlashResult;
 use azoth_reactions::reactive_phase_equilibrium::ReactivePhaseEquilibriumResult;
@@ -9974,330 +9968,6 @@ impl From<&PtPhaseEnvelopeResult> for PyPhaseEnvelopeResult {
     }
 }
 
-/// The public field names of a calc's result, in declaration order.
-///
-/// Returns an empty list for an unknown id rather than raising: this is an
-/// introspection helper for tests and diagnostics, and a missing calc should
-/// read as "no fields" rather than as an error to handle.
-#[pyfunction]
-#[must_use]
-pub fn result_fields(calc_id: &str) -> Vec<String> {
-    match calc_id {
-        ReynoldsNumberResult::CALC_ID => ReynoldsNumberResult::FIELDS.to_vec(),
-        ColebrookResult::CALC_ID => ColebrookResult::FIELDS.to_vec(),
-        SwameeJainResult::CALC_ID => SwameeJainResult::FIELDS.to_vec(),
-        HaalandResult::CALC_ID => HaalandResult::FIELDS.to_vec(),
-        OrificeFlowResult::CALC_ID => OrificeFlowResult::FIELDS.to_vec(),
-        ControlValveCvResult::CALC_ID => ControlValveCvResult::FIELDS.to_vec(),
-        ChokedFlowAreaResult::CALC_ID => ChokedFlowAreaResult::FIELDS.to_vec(),
-        ConductionPlaneWallResult::CALC_ID => ConductionPlaneWallResult::FIELDS.to_vec(),
-        PrKappaResult::CALC_ID => PrKappaResult::FIELDS.to_vec(),
-        PumpResult::CALC_ID => PumpResult::FIELDS.to_vec(),
-        HeaterResult::CALC_ID => HeaterResult::FIELDS.to_vec(),
-        CoolerResult::CALC_ID => CoolerResult::FIELDS.to_vec(),
-        FilterResult::CALC_ID => FilterResult::FIELDS.to_vec(),
-        CompressorResult::CALC_ID => CompressorResult::FIELDS.to_vec(),
-        ExpanderResult::CALC_ID => ExpanderResult::FIELDS.to_vec(),
-        PipeResult::CALC_ID => PipeResult::FIELDS.to_vec(),
-        HeatExchangerResult::CALC_ID => HeatExchangerResult::FIELDS.to_vec(),
-        MixerResult::CALC_ID => MixerResult::FIELDS.to_vec(),
-        ManifoldResult::CALC_ID => ManifoldResult::FIELDS.to_vec(),
-        SeparatorResult::CALC_ID => SeparatorResult::FIELDS.to_vec(),
-        GasScrubberResult::CALC_ID => GasScrubberResult::FIELDS.to_vec(),
-        ComponentSplitterResult::CALC_ID => ComponentSplitterResult::FIELDS.to_vec(),
-        ShortcutDistillationColumnResult::CALC_ID => {
-            ShortcutDistillationColumnResult::FIELDS.to_vec()
-        }
-        DistillationColumnResult::CALC_ID => DistillationColumnResult::FIELDS.to_vec(),
-        AbsorptionColumnResult::CALC_ID => AbsorptionColumnResult::FIELDS.to_vec(),
-        StrippingColumnResult::CALC_ID => StrippingColumnResult::FIELDS.to_vec(),
-        PackedColumnResult::CALC_ID => PackedColumnResult::FIELDS.to_vec(),
-        RateBasedPackedColumnResult::CALC_ID => RateBasedPackedColumnResult::FIELDS.to_vec(),
-        StirredTankReactorResult::CALC_ID => StirredTankReactorResult::FIELDS.to_vec(),
-        ThrottlingValveResult::CALC_ID => ThrottlingValveResult::FIELDS.to_vec(),
-        SplitterResult::CALC_ID => SplitterResult::FIELDS.to_vec(),
-        TankResult::CALC_ID => TankResult::FIELDS.to_vec(),
-        ThreePhaseSeparatorResult::CALC_ID => ThreePhaseSeparatorResult::FIELDS.to_vec(),
-        EjectorResult::CALC_ID => EjectorResult::FIELDS.to_vec(),
-        Iso6976Result::CALC_ID => Iso6976Result::FIELDS.to_vec(),
-        FlareResult::CALC_ID => FlareResult::FIELDS.to_vec(),
-        PlugFlowReactorResult::CALC_ID => PlugFlowReactorResult::FIELDS.to_vec(),
-        GibbsReactorResult::CALC_ID => GibbsReactorResult::FIELDS.to_vec(),
-        EquilibriumConstantResult::CALC_ID => EquilibriumConstantResult::FIELDS.to_vec(),
-        ChemicalEquilibriumResult::CALC_ID => ChemicalEquilibriumResult::FIELDS.to_vec(),
-        ReactivePhaseEquilibriumResult::CALC_ID => ReactivePhaseEquilibriumResult::FIELDS.to_vec(),
-        ReferencePotentialsResult::CALC_ID => ReferencePotentialsResult::FIELDS.to_vec(),
-        ReactiveHybridEosGeFlashResult::CALC_ID => ReactiveHybridEosGeFlashResult::FIELDS.to_vec(),
-        ReactiveTpFlashResult::CALC_ID => ReactiveTpFlashResult::FIELDS.to_vec(),
-        ReactivePhFlashResult::CALC_ID => ReactivePhFlashResult::FIELDS.to_vec(),
-        KernelKineticRateLawResult::CALC_ID => KernelKineticRateLawResult::FIELDS.to_vec(),
-        KernelKineticsResult::CALC_ID => KernelKineticsResult::FIELDS.to_vec(),
-        KernelEffectiveDiffusionResult::CALC_ID => KernelEffectiveDiffusionResult::FIELDS.to_vec(),
-        PrLeeKeslerAlphaResult::CALC_ID => PrLeeKeslerAlphaResult::FIELDS.to_vec(),
-        Matcop5PrumrAlphaResult::CALC_ID => Matcop5PrumrAlphaResult::FIELDS.to_vec(),
-        MatcopAlphaResult::CALC_ID => MatcopAlphaResult::FIELDS.to_vec(),
-        MatcopPrAlphaResult::CALC_ID => MatcopPrAlphaResult::FIELDS.to_vec(),
-        MatcopPrumrAlphaResult::CALC_ID => MatcopPrumrAlphaResult::FIELDS.to_vec(),
-        MatcopPrumrNewAlphaResult::CALC_ID => MatcopPrumrNewAlphaResult::FIELDS.to_vec(),
-        MollerupAlphaResult::CALC_ID => MollerupAlphaResult::FIELDS.to_vec(),
-        PrAlphaAbResult::CALC_ID => PrAlphaAbResult::FIELDS.to_vec(),
-        PrDaneshAlphaResult::CALC_ID => PrDaneshAlphaResult::FIELDS.to_vec(),
-        PrDelft1998AlphaResult::CALC_ID => PrDelft1998AlphaResult::FIELDS.to_vec(),
-        PrGassem2001AlphaResult::CALC_ID => PrGassem2001AlphaResult::FIELDS.to_vec(),
-        PrZFactorResult::CALC_ID => PrZFactorResult::FIELDS.to_vec(),
-        PrsvKappaResult::CALC_ID => PrsvKappaResult::FIELDS.to_vec(),
-        PrDepartureResult::CALC_ID => PrDepartureResult::FIELDS.to_vec(),
-        SrkKappaResult::CALC_ID => SrkKappaResult::FIELDS.to_vec(),
-        SrkAlphaAbResult::CALC_ID => SrkAlphaAbResult::FIELDS.to_vec(),
-        SrkZFactorResult::CALC_ID => SrkZFactorResult::FIELDS.to_vec(),
-        SrkDepartureResult::CALC_ID => SrkDepartureResult::FIELDS.to_vec(),
-        RkAlphaAbResult::CALC_ID => RkAlphaAbResult::FIELDS.to_vec(),
-        RkDepartureResult::CALC_ID => RkDepartureResult::FIELDS.to_vec(),
-        Pr78KappaResult::CALC_ID => Pr78KappaResult::FIELDS.to_vec(),
-        TwuKappaResult::CALC_ID => TwuKappaResult::FIELDS.to_vec(),
-        TwucoonAlphaResult::CALC_ID => TwucoonAlphaResult::FIELDS.to_vec(),
-        TwucoonParamAlphaResult::CALC_ID => TwucoonParamAlphaResult::FIELDS.to_vec(),
-        TwucoonStatoilAlphaResult::CALC_ID => TwucoonStatoilAlphaResult::FIELDS.to_vec(),
-        Vdw1fMixBinaryResult::CALC_ID => Vdw1fMixBinaryResult::FIELDS.to_vec(),
-        RachfordRiceBinaryResult::CALC_ID => RachfordRiceBinaryResult::FIELDS.to_vec(),
-        RachfordRiceResult::CALC_ID => RachfordRiceResult::FIELDS.to_vec(),
-        PrMolarVolumeResult::CALC_ID => PrMolarVolumeResult::FIELDS.to_vec(),
-        PrMassDensityResult::CALC_ID => PrMassDensityResult::FIELDS.to_vec(),
-        PrPenelouxShiftResult::CALC_ID => PrPenelouxShiftResult::FIELDS.to_vec(),
-        SrkPenelouxShiftResult::CALC_ID => SrkPenelouxShiftResult::FIELDS.to_vec(),
-        HeatOfVaporizationResult::CALC_ID => HeatOfVaporizationResult::FIELDS.to_vec(),
-        LiquidHeatCapacityResult::CALC_ID => LiquidHeatCapacityResult::FIELDS.to_vec(),
-        AntoineVaporPressureResult::CALC_ID => AntoineVaporPressureResult::FIELDS.to_vec(),
-        RackettMolarVolumeResult::CALC_ID => RackettMolarVolumeResult::FIELDS.to_vec(),
-        CostaldMolarVolumeResult::CALC_ID => CostaldMolarVolumeResult::FIELDS.to_vec(),
-        ChungViscosityResult::CALC_ID => ChungViscosityResult::FIELDS.to_vec(),
-        ChungConductivityResult::CALC_ID => ChungConductivityResult::FIELDS.to_vec(),
-        WilkeViscosityResult::CALC_ID => WilkeViscosityResult::FIELDS.to_vec(),
-        MasonSaxenaConductivityResult::CALC_ID => MasonSaxenaConductivityResult::FIELDS.to_vec(),
-        NrtlActivityCoefficientsResult::CALC_ID => NrtlActivityCoefficientsResult::FIELDS.to_vec(),
-        NitricSulfuricAcidVaporPressureResult::CALC_ID => {
-            NitricSulfuricAcidVaporPressureResult::FIELDS.to_vec()
-        }
-        UnifacActivityCoefficientsResult::CALC_ID => {
-            UnifacActivityCoefficientsResult::FIELDS.to_vec()
-        }
-        UniquacActivityCoefficientsResult::CALC_ID => {
-            UniquacActivityCoefficientsResult::FIELDS.to_vec()
-        }
-        UnifacUmrpruActivityCoefficientsResult::CALC_ID => {
-            UnifacUmrpruActivityCoefficientsResult::FIELDS.to_vec()
-        }
-        UnifacPsrkActivityCoefficientsResult::CALC_ID => {
-            UnifacPsrkActivityCoefficientsResult::FIELDS.to_vec()
-        }
-        VanLaarAcidActivityCoefficientsResult::CALC_ID => {
-            VanLaarAcidActivityCoefficientsResult::FIELDS.to_vec()
-        }
-        WilsonActivityCoefficientsResult::CALC_ID => {
-            WilsonActivityCoefficientsResult::FIELDS.to_vec()
-        }
-        TynCalusDiffusivityResult::CALC_ID => TynCalusDiffusivityResult::FIELDS.to_vec(),
-        UmrprAlphaResult::CALC_ID => UmrprAlphaResult::FIELDS.to_vec(),
-        WilkeChangDiffusivityResult::CALC_ID => WilkeChangDiffusivityResult::FIELDS.to_vec(),
-        HaydukMinhasDiffusivityResult::CALC_ID => HaydukMinhasDiffusivityResult::FIELDS.to_vec(),
-        SchwartzentruberAlphaResult::CALC_ID => SchwartzentruberAlphaResult::FIELDS.to_vec(),
-        SoreideWhitsonAlphaResult::CALC_ID => SoreideWhitsonAlphaResult::FIELDS.to_vec(),
-        SiddiqiLucasDiffusivityResult::CALC_ID => SiddiqiLucasDiffusivityResult::FIELDS.to_vec(),
-        Co2WaterDiffusivityResult::CALC_ID => Co2WaterDiffusivityResult::FIELDS.to_vec(),
-        ParachorMixtureSurfaceTensionResult::CALC_ID => {
-            ParachorMixtureSurfaceTensionResult::FIELDS.to_vec()
-        }
-        ParachorSurfaceTensionResult::CALC_ID => ParachorSurfaceTensionResult::FIELDS.to_vec(),
-        // Models. Present here because a result's *shape* is a cross-language
-        // contract whether or not its spec calls it a calculation.
-        PureSaturationResult::CALC_ID => PureSaturationResult::FIELDS.to_vec(),
-        PtFlashResult::CALC_ID => PtFlashResult::FIELDS.to_vec(),
-        PtPhaseEnvelopeResult::CALC_ID => PtPhaseEnvelopeResult::FIELDS.to_vec(),
-        PhFlashResult::CALC_ID => PhFlashResult::FIELDS.to_vec(),
-        PsFlashResult::CALC_ID => PsFlashResult::FIELDS.to_vec(),
-        TvFlashResult::CALC_ID => TvFlashResult::FIELDS.to_vec(),
-        PvFlashResult::CALC_ID => PvFlashResult::FIELDS.to_vec(),
-        ThFlashResult::CALC_ID => ThFlashResult::FIELDS.to_vec(),
-        TsFlashResult::CALC_ID => TsFlashResult::FIELDS.to_vec(),
-        TuFlashResult::CALC_ID => TuFlashResult::FIELDS.to_vec(),
-        TvFractionFlashResult::CALC_ID => TvFractionFlashResult::FIELDS.to_vec(),
-        PuFlashResult::CALC_ID => PuFlashResult::FIELDS.to_vec(),
-        PvRefluxFlashResult::CALC_ID => PvRefluxFlashResult::FIELDS.to_vec(),
-        PvfFlashResult::CALC_ID => PvfFlashResult::FIELDS.to_vec(),
-        VhFlashResult::CALC_ID => VhFlashResult::FIELDS.to_vec(),
-        VsFlashResult::CALC_ID => VsFlashResult::FIELDS.to_vec(),
-        VuFlashResult::CALC_ID => VuFlashResult::FIELDS.to_vec(),
-        VuFlashSingleCompResult::CALC_ID => VuFlashSingleCompResult::FIELDS.to_vec(),
-        StabilityTestResult::CALC_ID => StabilityTestResult::FIELDS.to_vec(),
-        TpMultiflashResult::CALC_ID => TpMultiflashResult::FIELDS.to_vec(),
-        BubblePressureResult::CALC_ID => BubblePressureResult::FIELDS.to_vec(),
-        BubbleTemperatureResult::CALC_ID => BubbleTemperatureResult::FIELDS.to_vec(),
-        CriticalPointResult::CALC_ID => CriticalPointResult::FIELDS.to_vec(),
-        BwrsPhaseResult::CALC_ID => BwrsPhaseResult::FIELDS.to_vec(),
-        SrkCpaPhaseResult::CALC_ID => SrkCpaPhaseResult::FIELDS.to_vec(),
-        PcsaftRahmatPhaseResult::CALC_ID => PcsaftRahmatPhaseResult::FIELDS.to_vec(),
-        SaftVrMiePhaseResult::CALC_ID => SaftVrMiePhaseResult::FIELDS.to_vec(),
-        SaftFlashResult::CALC_ID => SaftFlashResult::FIELDS.to_vec(),
-        PrCpaPhaseResult::CALC_ID => PrCpaPhaseResult::FIELDS.to_vec(),
-        UmrCpaPhaseResult::CALC_ID => UmrCpaPhaseResult::FIELDS.to_vec(),
-        SoreideWhitsonPhaseResult::CALC_ID => SoreideWhitsonPhaseResult::FIELDS.to_vec(),
-        FurstElectrolytePhaseResult::CALC_ID => FurstElectrolytePhaseResult::FIELDS.to_vec(),
-        FurstElectrolyteMod2004PhaseResult::CALC_ID => {
-            FurstElectrolyteMod2004PhaseResult::FIELDS.to_vec()
-        }
-        AmmoniaPhaseResult::CALC_ID => AmmoniaPhaseResult::FIELDS.to_vec(),
-        Co2PhaseResult::CALC_ID => Co2PhaseResult::FIELDS.to_vec(),
-        HeliumPhaseResult::CALC_ID => HeliumPhaseResult::FIELDS.to_vec(),
-        HydrogenPhaseResult::CALC_ID => HydrogenPhaseResult::FIELDS.to_vec(),
-        WaterPhaseResult::CALC_ID => WaterPhaseResult::FIELDS.to_vec(),
-        ArgonSolidPhaseResult::CALC_ID => ArgonSolidPhaseResult::FIELDS.to_vec(),
-        FreezingPointResult::CALC_ID => FreezingPointResult::FIELDS.to_vec(),
-        PhaseTransportResult::CALC_ID => PhaseTransportResult::FIELDS.to_vec(),
-        LiquidConductivityPolynomResult::CALC_ID => {
-            LiquidConductivityPolynomResult::FIELDS.to_vec()
-        }
-        LiquidViscosityPureResult::CALC_ID => LiquidViscosityPureResult::FIELDS.to_vec(),
-        ChapmanEnskogDiffusivityResult::CALC_ID => ChapmanEnskogDiffusivityResult::FIELDS.to_vec(),
-        FullerSchettlerGiddingsDiffusivityResult::CALC_ID => {
-            FullerSchettlerGiddingsDiffusivityResult::FIELDS.to_vec()
-        }
-        HydrateFormationTemperatureResult::CALC_ID => {
-            HydrateFormationTemperatureResult::FIELDS.to_vec()
-        }
-        HydrateEquilibriumLineResult::CALC_ID => HydrateEquilibriumLineResult::FIELDS.to_vec(),
-        HydrateInhibitorConcentrationResult::CALC_ID => {
-            HydrateInhibitorConcentrationResult::FIELDS.to_vec()
-        }
-        HydrateInhibitorWtResult::CALC_ID => HydrateInhibitorWtResult::FIELDS.to_vec(),
-        HydrateFractionResult::CALC_ID => HydrateFractionResult::FIELDS.to_vec(),
-        HydrateFormationPressureResult::CALC_ID => HydrateFormationPressureResult::FIELDS.to_vec(),
-        TbpFractionPropertiesResult::CALC_ID => TbpFractionPropertiesResult::FIELDS.to_vec(),
-        ScaleSaturationRatioResult::CALC_ID => ScaleSaturationRatioResult::FIELDS.to_vec(),
-        SolidFugacityResult::CALC_ID => SolidFugacityResult::FIELDS.to_vec(),
-        SaltPrecipitationResult::CALC_ID => SaltPrecipitationResult::FIELDS.to_vec(),
-        WaxSolidFugacityResult::CALC_ID => WaxSolidFugacityResult::FIELDS.to_vec(),
-        TpMultiflashWaxResult::CALC_ID => TpMultiflashWaxResult::FIELDS.to_vec(),
-        TpSolidFlashResult::CALC_ID => TpSolidFlashResult::FIELDS.to_vec(),
-        ParahydrogenSolidPhaseResult::CALC_ID => ParahydrogenSolidPhaseResult::FIELDS.to_vec(),
-        EosCgPhaseResult::CALC_ID => EosCgPhaseResult::FIELDS.to_vec(),
-        Gerg2008PhaseResult::CALC_ID => Gerg2008PhaseResult::FIELDS.to_vec(),
-        GeNrtlPhaseResult::CALC_ID => GeNrtlPhaseResult::FIELDS.to_vec(),
-        GeNrtlFlashResult::CALC_ID => GeNrtlFlashResult::FIELDS.to_vec(),
-        GeFlashResult::CALC_ID => GeFlashResult::FIELDS.to_vec(),
-        GeUnifacPhaseResult::CALC_ID => GeUnifacPhaseResult::FIELDS.to_vec(),
-        GeUniquacPhaseResult::CALC_ID => GeUniquacPhaseResult::FIELDS.to_vec(),
-        GeVanLaarAcidPhaseResult::CALC_ID => GeVanLaarAcidPhaseResult::FIELDS.to_vec(),
-        GeWilsonPhaseResult::CALC_ID => GeWilsonPhaseResult::FIELDS.to_vec(),
-        PitzerPhaseResult::CALC_ID => PitzerPhaseResult::FIELDS.to_vec(),
-        KentEisenbergPhaseResult::CALC_ID => KentEisenbergPhaseResult::FIELDS.to_vec(),
-        DesmukhMatherPhaseResult::CALC_ID => DesmukhMatherPhaseResult::FIELDS.to_vec(),
-        DewPressureResult::CALC_ID => DewPressureResult::FIELDS.to_vec(),
-        CapillaryDewPointResult::CALC_ID => CapillaryDewPointResult::FIELDS.to_vec(),
-        DewTemperatureResult::CALC_ID => DewTemperatureResult::FIELDS.to_vec(),
-        HybridEosGeFlashResult::CALC_ID => HybridEosGeFlashResult::FIELDS.to_vec(),
-        IapwsHenryLawResult::CALC_ID => IapwsHenryLawResult::FIELDS.to_vec(),
-        IdealGasCpResult::CALC_ID => IdealGasCpResult::FIELDS.to_vec(),
-        MolarEnthalpyEntropyResult::CALC_ID => MolarEnthalpyEntropyResult::FIELDS.to_vec(),
-        ViscosityResult::CALC_ID => ViscosityResult::FIELDS.to_vec(),
-        KernelAqueousViscosityResult::CALC_ID => KernelAqueousViscosityResult::FIELDS.to_vec(),
-        ThermalConductivityResult::CALC_ID => ThermalConductivityResult::FIELDS.to_vec(),
-        // Unit operations. In the same table for the same reason the models are: a
-        // result's shape is a cross-language contract whether or not its spec calls it
-        // a calculation.
-        PackingHydraulicsResult::CALC_ID => PackingHydraulicsResult::FIELDS.to_vec(),
-        PackingSizingResult::CALC_ID => PackingSizingResult::FIELDS.to_vec(),
-        TrayHydraulicsResult::CALC_ID => TrayHydraulicsResult::FIELDS.to_vec(),
-        PumpPowerResult::CALC_ID => PumpPowerResult::FIELDS.to_vec(),
-        KFactorsResult::CALC_ID => KFactorsResult::FIELDS.to_vec(),
-        DarcyWeisbachResult::CALC_ID => DarcyWeisbachResult::FIELDS.to_vec(),
-        _ => Vec::new(),
-    }
-    .into_iter()
-    .map(str::to_string)
-    .collect()
-}
-
-/// The calc ids this extension implements.
-#[pyfunction]
-#[must_use]
-pub fn calc_ids() -> Vec<String> {
-    vec![
-        ReynoldsNumberResult::CALC_ID.to_string(),
-        ColebrookResult::CALC_ID.to_string(),
-        SwameeJainResult::CALC_ID.to_string(),
-        HaalandResult::CALC_ID.to_string(),
-        OrificeFlowResult::CALC_ID.to_string(),
-        PackingHydraulicsResult::CALC_ID.to_string(),
-        PackingSizingResult::CALC_ID.to_string(),
-        TrayHydraulicsResult::CALC_ID.to_string(),
-        ControlValveCvResult::CALC_ID.to_string(),
-        ChokedFlowAreaResult::CALC_ID.to_string(),
-        ConductionPlaneWallResult::CALC_ID.to_string(),
-        PrKappaResult::CALC_ID.to_string(),
-        EquilibriumConstantResult::CALC_ID.to_string(),
-        PrLeeKeslerAlphaResult::CALC_ID.to_string(),
-        Matcop5PrumrAlphaResult::CALC_ID.to_string(),
-        MatcopAlphaResult::CALC_ID.to_string(),
-        MatcopPrAlphaResult::CALC_ID.to_string(),
-        MatcopPrumrAlphaResult::CALC_ID.to_string(),
-        MatcopPrumrNewAlphaResult::CALC_ID.to_string(),
-        MollerupAlphaResult::CALC_ID.to_string(),
-        PrAlphaAbResult::CALC_ID.to_string(),
-        PrDaneshAlphaResult::CALC_ID.to_string(),
-        PrDelft1998AlphaResult::CALC_ID.to_string(),
-        PrGassem2001AlphaResult::CALC_ID.to_string(),
-        PrZFactorResult::CALC_ID.to_string(),
-        PrsvKappaResult::CALC_ID.to_string(),
-        PrDepartureResult::CALC_ID.to_string(),
-        SrkKappaResult::CALC_ID.to_string(),
-        SrkAlphaAbResult::CALC_ID.to_string(),
-        SrkZFactorResult::CALC_ID.to_string(),
-        SrkDepartureResult::CALC_ID.to_string(),
-        RkAlphaAbResult::CALC_ID.to_string(),
-        RkDepartureResult::CALC_ID.to_string(),
-        Pr78KappaResult::CALC_ID.to_string(),
-        TwuKappaResult::CALC_ID.to_string(),
-        TwucoonAlphaResult::CALC_ID.to_string(),
-        TwucoonParamAlphaResult::CALC_ID.to_string(),
-        TwucoonStatoilAlphaResult::CALC_ID.to_string(),
-        Vdw1fMixBinaryResult::CALC_ID.to_string(),
-        RachfordRiceBinaryResult::CALC_ID.to_string(),
-        PrMolarVolumeResult::CALC_ID.to_string(),
-        PrMassDensityResult::CALC_ID.to_string(),
-        PrPenelouxShiftResult::CALC_ID.to_string(),
-        SrkPenelouxShiftResult::CALC_ID.to_string(),
-        HeatOfVaporizationResult::CALC_ID.to_string(),
-        LiquidHeatCapacityResult::CALC_ID.to_string(),
-        AntoineVaporPressureResult::CALC_ID.to_string(),
-        NitricSulfuricAcidVaporPressureResult::CALC_ID.to_string(),
-        RackettMolarVolumeResult::CALC_ID.to_string(),
-        CostaldMolarVolumeResult::CALC_ID.to_string(),
-        ChungViscosityResult::CALC_ID.to_string(),
-        ChungConductivityResult::CALC_ID.to_string(),
-        TynCalusDiffusivityResult::CALC_ID.to_string(),
-        ChapmanEnskogDiffusivityResult::CALC_ID.to_string(),
-        LiquidViscosityPureResult::CALC_ID.to_string(),
-        FullerSchettlerGiddingsDiffusivityResult::CALC_ID.to_string(),
-        UmrprAlphaResult::CALC_ID.to_string(),
-        WilkeChangDiffusivityResult::CALC_ID.to_string(),
-        HaydukMinhasDiffusivityResult::CALC_ID.to_string(),
-        SchwartzentruberAlphaResult::CALC_ID.to_string(),
-        SoreideWhitsonAlphaResult::CALC_ID.to_string(),
-        SiddiqiLucasDiffusivityResult::CALC_ID.to_string(),
-        Co2WaterDiffusivityResult::CALC_ID.to_string(),
-        ParachorSurfaceTensionResult::CALC_ID.to_string(),
-        IapwsHenryLawResult::CALC_ID.to_string(),
-        IdealGasCpResult::CALC_ID.to_string(),
-        PumpPowerResult::CALC_ID.to_string(),
-        KFactorsResult::CALC_ID.to_string(),
-        DarcyWeisbachResult::CALC_ID.to_string(),
-        TbpFractionPropertiesResult::CALC_ID.to_string(),
-        ScaleSaturationRatioResult::CALC_ID.to_string(),
-        SolidFugacityResult::CALC_ID.to_string(),
-        WaxSolidFugacityResult::CALC_ID.to_string(),
-    ]
-}
-
 /// Version of the Rust core, so provenance can record which build answered.
 #[pyfunction]
 #[must_use]
@@ -10392,6 +10062,7 @@ mod transport_tests {
     //! is the only mechanism that turns a silently unexposed field into a visible one.
 
     use super::*;
+    use azoth_core::CalcResult;
     use azoth_core::units::kelvins;
     use azoth_eos::Phase;
 
