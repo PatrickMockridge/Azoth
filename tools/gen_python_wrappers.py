@@ -127,10 +127,16 @@ def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
     return {name: value for name, value in out.items() if seen[name] == 1}
 
 
-def signatures(text: str) -> list[tuple[str, list[tuple[str, str]]]]:
-    """Every top-level `pub fn name(...)` in one file, as `(name, parameters)`."""
+def signatures(
+    text: str, visibility: str = r"pub fn"
+) -> list[tuple[str, list[tuple[str, str]]]]:
+    """Every top-level visible `fn name(...)` in one file, as `(name, parameters)`.
+
+    `visibility` is the prefix to match - `pub fn` for the kernels, and an optional `pub(crate)`
+    for the binding's own helpers, which the mixture builder is.
+    """
     out = []
-    for match in re.finditer(r"^pub fn (\w+)\(", text, re.M):
+    for match in re.finditer(rf"^{visibility} (\w+)\(", text, re.M):
         depth, i = 0, match.end() - 1
         while i < len(text):
             if text[i] == "(":
@@ -232,6 +238,122 @@ def base_ctor(unit: str | None) -> str | None:
     return si_ctors().get(str(dimension))
 
 
+#: How a parameter of the binding's own mixture builder crosses: the type pyo3 declares, and the
+#: expression the call passes. `build_mixture` *is* the boundary - a kernel wanting a `Mixture`
+#: takes eight arguments here, and the builder's signature is where that list is written.
+BUILDER_TYPES = {
+    "&[f64]": ("Vec<f64>", "{name}"),
+    "Vec<f64>": ("Vec<f64>", "{name}"),
+    "&PyAssociationSpec": ("PyRef<'_, PyAssociationSpec>", "{name}"),
+    "&str": ("&str", "{name}"),
+    "Option<&[Vec<f64>]>": ("Option<Vec<Vec<f64>>>", "NAME.as_deref()"),
+    "&[f32]": ("Vec<f32>", "{name}"),
+}
+
+
+def builder_parameters() -> list[tuple[str, str, str]]:
+    """`build_mixture`'s parameters as `(name, declared type, call expression)`.
+
+    Read from the builder rather than declared here, because the builder is the boundary: a kernel
+    that wants a `Mixture` is handed these eight arguments, and the list moves when the builder's
+    does. The call expression is `&name` for a slice the builder borrows, `name` for one it takes
+    by value, and the `Option` unwrap for the alpha parameters.
+    """
+    source = rust_index._blank_comments(
+        (CRATES / "azoth-python" / "src" / "eos.rs").read_text(encoding="utf-8")
+    )
+    for name, params in signatures(source, visibility=r"pub(?:\s*\([^)]*\))?\s+fn"):
+        if name != "build_mixture":
+            continue
+        out = []
+        for parameter, kind in params:
+            if parameter == "py":
+                continue
+            entry = BUILDER_TYPES.get(kind)
+            if entry is None:
+                sys.exit(f"gen_python_wrappers: build_mixture's {parameter}: {kind} has no rule")
+            declared, call = entry
+            call = call.format(name=parameter).replace("NAME", parameter)
+            if kind == "&[f64]":
+                call = f"&{parameter}"
+            elif kind == "&PyAssociationSpec":
+                call = f"&{parameter}"
+            out.append((parameter, declared, call))
+        return out
+    sys.exit("gen_python_wrappers: crates/azoth-python/src/eos.rs no longer declares build_mixture")
+
+
+#: The mixture builder's cubic choice: the three parameters the boundary gives Python defaults,
+#: and the only part of the bundle that is optional. Named rather than inferred because the
+#: builder itself declares no defaults - they are the `Mixture`'s, which is what `boundary_defaults`
+#: reads the values from.
+CUBIC_CHOICE = ("eos", "alpha", "alpha_params")
+
+
+def boundary_defaults() -> dict[str, str]:
+    """The defaults the cubic choice carries, read from the Python `Mixture` it mirrors.
+
+    `Mixture.cubic` defaults to `PR` and `Mixture.alpha` to `"pr"`, and the boundary takes the
+    same two defaults - so the value is read from the dataclass rather than restated here. A
+    cubic's boundary spelling is its `name`, which is what the bridge passes.
+    """
+    mixture = (ROOT / "python" / "src" / "azoth" / "eos" / "mixture.py").read_text(encoding="utf-8")
+    cubic_source = (ROOT / "python" / "src" / "azoth" / "eos" / "cubic.py").read_text(encoding="utf-8")
+    cubic_default = re.search(r"cubic: Cubic = field\(default=(\w+)\)", mixture)
+    alpha_default = re.search(r'alpha: str = field\(default="([^"]*)"\)', mixture)
+    if cubic_default is None or alpha_default is None:
+        sys.exit("gen_python_wrappers: python/src/azoth/eos/mixture.py no longer defaults cubic/alpha")
+    named = re.search(
+        rf'^{re.escape(cubic_default.group(1))} = Cubic\(\s*name="([^"]*)"', cubic_source, re.M
+    )
+    if named is None:
+        sys.exit(
+            f"gen_python_wrappers: {cubic_default.group(1)} in eos/cubic.py carries no name this "
+            "reader can resolve"
+        )
+    return {"eos": f'"{named.group(1)}"', "alpha": f'"{alpha_default.group(1)}"', "alpha_params": "None"}
+
+
+def bridge_call(name: str) -> int | None:
+    """How many arguments the bridge passes to `_core.<name>`, or `None` if it does not call it.
+
+    **The bridge is the only caller, so the boundary has to agree with it.** A generated wrapper
+    that took a different number of arguments would not fail to compile - it would fail at the
+    first call, which is what the arity check here turns into a refusal at generation time.
+    """
+    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
+    # The call's own comments carry commas and would be counted as arguments, so each line's
+    # comment is cut first - the reader is counting arguments, not reading prose.
+    source = "\n".join(
+        line[: line.index("#")] if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0 else line
+        for line in source.split("\n")
+    )
+    match = re.search(rf"_core\.{re.escape(name)}\(", source)
+    if match is None:
+        return None
+    depth, i = 0, match.end() - 1
+    while i < len(source):
+        if source[i] == "(":
+            depth += 1
+        elif source[i] == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    inner, count, deep, start = source[match.end() : i], 0, 0, 0
+    for j, ch in enumerate(inner):
+        if ch in "([{":
+            deep += 1
+        elif ch in ")]}":
+            deep -= 1
+        elif ch == "," and deep == 0:
+            count += 1
+            start = j + 1
+    if inner[start:].strip():
+        count += 1
+    return count
+
+
 def pairing(kernel: list[tuple[str, str]], inputs: dict) -> dict[str, str]:
     """Each kernel parameter to the declared input it carries, or `{}` where that cannot be read.
 
@@ -274,11 +396,6 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
     constructor for the unit the spec declares, a bare `f64` crosses as it is, and an enum is
     parsed from the `&str` pyo3 hands over.
     """
-    if "Mixture" in kind:
-        # **The mixture is expanded at the boundary, and this file does not guess how.** A kernel
-        # takes `&Mixture`; the binding takes the component arrays and the cubic choice beside them,
-        # which is a declaration the spec does not carry yet - the `expands_to` the plan names.
-        raise Refusal(f"{kind} is a mixture the spec does not declare")
     if kind in PASSTHROUGH:
         declared = PASSTHROUGH[kind]
         # A slice crosses as an owned `Vec`, and the kernel wants a borrow of it.
@@ -330,7 +447,7 @@ def locals_for(kind: str, name: str) -> list[str]:
 
 def _parse_err(error: str) -> str:
     """The closure a parse failure goes through, from the enum's own `FromStr`."""
-    return "(|e| to_pyerr(py, e))" if error == "to_pyerr" else "pyo3::exceptions::PyValueError::new_err"
+    return "|e| to_pyerr(py, e)" if error == "to_pyerr" else "pyo3::exceptions::PyValueError::new_err"
 
 
 def enum_local(kind: str, name: str, resolved: str, error: str) -> tuple[list[str], str]:
@@ -366,8 +483,13 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         raise Refusal("the kernel's parameter names are not the spec's")
 
     # What each parameter is, and whether anything about it was refused.
+    mixture = next((name for name, kind in kernel if "Mixture" in kind), None)
     plan: list[tuple[str, str, str, bool]] = []  # (parameter, kind, argument, is_enum)
     for name, kind in kernel:
+        if "Mixture" in kind:
+            # The builder is bound before the call, so the argument names that binding.
+            plan.append(("mixture", kind, "&mixture", False))
+            continue
         is_enum = kind not in PASSTHROUGH and kind not in aliases and not kind.startswith(("&[", "Option<"))
         if kind.startswith("Option<") and kind.endswith(">"):
             is_enum = kind[len("Option<") : -1] not in aliases and kind not in PASSTHROUGH
@@ -384,6 +506,9 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
 
     statements: list[str] = []
     arguments: list[str] = []
+    if mixture is not None:
+        call = ", ".join(expression for _, _, expression in builder_parameters())
+        statements.append(f"    let mixture = build_mixture(py, {call})?;")
     for name, kind, argument, is_enum in plan:
         statements.extend(locals_for(kind, name))
         if is_enum:
@@ -399,23 +524,51 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
 
     # The declared signature, with the optional ones last, which is `gen_stub`'s rule.
     declarations = []
+    defaults = boundary_defaults() if mixture is not None else {}
+    if mixture is not None:
+        declarations.extend(
+            f"{parameter}: {declared}"
+            for parameter, declared, _ in builder_parameters()
+            if parameter not in CUBIC_CHOICE
+        )
     for name, decl in gen_stub.ordered_parameters(inputs):
         kind = next(kind for key, kind in kernel if pairs.get(key) == name)
+        if "Mixture" in kind:
+            # The mixture's own input is carried by the builder's bundle, not by a parameter of
+            # the calc's name - the spec declares a component *list* and the boundary takes arrays.
+            continue
         declared, _ = convert(kind, decl.get("unit"), name, aliases)
         if decl.get("optional") and not declared.startswith("Option<") and declared != "&str" and not declared.startswith("Vec<"):
             declared = f"Option<{declared}>"
         declarations.append(f"{name}: {declared}")
+    if mixture is not None:
+        declarations.extend(
+            f"{parameter}: {declared}"
+            for parameter, declared, _ in builder_parameters()
+            if parameter in CUBIC_CHOICE
+        )
 
     rust_name = next(r.rust_name for r in rust_index.result_types() if r.calc_id == calc_id)
     names = [name for name, _ in gen_stub.ordered_parameters(inputs)]
-    signature_list = ", ".join(names)
+    if mixture is not None:
+        # The mixture's declared input is not a parameter: the bundle carries it.
+        names = [name for name in names if not any(
+            pairs.get(key) == name and "Mixture" in kind for key, kind in kernel
+        )]
+        bundle = [parameter for parameter, _, _ in builder_parameters()]
+        names = [n for n in bundle if n not in CUBIC_CHOICE] + names + [
+            n for n in bundle if n in CUBIC_CHOICE
+        ]
+    signature_list = ", ".join(
+        f"{n} = {defaults[n]}" if n in defaults else n for n in names
+    )
     lines = [
         f"/// {spec.get('name', function)}.",
         "///",
         "/// All arguments are SI magnitudes. See the module documentation for why.",
         "#[pyfunction]",
         f"#[pyo3(signature = ({signature_list}))]",
-        f'#[pyo3(text_signature = "({signature_list})")]',
+        f'#[pyo3(text_signature = "({signature_list.replace(chr(34), chr(92) + chr(34))})")]',
     ]
     if any(name != name.lower() for name in names):
         lines.append("#[allow(non_snake_case)] // symbols from the published equation")
@@ -454,14 +607,19 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
         if not pairing(kernel, spec["inputs"]):
             continue
         try:
-            out.append((
-                entry,
-                body(entry, kernel, kernel_module, kernel_path,
-                     rust_index._blank_comments(kernel_file.read_text(encoding="utf-8")),
-                     kernel_file, aliases),
-            ))
+            text = body(entry, kernel, kernel_module, kernel_path,
+                        rust_index._blank_comments(kernel_file.read_text(encoding="utf-8")),
+                        kernel_file, aliases)
         except Refusal:
             continue
+        # The signature the emitter wrote, against the call the bridge makes.
+        # `py` is injected by pyo3 and is not an argument the bridge passes, so it is counted
+        # and then taken back out.
+        declared = len(re.findall(r"^    (?:\w+): ", text, re.M)) - 1
+        called = bridge_call(function)
+        if called is not None and called != declared:
+            continue
+        out.append((entry, text))
     return out
 
 
@@ -486,11 +644,13 @@ def covered_ids() -> set[tuple[str, str]]:
 def emit() -> str:
     bodies = "\n\n".join(text for _, text in covered())
     used = ctors(bodies)
-    imports = (
-        "use crate::errors::to_pyerr;\n"
-        + (f"use azoth_core::units::{{{', '.join(used)}}};\n" if used else "")
-        + "use pyo3::prelude::*;\n"
-    )
+    imports = "use crate::errors::to_pyerr;\n"
+    if "build_mixture(" in bodies:
+        # The mixture boundary the expanded wrappers share: the builder and the record it takes.
+        imports += "use crate::eos::{PyAssociationSpec, build_mixture};\n"
+    if used:
+        imports += f"use azoth_core::units::{{{', '.join(used)}}};\n"
+    imports += "use pyo3::prelude::*;\n"
     header = (
         "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"
         "//!\n"

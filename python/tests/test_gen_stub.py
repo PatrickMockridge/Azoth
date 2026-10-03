@@ -158,23 +158,13 @@ KNOWN_SIGNATURE_DRIFT = frozenset(
         # this one `liqvisc` and `liqvisc_model` too. The stub renders the declared name;
         # the extension takes the expansion.
         "aqueous_viscosity",
-        "bubble_pressure",
-        "bubble_temperature",
-        "capillary_dew_point",
-        "critical_point",
-        "dew_pressure",
-        "dew_temperature",
         "ge_nrtl_flash",
         "ge_wilson_phase",
         "hydrogen_phase",
         "molar_enthalpy_entropy",
         "ph_flash",
         "ps_flash",
-        "pt_flash",
-        "pt_phase_envelope",
-        "stability_test",
         "thermal_conductivity",
-        "tp_multiflash",
         "viscosity",
         "wilson_activity_coefficients",
     }

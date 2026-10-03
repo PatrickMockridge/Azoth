@@ -6,6 +6,7 @@
 //! Regenerate with `python tools/gen_python_wrappers.py`; CI runs `--check` and fails on
 //! any difference.
 
+use crate::eos::{PyAssociationSpec, build_mixture};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole_kelvin, kelvins,
@@ -84,6 +85,133 @@ pub fn argon_solid_phase(
     azoth_eos::argon_solid_phase::argon_solid_phase(kelvins(T), pascals(P))
         .map(|r| crate::transport_gen::PyArgonSolidPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Bubble-point pressure.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, T, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn bubble_pressure(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    T: f64,
+    x: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyBubblePressureResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::bubble_pressure::bubble_pressure(&mixture, kelvins(T), &x)
+        .map(|r| crate::transport_gen::PyBubblePressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Bubble-point temperature.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, P, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, P, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn bubble_temperature(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    P: f64,
+    x: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyBubbleTemperatureResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::bubble_temperature::bubble_temperature(&mixture, pascals(P), &x)
+        .map(|r| crate::transport_gen::PyBubbleTemperatureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Capillary dew point.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, P, y, pore_radius, contact_angle, surface_tension, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, P, y, pore_radius, contact_angle, surface_tension, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn capillary_dew_point(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    P: f64,
+    y: Vec<f64>,
+    pore_radius: f64,
+    contact_angle: f64,
+    surface_tension: f64,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyCapillaryDewPointResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::capillary_dew_point::capillary_dew_point(
+        &mixture,
+        pascals(P),
+        &y,
+        pore_radius,
+        contact_angle,
+        surface_tension,
+    )
+    .map(|r| crate::transport_gen::PyCapillaryDewPointResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Gas binary diffusivity from the Chapman-Enskog theory.
@@ -241,6 +369,44 @@ pub fn costald_molar_volume(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Mixture critical point.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn critical_point(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyCriticalPointResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::critical_point::critical_point(&mixture, &z)
+        .map(|r| crate::transport_gen::PyCriticalPointResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Activity coefficients of a Desmukh-Mather electrolyte phase.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -258,6 +424,84 @@ pub fn desmukh_mather_phase(
     let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
     azoth_eos::desmukh_mather_phase::desmukh_mather_phase(&components_refs, T, P, &x)
         .map(|r| crate::transport_gen::PyDesmukhMatherPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Dew-point pressure.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, T, y, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, T, y, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn dew_pressure(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    T: f64,
+    y: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyDewPressureResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::dew_pressure::dew_pressure(&mixture, kelvins(T), &y)
+        .map(|r| crate::transport_gen::PyDewPressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Dew-point temperature.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, P, y, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, P, y, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn dew_temperature(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    P: f64,
+    y: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyDewTemperatureResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::dew_temperature::dew_temperature(&mixture, pascals(P), &y)
+        .map(|r| crate::transport_gen::PyDewTemperatureResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1212,6 +1456,85 @@ pub fn prsv_kappa(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Pressure-temperature flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pt_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyPtFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::pt_flash::pt_flash(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyPtFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// PT phase envelope.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pt_phase_envelope(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyPtPhaseEnvelopeResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::pt_phase_envelope::pt_phase_envelope(&mixture, pascals(P), &z)
+        .map(|r| crate::transport_gen::PyPtPhaseEnvelopeResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Vapour fraction from the Rachford-Rice equation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1640,6 +1963,46 @@ pub fn srk_z_factor(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Tangent-plane stability test.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn stability_test(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyStabilityTestResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::stability_test::stability_test(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyStabilityTestResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// TBP pseudo-component properties.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1672,6 +2035,46 @@ pub fn tp_flash_saft(
 ) -> PyResult<crate::transport_gen::PySaftFlashResult> {
     azoth_eos::tp_flash_saft::tp_flash_saft(&components, kelvins(T), pascals(P), &z)
         .map(|r| crate::transport_gen::PySaftFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Multiphase flash at fixed temperature and pressure.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tp_multiflash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyTpMultiflashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::tp_multiflash::tp_multiflash(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyTpMultiflashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2200,7 +2603,7 @@ pub fn chemical_equilibrium(
     phase_moles: f64,
 ) -> PyResult<crate::transport_gen::PyChemicalEquilibriumResult> {
     let concentration_basis_parsed: azoth_reactions::chemical_equilibrium::ConcentrationBasis =
-        concentration_basis.parse().map_err((|e| to_pyerr(py, e)))?;
+        concentration_basis.parse().map_err(|e| to_pyerr(py, e))?;
     azoth_reactions::chemical_equilibrium::chemical_equilibrium(
         &a_matrix,
         &b,
@@ -2347,11 +2750,11 @@ pub fn reactive_phase_equilibrium(
     seed: &str,
 ) -> PyResult<crate::transport_gen::PyReactivePhaseEquilibriumResult> {
     let source_parsed: azoth_reactions::databank::ReactionDataSource =
-        source.parse().map_err((|e| to_pyerr(py, e)))?;
+        source.parse().map_err(|e| to_pyerr(py, e))?;
     let seed_parsed: azoth_reactions::reactive_phase_equilibrium::ReactionSeed =
-        seed.parse().map_err((|e| to_pyerr(py, e)))?;
+        seed.parse().map_err(|e| to_pyerr(py, e))?;
     let concentration_basis_parsed: azoth_reactions::chemical_equilibrium::ConcentrationBasis =
-        concentration_basis.parse().map_err((|e| to_pyerr(py, e)))?;
+        concentration_basis.parse().map_err(|e| to_pyerr(py, e))?;
     azoth_reactions::reactive_phase_equilibrium::reactive_phase_equilibrium(
         &components,
         source_parsed,
