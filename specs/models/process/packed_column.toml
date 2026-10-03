@@ -19,12 +19,12 @@ assumptions = [
     "**seven of the report's quantities are published and the rest are owed.** The capture prints fourteen keys in two blocks: the first seven from `PackedColumn`'s accessors, the second from its calculator, which `packing_hydraulics` already publishes. `ROADMAP.md` names what closes the rest.\n",
 ]
 references = [
-    "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and `ROADMAP.md` names it.",
+    "NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, the internals tree rather than the vessel around it.",
     "`validation/neqsim/captures/process_packed_column.tsv` - fifteen rows: eleven stage-count rows that build the class at a stated height and print the trays it made, and four solved rows.",
 ]
 [source]
 standard = "NeqSim process/equipment/distillation/PackedColumn.java"
-edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed is `calculateTrayed`, the trayed half of the designer, and the mechanical design; `ROADMAP.md` names both."
+edition = "Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. Both halves of the designer are ported; what this id still owes is the mechanical design's wiring, which `ROADMAP.md` names."
 [algorithm]
 scheme = "sequential_substitution_sweeps"
 initialisation = "linear_temperature_profile"

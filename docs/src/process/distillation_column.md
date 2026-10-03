@@ -198,7 +198,7 @@ holds the declaration and the two languages to each other.
 - **both recycles are ported, and the pair is refused on a measurement.** A specified draw *flow* is a candidate search and a pumparound return is a fixed point; stating both puts the class on `solveWithColumnTearVariables`' coordinated loop, which `process_column_tear.tsv` shows does not converge.
 - **the coordinated loop fails by orders**: 18 of 30 candidates rejected and a `4.4e-4` residual on the draw alone, against `0.447` with an empty candidate history once the pumparound is beside it.
 - **the class's own liquid-and-pumparound row is where its balance does not close**: `RECONCILED_PRODUCTS`, a `2.449` kg/hr imbalance, and products `0.0200` mol/s above this port's, which closes to `9.7e-9`.
-- **the trayed half of the internals tree is owed, and the tray calculator is not**: `TrayHydraulicsCalculator` is the registered `hydraulics.tray_hydraulics`; what is left is `ColumnInternalsDesigner.calculateTrayed` and `DistillationColumnMechanicalDesign`, which `ROADMAP.md` names.
+- **the internals tree and the vessel around it are both ported**: the trayed designer is `column/designer.rs` and the mechanical design `column/mechanical.rs`. **What is left is the mechanical design's wiring onto this id.**
 - **the side-draw scan's constants are the port's, and no field holds them.** `_SIDE_DRAW_SCAN_STEP = 0.005` mirrors `SIDE_DRAW_CANDIDATE_SCAN_STEP`; `_SIDE_DRAW_SEED_FRACTION = 0.05` seeds an uncontrolled draw; `_SIDE_DRAW_IDENTITY = 1e-12` is the identity tolerance. The three siblings inherit them.
 
 

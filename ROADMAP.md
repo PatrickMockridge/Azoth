@@ -489,22 +489,30 @@ a claim nothing holds.
 
 - **The mechanical-design tree** — `process/mechanicaldesign/` and the `*MechanicalDesign`
   class beside each equipment class — is where most of them are, and no entry declares a
-  parameter any of them read. **`DistillationColumnMechanicalDesign`** and
-  **`AbsorberMechanicalDesign`**; and **`ReactorMechanicalDesign`** for
-  `process.gibbs_reactor` and `process.plug_flow_reactor`. **`TrayHydraulicsCalculator` is no
-  longer one of them**: its arithmetic is the registered `hydraulics.tray_hydraulics` id, and
-  what the column still owes is the *designer* that calls it, below.
-- **`ColumnInternalsDesigner`** is two halves and one of them is in. Its **packing** side is
-  done twice over: the report is `process.packed_column`'s own outputs, and the **sizing** —
+  parameter any of them read. **`DistillationColumnMechanicalDesign` is ported and not
+  wired**: `crates/azoth-process/src/column/mechanical.rs` is `calcDesign`, held to
+  `validation/neqsim/captures/process_column_mechanical_design.tsv`. What no model declares is
+  its inputs, so it runs behind no id yet. **`AbsorberMechanicalDesign` is a measured
+  non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
+  `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the
+  separator family's sizing, which this tree already refuses. **`ReactorMechanicalDesign`** for
+  `process.gibbs_reactor` and `process.plug_flow_reactor` is still owed.
+  **`TrayHydraulicsCalculator` is no longer one of them**: its arithmetic is the registered
+  `hydraulics.tray_hydraulics` id.
+- **`ColumnInternalsDesigner`** is two halves and both are in. Its **packing** side is done
+  twice over: the report is `process.packed_column`'s own outputs, and the **sizing** —
   `calculatePacked`, `sizeColumnDiameter`, `roundToStandardDiameter` — is
   `hydraulics.packing_sizing`, which `calcPackingHydraulics`'s branch on a non-positive
-  `column_diameter` now takes. What is owed is the **trayed** half: `calculateTrayed` and the
-  getters it feeds — `getRequiredDiameter`, `getMaxPercentFlood`, `getTotalPressureDrop`,
-  `getAverageTrayEfficiency`, `getTrayResults`, `getPackingResult` and
-  `getControllingTrayIndex` — plus `toJson`'s assembly, and the pressure-drop coupling
-  `DistillationColumn.updatePressureProfileFromHydraulics` performs when
-  `hydraulicPressureDropCouplingEnabled` is set, which changes the tear's shape and not only
-  its outputs.
+  `column_diameter` now takes. Its **trayed** half — `calculateTrayed` and the getters it feeds,
+  `getRequiredDiameter`, `getMaxPercentFlood`, `getTotalPressureDrop`, `getAverageTrayEfficiency`,
+  `getTrayResults`, `getPackingResult` and `getControllingTrayIndex` — is
+  `crates/azoth-process/src/column/designer.rs`, and its quantities are the outputs
+  `process.distillation_column` publishes (`required_diameter`, `internals_design_ok`,
+  `max_percent_flood`, `min_percent_flood`, `average_tray_efficiency`, `controlling_tray_index`,
+  `total_pressure_drop`), held to `validation/neqsim/captures/process_internals_designer.tsv`.
+  The pressure-drop coupling `DistillationColumn.updatePressureProfileFromHydraulics` performs
+  when `hydraulicPressureDropCouplingEnabled` is set — which changes the tear's shape and not
+  only its outputs — is ported too, on the same id.
 - **`GravityDrainageMargin` and `PackingFoulingModel` are recorded as non-ports**, and the
   measurement is the record: `git grep` over `f0c7436:src/main` answers **one file for each,
   the class itself**, so neither has a `src/main` caller at the pin, and each has a single test

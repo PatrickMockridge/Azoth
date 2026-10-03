@@ -8,7 +8,7 @@
 
 **NeqSim process/equipment/distillation/PackedColumn.java**
 
-Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. What the report leaves owed is `calculateTrayed`, the trayed half of the designer, and the mechanical design; `ROADMAP.md` names both.
+Its `estimateStages` and its three constructors, over `DistillationColumn`'s `run`; and `ColumnInternalsDesigner.calculatePacked`'s report, read at the middle tray. Both halves of the designer are ported; what this id still owes is the mechanical design's wiring, which `ROADMAP.md` names.
 
 
 ## Algorithm
@@ -162,5 +162,5 @@ declared checks *that call* could not evaluate.
 
 ## References
 
-- NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, which is mechanical design and `ROADMAP.md` names it.
+- NeqSim - Apache-2.0. `process/equipment/distillation/PackedColumn.java` is the port source: its `estimateStages` and its three constructors. The solve it wraps is `DistillationColumn.java`; the packing report is `ColumnInternalsDesigner`, the internals tree rather than the vessel around it.
 - `validation/neqsim/captures/process_packed_column.tsv` - fifteen rows: eleven stage-count rows that build the class at a stated height and print the trays it made, and four solved rows.
