@@ -241,6 +241,26 @@ pub fn costald_molar_volume(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Activity coefficients of a Desmukh-Mather electrolyte phase.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn desmukh_mather_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyDesmukhMatherPhaseResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::desmukh_mather_phase::desmukh_mather_phase(&components_refs, T, P, &x)
+        .map(|r| crate::transport_gen::PyDesmukhMatherPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Effective diffusion coefficients from a binary matrix.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -375,6 +395,35 @@ pub fn furst_electrolyte_phase(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Gamma-phi flash with a named activity-coefficient liquid.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, liquid_model, T, P, z, cubic))]
+#[pyo3(text_signature = "(components, liquid_model, T, P, z, cubic)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn ge_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    liquid_model: &str,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    cubic: &str,
+) -> PyResult<crate::transport_gen::PyGeFlashResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::ge_flash::ge_flash(
+        &components_refs,
+        cubic,
+        liquid_model,
+        kelvins(T),
+        pascals(P),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyGeFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// GERG-2008 phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -459,6 +508,36 @@ pub fn helium_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Isothermal flash of a fixed gas-oil-brine topology.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, cubic, T, P, moles))]
+#[pyo3(text_signature = "(components, cubic, T, P, moles)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn hybrid_eos_ge_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    cubic: &str,
+    T: f64,
+    P: f64,
+    moles: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyHybridEosGeFlashResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    let cubic_parsed: azoth_eos::cubic::Cubic = cubic
+        .parse()
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    azoth_eos::hybrid_eos_ge_flash::hybrid_eos_ge_flash(
+        &components_refs,
+        cubic_parsed,
+        T,
+        P,
+        &moles,
+    )
+    .map(|r| crate::transport_gen::PyHybridEosGeFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Henry constant of a gas in water, from the IAPWS guideline.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -497,6 +576,26 @@ pub fn ideal_gas_cp(
 ) -> PyResult<crate::transport_gen::PyIdealGasCpResult> {
     azoth_eos::ideal_gas_cp::ideal_gas_cp(cp_a, cp_b, cp_c, cp_d, cp_e, kelvins(T))
         .map(|r| crate::transport_gen::PyIdealGasCpResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// Fugacity coefficients of a Kent-Eisenberg phase.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn kent_eisenberg_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyKentEisenbergPhaseResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::kent_eisenberg_phase::kent_eisenberg_phase(&components_refs, T, P, &x)
+        .map(|r| crate::transport_gen::PyKentEisenbergPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -853,6 +952,26 @@ pub fn pcsaft_rahmat_phase(
     )
     .map(|r| crate::transport_gen::PyPcsaftRahmatPhaseResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// Activity coefficients of a Pitzer electrolyte phase.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, T, P, x))]
+#[pyo3(text_signature = "(components, T, P, x)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn pitzer_phase(
+    py: Python<'_>,
+    components: Vec<String>,
+    T: f64,
+    P: f64,
+    x: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyPitzerPhaseResult> {
+    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::pitzer_phase::pitzer_phase(&components_refs, T, P, &x)
+        .map(|r| crate::transport_gen::PyPitzerPhaseResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Peng-Robinson (1978) attraction-parameter coefficient.
@@ -2054,6 +2173,53 @@ pub fn reynolds_number(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Reactive chemical equilibrium by the Smith-Missen method.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance, concentration_basis, solvent_weight, solvent_mask, phase_moles))]
+#[pyo3(
+    text_signature = "(a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance, concentration_basis, solvent_weight, solvent_mask, phase_moles)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn chemical_equilibrium(
+    py: Python<'_>,
+    a_matrix: Vec<Vec<f64>>,
+    b: Vec<f64>,
+    whole_system: bool,
+    moles: Vec<f64>,
+    chem_ref: Vec<f64>,
+    log_activity: Vec<f64>,
+    T: f64,
+    max_iterations: u32,
+    tolerance: f64,
+    concentration_basis: &str,
+    solvent_weight: f64,
+    solvent_mask: Vec<f64>,
+    phase_moles: f64,
+) -> PyResult<crate::transport_gen::PyChemicalEquilibriumResult> {
+    let concentration_basis_parsed: azoth_reactions::chemical_equilibrium::ConcentrationBasis =
+        concentration_basis.parse().map_err((|e| to_pyerr(py, e)))?;
+    azoth_reactions::chemical_equilibrium::chemical_equilibrium(
+        &a_matrix,
+        &b,
+        whole_system,
+        &moles,
+        &chem_ref,
+        &log_activity,
+        T,
+        max_iterations,
+        tolerance,
+        concentration_basis_parsed,
+        solvent_weight,
+        &solvent_mask,
+        phase_moles,
+    )
+    .map(|r| crate::transport_gen::PyChemicalEquilibriumResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A reaction's kinetic rate factor.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -2151,6 +2317,57 @@ pub fn reactive_hybrid_eos_ge_flash(
         &moles,
     )
     .map(|r| crate::transport_gen::PyReactiveHybridEosGeFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Reactive equilibrium as an operation on one phase.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance, concentration_basis, seed))]
+#[pyo3(
+    text_signature = "(components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance, concentration_basis, seed)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn reactive_phase_equilibrium(
+    py: Python<'_>,
+    components: Vec<String>,
+    source: &str,
+    phase: &str,
+    moles: Vec<f64>,
+    phase_charge: f64,
+    phase_moles: f64,
+    whole_system: bool,
+    log_activity: Vec<f64>,
+    T: f64,
+    max_iterations: u32,
+    tolerance: f64,
+    concentration_basis: &str,
+    seed: &str,
+) -> PyResult<crate::transport_gen::PyReactivePhaseEquilibriumResult> {
+    let source_parsed: azoth_reactions::databank::ReactionDataSource =
+        source.parse().map_err((|e| to_pyerr(py, e)))?;
+    let seed_parsed: azoth_reactions::reactive_phase_equilibrium::ReactionSeed =
+        seed.parse().map_err((|e| to_pyerr(py, e)))?;
+    let concentration_basis_parsed: azoth_reactions::chemical_equilibrium::ConcentrationBasis =
+        concentration_basis.parse().map_err((|e| to_pyerr(py, e)))?;
+    azoth_reactions::reactive_phase_equilibrium::reactive_phase_equilibrium(
+        &components,
+        source_parsed,
+        phase,
+        &moles,
+        phase_charge,
+        phase_moles,
+        whole_system,
+        &log_activity,
+        T,
+        max_iterations,
+        tolerance,
+        seed_parsed,
+        concentration_basis_parsed,
+    )
+    .map(|r| crate::transport_gen::PyReactivePhaseEquilibriumResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

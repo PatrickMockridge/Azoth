@@ -182,6 +182,28 @@ def type_path(name: str, source: str, crate: str, file: Path) -> str:
     return f"{crate}::{name}"
 
 
+def from_str_error(name: str) -> str:
+    """How a `FromStr` failure becomes a `PyErr`: `to_pyerr` for `AzothError`, else `PyValueError`.
+
+    Read from the enum's own `impl FromStr`, because the two are not interchangeable - a
+    `Result<_, AzothError>` does not convert to a Python object, and a `&'static str` is not an
+    `AzothError`. Which one an enum carries is a fact about that enum.
+    """
+    last = name.rsplit("::", 1)[-1]
+    for path in sorted(CRATES.glob("*/src/**/*.rs")):
+        text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
+        match = re.search(rf"^impl\s+(?:std::str::)?FromStr\s+for\s+{re.escape(last)}\s*\{{", text, re.M)
+        if match is None:
+            continue
+        body = rust_index._block(text, match.end() - 1, str(path))
+        found = re.search(r"type\s+Err\s*=\s*([\w:]+)", body)
+        if found is None:
+            continue
+        error = found.group(1).rsplit("::", 1)[-1]
+        return "to_pyerr" if error == "AzothError" else "value"
+    return "value"
+
+
 def _root(base: str, crate: str) -> str:
     """A `use` path's root, with `crate::` resolved to the package the binding names."""
     if base == "crate":
@@ -210,6 +232,37 @@ def base_ctor(unit: str | None) -> str | None:
     return si_ctors().get(str(dimension))
 
 
+def pairing(kernel: list[tuple[str, str]], inputs: dict) -> dict[str, str]:
+    """Each kernel parameter to the declared input it carries, or `{}` where that cannot be read.
+
+    **By name, case-insensitively.** A `uom` quantity is a `t` or a `p` by the Rust convention
+    where the spec writes the chemistry's `T` and `P`, and the call is positional - so the case is
+    the kernel's to choose rather than a second name to declare.
+
+    **Then the single leftover.** Sixteen kernels call the component-name list `names`, `params` or
+    `coeffs` where the spec declares `components`, and two call the temperature `temperature`. When
+    exactly one name is left unmatched on each side they are the same parameter, and pairing them
+    is a reading of the two lists rather than a rename table kept here. Two or more leftovers are a
+    refusal: that shape is a re-ordered or a genuinely different signature.
+    """
+    out: dict[str, str] = {}
+    casefold = {name.lower(): (name, kind) for name, kind in kernel}
+    leftovers = []
+    for spec_name in inputs:
+        found = casefold.pop(spec_name.lower(), None)
+        if found is None:
+            leftovers.append(spec_name)
+        else:
+            out[found[0]] = spec_name
+    remaining = [name for name, _ in casefold.values()]
+    if not remaining and not leftovers:
+        return out
+    if len(remaining) == 1 and len(leftovers) == 1:
+        out[remaining[0]] = leftovers[0]
+        return out
+    return {}
+
+
 class Refusal(Exception):
     """This file cannot derive the wrapper, so it stays hand-written."""
 
@@ -221,6 +274,11 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
     constructor for the unit the spec declares, a bare `f64` crosses as it is, and an enum is
     parsed from the `&str` pyo3 hands over.
     """
+    if "Mixture" in kind:
+        # **The mixture is expanded at the boundary, and this file does not guess how.** A kernel
+        # takes `&Mixture`; the binding takes the component arrays and the cubic choice beside them,
+        # which is a declaration the spec does not carry yet - the `expands_to` the plan names.
+        raise Refusal(f"{kind} is a mixture the spec does not declare")
     if kind in PASSTHROUGH:
         declared = PASSTHROUGH[kind]
         # A slice crosses as an owned `Vec`, and the kernel wants a borrow of it.
@@ -254,7 +312,12 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
             # conversion this file has no rule for.
             raise Refusal(f"unit {unit!r} constructs {rust_index.uom_quantity(str(unit))}, not {kind}")
         return "f64", f"{ctor}({name})"
-    # A capitalised name that is not a `uom` alias is an enum: parsed from the string pyo3 gives.
+    if any(ch in kind for ch in "&<"):
+        # A reference or a generic this file has no rule for - `&GeNrtlPhaseParameters` is a
+        # parameter record the spec does not declare, the same boundary the mixture sits on.
+        raise Refusal(f"{kind} is neither a `uom` alias nor an enum this file can parse")
+    # A bare capitalised name that is not a `uom` alias is an enum: parsed from the string pyo3
+    # hands over.
     return "&str", name
 
 
@@ -265,14 +328,19 @@ def locals_for(kind: str, name: str) -> list[str]:
     return []
 
 
-def enum_local(kind: str, name: str, resolved: str) -> tuple[list[str], str]:
+def _parse_err(error: str) -> str:
+    """The closure a parse failure goes through, from the enum's own `FromStr`."""
+    return "(|e| to_pyerr(py, e))" if error == "to_pyerr" else "pyo3::exceptions::PyValueError::new_err"
+
+
+def enum_local(kind: str, name: str, resolved: str, error: str) -> tuple[list[str], str]:
     """An enum parameter, parsed into a local. `(statements, argument)`."""
     if kind.startswith("Option<"):
         inner = kind[len("Option<") : -1]
         return (
             [
                 f"    let {name}_parsed: Option<{resolved}> = {name}",
-                "        .map(|value| value.parse().map_err(pyo3::exceptions::PyValueError::new_err))",
+                f"        .map(|value| value.parse().map_err({_parse_err(error)}))",
                 "        .transpose()?;",
             ],
             f"{name}_parsed",
@@ -281,7 +349,7 @@ def enum_local(kind: str, name: str, resolved: str) -> tuple[list[str], str]:
         [
             f"    let {name}_parsed: {resolved} = {name}",
             "        .parse()",
-            "        .map_err(pyo3::exceptions::PyValueError::new_err)?;",
+            f"        .map_err({_parse_err(error)})?;",
         ],
         f"{name}_parsed",
     )
@@ -293,7 +361,9 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
     # **The kernel's own spelling, read case-insensitively.** A `uom` quantity is a `t` or a `p`
     # by the Rust convention where the spec writes the chemistry's `T` and `P`, and the call is
     # positional - so the case is the kernel's to choose and not a second name to declare.
-    params = {name.lower(): kind for name, kind in kernel}
+    pairs = pairing(kernel, inputs)
+    if not pairs:
+        raise Refusal("the kernel's parameter names are not the spec's")
 
     # What each parameter is, and whether anything about it was refused.
     plan: list[tuple[str, str, str, bool]] = []  # (parameter, kind, argument, is_enum)
@@ -301,7 +371,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         is_enum = kind not in PASSTHROUGH and kind not in aliases and not kind.startswith(("&[", "Option<"))
         if kind.startswith("Option<") and kind.endswith(">"):
             is_enum = kind[len("Option<") : -1] not in aliases and kind not in PASSTHROUGH
-        public = next((n for n in inputs if n.lower() == name.lower()), None)
+        public = pairs.get(name)
         if public is None:
             raise Refusal(f"kernel parameter {name!r} names no declared input")
         try:
@@ -318,14 +388,19 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         statements.extend(locals_for(kind, name))
         if is_enum:
             inner = kind[len("Option<") : -1] if kind.startswith("Option<") else kind
-            parsed, argument = enum_local(kind, name, type_path(inner, source, crate, file))
+            # A kernel may write the type inline as `crate::chemical_equilibrium::X` rather than
+            # importing it, so a path is resolved by its root and a bare name by the `use` line.
+            resolved = (
+                _root(inner, crate) if "::" in inner else type_path(inner, source, crate, file)
+            )
+            parsed, argument = enum_local(kind, name, resolved, from_str_error(resolved))
             statements.extend(parsed)
         arguments.append(argument)
 
     # The declared signature, with the optional ones last, which is `gen_stub`'s rule.
     declarations = []
     for name, decl in gen_stub.ordered_parameters(inputs):
-        kind = next(kind for key, kind in kernel if key.lower() == name.lower())
+        kind = next(kind for key, kind in kernel if pairs.get(key) == name)
         declared, _ = convert(kind, decl.get("unit"), name, aliases)
         if decl.get("optional") and not declared.startswith("Option<") and declared != "&str" and not declared.startswith("Vec<"):
             declared = f"Option<{declared}>"
@@ -376,7 +451,7 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
             continue
         kernel, kernel_module, kernel_file = found
         kernel_path = rust_index._item_path(kernel_file, function)
-        if {n.lower() for n, _ in kernel} != {n.lower() for n in spec["inputs"]}:
+        if not pairing(kernel, spec["inputs"]):
             continue
         try:
             out.append((

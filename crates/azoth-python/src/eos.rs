@@ -15,14 +15,13 @@ use pyo3::prelude::*;
 use crate::errors::to_pyerr;
 use crate::transport_gen::{
     PyAqueousViscosityResult, PyBwrsPhaseResult, PyCapillaryDewPointResult, PyCriticalPointResult,
-    PyDesmukhMatherPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult,
-    PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult,
-    PyHybridEosGeFlashResult, PyHydrogenPhaseResult, PyKentEisenbergPhaseResult,
+    PyGeNrtlFlashResult, PyGeNrtlPhaseResult, PyGeUnifacPhaseResult, PyGeUniquacPhaseResult,
+    PyGeVanLaarAcidPhaseResult, PyGeWilsonPhaseResult, PyHydrogenPhaseResult,
     PyMolarEnthalpyEntropyResult, PyNrtlActivityCoefficientsResult, PyPhFlashResult,
-    PyPitzerPhaseResult, PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult,
-    PyPvFlashResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyStabilityTestResult,
-    PyThFlashResult, PyThermalConductivityResult, PyTpMultiflashResult, PyTsFlashResult,
-    PyTuFlashResult, PyTvFlashResult, PyTvFractionFlashResult, PyUnifacActivityCoefficientsResult,
+    PyPsFlashResult, PyPtFlashResult, PyPuFlashResult, PyPureSaturationResult, PyPvFlashResult,
+    PyPvRefluxFlashResult, PyPvfFlashResult, PyStabilityTestResult, PyThFlashResult,
+    PyThermalConductivityResult, PyTpMultiflashResult, PyTsFlashResult, PyTuFlashResult,
+    PyTvFlashResult, PyTvFractionFlashResult, PyUnifacActivityCoefficientsResult,
     PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
     PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult, PyVhFlashResult,
     PyViscosityResult, PyVsFlashResult, PyVuFlashResult, PyVuFlashSingleCompResult,
@@ -313,75 +312,6 @@ pub fn ge_wilson_phase(
     };
     azoth_eos::ge_wilson_phase::ge_wilson_phase(&params, &mixture, T, P, &x)
         .map(|r| PyGeWilsonPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The activity coefficients of a Desmukh-Mather electrolyte phase.
-///
-/// The extended Debye-Huckel plus pair-sum expression, then NeqSim's mole-fraction
-/// conversion, and the `(gamma / gamma^infinity) H / P` fugacity branch. The solvent is
-/// whatever `REFERENCESTATETYPE` says it is, not whatever is named `water`.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, x))]
-#[pyo3(text_signature = "(components, T, P, x)")]
-#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
-pub fn desmukh_mather_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    x: Vec<f64>,
-) -> PyResult<PyDesmukhMatherPhaseResult> {
-    let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::desmukh_mather_phase::desmukh_mather_phase(&names, T, P, &x)
-        .map(|r| PyDesmukhMatherPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The fugacity coefficients of a Kent-Eisenberg phase, whose activity coefficients are one.
-///
-/// Takes the component names, because the branch each component takes is its databank
-/// `REFERENCESTATETYPE` and its charge - a `solvent` gets `P0_i(T)/P`, a neutral solute
-/// `H_i(T)/P`, and an ion the constant `1e8`.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, x))]
-#[pyo3(text_signature = "(components, T, P, x)")]
-#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
-pub fn kent_eisenberg_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    x: Vec<f64>,
-) -> PyResult<PyKentEisenbergPhaseResult> {
-    let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::kent_eisenberg_phase::kent_eisenberg_phase(&names, T, P, &x)
-        .map(|r| PyKentEisenbergPhaseResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The activity and fugacity coefficients of an electrolyte phase whose non-ideality is
-/// Pitzer's.
-///
-/// Takes the component **names** rather than resolved arrays, because the names are what
-/// the parameter datasets are keyed by: the model resolves each one's charge, molar mass
-/// and reference state against the databank itself. `P` moves no activity coefficient -
-/// `getGamma`'s own pressure argument is unused - and the fugacity coefficients divide by
-/// it, in bar.
-#[pyfunction]
-#[pyo3(signature = (components, T, P, x))]
-#[pyo3(text_signature = "(components, T, P, x)")]
-#[allow(non_snake_case)] // `T`, `P` and `x` are the symbols in the chemistry
-pub fn pitzer_phase(
-    py: Python<'_>,
-    components: Vec<String>,
-    T: f64,
-    P: f64,
-    x: Vec<f64>,
-) -> PyResult<PyPitzerPhaseResult> {
-    let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::pitzer_phase(&names, T, P, &x)
-        .map(|r| PyPitzerPhaseResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2196,37 +2126,6 @@ pub fn bwrs_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// The fixed-role gas-oil-brine flash, computed in Rust.
-///
-/// The component **names** cross unresolved: the two EoS roles' constants, the seeding's
-/// classes and the brine's ion mask all resolve here from the same databank, so the two
-/// languages cannot disagree about which substance is which.
-#[pyfunction]
-#[pyo3(signature = (components, cubic, T, P, moles))]
-#[pyo3(text_signature = "(components, cubic, T, P, moles)")]
-#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
-pub fn hybrid_eos_ge_flash(
-    py: Python<'_>,
-    components: Vec<String>,
-    cubic: &str,
-    T: f64,
-    P: f64,
-    moles: Vec<f64>,
-) -> PyResult<PyHybridEosGeFlashResult> {
-    let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::hybrid_eos_ge_flash(
-        &names,
-        cubic
-            .parse()
-            .map_err(pyo3::exceptions::PyValueError::new_err)?,
-        T,
-        P,
-        &moles,
-    )
-    .map(|r| PyHybridEosGeFlashResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// The Leachman hydrogen phase state, computed in Rust.
 #[pyfunction]
 #[pyo3(signature = (T, P, hydrogen_type = "normal", compressed_phase = "vapour"))]
@@ -2706,29 +2605,4 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
             .unwrap_or_default(),
         None => Vec::new(),
     }
-}
-
-/// The generalised gamma-phi flash: a cubic vapour over a named activity-coefficient liquid.
-///
-/// The names cross **unresolved** and both halves resolve on the Rust side - the liquid's
-/// parameters through `liquid_model` and the vapour's constants through `cubic` - so the two
-/// languages cannot disagree about which row answered, and a caller cannot pair a liquid
-/// with a vapour built from a different component list.
-#[pyfunction]
-#[pyo3(signature = (components, liquid_model, T, P, z, cubic))]
-#[pyo3(text_signature = "(components, liquid_model, T, P, z, cubic)")]
-#[allow(non_snake_case)] // `T`, `P` and `z` are the symbols in the chemistry
-pub fn ge_flash(
-    py: Python<'_>,
-    components: Vec<String>,
-    liquid_model: &str,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    cubic: &str,
-) -> PyResult<crate::transport_gen::PyGeFlashResult> {
-    let names: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::ge_flash::ge_flash(&names, cubic, liquid_model, kelvins(T), pascals(P), &z)
-        .map(|r| crate::transport_gen::PyGeFlashResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
 }

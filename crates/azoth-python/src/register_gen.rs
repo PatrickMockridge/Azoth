@@ -245,7 +245,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::critical_point, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::desmukh_mather_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::desmukh_mather_phase,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::dew_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::dew_temperature, m)?)?;
     m.add_function(wrap_pyfunction!(
@@ -266,7 +269,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::furst_electrolyte_phase,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::ge_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::ge_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::ge_nrtl_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::ge_nrtl_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::ge_unifac_phase, m)?)?;
@@ -283,7 +286,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::helium_phase, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::hybrid_eos_ge_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::hybrid_eos_ge_flash,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::hydrate_equilibrium_line, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::hydrate_formation_pressure, m)?)?;
     m.add_function(wrap_pyfunction!(
@@ -299,7 +305,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::eos::hydrogen_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::iapws_henry_law, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ideal_gas_cp, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::kent_eisenberg_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::kent_eisenberg_phase,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::liquid_conductivity_polynom,
         m
@@ -355,7 +364,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::eos::ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::phase_transport, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::pitzer_phase, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pitzer_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr78_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_alpha_ab, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_cpa_phase, m)?)?;
@@ -560,7 +569,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::process::tank, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::three_phase_separator, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::throttling_valve, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::reactions::chemical_equilibrium, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::chemical_equilibrium,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::reactions::equilibrium_constant, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::kinetic_rate_law, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::kinetics, m)?)?;
@@ -570,7 +582,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::reactions::reactive_ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(
-        crate::reactions::reactive_phase_equilibrium,
+        crate::wrappers_gen::reactive_phase_equilibrium,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::reactions::reactive_tp_flash, m)?)?;

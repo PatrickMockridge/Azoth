@@ -11,14 +11,11 @@
 
 use pyo3::prelude::*;
 
-use azoth_reactions::chemical_equilibrium::ConcentrationBasis;
 use azoth_reactions::databank::ReactionDataSource;
-use azoth_reactions::reactive_phase_equilibrium::ReactionSeed;
 
 use crate::errors::to_pyerr;
 use crate::transport_gen::{
-    PyEquilibriumConstantResult, PyReactivePhFlashResult, PyReactivePhaseEquilibriumResult,
-    PyReactiveTpFlashResult,
+    PyEquilibriumConstantResult, PyReactivePhFlashResult, PyReactiveTpFlashResult,
 };
 
 /// One reaction's equilibrium constant, its derivative and its heat of reaction.
@@ -67,112 +64,6 @@ pub fn reference_potentials(
         azoth_core::units::kelvins(T),
     )
     .map(|r| crate::transport_gen::PyReferencePotentialsResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// The reactive equilibrium composition of a phase.
-///
-/// **The matrix crosses nested**, so the parameter list is exactly the spec's declared
-/// inputs - a flat vector plus a row count would be two parameters where the spec has one,
-/// and the generated stub would disagree with this signature.
-///
-/// `whole_system` is NeqSim's `getNumberOfPhases() == 1`, which decides whether the solve
-/// corrects its conservation coupling to the phase's own element amounts.
-#[pyfunction]
-#[pyo3(signature = (a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance, concentration_basis, solvent_weight, solvent_mask, phase_moles))]
-#[pyo3(
-    text_signature = "(a_matrix, b, whole_system, moles, chem_ref, log_activity, T, max_iterations, tolerance, concentration_basis, solvent_weight, solvent_mask, phase_moles)"
-)]
-#[allow(non_snake_case)] // `T` is the symbol in the chemistry
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are thirteen
-pub fn chemical_equilibrium(
-    py: Python<'_>,
-    a_matrix: Vec<Vec<f64>>,
-    b: Vec<f64>,
-    whole_system: bool,
-    moles: Vec<f64>,
-    chem_ref: Vec<f64>,
-    log_activity: Vec<f64>,
-    T: f64,
-    max_iterations: u32,
-    tolerance: f64,
-    concentration_basis: &str,
-    solvent_weight: f64,
-    solvent_mask: Vec<f64>,
-    phase_moles: f64,
-) -> PyResult<crate::transport_gen::PyChemicalEquilibriumResult> {
-    let parsed_basis: ConcentrationBasis =
-        concentration_basis.parse().map_err(|e| to_pyerr(py, e))?;
-    azoth_reactions::chemical_equilibrium::chemical_equilibrium(
-        &a_matrix,
-        &b,
-        whole_system,
-        &moles,
-        &chem_ref,
-        &log_activity,
-        T,
-        max_iterations,
-        tolerance,
-        parsed_basis,
-        solvent_weight,
-        &solvent_mask,
-        phase_moles,
-    )
-    .map(|r| crate::transport_gen::PyChemicalEquilibriumResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// The phase's reactive equilibrium, as the operation the facade is.
-///
-/// **`skipped` is part of the result and not an error.** A phase that is neither aqueous
-/// nor liquid nor oil has no phase for a water-based equilibrium to be solved in, and the
-/// composition comes back as it went in - so the flag is what separates that from a solve
-/// that ran and did not converge.
-#[pyfunction]
-#[pyo3(
-    signature = (components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance, concentration_basis, seed)
-)]
-#[pyo3(
-    text_signature = "(components, source, phase, moles, phase_charge, phase_moles, whole_system, log_activity, T, max_iterations, tolerance, concentration_basis, seed)"
-)]
-#[allow(non_snake_case)] // `T` is the symbol in the chemistry
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are thirteen
-pub fn reactive_phase_equilibrium(
-    py: Python<'_>,
-    components: Vec<String>,
-    source: &str,
-    phase: &str,
-    moles: Vec<f64>,
-    phase_charge: f64,
-    phase_moles: f64,
-    whole_system: bool,
-    log_activity: Vec<f64>,
-    T: f64,
-    max_iterations: u32,
-    tolerance: f64,
-    concentration_basis: &str,
-    seed: &str,
-) -> PyResult<PyReactivePhaseEquilibriumResult> {
-    let parsed: ReactionDataSource = source.parse().map_err(|e| to_pyerr(py, e))?;
-    let parsed_basis: ConcentrationBasis =
-        concentration_basis.parse().map_err(|e| to_pyerr(py, e))?;
-    let parsed_seed: ReactionSeed = seed.parse().map_err(|e| to_pyerr(py, e))?;
-    azoth_reactions::reactive_phase_equilibrium::reactive_phase_equilibrium(
-        &components,
-        parsed,
-        phase,
-        &moles,
-        phase_charge,
-        phase_moles,
-        whole_system,
-        &log_activity,
-        T,
-        max_iterations,
-        tolerance,
-        parsed_seed,
-        parsed_basis,
-    )
-    .map(|r| PyReactivePhaseEquilibriumResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
