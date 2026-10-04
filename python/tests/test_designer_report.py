@@ -9,15 +9,16 @@ the Python half of that pair, and the two halves are mirrors.
 from __future__ import annotations
 
 from azoth import ureg
+from azoth.core.warnings import Warning
 from azoth.process.reference.designer import DesignerGeometry, designer_report
-from azoth.process.reference.distillation_column import _distillation_column_states
+from azoth.process.reference.distillation_column import _distillation_column_states, _States
 
 Q = ureg.Quantity
 
 COMPONENTS = ["methane", "n-butane"]
 
 
-def _binary_column():
+def _binary_column() -> tuple[_States, list[Warning]]:
     """The capture's own binary column: four stages between the ends, the feed on stage 2."""
     return _distillation_column_states(
         COMPONENTS,
