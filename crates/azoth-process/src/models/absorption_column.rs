@@ -238,6 +238,8 @@ pub fn absorption_column(
     // reads component → per-tray → column-wide in that order; the per-tray-per-component map
     // `setComponentMurphreeEfficiency(int, String, double)` writes has no palette spelling and
     // is not carried.
+    // numerics-ok: `Murphree::clamp` is the class's own `clampMurphreeEfficiency`, which
+    // clamps a requested efficiency rather than refusing it.
     let murphree = if murphree_efficiency.is_none() && component_murphree_efficiency.is_none() {
         None
     } else {
