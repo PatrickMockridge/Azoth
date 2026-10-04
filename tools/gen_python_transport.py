@@ -148,7 +148,9 @@ def identity(kind: str, unit: object) -> bool:
     )
 
 
-def field_expr(field: str, kind: str, depth: int, optional: bool, unit: object, element: str) -> str:
+def field_expr(
+    field: str, kind: str, depth: int, optional: bool, unit: object, element: str
+) -> str:
     """The right-hand side of one transport field's initialiser."""
     base = f"r.{field}"
     if kind == "warning":
@@ -209,8 +211,12 @@ def struct_for(result: rust_index.ResultType, spec: dict) -> str:
             unit = declared.get("unit")
             text = doc(declared.get("description", public))
         fields.append(
-            (public, field_type(kind, depth, optional, unit), text,
-             field_expr(rust, kind, depth, optional, unit, element))
+            (
+                public,
+                field_type(kind, depth, optional, unit),
+                text,
+                field_expr(rust, kind, depth, optional, unit, element),
+            )
         )
 
     non_snake = any(public != public.lower() for public, *_ in fields)
@@ -244,8 +250,11 @@ def pymethods(result: rust_index.ResultType, fields: list[tuple[str, str, str, s
     shown = [public for public, _, _, _ in fields if public != "warnings"]
     parts = ", ".join(f"{public}={{:?}}" for public in shown)
     args = ", ".join(f"self.{public}" for public in shown)
-    body = f'{result.rust_name}({parts}, {{}} warning(s))' if parts else \
-           f'{result.rust_name}({{}} warning(s))'
+    body = (
+        f"{result.rust_name}({parts}, {{}} warning(s))"
+        if parts
+        else f"{result.rust_name}({{}} warning(s))"
+    )
     arguments = f"{args}, self.warnings.len()" if args else "self.warnings.len()"
     return [
         "#[pymethods]",

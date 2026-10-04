@@ -69,7 +69,7 @@ def emit() -> str:
         "///\n"
         "/// Returns an empty list for an unknown id rather than raising: this is an\n"
         "/// introspection helper for tests and diagnostics, and a missing calc should\n"
-        "/// read as \"no fields\" rather than as an error to handle.\n"
+        '/// read as "no fields" rather than as an error to handle.\n'
         "#[pyfunction]\n"
         "#[must_use]\n"
         "pub fn result_fields(calc_id: &str) -> Vec<String> {\n"

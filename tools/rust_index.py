@@ -280,9 +280,10 @@ def result_types() -> tuple[ResultType, ...]:
                     rust_name=rust_name,
                     item_path=_item_path(path, rust_name),
                     module_file=path,
-                    fields=tuple((public, rust) for public, (rust, _) in zip(
-                        fields, rust_fields, strict=True
-                    )),
+                    fields=tuple(
+                        (public, rust)
+                        for public, (rust, _) in zip(fields, rust_fields, strict=True)
+                    ),
                     rust_field_types=tuple(rust_type for _, rust_type in rust_fields),
                 )
             )

@@ -13,9 +13,12 @@ signature *is* the declared input list". A mixture-expanded model takes a `Mixtu
 not declare, so its kernel names do not match and this file leaves it alone - which is why the
 `expands_to` declaration the plan wants for those is *not* a prerequisite here.
 
-Two things are reused rather than re-derived: the optional-last ordering is `gen_stub`'s
-`ordered_parameters` (Python has no syntax for a defaulted parameter before a required one), and
-a unit's constructor is `rust_index.rust_ctor`, the vocabulary's own map.
+Two things are reused rather than re-derived: a unit's constructor is `rust_index.rust_ctor`, the
+vocabulary's own map, and the reading of which `pub fn` a name is comes from the crate root rather
+than from a path. **The signature is in the spec's declared order and not the optional-last order**
+- `gen_stub`'s `ordered_parameters` belongs to the stub, which describes a Python `def`; `_core`
+is not one, and applying that rule here is what put `heat_exchanger`'s arguments in the wrong
+places.
 
     python tools/gen_python_wrappers.py            # write
     python tools/gen_python_wrappers.py --check    # fail if the tree is not what this emits
@@ -31,7 +34,6 @@ import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import gen_stub
 import rust_index
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -119,7 +121,7 @@ def root_exports(crate: str) -> dict[str, str]:
     return out
 
 
-def declared_in(crate: str, path: pathlib.Path) -> str:
+def declared_in(crate: str, path: Path) -> str:
     """The module directory a file sits under, which is the segment a `pub use` names."""
     inside = path.relative_to(CRATES / crate.replace("_", "-") / "src")
     parts = list(inside.with_suffix("").parts)
@@ -140,7 +142,7 @@ def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
     **`azoth-python` is not scanned.** It is this binding, and every wrapper it carries has the
     kernel's own name - so including it would make each kernel look like a duplicate of itself.
     """
-    found: dict[str, list[tuple[list[tuple[str, str]], str, pathlib.Path]]] = {}
+    found: dict[str, list[tuple[list[tuple[str, str]], str, Path]]] = {}
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
         parts = path.relative_to(CRATES).parts
         if parts[0] == "azoth-python":
@@ -150,7 +152,7 @@ def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
         for name, params in signatures(text):
             found.setdefault(name, []).append((params, module, path))
 
-    out: dict[str, tuple[list[tuple[str, str]], str, pathlib.Path]] = {}
+    out: dict[str, tuple[list[tuple[str, str]], str, Path]] = {}
     exports: dict[str, set[str]] = {}
     for name, candidates in found.items():
         if len(candidates) == 1:
@@ -170,9 +172,7 @@ def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
     return out
 
 
-def signatures(
-    text: str, visibility: str = r"pub fn"
-) -> list[tuple[str, list[tuple[str, str]]]]:
+def signatures(text: str, visibility: str = r"pub fn") -> list[tuple[str, list[tuple[str, str]]]]:
     """Every top-level visible `fn name(...)` in one file, as `(name, parameters)`.
 
     `visibility` is the prefix to match - `pub fn` for the kernels, and an optional `pub(crate)`
@@ -241,7 +241,9 @@ def from_str_error(name: str) -> str:
     last = name.rsplit("::", 1)[-1]
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
         text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
-        match = re.search(rf"^impl\s+(?:std::str::)?FromStr\s+for\s+{re.escape(last)}\s*\{{", text, re.M)
+        match = re.search(
+            rf"^impl\s+(?:std::str::)?FromStr\s+for\s+{re.escape(last)}\s*\{{", text, re.M
+        )
         if match is None:
             continue
         body = rust_index._block(text, match.end() - 1, str(path))
@@ -336,9 +338,7 @@ def builder_parameters(name: str = "build_mixture") -> list[tuple[str, str, str]
                 sys.exit(f"gen_python_wrappers: build_mixture's {parameter}: {kind} has no rule")
             declared, call = entry
             call = call.format(name=parameter).replace("NAME", parameter)
-            if kind == "&[f64]":
-                call = f"&{parameter}"
-            elif kind == "&PyAssociationSpec":
+            if kind in ("&[f64]", "&PyAssociationSpec"):
                 call = f"&{parameter}"
             out.append((parameter, declared, call))
         return out
@@ -360,11 +360,15 @@ def boundary_defaults() -> dict[str, str]:
     cubic's boundary spelling is its `name`, which is what the bridge passes.
     """
     mixture = (ROOT / "python" / "src" / "azoth" / "eos" / "mixture.py").read_text(encoding="utf-8")
-    cubic_source = (ROOT / "python" / "src" / "azoth" / "eos" / "cubic.py").read_text(encoding="utf-8")
+    cubic_source = (ROOT / "python" / "src" / "azoth" / "eos" / "cubic.py").read_text(
+        encoding="utf-8"
+    )
     cubic_default = re.search(r"cubic: Cubic = field\(default=(\w+)\)", mixture)
     alpha_default = re.search(r'alpha: str = field\(default="([^"]*)"\)', mixture)
     if cubic_default is None or alpha_default is None:
-        sys.exit("gen_python_wrappers: python/src/azoth/eos/mixture.py no longer defaults cubic/alpha")
+        sys.exit(
+            "gen_python_wrappers: python/src/azoth/eos/mixture.py no longer defaults cubic/alpha"
+        )
     named = re.search(
         rf'^{re.escape(cubic_default.group(1))} = Cubic\(\s*name="([^"]*)"', cubic_source, re.M
     )
@@ -373,7 +377,11 @@ def boundary_defaults() -> dict[str, str]:
             f"gen_python_wrappers: {cubic_default.group(1)} in eos/cubic.py carries no name this "
             "reader can resolve"
         )
-    return {"eos": f'"{named.group(1)}"', "alpha": f'"{alpha_default.group(1)}"', "alpha_params": "None"}
+    return {
+        "eos": f'"{named.group(1)}"',
+        "alpha": f'"{alpha_default.group(1)}"',
+        "alpha_params": "None",
+    }
 
 
 def bridge_call(name: str) -> int | None:
@@ -387,7 +395,9 @@ def bridge_call(name: str) -> int | None:
     # The call's own comments carry commas and would be counted as arguments, so each line's
     # comment is cut first - the reader is counting arguments, not reading prose.
     source = "\n".join(
-        line[: line.index("#")] if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0 else line
+        line[: line.index("#")]
+        if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0
+        else line
         for line in source.split("\n")
     )
     match = re.search(rf"_core\.{re.escape(name)}\(", source)
@@ -420,9 +430,7 @@ def record_fields(type_name: str) -> list[tuple[str, str]] | None:
     """A record's `pub` fields as `(name, type)`, or `None` where no crate declares it."""
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
         text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
-        match = re.search(
-            rf"^pub struct {re.escape(type_name)}\s*(?:<[^{{;]*>)?\s*\{{", text, re.M
-        )
+        match = re.search(rf"^pub struct {re.escape(type_name)}\s*(?:<[^{{;]*>)?\s*\{{", text, re.M)
         if match is None:
             continue
         return rust_index._field_decls(rust_index._block(text, match.end() - 1, str(path)))
@@ -433,7 +441,9 @@ def bridge_arguments(function: str) -> list[str]:
     """The bridge's call to `_core.<function>`, as its top-level argument expressions."""
     source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
     source = "\n".join(
-        line[: line.index("#")] if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0 else line
+        line[: line.index("#")]
+        if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0
+        else line
         for line in source.split("\n")
     )
     match = re.search(rf"_core\.{re.escape(function)}\(", source)
@@ -500,7 +510,11 @@ def pairing(kernel: list[tuple[str, str]], inputs: dict) -> dict[str, str]:
         name
         for name, kind in kernel
         if "Mixture" in kind
-        or (kind.startswith("&") and kind[1:] not in uom_aliases() and not kind.startswith(("&[", "&str")))
+        or (
+            kind.startswith("&")
+            and kind[1:] not in uom_aliases()
+            and not kind.startswith(("&[", "&str"))
+        )
     }
     declared = dict(inputs)
     if any("Mixture" in kind for _, kind in kernel):
@@ -544,8 +558,7 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
             return declared, f"{name}.as_deref()"
         return declared, (f"&{name}" if declared.startswith("Vec<") else name)
     if kind in NEEDS_LOCAL:
-        declared, local, body = NEEDS_LOCAL[kind]
-        return declared, f"&{name}_refs"
+        return NEEDS_LOCAL[kind][0], f"&{name}_refs"
     if kind.startswith("Option<") and kind.endswith(">"):
         inner = kind[len("Option<") : -1]
         if inner in aliases:
@@ -570,7 +583,9 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
             # A unit's constructor yields the quantity its *dimension* names, and a kernel that
             # wants a different one - `TemperatureInterval` for a `dT` declared in `K` - needs a
             # conversion this file has no rule for.
-            raise Refusal(f"unit {unit!r} constructs {rust_index.uom_quantity(str(unit))}, not {kind}")
+            raise Refusal(
+                f"unit {unit!r} constructs {rust_index.uom_quantity(str(unit))}, not {kind}"
+            )
         return "f64", f"{ctor}({name})"
     if any(ch in kind for ch in "&<"):
         # A reference or a generic this file has no rule for - `&GeNrtlPhaseParameters` is a
@@ -590,13 +605,14 @@ def locals_for(kind: str, name: str) -> list[str]:
 
 def _parse_err(error: str) -> str:
     """The closure a parse failure goes through, from the enum's own `FromStr`."""
-    return "|e| to_pyerr(py, e)" if error == "to_pyerr" else "pyo3::exceptions::PyValueError::new_err"
+    return (
+        "|e| to_pyerr(py, e)" if error == "to_pyerr" else "pyo3::exceptions::PyValueError::new_err"
+    )
 
 
 def enum_local(kind: str, name: str, resolved: str, error: str) -> tuple[list[str], str]:
     """An enum parameter, parsed into a local. `(statements, argument)`."""
     if kind.startswith("Option<"):
-        inner = kind[len("Option<") : -1]
         return (
             [
                 f"    let {name}_parsed: Option<{resolved}> = {name}",
@@ -615,11 +631,19 @@ def enum_local(kind: str, name: str, resolved: str, error: str) -> tuple[list[st
     )
 
 
-def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases: set[str],
-         builder: str = "build_mixture") -> str:
+def body(
+    entry,
+    kernel,
+    crate: str,
+    path: str,
+    source: str,
+    file: Path,
+    aliases: set[str],
+    builder: str = "build_mixture",
+) -> str:
     global _BUILDER
     _BUILDER = builder
-    calc_id, module, function, spec = entry
+    calc_id, _, function, spec = entry
     inputs = spec["inputs"]
     # **The kernel's own spelling, read case-insensitively.** A `uom` quantity is a `t` or a `p`
     # by the Rust convention where the spec writes the chemistry's `T` and `P`, and the call is
@@ -647,17 +671,24 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
                 if declared is None:
                     raise Refusal(f"{kind[1:]}'s field {field}: {field_type} has no rule")
                 record.append(field)
-            plan.append((
-                name, kind,
-                f"&{type_path(kind[1:], source, crate, file)} {{ {', '.join(record)} }}",
-                False,
-            ))
+            plan.append(
+                (
+                    name,
+                    kind,
+                    f"&{type_path(kind[1:], source, crate, file)} {{ {', '.join(record)} }}",
+                    False,
+                )
+            )
             continue
         if "Mixture" in kind:
             # The builder is bound before the call, so the argument names that binding.
             plan.append(("mixture", kind, "&mixture", False))
             continue
-        is_enum = kind not in PASSTHROUGH and kind not in aliases and not kind.startswith(("&[", "Option<"))
+        is_enum = (
+            kind not in PASSTHROUGH
+            and kind not in aliases
+            and not kind.startswith(("&[", "Option<"))
+        )
         if kind.startswith("Option<") and kind.endswith(">"):
             is_enum = kind[len("Option<") : -1] not in aliases and kind not in PASSTHROUGH
         public = pairs.get(name)
@@ -716,9 +747,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         if kind is not None and decl.get("optional") and not kind.startswith("Option<"):
             # The spec lets the caller omit it and the kernel wants a value, so a default has to
             # be chosen - which is a decision this file will not invent.
-            raise Refusal(
-                f"{calc_id}: {name} is optional in the spec and the kernel takes {kind}"
-            )
+            raise Refusal(f"{calc_id}: {name} is optional in the spec and the kernel takes {kind}")
         if kind is None:
             # An input the boundary carries structurally - the mixture's `components`, which the
             # builder's arrays stand for - has no parameter of its own.
@@ -728,7 +757,12 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
             # the calc's name - the spec declares a component *list* and the boundary takes arrays.
             continue
         declared, _ = convert(kind, decl.get("unit"), name, aliases)
-        if decl.get("optional") and not declared.startswith("Option<") and declared != "&str" and not declared.startswith("Vec<"):
+        if (
+            decl.get("optional")
+            and not declared.startswith("Option<")
+            and declared != "&str"
+            and not declared.startswith("Vec<")
+        ):
             declared = f"Option<{declared}>"
         declarations.append(f"{name}: {declared}")
     if mixture is not None:
@@ -745,20 +779,19 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         paired = set(pairs.values())
         names = [name for name in names if name in paired]
         bundle = [parameter for parameter, _, _ in builder_parameters(builder)]
-        names = [n for n in bundle if n not in CUBIC_CHOICE] + names + [
-            n for n in bundle if n in CUBIC_CHOICE
-        ]
+        names = (
+            [n for n in bundle if n not in CUBIC_CHOICE]
+            + names
+            + [n for n in bundle if n in CUBIC_CHOICE]
+        )
     if record:
-        head = names.index(next(n for n in names if n not in CUBIC_CHOICE and n in
-                                [p for p, _, _ in builder_parameters()] or True)) if False else 0
         # The record's fields sit between the mixture's required half and the calc's own inputs.
+        head = 0
         if mixture is not None:
             bundle = [parameter for parameter, _, _ in builder_parameters(builder)]
             head = len([n for n in bundle if n not in CUBIC_CHOICE])
         names = names[:head] + record + names[head:]
-    signature_list = ", ".join(
-        f"{n} = {defaults[n]}" if n in defaults else n for n in names
-    )
+    signature_list = ", ".join(f"{n} = {defaults[n]}" if n in defaults else n for n in names)
     lines = [
         f"/// {spec.get('name', function)}.",
         "///",
@@ -811,8 +844,9 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
         text = None
         for builder in choices:
             try:
-                candidate = body(entry, kernel, kernel_module, kernel_path, source,
-                                 kernel_file, aliases, builder)
+                candidate = body(
+                    entry, kernel, kernel_module, kernel_path, source, kernel_file, aliases, builder
+                )
             except Refusal:
                 continue
             # `py` is injected by pyo3 and is not an argument the bridge passes.
@@ -869,20 +903,18 @@ def emit() -> str:
     if "build_mixture(" in bodies or "build_mixture_with_mass(" in bodies:
         # The mixture boundary the expanded wrappers share: the builder and the record it takes.
         builders = sorted({b for b in BUILDERS if f"{b}(" in bodies})
-        imports += (
-            f"use crate::eos::{{PyAssociationSpec, {', '.join(builders)}}};\n"
-        )
+        imports += f"use crate::eos::{{PyAssociationSpec, {', '.join(builders)}}};\n"
     if used:
         imports += f"use azoth_core::units::{{{', '.join(used)}}};\n"
     imports += "use pyo3::prelude::*;\n"
     header = (
         "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"
         "//!\n"
-        "//! Generated by `tools/gen_python_wrappers.py` from each spec's declared inputs and the\n"
-        "//! kernel's own signature - the two agree by name on every id this file covers.\n"
+        "//! Generated by `tools/gen_python_wrappers.py` from each spec's declared inputs\n"
+        "//! and the kernel's own signature, which agree by name on every id this file covers.\n"
         "//!\n"
-        "//! Regenerate with `python tools/gen_python_wrappers.py`; CI runs `--check` and fails on\n"
-        "//! any difference.\n"
+        "//! Regenerate with `python tools/gen_python_wrappers.py`; CI runs `--check`\n"
+        "//! and fails on any difference.\n"
         "\n"
     )
     return header + imports + "\n" + bodies + "\n"
@@ -914,7 +946,7 @@ def main() -> None:
         total = len(rust_index.implementations())
         print(f"covered: {len(taken)} of {total}")
         names = {cid for (cid, _, _, _), _ in taken}
-        for calc_id, module, function in rust_index.implementations():
+        for calc_id, _, _ in rust_index.implementations():
             if calc_id not in names:
                 print(f"   left hand-written: {calc_id}")
         return

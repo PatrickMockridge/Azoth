@@ -152,8 +152,14 @@ def reactive_hybrid_eos_ge_flash(
     return ReactiveHybridEosGeFlashResult(
         phase_fractions=tuple(outcome["beta"]),
         x=tuple(tuple(row) for row in outcome["x"]),
-        coupled_moles=tuple(from_si(_v, "mol") for _v in tuple(quantity(value, "mol") for value in outcome["coupled_moles"])),
-        aqueous_moles=tuple(from_si(_v, "mol") for _v in tuple(quantity(value, "mol") for value in outcome["aqueous_moles"])),
+        coupled_moles=tuple(
+            from_si(_v, "mol")
+            for _v in tuple(quantity(value, "mol") for value in outcome["coupled_moles"])
+        ),
+        aqueous_moles=tuple(
+            from_si(_v, "mol")
+            for _v in tuple(quantity(value, "mol") for value in outcome["aqueous_moles"])
+        ),
         passes=outcome["passes"],
         chemical_deviation=outcome["chemical_deviation"],
         residual=outcome["residual"],
