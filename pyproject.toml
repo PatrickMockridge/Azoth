@@ -149,6 +149,9 @@ exclude = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# Lean source is emitted from here, and its operators are the characters Lean reads -
+# `ℝ`, `≠`, `∧`, `≤`. Rewriting them to ASCII would emit source Lean refuses.
+"tools/guards.py" = ["RUF001"]
 # Tests legitimately hard-code expected numbers and use long assertion messages.
 "python/tests/**" = ["ARG001", "ARG002"]
 # Generated from the specs. Its values are repr()s of spec contents, so line

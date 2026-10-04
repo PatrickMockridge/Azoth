@@ -79,7 +79,7 @@ pub fn choked_flow_area(
         &mut warnings,
     )?;
 
-    // Guarded by the checks above, so k > 1 and P0, rho0 > 0.
+    // Guarded by the checks above, so k > 1 and P0, rho0 > 0. guarded: choked_flow_area.exponent_and_radicand
     //
     // The geometric factor is the derived expression rather than a named constant,
     // because it depends on `k` and so cannot be one. At k = 1.4 it is exactly

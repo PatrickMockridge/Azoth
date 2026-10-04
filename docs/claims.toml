@@ -12,7 +12,8 @@
 #
 # Probes: specs.calcs, specs.models, specs.ids, specs.unported_rows, unit_ops.declared,
 # unit_ops.kernels, unit_ops.dispatch, unit_ops.refusals, vocabulary.units,
-# lean.axioms_gated, lean.axioms_dim, lean.gate_printed, lean.modules, pairs.eos_files,
+# lean.axioms_gated, lean.axioms_dim, lean.gate_printed, lean.guards_gated, lean.modules,
+# pairs.eos_files,
 # skills.total, skills.azoth, skills.screening_p11, provenance.ids,
 # provenance.partially_verified, path, lean.gated.
 # `python tools/check_doc_claims.py --probe <name>` prints one measurement.
@@ -91,8 +92,8 @@ measure = { entries = "unit_ops.dispatch", refusals = "unit_ops.refusals" }
 
 [[claim]]
 page = "docs/src/calculus/index.md"
-text = "**{gated}** `#print axioms` lines in `Azoth/Axioms.lean`, {dim} of them `Azoth.Dim`'s, and **{gate}** in the generated `Azoth/Gate.lean`"
-measure = { gated = "lean.axioms_gated", dim = "lean.axioms_dim", gate = "lean.gate_printed" }
+text = "**{gated}** `#print axioms` lines in `Azoth/Axioms.lean`, {dim} of them `Azoth.Dim`'s, **{gate}** in the generated `Azoth/Gate.lean` - one per canonical unit, checking that the table's exponents name the dimension `lean-units` calls by that name, plus one for `Azoth.Inputs`, which holds the palette's input table to the vocabulary's own exponents - and **{guards}** in the generated `Azoth/GuardGate.lean`"
+measure = { gated = "lean.axioms_gated", dim = "lean.axioms_dim", gate = "lean.gate_printed", guards = "lean.guards_gated" }
 
 [[claim]]
 page = "docs/src/calculus/index.md"

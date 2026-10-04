@@ -34,10 +34,11 @@ Eleven layers, each a page here and the Lean module it is stated against:
 | The rendering | a rendering is a function of the document, and what the editor holds | `Azoth/View.lean` ✅ | [The rendering](./view.md) |
 | The session | what an edge may join, the doors one document is reached through, and what a flag is for | `Azoth/Graph.lean`, `Azoth/Session.lean` ✅ | [The session](./session.md) |
 
-Two further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
+Three further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
 `#print axioms` line for each general theorem and for the witness theorems beside some of
-them, and the generated `Azoth/Gate.lean` the one per canonical unit. Fifteen modules in all,
-and every layer the calculus states has one.
+them, and the generated `Azoth/Gate.lean` and `Azoth/GuardGate.lean` the ones for the
+canonical units and for the guards. Seventeen modules in all, and every layer the calculus
+states has one.
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
 Python, JSON Schema and Lean. It is specified separately, in
@@ -48,13 +49,14 @@ authority is a generator rather than a proof.
 
 **The axiom gate is what makes a proof count.** `tools/check_lean_axioms.py` refuses a
 theorem resting on anything outside the three axioms Lean permits — **68** `#print axioms`
-lines in `Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, and **69** in the generated
+lines in `Azoth/Axioms.lean`, six of them `Azoth.Dim`'s, **69** in the generated
 `Azoth/Gate.lean` - one per canonical unit, checking that the table's exponents name the
 dimension `lean-units` calls by that name, plus one for `Azoth.Inputs`, which holds the
-palette's input table to the vocabulary's own exponents. **Not every gated line is a claim**: the file
+palette's input table to the vocabulary's own exponents - and **9** in the generated
+`Azoth/GuardGate.lean`, one per guard theorem. **Not every gated line is a claim**: the file
 names the witness theorems beside the claims they keep from being vacuous, and says why —
 "a gate whose only gated theorems are the ones it satisfies is a gate that cannot fail" — so
-the line count is what the gate holds, and the claims are fewer than the lines. Both numbers
+the line count is what the gate holds, and the claims are fewer than the lines. Those numbers
 are the files' own, and a reader can count them.
 
 Most of the eleven are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),

@@ -30,7 +30,7 @@ two answers is not an answer.
 |---|---|---|
 | A failure is loud, and names the input | typed errors, one variant per class, each carrying the offending field | `crates/azoth-core/src/error.rs` |
 | An answer that is two answers is refused | a single-phase root, or an error naming the two-phase state | `crates/azoth-process/src/stream.rs` |
-| A partial function is total, clamped, or deliberately `NaN` | the rule, and a gate that reads the source for it | [`numerics.md`](./calculus/numerics.md), `tools/check_numerics.py` |
+| A partial function is total, clamped, or deliberately `NaN` | the rule, a gate that reads the source for it, and a theorem for each guard whose checks discharge the domain | [`numerics.md`](./calculus/numerics.md), `tools/check_numerics.py`, `tools/check_guards.py` |
 | A value nothing reads is refused, not skipped | the card reader's load-time refusal | `crates/azoth-eos/src/card.rs` |
 | A name the data cannot answer is an error, not a default | one choke point for every substance lookup | `crates/azoth-eos/src/databank.rs` |
 | The Python path cannot quietly stand in for the Rust one | `AZOTH_REQUIRE_RUST=1` makes a missing core fatal | `python/src/azoth/_dispatch.py` |

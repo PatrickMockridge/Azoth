@@ -72,7 +72,7 @@ pub fn orifice_flow(
         &mut warnings,
     )?;
 
-    // Guarded by the checks above, so d and rho are positive and dP is not negative.
+    // Guarded by the checks above, so d and rho are positive and dP is not negative. guarded: orifice_flow.divisor_and_radicand
     let area = std::f64::consts::PI * d.value * d.value / 4.0;
     let q = Cd * area * (2.0 * dP.value / rho.value).sqrt();
 

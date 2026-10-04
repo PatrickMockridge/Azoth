@@ -288,6 +288,10 @@ def lean_gate_printed() -> int:
     return len(_gate_lines("Gate.lean"))
 
 
+def lean_guards_gated() -> int:
+    return len(_gate_lines("GuardGate.lean"))
+
+
 def lean_modules() -> int:
     """Every module under `lean/Azoth/`, the gate files included."""
     modules = sorted((ROOT / "lean" / "Azoth").glob("*.lean"))
@@ -397,6 +401,7 @@ MEASURES = {
     "lean.axioms_gated": lean_axioms_gated,
     "lean.axioms_dim": lean_axioms_dim,
     "lean.gate_printed": lean_gate_printed,
+    "lean.guards_gated": lean_guards_gated,
     "lean.modules": lean_modules,
     "pairs.eos_files": pairs_eos_files,
     "skills.total": skills_total,
@@ -429,7 +434,7 @@ def validates_path(captured: str) -> str | None:
 def validates_lean_gated(captured: str) -> str | None:
     """A `lean.gated` hole must name a theorem one of the two gate files prints axioms for."""
     name = captured.strip().strip("`")
-    gated = _gate_lines("Axioms.lean") + _gate_lines("Gate.lean")
+    gated = _gate_lines("Axioms.lean") + _gate_lines("Gate.lean") + _gate_lines("GuardGate.lean")
     if name in gated:
         return None
     leaf = name.rsplit(".", 1)[-1]

@@ -4,9 +4,10 @@
 -- `specs/vocabulary/vocabulary.toml`.
 --
 -- One entry per canonical unit a spec may declare, with the dimension it
--- carries as exponents in `Azoth.Dim.slots` order. The theorems that say
--- these mean what the calculus says they mean are hand-written, in
--- `Azoth/Units.lean`, because a proven statement is not a naming.
+-- carries as exponents in `Azoth.Dim.slots` order, and the theorem saying those
+-- exponents name the dimension `lean-units` calls by that name. The theorem's
+-- right-hand side is the hand-written `LEAN_DIMENSIONS` entry in the generator,
+-- so the statement checks the table rather than restating it.
 
 import Azoth.Dim
 

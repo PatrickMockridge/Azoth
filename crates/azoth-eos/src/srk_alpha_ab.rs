@@ -58,7 +58,7 @@ pub fn srk_alpha_ab(kappa: f64, Tr: f64, Pr: f64) -> Result<SrkAlphaAbResult> {
     // is what makes the critical point special.
     let attraction = 1.0 + kappa * (1.0 - Tr.sqrt());
     let alpha = attraction * attraction;
-    // Guarded by the checks above, so Tr is positive here.
+    // Guarded by the checks above, so Tr is positive here. guarded: srk_alpha_ab.sqrt_and_divisor
     let a_reduced = Cubic::Srk.omega_a() * alpha * Pr / (Tr * Tr);
     let b_reduced = Cubic::Srk.omega_b() * Pr / Tr;
 

@@ -31,9 +31,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LEAN_DIR = REPO_ROOT / "lean"
 
-#: The files carrying `#print axioms` lines: hand-written general theorems, and one
-#: generated line per canonical unit. See `tools/check_lean_axioms.py`.
-GATES = (LEAN_DIR / "Azoth" / "Axioms.lean", LEAN_DIR / "Azoth" / "Gate.lean")
+#: The files carrying `#print axioms` lines: hand-written general theorems, one generated
+#: line per canonical unit, and one per guard theorem. See `tools/check_lean_axioms.py`.
+GATES = (
+    LEAN_DIR / "Azoth" / "Axioms.lean",
+    LEAN_DIR / "Azoth" / "Gate.lean",
+    LEAN_DIR / "Azoth" / "GuardGate.lean",
+)
 LEAN_SOURCE = LEAN_DIR / "Azoth"
 
 #: `#print axioms Azoth.Dim.ofExponents_nil`

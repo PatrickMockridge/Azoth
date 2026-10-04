@@ -73,7 +73,7 @@ pub fn conduction_plane_wall(
         &mut warnings,
     )?;
 
-    // Guarded by the checks above, so `L` is non-zero here.
+    // Guarded by the checks above, so `L` is non-zero here. guarded: conduction_plane_wall.divides_by_l
     let q = k.value * A.value * dT.value / L.value;
 
     apply_checks(

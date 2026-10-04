@@ -42,16 +42,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LEAN_DIR = ROOT / "lean"
 
-#: The files carrying `#print axioms` lines, and the reason there are two.
+#: The files carrying `#print axioms` lines, and the reason there are three.
 #:
 #: `Axioms.lean` is hand-written and holds the general theorems, beside the prose
 #: explaining what the gate is for. `Gate.lean` is generated from the vocabulary
-#: table and holds one line per canonical unit - generated because a
-#: hand-maintained list of unit names goes stale the first time a unit is
+#: table and holds one line per canonical unit, and `GuardGate.lean` is generated
+#: from the guard manifest and holds one per guard theorem - both generated
+#: because a hand-maintained list of names goes stale the first time one is
 #: added, and it goes stale *silently*: the theorem is proved and nothing gates it.
 GATES = (
     LEAN_DIR / "Azoth" / "Axioms.lean",
     LEAN_DIR / "Azoth" / "Gate.lean",
+    LEAN_DIR / "Azoth" / "GuardGate.lean",
 )
 
 #: The axioms a proof may rest on. `propext` and `Quot.sound` are the two Lean

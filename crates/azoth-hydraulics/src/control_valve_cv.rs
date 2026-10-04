@@ -99,7 +99,7 @@ pub fn control_valve_cv(Cv: f64, dP: Pressure, SG: f64) -> Result<ControlValveCv
         &mut warnings,
     )?;
 
-    // Guarded by the checks above, so SG is positive and dP is not negative.
+    // Guarded by the checks above, so SG is positive and dP is not negative. guarded: control_valve_cv.divisor_and_radicand
     let q = CV_TO_SI * Cv * (dP.value / SG).sqrt();
 
     apply_checks(

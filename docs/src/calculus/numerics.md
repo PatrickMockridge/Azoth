@@ -104,4 +104,4 @@ the numerator is `x^2/2` computed as a cancellation of two numbers near one. Mea
 **A guard is only as good as the arithmetic it protects**, which is the reason the policy
 above is stated per call site rather than as a wrapper: the wrapper cannot know.
 
-*Enforcement: check — `tools/check_numerics.py` fails on the cases decidable from a line of source, and prints how many lines each rule excused; the guards it cannot see are stated per call site, which is the rule this page makes.*
+*Enforcement: check — `tools/check_numerics.py` fails on the cases decidable from a line of source, and prints how many lines each rule excused; the guards it cannot see are stated per call site, which is the rule this page makes, and `tools/check_guards.py` holds each `guarded:` marker to an entry in `lean/guards.toml`, each entry to a gated theorem in `Azoth/GuardGate.lean`, and each shape a `valid_range` row takes to a class with an owner.*

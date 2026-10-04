@@ -94,7 +94,7 @@ pub fn pr_alpha_ab(kappa: f64, Tr: f64, Pr: f64) -> Result<PrAlphaAbResult> {
     // `v**2`/`v * v`.
     let attraction = 1.0 + kappa * (1.0 - Tr.sqrt());
     let alpha = attraction * attraction;
-    // Guarded by the checks above, so Tr is positive here.
+    // Guarded by the checks above, so Tr is positive here. guarded: pr_alpha_ab.sqrt_and_divisor
     let a_reduced = OMEGA_A * alpha * Pr / (Tr * Tr);
     let b_reduced = OMEGA_B * Pr / Tr;
 

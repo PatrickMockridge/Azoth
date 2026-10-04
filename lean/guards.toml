@@ -1,0 +1,168 @@
+# Every site whose kernel evaluates a partial function behind a check, and every class of edge
+# case the bound vocabulary can express.
+#
+# `key` is the token the call site carries as `guarded: <key>`; the Lean identifier is the same
+# key with `.` written `_`, so one name binds the marker, this entry, the theorem and the gate
+# line. `tools/guards.py` reads it and `tools/check_guards.py` holds the two ends together.
+#
+# `condition` is the domain condition the kernel's arithmetic needs, as a Lean expression over the
+# spec's own input names. It is the one thing neither the spec nor the source can be read for: the
+# spec states bounds, the source states an expression, and only a person says which bound
+# discharges which expression. The *hypotheses* are not written here - they are the spec's own
+# `severity = "error"` rows, derived, so deleting a bound makes the proof fail.
+#
+# `proof` is the tactic that closes it, transcribed. It is the same shape as
+# `gen_vocabulary.py`'s `LEAN_DIMENSIONS`: a hand-written per-item datum from which the generator
+# builds a statement whose rest is derived. A wrong proof fails `lake build`, which is where the
+# tree already judges a generated file.
+#
+# `owner` is a closed vocabulary: `lean` (a gated theorem in `Azoth/Guards.lean`), `check` (a
+# named checker or test), `construction` (total by how the value is built), `port` (fidelity to
+# the source, which is not a domain claim), `unformalised` (nothing holds it, and the reason says
+# why that is recorded rather than fixed).
+
+# --- the nine value-domain guards ---------------------------------------------------------
+
+[[guard]]
+key = "rachford_rice_binary.divisor_nonzero"
+site = "crates/azoth-eos/src/rachford_rice_binary.rs"
+spec = "eos.rachford_rice_binary"
+condition = "(K1 - 1) * (K2 - 1) ≠ 0"
+proof = "exact mul_ne_zero (sub_ne_zero.mpr h_K1_ne) (sub_ne_zero.mpr h_K2_ne)"
+owner = "lean"
+
+[[guard]]
+key = "pr_alpha_ab.sqrt_and_divisor"
+site = "crates/azoth-eos/src/pr_alpha_ab.rs"
+spec = "eos.pr_alpha_ab"
+condition = "(0 ≤ Tr) ∧ (Tr * Tr ≠ 0)"
+proof = "exact ⟨le_of_lt h_Tr_gt, mul_ne_zero (ne_of_gt h_Tr_gt) (ne_of_gt h_Tr_gt)⟩"
+owner = "lean"
+
+[[guard]]
+key = "srk_alpha_ab.sqrt_and_divisor"
+site = "crates/azoth-eos/src/srk_alpha_ab.rs"
+spec = "eos.srk_alpha_ab"
+condition = "(0 ≤ Tr) ∧ (Tr * Tr ≠ 0)"
+proof = "exact ⟨le_of_lt h_Tr_gt, mul_ne_zero (ne_of_gt h_Tr_gt) (ne_of_gt h_Tr_gt)⟩"
+owner = "lean"
+
+[[guard]]
+key = "rk_alpha_ab.sqrt_and_divisor"
+site = "crates/azoth-eos/src/rk_alpha_ab.rs"
+spec = "eos.rk_alpha_ab"
+condition = "(0 ≤ Tr) ∧ (Tr * Tr ≠ 0)"
+proof = "exact ⟨le_of_lt h_Tr_gt, mul_ne_zero (ne_of_gt h_Tr_gt) (ne_of_gt h_Tr_gt)⟩"
+owner = "lean"
+
+# The exponent `(k + 1) / (2 * (k - 1))` needs both divisors, and the radicand `k * rho0 * P0`
+# needs its sign. `1 < k` is the spec's own bound, not a construction.
+[[guard]]
+key = "choked_flow_area.exponent_and_radicand"
+site = "crates/azoth-hydraulics/src/choked_flow_area.rs"
+spec = "hydraulics.choked_flow_area"
+condition = "(k - 1 ≠ 0) ∧ (k + 1 ≠ 0) ∧ (0 ≤ k * rho0 * P0)"
+proof = "exact ⟨sub_ne_zero.mpr (ne_of_gt h_k_gt), ne_of_gt (by linarith), by positivity⟩"
+owner = "lean"
+
+[[guard]]
+key = "orifice_flow.divisor_and_radicand"
+site = "crates/azoth-hydraulics/src/orifice_flow.rs"
+spec = "hydraulics.orifice_flow"
+condition = "(rho ≠ 0) ∧ (0 ≤ 2 * dP / rho)"
+proof = "exact ⟨ne_of_gt h_rho_gt, by positivity⟩"
+owner = "lean"
+
+[[guard]]
+key = "control_valve_cv.divisor_and_radicand"
+site = "crates/azoth-hydraulics/src/control_valve_cv.rs"
+spec = "hydraulics.control_valve_cv"
+condition = "(SG ≠ 0) ∧ (0 ≤ dP / SG)"
+proof = "exact ⟨ne_of_gt h_SG_gt, by positivity⟩"
+owner = "lean"
+
+[[guard]]
+key = "darcy_weisbach.divides_by_d"
+site = "crates/azoth-hydraulics/src/darcy_weisbach.rs"
+spec = "hydraulics.darcy_weisbach"
+condition = "D ≠ 0"
+proof = "exact ne_of_gt h_D_gt"
+owner = "lean"
+
+[[guard]]
+key = "conduction_plane_wall.divides_by_l"
+site = "crates/azoth-thermal/src/conduction_plane_wall.rs"
+spec = "thermal.conduction_plane_wall"
+condition = "L ≠ 0"
+proof = "exact ne_of_gt h_L_gt"
+owner = "lean"
+
+# --- the two that are not value-domain obligations ------------------------------------------
+
+# The guarded expression is total. What is owed is fidelity to the source's condition, which the
+# port rule holds and a `valid_range` row cannot express.
+[[guard]]
+key = "scale_saturation_ratio.pressure_term"
+site = "crates/azoth-eos/src/scale_saturation_ratio.rs"
+spec = "eos.scale_saturation_ratio"
+owner = "port"
+source = "NeqSim CheckScalePotential, the `Vdelta` pressure term"
+
+# The guard is `none(x) = !(x > 0 ∧ x.is_finite())` and the out-of-domain branch is `0.0`. Its
+# hypotheses are code predicates rather than spec rows, so a Lean statement here would restate the
+# code rather than check it.
+[[guard]]
+key = "segment_heat.exponent"
+site = "crates/azoth-process/src/segment/heat.rs"
+owner = "check"
+checker = "crates/azoth-process/src/segment/heat.rs"
+reason = "the guard is the class's; its hypotheses are code predicates, not spec bounds"
+
+# --- the classes -----------------------------------------------------------------------------
+#
+# One entry per shape a `valid_range` row in `specs/` actually takes, keyed by the shape itself:
+# `<severity>-<equals|interval>-<outside|inside>`, plus `computed-from` for a row that names the
+# inputs its quantity is derived from. `tools/check_guards.py` reads the specs, derives the keys
+# and refuses a shape with no entry here - so a new shape is a decision rather than an omission.
+#
+# The two runtime classes are declared but not swept: nothing in the specs enumerates them, and
+# saying so is better than pretending the sweep covers them.
+
+[[class]]
+key = "error-interval-outside"
+owner = "check"
+checker = "crates/azoth-core/src/range.rs"
+
+[[class]]
+key = "error-equals-outside"
+owner = "lean"
+gate = "lean/Azoth/GuardGate.lean"
+
+[[class]]
+key = "warning-interval-outside"
+owner = "check"
+checker = "crates/azoth-core/src/range.rs"
+reason = "a warning bound does not discharge a guard, so it is never a hypothesis of one"
+
+[[class]]
+key = "warning-interval-inside"
+owner = "check"
+checker = "crates/azoth-core/src/range.rs"
+
+[[class]]
+key = "computed-from"
+owner = "check"
+checker = "tools/spec_lint.py"
+reason = "the quantity is derived, so its check is only evaluable if the inputs it names are declared"
+
+# Not derivable from the specs: a value that reaches a check as `NaN`, and a divisor no row
+# covers. Both are runtime states, declared so their owner is a decision somebody made.
+[[class]]
+key = "nan-input"
+owner = "check"
+checker = "crates/azoth-core/src/range.rs"
+
+[[class]]
+key = "unguarded-partial-function"
+owner = "unformalised"
+reason = "darcy_weisbach divides by `mu` and scale_saturation_ratio by `x_water`; neither has a valid_range row"
