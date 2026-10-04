@@ -1371,3 +1371,91 @@ pub fn model_schemes(model_id: &str) -> Vec<String> {
         None => Vec::new(),
     }
 }
+
+/// A pure solid's fugacity coefficient, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (heat_of_fusion, triple_point_temperature, delta_cp_sl, delta_solid_volume, tc, pc, omega, T, P, eos = "srk"))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)]
+pub fn solid_fugacity(
+    py: Python<'_>,
+    heat_of_fusion: f64,
+    triple_point_temperature: f64,
+    delta_cp_sl: f64,
+    delta_solid_volume: f64,
+    tc: f64,
+    pc: f64,
+    omega: f64,
+    T: f64,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::transport_gen::PySolidFugacityResult> {
+    azoth_eos::solid_fugacity(
+        heat_of_fusion,
+        triple_point_temperature,
+        delta_cp_sl,
+        delta_solid_volume,
+        kelvins(tc),
+        pascals(pc),
+        omega,
+        kelvins(T),
+        pascals(P),
+        eos,
+    )
+    .map(|r| crate::transport_gen::PySolidFugacityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The fraction of a feed that has frozen out as one pure solid, computed in Rust.
+///
+/// **The component names cross unresolved**, and this side resolves them: the melt data and
+/// the density correlations are the databank's own columns.
+#[pyfunction]
+#[pyo3(signature = (components, solid, T, P, z, eos = "srk"))]
+#[allow(non_snake_case)] // `T`, `P` and `z` are the symbols in the chemistry
+pub fn tp_solid_flash(
+    py: Python<'_>,
+    components: Vec<String>,
+    solid: &str,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+) -> PyResult<crate::transport_gen::PyTpSolidFlashResult> {
+    let names: Vec<&str> = components.iter().map(String::as_str).collect();
+    azoth_eos::tp_solid_flash(&names, solid, kelvins(T), pascals(P), &z, eos)
+        .map(|r| crate::transport_gen::PyTpSolidFlashResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// A wax cut's solid fugacity coefficient, computed in Rust.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos = "srk"))]
+#[allow(non_snake_case)] // `T` and `P` are the symbols in the chemistry
+#[allow(clippy::too_many_arguments)]
+pub fn wax_solid_fugacity(
+    py: Python<'_>,
+    molar_mass: f64,
+    tc: f64,
+    pc: f64,
+    omega: f64,
+    heat_of_fusion: f64,
+    triple_point_temperature: f64,
+    T: f64,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::transport_gen::PyWaxSolidFugacityResult> {
+    azoth_eos::wax_solid_fugacity(
+        molar_mass,
+        kelvins(tc),
+        pascals(pc),
+        omega,
+        heat_of_fusion,
+        kelvins(triple_point_temperature),
+        kelvins(T),
+        pascals(P),
+        eos,
+    )
+    .map(|r| crate::transport_gen::PyWaxSolidFugacityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}

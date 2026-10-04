@@ -433,7 +433,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::siddiqi_lucas_diffusivity,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::wrappers_gen::solid_fugacity, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::soreide_whitson_alpha,
         m
@@ -464,7 +464,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_flash_saft, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_multiflash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::tp_multiflash_wax, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_solid_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::tp_solid_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ts_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tu_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tv_flash, m)?)?;
@@ -515,10 +515,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::water_phase, m)?)?;
-    m.add_function(wrap_pyfunction!(
-        crate::wrappers_gen::wax_solid_fugacity,
-        m
-    )?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::wax_solid_fugacity, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::wilke_chang_diffusivity,
         m
@@ -551,39 +548,48 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::reynolds_number, m)?)?;
     m.add_function(wrap_pyfunction!(crate::hydraulics::tray_hydraulics, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::absorption_column, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::component_splitter, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::compressor, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::cooler, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::distillation_column, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::component_splitter,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::compressor, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::cooler, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::distillation_column,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::process::ejector, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::expander, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::filter, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::flare, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::gas_scrubber, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::gibbs_reactor, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::expander, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::filter, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::flare, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::gas_scrubber, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::gibbs_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::heat_exchanger, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::heater, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::manifold, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::mixer, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::heater, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::manifold, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::mixer, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::packed_column, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::pipe, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pipe, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::plug_flow_reactor, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::pump, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pump, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::process::rate_based_packed_column,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::process::separator, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::separator, m)?)?;
     m.add_function(wrap_pyfunction!(
-        crate::process::shortcut_distillation_column,
+        crate::wrappers_gen::shortcut_distillation_column,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::process::splitter, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::splitter, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::stirred_tank_reactor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::process::stripping_column, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::tank, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::three_phase_separator, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::process::throttling_valve, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::tank, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::three_phase_separator,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::throttling_valve, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::chemical_equilibrium,
         m

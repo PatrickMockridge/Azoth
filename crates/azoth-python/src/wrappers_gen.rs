@@ -11,7 +11,7 @@ use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole, joules_per_mole_kelvin,
     kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
-    meters_per_second, pascal_seconds, pascals,
+    meters_per_second, pascal_seconds, pascals, watts,
 };
 use pyo3::prelude::*;
 
@@ -2056,45 +2056,6 @@ pub fn siddiqi_lucas_diffusivity(
     .map_err(|e| to_pyerr(py, e))
 }
 
-/// Pure solid fugacity coefficient.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (heat_of_fusion, triple_point_temperature, delta_cp_sl, delta_solid_volume, tc, pc, omega, T, P, eos))]
-#[pyo3(
-    text_signature = "(heat_of_fusion, triple_point_temperature, delta_cp_sl, delta_solid_volume, tc, pc, omega, T, P, eos)"
-)]
-#[allow(non_snake_case)] // symbols from the published equation
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-pub fn solid_fugacity(
-    py: Python<'_>,
-    heat_of_fusion: f64,
-    triple_point_temperature: f64,
-    delta_cp_sl: f64,
-    delta_solid_volume: f64,
-    tc: f64,
-    pc: f64,
-    omega: f64,
-    T: f64,
-    P: f64,
-    eos: &str,
-) -> PyResult<crate::transport_gen::PySolidFugacityResult> {
-    azoth_eos::solid_fugacity::solid_fugacity(
-        heat_of_fusion,
-        triple_point_temperature,
-        delta_cp_sl,
-        delta_solid_volume,
-        kelvins(tc),
-        pascals(pc),
-        omega,
-        kelvins(T),
-        pascals(P),
-        eos,
-    )
-    .map(|r| crate::transport_gen::PySolidFugacityResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Soreide-Whitson alpha function for water.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -2479,35 +2440,6 @@ pub fn tp_multiflash(
     azoth_eos::tp_multiflash::tp_multiflash(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| crate::transport_gen::PyTpMultiflashResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
-}
-
-/// Solid flash at fixed temperature and pressure.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (components, solid, T, P, z, eos))]
-#[pyo3(text_signature = "(components, solid, T, P, z, eos)")]
-#[allow(non_snake_case)] // symbols from the published equation
-pub fn tp_solid_flash(
-    py: Python<'_>,
-    components: Vec<String>,
-    solid: &str,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    eos: &str,
-) -> PyResult<crate::transport_gen::PyTpSolidFlashResult> {
-    let components_refs: Vec<&str> = components.iter().map(String::as_str).collect();
-    azoth_eos::tp_solid_flash::tp_solid_flash(
-        &components_refs,
-        solid,
-        kelvins(T),
-        pascals(P),
-        &z,
-        eos,
-    )
-    .map(|r| crate::transport_gen::PyTpSolidFlashResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Temperature-entropy flash.
@@ -3122,43 +3054,6 @@ pub fn water_phase(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// Wax solid fugacity coefficient.
-///
-/// All arguments are SI magnitudes. See the module documentation for why.
-#[pyfunction]
-#[pyo3(signature = (molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos))]
-#[pyo3(
-    text_signature = "(molar_mass, tc, pc, omega, heat_of_fusion, triple_point_temperature, T, P, eos)"
-)]
-#[allow(non_snake_case)] // symbols from the published equation
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-pub fn wax_solid_fugacity(
-    py: Python<'_>,
-    molar_mass: f64,
-    tc: f64,
-    pc: f64,
-    omega: f64,
-    heat_of_fusion: f64,
-    triple_point_temperature: f64,
-    T: f64,
-    P: f64,
-    eos: &str,
-) -> PyResult<crate::transport_gen::PyWaxSolidFugacityResult> {
-    azoth_eos::wax_solid_fugacity::wax_solid_fugacity(
-        molar_mass,
-        kelvins(tc),
-        pascals(pc),
-        omega,
-        heat_of_fusion,
-        kelvins(triple_point_temperature),
-        kelvins(T),
-        pascals(P),
-        eos,
-    )
-    .map(|r| crate::transport_gen::PyWaxSolidFugacityResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// Liquid binary diffusivity from the Wilke-Chang correlation.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -3417,6 +3312,732 @@ pub fn reynolds_number(
         pascal_seconds(mu),
     )
     .map(|r| crate::transport_gen::PyReynoldsNumberResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Component splitter.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
+pub fn component_splitter(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    split_factors: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyComponentSplitterResult> {
+    azoth_process::models::component_splitter::component_splitter(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        &split_factors,
+    )
+    .map(|r| crate::transport_gen::PyComponentSplitterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Compressor.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn compressor(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+    isentropic_efficiency: f64,
+) -> PyResult<crate::transport_gen::PyCompressorResult> {
+    azoth_process::models::compressor::compressor(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+        isentropic_efficiency,
+    )
+    .map(|r| crate::transport_gen::PyCompressorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Cooler.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn cooler(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_temperature: Option<f64>,
+    duty: Option<f64>,
+    pressure_drop: Option<f64>,
+) -> PyResult<crate::transport_gen::PyCoolerResult> {
+    azoth_process::models::cooler::cooler(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_temperature.map(kelvins),
+        duty.map(watts),
+        pressure_drop.map(pascals),
+    )
+    .map(|r| crate::transport_gen::PyCoolerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Distillation column.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, murphree_efficiency, tray_murphree_efficiency, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, reactive, reactive_start_tray, reactive_end_tray, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, column_diameter, max_allowable_fs_factor, internals_type, tray_spacing, weir_height, hole_diameter, hole_area_fraction, downcommer_area_fraction, design_flood_fraction, column_diameter_override, hydraulic_pressure_drop_coupling, hydraulic_pressure_drop_internals_type))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, murphree_efficiency, tray_murphree_efficiency, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, reactive, reactive_start_tray, reactive_end_tray, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, column_diameter, max_allowable_fs_factor, internals_type, tray_spacing, weir_height, hole_diameter, hole_area_fraction, downcommer_area_fraction, design_flood_fraction, column_diameter_override, hydraulic_pressure_drop_coupling, hydraulic_pressure_drop_internals_type)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn distillation_column(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    number_of_stages: usize,
+    feed_stage: usize,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: f64,
+    bottom_pressure: f64,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    reboiler_temperature: Option<f64>,
+    condenser_temperature: Option<f64>,
+    murphree_efficiency: Option<f64>,
+    tray_murphree_efficiency: Option<Vec<f64>>,
+    solver_type: Option<&str>,
+    top_specification_type: Option<&str>,
+    top_specification_target: Option<f64>,
+    top_specification_component: Option<&str>,
+    bottom_specification_type: Option<&str>,
+    bottom_specification_target: Option<f64>,
+    bottom_specification_component: Option<&str>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
+    gas_side_draw_fractions: Option<Vec<f64>>,
+    liquid_side_draw_fractions: Option<Vec<f64>>,
+    pumparound_fractions: Option<Vec<f64>>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
+    column_diameter: Option<f64>,
+    max_allowable_fs_factor: Option<f64>,
+    internals_type: Option<&str>,
+    tray_spacing: Option<f64>,
+    weir_height: Option<f64>,
+    hole_diameter: Option<f64>,
+    hole_area_fraction: Option<f64>,
+    downcommer_area_fraction: Option<f64>,
+    design_flood_fraction: Option<f64>,
+    column_diameter_override: Option<f64>,
+    hydraulic_pressure_drop_coupling: Option<bool>,
+    hydraulic_pressure_drop_internals_type: Option<&str>,
+) -> PyResult<crate::transport_gen::PyDistillationColumnResult> {
+    azoth_process::models::distillation_column::distillation_column(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        number_of_stages,
+        feed_stage,
+        has_reboiler,
+        has_condenser,
+        pascals(top_pressure),
+        pascals(bottom_pressure),
+        reboiler_temperature.map(kelvins),
+        condenser_temperature.map(kelvins),
+        temperature_tolerance,
+        max_iterations,
+        murphree_efficiency,
+        tray_murphree_efficiency.as_deref(),
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
+        gas_side_draw_fractions.as_deref(),
+        liquid_side_draw_fractions.as_deref(),
+        pumparound_fractions.as_deref(),
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
+        column_diameter,
+        max_allowable_fs_factor,
+        internals_type,
+        tray_spacing,
+        weir_height,
+        hole_diameter,
+        hole_area_fraction,
+        downcommer_area_fraction,
+        design_flood_fraction,
+        column_diameter_override,
+        hydraulic_pressure_drop_coupling,
+        hydraulic_pressure_drop_internals_type,
+    )
+    .map(|r| crate::transport_gen::PyDistillationColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Expander.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn expander(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+    isentropic_efficiency: f64,
+) -> PyResult<crate::transport_gen::PyExpanderResult> {
+    azoth_process::models::expander::expander(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+        isentropic_efficiency,
+    )
+    .map(|r| crate::transport_gen::PyExpanderResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Filter.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop))]
+#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop)")]
+pub fn filter(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    pressure_drop: f64,
+) -> PyResult<crate::transport_gen::PyFilterResult> {
+    azoth_process::models::filter::filter(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(pressure_drop),
+    )
+    .map(|r| crate::transport_gen::PyFilterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Flare.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t))]
+#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t)")]
+pub fn flare(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+) -> PyResult<crate::transport_gen::PyFlareResult> {
+    azoth_process::models::flare::flare(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+    )
+    .map(|r| crate::transport_gen::PyFlareResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Gas scrubber.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn gas_scrubber(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_liquid: f64,
+    heat_input: Option<f64>,
+) -> PyResult<crate::transport_gen::PyGasScrubberResult> {
+    azoth_process::models::gas_scrubber::gas_scrubber(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_liquid,
+        heat_input.map(watts),
+    )
+    .map(|r| crate::transport_gen::PyGasScrubberResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Gibbs reactor.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn gibbs_reactor(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    energy_mode: &str,
+    damping_composition: f64,
+    max_iterations: f64,
+    convergence_tolerance: f64,
+    min_iterations: f64,
+) -> PyResult<crate::transport_gen::PyGibbsReactorResult> {
+    azoth_process::models::gibbs_reactor::gibbs_reactor(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        energy_mode,
+        damping_composition,
+        max_iterations,
+        convergence_tolerance,
+        min_iterations,
+    )
+    .map(|r| crate::transport_gen::PyGibbsReactorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Heater.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature, duty, pressure_drop)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn heater(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_temperature: Option<f64>,
+    duty: Option<f64>,
+    pressure_drop: Option<f64>,
+) -> PyResult<crate::transport_gen::PyHeaterResult> {
+    azoth_process::models::heater::heater(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        outlet_temperature.map(kelvins),
+        duty.map(watts),
+        pressure_drop.map(pascals),
+    )
+    .map(|r| crate::transport_gen::PyHeaterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Manifold.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
+pub fn manifold(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: Vec<f64>,
+    feed_z: Vec<Vec<f64>>,
+    feed_p: Vec<f64>,
+    feed_t: Vec<f64>,
+    split_factors: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyManifoldResult> {
+    azoth_process::models::manifold::manifold(
+        &components,
+        &feed_n,
+        &feed_z,
+        &feed_p.iter().map(|v| pascals(*v)).collect::<Vec<_>>(),
+        &feed_t.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
+        &split_factors,
+    )
+    .map(|r| crate::transport_gen::PyManifoldResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Mixer.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, outlet_pressure))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, outlet_pressure)")]
+pub fn mixer(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: Vec<f64>,
+    feed_z: Vec<Vec<f64>>,
+    feed_p: Vec<f64>,
+    feed_t: Vec<f64>,
+    outlet_pressure: Option<f64>,
+) -> PyResult<crate::transport_gen::PyMixerResult> {
+    azoth_process::models::mixer::mixer(
+        &components,
+        &feed_n,
+        &feed_z,
+        &feed_p.iter().map(|v| pascals(*v)).collect::<Vec<_>>(),
+        &feed_t.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
+        outlet_pressure.map(pascals),
+    )
+    .map(|r| crate::transport_gen::PyMixerResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Pipe.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pipe(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    length: f64,
+    diameter: f64,
+    roughness: f64,
+) -> PyResult<crate::transport_gen::PyPipeResult> {
+    azoth_process::models::pipe::pipe(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        meters(length),
+        meters(diameter),
+        meters(roughness),
+    )
+    .map(|r| crate::transport_gen::PyPipeResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Pump.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
+#[pyo3(
+    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pump(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+    isentropic_efficiency: f64,
+) -> PyResult<crate::transport_gen::PyPumpResult> {
+    azoth_process::models::pump::pump(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+        isentropic_efficiency,
+    )
+    .map(|r| crate::transport_gen::PyPumpResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Separator.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn separator(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_liquid: f64,
+    heat_input: Option<f64>,
+) -> PyResult<crate::transport_gen::PySeparatorResult> {
+    azoth_process::models::separator::separator(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_liquid,
+        heat_input.map(watts),
+    )
+    .map(|r| crate::transport_gen::PySeparatorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Shortcut distillation column.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, light_key, heavy_key, light_key_recovery_distillate, heavy_key_recovery_bottoms, reflux_ratio_multiplier, condenser_pressure, reboiler_pressure))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, light_key, heavy_key, light_key_recovery_distillate, heavy_key_recovery_bottoms, reflux_ratio_multiplier, condenser_pressure, reboiler_pressure)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn shortcut_distillation_column(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    light_key: &str,
+    heavy_key: &str,
+    light_key_recovery_distillate: f64,
+    heavy_key_recovery_bottoms: f64,
+    reflux_ratio_multiplier: f64,
+    condenser_pressure: Option<f64>,
+    reboiler_pressure: Option<f64>,
+) -> PyResult<crate::transport_gen::PyShortcutDistillationColumnResult> {
+    azoth_process::models::shortcut_distillation_column::shortcut_distillation_column(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        light_key,
+        heavy_key,
+        light_key_recovery_distillate,
+        heavy_key_recovery_bottoms,
+        reflux_ratio_multiplier,
+        condenser_pressure.map(pascals),
+        reboiler_pressure.map(pascals),
+    )
+    .map(|r| crate::transport_gen::PyShortcutDistillationColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Splitter.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
+pub fn splitter(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    split_factors: Vec<f64>,
+) -> PyResult<crate::transport_gen::PySplitterResult> {
+    azoth_process::models::splitter::splitter(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        &split_factors,
+    )
+    .map(|r| crate::transport_gen::PySplitterResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Tank.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t))]
+#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t)")]
+pub fn tank(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: Vec<f64>,
+    feed_z: Vec<Vec<f64>>,
+    feed_p: Vec<f64>,
+    feed_t: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyTankResult> {
+    azoth_process::models::tank::tank(
+        &components,
+        &feed_n,
+        &feed_z,
+        &feed_p.iter().map(|v| pascals(*v)).collect::<Vec<_>>(),
+        &feed_t.iter().map(|v| kelvins(*v)).collect::<Vec<_>>(),
+    )
+    .map(|r| crate::transport_gen::PyTankResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Three-phase separator.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn three_phase_separator(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    pressure_drop: f64,
+    gas_in_aqueous: f64,
+    gas_in_oil: f64,
+    oil_in_aqueous: f64,
+    oil_in_gas: f64,
+    aqueous_in_gas: f64,
+    aqueous_in_oil: f64,
+    heat_input: Option<f64>,
+) -> PyResult<crate::transport_gen::PyThreePhaseSeparatorResult> {
+    azoth_process::models::three_phase_separator::three_phase_separator(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        pascals(pressure_drop),
+        gas_in_aqueous,
+        gas_in_oil,
+        oil_in_aqueous,
+        oil_in_gas,
+        aqueous_in_gas,
+        aqueous_in_oil,
+        heat_input.map(watts),
+    )
+    .map(|r| crate::transport_gen::PyThreePhaseSeparatorResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Throttling valve.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]
+#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure)")]
+pub fn throttling_valve(
+    py: Python<'_>,
+    components: Vec<String>,
+    inlet_n: f64,
+    inlet_z: Vec<f64>,
+    inlet_p: f64,
+    inlet_t: f64,
+    outlet_pressure: f64,
+) -> PyResult<crate::transport_gen::PyThrottlingValveResult> {
+    azoth_process::models::throttling_valve::throttling_valve(
+        &components,
+        inlet_n,
+        &inlet_z,
+        pascals(inlet_p),
+        kelvins(inlet_t),
+        pascals(outlet_pressure),
+    )
+    .map(|r| crate::transport_gen::PyThrottlingValveResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

@@ -97,6 +97,37 @@ def si_ctors() -> dict[str, str]:
     return out
 
 
+def root_exports(crate: str) -> dict[str, str]:
+    """Each name the crate root re-exports, mapped to the module path it comes from.
+
+    A name can be declared twice in one crate - `azoth-process` has `kernels::absorption_column`
+    taking a setup record and `models::absorption_column` taking the declared inputs, and the spec
+    names the second. Which one the crate root exports is the crate's own answer, so it is read
+    rather than guessed at.
+    """
+    lib = CRATES / crate.replace("_", "-") / "src" / "lib.rs"
+    if not lib.exists():
+        return {}
+    text = rust_index._blank_comments(lib.read_text(encoding="utf-8"))
+    out: dict[str, str] = {}
+    for group in re.finditer(r"^pub use ([\w:]+)::\{([^}]*)\};", text, re.M | re.S):
+        for name in group.group(2).replace("\n", " ").split(","):
+            if name.strip():
+                out[name.strip()] = group.group(1)
+    for single in re.finditer(r"^pub use ([\w:]+)::(\w+);", text, re.M):
+        out[single.group(2)] = single.group(1)
+    return out
+
+
+def declared_in(crate: str, path: pathlib.Path) -> str:
+    """The module directory a file sits under, which is the segment a `pub use` names."""
+    inside = path.relative_to(CRATES / crate.replace("_", "-") / "src")
+    parts = list(inside.with_suffix("").parts)
+    if parts and parts[-1] == "mod":
+        parts.pop()
+    return "::".join(parts[:-1])
+
+
 def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
     """Every `pub fn` the kernels declare, by name, as `(parameters, crate, item path)`.
 
@@ -109,8 +140,7 @@ def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
     **`azoth-python` is not scanned.** It is this binding, and every wrapper it carries has the
     kernel's own name - so including it would make each kernel look like a duplicate of itself.
     """
-    out: dict[str, tuple[list[tuple[str, str]], str, str]] = {}
-    seen: dict[str, int] = {}
+    found: dict[str, list[tuple[list[tuple[str, str]], str, pathlib.Path]]] = {}
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
         parts = path.relative_to(CRATES).parts
         if parts[0] == "azoth-python":
@@ -118,13 +148,26 @@ def kernel_signatures() -> dict[str, tuple[list[tuple[str, str]], str, str]]:
         module = parts[0].replace("-", "_")
         text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
         for name, params in signatures(text):
-            if name in seen:
-                seen[name] += 1
-                out.pop(name, None)
-                continue
-            seen[name] = 1
-            out[name] = (params, module, path)
-    return {name: value for name, value in out.items() if seen[name] == 1}
+            found.setdefault(name, []).append((params, module, path))
+
+    out: dict[str, tuple[list[tuple[str, str]], str, pathlib.Path]] = {}
+    exports: dict[str, set[str]] = {}
+    for name, candidates in found.items():
+        if len(candidates) == 1:
+            out[name] = candidates[0]
+            continue
+        # Declared more than once in one crate: the root's own `pub use` says which is the item the
+        # spec's path names. Two that both are, or neither, is a name this reader will not pick.
+        for _, module, _ in candidates:
+            exports.setdefault(module, root_exports(module))
+        matched = [
+            candidate
+            for candidate in candidates
+            if exports[candidate[1]].get(name) == declared_in(candidate[1], candidate[2])
+        ]
+        if len(matched) == 1:
+            out[name] = matched[0]
+    return out
 
 
 def signatures(
@@ -386,6 +429,56 @@ def record_fields(type_name: str) -> list[tuple[str, str]] | None:
     return None
 
 
+def bridge_arguments(function: str) -> list[str]:
+    """The bridge's call to `_core.<function>`, as its top-level argument expressions."""
+    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
+    source = "\n".join(
+        line[: line.index("#")] if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0 else line
+        for line in source.split("\n")
+    )
+    match = re.search(rf"_core\.{re.escape(function)}\(", source)
+    if match is None:
+        return []
+    depth, i = 0, match.end() - 1
+    while i < len(source):
+        if source[i] == "(":
+            depth += 1
+        elif source[i] == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    inner, parts, depth, start = source[match.end() : i], [], 0, 0
+    for j, ch in enumerate(inner):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            parts.append(inner[start:j])
+            start = j + 1
+    parts.append(inner[start:])
+    return [part.strip() for part in parts if part.strip()]
+
+
+def bridge_order(function: str, names: list[str]) -> bool:
+    """Whether the bridge passes `names` in the order they are declared.
+
+    **The bridge is the only caller and it calls positionally**, so the order it passes is the
+    contract - and it is not the spec's for every id: `heat_exchanger`'s hand-written wrapper took
+    the two component lists first and the fields after, which the spec does not say. Each argument
+    is matched to the one declared name it mentions, and a sequence that is not the declared order
+    is a signature this file would emit in the wrong places.
+    """
+    carried = set(names)
+    seen: list[str] = []
+    for argument in bridge_arguments(function):
+        mentioned = [name for name in names if re.search(rf"\b{re.escape(name)}\b", argument)]
+        if len(mentioned) == 1:
+            seen.append(mentioned[0])
+    return [name for name in names if name in carried and name in seen] == seen
+
+
 def pairing(kernel: list[tuple[str, str]], inputs: dict) -> dict[str, str]:
     """Each kernel parameter to the declared input it carries, or `{}` where that cannot be read.
 
@@ -445,7 +538,10 @@ def convert(kind: str, unit: str | None, name: str, aliases: set[str]) -> tuple[
     """
     if kind in PASSTHROUGH:
         declared = PASSTHROUGH[kind]
-        # A slice crosses as an owned `Vec`, and the kernel wants a borrow of it.
+        # A slice crosses as an owned `Vec` and the kernel borrows it; an optional one borrows a
+        # slice of the `Vec` the caller gave, which is what `as_deref` is for.
+        if kind.startswith("Option<&["):
+            return declared, f"{name}.as_deref()"
         return declared, (f"&{name}" if declared.startswith("Vec<") else name)
     if kind in NEEDS_LOCAL:
         declared, local, body = NEEDS_LOCAL[kind]
@@ -593,7 +689,13 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
             statements.extend(parsed)
         arguments.append(argument)
 
-    # The declared signature, with the optional ones last, which is `gen_stub`'s rule.
+    # **The signature is in the spec's declared order, not the optional-last order.** `_core` is
+    # the bridge's private door and the bridge calls it positionally in this order; the
+    # optional-last rule belongs to the *stub*, which describes the public function, and `gen_stub`
+    # applies it there. `_core`'s signature is not a Python `def`, so it is under no such
+    # constraint - and inventing one here is what put `heat_exchanger`'s arguments in the wrong
+    # places.
+    declared_order = list(inputs.items())
     declarations = []
     defaults = boundary_defaults() if mixture is not None else {}
     if mixture is not None:
@@ -609,8 +711,14 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
                 None,
             )
             declarations.append(f"{field}: {RECORD_FIELDS[found]}")
-    for name, decl in gen_stub.ordered_parameters(inputs):
+    for name, decl in declared_order:
         kind = next((kind for key, kind in kernel if pairs.get(key) == name), None)
+        if kind is not None and decl.get("optional") and not kind.startswith("Option<"):
+            # The spec lets the caller omit it and the kernel wants a value, so a default has to
+            # be chosen - which is a decision this file will not invent.
+            raise Refusal(
+                f"{calc_id}: {name} is optional in the spec and the kernel takes {kind}"
+            )
         if kind is None:
             # An input the boundary carries structurally - the mixture's `components`, which the
             # builder's arrays stand for - has no parameter of its own.
@@ -631,7 +739,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         )
 
     rust_name = next(r.rust_name for r in rust_index.result_types() if r.calc_id == calc_id)
-    names = [name for name, _ in gen_stub.ordered_parameters(inputs)]
+    names = [name for name, _ in declared_order]
     if mixture is not None:
         # The mixture's declared input is not a parameter: the bundle carries it.
         paired = set(pairs.values())
@@ -684,8 +792,6 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
     specs = specs_by_id()
     out = []
     for calc_id, module, function in rust_index.implementations():
-        if module == "process":
-            continue
         found = kernels.get(function)
         spec = specs[calc_id]
         entry = (calc_id, module, function, spec)
@@ -716,13 +822,31 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
                 break
         if text is None:
             continue
+        if any("Mixture" not in kind for _, kind in kernel):
+            # The mixture's own parameters are the bundle's, in the bundle's order; the rest are
+            # the spec's, and the bridge has to pass them in the order the spec declares them.
+            carried = set(pairing(kernel, spec["inputs"]).values())
+            if not bridge_order(function, [name for name in spec["inputs"] if name in carried]):
+                continue
         out.append((entry, text))
     return out
 
 
 def ctors(text: str) -> list[str]:
-    """The vocabulary constructors the emitted wrappers call."""
-    return sorted(set(re.findall(r"\b([a-z_]+)\((?=[A-Za-z_])", text)) & set(_ALL_CTORS))
+    """The vocabulary constructors the emitted wrappers name, in call or in `map`.
+
+    A word scan rather than a call scan: a constructor reaches the call as `pascals(P)` but also as
+    `duty.map(watts)`, where the name is followed by a bracket rather than a letter.
+    """
+    return sorted(
+        name
+        for name in _ALL_CTORS
+        # A constructor reaches the call either directly - `pascals(P)` - or through a `map`,
+        # where it is the whole argument: `duty.map(watts)`. Matched in those two positions
+        # rather than as a bare word, because a parameter can be *named* after a unit.
+        if re.search(rf"(?:^|[^\w.]){name}\(", text, re.M)
+        or re.search(rf"\.map\(\s*{name}\s*\)", text)
+    )
 
 
 def _all_ctors() -> set[str]:
