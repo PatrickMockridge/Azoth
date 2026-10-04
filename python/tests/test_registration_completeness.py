@@ -22,14 +22,19 @@ be two places to fix when one changes:
 
 # What only this file checks
 
-Four gaps, each of which was invisible until something called the calc:
+Five gaps, each of which was invisible until something called the calc:
 
 * ``azoth._core.calc_ids()`` — the extension's own list. A calc missing from it is
   reported by no other test, because every check that iterates the registry
   iterates the *registry*, not the extension.
-* ``azoth._rust_bridge._IMPLEMENTATIONS`` — the bridge's id table. Its absence is
-  only reachable through ``resolve``, so it surfaced only for a calc that had an
-  active spec case and was asked for by id.
+* the bridge function existing for a calc id. The bridge used to carry an id table
+  whose absence was only reachable through ``resolve``; the table is gone and
+  ``resolve`` derives the name, so what can now be missing is the *function*.
+* that the bridge accepts the arguments the public API passes it. The two are
+  separate hand-written declarations of one contract, so a parameter added to the
+  public wrapper and its kernel but not to the bridge is a ``TypeError`` on the
+  Rust backend alone — which is what it was, for ``column_diameter`` and
+  ``max_allowable_fs_factor`` on the three columns, until this check was added.
 * ``azoth._core.pyi`` — the stub. Nothing validated it at all.
 * that the result class is a usable dataclass. This one is not hypothetical: the
   Haaland calc was added with its ``@dataclass`` decorator missing, every Rust test
@@ -43,6 +48,7 @@ from __future__ import annotations
 import ast
 import dataclasses
 import importlib
+import inspect
 import re
 from pathlib import Path
 from types import ModuleType
@@ -165,6 +171,18 @@ def test_the_extension_exposes_the_function(calc_id: str) -> None:
 # --- the bridge's id table ----------------------------------------------
 
 
+def _registered_ids() -> list[str]:
+    """Every id `resolve` accepts: the calcs *and* the models.
+
+    `CALC_IDS` above is the calcs alone, because it is the extension's ``calc_ids()``
+    table that has to match those. The bridge covers both halves, so the tests that ask
+    what the bridge knows read this.
+    """
+    from azoth._models_gen import MODELS
+
+    return sorted([calc["id"] for calc in CALCS] + [model["id"] for model in MODELS])
+
+
 @pytest.mark.requires_rust
 def test_the_bridge_covers_exactly_the_registry() -> None:
     """Every registered id resolves to a bridge function that exists.
@@ -177,13 +195,116 @@ def test_the_bridge_covers_exactly_the_registry() -> None:
     names it looks up.
     """
     bridge = importlib.import_module("azoth._rust_bridge")
-    missing = sorted(calc_id for calc_id in CALC_IDS if not hasattr(bridge, FUNCTION_NAME[calc_id]))
+    missing = [
+        calc_id for calc_id in _registered_ids() if not hasattr(bridge, calc_id.rpartition(".")[2])
+    ]
     assert not missing, (
         f"{missing} have no bridge function. Add one named after the id's last "
         f"segment in python/src/azoth/_rust_bridge.py - there is no table to update."
     )
     with pytest.raises(KeyError):
         bridge.resolve("not.a_calc")
+
+
+def _public_dispatch_sites() -> list[tuple[str, list[str], str]]:
+    """Every ``resolve(...)(...)`` call site in the public packages.
+
+    Returns ``(calc_id, keyword names, file)`` for each, read from the source rather
+    than listed. The public wrapper is the caller `_rust_bridge` exists to serve: it
+    resolves the id and calls whatever comes back with these keywords, so this *is* the
+    signature the bridge has to accept - one hand-written declaration of a contract two
+    files state separately.
+
+    The id is written either as the module's own constant (``resolve(_ORIFICE_FLOW)``)
+    or as a literal for the one site that has no constant, so both spellings are read.
+    Every site is keyword-only today; a positional one would be a contract this cannot
+    read, and it is refused rather than skipped.
+    """
+    sites: list[tuple[str, list[str], str]] = []
+    root = REPO_ROOT / "python" / "src" / "azoth"
+    for path in sorted(root.glob("*/__init__.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        constants = {
+            node.targets[0].id: node.value.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        }
+        for call in ast.walk(tree):
+            if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Call):
+                continue
+            inner = call.func
+            if not (isinstance(inner.func, ast.Name) and inner.func.id == "resolve"):
+                continue
+            (argument,) = inner.args
+            if isinstance(argument, ast.Constant):
+                calc_id = argument.value
+            elif isinstance(argument, ast.Name) and argument.id in constants:
+                calc_id = constants[argument.id]
+            else:
+                raise AssertionError(
+                    f"{path.name}: `resolve({ast.unparse(argument)})` is not a literal or "
+                    f"a module-level string constant, so the id it dispatches to cannot "
+                    f"be read from this file"
+                )
+            assert not call.args, (
+                f"{path.name}: the call to `resolve({calc_id!r})(...)` passes a positional "
+                f"argument, which this check cannot compare against the bridge's own "
+                f"parameter list"
+            )
+            assert all(keyword.arg is not None for keyword in call.keywords), (
+                f"{path.name}: the call to `resolve({calc_id!r})(...)` unpacks keywords"
+            )
+            sites.append((calc_id, [keyword.arg for keyword in call.keywords], path.name))
+    return sites
+
+
+@pytest.mark.requires_rust
+def test_the_bridge_accepts_the_arguments_the_public_api_passes() -> None:
+    """Every keyword the public wrapper sends, the bridge function takes.
+
+    The two are one contract written twice, and nothing compared them: the bridge is
+    called through ``resolve`` with exactly the keywords its caller names, so a
+    parameter the wrapper forwards but the bridge does not declare is a ``TypeError``
+    on the Rust backend and a working call on the Python one. That is what it was for
+    ``column_diameter`` and ``max_allowable_fs_factor``: the capacity-limit port added
+    both to the spec, the kernel, the reference and the public wrapper, and the bridge
+    was never told, so ``azoth.process.absorption_column`` raised
+    ``TypeError: absorption_column() got an unexpected keyword argument
+    'column_diameter'`` on every call - reachable from the public API, and reported by
+    no test, because no spec case sets either input.
+
+    A count is not enough to catch it. Both are optional in ``_core``'s own signature,
+    so the bridge's short call is accepted there and the caller's value is dropped;
+    only the *names* separate the two.
+    """
+    bridge = importlib.import_module("azoth._rust_bridge")
+    sites = _public_dispatch_sites()
+    assert len(sites) == len(_registered_ids()), (
+        f"{len(sites)} public resolve() call sites for {len(_registered_ids())} ids - "
+        f"every registered calculation is reachable through the public API, so the two "
+        f"counts must agree"
+    )
+
+    problems: list[str] = []
+    for calc_id, keywords, source in sites:
+        function = getattr(bridge, calc_id.rpartition(".")[2], None)
+        if function is None:
+            problems.append(f"{calc_id}: no bridge function ({source})")
+            continue
+        accepted = set(inspect.signature(function).parameters)
+        missing = [keyword for keyword in keywords if keyword not in accepted]
+        if missing:
+            problems.append(f"{calc_id}: the bridge does not take {missing} ({source})")
+    assert not problems, (
+        "the bridge and the public API disagree about the arguments:\n  "
+        + "\n  ".join(problems)
+        + "\nAdd the parameter to python/src/azoth/_rust_bridge.py and forward it to "
+        "azoth._core."
+    )
 
 
 # --- the type stub ------------------------------------------------------

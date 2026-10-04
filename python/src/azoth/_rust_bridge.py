@@ -4651,6 +4651,8 @@ def absorption_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber; see :func:`azoth.process.reference.absorption_column`.
 
@@ -4706,6 +4708,8 @@ def absorption_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         pumparound_max_iterations,
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        max_allowable_fs_factor,
     )
     return AbsorptionColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -4791,6 +4795,7 @@ def packed_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> PackedColumnResult:
     """Solve a packed column; see :func:`azoth.process.reference.packed_column`.
 
@@ -4854,6 +4859,7 @@ def packed_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         pumparound_max_iterations,
+        max_allowable_fs_factor,
     )
     return PackedColumnResult(
         gas_side_draw_n=tuple(
@@ -4946,6 +4952,8 @@ def stripping_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper; see :func:`azoth.process.reference.stripping_column`.
 
@@ -4999,6 +5007,8 @@ def stripping_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         pumparound_max_iterations,
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        max_allowable_fs_factor,
     )
     return StrippingColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
