@@ -292,44 +292,9 @@ fn wrong_shape(name: &str, expected: &str, found: &toml::Value) -> AzothError {
     )
 }
 
-/// **The table.** One entry per palette id that has a kernel, each returning its outlets in the
-/// order its declaration names them.
-pub const DISPATCH: &[(&str, Kernel)] = &[
-    ("unit_ops.absorption_column", absorption_column),
-    ("unit_ops.component_splitter", component_splitter),
-    ("unit_ops.compressor", compressor),
-    ("unit_ops.cooler", cooler),
-    ("unit_ops.distillation_column", distillation_column),
-    ("unit_ops.ejector", ejector),
-    ("unit_ops.expander", expander),
-    ("unit_ops.filter", filter),
-    ("unit_ops.flare", flare),
-    ("unit_ops.gibbs_reactor", gibbs_reactor),
-    ("unit_ops.gas_scrubber", gas_scrubber),
-    ("unit_ops.heat_exchanger", heat_exchanger),
-    ("unit_ops.heater", heater),
-    ("unit_ops.manifold", manifold),
-    ("unit_ops.mixer", mixer),
-    ("unit_ops.pipe", pipe),
-    ("unit_ops.packed_column", packed_column),
-    ("unit_ops.plug_flow_reactor", plug_flow_reactor),
-    ("unit_ops.pump", pump),
-    (
-        "unit_ops.rate_based_packed_column",
-        rate_based_packed_column,
-    ),
-    ("unit_ops.separator", separator),
-    (
-        "unit_ops.shortcut_distillation_column",
-        shortcut_distillation_column,
-    ),
-    ("unit_ops.splitter", splitter),
-    ("unit_ops.stirred_tank_reactor", stirred_tank_reactor),
-    ("unit_ops.stripping_column", stripping_column),
-    ("unit_ops.tank", tank),
-    ("unit_ops.three_phase_separator", three_phase_separator),
-    ("unit_ops.throttling_valve", throttling_valve),
-];
+/// **The table**, generated from the palette's ids and the adapters above by
+/// `tools/gen_dispatch.py`.
+pub use crate::executor::dispatch_gen::DISPATCH;
 
 /// **The entries this executor does not run, and what would close each.** A palette entry with no
 /// kernel is refused by name here rather than missing, so a flowsheet naming one is told why.
@@ -371,13 +336,13 @@ pub fn dispatch(id: &str, inlets: &[Stream], parameters: &Parameters<'_>) -> Res
 // The entries, in the table's order. Each is a translation and nothing else: the arithmetic is
 // the kernel's, and what is written here is which declared parameter goes on which argument.
 
-fn component_splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn component_splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let (first, second) =
         kernels::component_splitter::component_splitter(&inlets[0], &p.vector("split_factors")?)?;
     Ok(KernelOutcome::streams_only(vec![first, second]))
 }
 
-fn compressor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn compressor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(vec![
         kernels::compressor::compressor(
             &inlets[0],
@@ -387,7 +352,7 @@ fn compressor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     ]))
 }
 
-fn cooler(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn cooler(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::cooler::cooler(
         &inlets[0],
         p.optional_si("outlet_temperature")?.map(kelvins),
@@ -399,7 +364,7 @@ fn cooler(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
-fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(vec![
         kernels::expander::expander(
             &inlets[0],
@@ -409,13 +374,13 @@ fn expander(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     ]))
 }
 
-fn filter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn filter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::filter::filter(&inlets[0], pascals(p.si("pressure_drop")?))?;
     let result = crate::models::FilterResult::of(&out, Vec::new());
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
-fn flare(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn flare(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {
     let (product, numbers) = kernels::flare::flare(&inlets[0])?;
     let result = crate::models::FlareResult::of(&product, &numbers, Vec::new());
     KernelOutcome::publishing(vec![product], &result)
@@ -426,7 +391,7 @@ fn flare(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {
 /// **The pressure is the feed's and the equilibrium temperature is the feed's**, so nothing here
 /// converts a unit: the solver takes the numeric bar value the class's own residual writes
 /// `ln(P/1 bara)` with, and that is `feed.p` over `1e5`.
-fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let setup = kernels::gibbs_reactor::ReactorSetup {
         energy_mode: kernels::gibbs_reactor::EnergyMode::named(&p.text("energy_mode")?),
         damping_composition: p.number("damping_composition")?,
@@ -439,7 +404,7 @@ fn gibbs_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome>
     KernelOutcome::publishing(vec![outlet], &result)
 }
 
-fn heater(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn heater(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::heater::heater(
         &inlets[0],
         p.optional_si("outlet_temperature")?.map(kelvins),
@@ -450,21 +415,21 @@ fn heater(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
-fn manifold(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn manifold(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(kernels::manifold::manifold(
         inlets,
         &p.vector("split_factors")?,
     )?))
 }
 
-fn mixer(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn mixer(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(vec![kernels::mixer::mixer(
         inlets,
         p.optional_si("outlet_pressure")?.map(pascals),
     )?]))
 }
 
-fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::pipe::pipe(
         &inlets[0],
         azoth_core::units::meters(p.si("length")?),
@@ -479,7 +444,7 @@ fn pipe(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
-fn pump(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn pump(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(vec![kernels::pump::pump(
         &inlets[0],
         pascals(p.si("outlet_pressure")?),
@@ -487,7 +452,7 @@ fn pump(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     )?]))
 }
 
-fn separator(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn separator(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let (vapour, liquid) = kernels::separator::separator(
         &inlets[0],
         pascals(p.si("pressure_drop")?),
@@ -497,7 +462,7 @@ fn separator(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(vec![vapour, liquid]))
 }
 
-fn gas_scrubber(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn gas_scrubber(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let (gas, liquid) = kernels::gas_scrubber::gas_scrubber(
         &inlets[0],
         pascals(p.si("pressure_drop")?),
@@ -507,25 +472,25 @@ fn gas_scrubber(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> 
     Ok(KernelOutcome::streams_only(vec![gas, liquid]))
 }
 
-fn splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn splitter(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(kernels::splitter::splitter(
         &inlets[0],
         &p.vector("split_factors")?,
     )?))
 }
 
-fn tank(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn tank(inlets: &[Stream], _p: &Parameters<'_>) -> Result<KernelOutcome> {
     let (gas, liquid) = kernels::tank::tank(inlets)?;
     Ok(KernelOutcome::streams_only(vec![gas, liquid]))
 }
 
-fn throttling_valve(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn throttling_valve(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     Ok(KernelOutcome::streams_only(vec![
         kernels::throttling_valve::throttling_valve(&inlets[0], pascals(p.si("outlet_pressure")?))?,
     ]))
 }
 
-fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::heat_exchanger::heat_exchanger(
         &inlets[0],
         &inlets[1],
@@ -543,7 +508,7 @@ fn heat_exchanger(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome
     KernelOutcome::publishing(vec![out.hot_out, out.cold_out], &result)
 }
 
-fn ejector(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn ejector(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::ejector::ejector(
         &inlets[0],
         &inlets[1],
@@ -562,7 +527,10 @@ fn ejector(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     KernelOutcome::publishing(vec![out.outlet], &result)
 }
 
-fn three_phase_separator(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn three_phase_separator(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
     let (vapour, light, heavy) = kernels::three_phase_separator::three_phase_separator(
         &inlets[0],
         pascals(p.si("pressure_drop")?),
@@ -579,7 +547,7 @@ fn three_phase_separator(inlets: &[Stream], p: &Parameters<'_>) -> Result<Kernel
     Ok(KernelOutcome::streams_only(vec![vapour, light, heavy]))
 }
 
-fn stirred_tank_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn stirred_tank_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let (product, duty) = kernels::stirred_tank_reactor::stirred_tank_reactor(
         &inlets[0],
         &kernels::ReactorSetup {
@@ -596,7 +564,7 @@ fn stirred_tank_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelO
     KernelOutcome::publishing(vec![product], &result)
 }
 
-fn plug_flow_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn plug_flow_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     // The order vectors are declared over the reactants the reaction data names, and the
     // stoichiometry is read from that data rather than declared - the same route the model takes.
     let orders = p.vector("reaction_orders")?;
@@ -706,7 +674,7 @@ fn plug_flow_reactor(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutc
     KernelOutcome::publishing(vec![product], &result)
 }
 
-fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let out = kernels::absorption_column::absorption_column(
         &kernels::absorption_column::AbsorberSetup {
             gas: inlets[0].clone(),
@@ -782,7 +750,7 @@ fn absorber_capacity(
     ))
 }
 
-fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     // **A stripper is an absorber with its two feeds renamed**, which is the class's own
     // statement: absorption and stripping are the same counter-current stage equations.
     let out = kernels::absorption_column::absorption_column(
@@ -827,7 +795,10 @@ fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutco
 /// does not carry has to be refused *here* rather than ignored: a form that offered a solver the
 /// executor silently dropped would be a parameter the palette declares and nothing honours, which
 /// is the defect `unit_ops.throttling_valve`'s `valve_opening` was withdrawn for.
-fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn rate_based_packed_column(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
     use kernels::rate_based_packed_column::{
         ColumnSolver, FilmModel, HeatTransferModel, MassTransferCorrelation, RateBasedSetup,
         SegmentSolver,
@@ -870,7 +841,7 @@ fn rate_based_packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<Ker
     KernelOutcome::publishing(vec![out.gas_out, out.liquid_out], &result)
 }
 
-fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     // **The coupling is the outer loop, so the flag picks the kernel entry rather than adding a
     // step.** A form that set it and got the uncoupled profile would be a parameter the palette
     // declares and nothing honours.
@@ -970,7 +941,7 @@ fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOu
 /// form's completeness and are **not** read: the base kernel takes neither, and refusing them
 /// would make this entry narrower than `unit_ops.distillation_column`, which declares the same
 /// three and reads neither. That is one limitation stated once rather than twice.
-fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn packed_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     let solver = match p.optional_text("solver_type")?.as_deref() {
         None | Some("direct_substitution") => {
             kernels::distillation_column::SolverType::DirectSubstitution
@@ -1085,7 +1056,10 @@ fn column_setup(inlets: &[Stream], p: &Parameters<'_>) -> Result<kernels::Column
     })
 }
 
-fn shortcut_distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
+pub(crate) fn shortcut_distillation_column(
+    inlets: &[Stream],
+    p: &Parameters<'_>,
+) -> Result<KernelOutcome> {
     let out = kernels::shortcut_distillation_column::shortcut_distillation_column(
         &inlets[0],
         &p.text("light_key")?,

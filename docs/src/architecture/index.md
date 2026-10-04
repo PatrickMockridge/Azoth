@@ -26,6 +26,7 @@ specs/schema/*.json      the contract each of those is held to
         ├─► tools/gen_docs.py       ─► docs/src/**, including docs/src/SUMMARY.md
         ├─► tools/gen_stub.py       ─► python/src/azoth/_core.pyi
         ├─► tools/gen_guard_theorems.py ─► lean/Azoth/Guards.lean, GuardGate.lean
+        ├─► tools/gen_dispatch.py   ─► crates/azoth-process/src/executor/dispatch_gen.rs
         ├─► tools/provenance.py     ─► provenance.json
         └─► tools/gen_model_inputs.py ─► crates/azoth-process/src/model_inputs_gen.rs
                                         lean/Azoth/Inputs.lean
@@ -78,9 +79,10 @@ holds the checkers, which generate nothing and are what fail the build: `spec_li
 | the licence obligations for the vendored data | `NOTICE`, `LICENSE-CC-BY-4.0` |
 | what the library promises and does not | [the specification](./specification.md) |
 
-`tools/check_lean_axioms.py` reads the two gate files, `lean/Azoth/Axioms.lean` and the
-generated `lean/Azoth/Gate.lean`, and refuses any axiom the development was not allowed to
-use, so the Lean half is checked rather than trusted.
+`tools/check_lean_axioms.py` reads the three gate files — the hand-written
+`lean/Azoth/Axioms.lean` and the generated `lean/Azoth/Gate.lean` and
+`lean/Azoth/GuardGate.lean` — and refuses any axiom the development was not allowed to use, so
+the Lean half is checked rather than trusted.
 
 ## Two implementations, mirrored
 

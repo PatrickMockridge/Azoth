@@ -210,11 +210,18 @@ def unit_ops_kernels() -> int:
     return len(_palette_ids() & declared)
 
 
+#: The two files an `executor::dispatch` table can be in. `UNRUNNABLE` is hand-written and stays
+#: where it is; `DISPATCH` is generated, and read here from whichever file carries it rather than
+#: from a path that moves when a table does.
+_DISPATCH_SOURCES = (
+    ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch.rs",
+    ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch_gen.rs",
+)
+
+
 def _table(name: str) -> list[str]:
     """The ids in one `executor::dispatch` table, parsed from its own source."""
-    text = (ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch.rs").read_text(
-        encoding="utf-8"
-    )
+    text = "".join(path.read_text(encoding="utf-8") for path in _DISPATCH_SOURCES)
     # `)];` as well as `];`: a one-entry table is rustfmt'd across lines as
     # `&[(\n    "id",\n    "why",\n)];`.
     match = re.search(rf"pub const {name}[^=]*= &\[(.*?)\n\)?\];", text, re.S)

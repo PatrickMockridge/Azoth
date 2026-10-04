@@ -322,6 +322,7 @@ jobs:
           .venv/bin/python tools/gen_python_transport.py
           .venv/bin/python tools/gen_python_register.py
           .venv/bin/python tools/gen_guard_theorems.py
+          .venv/bin/python tools/gen_dispatch.py
           .venv/bin/python tools/gen_python_wrappers.py
       - name: Fail if anything drifted
         run: |
@@ -334,6 +335,7 @@ jobs:
             echo "::error::  python tools/gen_python_transport.py"
             echo "::error::  python tools/gen_python_register.py"
             echo "::error::  python tools/gen_guard_theorems.py"
+            echo "::error::  python tools/gen_dispatch.py"
             echo "::error::  python tools/gen_python_wrappers.py"
             exit 1
           fi
