@@ -1,8 +1,13 @@
 """Every calc id is wired into every hand-maintained list that has to know it.
 
-Adding a calculation needs five new files, and then a dozen edits to existing
-ones - none of which fails at generation time if forgotten. This file exists to
-make those omissions fail loudly, naming the file to go and edit.
+Adding a calculation needs five new files - a spec, a kernel and a test in each
+language - and then edits to the existing ones that still know an id by hand:
+the Rust result type and its `lib.rs` line, the bridge adapter, the Python result
+dataclass and the public package. None of those fails at generation time if
+forgotten, and this file exists to make the omission fail loudly, naming the file
+to go and edit. The registration lists the tranche has generated since - the
+extension's id tables, its register call, its transport structs and its wrappers -
+are not among them, because a generator that forgot one fails its own `--check`.
 
 # What is checked elsewhere, and deliberately not repeated here
 

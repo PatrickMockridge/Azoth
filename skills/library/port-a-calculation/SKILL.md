@@ -1,9 +1,9 @@
 # Port a calculation into azoth
 
 azoth's one priority is finishing the port of NeqSim. A new calculation is not a
-function someone adds — it is a **spec plus two hand-written kernels plus a test**,
-with every other file generated from the spec. This skill is the whole of that
-discipline.
+function someone adds — it is a **spec plus two hand-written kernels plus a test of
+each**, with every other file generated from the spec. This skill is the whole of
+that discipline.
 
 ## When to Use
 
@@ -26,7 +26,8 @@ Do not use this skill to *call* a calculation — that is `azoth-run-calculation
   procedure).
 - One Rust kernel and one Python kernel — two hand-written implementations of the same
   arithmetic.
-- One test comparing the two case by case, with matching iteration counts.
+- One test of each kernel, and the pair compared case by case with matching iteration
+  counts.
 
 ## How a calculation runs
 
@@ -38,6 +39,13 @@ specs/**/*.toml ─► tools/gen_registry.py ─► crates/*/spec_gen.rs, python
                 ─► tools/gen_vocabulary.py
                 ─► tools/gen_docs.py    ─► docs/src/**, SUMMARY.md
                 ─► tools/gen_stub.py    ─► python/src/azoth/_core.pyi
+                ─► tools/gen_guard_theorems.py ─► lean/Azoth/Guards.lean, GuardGate.lean
+
+the registry and the Rust sources
+                ─► tools/gen_python_registry.py  ─► crates/azoth-python/src/registry_tables_gen.rs
+                ─► tools/gen_python_transport.py ─► crates/azoth-python/src/transport_gen.rs
+                ─► tools/gen_python_register.py  ─► crates/azoth-python/src/register_gen.rs
+                ─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
 ```
 
 The spec declares; the generators name. A field the spec does not name cannot be
@@ -47,8 +55,10 @@ emitted, and a declared output with no field is a promise the code cannot keep �
 ## Python usage pattern
 
 ```python
-# A new calculation costs four hand-written files. The spec declares; the two kernels
-# implement; the test compares. Everything else is generated from the spec.
+# A new calculation costs five hand-written files: the spec, a kernel and a test in
+# each language. The spec declares; the two kernels implement; the tests compare.
+# Everything else is generated - the extension's id tables, its register call, its
+# transport structs and its wrappers among them.
 import azoth
 
 azoth.available()  # what the registry already knows, before adding to it
@@ -91,8 +101,9 @@ Reading someone's Java is not reading the paper, so everything ported ships
 - `docs/src/architecture/spec-files.md` — the format of a spec.
 - `databank/manifest.toml` — the column-by-column record of what is taken and what is
   not, and the `not-yet` backlog this skill works from.
-- `tools/` — `gen_registry`, `gen_models`, `gen_docs`, `gen_stub`, `gen_vocabulary`,
-  and the checkers `spec_lint`, `prose_lint`, `check_manifest`.
+- `tools/` — the generators (`gen_registry`, `gen_models`, `gen_docs`, `gen_stub`,
+  `gen_vocabulary`, `gen_python_*`, `gen_guard_theorems`) and the checkers that fail the
+  build (`spec_lint`, `prose_lint`, `check_manifest`, `check_guards`).
 
 ## References
 
