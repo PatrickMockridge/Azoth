@@ -95,7 +95,7 @@ this page, `ROADMAP.md`, the batch exclusion list, and the port's NeqSim probe a
 capture.
 
 **Of those eleven, the pyo3 wrapper is the one the tranche has taken.** It is generated for
-**147** of the registered ids and hand-written for **47**: a kernel that takes a record or a
+**148** of the registered ids and hand-written for **46**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so
 is one whose signature disagrees with the order the bridge passes it in.
 
