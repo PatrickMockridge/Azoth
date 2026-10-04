@@ -801,11 +801,11 @@ class PlugFlowReactorResult(_HasWarnings):
     #: The duty an isothermal reactor supplies, zero on the other branches.
     heat_duty: Q
     #: Every station's axial position, m.
-    positions: tuple[float, ...]
+    positions: tuple[Q, ...]
     #: Every station's temperature, K.
-    temperature_profile: tuple[float, ...]
+    temperature_profile: tuple[Q, ...]
     #: Every station's pressure, Pa.
-    pressure_profile: tuple[float, ...]
+    pressure_profile: tuple[Q, ...]
     #: Every station's conversion.
     conversion_profile: tuple[float, ...]
     #: Caveats.
@@ -842,11 +842,11 @@ class GibbsReactorResult(_HasWarnings):
     #: The last undamped step norm.
     final_error: float
     #: The element Lagrange multipliers, on the class's own seven element names.
-    lagrange_multipliers: tuple[float, ...]
+    lagrange_multipliers: tuple[Q, ...]
     #: The outlet element balance less the inlet's.
-    element_balance_difference: tuple[float, ...]
+    element_balance_difference: tuple[Q, ...]
     #: The total Gibbs energy at the top of each iteration, before the update.
-    gibbs_energy_history: tuple[float, ...]
+    gibbs_energy_history: tuple[Q, ...]
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -1591,9 +1591,9 @@ class HydrateEquilibriumLineResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "eos.hydrate_equilibrium_line"
 
     #: The formation temperatures, in grid order, in kelvin.
-    temperature: tuple[float, ...]
+    temperature: tuple[Q, ...]
     #: The pressures the points were solved at, in pascals, parallel to ``temperature``.
-    pressure: tuple[float, ...]
+    pressure: tuple[Q, ...]
     #: Caveats, from every point of the grid.
     warnings: tuple[Warning, ...]
 
@@ -3147,13 +3147,13 @@ class PtPhaseEnvelopeResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "eos.pt_phase_envelope"
 
     #: The dew-point temperatures, in trace order.
-    dew_temperature: tuple[float, ...]
+    dew_temperature: tuple[Q, ...]
     #: The dew-point pressures, parallel to ``dew_temperature``.
-    dew_pressure: tuple[float, ...]
+    dew_pressure: tuple[Q, ...]
     #: The bubble-point temperatures, in trace order.
-    bubble_temperature: tuple[float, ...]
+    bubble_temperature: tuple[Q, ...]
     #: The bubble-point pressures, parallel to ``bubble_temperature``.
-    bubble_pressure: tuple[float, ...]
+    bubble_pressure: tuple[Q, ...]
     #: The temperature at the cricondenbar.
     cricondenbar_temperature: Q
     #: The cricondenbar pressure.
@@ -4436,7 +4436,7 @@ class PitzerPhaseResult(_HasWarnings):
     #: divided by none.
     gamma_inf: tuple[float, ...]
     #: Each component's molality ``n_i / m_water``, in mol/kg of solvent.
-    molality: tuple[float, ...]
+    molality: tuple[Q, ...]
     #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.
     ionic_strength: Q
     #: The Pitzer osmotic coefficient of the water.
@@ -4476,7 +4476,7 @@ class DesmukhMatherPhaseResult(_HasWarnings):
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
     #: Each component's molality ``n_i / m_solvent``, in mol/kg of solvent.
-    molality: tuple[float, ...]
+    molality: tuple[Q, ...]
     #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.
     ionic_strength: Q
     #: The mean molar mass of the ``solvent``-reference components, in kg/mol.

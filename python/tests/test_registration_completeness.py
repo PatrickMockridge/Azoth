@@ -50,6 +50,7 @@ import dataclasses
 import importlib
 import inspect
 import re
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -240,10 +241,11 @@ def _public_dispatch_sites() -> list[tuple[str, list[str], str]]:
             if not (isinstance(inner.func, ast.Name) and inner.func.id == "resolve"):
                 continue
             (argument,) = inner.args
+            calc_id: str
             if isinstance(argument, ast.Constant):
-                calc_id = argument.value
+                calc_id = str(argument.value)
             elif isinstance(argument, ast.Name) and argument.id in constants:
-                calc_id = constants[argument.id]
+                calc_id = str(constants[argument.id])
             else:
                 raise AssertionError(
                     f"{path.name}: `resolve({ast.unparse(argument)})` is not a literal or "
@@ -255,10 +257,13 @@ def _public_dispatch_sites() -> list[tuple[str, list[str], str]]:
                 f"argument, which this check cannot compare against the bridge's own "
                 f"parameter list"
             )
-            assert all(keyword.arg is not None for keyword in call.keywords), (
-                f"{path.name}: the call to `resolve({calc_id!r})(...)` unpacks keywords"
-            )
-            sites.append((calc_id, [keyword.arg for keyword in call.keywords], path.name))
+            keywords: list[str] = []
+            for keyword in call.keywords:
+                assert keyword.arg is not None, (
+                    f"{path.name}: the call to `resolve({calc_id!r})(...)` unpacks keywords"
+                )
+                keywords.append(keyword.arg)
+            sites.append((calc_id, keywords, path.name))
     return sites
 
 
@@ -414,6 +419,106 @@ def test_the_stub_matches_the_rust_transport_types() -> None:
     assert checked >= 8, (
         f"only {checked} transport type(s) were compared against the Rust source, but "
         f"the stub declares more. The parser is matching less than it should."
+    )
+
+
+#: A Rust transport type that carries a quantity, and how the stub spells it.
+#:
+#: **Only these are compared, and the reason is the one this file keeps meeting.** A dimensioned
+#: field is a `PyQty` in the transport and a `Qty` in the stub, and a *dimensionless* one is a
+#: bare `f64` and a `float` - and in Rust the two are the same number, because the kernels are
+#: typed against `uom::si::f64` where an alias and a float differ only in spelling. So a field
+#: can be a quantity on one side of the wire and a number on the other without anything failing
+#: to compile, which is exactly what happened: fourteen vector fields were `Vec<PyQty>` in the
+#: transport and `list[float]` in the stub, the bridge read `.magnitude_si` off them, and mypy
+#: was the only thing that noticed - sixty errors' worth, in code that was right.
+_QUANTITY_STUB_TYPES = {
+    "PyQty": "Qty",
+    "Option<PyQty>": "Qty | None",
+    "Vec<PyQty>": "list[Qty]",
+    "Option<Vec<PyQty>>": "list[Qty] | None",
+    "Vec<Vec<PyQty>>": "list[list[Qty]]",
+}
+
+TRANSPORT_GEN = REPO_ROOT / "crates" / "azoth-python" / "src" / "transport_gen.rs"
+
+
+def _tools_module(name: str) -> ModuleType:
+    """A module out of `tools/`, which is not a package and so is not importable by name."""
+    sys.path.insert(0, str(REPO_ROOT / "tools"))
+    try:
+        return importlib.import_module(name)
+    finally:
+        sys.path.pop(0)
+
+
+def _transport_field_types() -> dict[str, dict[str, str]]:
+    """The generated transport's fields, by class name without the `Py` prefix.
+
+    Read from `transport_gen.rs` rather than from `gen_stub.py`'s own rule, because the
+    transport is what an attribute access actually reaches: `_core.<calc>(...).field` is a
+    `PyQty` or a number according to this file, and the stub is a description of it.
+    """
+    rust_index = _tools_module("rust_index")
+    text = rust_index._blank_comments(TRANSPORT_GEN.read_text(encoding="utf-8"))
+    out: dict[str, dict[str, str]] = {}
+    for block in re.finditer(r"^pub struct (Py\w+) \{(.*?)^\}", text, re.M | re.S):
+        raw, body = block.group(1), block.group(2)
+        out[raw.removeprefix("Py")] = {
+            field.group(1): field.group(2)
+            for field in re.finditer(r"^\s*pub (\w+): (.+),$", body, re.M)
+        }
+    return out
+
+
+def test_the_stub_types_the_quantity_fields_the_transport_carries() -> None:
+    """Every quantity the transport carries is a `Qty` in the stub, not a number.
+
+    The sibling above compares the two files' *field names* and was written because a stub
+    describing an attribute no object has type-checks clean. This is the same failure one
+    column over: a stub describing an attribute as a `float` that is a quantity type-checks
+    clean too, and then every read of `.magnitude_si` on it is an error.
+    """
+    transport = _transport_field_types()
+    assert transport, f"{TRANSPORT_GEN.name} parsed to no structs"
+
+    stubs = {
+        node.name: {
+            statement.target.id: ast.unparse(statement.annotation)
+            for statement in node.body
+            if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+        }
+        for node in _stub_tree().body
+        if isinstance(node, ast.ClassDef)
+    }
+
+    problems: list[str] = []
+    checked = 0
+    for class_name, fields in transport.items():
+        declared = stubs.get(class_name)
+        if declared is None:
+            continue
+        for field, rust_type in fields.items():
+            expected = _QUANTITY_STUB_TYPES.get(rust_type)
+            if expected is None:
+                continue
+            checked += 1
+            if declared.get(field) != expected:
+                problems.append(
+                    f"{class_name}.{field}: the transport carries {rust_type}, so the stub "
+                    f"must declare {expected}, and it declares {declared.get(field)!r}"
+                )
+
+    # The same guard the sibling carries: a mapping that stopped matching would make every
+    # assertion below vacuous, and the count says whether it is still matching.
+    assert checked >= 400, (
+        f"only {checked} quantity field(s) were compared, but the transport carries far "
+        f"more. The parser or the type mapping is matching less than it should."
+    )
+    assert not problems, (
+        "\n  ".join(["_core.pyi and the transport disagree about a field's type:", *problems])
+        + "\nRun `python tools/gen_stub.py` after correcting the annotation in "
+        "python/src/azoth/core/result.py - the stub is emitted from it."
     )
 
 

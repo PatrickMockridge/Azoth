@@ -311,7 +311,7 @@ class CriticalPointResult:
 class DesmukhMatherPhaseResult:
     gamma: list[float]
     ln_gamma: list[float]
-    molality: list[float]
+    molality: list[Qty]
     ionic_strength: Qty
     solvent_molar_mass: Qty
     ln_phi: list[float]
@@ -498,8 +498,8 @@ class HybridEosGeFlashResult:
 
 @final
 class HydrateEquilibriumLineResult:
-    temperature: list[float]
-    pressure: list[float]
+    temperature: list[Qty]
+    pressure: list[Qty]
     warnings: list[Warning]
 
 @final
@@ -713,7 +713,7 @@ class PitzerPhaseResult:
     ln_phi: list[float]
     henry: list[Qty]
     gamma_inf: list[float]
-    molality: list[float]
+    molality: list[Qty]
     ionic_strength: Qty
     osmotic_coefficient: float
     water_activity: float
@@ -835,10 +835,10 @@ class PtFlashResult:
 
 @final
 class PtPhaseEnvelopeResult:
-    dew_temperature: list[float]
-    dew_pressure: list[float]
-    bubble_temperature: list[float]
-    bubble_pressure: list[float]
+    dew_temperature: list[Qty]
+    dew_pressure: list[Qty]
+    bubble_temperature: list[Qty]
+    bubble_pressure: list[Qty]
     cricondenbar_temperature: Qty
     cricondenbar_pressure: Qty
     cricondentherm_temperature: Qty
@@ -1648,9 +1648,9 @@ class GibbsReactorResult:
     converged: bool
     iterations: float
     final_error: float
-    lagrange_multipliers: list[float]
-    element_balance_difference: list[float]
-    gibbs_energy_history: list[float]
+    lagrange_multipliers: list[Qty]
+    element_balance_difference: list[Qty]
+    gibbs_energy_history: list[Qty]
     warnings: list[Warning]
 
 @final
@@ -1760,9 +1760,9 @@ class PlugFlowReactorResult:
     pressure_drop: Qty
     outlet_temperature: Qty
     heat_duty: Qty
-    positions: list[float]
-    temperature_profile: list[float]
-    pressure_profile: list[float]
+    positions: list[Qty]
+    temperature_profile: list[Qty]
+    pressure_profile: list[Qty]
     conversion_profile: list[float]
     warnings: list[Warning]
 
