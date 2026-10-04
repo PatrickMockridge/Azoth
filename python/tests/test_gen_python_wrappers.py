@@ -26,7 +26,11 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 
 #: The hand-written `pub fn`s the namespace modules may carry. Measured when the generator
 #: landed; lowering it is the point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 47
+#:
+#: 47 -> 46 when `process.packed_column` moved: slice 5c's last change made the generator able to
+#: derive it, and the committed `wrappers_gen.rs` was not regenerated, so for four commits the id
+#: was both covered and hand-written - which the disjointness below also catches.
+KNOWN_HAND_WRITTEN = 46
 
 
 def _tools_module(name: str) -> ModuleType:

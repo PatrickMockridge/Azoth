@@ -3776,6 +3776,118 @@ pub fn mixer(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Packed column.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, packing_type, structured_packing, design_flood_fraction, packing_hydraulic_capacity_factor, column_diameter, murphree_efficiency, reactive, reactive_start_tray, reactive_end_tray, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, tray_murphree_efficiency, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, max_allowable_fs_factor))]
+#[pyo3(
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, packing_type, structured_packing, design_flood_fraction, packing_hydraulic_capacity_factor, column_diameter, murphree_efficiency, reactive, reactive_start_tray, reactive_end_tray, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, tray_murphree_efficiency, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, max_allowable_fs_factor)"
+)]
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn packed_column(
+    py: Python<'_>,
+    components: Vec<String>,
+    feed_n: f64,
+    feed_z: Vec<f64>,
+    feed_p: f64,
+    feed_t: f64,
+    packed_height: f64,
+    feed_stage: usize,
+    has_reboiler: bool,
+    has_condenser: bool,
+    top_pressure: f64,
+    bottom_pressure: f64,
+    temperature_tolerance: f64,
+    max_iterations: usize,
+    reboiler_temperature: Option<f64>,
+    condenser_temperature: Option<f64>,
+    packing_type: Option<&str>,
+    structured_packing: Option<bool>,
+    design_flood_fraction: Option<f64>,
+    packing_hydraulic_capacity_factor: Option<f64>,
+    column_diameter: Option<f64>,
+    murphree_efficiency: Option<f64>,
+    reactive: Option<bool>,
+    reactive_start_tray: Option<usize>,
+    reactive_end_tray: Option<usize>,
+    solver_type: Option<&str>,
+    top_specification_type: Option<&str>,
+    top_specification_target: Option<f64>,
+    top_specification_component: Option<&str>,
+    bottom_specification_type: Option<&str>,
+    bottom_specification_target: Option<f64>,
+    bottom_specification_component: Option<&str>,
+    tray_murphree_efficiency: Option<Vec<f64>>,
+    gas_side_draw_fractions: Option<Vec<f64>>,
+    liquid_side_draw_fractions: Option<Vec<f64>>,
+    pumparound_fractions: Option<Vec<f64>>,
+    side_draw_flow_tray: Option<usize>,
+    side_draw_flow_phase: Option<&str>,
+    side_draw_flow_target: Option<f64>,
+    side_draw_flow_tolerance: Option<f64>,
+    side_draw_flow_max_iterations: Option<usize>,
+    pumparound_return_tray: Option<usize>,
+    pumparound_draw_tray: Option<usize>,
+    pumparound_draw_fraction: Option<f64>,
+    pumparound_temperature_drop: Option<f64>,
+    pumparound_tolerance: Option<f64>,
+    pumparound_max_iterations: Option<usize>,
+    max_allowable_fs_factor: Option<f64>,
+) -> PyResult<crate::transport_gen::PyPackedColumnResult> {
+    azoth_process::models::packed_column::packed_column(
+        &components,
+        feed_n,
+        &feed_z,
+        pascals(feed_p),
+        kelvins(feed_t),
+        packed_height,
+        feed_stage,
+        has_reboiler,
+        has_condenser,
+        pascals(top_pressure),
+        pascals(bottom_pressure),
+        reboiler_temperature.map(kelvins),
+        condenser_temperature.map(kelvins),
+        temperature_tolerance,
+        max_iterations,
+        packing_type,
+        structured_packing,
+        design_flood_fraction,
+        packing_hydraulic_capacity_factor,
+        column_diameter,
+        murphree_efficiency,
+        reactive,
+        reactive_start_tray,
+        reactive_end_tray,
+        solver_type,
+        top_specification_type,
+        top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        bottom_specification_target,
+        bottom_specification_component,
+        tray_murphree_efficiency.as_deref(),
+        gas_side_draw_fractions.as_deref(),
+        liquid_side_draw_fractions.as_deref(),
+        pumparound_fractions.as_deref(),
+        side_draw_flow_tray,
+        side_draw_flow_phase,
+        side_draw_flow_target,
+        side_draw_flow_tolerance,
+        side_draw_flow_max_iterations,
+        pumparound_return_tray,
+        pumparound_draw_tray,
+        pumparound_draw_fraction,
+        pumparound_temperature_drop,
+        pumparound_tolerance,
+        pumparound_max_iterations,
+        max_allowable_fs_factor,
+    )
+    .map(|r| crate::transport_gen::PyPackedColumnResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Pipe.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
