@@ -31,19 +31,22 @@ judgement the exemplar table in the report makes by hand. What this fixes is onl
 the number is now reproducible from a definition stated here rather than depending on an
 unrecorded one.
 """
+
+import pathlib
 import re
 import sys
-import pathlib
 
 IF = re.compile(r"\bif\s*\(([^;{}]*)\)\s*\{", re.S)
 ZERO = re.compile(r"[<>]=?\s*0(?:\.0*)?\b")
 NAN = re.compile(r"isNaN|isInfinite|isFinite")
 ASSIGN = re.compile(
     r"(?<![\w.])([A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]*\])?(?:\.[A-Za-z_][A-Za-z0-9_]*)*)"
-    r"\s*=\s*([-+]?\d[\d_.eE+\-]*[dDfFlL]?)\s*;")
+    r"\s*=\s*([-+]?\d[\d_.eE+\-]*[dDfFlL]?)\s*;"
+)
 DECL = re.compile(
     r"\b(?:double|float|int|long)\s+([A-Za-z_][A-Za-z0-9_]*)"
-    r"\s*=\s*([-+]?\d[\d_.eE+\-]*[dDfFlL]?)\s*;")
+    r"\s*=\s*([-+]?\d[\d_.eE+\-]*[dDfFlL]?)\s*;"
+)
 
 
 def strip_comments(text):
@@ -55,7 +58,7 @@ def strip_comments(text):
             j = i + 1
             while j < n and text[j] != '"':
                 j += 2 if text[j] == "\\" else 1
-            out.append(text[i:j + 1])
+            out.append(text[i : j + 1])
             i = j + 1
         elif text.startswith("//", i):
             j = text.find("\n", i)
@@ -117,9 +120,8 @@ def scan(path, wide):
                 name = am.group(1).split("[")[0].split(".")[-1]
                 if name not in cond:
                     continue
-                line = text[:m.start() + am.start()].count("\n") + 1
-                hits.append((line, " ".join(cond.split())[:72],
-                             f"{am.group(1)} = {am.group(2)}"))
+                line = text[: m.start() + am.start()].count("\n") + 1
+                hits.append((line, " ".join(cond.split())[:72], f"{am.group(1)} = {am.group(2)}"))
     return sorted(set(hits))
 
 

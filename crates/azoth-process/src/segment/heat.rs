@@ -4,7 +4,7 @@ use super::film::finite_positive;
 
 /// `calculateVolumetricHeatTransferCoefficient`: the Chilton-Colburn analogy.
 ///
-/// **The fractional exponent is guarded, and the guard is the class's.** `(Sc/Pr)^(2/3)` is a
+/// **The fractional exponent is guarded, and the guard is the class's.** `(Sc/Pr)^(2/3)` is a guarded: segment_heat.exponent
 /// partial function at a non-positive base, so both numbers are required positive and finite
 /// before it is evaluated; a state that fails either answers `0.0` rather than a `NaN` carried
 /// into the segment's heat balance.

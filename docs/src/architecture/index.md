@@ -25,14 +25,28 @@ specs/schema/*.json      the contract each of those is held to
         │                              lean/Azoth/Vocabulary.lean, Gate.lean
         ├─► tools/gen_docs.py       ─► docs/src/**, including docs/src/SUMMARY.md
         ├─► tools/gen_stub.py       ─► python/src/azoth/_core.pyi
+        ├─► tools/gen_guard_theorems.py ─► lean/Azoth/Guards.lean, GuardGate.lean
+        ├─► tools/gen_dispatch.py   ─► crates/azoth-process/src/executor/dispatch_gen.rs
         ├─► tools/provenance.py     ─► provenance.json
         └─► tools/gen_model_inputs.py ─► crates/azoth-process/src/model_inputs_gen.rs
+                                        lean/Azoth/Inputs.lean
 
 specs/unit_ops/**/*.toml ─► tools/gen_palette.py ─► crates/azoth-process/src/palette_gen.rs
+                                                └► ui/test/fixtures/** (via gen_ui_fixtures.py)
+
+the registry, the Rust sources and the specs
+        │
+        ├─► tools/gen_python_registry.py  ─► crates/azoth-python/src/registry_tables_gen.rs
+        ├─► tools/gen_python_transport.py ─► crates/azoth-python/src/transport_gen.rs
+        ├─► tools/gen_python_register.py  ─► crates/azoth-python/src/register_gen.rs
+        └─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
 
 databank/sources/neqsim/*.csv ─► tools/gen_databank.py ─► data/components/*.csv
+                              └► tools/gen_keycard.py ─► databank/keycard.toml
 keycard.toml                  ─► tools/gen_user_data.py ─► data/fittings/*.csv
                                                            data/fluids/*.csv
+vendor/reactions/*            ─► tools/gen_reaction_data.py ─► data/reactions/**
+validation/neqsim/captures/*  ─► tools/gen_neqsim_cases.py  ─► validation/eos/**
 ```
 
 **Two of those read a specification nothing else compiles from.** The process palette is
@@ -48,7 +62,8 @@ all of them and fails on a diff.** So a specification is not a document that is
 supposed to match the code; it is the thing the code was made from. `tools/` also
 holds the checkers, which generate nothing and are what fail the build: `spec_lint`,
 `prose_lint`, `check_links`, `check_json_keys`, `check_numerics`, `check_manifest`,
-`check_lean_axioms`, `check_doc_claims`, `check_user_data`, `check_wheel_data` and
+`check_lean_axioms`, `check_guards`, `check_doc_claims`, `check_unported`, `check_ui`,
+`check_versions`, `check_mcp_schema`, `check_user_data`, `check_wheel_data` and
 `validate_skills`.
 
 ## What is true, and where it is written
@@ -64,9 +79,10 @@ holds the checkers, which generate nothing and are what fail the build: `spec_li
 | the licence obligations for the vendored data | `NOTICE`, `LICENSE-CC-BY-4.0` |
 | what the library promises and does not | [the specification](./specification.md) |
 
-`tools/check_lean_axioms.py` reads the two gate files, `lean/Azoth/Axioms.lean` and the
-generated `lean/Azoth/Gate.lean`, and refuses any axiom the development was not allowed to
-use, so the Lean half is checked rather than trusted.
+`tools/check_lean_axioms.py` reads the three gate files — the hand-written
+`lean/Azoth/Axioms.lean` and the generated `lean/Azoth/Gate.lean` and
+`lean/Azoth/GuardGate.lean` — and refuses any axiom the development was not allowed to use, so
+the Lean half is checked rather than trusted.
 
 ## Two implementations, mirrored
 

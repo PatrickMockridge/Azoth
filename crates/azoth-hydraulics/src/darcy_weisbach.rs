@@ -94,7 +94,7 @@ pub fn darcy_weisbach(
         &mut warnings,
     )?;
 
-    // Guarded by the checks above, so D is non-zero here.
+    // Guarded by the checks above, so D is non-zero here. guarded: darcy_weisbach.divides_by_d
     let dp = f * (l_v / d_v) * (rho_v * v_v * v_v / 2.0);
 
     // Reynolds number only when viscosity was supplied. Everything downstream

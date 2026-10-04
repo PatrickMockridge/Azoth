@@ -22,7 +22,7 @@ from azoth import _models_gen
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import HydrateEquilibriumLineResult
-from azoth.core.units import Q, input_to_si, quantity
+from azoth.core.units import Q, from_si, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos.reference import _hydrate
 from azoth.eos.reference.hydrate_formation_temperature import hydrate_formation_temperature
@@ -78,7 +78,7 @@ def hydrate_equilibrium_line(
         warnings.extend(solved.warnings)
 
     return HydrateEquilibriumLineResult(
-        temperature=tuple(temperature),
-        pressure=tuple(pressure),
+        temperature=tuple(from_si(_v, "K") for _v in tuple(temperature)),
+        pressure=tuple(from_si(_v, "Pa") for _v in tuple(pressure)),
         warnings=tuple(warnings),
     )

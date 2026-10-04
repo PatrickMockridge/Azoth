@@ -184,6 +184,8 @@ impl CalcResult for AbsorptionColumnResult {
     }
 }
 
+// numerics-ok: `Murphree::clamp` is the class's own `clampMurphreeEfficiency`, which
+// clamps a requested efficiency rather than refusing it.
 /// Solve a tray absorber.
 ///
 /// # Errors

@@ -196,7 +196,7 @@ def test_every_id_agrees_across_languages() -> None:
 
     Both registries, because both are shipped: `calc_ids()` is the calculations and
     `model_ids()` the models, and together they are every id the extension exposes. That the
-    union is the registry's own 192 is asserted rather than assumed - a list that had quietly
+    union is the registry's own 194 is asserted rather than assumed - a list that had quietly
     lost an id would otherwise make this test pass by checking less.
     """
     from azoth._dispatch import result_types

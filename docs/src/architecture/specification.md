@@ -83,22 +83,29 @@ compared case by case, and that comparison is a test, not the reason there are t
 **Everything that names them is generated, and that is not the same as cheap.** A new
 calculation used to cost eleven hand edits across Rust and Python on top of its two
 kernels — result structs, transport classes, registration lines, `__all__` entries,
-dispatch wrappers. Each of those is a function of the spec's `inputs:`, `outputs:` and the
-id, and is now derived from the id or emitted by a generator. **Four is a count of *kinds*
-of file and not of files.** Measured on `hydraulics.tray_hydraulics`, whose commit touched
-thirty-one paths: **ten** were emitted by four generators, and **thirteen** were
-hand-maintained — the spec, the two kernels, the test, the crate's result type and its
-`lib.rs` line, the pyo3 wrapper and its two registration sites, the transported result
-struct and its `From`, the bridge adapter, the Python result dataclass, and
-`tools/gen_registry.py`'s own id table. The rest of those thirty-one are prose, a link and
-an existing test's expectation.
+dispatch wrappers. Most of those are a function of the spec's `inputs:`, `outputs:` and the
+id, and the registration-hardening tranche has moved them into generators. **Four is a
+count of *kinds* of file and not of files.** Measured on `hydraulics.tray_hydraulics`,
+which thirty-nine files name: **sixteen** are emitted by a generator and **eleven** must
+still be edited by hand — the spec, a kernel and a test in each language, the crate's
+result type and its `lib.rs` line, the pyo3 wrapper, the bridge adapter, the Python result
+dataclass and the public package. The other twelve name it because they read it or record
+it rather than because a port writes them: another column's model, the flowsheet designer,
+this page, `ROADMAP.md`, the batch exclusion list, and the port's NeqSim probe and its
+capture.
+
+**Of those eleven, the pyo3 wrapper is the one the tranche has taken.** It is generated for
+**148** of the registered ids and hand-written for **46**: a kernel that takes a record or a
+mixture the spec does not name is one the generator refuses rather than guesses at, and so
+is one whose signature disagrees with the order the bridge passes it in.
 
 **A `process.*` model is dearer again**, because both languages carry a result record and a
 public wrapper of their own: measured over the four columns' capacity limits, **ten sites per
 model** — its model spec, its case file and its palette entry, its model and its reference
 twin, plus a line each in the pyo3 wrapper, the transported results, the bridge, the Python
-result dataclass and the public package. Making the count below true is the
-registration-hardening tranche's subject and not this page's.
+result dataclass and the public package. The tranche has taken two of those ten — the pyo3
+wrapper and the transported result are generated for a model whose kernel takes the declared
+inputs — and the remaining eight are why the count below is still worth stating.
 
 **A spec declares every result field, in both directions.** A field the spec does not name
 cannot be emitted by a generator, and a declared output with no field is a promise the

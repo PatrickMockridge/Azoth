@@ -195,9 +195,9 @@ def packing_sizing(
     return PackingSizingResult(
         packing_name=resolved.name,
         packing_factor=resolved.packing_factor,
-        flooding_velocity=flooding_velocity,
-        design_velocity=design_velocity,
-        vapor_volumetric_flow=vapor_volumetric_flow,
+        flooding_velocity=from_si(flooding_velocity, "m/s"),
+        design_velocity=from_si(design_velocity, "m/s"),
+        vapor_volumetric_flow=from_si(vapor_volumetric_flow, "m**3/s"),
         required_area=from_si(required_area, "m**2"),
         required_diameter=from_si(required_diameter, "m"),
         column_diameter=from_si(column_diameter, "m"),

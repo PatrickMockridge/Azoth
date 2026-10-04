@@ -1,8 +1,13 @@
 """Every calc id is wired into every hand-maintained list that has to know it.
 
-Adding a calculation needs five new files, and then a dozen edits to existing
-ones - none of which fails at generation time if forgotten. This file exists to
-make those omissions fail loudly, naming the file to go and edit.
+Adding a calculation needs five new files - a spec, a kernel and a test in each
+language - and then edits to the existing ones that still know an id by hand:
+the Rust result type and its `lib.rs` line, the bridge adapter, the Python result
+dataclass and the public package. None of those fails at generation time if
+forgotten, and this file exists to make the omission fail loudly, naming the file
+to go and edit. The registration lists the tranche has generated since - the
+extension's id tables, its register call, its transport structs and its wrappers -
+are not among them, because a generator that forgot one fails its own `--check`.
 
 # What is checked elsewhere, and deliberately not repeated here
 
@@ -17,14 +22,19 @@ be two places to fix when one changes:
 
 # What only this file checks
 
-Four gaps, each of which was invisible until something called the calc:
+Five gaps, each of which was invisible until something called the calc:
 
 * ``azoth._core.calc_ids()`` — the extension's own list. A calc missing from it is
   reported by no other test, because every check that iterates the registry
   iterates the *registry*, not the extension.
-* ``azoth._rust_bridge._IMPLEMENTATIONS`` — the bridge's id table. Its absence is
-  only reachable through ``resolve``, so it surfaced only for a calc that had an
-  active spec case and was asked for by id.
+* the bridge function existing for a calc id. The bridge used to carry an id table
+  whose absence was only reachable through ``resolve``; the table is gone and
+  ``resolve`` derives the name, so what can now be missing is the *function*.
+* that the bridge accepts the arguments the public API passes it. The two are
+  separate hand-written declarations of one contract, so a parameter added to the
+  public wrapper and its kernel but not to the bridge is a ``TypeError`` on the
+  Rust backend alone — which is what it was, for ``column_diameter`` and
+  ``max_allowable_fs_factor`` on the three columns, until this check was added.
 * ``azoth._core.pyi`` — the stub. Nothing validated it at all.
 * that the result class is a usable dataclass. This one is not hypothetical: the
   Haaland calc was added with its ``@dataclass`` decorator missing, every Rust test
@@ -38,7 +48,9 @@ from __future__ import annotations
 import ast
 import dataclasses
 import importlib
+import inspect
 import re
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -125,8 +137,8 @@ def test_the_extension_registers_exactly_the_registry() -> None:
     Asserted as an equality in both directions, so a calc dropped from the
     extension is caught alongside one added to the registry and forgotten. The
     generated registry is the source of truth here - it is what the rest of the
-    machinery is built from - so this is the check that makes the hand-maintained
-    list in ``crates/azoth-python/src/results.rs`` self-policing.
+    machinery is built from - so this is the check that makes the generated
+    ``crates/azoth-python/src/registry_tables_gen.rs`` self-policing.
     """
     extension_ids = set(_extension().calc_ids())
     registry_ids = set(CALC_IDS)
@@ -134,7 +146,8 @@ def test_the_extension_registers_exactly_the_registry() -> None:
         f"azoth._core.calc_ids() and the registry differ\n"
         f"  missing from the extension: {sorted(registry_ids - extension_ids)}\n"
         f"  not in the registry: {sorted(extension_ids - registry_ids)}\n"
-        f"Add or remove the entry in crates/azoth-python/src/results.rs (calc_ids), "
+        f"Add or remove the spec under specs/calcs/ and run "
+        f"`python tools/gen_python_registry.py`, "
         f"register the function in crates/azoth-python/src/lib.rs (add_function), "
         f"and declare it in python/src/azoth/_core.pyi."
     )
@@ -159,6 +172,18 @@ def test_the_extension_exposes_the_function(calc_id: str) -> None:
 # --- the bridge's id table ----------------------------------------------
 
 
+def _registered_ids() -> list[str]:
+    """Every id `resolve` accepts: the calcs *and* the models.
+
+    `CALC_IDS` above is the calcs alone, because it is the extension's ``calc_ids()``
+    table that has to match those. The bridge covers both halves, so the tests that ask
+    what the bridge knows read this.
+    """
+    from azoth._models_gen import MODELS
+
+    return sorted([calc["id"] for calc in CALCS] + [model["id"] for model in MODELS])
+
+
 @pytest.mark.requires_rust
 def test_the_bridge_covers_exactly_the_registry() -> None:
     """Every registered id resolves to a bridge function that exists.
@@ -171,13 +196,120 @@ def test_the_bridge_covers_exactly_the_registry() -> None:
     names it looks up.
     """
     bridge = importlib.import_module("azoth._rust_bridge")
-    missing = sorted(calc_id for calc_id in CALC_IDS if not hasattr(bridge, FUNCTION_NAME[calc_id]))
+    missing = [
+        calc_id for calc_id in _registered_ids() if not hasattr(bridge, calc_id.rpartition(".")[2])
+    ]
     assert not missing, (
         f"{missing} have no bridge function. Add one named after the id's last "
         f"segment in python/src/azoth/_rust_bridge.py - there is no table to update."
     )
     with pytest.raises(KeyError):
         bridge.resolve("not.a_calc")
+
+
+def _public_dispatch_sites() -> list[tuple[str, list[str], str]]:
+    """Every ``resolve(...)(...)`` call site in the public packages.
+
+    Returns ``(calc_id, keyword names, file)`` for each, read from the source rather
+    than listed. The public wrapper is the caller `_rust_bridge` exists to serve: it
+    resolves the id and calls whatever comes back with these keywords, so this *is* the
+    signature the bridge has to accept - one hand-written declaration of a contract two
+    files state separately.
+
+    The id is written either as the module's own constant (``resolve(_ORIFICE_FLOW)``)
+    or as a literal for the one site that has no constant, so both spellings are read.
+    Every site is keyword-only today; a positional one would be a contract this cannot
+    read, and it is refused rather than skipped.
+    """
+    sites: list[tuple[str, list[str], str]] = []
+    root = REPO_ROOT / "python" / "src" / "azoth"
+    for path in sorted(root.glob("*/__init__.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        constants = {
+            node.targets[0].id: node.value.value
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        }
+        for call in ast.walk(tree):
+            if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Call):
+                continue
+            inner = call.func
+            if not (isinstance(inner.func, ast.Name) and inner.func.id == "resolve"):
+                continue
+            (argument,) = inner.args
+            calc_id: str
+            if isinstance(argument, ast.Constant):
+                calc_id = str(argument.value)
+            elif isinstance(argument, ast.Name) and argument.id in constants:
+                calc_id = str(constants[argument.id])
+            else:
+                raise AssertionError(
+                    f"{path.name}: `resolve({ast.unparse(argument)})` is not a literal or "
+                    f"a module-level string constant, so the id it dispatches to cannot "
+                    f"be read from this file"
+                )
+            assert not call.args, (
+                f"{path.name}: the call to `resolve({calc_id!r})(...)` passes a positional "
+                f"argument, which this check cannot compare against the bridge's own "
+                f"parameter list"
+            )
+            keywords: list[str] = []
+            for keyword in call.keywords:
+                assert keyword.arg is not None, (
+                    f"{path.name}: the call to `resolve({calc_id!r})(...)` unpacks keywords"
+                )
+                keywords.append(keyword.arg)
+            sites.append((calc_id, keywords, path.name))
+    return sites
+
+
+@pytest.mark.requires_rust
+def test_the_bridge_accepts_the_arguments_the_public_api_passes() -> None:
+    """Every keyword the public wrapper sends, the bridge function takes.
+
+    The two are one contract written twice, and nothing compared them: the bridge is
+    called through ``resolve`` with exactly the keywords its caller names, so a
+    parameter the wrapper forwards but the bridge does not declare is a ``TypeError``
+    on the Rust backend and a working call on the Python one. That is what it was for
+    ``column_diameter`` and ``max_allowable_fs_factor``: the capacity-limit port added
+    both to the spec, the kernel, the reference and the public wrapper, and the bridge
+    was never told, so ``azoth.process.absorption_column`` raised
+    ``TypeError: absorption_column() got an unexpected keyword argument
+    'column_diameter'`` on every call - reachable from the public API, and reported by
+    no test, because no spec case sets either input.
+
+    A count is not enough to catch it. Both are optional in ``_core``'s own signature,
+    so the bridge's short call is accepted there and the caller's value is dropped;
+    only the *names* separate the two.
+    """
+    bridge = importlib.import_module("azoth._rust_bridge")
+    sites = _public_dispatch_sites()
+    assert len(sites) == len(_registered_ids()), (
+        f"{len(sites)} public resolve() call sites for {len(_registered_ids())} ids - "
+        f"every registered calculation is reachable through the public API, so the two "
+        f"counts must agree"
+    )
+
+    problems: list[str] = []
+    for calc_id, keywords, source in sites:
+        function = getattr(bridge, calc_id.rpartition(".")[2], None)
+        if function is None:
+            problems.append(f"{calc_id}: no bridge function ({source})")
+            continue
+        accepted = set(inspect.signature(function).parameters)
+        missing = [keyword for keyword in keywords if keyword not in accepted]
+        if missing:
+            problems.append(f"{calc_id}: the bridge does not take {missing} ({source})")
+    assert not problems, (
+        "the bridge and the public API disagree about the arguments:\n  "
+        + "\n  ".join(problems)
+        + "\nAdd the parameter to python/src/azoth/_rust_bridge.py and forward it to "
+        "azoth._core."
+    )
 
 
 # --- the type stub ------------------------------------------------------
@@ -287,6 +419,106 @@ def test_the_stub_matches_the_rust_transport_types() -> None:
     assert checked >= 8, (
         f"only {checked} transport type(s) were compared against the Rust source, but "
         f"the stub declares more. The parser is matching less than it should."
+    )
+
+
+#: A Rust transport type that carries a quantity, and how the stub spells it.
+#:
+#: **Only these are compared, and the reason is the one this file keeps meeting.** A dimensioned
+#: field is a `PyQty` in the transport and a `Qty` in the stub, and a *dimensionless* one is a
+#: bare `f64` and a `float` - and in Rust the two are the same number, because the kernels are
+#: typed against `uom::si::f64` where an alias and a float differ only in spelling. So a field
+#: can be a quantity on one side of the wire and a number on the other without anything failing
+#: to compile, which is exactly what happened: fourteen vector fields were `Vec<PyQty>` in the
+#: transport and `list[float]` in the stub, the bridge read `.magnitude_si` off them, and mypy
+#: was the only thing that noticed - sixty errors' worth, in code that was right.
+_QUANTITY_STUB_TYPES = {
+    "PyQty": "Qty",
+    "Option<PyQty>": "Qty | None",
+    "Vec<PyQty>": "list[Qty]",
+    "Option<Vec<PyQty>>": "list[Qty] | None",
+    "Vec<Vec<PyQty>>": "list[list[Qty]]",
+}
+
+TRANSPORT_GEN = REPO_ROOT / "crates" / "azoth-python" / "src" / "transport_gen.rs"
+
+
+def _tools_module(name: str) -> ModuleType:
+    """A module out of `tools/`, which is not a package and so is not importable by name."""
+    sys.path.insert(0, str(REPO_ROOT / "tools"))
+    try:
+        return importlib.import_module(name)
+    finally:
+        sys.path.pop(0)
+
+
+def _transport_field_types() -> dict[str, dict[str, str]]:
+    """The generated transport's fields, by class name without the `Py` prefix.
+
+    Read from `transport_gen.rs` rather than from `gen_stub.py`'s own rule, because the
+    transport is what an attribute access actually reaches: `_core.<calc>(...).field` is a
+    `PyQty` or a number according to this file, and the stub is a description of it.
+    """
+    rust_index = _tools_module("rust_index")
+    text = rust_index._blank_comments(TRANSPORT_GEN.read_text(encoding="utf-8"))
+    out: dict[str, dict[str, str]] = {}
+    for block in re.finditer(r"^pub struct (Py\w+) \{(.*?)^\}", text, re.M | re.S):
+        raw, body = block.group(1), block.group(2)
+        out[raw.removeprefix("Py")] = {
+            field.group(1): field.group(2)
+            for field in re.finditer(r"^\s*pub (\w+): (.+),$", body, re.M)
+        }
+    return out
+
+
+def test_the_stub_types_the_quantity_fields_the_transport_carries() -> None:
+    """Every quantity the transport carries is a `Qty` in the stub, not a number.
+
+    The sibling above compares the two files' *field names* and was written because a stub
+    describing an attribute no object has type-checks clean. This is the same failure one
+    column over: a stub describing an attribute as a `float` that is a quantity type-checks
+    clean too, and then every read of `.magnitude_si` on it is an error.
+    """
+    transport = _transport_field_types()
+    assert transport, f"{TRANSPORT_GEN.name} parsed to no structs"
+
+    stubs = {
+        node.name: {
+            statement.target.id: ast.unparse(statement.annotation)
+            for statement in node.body
+            if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+        }
+        for node in _stub_tree().body
+        if isinstance(node, ast.ClassDef)
+    }
+
+    problems: list[str] = []
+    checked = 0
+    for class_name, fields in transport.items():
+        declared = stubs.get(class_name)
+        if declared is None:
+            continue
+        for field, rust_type in fields.items():
+            expected = _QUANTITY_STUB_TYPES.get(rust_type)
+            if expected is None:
+                continue
+            checked += 1
+            if declared.get(field) != expected:
+                problems.append(
+                    f"{class_name}.{field}: the transport carries {rust_type}, so the stub "
+                    f"must declare {expected}, and it declares {declared.get(field)!r}"
+                )
+
+    # The same guard the sibling carries: a mapping that stopped matching would make every
+    # assertion below vacuous, and the count says whether it is still matching.
+    assert checked >= 400, (
+        f"only {checked} quantity field(s) were compared, but the transport carries far "
+        f"more. The parser or the type mapping is matching less than it should."
+    )
+    assert not problems, (
+        "\n  ".join(["_core.pyi and the transport disagree about a field's type:", *problems])
+        + "\nRun `python tools/gen_stub.py` after correcting the annotation in "
+        "python/src/azoth/core/result.py - the stub is emitted from it."
     )
 
 

@@ -203,7 +203,7 @@ def reactive_phase_equilibrium(
             skipped=True,
             a_matrix=tuple(tuple(row) for row in a_matrix),
             b=tuple(from_si(value, "mol") for value in b),
-            chem_ref=chem_ref,
+            chem_ref=tuple(chem_ref),
             moles=tuple(from_si(value, "mol") for value in magnitudes),
             iterations=0,
             error=0.0,
@@ -294,7 +294,7 @@ def reactive_phase_equilibrium(
         seed_moles=tuple(from_si(value, "mol") for value in seed_moles),
         a_matrix=tuple(tuple(row) for row in a_matrix),
         b=tuple(from_si(value, "mol") for value in b),
-        chem_ref=chem_ref,
+        chem_ref=tuple(chem_ref),
         # `updateMoles`'s floor, applied to the value the phase is left holding.
         moles=tuple(
             from_si(max(float(value.to("mol").magnitude), MIN_WRITTEN_MOLES), "mol")

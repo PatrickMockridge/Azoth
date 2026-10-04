@@ -225,6 +225,10 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
         # The same `packing` input, read for its factor alone rather than for its whole
         # geometry - so the same categorical reason, and no column to vary it down.
         "hydraulics.packing_sizing",
+        # `tray_type` names which internals the sizing assumes and the arithmetic changes with
+        # it, the same categorical reason as the two above. The spec gained the input in the
+        # port that landed `hydraulics.tray_hydraulics` and this list was not updated with it.
+        "hydraulics.tray_hydraulics",
         # `eos` names the cubic the reference liquid is built from, the same categorical
         # input the other two carry.
         "eos.solid_fugacity",

@@ -50,7 +50,7 @@ pub fn rk_alpha_ab(Tr: f64, Pr: f64) -> Result<RkAlphaAbResult> {
     )?;
 
     let alpha = 1.0 / Tr.sqrt();
-    // Guarded by the checks above, so Tr is positive here.
+    // Guarded by the checks above, so Tr is positive here. guarded: rk_alpha_ab.sqrt_and_divisor
     let a_reduced = Cubic::Rk.omega_a() * alpha * Pr / (Tr * Tr);
     let b_reduced = Cubic::Rk.omega_b() * Pr / Tr;
 

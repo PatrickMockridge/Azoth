@@ -216,9 +216,9 @@ def size_column_diameter(
         surface_tension,
         relative_volatility,
     )
-    # **The result carries its velocities as plain m/s floats**, which is the shape the
-    # dataclass declares for them, so this reads the number and not a quantity.
-    flooding_velocity = float(trial.flooding_velocity)
+    # **The result carries its velocities as quantities**, which is the shape the dataclass
+    # declares for them, so this reads the value in m/s rather than the object.
+    flooding_velocity = float(trial.flooding_velocity.to("m/s").magnitude)
     density = float(vapor_density.to("kg/m**3").magnitude)
     volumetric_flow = float(vapor_mass_flow.to("kg/s").magnitude) / max(
         density, VAPOR_DENSITY_FLOOR
@@ -539,10 +539,10 @@ def tray_hydraulics(
     )
 
     return TrayHydraulicsResult(
-        flooding_velocity=flooding_velocity,
-        actual_vapor_velocity=actual_vapor_velocity,
+        flooding_velocity=from_si(flooding_velocity, "m/s"),
+        actual_vapor_velocity=from_si(actual_vapor_velocity, "m/s"),
         percent_flood=percent_flood,
-        minimum_vapor_velocity=minimum_vapor_velocity,
+        minimum_vapor_velocity=from_si(minimum_vapor_velocity, "m/s"),
         fs_factor=fs_factor,
         weeping_ok=weeping_ok,
         entrainment=entrainment,

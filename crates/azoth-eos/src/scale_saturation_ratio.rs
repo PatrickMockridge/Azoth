@@ -114,7 +114,7 @@ pub fn scale_saturation_ratio(
         _ => {}
     }
 
-    // The pressure term, guarded exactly as NeqSim guards it.
+    // The pressure term, guarded exactly as NeqSim guards it. guarded: scale_saturation_ratio.pressure_term
     if record.volume_delta.abs() > 1.0e-10 && p_bar > 1.013 {
         let correction = -record.volume_delta * (p_bar - REFERENCE_PRESSURE_BAR) / (R_CM3_BAR * t);
         ksp *= correction.clamp(-LN_SR_CLAMP, LN_SR_CLAMP).exp();

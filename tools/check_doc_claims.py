@@ -210,11 +210,18 @@ def unit_ops_kernels() -> int:
     return len(_palette_ids() & declared)
 
 
+#: The two files an `executor::dispatch` table can be in. `UNRUNNABLE` is hand-written and stays
+#: where it is; `DISPATCH` is generated, and read here from whichever file carries it rather than
+#: from a path that moves when a table does.
+_DISPATCH_SOURCES = (
+    ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch.rs",
+    ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch_gen.rs",
+)
+
+
 def _table(name: str) -> list[str]:
     """The ids in one `executor::dispatch` table, parsed from its own source."""
-    text = (ROOT / "crates" / "azoth-process" / "src" / "executor" / "dispatch.rs").read_text(
-        encoding="utf-8"
-    )
+    text = "".join(path.read_text(encoding="utf-8") for path in _DISPATCH_SOURCES)
     # `)];` as well as `];`: a one-entry table is rustfmt'd across lines as
     # `&[(\n    "id",\n    "why",\n)];`.
     match = re.search(rf"pub const {name}[^=]*= &\[(.*?)\n\)?\];", text, re.S)
@@ -288,12 +295,61 @@ def lean_gate_printed() -> int:
     return len(_gate_lines("Gate.lean"))
 
 
+def lean_guards_gated() -> int:
+    return len(_gate_lines("GuardGate.lean"))
+
+
 def lean_modules() -> int:
     """Every module under `lean/Azoth/`, the gate files included."""
     modules = sorted((ROOT / "lean" / "Azoth").glob("*.lean"))
     if not modules:
         raise ProbeError("no .lean modules under lean/Azoth")
     return len(modules)
+
+
+def _wrapper_counts() -> tuple[int, int]:
+    """How many registered ids carry a generated pyo3 wrapper, and how many are hand-written.
+
+    Read the way `python/tests/test_gen_python_wrappers.py` reads them, and for the same reason:
+    the generated count is the generator's own output and the hand-written one is what the
+    namespace modules still carry, so a calculation moved from one to the other moves both.
+    """
+    import sys as _sys
+
+    _sys.path.insert(0, str(ROOT / "tools"))
+    import rust_index
+
+    registered = {function for _, _, function in rust_index.implementations()}
+    generated = len(
+        re.findall(
+            r"^pub fn \w+\(",
+            (ROOT / "crates" / "azoth-python" / "src" / "wrappers_gen.rs").read_text(
+                encoding="utf-8"
+            ),
+            re.M,
+        )
+    )
+    hand = 0
+    for module in ("hydraulics", "eos", "thermal", "reactions", "standards", "process"):
+        source = (ROOT / "crates" / "azoth-python" / "src" / f"{module}.rs").read_text(
+            encoding="utf-8"
+        )
+        hand += len(
+            [
+                name
+                for name in re.findall(r"^pub fn (\w+)\(\s*py: Python<'_>", source, re.M)
+                if name in registered
+            ]
+        )
+    return generated, hand
+
+
+def layout_wrappers_generated() -> int:
+    return _wrapper_counts()[0]
+
+
+def layout_wrappers_hand() -> int:
+    return _wrapper_counts()[1]
 
 
 def pairs_eos_files() -> int:
@@ -397,7 +453,10 @@ MEASURES = {
     "lean.axioms_gated": lean_axioms_gated,
     "lean.axioms_dim": lean_axioms_dim,
     "lean.gate_printed": lean_gate_printed,
+    "lean.guards_gated": lean_guards_gated,
     "lean.modules": lean_modules,
+    "layout.wrappers_generated": layout_wrappers_generated,
+    "layout.wrappers_hand": layout_wrappers_hand,
     "pairs.eos_files": pairs_eos_files,
     "skills.total": skills_total,
     "skills.azoth": skills_azoth,
@@ -429,7 +488,7 @@ def validates_path(captured: str) -> str | None:
 def validates_lean_gated(captured: str) -> str | None:
     """A `lean.gated` hole must name a theorem one of the two gate files prints axioms for."""
     name = captured.strip().strip("`")
-    gated = _gate_lines("Axioms.lean") + _gate_lines("Gate.lean")
+    gated = _gate_lines("Axioms.lean") + _gate_lines("Gate.lean") + _gate_lines("GuardGate.lean")
     if name in gated:
         return None
     leaf = name.rsplit(".", 1)[-1]

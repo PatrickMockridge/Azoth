@@ -12,7 +12,7 @@ use azoth_thermal as therm;
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::results::PyConductionPlaneWallResult;
+use crate::transport_gen::PyConductionPlaneWallResult;
 
 /// Steady conduction through a plane wall.
 ///

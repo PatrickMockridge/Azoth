@@ -8,8 +8,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use azoth_core::units::{
-    joules_per_mole, kelvins, kilograms_per_cubic_meter, meters, pascals, square_meters_per_second,
-    watts, watts_per_kelvin, watts_per_square_meter_kelvin,
+    joules_per_mole, kelvins, kilograms_per_cubic_meter, pascals, square_meters_per_second, watts,
+    watts_per_kelvin, watts_per_square_meter_kelvin,
 };
 use azoth_process::executor::Session;
 use azoth_process::{self, ExecutionOrder, Stream};
@@ -209,363 +209,6 @@ pub fn pump_stream(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// `process.compressor` - the isentropic route as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
-pub fn compressor(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_pressure: f64,
-    isentropic_efficiency: f64,
-) -> PyResult<crate::results::PyCompressorResult> {
-    azoth_process::compressor(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(outlet_pressure),
-        isentropic_efficiency,
-    )
-    .map(|r| crate::results::PyCompressorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.expander` - the same route with the efficiency multiplying.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
-pub fn expander(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_pressure: f64,
-    isentropic_efficiency: f64,
-) -> PyResult<crate::results::PyExpanderResult> {
-    azoth_process::expander(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(outlet_pressure),
-        isentropic_efficiency,
-    )
-    .map(|r| crate::results::PyExpanderResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.filter` - the filter's kernel as a registered id.
-///
-/// The drop is required: the class defaults `deltaP` to `0.01` bar, which the palette entry
-/// does not declare, and inventing a default here would be answering a question the caller
-/// did not ask.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop))]
-#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, pressure_drop)")]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are six
-pub fn filter(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    pressure_drop: f64,
-) -> PyResult<crate::results::PyFilterResult> {
-    azoth_process::filter(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(pressure_drop),
-    )
-    .map(|r| crate::results::PyFilterResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.pipe` - the line's kernel as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, length, diameter, roughness)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
-pub fn pipe(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    length: f64,
-    diameter: f64,
-    roughness: f64,
-) -> PyResult<crate::results::PyPipeResult> {
-    azoth_process::pipe(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        meters(length),
-        meters(diameter),
-        meters(roughness),
-    )
-    .map(|r| crate::results::PyPipeResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.cooler` - `Heater.run` reached through `Cooler`, as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature = None, duty = None, pressure_drop = None))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature=None, duty=None, pressure_drop=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
-pub fn cooler(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_temperature: Option<f64>,
-    duty: Option<f64>,
-    pressure_drop: Option<f64>,
-) -> PyResult<crate::results::PyCoolerResult> {
-    azoth_process::cooler(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        outlet_temperature.map(kelvins),
-        duty.map(watts),
-        pressure_drop.map(pascals),
-    )
-    .map(|r| crate::results::PyCoolerResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.heater` - the heater's kernel as a registered id.
-///
-/// **The three optional parameters are the class's three setters, and two of them are
-/// exclusive.** A stated outlet temperature and a stated duty clear each other's flags in
-/// `Heater`, so the pair is refused here rather than resolved; `pressure_drop` is
-/// independent of both.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature = None, duty = None, pressure_drop = None))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_temperature=None, duty=None, pressure_drop=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
-pub fn heater(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_temperature: Option<f64>,
-    duty: Option<f64>,
-    pressure_drop: Option<f64>,
-) -> PyResult<crate::results::PyHeaterResult> {
-    azoth_process::heater(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        outlet_temperature.map(kelvins),
-        duty.map(watts),
-        pressure_drop.map(pascals),
-    )
-    .map(|r| crate::results::PyHeaterResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.pump` - the pump's kernel as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency))]
-#[pyo3(
-    text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure, isentropic_efficiency)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are seven
-pub fn pump(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_pressure: f64,
-    isentropic_efficiency: f64,
-) -> PyResult<crate::results::PyPumpResult> {
-    azoth_process::pump(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(outlet_pressure),
-        isentropic_efficiency,
-    )
-    .map(|r| crate::results::PyPumpResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.distillation_column` - the column solve as a registered id.
-///
-/// **The first process id whose outputs are vectors of a *computed* length** - one entry per
-/// tray - and the first that refuses declared parameters by name. Both are the boundary's
-/// business rather than the kernel's.
-#[pyfunction]
-#[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance = 1e-6, max_iterations = 200, reboiler_temperature = None, condenser_temperature = None, murphree_efficiency = None, tray_murphree_efficiency = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None, column_diameter=None, max_allowable_fs_factor=None, internals_type=None, tray_spacing=None, weir_height=None, hole_diameter=None, hole_area_fraction=None, downcommer_area_fraction=None, design_flood_fraction=None, column_diameter_override=None, hydraulic_pressure_drop_coupling=None, hydraulic_pressure_drop_internals_type=None)
-)]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, murphree_efficiency=None, tray_murphree_efficiency=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None, column_diameter=None, max_allowable_fs_factor=None, internals_type=None, tray_spacing=None, weir_height=None, hole_diameter=None, hole_area_fraction=None, downcommer_area_fraction=None, design_flood_fraction=None, column_diameter_override=None, hydraulic_pressure_drop_coupling=None, hydraulic_pressure_drop_internals_type=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are twenty-two
-pub fn distillation_column(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    number_of_stages: usize,
-    feed_stage: usize,
-    has_reboiler: bool,
-    has_condenser: bool,
-    top_pressure: f64,
-    bottom_pressure: f64,
-    temperature_tolerance: f64,
-    max_iterations: usize,
-    reboiler_temperature: Option<f64>,
-    condenser_temperature: Option<f64>,
-    murphree_efficiency: Option<f64>,
-    tray_murphree_efficiency: Option<Vec<f64>>,
-    solver_type: Option<&str>,
-    top_specification_type: Option<&str>,
-    top_specification_target: Option<f64>,
-    top_specification_component: Option<&str>,
-    bottom_specification_type: Option<&str>,
-    bottom_specification_target: Option<f64>,
-    bottom_specification_component: Option<&str>,
-    reactive: Option<bool>,
-    reactive_start_tray: Option<usize>,
-    reactive_end_tray: Option<usize>,
-    gas_side_draw_fractions: Option<Vec<f64>>,
-    liquid_side_draw_fractions: Option<Vec<f64>>,
-    pumparound_fractions: Option<Vec<f64>>,
-    side_draw_flow_tray: Option<usize>,
-    side_draw_flow_phase: Option<String>,
-    side_draw_flow_target: Option<f64>,
-    side_draw_flow_tolerance: Option<f64>,
-    side_draw_flow_max_iterations: Option<usize>,
-    pumparound_return_tray: Option<usize>,
-    pumparound_draw_tray: Option<usize>,
-    pumparound_draw_fraction: Option<f64>,
-    pumparound_temperature_drop: Option<f64>,
-    pumparound_tolerance: Option<f64>,
-    pumparound_max_iterations: Option<usize>,
-    column_diameter: Option<f64>,
-    max_allowable_fs_factor: Option<f64>,
-    internals_type: Option<String>,
-    tray_spacing: Option<f64>,
-    weir_height: Option<f64>,
-    hole_diameter: Option<f64>,
-    hole_area_fraction: Option<f64>,
-    downcommer_area_fraction: Option<f64>,
-    design_flood_fraction: Option<f64>,
-    column_diameter_override: Option<f64>,
-    hydraulic_pressure_drop_coupling: Option<bool>,
-    hydraulic_pressure_drop_internals_type: Option<String>,
-) -> PyResult<crate::results::PyDistillationColumnResult> {
-    azoth_process::distillation_column(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        number_of_stages,
-        feed_stage,
-        has_reboiler,
-        has_condenser,
-        pascals(top_pressure),
-        pascals(bottom_pressure),
-        reboiler_temperature.map(kelvins),
-        condenser_temperature.map(kelvins),
-        temperature_tolerance,
-        max_iterations,
-        murphree_efficiency,
-        tray_murphree_efficiency.as_deref(),
-        solver_type,
-        top_specification_type,
-        top_specification_target,
-        top_specification_component,
-        bottom_specification_type,
-        bottom_specification_target,
-        bottom_specification_component,
-        reactive,
-        reactive_start_tray,
-        reactive_end_tray,
-        gas_side_draw_fractions.as_deref(),
-        liquid_side_draw_fractions.as_deref(),
-        pumparound_fractions.as_deref(),
-        side_draw_flow_tray,
-        side_draw_flow_phase.as_deref(),
-        side_draw_flow_target,
-        side_draw_flow_tolerance,
-        side_draw_flow_max_iterations,
-        pumparound_return_tray,
-        pumparound_draw_tray,
-        pumparound_draw_fraction,
-        pumparound_temperature_drop,
-        pumparound_tolerance,
-        pumparound_max_iterations,
-        column_diameter,
-        max_allowable_fs_factor,
-        internals_type.as_deref(),
-        tray_spacing,
-        weir_height,
-        hole_diameter,
-        hole_area_fraction,
-        downcommer_area_fraction,
-        design_flood_fraction,
-        column_diameter_override,
-        hydraulic_pressure_drop_coupling,
-        hydraulic_pressure_drop_internals_type.as_deref(),
-    )
-    .map(|r| crate::results::PyDistillationColumnResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
 /// `process.absorption_column` - the tray absorber as a registered id.
 ///
 /// **The column's own profile shape with the class's own product names**, and two inlets where
@@ -626,7 +269,7 @@ pub fn absorption_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
-) -> PyResult<crate::results::PyAbsorptionColumnResult> {
+) -> PyResult<crate::transport_gen::PyAbsorptionColumnResult> {
     azoth_process::absorption_column(
         &gas_components,
         gas_n,
@@ -669,124 +312,7 @@ pub fn absorption_column(
         column_diameter,
         max_allowable_fs_factor,
     )
-    .map(|r| crate::results::PyAbsorptionColumnResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.packed_column` - the packed column as a registered id.
-///
-/// **The base column's own machine at a derived stage count**: `PackedColumn extends
-/// DistillationColumn`, its `run` is `super.run(id)` and the packing is read by a hydraulics
-/// report afterwards, so `packed_height` reaches the separation only through `estimateStages`.
-#[pyfunction]
-#[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature = None, condenser_temperature = None, packing_type = None, structured_packing = None, design_flood_fraction = None, packing_hydraulic_capacity_factor = None, column_diameter = None, murphree_efficiency = None, reactive = None, reactive_start_tray = None, reactive_end_tray = None, solver_type = None, top_specification_type = None, top_specification_target = None, top_specification_component = None, bottom_specification_type = None, bottom_specification_target = None, bottom_specification_component = None, tray_murphree_efficiency = None, gas_side_draw_fractions = None, liquid_side_draw_fractions = None, pumparound_fractions = None, side_draw_flow_tray = None, side_draw_flow_phase = None, side_draw_flow_target = None, side_draw_flow_tolerance = None, side_draw_flow_max_iterations = None, pumparound_return_tray = None, pumparound_draw_tray = None, pumparound_draw_fraction = None, pumparound_temperature_drop = None, pumparound_tolerance = None, pumparound_max_iterations = None, max_allowable_fs_factor = None)
-)]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, packed_height, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature=None, condenser_temperature=None, packing_type=None, structured_packing=None, design_flood_fraction=None, packing_hydraulic_capacity_factor=None, column_diameter=None, murphree_efficiency=None, reactive=None, reactive_start_tray=None, reactive_end_tray=None, solver_type=None, top_specification_type=None, top_specification_target=None, top_specification_component=None, bottom_specification_type=None, bottom_specification_target=None, bottom_specification_component=None, tray_murphree_efficiency=None, gas_side_draw_fractions=None, liquid_side_draw_fractions=None, pumparound_fractions=None, side_draw_flow_tray=None, side_draw_flow_phase=None, side_draw_flow_target=None, side_draw_flow_tolerance=None, side_draw_flow_max_iterations=None, pumparound_return_tray=None, pumparound_draw_tray=None, pumparound_draw_fraction=None, pumparound_temperature_drop=None, pumparound_tolerance=None, pumparound_max_iterations=None, max_allowable_fs_factor=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input
-pub fn packed_column(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    packed_height: f64,
-    feed_stage: usize,
-    has_reboiler: bool,
-    has_condenser: bool,
-    top_pressure: f64,
-    bottom_pressure: f64,
-    temperature_tolerance: f64,
-    max_iterations: usize,
-    reboiler_temperature: Option<f64>,
-    condenser_temperature: Option<f64>,
-    packing_type: Option<&str>,
-    structured_packing: Option<bool>,
-    design_flood_fraction: Option<f64>,
-    packing_hydraulic_capacity_factor: Option<f64>,
-    column_diameter: Option<f64>,
-    murphree_efficiency: Option<f64>,
-    reactive: Option<bool>,
-    reactive_start_tray: Option<usize>,
-    reactive_end_tray: Option<usize>,
-    solver_type: Option<&str>,
-    top_specification_type: Option<&str>,
-    top_specification_target: Option<f64>,
-    top_specification_component: Option<&str>,
-    bottom_specification_type: Option<&str>,
-    bottom_specification_target: Option<f64>,
-    bottom_specification_component: Option<&str>,
-    tray_murphree_efficiency: Option<Vec<f64>>,
-    gas_side_draw_fractions: Option<Vec<f64>>,
-    liquid_side_draw_fractions: Option<Vec<f64>>,
-    pumparound_fractions: Option<Vec<f64>>,
-    side_draw_flow_tray: Option<usize>,
-    side_draw_flow_phase: Option<&str>,
-    side_draw_flow_target: Option<f64>,
-    side_draw_flow_tolerance: Option<f64>,
-    side_draw_flow_max_iterations: Option<usize>,
-    pumparound_return_tray: Option<usize>,
-    pumparound_draw_tray: Option<usize>,
-    pumparound_draw_fraction: Option<f64>,
-    pumparound_temperature_drop: Option<f64>,
-    pumparound_tolerance: Option<f64>,
-    pumparound_max_iterations: Option<usize>,
-    max_allowable_fs_factor: Option<f64>,
-) -> PyResult<crate::results::PyPackedColumnResult> {
-    azoth_process::packed_column(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        packed_height,
-        feed_stage,
-        has_reboiler,
-        has_condenser,
-        pascals(top_pressure),
-        pascals(bottom_pressure),
-        reboiler_temperature.map(kelvins),
-        condenser_temperature.map(kelvins),
-        temperature_tolerance,
-        max_iterations,
-        packing_type,
-        structured_packing,
-        design_flood_fraction,
-        packing_hydraulic_capacity_factor,
-        column_diameter,
-        murphree_efficiency,
-        reactive,
-        reactive_start_tray,
-        reactive_end_tray,
-        solver_type,
-        top_specification_type,
-        top_specification_target,
-        top_specification_component,
-        bottom_specification_type,
-        bottom_specification_target,
-        bottom_specification_component,
-        tray_murphree_efficiency.as_deref(),
-        gas_side_draw_fractions.as_deref(),
-        liquid_side_draw_fractions.as_deref(),
-        pumparound_fractions.as_deref(),
-        side_draw_flow_tray,
-        side_draw_flow_phase,
-        side_draw_flow_target,
-        side_draw_flow_tolerance,
-        side_draw_flow_max_iterations,
-        pumparound_return_tray,
-        pumparound_draw_tray,
-        pumparound_draw_fraction,
-        pumparound_temperature_drop,
-        pumparound_tolerance,
-        pumparound_max_iterations,
-        max_allowable_fs_factor,
-    )
-    .map(|r| crate::results::PyPackedColumnResult::from(&r))
+    .map(|r| crate::transport_gen::PyAbsorptionColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -846,7 +372,7 @@ pub fn stripping_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
-) -> PyResult<crate::results::PyStrippingColumnResult> {
+) -> PyResult<crate::transport_gen::PyStrippingColumnResult> {
     azoth_process::stripping_column(
         &stripping_gas_components,
         &rich_liquid_components,
@@ -889,34 +415,7 @@ pub fn stripping_column(
         column_diameter,
         max_allowable_fs_factor,
     )
-    .map(|r| crate::results::PyStrippingColumnResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.throttling_valve` - the valve's kernel as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure))]
-#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t, outlet_pressure)")]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are six
-pub fn throttling_valve(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-    outlet_pressure: f64,
-) -> PyResult<crate::results::PyThrottlingValveResult> {
-    azoth_process::throttling_valve(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-        pascals(outlet_pressure),
-    )
-    .map(|r| crate::results::PyThrottlingValveResult::from(&r))
+    .map(|r| crate::transport_gen::PyStrippingColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -951,7 +450,7 @@ pub fn heat_exchanger(
     ua: Option<f64>,
     hot_outlet_temperature: Option<f64>,
     cold_outlet_temperature: Option<f64>,
-) -> PyResult<crate::results::PyHeatExchangerResult> {
+) -> PyResult<crate::transport_gen::PyHeatExchangerResult> {
     azoth_process::heat_exchanger(
         &hot_components,
         hot_in_n,
@@ -968,101 +467,8 @@ pub fn heat_exchanger(
         hot_outlet_temperature.map(kelvins),
         cold_outlet_temperature.map(kelvins),
     )
-    .map(|r| crate::results::PyHeatExchangerResult::from(&r))
+    .map(|r| crate::transport_gen::PyHeatExchangerResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.separator` - the separator's kernel as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input = None))]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
-pub fn separator(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    pressure_drop: f64,
-    gas_in_liquid: f64,
-    heat_input: Option<f64>,
-) -> PyResult<crate::results::PySeparatorResult> {
-    azoth_process::separator(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        pascals(pressure_drop),
-        gas_in_liquid,
-        heat_input.map(watts),
-    )
-    .map(|r| crate::results::PySeparatorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.gas_scrubber` - the separator's kernel under the other entry.
-///
-/// `GasScrubber` does not override `run`, so this is `process.separator`'s arithmetic and
-/// the same arguments.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input = None))]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eight
-pub fn gas_scrubber(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    pressure_drop: f64,
-    gas_in_liquid: f64,
-    heat_input: Option<f64>,
-) -> PyResult<crate::results::PyGasScrubberResult> {
-    azoth_process::gas_scrubber(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        pascals(pressure_drop),
-        gas_in_liquid,
-        heat_input.map(watts),
-    )
-    .map(|r| crate::results::PyGasScrubberResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.tank` - the tank's kernel as a registered id.
-///
-/// **No parameters at all.** A tank's steady state is the flash it holds, so the only
-/// inputs are the feeds: `many` at the inlet, as `process.mixer`'s are.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t))]
-#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t)")]
-#[allow(non_snake_case)] // the record's own field names
-pub fn tank(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: Vec<f64>,
-    feed_z: Vec<Vec<f64>>,
-    feed_p: Vec<f64>,
-    feed_t: Vec<f64>,
-) -> PyResult<crate::results::PyTankResult> {
-    let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
-    let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
-        feed_t.into_iter().map(kelvins).collect();
-    azoth_process::tank(&components, &feed_n, &feed_z, &pressures, &temperatures)
-        .map(|r| crate::results::PyTankResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
 }
 
 /// `process.stirred_tank_reactor` - the reactor's kernel as a registered id.
@@ -1091,7 +497,7 @@ pub fn stirred_tank_reactor(
     reactor_temperature: Option<f64>,
     reactor_pressure: Option<f64>,
     pressure_drop: Option<f64>,
-) -> PyResult<crate::results::PyStirredTankReactorResult> {
+) -> PyResult<crate::transport_gen::PyStirredTankReactorResult> {
     azoth_process::stirred_tank_reactor(
         &components,
         feed_n,
@@ -1106,7 +512,7 @@ pub fn stirred_tank_reactor(
         reactor_pressure.map(pascals),
         pascals(pressure_drop.unwrap_or(0.0)),
     )
-    .map(|r| crate::results::PyStirredTankReactorResult::from(&r))
+    .map(|r| crate::transport_gen::PyStirredTankReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1155,7 +561,7 @@ pub fn plug_flow_reactor(
     catalyst_molecular_diffusivity: Option<f64>,
     catalyst_effectiveness_enabled: Option<bool>,
     key_component: Option<String>,
-) -> PyResult<crate::results::PyPlugFlowReactorResult> {
+) -> PyResult<crate::transport_gen::PyPlugFlowReactorResult> {
     azoth_process::plug_flow_reactor(
         &components,
         feed_n,
@@ -1187,74 +593,7 @@ pub fn plug_flow_reactor(
         catalyst_effectiveness_enabled,
         key_component,
     )
-    .map(|r| crate::results::PyPlugFlowReactorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.gibbs_reactor` - the equilibrium composition as a registered id.
-///
-/// **The equilibrium temperature is the feed's.** `GibbsReactor` has no temperature setter: it
-/// reads `system.getTemperature()` from the fluid it is handed, so `feed_t` is the only one, and
-/// the palette entry that used to declare a separate `temperature` parameter was wrong.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations))]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, energy_mode, damping_composition, max_iterations, convergence_tolerance, min_iterations)"
-)]
-#[allow(clippy::too_many_arguments)] // one argument per declared input
-pub fn gibbs_reactor(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    energy_mode: &str,
-    damping_composition: f64,
-    max_iterations: f64,
-    convergence_tolerance: f64,
-    min_iterations: f64,
-) -> PyResult<crate::results::PyGibbsReactorResult> {
-    azoth_process::gibbs_reactor(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        energy_mode,
-        damping_composition,
-        max_iterations,
-        convergence_tolerance,
-        min_iterations,
-    )
-    .map(|r| crate::results::PyGibbsReactorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.flare` - the flare's kernel as a registered id.
-///
-/// **The record through and two numbers beside it.** `Flare.run` clones the inlet into the
-/// outlet, so the five fields cross unchanged; the duty and the CO2 emission are the class's
-/// own, and they are outputs here because they are what the machine reports.
-#[pyfunction]
-#[pyo3(signature = (components, inlet_n, inlet_z, inlet_p, inlet_t))]
-#[pyo3(text_signature = "(components, inlet_n, inlet_z, inlet_p, inlet_t)")]
-pub fn flare(
-    py: Python<'_>,
-    components: Vec<String>,
-    inlet_n: f64,
-    inlet_z: Vec<f64>,
-    inlet_p: f64,
-    inlet_t: f64,
-) -> PyResult<crate::results::PyFlareResult> {
-    azoth_process::flare(
-        &components,
-        inlet_n,
-        &inlet_z,
-        pascals(inlet_p),
-        kelvins(inlet_t),
-    )
-    .map(|r| crate::results::PyFlareResult::from(&r))
+    .map(|r| crate::transport_gen::PyPlugFlowReactorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1286,7 +625,7 @@ pub fn ejector(
     suction_nozzle_efficiency: f64,
     mixing_efficiency: f64,
     diffuser_efficiency: f64,
-) -> PyResult<crate::results::PyEjectorResult> {
+) -> PyResult<crate::transport_gen::PyEjectorResult> {
     azoth_process::ejector(
         &motive_components,
         motive_n,
@@ -1304,215 +643,7 @@ pub fn ejector(
         mixing_efficiency,
         diffuser_efficiency,
     )
-    .map(|r| crate::results::PyEjectorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.three_phase_separator` - the separator's kernel as a registered id.
-///
-/// **Six entrainment fractions and three outlets.** The fractions cross in `run`'s own
-/// order, which is the order they are applied in, and the outlets are the record's five
-/// fields under `vapour`, `light_liquid` and `heavy_liquid`.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input = None))]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_aqueous, gas_in_oil, oil_in_aqueous, oil_in_gas, aqueous_in_gas, aqueous_in_oil, heat_input=None)"
-)]
-#[allow(clippy::too_many_arguments)] // one argument per declared input, and there are thirteen
-pub fn three_phase_separator(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    pressure_drop: f64,
-    gas_in_aqueous: f64,
-    gas_in_oil: f64,
-    oil_in_aqueous: f64,
-    oil_in_gas: f64,
-    aqueous_in_gas: f64,
-    aqueous_in_oil: f64,
-    heat_input: Option<f64>,
-) -> PyResult<crate::results::PyThreePhaseSeparatorResult> {
-    azoth_process::three_phase_separator(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        pascals(pressure_drop),
-        gas_in_aqueous,
-        gas_in_oil,
-        oil_in_aqueous,
-        oil_in_gas,
-        aqueous_in_gas,
-        aqueous_in_oil,
-        heat_input.map(watts),
-    )
-    .map(|r| crate::results::PyThreePhaseSeparatorResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.shortcut_distillation_column` - the FUG column as a registered id.
-///
-/// **The first `procedure` in this namespace.** Its `[algorithm]` block is the Underwood
-/// bisection the two implementations both run; nothing in Rust or Python reads it at
-/// runtime, and the case is what holds both to it.
-#[pyfunction]
-#[pyo3(
-    signature = (components, feed_n, feed_z, feed_p, feed_t, light_key, heavy_key, light_key_recovery_distillate, heavy_key_recovery_bottoms, reflux_ratio_multiplier, condenser_pressure = None, reboiler_pressure = None)
-)]
-#[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, light_key, heavy_key, light_key_recovery_distillate, heavy_key_recovery_bottoms, reflux_ratio_multiplier, condenser_pressure=None, reboiler_pressure=None)"
-)]
-#[allow(non_snake_case)] // the record's own field names
-#[allow(clippy::too_many_arguments)] // one parameter per declared input, and there are eleven
-pub fn shortcut_distillation_column(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    light_key: &str,
-    heavy_key: &str,
-    light_key_recovery_distillate: f64,
-    heavy_key_recovery_bottoms: f64,
-    reflux_ratio_multiplier: f64,
-    condenser_pressure: Option<f64>,
-    reboiler_pressure: Option<f64>,
-) -> PyResult<crate::results::PyShortcutDistillationColumnResult> {
-    azoth_process::shortcut_distillation_column(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        light_key,
-        heavy_key,
-        light_key_recovery_distillate,
-        heavy_key_recovery_bottoms,
-        reflux_ratio_multiplier,
-        condenser_pressure.map(pascals),
-        reboiler_pressure.map(pascals),
-    )
-    .map(|r| crate::results::PyShortcutDistillationColumnResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.mixer` - the mixer's kernel as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, outlet_pressure = None))]
-#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, outlet_pressure=None)")]
-#[allow(non_snake_case)] // the record's own field names
-pub fn mixer(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: Vec<f64>,
-    feed_z: Vec<Vec<f64>>,
-    feed_p: Vec<f64>,
-    feed_t: Vec<f64>,
-    outlet_pressure: Option<f64>,
-) -> PyResult<crate::results::PyMixerResult> {
-    let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
-    let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
-        feed_t.into_iter().map(kelvins).collect();
-    azoth_process::mixer(
-        &components,
-        &feed_n,
-        &feed_z,
-        &pressures,
-        &temperatures,
-        outlet_pressure.map(pascals),
-    )
-    .map(|r| crate::results::PyMixerResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.manifold` - the manifold's kernel as a registered id.
-///
-/// **`many` at both ends**: the feeds cross as `process.mixer`'s vectors do and the outlets
-/// as `process.splitter`'s do, because the manifold is those two composed.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
-#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
-#[allow(non_snake_case)] // the record's own field names
-pub fn manifold(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: Vec<f64>,
-    feed_z: Vec<Vec<f64>>,
-    feed_p: Vec<f64>,
-    feed_t: Vec<f64>,
-    split_factors: Vec<f64>,
-) -> PyResult<crate::results::PyManifoldResult> {
-    let pressures: Vec<azoth_core::units::Pressure> = feed_p.into_iter().map(pascals).collect();
-    let temperatures: Vec<azoth_core::units::ThermodynamicTemperature> =
-        feed_t.into_iter().map(kelvins).collect();
-    azoth_process::manifold(
-        &components,
-        &feed_n,
-        &feed_z,
-        &pressures,
-        &temperatures,
-        &split_factors,
-    )
-    .map(|r| crate::results::PyManifoldResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.splitter` - the splitter's kernel as a registered id.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
-#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
-#[allow(non_snake_case)] // the record's own field names
-pub fn splitter(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    split_factors: Vec<f64>,
-) -> PyResult<crate::results::PySplitterResult> {
-    azoth_process::splitter(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        &split_factors,
-    )
-    .map(|r| crate::results::PySplitterResult::from(&r))
-    .map_err(|e| to_pyerr(py, e))
-}
-
-/// `process.component_splitter` - the component splitter's kernel as a registered id.
-///
-/// The factors are one per **component**, not one per outlet.
-#[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, split_factors))]
-#[pyo3(text_signature = "(components, feed_n, feed_z, feed_p, feed_t, split_factors)")]
-#[allow(non_snake_case)] // the record's own field names
-pub fn component_splitter(
-    py: Python<'_>,
-    components: Vec<String>,
-    feed_n: f64,
-    feed_z: Vec<f64>,
-    feed_p: f64,
-    feed_t: f64,
-    split_factors: Vec<f64>,
-) -> PyResult<crate::results::PyComponentSplitterResult> {
-    azoth_process::component_splitter(
-        &components,
-        feed_n,
-        &feed_z,
-        pascals(feed_p),
-        kelvins(feed_t),
-        &split_factors,
-    )
-    .map(|r| crate::results::PyComponentSplitterResult::from(&r))
+    .map(|r| crate::transport_gen::PyEjectorResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1740,7 +871,7 @@ pub fn rate_based_packed_column(
     heat_transfer_model: Option<&str>,
     segment_solver: Option<&str>,
     column_solver: Option<&str>,
-) -> PyResult<crate::results::PyRateBasedPackedColumnResult> {
+) -> PyResult<crate::transport_gen::PyRateBasedPackedColumnResult> {
     azoth_process::rate_based_packed_column(
         &gas_components,
         gas_n,
@@ -1770,6 +901,6 @@ pub fn rate_based_packed_column(
         segment_solver,
         column_solver,
     )
-    .map(|out| crate::results::PyRateBasedPackedColumnResult::from(&out))
+    .map(|out| crate::transport_gen::PyRateBasedPackedColumnResult::from(&out))
     .map_err(|e| to_pyerr(py, e))
 }

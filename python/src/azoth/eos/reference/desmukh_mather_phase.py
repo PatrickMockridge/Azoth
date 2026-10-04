@@ -19,7 +19,7 @@ from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import DesmukhMatherPhaseResult
-from azoth.core.units import Q, input_to_si
+from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import _henry
@@ -179,9 +179,9 @@ def desmukh_mather_phase(
     return DesmukhMatherPhaseResult(
         gamma=tuple(math.exp(value) for value in ln_gamma),
         ln_gamma=tuple(ln_gamma),
-        molality=tuple(molality),
-        ionic_strength=ionic_strength,
-        solvent_molar_mass=solvent_molar_mass,
+        molality=tuple(from_si(_v, "mol/kg") for _v in tuple(molality)),
+        ionic_strength=from_si(ionic_strength, "mol/kg"),
+        solvent_molar_mass=from_si(solvent_molar_mass, "kg/mol"),
         ln_phi=tuple(ln_phi),
         warnings=tuple(warnings),
     )

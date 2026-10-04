@@ -60,7 +60,7 @@ pub fn rachford_rice_binary(z1: f64, K1: f64, K2: f64) -> Result<RachfordRiceBin
     // `K1 - 1.0` inline four times - which is what the spec's equation shows.
     let a = K1 - 1.0;
     let b = K2 - 1.0;
-    // Guarded by the `equals: 1` bounds above, so neither divisor is zero.
+    // Guarded by the `equals: 1` bounds above, so neither divisor is zero. guarded: rachford_rice_binary.divisor_nonzero
     let beta = -(z1 * a + (1.0 - z1) * b) / (a * b);
 
     apply_checks(

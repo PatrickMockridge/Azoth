@@ -109,6 +109,6 @@ def ps_flash(
         z_liquid=flash.z_liquid,
         z_vapour=flash.z_vapour,
         iterations=solved["iterations"],
-        residual=solved["residual"],
+        residual=from_si(solved["residual"], "J/(mol*K)"),
         warnings=distinct_warnings(warnings),
     )

@@ -376,9 +376,11 @@ def packing_hydraulics(
         specific_surface_area=result.specific_surface_area,
         void_fraction=result.void_fraction,
         packing_factor=result.packing_factor,
-        flooding_velocity=result.flooding_velocity,
-        vapor_velocity=result.vapor_velocity,
-        liquid_velocity=result.liquid_velocity,
+        flooding_velocity=from_si(
+            result.flooding_velocity.magnitude_si, result.flooding_velocity.unit
+        ),
+        vapor_velocity=from_si(result.vapor_velocity.magnitude_si, result.vapor_velocity.unit),
+        liquid_velocity=from_si(result.liquid_velocity.magnitude_si, result.liquid_velocity.unit),
         f_factor=result.f_factor,
         percent_flood=result.percent_flood,
         pressure_drop_per_meter=from_si(
@@ -390,13 +392,15 @@ def packing_hydraulics(
         wetted_area=result.wetted_area,
         k_ga=result.k_ga,
         k_la=result.k_la,
-        htu_g=result.htu_g,
-        htu_l=result.htu_l,
-        htu_og=result.htu_og,
+        htu_g=from_si(result.htu_g.magnitude_si, result.htu_g.unit),
+        htu_l=from_si(result.htu_l.magnitude_si, result.htu_l.unit),
+        htu_og=from_si(result.htu_og.magnitude_si, result.htu_og.unit),
         hetp=from_si(result.hetp.magnitude_si, result.hetp.unit),
         theoretical_stages=result.theoretical_stages,
-        wetting_rate=result.wetting_rate,
-        minimum_wetting_rate=result.minimum_wetting_rate,
+        wetting_rate=from_si(result.wetting_rate.magnitude_si, result.wetting_rate.unit),
+        minimum_wetting_rate=from_si(
+            result.minimum_wetting_rate.magnitude_si, result.minimum_wetting_rate.unit
+        ),
         wetting_ok=result.wetting_ok,
         design_ok=result.design_ok,
         warnings=_warnings(result.warnings),
@@ -444,10 +448,16 @@ def tray_hydraulics(
         relative_volatility,
     )
     return TrayHydraulicsResult(
-        flooding_velocity=result.flooding_velocity,
-        actual_vapor_velocity=result.actual_vapor_velocity,
+        flooding_velocity=from_si(
+            result.flooding_velocity.magnitude_si, result.flooding_velocity.unit
+        ),
+        actual_vapor_velocity=from_si(
+            result.actual_vapor_velocity.magnitude_si, result.actual_vapor_velocity.unit
+        ),
         percent_flood=result.percent_flood,
-        minimum_vapor_velocity=result.minimum_vapor_velocity,
+        minimum_vapor_velocity=from_si(
+            result.minimum_vapor_velocity.magnitude_si, result.minimum_vapor_velocity.unit
+        ),
         fs_factor=result.fs_factor,
         weeping_ok=result.weeping_ok,
         entrainment=result.entrainment,
@@ -511,9 +521,13 @@ def packing_sizing(
     return PackingSizingResult(
         packing_name=result.packing_name,
         packing_factor=result.packing_factor,
-        flooding_velocity=result.flooding_velocity,
-        design_velocity=result.design_velocity,
-        vapor_volumetric_flow=result.vapor_volumetric_flow,
+        flooding_velocity=from_si(
+            result.flooding_velocity.magnitude_si, result.flooding_velocity.unit
+        ),
+        design_velocity=from_si(result.design_velocity.magnitude_si, result.design_velocity.unit),
+        vapor_volumetric_flow=from_si(
+            result.vapor_volumetric_flow.magnitude_si, result.vapor_volumetric_flow.unit
+        ),
         required_area=from_si(result.required_area.magnitude_si, result.required_area.unit),
         required_diameter=from_si(
             result.required_diameter.magnitude_si, result.required_diameter.unit
@@ -1937,10 +1951,10 @@ def pt_phase_envelope(mixture: Any, P: Q, z: Sequence[float]) -> PtPhaseEnvelope
         [list(c.alpha_params) for c in mixture.components],
     )
     return PtPhaseEnvelopeResult(
-        dew_temperature=tuple(raw.dew_temperature),
-        dew_pressure=tuple(raw.dew_pressure),
-        bubble_temperature=tuple(raw.bubble_temperature),
-        bubble_pressure=tuple(raw.bubble_pressure),
+        dew_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in raw.dew_temperature),
+        dew_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in raw.dew_pressure),
+        bubble_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in raw.bubble_temperature),
+        bubble_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in raw.bubble_pressure),
         cricondenbar_temperature=from_si(raw.cricondenbar_temperature.magnitude_si, "K"),
         cricondenbar_pressure=from_si(raw.cricondenbar_pressure.magnitude_si, "Pa"),
         cricondentherm_temperature=from_si(raw.cricondentherm_temperature.magnitude_si, "K"),
@@ -1948,7 +1962,7 @@ def pt_phase_envelope(mixture: Any, P: Q, z: Sequence[float]) -> PtPhaseEnvelope
         critical_temperature=from_si(raw.critical_temperature.magnitude_si, "K"),
         critical_pressure=from_si(raw.critical_pressure.magnitude_si, "Pa"),
         iterations=raw.iterations,
-        residual=raw.residual,
+        residual=from_si(raw.residual.magnitude_si, raw.residual.unit),
         warnings=_warnings(raw.warnings),
     )
 
@@ -2035,7 +2049,7 @@ def ps_flash(mixture: Any, ideal_gas: Any, P: Q, S: Q, z: Sequence[float]) -> Ps
         z_liquid=result.z_liquid,
         z_vapour=result.z_vapour,
         iterations=result.iterations,
-        residual=result.residual,
+        residual=from_si(result.residual.magnitude_si, result.residual.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -3056,9 +3070,11 @@ def desmukh_mather_phase(
     return DesmukhMatherPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
-        molality=tuple(result.molality),
-        ionic_strength=result.ionic_strength,
-        solvent_molar_mass=result.solvent_molar_mass,
+        molality=tuple(from_si(q.magnitude_si, q.unit) for q in result.molality),
+        ionic_strength=from_si(result.ionic_strength.magnitude_si, result.ionic_strength.unit),
+        solvent_molar_mass=from_si(
+            result.solvent_molar_mass.magnitude_si, result.solvent_molar_mass.unit
+        ),
         ln_phi=tuple(result.ln_phi),
         warnings=_warnings(result.warnings),
     )
@@ -3109,8 +3125,8 @@ def pitzer_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[float]) -> P
         ln_phi=tuple(result.ln_phi),
         henry=tuple(from_si(value.magnitude_si, value.unit) for value in result.henry),
         gamma_inf=tuple(result.gamma_inf),
-        molality=tuple(result.molality),
-        ionic_strength=result.ionic_strength,
+        molality=tuple(from_si(q.magnitude_si, q.unit) for q in result.molality),
+        ionic_strength=from_si(result.ionic_strength.magnitude_si, result.ionic_strength.unit),
         osmotic_coefficient=result.osmotic_coefficient,
         water_activity=result.water_activity,
         dataset=result.dataset,
@@ -3352,8 +3368,8 @@ def hydrate_equilibrium_line(
         hydrate_model,
     )
     return HydrateEquilibriumLineResult(
-        temperature=tuple(result.temperature),
-        pressure=tuple(result.pressure),
+        temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.temperature),
+        pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure),
         warnings=_warnings(result.warnings),
     )
 
@@ -3384,7 +3400,7 @@ def hydrate_inhibitor_wt(
         eos,
     )
     return HydrateInhibitorWtResult(
-        inhibitor_moles=result.inhibitor_moles,
+        inhibitor_moles=from_si(result.inhibitor_moles.magnitude_si, result.inhibitor_moles.unit),
         weight_fraction=result.weight_fraction,
         phases=result.phases,
         iterations=result.iterations,
@@ -3420,13 +3436,13 @@ def hydrate_inhibitor_concentration(
         hydrate_model,
     )
     return HydrateInhibitorConcentrationResult(
-        inhibitor_moles=result.inhibitor_moles,
+        inhibitor_moles=from_si(result.inhibitor_moles.magnitude_si, result.inhibitor_moles.unit),
         weight_fraction=result.weight_fraction,
         hydrate_temperature=from_si(
             result.hydrate_temperature.magnitude_si, result.hydrate_temperature.unit
         ),
         iterations=result.iterations,
-        residual=result.residual,
+        residual=from_si(result.residual.magnitude_si, result.residual.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -3722,7 +3738,7 @@ def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
     return IapwsHenryLawResult(
         henry=from_si(result.henry.magnitude_si, result.henry.unit),
         ln_henry=result.ln_henry,
-        d_ln_henry_d_t=result.d_ln_henry_d_t,
+        d_ln_henry_d_t=from_si(result.d_ln_henry_d_t.magnitude_si, result.d_ln_henry_d_t.unit),
         status=_HenryStatus(result.status),
         rms_log_residual=result.rms_log_residual,
         warnings=_warnings(result.warnings),
@@ -4651,6 +4667,8 @@ def absorption_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber; see :func:`azoth.process.reference.absorption_column`.
 
@@ -4706,6 +4724,8 @@ def absorption_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         pumparound_max_iterations,
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        max_allowable_fs_factor,
     )
     return AbsorptionColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -4723,7 +4743,9 @@ def absorption_column(
         liquid_out_t=from_si(result.liquid_out_t.magnitude_si, result.liquid_out_t.unit),
         liquid_out_h=from_si(result.liquid_out_h.magnitude_si, result.liquid_out_h.unit),
         iterations=result.iterations,
-        temperature_residual=result.temperature_residual,
+        temperature_residual=from_si(
+            result.temperature_residual.magnitude_si, result.temperature_residual.unit
+        ),
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
         fs_factor=float(result.fs_factor),
@@ -4733,7 +4755,7 @@ def absorption_column(
             result.minimum_diameter_for_fs_limit.magnitude_si,
             result.minimum_diameter_for_fs_limit.unit,
         ),
-        gas_load_factor=float(result.gas_load_factor),
+        gas_load_factor=from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
         gas_load_factor_utilization=float(result.gas_load_factor_utilization),
         gas_load_factor_within_design_limit=bool(result.gas_load_factor_within_design_limit),
         minimum_diameter_for_gas_load_limit=from_si(
@@ -4791,6 +4813,7 @@ def packed_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> PackedColumnResult:
     """Solve a packed column; see :func:`azoth.process.reference.packed_column`.
 
@@ -4854,6 +4877,7 @@ def packed_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         pumparound_max_iterations,
+        max_allowable_fs_factor,
     )
     return PackedColumnResult(
         gas_side_draw_n=tuple(
@@ -4895,7 +4919,9 @@ def packed_column(
         hetp=from_si(result.hetp.magnitude_si, result.hetp.unit),
         theoretical_stages=result.theoretical_stages,
         percent_flood=result.percent_flood,
-        flooding_velocity=result.flooding_velocity,
+        flooding_velocity=from_si(
+            result.flooding_velocity.magnitude_si, result.flooding_velocity.unit
+        ),
         packing_pressure_drop=from_si(
             result.packing_pressure_drop.magnitude_si, result.packing_pressure_drop.unit
         ),
@@ -4946,6 +4972,8 @@ def stripping_column(
     pumparound_temperature_drop: object | None = None,
     pumparound_tolerance: float | None = None,
     pumparound_max_iterations: int | None = None,
+    column_diameter: Q | None = None,
+    max_allowable_fs_factor: float | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper; see :func:`azoth.process.reference.stripping_column`.
 
@@ -4999,6 +5027,8 @@ def stripping_column(
         else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
         pumparound_tolerance,
         pumparound_max_iterations,
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        max_allowable_fs_factor,
     )
     return StrippingColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -5016,7 +5046,9 @@ def stripping_column(
         lean_liquid_t=from_si(result.lean_liquid_t.magnitude_si, result.lean_liquid_t.unit),
         lean_liquid_h=from_si(result.lean_liquid_h.magnitude_si, result.lean_liquid_h.unit),
         iterations=result.iterations,
-        temperature_residual=result.temperature_residual,
+        temperature_residual=from_si(
+            result.temperature_residual.magnitude_si, result.temperature_residual.unit
+        ),
         mass_residual=result.mass_residual,
         energy_residual=result.energy_residual,
         fs_factor=float(result.fs_factor),
@@ -5026,7 +5058,7 @@ def stripping_column(
             result.minimum_diameter_for_fs_limit.magnitude_si,
             result.minimum_diameter_for_fs_limit.unit,
         ),
-        gas_load_factor=float(result.gas_load_factor),
+        gas_load_factor=from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
         gas_load_factor_utilization=float(result.gas_load_factor_utilization),
         gas_load_factor_within_design_limit=bool(result.gas_load_factor_within_design_limit),
         minimum_diameter_for_gas_load_limit=from_si(
@@ -5133,9 +5165,15 @@ def gibbs_reactor(
         converged=result.converged,
         iterations=result.iterations,
         final_error=result.final_error,
-        lagrange_multipliers=tuple(result.lagrange_multipliers),
-        element_balance_difference=tuple(result.element_balance_difference),
-        gibbs_energy_history=tuple(result.gibbs_energy_history),
+        lagrange_multipliers=tuple(
+            from_si(q.magnitude_si, q.unit) for q in result.lagrange_multipliers
+        ),
+        element_balance_difference=tuple(
+            from_si(q.magnitude_si, q.unit) for q in result.element_balance_difference
+        ),
+        gibbs_energy_history=tuple(
+            from_si(q.magnitude_si, q.unit) for q in result.gibbs_energy_history
+        ),
         warnings=_warnings(result.warnings),
     )
 
@@ -5228,9 +5266,11 @@ def plug_flow_reactor(
             result.outlet_temperature.magnitude_si, result.outlet_temperature.unit
         ),
         heat_duty=from_si(result.heat_duty.magnitude_si, result.heat_duty.unit),
-        positions=tuple(result.positions),
-        temperature_profile=tuple(result.temperature_profile),
-        pressure_profile=tuple(result.pressure_profile),
+        positions=tuple(from_si(q.magnitude_si, q.unit) for q in result.positions),
+        temperature_profile=tuple(
+            from_si(q.magnitude_si, q.unit) for q in result.temperature_profile
+        ),
+        pressure_profile=tuple(from_si(q.magnitude_si, q.unit) for q in result.pressure_profile),
         conversion_profile=tuple(result.conversion_profile),
         warnings=_warnings(result.warnings),
     )

@@ -801,11 +801,11 @@ class PlugFlowReactorResult(_HasWarnings):
     #: The duty an isothermal reactor supplies, zero on the other branches.
     heat_duty: Q
     #: Every station's axial position, m.
-    positions: tuple[float, ...]
+    positions: tuple[Q, ...]
     #: Every station's temperature, K.
-    temperature_profile: tuple[float, ...]
+    temperature_profile: tuple[Q, ...]
     #: Every station's pressure, Pa.
-    pressure_profile: tuple[float, ...]
+    pressure_profile: tuple[Q, ...]
     #: Every station's conversion.
     conversion_profile: tuple[float, ...]
     #: Caveats.
@@ -842,11 +842,11 @@ class GibbsReactorResult(_HasWarnings):
     #: The last undamped step norm.
     final_error: float
     #: The element Lagrange multipliers, on the class's own seven element names.
-    lagrange_multipliers: tuple[float, ...]
+    lagrange_multipliers: tuple[Q, ...]
     #: The outlet element balance less the inlet's.
-    element_balance_difference: tuple[float, ...]
+    element_balance_difference: tuple[Q, ...]
     #: The total Gibbs energy at the top of each iteration, before the update.
-    gibbs_energy_history: tuple[float, ...]
+    gibbs_energy_history: tuple[Q, ...]
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -1591,9 +1591,9 @@ class HydrateEquilibriumLineResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "eos.hydrate_equilibrium_line"
 
     #: The formation temperatures, in grid order, in kelvin.
-    temperature: tuple[float, ...]
+    temperature: tuple[Q, ...]
     #: The pressures the points were solved at, in pascals, parallel to ``temperature``.
-    pressure: tuple[float, ...]
+    pressure: tuple[Q, ...]
     #: Caveats, from every point of the grid.
     warnings: tuple[Warning, ...]
 
@@ -1605,7 +1605,7 @@ class HydrateInhibitorWtResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "eos.hydrate_inhibitor_wt"
 
     #: The inhibitor's moles at the answer, the feed's own included.
-    inhibitor_moles: float
+    inhibitor_moles: Q
     #: The **aqueous phase's** inhibitor mass fraction, which is what the secant drives to the
     #: target. Not the feed's own: a gas phase takes some inhibitor with it.
     weight_fraction: float
@@ -1626,7 +1626,7 @@ class HydrateInhibitorConcentrationResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "eos.hydrate_inhibitor_concentration"
 
     #: The inhibitor's moles at the answer, the feed's own included.
-    inhibitor_moles: float
+    inhibitor_moles: Q
     #: The inhibitor's mass fraction of the inhibitor-and-water pair, which is what a dosing
     #: figure reports - the hydrocarbons are not in its denominator.
     weight_fraction: float
@@ -1636,7 +1636,7 @@ class HydrateInhibitorConcentrationResult(_HasWarnings):
     #: Secant steps taken, with a floor of three.
     iterations: int
     #: ``T_hydrate - T_target`` at the answer, in kelvin.
-    residual: float
+    residual: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -1891,11 +1891,11 @@ class PackingHydraulicsResult(_HasWarnings):
     #: The resolved packing factor, in 1/m.
     packing_factor: float
     #: The flooding velocity, in m/s.
-    flooding_velocity: float
+    flooding_velocity: Q
     #: The vapour's superficial velocity.
-    vapor_velocity: float
+    vapor_velocity: Q
     #: The liquid's superficial velocity.
-    liquid_velocity: float
+    liquid_velocity: Q
     #: The vapour's F-factor, in Pa**0.5.
     f_factor: float
     #: The load, in per cent of flood.
@@ -1911,19 +1911,19 @@ class PackingHydraulicsResult(_HasWarnings):
     #: The volumetric liquid-film coefficient, in 1/s.
     k_la: float
     #: The gas-side height of a transfer unit.
-    htu_g: float
+    htu_g: Q
     #: The liquid-side height of a transfer unit.
-    htu_l: float
+    htu_l: Q
     #: The overall height of a transfer unit.
-    htu_og: float
+    htu_og: Q
     #: The height equivalent to a theoretical plate.
     hetp: Q
     #: The packed height over the HETP.
     theoretical_stages: float
     #: The liquid's actual wetting rate, in m**3/(m**2 s).
-    wetting_rate: float
+    wetting_rate: Q
     #: The minimum wetting rate this packing's category needs.
-    minimum_wetting_rate: float
+    minimum_wetting_rate: Q
     #: Whether the liquid rate reaches the minimum.
     wetting_ok: bool
     #: Whether the bed is inside the design window.
@@ -1949,11 +1949,11 @@ class PackingSizingResult(_HasWarnings):
     #: The resolved packing factor, in 1/m - the only geometry this calculation reads.
     packing_factor: float
     #: The vapour velocity at flooding, in m/s.
-    flooding_velocity: float
+    flooding_velocity: Q
     #: ``flooding_velocity * design_flood_fraction``, in m/s.
-    design_velocity: float
+    design_velocity: Q
     #: The vapour's volumetric flow, in m**3/s.
-    vapor_volumetric_flow: float
+    vapor_volumetric_flow: Q
     #: The cross-sectional area the vapour needs.
     required_area: Q
     #: ``sqrt(4 A / pi)``, **before** the standard-size rounding.
@@ -1976,13 +1976,13 @@ class TrayHydraulicsResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "hydraulics.tray_hydraulics"
 
     #: The Souders-Brown flooding velocity, in m/s.
-    flooding_velocity: float
+    flooding_velocity: Q
     #: The vapour's velocity over the net area, in m/s.
-    actual_vapor_velocity: float
+    actual_vapor_velocity: Q
     #: The actual velocity as a percentage of the flooding one.
     percent_flood: float
     #: The weeping minimum on a net-area basis, in m/s.
-    minimum_vapor_velocity: float
+    minimum_vapor_velocity: Q
     #: The vapour's F-factor, in Pa**0.5.
     fs_factor: float
     #: Whether the actual **hole** velocity reaches Sinnott's minimum.
@@ -3147,13 +3147,13 @@ class PtPhaseEnvelopeResult(_HasWarnings):
     CALC_ID: ClassVar[str] = "eos.pt_phase_envelope"
 
     #: The dew-point temperatures, in trace order.
-    dew_temperature: tuple[float, ...]
+    dew_temperature: tuple[Q, ...]
     #: The dew-point pressures, parallel to ``dew_temperature``.
-    dew_pressure: tuple[float, ...]
+    dew_pressure: tuple[Q, ...]
     #: The bubble-point temperatures, in trace order.
-    bubble_temperature: tuple[float, ...]
+    bubble_temperature: tuple[Q, ...]
     #: The bubble-point pressures, parallel to ``bubble_temperature``.
-    bubble_pressure: tuple[float, ...]
+    bubble_pressure: tuple[Q, ...]
     #: The temperature at the cricondenbar.
     cricondenbar_temperature: Q
     #: The cricondenbar pressure.
@@ -3169,7 +3169,7 @@ class PtPhaseEnvelopeResult(_HasWarnings):
     #: The number of continuation points traced.
     iterations: int
     #: The temperature gap between the two branches' endpoints, in kelvin.
-    residual: float
+    residual: Q
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -3244,7 +3244,7 @@ class PsFlashResult(_HasWarnings):
     #: Bisection steps taken.
     iterations: int
     #: ``|S(T) - S_target| / max(|S_target|, 1)`` at the answer.
-    residual: float
+    residual: Q
     #: Caveats, deduplicated.
     warnings: tuple[Warning, ...]
 
@@ -3800,7 +3800,7 @@ class IapwsHenryLawResult(_HasWarnings):
     #: ``ln kH``, the logarithm of the value above and not of NeqSim's bar figure.
     ln_henry: float
     #: ``d(ln kH)/dT``.
-    d_ln_henry_d_t: float
+    d_ln_henry_d_t: Q
     #: Whether ``T`` is inside the row's fitted range.
     status: HenryStatus
     #: The row's reported root-mean-square residual in ``ln kH``.
@@ -4436,9 +4436,9 @@ class PitzerPhaseResult(_HasWarnings):
     #: divided by none.
     gamma_inf: tuple[float, ...]
     #: Each component's molality ``n_i / m_water``, in mol/kg of solvent.
-    molality: tuple[float, ...]
+    molality: tuple[Q, ...]
     #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.
-    ionic_strength: float
+    ionic_strength: Q
     #: The Pitzer osmotic coefficient of the water.
     osmotic_coefficient: float
     #: The water activity ``a_w``.
@@ -4476,11 +4476,11 @@ class DesmukhMatherPhaseResult(_HasWarnings):
     #: The natural logarithm of each activity coefficient.
     ln_gamma: tuple[float, ...]
     #: Each component's molality ``n_i / m_solvent``, in mol/kg of solvent.
-    molality: tuple[float, ...]
+    molality: tuple[Q, ...]
     #: ``I = 1/2 sum m_i z_i^2``, in mol/kg.
-    ionic_strength: float
+    ionic_strength: Q
     #: The mean molar mass of the ``solvent``-reference components, in kg/mol.
-    solvent_molar_mass: float
+    solvent_molar_mass: Q
     #: The natural logarithm of each fugacity coefficient.
     ln_phi: tuple[float, ...]
     #: Caveats.
@@ -4733,7 +4733,7 @@ class StrippingColumnResult(_HasWarnings):
     #: Iterations taken - one sweep where every tray is pinned.
     iterations: int
     #: The mean tray-temperature change at the last iteration, the gate the solve was held to.
-    temperature_residual: float
+    temperature_residual: Q
     #: The products' worst component imbalance against both feeds, relative.
     mass_residual: float
     #: ``|H_feeds - H_products| / |H_feeds|``.
@@ -4748,7 +4748,7 @@ class StrippingColumnResult(_HasWarnings):
     minimum_diameter_for_fs_limit: Q
     #: ``getGasLoadFactor``: the Souders-Brown ``Ks``, whose two densities are ``getPhase(0)``
     #: of the two outlets - which is why the class's near-dry fallback is the ordinary path.
-    gas_load_factor: float
+    gas_load_factor: Q
     #: ``getGasLoadFactorUtilization``.
     gas_load_factor_utilization: float
     #: ``isGasLoadFactorWithinDesignLimit``.
@@ -4838,7 +4838,7 @@ class PackedColumnResult(_HasWarnings):
     percent_flood: float
     #: The velocity at which the bed floods, from the Eckert fit at the middle tray's state, in
     #: m/s - a bare magnitude, as it is in ``hydraulics.packing_hydraulics``.
-    flooding_velocity: float
+    flooding_velocity: Q
     #: The bed's total pressure drop: Leva's form per metre times the packed height.
     packing_pressure_drop: Q
     #: **``PackedColumn.isHydraulicsOk()``**, which the pinned jar shows is the calculator's own
@@ -4894,7 +4894,7 @@ class AbsorptionColumnResult(_HasWarnings):
     #: Iterations taken - one sweep where every tray is pinned.
     iterations: int
     #: The mean tray-temperature change at the last iteration, the gate the solve was held to.
-    temperature_residual: float
+    temperature_residual: Q
     #: The products' worst component imbalance against both feeds, relative.
     mass_residual: float
     #: ``|H_feeds - H_products| / |H_feeds|``.
@@ -4909,7 +4909,7 @@ class AbsorptionColumnResult(_HasWarnings):
     minimum_diameter_for_fs_limit: Q
     #: ``getGasLoadFactor``: the Souders-Brown ``Ks``, whose two densities are ``getPhase(0)``
     #: of the two outlets - which is why the class's near-dry fallback is the ordinary path.
-    gas_load_factor: float
+    gas_load_factor: Q
     #: ``getGasLoadFactorUtilization``.
     gas_load_factor_utilization: float
     #: ``isGasLoadFactorWithinDesignLimit``.

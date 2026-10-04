@@ -24,6 +24,7 @@
 //! invented.
 
 pub mod dispatch;
+mod dispatch_gen;
 pub mod json;
 pub mod session;
 

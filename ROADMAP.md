@@ -494,8 +494,10 @@ a claim nothing holds.
   `validation/neqsim/captures/process_column_mechanical_design.tsv`. What no model declares is
   its inputs, so it runs behind no id yet. **Wiring it is deliberately deferred**: it is four new
   inputs and about eight new outputs on `process.distillation_column`, and the same shape across
-  `absorption_column`, `stripping_column` and `packed_column` - ten hand-maintained sites per
-  model, which is the registration-hardening tranche's subject and its first customer.
+  `absorption_column`, `stripping_column` and `packed_column`. The registration-hardening tranche
+  has since generated the pyo3 wrapper, the transported result and the registration lists, so the
+  wiring is cheaper than when it was deferred — and it is still owed, because what no model
+  declares is still its inputs.
   **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the

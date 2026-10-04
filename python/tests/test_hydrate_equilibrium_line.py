@@ -40,10 +40,11 @@ def test_the_line_reproduces_the_capture() -> None:
     assert len(line.temperature) == 10
     assert len(line.pressure) == 10
     # The grid is NeqSim's own stepping, which lands on the maximum at the last point.
+    # The pressures are `Pa` quantities, the shape the spec declares for them.
     for point, pressure in enumerate(line.pressure):
-        assert pressure == (1.0e5 + (200.0e5 - 1.0e5) / 9.0 * point)
+        assert pressure.to("Pa").magnitude == (1.0e5 + (200.0e5 - 1.0e5) / 9.0 * point)
     for point, want in enumerate(TEMPERATURES):
-        got = line.temperature[point]
+        got = line.temperature[point].to("K").magnitude
         assert abs(got / want - 1.0) < 1.0e-6, f"grid point {point}: {got} against {want}"
 
 

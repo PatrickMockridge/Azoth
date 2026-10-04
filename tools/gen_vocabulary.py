@@ -789,12 +789,13 @@ def emit_python(table: dict[str, Any]) -> str:
 
 
 def emit_lean(table: dict[str, Any]) -> str:
-    """The vocabulary as Lean data, one dimension per canonical unit.
+    """The vocabulary as Lean: the table, a lookup, and one theorem per canonical unit.
 
-    Data only: the table, and a lookup. Theorems *about* it are hand-written,
-    because "everything that names them is generated" and a proven statement is
-    not a naming - so the generator emits what a unit is and a proof says it means
-    what the calculus says it means.
+    The data is the table. The theorem beside each unit says the exponents it carries name the
+    dimension `lean-units` calls by that name, and its right-hand side is the hand-written
+    `LEAN_DIMENSIONS` entry - so the statement is a check on the table rather than a restatement
+    of it, and a wrong exponent or slot order fails to prove. `emit_lean_theorems` writes them,
+    and `emit_lean_gate` the `#print axioms` line for each.
     """
     by_id = {d["id"]: d for d in table["dimensions"]}
     units = table["units"]
@@ -807,9 +808,10 @@ def emit_lean(table: dict[str, Any]) -> str:
         "-- `specs/vocabulary/vocabulary.toml`.",
         "--",
         "-- One entry per canonical unit a spec may declare, with the dimension it",
-        "-- carries as exponents in `Azoth.Dim.slots` order. The theorems that say",
-        "-- these mean what the calculus says they mean are hand-written, in",
-        "-- `Azoth/Units.lean`, because a proven statement is not a naming.",
+        "-- carries as exponents in `Azoth.Dim.slots` order, and the theorem saying those",
+        "-- exponents name the dimension `lean-units` calls by that name. The theorem's",
+        "-- right-hand side is the hand-written `LEAN_DIMENSIONS` entry in the generator,",
+        "-- so the statement checks the table rather than restating it.",
         "",
         "import Azoth.Dim",
         "",

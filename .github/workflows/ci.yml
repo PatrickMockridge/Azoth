@@ -109,6 +109,11 @@ jobs:
       # line already relies on the runner image carrying the toolchain.
       - run: python tools/gen_palette.py --check
       - run: python tools/gen_model_inputs.py --check
+      # The guard theorems, against the manifest and the specs. Both are stdlib-only: the
+      # checker answers "is every edge-case class owned", and Lean is what answers whether the
+      # claims are true - which is the `lean-verify` job's, because it needs the toolchain.
+      - run: python tools/gen_guard_theorems.py --check
+      - run: python tools/check_guards.py
 
   rust-test:
     name: rust-test
@@ -313,6 +318,12 @@ jobs:
           .venv/bin/python tools/gen_models.py
           .venv/bin/python tools/gen_stub.py
           .venv/bin/python tools/gen_model_inputs.py
+          .venv/bin/python tools/gen_python_registry.py
+          .venv/bin/python tools/gen_python_transport.py
+          .venv/bin/python tools/gen_python_register.py
+          .venv/bin/python tools/gen_guard_theorems.py
+          .venv/bin/python tools/gen_dispatch.py
+          .venv/bin/python tools/gen_python_wrappers.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -320,6 +331,12 @@ jobs:
             echo "::error::  python tools/gen_vocabulary.py && python tools/gen_docs.py"
             echo "::error::  python tools/gen_registry.py && python tools/gen_models.py"
             echo "::error::  python tools/gen_stub.py && python tools/gen_model_inputs.py"
+            echo "::error::  python tools/gen_python_registry.py"
+            echo "::error::  python tools/gen_python_transport.py"
+            echo "::error::  python tools/gen_python_register.py"
+            echo "::error::  python tools/gen_guard_theorems.py"
+            echo "::error::  python tools/gen_dispatch.py"
+            echo "::error::  python tools/gen_python_wrappers.py"
             exit 1
           fi
 
