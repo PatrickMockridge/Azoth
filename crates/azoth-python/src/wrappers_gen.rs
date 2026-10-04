@@ -9,9 +9,9 @@
 use crate::eos::{PyAssociationSpec, build_mixture};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
-    cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole_kelvin, kelvins,
-    kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters, meters_per_second,
-    pascal_seconds, pascals,
+    cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole, joules_per_mole_kelvin,
+    kelvins, kilograms_per_cubic_meter, kilograms_per_mole, kilograms_per_second, meters,
+    meters_per_second, pascal_seconds, pascals,
 };
 use pyo3::prelude::*;
 
@@ -1065,6 +1065,65 @@ pub fn matcop_prumr_new_alpha(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Molar enthalpy and entropy of a mixture.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, compressibility, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, compressibility, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn molar_enthalpy_entropy(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    compressibility: f64,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyMolarEnthalpyEntropyResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::molar_enthalpy_entropy::molar_enthalpy_entropy(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        kelvins(T),
+        pascals(P),
+        &z,
+        compressibility,
+    )
+    .map(|r| crate::transport_gen::PyMolarEnthalpyEntropyResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Mollerup alpha function.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1195,6 +1254,63 @@ pub fn pcsaft_rahmat_phase(
         compressed_phase,
     )
     .map(|r| crate::transport_gen::PyPcsaftRahmatPhaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Pressure-enthalpy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn ph_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    H: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyPhFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::ph_flash::ph_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        pascals(P),
+        joules_per_mole(H),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyPhFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -1456,6 +1572,63 @@ pub fn prsv_kappa(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Pressure-entropy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn ps_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    S: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyPsFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::ps_flash::ps_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        pascals(P),
+        joules_per_mole_kelvin(S),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyPsFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Pressure-temperature flash.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -1533,6 +1706,120 @@ pub fn pt_phase_envelope(
     azoth_eos::pt_phase_envelope::pt_phase_envelope(&mixture, pascals(P), &z)
         .map(|r| crate::transport_gen::PyPtPhaseEnvelopeResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Pressure-internal-energy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pu_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    U: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyPuFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::pu_flash::pu_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        pascals(P),
+        joules_per_mole(U),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyPuFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Pressure-volume flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn pv_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    V: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyPvFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::pv_flash::pv_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        pascals(P),
+        cubic_meters_per_mole(V),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyPvFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Vapour fraction from the Rachford-Rice equation.
@@ -2019,6 +2306,63 @@ pub fn tbp_fraction_properties(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Temperature-enthalpy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn th_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    H: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyThFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::th_flash::th_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        kelvins(T),
+        joules_per_mole(H),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyThFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// SAFT-VR-Mie flash.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -2104,6 +2448,177 @@ pub fn tp_solid_flash(
         eos,
     )
     .map(|r| crate::transport_gen::PyTpSolidFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Temperature-entropy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn ts_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    S: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyTsFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::ts_flash::ts_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        kelvins(T),
+        joules_per_mole_kelvin(S),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyTsFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Temperature-internal-energy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tu_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    U: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyTuFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::tu_flash::tu_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        kelvins(T),
+        joules_per_mole(U),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyTuFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Temperature-volume flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn tv_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    V: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyTvFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::tv_flash::tv_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        kelvins(T),
+        cubic_meters_per_mole(V),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyTvFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 
@@ -2259,6 +2774,234 @@ pub fn vdw1f_mix_binary(
     azoth_eos::vdw1f_mix_binary::vdw1f_mix_binary(z1, a1, a2, b1, b2, k12)
         .map(|r| crate::transport_gen::PyVdw1fMixBinaryResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
+}
+
+/// Volume-enthalpy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn vh_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    V: f64,
+    H: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyVhFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::vh_flash::vh_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        cubic_meters_per_mole(V),
+        joules_per_mole(H),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyVhFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Volume-entropy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn vs_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    V: f64,
+    S: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyVsFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::vs_flash::vs_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        cubic_meters_per_mole(V),
+        joules_per_mole_kelvin(S),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyVsFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Volume-internal-energy flash.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn vu_flash(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    V: f64,
+    U: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyVuFlashResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::vu_flash::vu_flash(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        cubic_meters_per_mole(V),
+        joules_per_mole(U),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyVuFlashResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// Volume-internal-energy flash of a pure component.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, U, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, U, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn vu_flash_single_comp(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    P: f64,
+    V: f64,
+    U: f64,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyVuFlashSingleCompResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::vu_flash_single_comp::vu_flash_single_comp(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        pascals(P),
+        cubic_meters_per_mole(V),
+        joules_per_mole(U),
+    )
+    .map(|r| crate::transport_gen::PyVuFlashSingleCompResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
 }
 
 /// Water reference phase state.

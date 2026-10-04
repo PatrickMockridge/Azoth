@@ -238,6 +238,19 @@ def base_ctor(unit: str | None) -> str | None:
     return si_ctors().get(str(dimension))
 
 
+#: How a struct-typed kernel parameter's own fields cross. A record the spec does not declare is
+#: transported by reading its fields, the same reading `rust_index` makes of a result type - so a
+#: kernel wanting an `IdealGasModel` is handed `cp_a`-`cp_e` and this assembles the struct.
+RECORD_FIELDS = {
+    "Vec<f64>": "Vec<f64>",
+    "Vec<Vec<f64>>": "Vec<Vec<f64>>",
+    "f64": "f64",
+    "bool": "bool",
+    "usize": "usize",
+    "String": "String",
+    "Vec<String>": "Vec<String>",
+}
+
 #: How a parameter of the binding's own mixture builder crosses: the type pyo3 declares, and the
 #: expression the call passes. `build_mixture` *is* the boundary - a kernel wanting a `Mixture`
 #: takes eight arguments here, and the builder's signature is where that list is written.
@@ -354,6 +367,19 @@ def bridge_call(name: str) -> int | None:
     return count
 
 
+def record_fields(type_name: str) -> list[tuple[str, str]] | None:
+    """A record's `pub` fields as `(name, type)`, or `None` where no crate declares it."""
+    for path in sorted(CRATES.glob("*/src/**/*.rs")):
+        text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
+        match = re.search(
+            rf"^pub struct {re.escape(type_name)}\s*(?:<[^{{;]*>)?\s*\{{", text, re.M
+        )
+        if match is None:
+            continue
+        return rust_index._field_decls(rust_index._block(text, match.end() - 1, str(path)))
+    return None
+
+
 def pairing(kernel: list[tuple[str, str]], inputs: dict) -> dict[str, str]:
     """Each kernel parameter to the declared input it carries, or `{}` where that cannot be read.
 
@@ -368,9 +394,24 @@ def pairing(kernel: list[tuple[str, str]], inputs: dict) -> dict[str, str]:
     refusal: that shape is a re-ordered or a genuinely different signature.
     """
     out: dict[str, str] = {}
-    casefold = {name.lower(): (name, kind) for name, kind in kernel}
+    # A parameter the boundary transports *structurally* is not paired with a declared input:
+    # the mixture is the spec's `components` read as arrays, and a record is a type the spec does
+    # not name at all. Neither is a leftover, and the mixture consumes the components input.
+    structural = {
+        name
+        for name, kind in kernel
+        if "Mixture" in kind
+        or (kind.startswith("&") and kind[1:] not in uom_aliases() and not kind.startswith(("&[", "&str")))
+    }
+    declared = dict(inputs)
+    if any("Mixture" in kind for _, kind in kernel):
+        for spec_name, decl in inputs.items():
+            if decl.get("type") == "components":
+                declared.pop(spec_name, None)
+                break
+    casefold = {name.lower(): (name, kind) for name, kind in kernel if name not in structural}
     leftovers = []
-    for spec_name in inputs:
+    for spec_name in declared:
         found = casefold.pop(spec_name.lower(), None)
         if found is None:
             leftovers.append(spec_name)
@@ -484,8 +525,29 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
 
     # What each parameter is, and whether anything about it was refused.
     mixture = next((name for name, kind in kernel if "Mixture" in kind), None)
+    #: A struct-typed parameter's own fields, in the order the record declares them.
+    record: list[str] = []
     plan: list[tuple[str, str, str, bool]] = []  # (parameter, kind, argument, is_enum)
     for name, kind in kernel:
+        if "Mixture" in kind:
+            # The builder is bound before the call, so the argument names that binding.
+            plan.append(("mixture", kind, "&mixture", False))
+            continue
+        if kind.startswith("&") and kind[1:] not in aliases and not kind.startswith(("&[", "&str")):
+            fields = record_fields(kind[1:])
+            if fields is None:
+                raise Refusal(f"{kind} is a reference to a type no crate declares")
+            for field, field_type in fields:
+                declared = RECORD_FIELDS.get(field_type)
+                if declared is None:
+                    raise Refusal(f"{kind[1:]}'s field {field}: {field_type} has no rule")
+                record.append(field)
+            plan.append((
+                name, kind,
+                f"&{type_path(kind[1:], source, crate, file)} {{ {', '.join(record)} }}",
+                False,
+            ))
+            continue
         if "Mixture" in kind:
             # The builder is bound before the call, so the argument names that binding.
             plan.append(("mixture", kind, "&mixture", False))
@@ -531,8 +593,19 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
             for parameter, declared, _ in builder_parameters()
             if parameter not in CUBIC_CHOICE
         )
+    if record:
+        for field in record:
+            found = next(
+                (t for n, nk in kernel for f, t in (record_fields(nk[1:]) or []) if f == field),
+                None,
+            )
+            declarations.append(f"{field}: {RECORD_FIELDS[found]}")
     for name, decl in gen_stub.ordered_parameters(inputs):
-        kind = next(kind for key, kind in kernel if pairs.get(key) == name)
+        kind = next((kind for key, kind in kernel if pairs.get(key) == name), None)
+        if kind is None:
+            # An input the boundary carries structurally - the mixture's `components`, which the
+            # builder's arrays stand for - has no parameter of its own.
+            continue
         if "Mixture" in kind:
             # The mixture's own input is carried by the builder's bundle, not by a parameter of
             # the calc's name - the spec declares a component *list* and the boundary takes arrays.
@@ -552,13 +625,20 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
     names = [name for name, _ in gen_stub.ordered_parameters(inputs)]
     if mixture is not None:
         # The mixture's declared input is not a parameter: the bundle carries it.
-        names = [name for name in names if not any(
-            pairs.get(key) == name and "Mixture" in kind for key, kind in kernel
-        )]
+        paired = set(pairs.values())
+        names = [name for name in names if name in paired]
         bundle = [parameter for parameter, _, _ in builder_parameters()]
         names = [n for n in bundle if n not in CUBIC_CHOICE] + names + [
             n for n in bundle if n in CUBIC_CHOICE
         ]
+    if record:
+        head = names.index(next(n for n in names if n not in CUBIC_CHOICE and n in
+                                [p for p, _, _ in builder_parameters()] or True)) if False else 0
+        # The record's fields sit between the mixture's required half and the calc's own inputs.
+        if mixture is not None:
+            bundle = [parameter for parameter, _, _ in builder_parameters()]
+            head = len([n for n in bundle if n not in CUBIC_CHOICE])
+        names = names[:head] + record + names[head:]
     signature_list = ", ".join(
         f"{n} = {defaults[n]}" if n in defaults else n for n in names
     )

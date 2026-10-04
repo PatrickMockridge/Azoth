@@ -345,7 +345,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::matcop_prumr_new_alpha,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::molar_enthalpy_entropy, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::molar_enthalpy_entropy,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::mollerup_alpha, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::nitric_sulfuric_acid_vapor_pressure,
@@ -368,7 +371,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::pcsaft_rahmat_phase,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::ph_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::ph_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::phase_transport, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pitzer_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr78_kappa, m)?)?;
@@ -394,12 +397,12 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_peneloux_shift, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pr_z_factor, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::prsv_kappa, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::ps_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::ps_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pt_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::pt_phase_envelope, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::pu_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pu_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::pure_saturation, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::pv_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::pv_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::pv_reflux_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::pvf_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::rachford_rice, m)?)?;
@@ -453,15 +456,15 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::tbp_fraction_properties,
         m
     )?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::th_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::th_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::thermal_conductivity, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_flash_saft, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_multiflash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::tp_multiflash_wax, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_solid_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::ts_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::tu_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::tv_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::ts_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::tu_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::tv_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::tv_fraction_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::twu_kappa, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::twucoon_alpha, m)?)?;
@@ -500,11 +503,14 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::vdw1f_mix_binary, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::vh_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::vh_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::viscosity, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::vs_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::vu_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::vu_flash_single_comp, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::vs_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::vu_flash, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::vu_flash_single_comp,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::water_phase, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::wax_solid_fugacity,
