@@ -264,7 +264,12 @@ BUILDER_TYPES = {
 }
 
 
-def builder_parameters() -> list[tuple[str, str, str]]:
+#: The binding's mixture builders, tried in order. A kernel takes the expansion one of them
+#: defines; which one is decided by the emitted arity matching the bridge's call, not guessed.
+BUILDERS = ("build_mixture", "build_mixture_with_mass")
+
+
+def builder_parameters(name: str = "build_mixture") -> list[tuple[str, str, str]]:
     """`build_mixture`'s parameters as `(name, declared type, call expression)`.
 
     Read from the builder rather than declared here, because the builder is the boundary: a kernel
@@ -272,11 +277,12 @@ def builder_parameters() -> list[tuple[str, str, str]]:
     does. The call expression is `&name` for a slice the builder borrows, `name` for one it takes
     by value, and the `Option` unwrap for the alpha parameters.
     """
+    builder = _BUILDER
     source = rust_index._blank_comments(
         (CRATES / "azoth-python" / "src" / "eos.rs").read_text(encoding="utf-8")
     )
-    for name, params in signatures(source, visibility=r"pub(?:\s*\([^)]*\))?\s+fn"):
-        if name != "build_mixture":
+    for name, params in signatures(source, visibility=r"(?:pub(?:\s*\([^)]*\))?\s+)?fn"):
+        if name != builder:
             continue
         out = []
         for parameter, kind in params:
@@ -293,7 +299,7 @@ def builder_parameters() -> list[tuple[str, str, str]]:
                 call = f"&{parameter}"
             out.append((parameter, declared, call))
         return out
-    sys.exit("gen_python_wrappers: crates/azoth-python/src/eos.rs no longer declares build_mixture")
+    sys.exit(f"gen_python_wrappers: eos.rs no longer declares {builder}")
 
 
 #: The mixture builder's cubic choice: the three parameters the boundary gives Python defaults,
@@ -513,7 +519,10 @@ def enum_local(kind: str, name: str, resolved: str, error: str) -> tuple[list[st
     )
 
 
-def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases: set[str]) -> str:
+def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases: set[str],
+         builder: str = "build_mixture") -> str:
+    global _BUILDER
+    _BUILDER = builder
     calc_id, module, function, spec = entry
     inputs = spec["inputs"]
     # **The kernel's own spelling, read case-insensitively.** A `uom` quantity is a `t` or a `p`
@@ -569,8 +578,8 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
     statements: list[str] = []
     arguments: list[str] = []
     if mixture is not None:
-        call = ", ".join(expression for _, _, expression in builder_parameters())
-        statements.append(f"    let mixture = build_mixture(py, {call})?;")
+        call = ", ".join(expression for _, _, expression in builder_parameters(builder))
+        statements.append(f"    let mixture = {builder}(py, {call})?;")
     for name, kind, argument, is_enum in plan:
         statements.extend(locals_for(kind, name))
         if is_enum:
@@ -590,7 +599,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
     if mixture is not None:
         declarations.extend(
             f"{parameter}: {declared}"
-            for parameter, declared, _ in builder_parameters()
+            for parameter, declared, _ in builder_parameters(builder)
             if parameter not in CUBIC_CHOICE
         )
     if record:
@@ -617,7 +626,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
     if mixture is not None:
         declarations.extend(
             f"{parameter}: {declared}"
-            for parameter, declared, _ in builder_parameters()
+            for parameter, declared, _ in builder_parameters(builder)
             if parameter in CUBIC_CHOICE
         )
 
@@ -627,7 +636,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
         # The mixture's declared input is not a parameter: the bundle carries it.
         paired = set(pairs.values())
         names = [name for name in names if name in paired]
-        bundle = [parameter for parameter, _, _ in builder_parameters()]
+        bundle = [parameter for parameter, _, _ in builder_parameters(builder)]
         names = [n for n in bundle if n not in CUBIC_CHOICE] + names + [
             n for n in bundle if n in CUBIC_CHOICE
         ]
@@ -636,7 +645,7 @@ def body(entry, kernel, crate: str, path: str, source: str, file: Path, aliases:
                                 [p for p, _, _ in builder_parameters()] or True)) if False else 0
         # The record's fields sit between the mixture's required half and the calc's own inputs.
         if mixture is not None:
-            bundle = [parameter for parameter, _, _ in builder_parameters()]
+            bundle = [parameter for parameter, _, _ in builder_parameters(builder)]
             head = len([n for n in bundle if n not in CUBIC_CHOICE])
         names = names[:head] + record + names[head:]
     signature_list = ", ".join(
@@ -686,18 +695,26 @@ def covered() -> list[tuple[tuple[str, str, str, dict], str]]:
         kernel_path = rust_index._item_path(kernel_file, function)
         if not pairing(kernel, spec["inputs"]):
             continue
-        try:
-            text = body(entry, kernel, kernel_module, kernel_path,
-                        rust_index._blank_comments(kernel_file.read_text(encoding="utf-8")),
-                        kernel_file, aliases)
-        except Refusal:
-            continue
-        # The signature the emitter wrote, against the call the bridge makes.
-        # `py` is injected by pyo3 and is not an argument the bridge passes, so it is counted
-        # and then taken back out.
-        declared = len(re.findall(r"^    (?:\w+): ", text, re.M)) - 1
+        source = rust_index._blank_comments(kernel_file.read_text(encoding="utf-8"))
         called = bridge_call(function)
-        if called is not None and called != declared:
+        # **The builder is searched, not assumed.** A kernel wants *a* mixture expansion, and
+        # which one is decided by the emitted arity matching the only caller's call - that is
+        # what tells `eos.viscosity` (which needs `molar_mass` at the boundary too) from
+        # `eos.pt_flash`. No builder that fits means a refusal, not a guess.
+        choices = BUILDERS if any("Mixture" in kind for _, kind in kernel) else ("build_mixture",)
+        text = None
+        for builder in choices:
+            try:
+                candidate = body(entry, kernel, kernel_module, kernel_path, source,
+                                 kernel_file, aliases, builder)
+            except Refusal:
+                continue
+            # `py` is injected by pyo3 and is not an argument the bridge passes.
+            declared = len(re.findall(r"^    (?:\w+): ", candidate, re.M)) - 1
+            if called is None or called == declared:
+                text = candidate
+                break
+        if text is None:
             continue
         out.append((entry, text))
     return out
@@ -725,9 +742,12 @@ def emit() -> str:
     bodies = "\n\n".join(text for _, text in covered())
     used = ctors(bodies)
     imports = "use crate::errors::to_pyerr;\n"
-    if "build_mixture(" in bodies:
+    if "build_mixture(" in bodies or "build_mixture_with_mass(" in bodies:
         # The mixture boundary the expanded wrappers share: the builder and the record it takes.
-        imports += "use crate::eos::{PyAssociationSpec, build_mixture};\n"
+        builders = sorted({b for b in BUILDERS if f"{b}(" in bodies})
+        imports += (
+            f"use crate::eos::{{PyAssociationSpec, {', '.join(builders)}}};\n"
+        )
     if used:
         imports += f"use azoth_core::units::{{{', '.join(used)}}};\n"
     imports += "use pyo3::prelude::*;\n"

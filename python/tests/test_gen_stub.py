@@ -161,8 +161,6 @@ KNOWN_SIGNATURE_DRIFT = frozenset(
         "ge_nrtl_flash",
         "ge_wilson_phase",
         "hydrogen_phase",
-        "thermal_conductivity",
-        "viscosity",
         "wilson_activity_coefficients",
     }
 )

@@ -15,11 +15,10 @@ use crate::transport_gen::{
     PyAqueousViscosityResult, PyBwrsPhaseResult, PyGeNrtlFlashResult, PyGeNrtlPhaseResult,
     PyGeUnifacPhaseResult, PyGeUniquacPhaseResult, PyGeVanLaarAcidPhaseResult,
     PyGeWilsonPhaseResult, PyHydrogenPhaseResult, PyNrtlActivityCoefficientsResult,
-    PyPureSaturationResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyThermalConductivityResult,
-    PyTvFractionFlashResult, PyUnifacActivityCoefficientsResult,
-    PyUnifacPsrkActivityCoefficientsResult, PyUnifacUmrpruActivityCoefficientsResult,
-    PyUniquacActivityCoefficientsResult, PyVanLaarAcidActivityCoefficientsResult,
-    PyViscosityResult, PyWilsonActivityCoefficientsResult,
+    PyPureSaturationResult, PyPvRefluxFlashResult, PyPvfFlashResult, PyTvFractionFlashResult,
+    PyUnifacActivityCoefficientsResult, PyUnifacPsrkActivityCoefficientsResult,
+    PyUnifacUmrpruActivityCoefficientsResult, PyUniquacActivityCoefficientsResult,
+    PyVanLaarAcidActivityCoefficientsResult, PyWilsonActivityCoefficientsResult,
 };
 
 /// The activity coefficients of a mixture, from NRTL. A *model* rather than a
@@ -405,7 +404,8 @@ impl PyAssociationSpec {
 /// `eos.ge_wilson_phase` need.
 #[allow(non_snake_case)] // `Tc` and `Pc` are the symbols in the chemistry
 #[allow(clippy::too_many_arguments)] // The transport's own shape, not a design.
-fn build_mixture_with_mass(
+// The generated wrappers call this the way they call `build_mixture`, so it is `pub(crate)`.
+pub(crate) fn build_mixture_with_mass(
     py: Python<'_>,
     Tc: &[f64],
     Pc: &[f64],
@@ -1251,48 +1251,6 @@ pub fn phase_transport(
         .map_err(|e| to_pyerr(py, e))
 }
 
-/// The liquid viscosity from the Pedersen (PFCT) heavy-oil correlation.
-///
-/// `eos`, `alpha` and `alpha_params` are accepted for the boundary's uniformity with the
-/// other mixture models and ignored: the reference flash is pure methane SRK, so the
-/// mixture's own cubic and alpha are not consulted.
-#[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
-#[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, T, P, z, eos = \"pr\", alpha = \"pr\")"
-)]
-#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-#[allow(unused_variables)] // `eos`, `alpha` and `alpha_params` are boundary-only, see above.
-pub fn viscosity(
-    py: Python<'_>,
-    Tc: Vec<f64>,
-    Pc: Vec<f64>,
-    omega: Vec<f64>,
-    kij: Vec<f64>,
-    association: PyRef<'_, PyAssociationSpec>,
-    molar_mass: Vec<f64>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    eos: &str,
-    alpha: &str,
-    alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyViscosityResult> {
-    let n = Tc.len();
-    let components = (0..n)
-        .map(|i| {
-            azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])
-                .map(|c| c.with_molar_mass(Some(molar_mass[i])))
-        })
-        .collect::<azoth_core::Result<Vec<_>>>()
-        .map_err(|e| to_pyerr(py, e))?;
-    let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
-    azoth_eos::viscosity(&mixture, kelvins(T), pascals(P), &z)
-        .map(|r| PyViscosityResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
 /// The liquid viscosity NeqSim gives an **aqueous** phase.
 ///
 /// `eos`, `alpha` and `alpha_params` are accepted for the boundary's uniformity and
@@ -1344,59 +1302,6 @@ pub fn aqueous_viscosity(
     let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
     azoth_eos::aqueous_viscosity(&mixture, kelvins(T), pascals(P), &z)
         .map(|r| PyAqueousViscosityResult::from(&r))
-        .map_err(|e| to_pyerr(py, e))
-}
-
-/// The liquid thermal conductivity from the Pedersen (PFCT) correlation.
-///
-/// `eos`, `alpha` and `alpha_params` are accepted for the boundary's uniformity and
-/// ignored: the reference flash is pure methane SRK.
-#[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
-#[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = \"pr\", alpha = \"pr\")"
-)]
-#[allow(non_snake_case)] // `Tc`, `Pc`, `T` and `P` are the symbols in the chemistry
-#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
-#[allow(unused_variables)] // `eos`, `alpha` and `alpha_params` are boundary-only, see above.
-pub fn thermal_conductivity(
-    py: Python<'_>,
-    Tc: Vec<f64>,
-    Pc: Vec<f64>,
-    omega: Vec<f64>,
-    kij: Vec<f64>,
-    association: PyRef<'_, PyAssociationSpec>,
-    molar_mass: Vec<f64>,
-    cp_a: Vec<f64>,
-    cp_b: Vec<f64>,
-    cp_c: Vec<f64>,
-    cp_d: Vec<f64>,
-    cp_e: Vec<f64>,
-    T: f64,
-    P: f64,
-    z: Vec<f64>,
-    eos: &str,
-    alpha: &str,
-    alpha_params: Option<Vec<Vec<f64>>>,
-) -> PyResult<PyThermalConductivityResult> {
-    let n = Tc.len();
-    let components = (0..n)
-        .map(|i| {
-            azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])
-                .map(|c| c.with_molar_mass(Some(molar_mass[i])))
-        })
-        .collect::<azoth_core::Result<Vec<_>>>()
-        .map_err(|e| to_pyerr(py, e))?;
-    let mixture = azoth_eos::Mixture::new(components, kij).map_err(|e| to_pyerr(py, e))?;
-    let ideal_gas = azoth_eos::IdealGasModel {
-        cp_a,
-        cp_b,
-        cp_c,
-        cp_d,
-        cp_e,
-    };
-    azoth_eos::thermal_conductivity(&mixture, &ideal_gas, kelvins(T), pascals(P), &z)
-        .map(|r| PyThermalConductivityResult::from(&r))
         .map_err(|e| to_pyerr(py, e))
 }
 

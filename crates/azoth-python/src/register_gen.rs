@@ -457,7 +457,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::th_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::thermal_conductivity, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::thermal_conductivity,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_flash_saft, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::tp_multiflash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::tp_multiflash_wax, m)?)?;
@@ -504,7 +507,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::vdw1f_mix_binary, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::vh_flash, m)?)?;
-    m.add_function(wrap_pyfunction!(crate::eos::viscosity, m)?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::vs_flash, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::vu_flash, m)?)?;
     m.add_function(wrap_pyfunction!(

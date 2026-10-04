@@ -6,7 +6,7 @@
 //! Regenerate with `python tools/gen_python_wrappers.py`; CI runs `--check` and fails on
 //! any difference.
 
-use crate::eos::{PyAssociationSpec, build_mixture};
+use crate::eos::{PyAssociationSpec, build_mixture, build_mixture_with_mass};
 use crate::errors::to_pyerr;
 use azoth_core::units::{
     cubic_meters_per_mole, cubic_meters_per_second, joules_per_mole, joules_per_mole_kelvin,
@@ -2363,6 +2363,65 @@ pub fn th_flash(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// Liquid thermal conductivity from the Pedersen (PFCT) correlation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn thermal_conductivity(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    molar_mass: Vec<f64>,
+    cp_a: Vec<f64>,
+    cp_b: Vec<f64>,
+    cp_c: Vec<f64>,
+    cp_d: Vec<f64>,
+    cp_e: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyThermalConductivityResult> {
+    let mixture = build_mixture_with_mass(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        &molar_mass,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::thermal_conductivity::thermal_conductivity(
+        &mixture,
+        &azoth_eos::molar_enthalpy_entropy::IdealGasModel {
+            cp_a,
+            cp_b,
+            cp_c,
+            cp_d,
+            cp_e,
+        },
+        kelvins(T),
+        pascals(P),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyThermalConductivityResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// SAFT-VR-Mie flash.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
@@ -2831,6 +2890,48 @@ pub fn vh_flash(
     )
     .map(|r| crate::transport_gen::PyVhFlashResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
+}
+
+/// Liquid viscosity from the Pedersen (PFCT) heavy-oil correlation.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn viscosity(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    molar_mass: Vec<f64>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyViscosityResult> {
+    let mixture = build_mixture_with_mass(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        &molar_mass,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::viscosity::viscosity(&mixture, kelvins(T), pascals(P), &z)
+        .map(|r| crate::transport_gen::PyViscosityResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
 }
 
 /// Volume-entropy flash.

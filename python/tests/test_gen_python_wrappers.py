@@ -26,7 +26,7 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 
 #: The hand-written `pub fn`s the namespace modules may carry. Measured when the generator
 #: landed; lowering it is the point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 66
+KNOWN_HAND_WRITTEN = 64
 
 
 def _tools_module(name: str) -> ModuleType:
