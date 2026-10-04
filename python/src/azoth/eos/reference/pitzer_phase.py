@@ -334,7 +334,7 @@ def pitzer_phase(
         gamma=tuple(activity.gamma),
         ln_gamma=tuple(activity.ln_gamma),
         ln_phi=tuple(ln_phi),
-        henry=tuple(from_si(_v, "Pa") for _v in tuple(henry)),
+        henry=tuple(henry),
         gamma_inf=tuple(gamma_inf),
         molality=tuple(from_si(_v, "mol/kg") for _v in tuple(activity.molality)),
         ionic_strength=from_si(activity.ionic_strength, "mol/kg"),

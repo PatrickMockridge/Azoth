@@ -21,7 +21,7 @@ from typing import Any, TypedDict
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import ReactiveHybridEosGeFlashResult
-from azoth.core.units import Q, from_si, input_to_si, quantity
+from azoth.core.units import Q, input_to_si, quantity
 from azoth.core.warnings import Warning
 from azoth.eos import components as _components
 from azoth.eos.reference import hybrid_eos_ge_flash as _hybrid
@@ -152,14 +152,8 @@ def reactive_hybrid_eos_ge_flash(
     return ReactiveHybridEosGeFlashResult(
         phase_fractions=tuple(outcome["beta"]),
         x=tuple(tuple(row) for row in outcome["x"]),
-        coupled_moles=tuple(
-            from_si(_v, "mol")
-            for _v in tuple(quantity(value, "mol") for value in outcome["coupled_moles"])
-        ),
-        aqueous_moles=tuple(
-            from_si(_v, "mol")
-            for _v in tuple(quantity(value, "mol") for value in outcome["aqueous_moles"])
-        ),
+        coupled_moles=tuple(quantity(value, "mol") for value in outcome["coupled_moles"]),
+        aqueous_moles=tuple(quantity(value, "mol") for value in outcome["aqueous_moles"]),
         passes=outcome["passes"],
         chemical_deviation=outcome["chemical_deviation"],
         residual=outcome["residual"],

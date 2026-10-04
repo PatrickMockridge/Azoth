@@ -252,7 +252,7 @@ def phase_transport(
         mu=mu,
         k=k,
         d_binary=tuple(tuple(value for value in row) for row in matrix),
-        d_effective=tuple(from_si(_v, "m**2/s") for _v in d_effective),
+        d_effective=tuple(d_effective),
         warnings=tuple(warnings),
     )
 
