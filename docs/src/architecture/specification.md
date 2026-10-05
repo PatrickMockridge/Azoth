@@ -98,9 +98,11 @@ capture.
 The wrapper is generated for **148** of the registered ids and hand-written for **46**: a kernel
 that takes a record or a mixture the spec does not name is one the generator refuses rather than
 guesses at, and so is one whose signature disagrees with the order the bridge passes it in. The
-bridge adapter is generated for **172** and hand-written for **22**, and its rule is narrower
-because its boundary is a Python signature rather than a Rust one: the adapter's parameters must
-be `_core`'s, in that order, and every one of them an input the spec declares.
+bridge adapter is generated for **181** and hand-written for **13**, and its rule is narrower
+because its boundary is a Python signature rather than a Rust one: its signature is the public
+wrapper's, its call is the `#[pyfunction]`'s own order, and every argument on either side must be
+an input the spec declares, a field of the `params` record the wrapper's annotation names, or one
+expression a boundary object resolves into.
 
 **That pair is why the tranche started.** The two are the same contract written twice - the
 wrapper says what `_core` takes, the adapter says what the caller sends - and nothing compared

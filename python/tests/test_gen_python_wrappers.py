@@ -87,3 +87,28 @@ def test_no_id_is_both_generated_and_hand_written() -> None:
     generated = {function for _, function in wrappers.covered_ids()}
 
     assert generated & set(_hand_written()) == set(), "an id is both generated and hand-written"
+
+
+def test_the_boundary_reader_sees_both_halves_of_the_bridge() -> None:
+    """**A file the reader cannot see is a check that has been turned off.**
+
+    `bridge_call` and `bridge_arguments` decide the emitted wrapper's arity and parameter order,
+    and they read the bridge for the call. When the bridge's adapters were generated, most of the
+    calls moved into `_rust_bridge_gen.py`; a reader that read only `_rust_bridge.py` then found no
+    call for those ids, which *passed* both checks rather than failing them - and admitted five ids
+    the generator had refused on purpose (`phase_transport`, `absorption_column`, `ejector`,
+    `heat_exchanger`, `stripping_column`) while the committed `wrappers_gen.rs` still lacked them,
+    so `--check` was red for the whole of the next slice. Every generated adapter makes exactly one
+    `_core.<name>(` call, so the reader has to find one for each.
+    """
+    wrappers = _tools_module("gen_python_wrappers")
+    bridge = (REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text("utf-8")
+    block = bridge.partition("__all__ = [")[2].partition("]")[0]
+    names = re.findall(r'^    "(\w+)",$', block, re.M)
+
+    assert names, "the generated bridge declares no adapters"
+    unseen = sorted(name for name in names if wrappers.bridge_call(name) is None)
+    assert not unseen, (
+        f"{len(unseen)} generated adapter(s) whose `_core` call the boundary reader cannot see, so "
+        f"its arity and order checks are silently off for them: {unseen}"
+    )

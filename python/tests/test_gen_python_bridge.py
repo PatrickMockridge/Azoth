@@ -22,10 +22,16 @@ from types import ModuleType
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge.py"
 
-#: The adapters `_rust_bridge.py` may still carry by hand. Every one of them is an id whose
-#: boundary is a mixture, a record or a container the spec does not declare; lowering this is the
-#: point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 22
+#: The adapters `_rust_bridge.py` may still carry by hand, and the cause each one is left for:
+#: five whose boundary carries the per-component molar mass, resolved from `mixture.components`
+#: behind a guard rather than by one expression; three that take a keycard the public wrapper
+#: resolves into an argument before the bridge is reached; one whose record is per-component
+#: *arrays* rather than fields (`bwrs_phase`); and four single ids - `capillary_dew_point` and
+#: `rate_based_packed_column`, whose optional inputs the extension takes non-optionally with no
+#: default to send, `hydrogen_phase`, whose wrapper takes a mode the spec does not declare, and
+#: `pure_saturation`, which takes the critical constants the spec resolves from a component name.
+#: Lowering this is the point, and raising it needs a reason in the diff.
+KNOWN_HAND_WRITTEN = 13
 
 
 def _tools_module(name: str) -> ModuleType:

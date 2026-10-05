@@ -25,10 +25,11 @@ from typing import Any
 
 from azoth import _core, _models_gen
 
-# **The generated half.** Every id whose signature is the public wrapper's and whose boundary is
-# the spec's own inputs is emitted by `tools/gen_python_bridge.py`; what is left in this file is
-# the ids that take a `Mixture` or a record the spec does not name. `resolve` derives the id's
-# function name and looks it up in this module's globals, which the star import fills.
+# **The generated half.** Every id whose signature is the public wrapper's and whose every
+# boundary parameter is an input the spec declares, a field of the `params` record, or a boundary
+# object's derived expansion is emitted by `tools/gen_python_bridge.py`; what is left in this file
+# is the ids that generator refuses, each with its reason in `--survey`. `resolve` derives the
+# id's function name and looks it up in this module's globals, which the star import fills.
 from azoth._rust_bridge_gen import *  # noqa: F403
 
 # The helpers the generated adapters and the hand-written ones both call. Imported rather than
@@ -43,27 +44,17 @@ from azoth.core.result import (
     AqueousViscosityResult,
     BwrsPhaseResult,
     CapillaryDewPointResult,
-    GeNrtlFlashResult,
-    GeNrtlPhaseResult,
-    GeUnifacPhaseResult,
     GeUniquacPhaseResult,
-    GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
     HydrogenPhaseResult,
-    NrtlActivityCoefficientsResult,
     OrificeFlowResult,
     PureSaturationResult,
     RateBasedPackedColumnResult,
     ThermalConductivityResult,
-    UnifacActivityCoefficientsResult,
-    UnifacPsrkActivityCoefficientsResult,
-    UnifacUmrpruActivityCoefficientsResult,
     UniquacActivityCoefficientsResult,
-    VanLaarAcidActivityCoefficientsResult,
     ViscosityResult,
     WilsonActivityCoefficientsResult,
 )
-from azoth.core.result import Phase as _Phase
 from azoth.core.units import Q, from_si, input_to_si, to_si
 
 
@@ -92,134 +83,6 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
         ln_phi=result.ln_phi,
         iterations=result.iterations,
         residual=result.residual,
-        warnings=_warnings(result.warnings),
-    )
-
-
-def nrtl_activity_coefficients(
-    params: Any,
-    T: Q,
-    x: Sequence[float],
-) -> NrtlActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The resolved matrices cross the boundary flattened row-major, the same two vectors
-    the Rust kernel takes.
-    """
-    spec = _models_gen.model("eos.nrtl_activity_coefficients")
-    result = _core.nrtl_activity_coefficients(
-        list(params.alpha),
-        list(params.dij),
-        input_to_si(spec, "T", T),
-        list(x),
-    )
-    return NrtlActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def unifac_activity_coefficients(
-    params: Any,
-    T: Q,
-    x: Sequence[float],
-) -> UnifacActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The resolved group tables cross the boundary flattened, in the dataclass's own
-    field order, the same vectors the Rust kernel takes.
-    """
-    spec = _models_gen.model("eos.unifac_activity_coefficients")
-    result = _core.unifac_activity_coefficients(
-        list(params.groups),
-        list(params.group_r),
-        list(params.group_q),
-        list(params.aij),
-        input_to_si(spec, "T", T),
-        list(x),
-    )
-    return UnifacActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def van_laar_acid_activity_coefficients(
-    params: Any,
-    T: Q,
-    x: Sequence[float],
-) -> VanLaarAcidActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The resolved acid identities cross the boundary as the flattened integers they are.
-    """
-    spec = _models_gen.model("eos.van_laar_acid_activity_coefficients")
-    result = _core.van_laar_acid_activity_coefficients(
-        list(params.acid_index),
-        input_to_si(spec, "T", T),
-        list(x),
-    )
-    return VanLaarAcidActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def unifac_psrk_activity_coefficients(
-    params: Any,
-    T: Q,
-    x: Sequence[float],
-) -> UnifacPsrkActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The resolved basis and the three interaction matrices cross flattened, in the
-    dataclass's own field order.
-    """
-    spec = _models_gen.model("eos.unifac_psrk_activity_coefficients")
-    result = _core.unifac_psrk_activity_coefficients(
-        list(params.groups),
-        list(params.group_r),
-        list(params.group_q),
-        list(params.aij),
-        list(params.bij),
-        list(params.cij),
-        input_to_si(spec, "T", T),
-        list(x),
-    )
-    return UnifacPsrkActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def unifac_umrpru_activity_coefficients(
-    params: Any,
-    T: Q,
-    x: Sequence[float],
-) -> UnifacUmrpruActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The resolved basis and the chosen set's three matrices cross flattened, in the
-    dataclass's own field order.
-    """
-    spec = _models_gen.model("eos.unifac_umrpru_activity_coefficients")
-    result = _core.unifac_umrpru_activity_coefficients(
-        list(params.groups),
-        list(params.group_r),
-        list(params.group_q),
-        list(params.aij),
-        list(params.bij),
-        list(params.cij),
-        input_to_si(spec, "T", T),
-        list(x),
-    )
-    return UnifacUmrpruActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),
     )
 
@@ -525,33 +388,6 @@ def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
     )
 
 
-def ge_nrtl_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeNrtlPhaseResult:
-    """The fugacity coefficients of an NRTL liquid, computed in Rust.
-
-    The resolved record crosses flattened, one list per field, in the dataclass's own
-    order.
-    """
-    spec = _models_gen.model("eos.ge_nrtl_phase")
-    result = _core.ge_nrtl_phase(
-        list(params.alpha),
-        list(params.dij),
-        list(params.antoine_type),
-        list(params.antoine_coefficients),
-        list(params.antoine_tc),
-        list(params.antoine_pc),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(x),
-    )
-    return GeNrtlPhaseResult(
-        gamma=tuple(result.gamma),
-        ln_gamma=tuple(result.ln_gamma),
-        ln_phi=tuple(result.ln_phi),
-        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
-        warnings=_warnings(result.warnings),
-    )
-
-
 def ge_wilson_phase(
     params: Any, mixture: Any, T: Q, P: Q, x: Sequence[float]
 ) -> GeWilsonPhaseResult:
@@ -615,107 +451,6 @@ def ge_uniquac_phase(
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
         p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def ge_van_laar_acid_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeVanLaarAcidPhaseResult:
-    """The acid liquid's fugacity coefficients, computed in Rust.
-
-    The resolved record crosses flattened, one list per field, in the dataclass's own
-    order - the acid identities first, then the vapour-pressure columns beside them.
-    """
-    spec = _models_gen.model("eos.ge_van_laar_acid_phase")
-    result = _core.ge_van_laar_acid_phase(
-        list(params.acid_index),
-        list(params.antoine_type),
-        list(params.antoine_coefficients),
-        list(params.antoine_tc),
-        list(params.antoine_pc),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(x),
-    )
-    return GeVanLaarAcidPhaseResult(
-        gamma=tuple(result.gamma),
-        ln_gamma=tuple(result.ln_gamma),
-        ln_phi=tuple(result.ln_phi),
-        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def ge_unifac_phase(params: Any, T: Q, P: Q, x: Sequence[float]) -> GeUnifacPhaseResult:
-    """The fugacity coefficients of a UNIFAC liquid, computed in Rust.
-
-    The resolved record crosses flattened, one list per field, in the dataclass's own
-    order.
-    """
-    spec = _models_gen.model("eos.ge_unifac_phase")
-    result = _core.ge_unifac_phase(
-        list(params.groups),
-        list(params.group_r),
-        list(params.group_q),
-        list(params.aij),
-        list(params.antoine_type),
-        list(params.antoine_coefficients),
-        list(params.antoine_tc),
-        list(params.antoine_pc),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(x),
-    )
-    return GeUnifacPhaseResult(
-        gamma=tuple(result.gamma),
-        ln_gamma=tuple(result.ln_gamma),
-        ln_phi=tuple(result.ln_phi),
-        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def ge_nrtl_flash(params: Any, mixture: Any, T: Q, P: Q, z: Sequence[float]) -> GeNrtlFlashResult:
-    """The gamma-phi flash of an SRK vapour over an NRTL liquid, computed in Rust.
-
-    Both objects cross, in the order the stub declares them: the mixture as four
-    parallel lists plus the cubic it is evaluated under, then the resolved parameter
-    record's own fields. The record's first field is NRTL's ``alpha`` matrix, so the
-    cubic's alpha *correlation* crosses beside it as ``cubic_alpha``.
-
-    `vapour_fraction` crosses as `Option<f64>` and becomes `None`, not a sentinel.
-    """
-    spec = _models_gen.model("eos.ge_nrtl_flash")
-    result = _core.ge_nrtl_flash(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        list(params.alpha),
-        list(params.dij),
-        list(params.antoine_type),
-        list(params.antoine_coefficients),
-        list(params.antoine_tc),
-        list(params.antoine_pc),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(z),
-        mixture.cubic.name,
-        mixture.alpha,
-        [list(c.alpha_params) for c in mixture.components],
-    )
-    return GeNrtlFlashResult(
-        vapour_fraction=result.vapour_fraction,
-        x=tuple(result.x),
-        y=tuple(result.y),
-        k=tuple(result.k),
-        ln_phi_liquid=tuple(result.ln_phi_liquid),
-        ln_phi_vapour=tuple(result.ln_phi_vapour),
-        z_vapour=result.z_vapour,
-        min_t_over_tc=result.min_t_over_tc,
-        phase=_Phase(result.phase),
-        iterations=result.iterations,
-        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 

@@ -384,6 +384,31 @@ def boundary_defaults() -> dict[str, str]:
     }
 
 
+def bridge_source() -> str:
+    """The bridge, both halves, as source with each line's trailing comment cut.
+
+    **Both halves, because the bridge is now two files and the boundary is in whichever one holds
+    the adapter.** Most of the calls moved to the generated `_rust_bridge_gen.py` when the bridge
+    was generated, and reading only `_rust_bridge.py` then found no call for them - which silently
+    *passed* the arity and order checks below rather than failing them, and admitted five ids the
+    generator had refused on purpose (`phase_transport`, `absorption_column`, `ejector`,
+    `heat_exchanger`, `stripping_column`). The checks are what this reads for, so a file it cannot
+    see is a check that has been turned off.
+
+    The comments are cut because they carry commas that would be counted as arguments.
+    """
+    parts = [
+        (ROOT / "python" / "src" / "azoth" / name).read_text(encoding="utf-8")
+        for name in ("_rust_bridge_gen.py", "_rust_bridge.py")
+    ]
+    return "\n".join(
+        line[: line.index("#")]
+        if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0
+        else line
+        for line in "\n".join(parts).split("\n")
+    )
+
+
 def bridge_call(name: str) -> int | None:
     """How many arguments the bridge passes to `_core.<name>`, or `None` if it does not call it.
 
@@ -391,15 +416,7 @@ def bridge_call(name: str) -> int | None:
     that took a different number of arguments would not fail to compile - it would fail at the
     first call, which is what the arity check here turns into a refusal at generation time.
     """
-    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
-    # The call's own comments carry commas and would be counted as arguments, so each line's
-    # comment is cut first - the reader is counting arguments, not reading prose.
-    source = "\n".join(
-        line[: line.index("#")]
-        if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0
-        else line
-        for line in source.split("\n")
-    )
+    source = bridge_source()
     match = re.search(rf"_core\.{re.escape(name)}\(", source)
     if match is None:
         return None
@@ -439,13 +456,7 @@ def record_fields(type_name: str) -> list[tuple[str, str]] | None:
 
 def bridge_arguments(function: str) -> list[str]:
     """The bridge's call to `_core.<function>`, as its top-level argument expressions."""
-    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
-    source = "\n".join(
-        line[: line.index("#")]
-        if "#" in line and line.count('"', 0, line.index("#")) % 2 == 0
-        else line
-        for line in source.split("\n")
-    )
+    source = bridge_source()
     match = re.search(rf"_core\.{re.escape(function)}\(", source)
     if match is None:
         return []

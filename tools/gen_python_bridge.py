@@ -9,8 +9,10 @@ is a function of declarations that already exist:
 * **the signature** is the public wrapper's, because the wrapper is the caller: it does
   `resolve(...)(**kwargs)` and the bridge is what comes back. `python/src/azoth/{eos,hydraulics,
   process,reactions,standards,thermal}/__init__.py` states it once, and that is the contract.
-* **the call's arguments** are `_core.pyi`'s parameter list, in its order, each converted
-  according to the kind and unit the spec declares for it.
+* **the call's arguments** are the `#[pyfunction]`'s own parameter list, in its order, each
+  converted according to the kind and unit the spec declares for it. Not the stub's: `gen_stub`
+  renders a calc's parameters from the spec, and `reactions.equilibrium_constant` declares
+  `(reaction, source, T)` to a kernel that takes `(source, reaction, T)`.
 * **the result** is the transport struct's fields, in `CalcResult::FIELDS` order, each rebuilt
   according to its Rust transport type.
 
@@ -22,10 +24,11 @@ short for four commits - `absorption_column`, `stripping_column` and `packed_col
 that: both parameters are optional in `_core`'s own signature, so the short call was accepted and
 the caller's value silently dropped.
 
-**Coverage is read, not listed.** An id is covered when the public wrapper's parameter names are
-`_core`'s, in that order - which is the rule the whole file is built on, since the call is
-positional - and when every parameter is an input the spec declares. A kernel whose boundary is a
-mixture or a record the spec does not name fails both and is left hand-written.
+**Coverage is read, not listed.** An id is covered when every parameter the `#[pyfunction]` takes
+is explained - an input the spec declares, a field of the `params` record, or a boundary object's
+expansion - and every parameter the caller gives is one of those three. A kernel whose boundary is
+a record the dataclass does not describe, or an object whose expansion is not one expression, fails
+one of the two and is left hand-written.
 
     python tools/gen_python_bridge.py            # write
     python tools/gen_python_bridge.py --check    # fail if the tree is not what this emits
@@ -35,8 +38,12 @@ mixture or a record the spec does not name fails both and is left hand-written.
 from __future__ import annotations
 
 import ast
+import dataclasses
+import importlib
+import inspect
 import re
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -92,9 +99,9 @@ ARGUMENT_DEFAULTS: dict[tuple[str, str], str] = {
 #: A model whose spec declares `components` is handed a `Mixture` instead, and the extension takes
 #: the expansion. The mapping is not a guess: across the thirty-one adapters that take one, `Tc`,
 #: `Pc`, `omega`, `kij`, `association`, `eos`, `alpha` and `alpha_params` each have **one spelling
-#: and one only**, and so does each `cp_*` an `IdealGasModel` resolves into. The two the table
-#: does not carry - `molar_mass` computed from the components with a guard, and the `params`
-#: record's `antoine_*`/`dij` columns - are refusals, because their expressions are per-id.
+#: and one only**, and so does each `cp_*` an `IdealGasModel` resolves into. A `params` record is
+#: *not* here: its expansion is derived from the record's own fields by `parameter_records`, so the
+#: only one this table does not carry is `molar_mass`, computed from the components behind a guard.
 MIXTURE_EXPANSION: dict[str, str] = {
     "Tc": "[c.Tc.to_base_units().magnitude for c in mixture.components]",
     "Pc": "[c.Pc.to_base_units().magnitude for c in mixture.components]",
@@ -115,7 +122,10 @@ IDEAL_GAS_EXPANSION: dict[str, str] = {
 }
 
 #: The Python parameters that *are* a boundary object rather than an argument.
-BOUNDARY_OBJECTS = ("mixture", "ideal_gas")
+#:
+#: A `params` record belongs here for the same reason `mixture` does: the caller holds a Python
+#: object and the extension takes no such thing, so it is not an input any spec could declare.
+BOUNDARY_OBJECTS = ("mixture", "ideal_gas", "params")
 
 ARGUMENT_SCALES: dict[tuple[str, str], tuple[str, str]] = {
     ("hydraulics.tray_hydraulics", "hole_diameter"): (
@@ -230,6 +240,41 @@ def wrapper_types() -> dict[str, dict[str, str]]:
                 for line in match.group(2).splitlines()
                 if (field := re.match(r"\s*(\w+): (.+?),?$", line))
             }
+    return out
+
+
+@lru_cache(maxsize=1)
+def parameter_records() -> dict[str, list[str]]:
+    """Each wrapper's `params` record, as the field names the extension takes one list per.
+
+    **A record is a boundary object whose expansion is derived rather than tabled.** The extension
+    does not take the record; it takes one flattened list per field, and the field order is the
+    extension's own - `ge_nrtl_flash`'s call opens `alpha, dij` then the four `antoine_*` columns,
+    which is `GeNrtlPhaseParameters`'s order and not the spec's `(components, T, P, z, eos)`.
+    Which fields those are is a fact about the dataclass the parameter is *annotated* with, read
+    here the way `gen_stub.parameter_record_fields` reads it to render the stub's arguments.
+
+    Cached because the six namespace modules are imported to answer it, and `covered` asks once per
+    id.
+    """
+    from azoth.eos import components as _components
+
+    out: dict[str, list[str]] = {}
+    for namespace in NAMESPACES:
+        path = PY_SRC / namespace / "__init__.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        module = importlib.import_module(f"azoth.{namespace}")
+        for node in tree.body:
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            parameters = inspect.signature(getattr(module, node.name)).parameters
+            if "params" not in parameters:
+                continue
+            annotation = parameters["params"].annotation
+            # A string where the module defers its annotations and the class itself where it does
+            # not; both name the same dataclass and neither is worth refusing over.
+            record = getattr(_components, annotation) if isinstance(annotation, str) else annotation
+            out[node.name] = [field.name for field in dataclasses.fields(record)]
     return out
 
 
@@ -448,6 +493,23 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
         expansion.update(MIXTURE_EXPANSION)
     if "ideal_gas" in params:
         expansion.update(IDEAL_GAS_EXPANSION)
+    if "params" in params:
+        record = parameter_records().get(function, [])
+        # **Both namespaces are closed, and a name in both is a refusal rather than a priority.**
+        # A record field that is also an input the spec declares leaves the extension's own name
+        # for it ambiguous - the two are different values and no measurement here says which the
+        # pyfunction means - so this stops rather than picking one.
+        ambiguous = sorted(set(record) & set(declared))
+        if ambiguous:
+            raise Refusal(
+                f"{ambiguous}: both a field of the params record and an input the spec declares"
+            )
+        # **The record is applied last, so it wins a collision with the mixture.** `ge_nrtl_flash`
+        # carries a record whose first field is NRTL's `alpha` *and* a mixture whose cubic has an
+        # `alpha` correlation, and the extension gives the two different names: the record keeps
+        # `alpha` and the cubic's crosses as `cubic_alpha`. Measured over the twelve record ids,
+        # `alpha` is the only collision and the record is the one that keeps its name.
+        expansion.update({field: f"list(params.{field})" for field in record})
     unexplained = [p for p in core_params if p not in declared and p not in expansion]
     if unexplained:
         raise Refusal(f"{unexplained}: neither a declared input nor a boundary expansion")
@@ -598,8 +660,20 @@ def emit() -> str:
     # imports the result dataclasses as well, so a name cannot be told from an annotation by
     # looking it up in that module - `TpFlashSaftResult` is in both. `Sequence` and `Q` are the
     # two the header already brings.
-    external_lines = [namespace_imports()[name] for name in external - {"Sequence", "Q"}]
-    imports.extend(sorted(external_lines, key=str.lower))
+    # **Grouped by module, because isort groups.** Two annotation names from one module are one
+    # parenthesised block and two from different modules are two lines. `Mixture` and
+    # `IdealGasModel` come from two modules, which is why one-line-per-name survived until eight
+    # record dataclasses arrived from a third.
+    by_module: dict[str, list[str]] = {}
+    for name in external - {"Sequence", "Q"}:
+        module, _, imported = namespace_imports()[name].partition(" import ")
+        by_module.setdefault(module.removeprefix("from "), []).append(imported)
+    for module in sorted(by_module, key=str.lower):
+        names = sorted(by_module[module], key=str.lower)
+        if len(names) == 1:
+            imports.append(f"from {module} import {names[0]}")
+        else:
+            imports += [f"from {module} import (", *(f"    {name}," for name in names), ")"]
 
     header = (
         '"""The Rust backend\'s functions, emitted from the extension\'s own declarations.\n'
@@ -608,7 +682,7 @@ def emit() -> str:
         "declarations each one is a function of. **Do not edit by hand.**\n"
         "\n"
         "`python/src/azoth/_rust_bridge.py` re-exports these and keeps the ids this file cannot\n"
-        "derive, whose boundary is a mixture or a record the spec does not name.\n"
+        "derive, whose boundary is a container the extension does not name.\n"
         '"""\n'
         "\n"
         "from __future__ import annotations\n"
