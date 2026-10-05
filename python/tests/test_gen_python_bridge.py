@@ -24,14 +24,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge.py"
 
 #: The adapters `_rust_bridge.py` may still carry by hand, and the cause each one is left for:
-#: three that take a keycard the public wrapper resolves into an argument before the bridge is
-#: reached (`ge_uniquac_phase`, `uniquac_activity_coefficients`, `orifice_flow`); one whose record
-#: is per-component *arrays* rather than fields (`bwrs_phase`); and four single ids -
-#: `capillary_dew_point` and `rate_based_packed_column`, whose optional inputs the extension takes
-#: non-optionally with no default to send, `hydrogen_phase`, whose wrapper takes a mode the spec
-#: does not declare, and `pure_saturation`, which takes the critical constants the spec resolves
-#: from a component name. Lowering this is the point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 8
+#: `bwrs_phase`, whose record is per-component *arrays* rather than fields; `hydrogen_phase`, whose
+#: wrapper takes a mode the spec does not declare; `pure_saturation`, which takes the critical
+#: constants the spec resolves from a component name; and `rate_based_packed_column`, whose
+#: optional input the extension takes non-optionally with no default to send. Lowering this is the
+#: point, and raising it needs a reason in the diff.
+KNOWN_HAND_WRITTEN = 4
 
 
 def _tools_module(name: str) -> ModuleType:
@@ -149,6 +147,37 @@ def test_a_scalar_the_wrapper_calls_a_float_is_not_refused_by_the_bridge() -> No
         f"{refused} are dimensioned inputs the public wrapper does not require as quantities, and "
         f"the generated call refuses the bare number that is then its only shape"
     )
+
+
+def test_the_bridge_takes_exactly_what_the_wrapper_forwards() -> None:
+    """**The bridge's parameters are the call, not the signature.**
+
+    Four wrappers declare a parameter the bridge must not have. `orifice_flow`, `ge_uniquac_phase`
+    and `uniquac_activity_coefficients` each take a `card`, look a defaulted input up through it
+    and send the result; `capillary_dew_point` supplies two of its own. A bridge built from the
+    signature carries a `card` nothing forwards and nothing reads - and
+    `test_the_bridge_accepts_the_arguments_the_public_api_passes` cannot see it, because that test
+    asks only whether what is *sent* is accepted, never whether anything extra is taken.
+    """
+    generator = _tools_module("gen_python_bridge")
+    forwarded = generator.wrapper_forwards()
+    text = (REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text("utf-8")
+    bodies = {node.name: node for node in ast.parse(text).body if isinstance(node, ast.FunctionDef)}
+
+    assert bodies, "the generated bridge declares no adapters"
+    unchecked = sorted(name for name in bodies if name not in forwarded)
+    assert not unchecked, f"{unchecked} are generated and no wrapper's call was read for them"
+
+    problems = []
+    for name, node in bodies.items():
+        expected = set(forwarded[name])
+        actual = {a.arg for a in node.args.posonlyargs + node.args.args + node.args.kwonlyargs}
+        if actual != expected:
+            problems.append(
+                f"{name}: {sorted(actual - expected)} taken that nothing sends, "
+                f"{sorted(expected - actual)} sent that it does not take"
+            )
+    assert not problems, "\n  ".join(["the call and the bridge disagree:", *problems])
 
 
 def test_every_molar_mass_boundary_finds_the_sentence_it_carries() -> None:

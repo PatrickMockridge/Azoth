@@ -22,6 +22,7 @@ from azoth.core.result import (
     ArgonSolidPhaseResult,
     BubblePressureResult,
     BubbleTemperatureResult,
+    CapillaryDewPointResult,
     ChapmanEnskogDiffusivityResult,
     ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
@@ -60,6 +61,7 @@ from azoth.core.result import (
     GeNrtlPhaseResult,
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
+    GeUniquacPhaseResult,
     GeVanLaarAcidPhaseResult,
     GeWilsonPhaseResult,
     GibbsReactorResult,
@@ -100,6 +102,7 @@ from azoth.core.result import (
     MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
+    OrificeFlowResult,
     PackedColumnResult,
     PackingHydraulicsResult,
     PackingSizingResult,
@@ -193,6 +196,7 @@ from azoth.core.result import (
     UnifacActivityCoefficientsResult,
     UnifacPsrkActivityCoefficientsResult,
     UnifacUmrpruActivityCoefficientsResult,
+    UniquacActivityCoefficientsResult,
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
@@ -222,12 +226,14 @@ from azoth.core.units import Q, from_si, input_to_si
 from azoth.eos.components import (
     GeNrtlPhaseParameters,
     GeUnifacPhaseParameters,
+    GeUniquacPhaseParameters,
     GeVanLaarAcidPhaseParameters,
     GeWilsonPhaseParameters,
     NrtlParameters,
     UnifacParameters,
     UnifacPsrkParameters,
     UnifacUmrpruParameters,
+    UniquacParameters,
     VanLaarAcidParameters,
 )
 from azoth.eos.mixture import Mixture
@@ -241,6 +247,7 @@ __all__ = [
     "argon_solid_phase",
     "bubble_pressure",
     "bubble_temperature",
+    "capillary_dew_point",
     "chapman_enskog_diffusivity",
     "chemical_equilibrium",
     "choked_flow_area",
@@ -280,6 +287,7 @@ __all__ = [
     "ge_nrtl_flash",
     "ge_nrtl_phase",
     "ge_unifac_phase",
+    "ge_uniquac_phase",
     "ge_van_laar_acid_phase",
     "ge_wilson_phase",
     "gerg2008_phase",
@@ -317,6 +325,7 @@ __all__ = [
     "mollerup_alpha",
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
+    "orifice_flow",
     "packed_column",
     "packing_hydraulics",
     "packing_sizing",
@@ -408,6 +417,7 @@ __all__ = [
     "unifac_activity_coefficients",
     "unifac_psrk_activity_coefficients",
     "unifac_umrpru_activity_coefficients",
+    "uniquac_activity_coefficients",
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vh_flash",
@@ -555,6 +565,38 @@ def bubble_temperature(mixture: Mixture, P: Q, x: list[float]) -> BubbleTemperat
         k=tuple(result.k),
         z_liquid=result.z_liquid,
         z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def capillary_dew_point(mixture: Mixture, P: Q, y: list[float], pore_radius: Q, contact_angle: Q, surface_tension: Q) -> CapillaryDewPointResult:
+    """``eos.capillary_dew_point``, computed in Rust."""
+    spec = _models_gen.model("eos.capillary_dew_point")
+    result = _core.capillary_dew_point(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "P", P),
+        list(y),
+        input_to_si(spec, "pore_radius", pore_radius),
+        _si(spec, "contact_angle", contact_angle),
+        input_to_si(spec, "surface_tension", surface_tension),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return CapillaryDewPointResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        incipient=tuple(result.incipient),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        capillary_pressure=from_si(result.capillary_pressure.magnitude_si, result.capillary_pressure.unit),
         min_t_over_tc=result.min_t_over_tc,
         iterations=result.iterations,
         residual=result.residual,
@@ -769,7 +811,7 @@ def effective_diffusion(binary_diffusion: Sequence[Sequence[Q]], x: Sequence[flo
     """``eos.effective_diffusion``, computed in Rust."""
     spec = _models_gen.model("eos.effective_diffusion")
     result = _core.effective_diffusion(
-        [[_si(spec, "binary_diffusion", v) for v in row] for row in binary_diffusion],
+        [[input_to_si(spec, "binary_diffusion", v) for v in row] for row in binary_diffusion],
         list(x),
     )
     return EffectiveDiffusionResult(
@@ -973,6 +1015,30 @@ def ge_unifac_phase(params: GeUnifacPhaseParameters, T: Q, P: Q, x: Sequence[flo
         list(x),
     )
     return GeUnifacPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(q.magnitude_si, q.unit) for q in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_uniquac_phase(params: GeUniquacPhaseParameters, T: Q, P: Q, x: Sequence[float], aij: Sequence[Sequence[Q]]) -> GeUniquacPhaseResult:
+    """``eos.ge_uniquac_phase``, computed in Rust."""
+    spec = _models_gen.model("eos.ge_uniquac_phase")
+    result = _core.ge_uniquac_phase(
+        list(params.r),
+        list(params.q),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        [[input_to_si(spec, "aij", v) for v in row] for row in aij],
+    )
+    return GeUniquacPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
@@ -2931,6 +2997,23 @@ def unifac_umrpru_activity_coefficients(params: UnifacUmrpruParameters, T: Q, x:
     )
 
 
+def uniquac_activity_coefficients(params: UniquacParameters, T: Q, x: Sequence[float], aij: Sequence[Sequence[Q]]) -> UniquacActivityCoefficientsResult:
+    """``eos.uniquac_activity_coefficients``, computed in Rust."""
+    spec = _models_gen.model("eos.uniquac_activity_coefficients")
+    result = _core.uniquac_activity_coefficients(
+        list(params.r),
+        list(params.q),
+        input_to_si(spec, "T", T),
+        list(x),
+        [[input_to_si(spec, "aij", v) for v in row] for row in aij],
+    )
+    return UniquacActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def van_laar_acid_activity_coefficients(params: VanLaarAcidParameters, T: Q, x: Sequence[float]) -> VanLaarAcidActivityCoefficientsResult:
     """``eos.van_laar_acid_activity_coefficients``, computed in Rust."""
     spec = _models_gen.model("eos.van_laar_acid_activity_coefficients")
@@ -3323,6 +3406,21 @@ def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJ
     )
     return SwameeJainResult(
         f=result.f,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
+    """``hydraulics.orifice_flow``, computed in Rust."""
+    spec = _spec_for("hydraulics.orifice_flow")
+    result = _core.orifice_flow(
+        input_to_si(spec, "d", d),
+        input_to_si(spec, "dP", dP),
+        input_to_si(spec, "rho", rho),
+        Cd,
+    )
+    return OrificeFlowResult(
+        q=from_si(result.q.magnitude_si, result.q.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -98,7 +98,7 @@ capture.
 The wrapper is generated for **149** of the registered ids and hand-written for **45**: a kernel
 that takes a record or a mixture the spec does not name is one the generator refuses rather than
 guesses at, and so is one whose signature disagrees with the order the bridge passes it in. The
-bridge adapter is generated for **186** and hand-written for **8**, and its rule is narrower
+bridge adapter is generated for **190** and hand-written for **4**, and its rule is narrower
 because its boundary is a Python signature rather than a Rust one: its signature is the public
 wrapper's, its call is the `#[pyfunction]`'s own order, and every argument on either side must be
 an input the spec declares, a field of the `params` record the wrapper's annotation names, or one
