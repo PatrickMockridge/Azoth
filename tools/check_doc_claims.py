@@ -65,8 +65,8 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
 import importlib
+import importlib.util
 import re
 import sys
 import tomllib
@@ -351,24 +351,26 @@ def _bridge_counts() -> tuple[int, int]:
     The generated half is the emitted file's `__all__`, which is what the generator wrote; the
     hand-written half is the registered functions still written out in `_rust_bridge.py`. A name
     in both is what `test_gen_python_bridge.py` refuses, so the two counts are disjoint.
+
+    **The registry is read from the Rust, not imported.** `spec-validate` runs this with neither
+    `azoth` installed nor `python/src` on the path, so importing the generated tables made the probe
+    a `ModuleNotFoundError` there while passing in every checkout - the wrappers' pair above reads
+    `rust_index` for the same reason, and one reader is what keeps the two honest.
     """
-    text = ((ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py")).read_text(encoding="utf-8")
+    import sys as _sys
+
+    _sys.path.insert(0, str(ROOT / "tools"))
+    import rust_index
+
+    text = (ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text(encoding="utf-8")
     block = text.partition("__all__ = [")[2].partition("]")[0]
     generated = len(re.findall(r'^    "\w+",', block, re.M))
     if generated == 0:
         raise ProbeError("_rust_bridge_gen.py declares no adapters")
 
-    registered = {
-        entry["id"].rpartition(".")[2]
-        for entry in [
-            *importlib.import_module("azoth._registry_gen").CALCS,
-            *importlib.import_module("azoth._models_gen").MODELS,
-        ]
-    }
-    source = ((ROOT / "python" / "src" / "azoth" / "_rust_bridge.py")).read_text(encoding="utf-8")
-    hand = len(
-        [name for name in re.findall(r"^def (\w+)\(", source, re.M) if name in registered]
-    )
+    registered = {function for _, _, function in rust_index.implementations()}
+    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
+    hand = len([name for name in re.findall(r"^def (\w+)\(", source, re.M) if name in registered])
     return generated, hand
 
 

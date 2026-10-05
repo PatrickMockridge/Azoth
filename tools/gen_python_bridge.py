@@ -468,6 +468,14 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
     dimensionless case crosses unchanged; a dimensioned one goes through `input_to_si`, which reads
     the unit *and* the `interval` flag from the spec rather than restating them - a call site that
     writes `to_si(dT, "K", "dT")` is a flag the spec holds and the code ignores.
+
+    **A scalar's annotation decides the same way a vector's does.** `annotation` is the *public
+    wrapper's*, and `float` says the caller may hand over a bare number while `Q` says a quantity is
+    required; `input_to_si` refuses the first, so reading the annotation as "always a quantity" made
+    a declared default like `temperature_tolerance: float = 1.0e-6` unreachable through the Rust
+    backend - three side-draw tests failed on a call that never states the argument. The
+    hand-written bridge passed every input through `_si`, so this restores that laxity to exactly
+    the parameters whose own signature asks for it.
     """
     kind = declaration.get("type", "quantity")
     unit = declaration.get("unit")
@@ -478,14 +486,24 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
         body = _matrix(name, dimensioned, annotation)
     elif kind == "vector":
         body = _vector(name, dimensioned, annotation)
-    elif kind == "components":
+    elif kind in ("components", "fitting_list"):
         # The extension takes an owned `Vec<String>`; everything else that is not a number is
-        # already the thing the signature declares, an enum and a boolean included.
+        # already the thing the signature declares, an enum and a boolean included. A fitting list
+        # is a `Vec<String>` too - `crane_k_factors` is the one - and its wrapper declares a
+        # `Sequence`, which is the same shape the components case rebuilds.
         body = f"list({name})"
     elif kind in ("string", "enum", "boolean") or not dimensioned:
         body = name
     else:
-        body = f'input_to_si(spec, "{name}", {name})'
+        # **`Q` and not `float`.** The annotations a wrapper actually writes for a dimensioned
+        # scalar are `Q`, `float`, `Q | None`, `float | None` and `float | Q`, and only the first
+        # two of those say a quantity is the *only* shape accepted - so the test is both halves,
+        # not the presence of `Q`. `float | Q` is a number in the declared unit or a quantity.
+        body = (
+            f'input_to_si(spec, "{name}", {name})'
+            if "Q" in annotation and "float" not in annotation
+            else f'_si(spec, "{name}", {name})'
+        )
     if optional and kind not in ("string", "enum", "boolean"):
         return f"None if {name} is None else {body}"
     return body
@@ -506,9 +524,14 @@ def _vector(name: str, dimensioned: bool, annotation: str) -> str:
 
 
 def _matrix(name: str, dimensioned: bool, annotation: str) -> str:
-    """A matrix is a `Vec<Vec<f64>>` either way; only a quantity's entries need converting."""
+    """A matrix is a `Vec<Vec<f64>>` either way; only a quantity's entries need converting.
+
+    The rows are rebuilt either way, for the reason the vector's are: the wrapper declares a
+    `Sequence`, the extension publishes a `Vec`, and a `Sequence[Sequence[float]]` reaching a
+    `list[list[float]]` parameter is a type the checker refuses.
+    """
     if not dimensioned or "Q" not in annotation:
-        return name
+        return f"[list(row) for row in {name}]"
     return f'[[_si(spec, "{name}", v) for v in row] for row in {name}]'
 
 

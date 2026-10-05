@@ -1270,11 +1270,11 @@ def ideal_gas_cp(cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float
     """``eos.ideal_gas_cp``, computed in Rust."""
     spec = _spec_for("eos.ideal_gas_cp")
     result = _core.ideal_gas_cp(
-        input_to_si(spec, "cp_a", cp_a),
-        input_to_si(spec, "cp_b", cp_b),
-        input_to_si(spec, "cp_c", cp_c),
-        input_to_si(spec, "cp_d", cp_d),
-        input_to_si(spec, "cp_e", cp_e),
+        _si(spec, "cp_a", cp_a),
+        _si(spec, "cp_b", cp_b),
+        _si(spec, "cp_c", cp_c),
+        _si(spec, "cp_d", cp_d),
+        _si(spec, "cp_e", cp_e),
         input_to_si(spec, "T", T),
     )
     return IdealGasCpResult(
@@ -1304,7 +1304,7 @@ def liquid_conductivity_polynom(liquid_conductivity: Sequence[Sequence[float]], 
     """``eos.liquid_conductivity_polynom``, computed in Rust."""
     spec = _models_gen.model("eos.liquid_conductivity_polynom")
     result = _core.liquid_conductivity_polynom(
-        liquid_conductivity,
+        [list(row) for row in liquid_conductivity],
         [input_to_si(spec, "molar_mass", v) for v in molar_mass],
         list(z),
         input_to_si(spec, "T", T),
@@ -3257,7 +3257,7 @@ def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
     """``hydraulics.crane_k_factors``, computed in Rust."""
     result = _core.crane_k_factors(
-        fittings,
+        list(fittings),
         f_t,
     )
     return KFactorsResult(
@@ -3498,7 +3498,7 @@ def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], g
         int(number_of_stages),
         input_to_si(spec, "top_pressure", top_pressure),
         input_to_si(spec, "bottom_pressure", bottom_pressure),
-        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
         int(max_iterations),
         None if tray_temperatures is None else [_si(spec, "tray_temperatures", v) for v in tray_temperatures],
         None if murphree_efficiency is None else murphree_efficiency,
@@ -3644,7 +3644,7 @@ def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], f
         has_condenser,
         input_to_si(spec, "top_pressure", top_pressure),
         input_to_si(spec, "bottom_pressure", bottom_pressure),
-        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
         int(max_iterations),
         None if reboiler_temperature is None else input_to_si(spec, "reboiler_temperature", reboiler_temperature),
         None if condenser_temperature is None else input_to_si(spec, "condenser_temperature", condenser_temperature),
@@ -3960,7 +3960,7 @@ def manifold(components: list[str], feed_n: list[Q], feed_z: list[list[float]], 
     result = _core.manifold(
         list(components),
         [input_to_si(spec, "feed_n", v) for v in feed_n],
-        feed_z,
+        [list(row) for row in feed_z],
         [input_to_si(spec, "feed_p", v) for v in feed_p],
         [input_to_si(spec, "feed_t", v) for v in feed_t],
         list(split_factors),
@@ -3981,7 +3981,7 @@ def mixer(components: list[str], feed_n: list[Q], feed_z: list[list[float]], fee
     result = _core.mixer(
         list(components),
         [input_to_si(spec, "feed_n", v) for v in feed_n],
-        feed_z,
+        [list(row) for row in feed_z],
         [input_to_si(spec, "feed_p", v) for v in feed_p],
         [input_to_si(spec, "feed_t", v) for v in feed_t],
         None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
@@ -4011,7 +4011,7 @@ def packed_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         has_condenser,
         input_to_si(spec, "top_pressure", top_pressure),
         input_to_si(spec, "bottom_pressure", bottom_pressure),
-        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
         int(max_iterations),
         None if reboiler_temperature is None else input_to_si(spec, "reboiler_temperature", reboiler_temperature),
         None if condenser_temperature is None else input_to_si(spec, "condenser_temperature", condenser_temperature),
@@ -4120,8 +4120,8 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         list(feed_z),
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
-        input_to_si(spec, "length", length),
-        input_to_si(spec, "diameter", diameter),
+        _si(spec, "length", length),
+        _si(spec, "diameter", diameter),
         number_of_tubes,
         energy_mode,
         input_to_si(spec, "coolant_temperature", coolant_temperature),
@@ -4134,12 +4134,12 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         list(reaction_orders),
         rate_type,
         pre_exponential_factor,
-        input_to_si(spec, "activation_energy", activation_energy),
+        _si(spec, "activation_energy", activation_energy),
         temperature_exponent,
-        input_to_si(spec, "heat_of_reaction", heat_of_reaction),
+        _si(spec, "heat_of_reaction", heat_of_reaction),
         None if catalyst_bulk_density is None else input_to_si(spec, "catalyst_bulk_density", catalyst_bulk_density),
         None if catalyst_activity_factor is None else catalyst_activity_factor,
-        None if catalyst_particle_diameter is None else input_to_si(spec, "catalyst_particle_diameter", catalyst_particle_diameter),
+        None if catalyst_particle_diameter is None else _si(spec, "catalyst_particle_diameter", catalyst_particle_diameter),
         None if catalyst_void_fraction is None else catalyst_void_fraction,
         None if catalyst_molecular_diffusivity is None else input_to_si(spec, "catalyst_molecular_diffusivity", catalyst_molecular_diffusivity),
         catalyst_effectiveness_enabled,
@@ -4319,7 +4319,7 @@ def stripping_column(stripping_gas_components: list[str], rich_liquid_components
         int(number_of_stages),
         input_to_si(spec, "top_pressure", top_pressure),
         input_to_si(spec, "bottom_pressure", bottom_pressure),
-        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        _si(spec, "temperature_tolerance", temperature_tolerance),
         int(max_iterations),
         None if tray_temperatures is None else [_si(spec, "tray_temperatures", v) for v in tray_temperatures],
         None if murphree_efficiency is None else murphree_efficiency,
@@ -4384,7 +4384,7 @@ def tank(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed
     result = _core.tank(
         list(components),
         [input_to_si(spec, "feed_n", v) for v in feed_n],
-        feed_z,
+        [list(row) for row in feed_z],
         [input_to_si(spec, "feed_p", v) for v in feed_p],
         [input_to_si(spec, "feed_t", v) for v in feed_t],
     )
@@ -4466,7 +4466,7 @@ def chemical_equilibrium(a_matrix: list[list[float]], b: list[float], whole_syst
     """``reactions.chemical_equilibrium``, computed in Rust."""
     spec = _models_gen.model("reactions.chemical_equilibrium")
     result = _core.chemical_equilibrium(
-        a_matrix,
+        [list(row) for row in a_matrix],
         [_si(spec, "b", v) for v in b],
         whole_system,
         [_si(spec, "moles", v) for v in moles],
@@ -4676,14 +4676,14 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
     )
 
 
-def iso6976(components: list[str], z: list[float], volumetric_reference_temperature: object, energy_reference_temperature: object) -> Iso6976Result:
+def iso6976(components: list[str], z: list[float], volumetric_reference_temperature: float | Q, energy_reference_temperature: float | Q) -> Iso6976Result:
     """``standards.iso6976``, computed in Rust."""
     spec = _models_gen.model("standards.iso6976")
     result = _core.iso6976(
         list(components),
         list(z),
-        input_to_si(spec, "volumetric_reference_temperature", volumetric_reference_temperature),
-        input_to_si(spec, "energy_reference_temperature", energy_reference_temperature),
+        _si(spec, "volumetric_reference_temperature", volumetric_reference_temperature),
+        _si(spec, "energy_reference_temperature", energy_reference_temperature),
     )
     return Iso6976Result(
         molar_mass=from_si(result.molar_mass.magnitude_si, result.molar_mass.unit),
