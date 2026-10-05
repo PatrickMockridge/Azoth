@@ -66,6 +66,7 @@ from __future__ import annotations
 import argparse
 import ast
 import importlib.util
+import importlib
 import re
 import sys
 import tomllib
@@ -344,6 +345,41 @@ def _wrapper_counts() -> tuple[int, int]:
     return generated, hand
 
 
+def _bridge_counts() -> tuple[int, int]:
+    """`(generated, hand-written)` adapters, the same way the wrappers' pair is measured.
+
+    The generated half is the emitted file's `__all__`, which is what the generator wrote; the
+    hand-written half is the registered functions still written out in `_rust_bridge.py`. A name
+    in both is what `test_gen_python_bridge.py` refuses, so the two counts are disjoint.
+    """
+    text = ((ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py")).read_text(encoding="utf-8")
+    block = text.partition("__all__ = [")[2].partition("]")[0]
+    generated = len(re.findall(r'^    "\w+",', block, re.M))
+    if generated == 0:
+        raise ProbeError("_rust_bridge_gen.py declares no adapters")
+
+    registered = {
+        entry["id"].rpartition(".")[2]
+        for entry in [
+            *importlib.import_module("azoth._registry_gen").CALCS,
+            *importlib.import_module("azoth._models_gen").MODELS,
+        ]
+    }
+    source = ((ROOT / "python" / "src" / "azoth" / "_rust_bridge.py")).read_text(encoding="utf-8")
+    hand = len(
+        [name for name in re.findall(r"^def (\w+)\(", source, re.M) if name in registered]
+    )
+    return generated, hand
+
+
+def layout_bridge_generated() -> int:
+    return _bridge_counts()[0]
+
+
+def layout_bridge_hand() -> int:
+    return _bridge_counts()[1]
+
+
 def layout_wrappers_generated() -> int:
     return _wrapper_counts()[0]
 
@@ -455,6 +491,8 @@ MEASURES = {
     "lean.gate_printed": lean_gate_printed,
     "lean.guards_gated": lean_guards_gated,
     "lean.modules": lean_modules,
+    "layout.bridge_generated": layout_bridge_generated,
+    "layout.bridge_hand": layout_bridge_hand,
     "layout.wrappers_generated": layout_wrappers_generated,
     "layout.wrappers_hand": layout_wrappers_hand,
     "pairs.eos_files": pairs_eos_files,

@@ -25,7 +25,7 @@ BRIDGE = REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge.py"
 #: The adapters `_rust_bridge.py` may still carry by hand. Every one of them is an id whose
 #: boundary is a mixture, a record or a container the spec does not declare; lowering this is the
 #: point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 47
+KNOWN_HAND_WRITTEN = 22
 
 
 def _tools_module(name: str) -> ModuleType:
@@ -79,7 +79,7 @@ def test_no_id_is_both_generated_and_hand_written() -> None:
     generated one would win and the hand-written one would be dead code nobody noticed.
     """
     generator = _tools_module("gen_python_bridge")
-    generated = {calc_id.rpartition(".")[2] for calc_id, _, _ in generator.covered()[0]}
+    generated = {calc_id.rpartition(".")[2] for calc_id, _, _, _ in generator.covered()[0]}
     registered = {function for _, _, function in _tools_module("rust_index").implementations()}
 
     both = generated & set(_hand_written())

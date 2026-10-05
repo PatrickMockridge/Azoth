@@ -13,12 +13,14 @@ from collections.abc import Sequence
 
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
-from azoth.core.bridge_support import _si, _warnings
+from azoth.core.bridge_support import _association_spec, _si, _warnings
 from azoth.core.result import (
     AbsorptionColumnResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     ArgonSolidPhaseResult,
+    BubblePressureResult,
+    BubbleTemperatureResult,
     ChapmanEnskogDiffusivityResult,
     ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
@@ -33,8 +35,11 @@ from azoth.core.result import (
     ControlValveCvResult,
     CoolerResult,
     CostaldMolarVolumeResult,
+    CriticalPointResult,
     DarcyWeisbachResult,
     DesmukhMatherPhaseResult,
+    DewPressureResult,
+    DewTemperatureResult,
     DistillationColumnResult,
     EffectiveDiffusionResult,
     EjectorResult,
@@ -85,6 +90,7 @@ from azoth.core.result import (
     MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult,
     MixerResult,
+    MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult,
     PackedColumnResult,
@@ -95,6 +101,7 @@ from azoth.core.result import (
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
     PhaseTransportResult,
+    PhFlashResult,
     PipeResult,
     PitzerPhaseResult,
     PlugFlowReactorResult,
@@ -112,8 +119,15 @@ from azoth.core.result import (
     PrPenelouxShiftResult,
     PrsvKappaResult,
     PrZFactorResult,
+    PsFlashResult,
+    PtFlashResult,
+    PtPhaseEnvelopeResult,
+    PuFlashResult,
     PumpPowerResult,
     PumpResult,
+    PvfFlashResult,
+    PvFlashResult,
+    PvRefluxFlashResult,
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
@@ -143,17 +157,24 @@ from azoth.core.result import (
     SrkKappaResult,
     SrkPenelouxShiftResult,
     SrkZFactorResult,
+    StabilityTestResult,
     StirredTankReactorResult,
     StrippingColumnResult,
     SwameeJainResult,
     TankResult,
     TbpFractionPropertiesResult,
+    ThFlashResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
     TpFlashSaftResult,
+    TpMultiflashResult,
     TpMultiflashWaxResult,
     TpSolidFlashResult,
     TrayHydraulicsResult,
+    TsFlashResult,
+    TuFlashResult,
+    TvFlashResult,
+    TvFractionFlashResult,
     TwucoonAlphaResult,
     TwucoonParamAlphaResult,
     TwucoonStatoilAlphaResult,
@@ -162,6 +183,10 @@ from azoth.core.result import (
     UmrCpaPhaseResult,
     UmrprAlphaResult,
     Vdw1fMixBinaryResult,
+    VhFlashResult,
+    VsFlashResult,
+    VuFlashResult,
+    VuFlashSingleCompResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
     WilkeChangDiffusivityResult,
@@ -173,13 +198,23 @@ from azoth.core.result import (
 from azoth.core.result import (
     Phase as _Phase,
 )
+from azoth.core.result import (
+    StabilityVerdict as _StabilityVerdict,
+)
+from azoth.core.result import (
+    TpMultiflashSeed as _TpMultiflashSeed,
+)
 from azoth.core.units import Q, from_si, input_to_si
+from azoth.eos.mixture import Mixture
+from azoth.eos.reference.molar_enthalpy_entropy import IdealGasModel
 
 __all__ = [
     "absorption_column",
     "ammonia_phase",
     "antoine_vapor_pressure",
     "argon_solid_phase",
+    "bubble_pressure",
+    "bubble_temperature",
     "chapman_enskog_diffusivity",
     "chemical_equilibrium",
     "choked_flow_area",
@@ -194,8 +229,11 @@ __all__ = [
     "cooler",
     "costald_molar_volume",
     "crane_k_factors",
+    "critical_point",
     "darcy_weisbach",
     "desmukh_mather_phase",
+    "dew_pressure",
+    "dew_temperature",
     "distillation_column",
     "effective_diffusion",
     "ejector",
@@ -244,6 +282,7 @@ __all__ = [
     "matcop_prumr_alpha",
     "matcop_prumr_new_alpha",
     "mixer",
+    "molar_enthalpy_entropy",
     "mollerup_alpha",
     "nitric_sulfuric_acid_vapor_pressure",
     "packed_column",
@@ -253,6 +292,7 @@ __all__ = [
     "parachor_surface_tension",
     "parahydrogen_solid_phase",
     "pcsaft_rahmat_phase",
+    "ph_flash",
     "phase_transport",
     "pipe",
     "pitzer_phase",
@@ -271,8 +311,15 @@ __all__ = [
     "pr_peneloux_shift",
     "pr_z_factor",
     "prsv_kappa",
+    "ps_flash",
+    "pt_flash",
+    "pt_phase_envelope",
+    "pu_flash",
     "pump",
     "pump_power",
+    "pv_flash",
+    "pv_reflux_flash",
+    "pvf_flash",
     "rachford_rice",
     "rachford_rice_binary",
     "rackett_molar_volume",
@@ -301,16 +348,23 @@ __all__ = [
     "srk_kappa",
     "srk_peneloux_shift",
     "srk_z_factor",
+    "stability_test",
     "stirred_tank_reactor",
     "stripping_column",
     "tank",
     "tbp_fraction_properties",
+    "th_flash",
     "three_phase_separator",
     "throttling_valve",
     "tp_flash_saft",
+    "tp_multiflash",
     "tp_multiflash_wax",
     "tp_solid_flash",
     "tray_hydraulics",
+    "ts_flash",
+    "tu_flash",
+    "tv_flash",
+    "tv_fraction_flash",
     "twu_kappa",
     "twucoon_alpha",
     "twucoon_param_alpha",
@@ -319,6 +373,10 @@ __all__ = [
     "umr_cpa_phase",
     "umrpr_alpha",
     "vdw1f_mix_binary",
+    "vh_flash",
+    "vs_flash",
+    "vu_flash",
+    "vu_flash_single_comp",
     "water_phase",
     "wax_solid_fugacity",
     "wilke_chang_diffusivity",
@@ -380,6 +438,62 @@ def argon_solid_phase(T: Q, P: Q) -> ArgonSolidPhaseResult:
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def bubble_pressure(mixture: Mixture, T: Q, x: list[float]) -> BubblePressureResult:
+    """``eos.bubble_pressure``, computed in Rust."""
+    spec = _models_gen.model("eos.bubble_pressure")
+    result = _core.bubble_pressure(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        list(x),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return BubblePressureResult(
+        pressure=from_si(result.pressure.magnitude_si, result.pressure.unit),
+        incipient=tuple(result.incipient),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def bubble_temperature(mixture: Mixture, P: Q, x: list[float]) -> BubbleTemperatureResult:
+    """``eos.bubble_temperature``, computed in Rust."""
+    spec = _models_gen.model("eos.bubble_temperature")
+    result = _core.bubble_temperature(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "P", P),
+        list(x),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return BubbleTemperatureResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        incipient=tuple(result.incipient),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 
@@ -487,6 +601,30 @@ def costald_molar_volume(omega: float, Tc: Q, Vc: Q, M: Q, rho_normal: Q, T: Q) 
     )
 
 
+def critical_point(mixture: Mixture, z: list[float]) -> CriticalPointResult:
+    """``eos.critical_point``, computed in Rust."""
+    result = _core.critical_point(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return CriticalPointResult(
+        tc=from_si(result.tc.magnitude_si, result.tc.unit),
+        pc=from_si(result.pc.magnitude_si, result.pc.unit),
+        vc=from_si(result.vc.magnitude_si, result.vc.unit),
+        z_c=result.z_c,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def desmukh_mather_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[float]) -> DesmukhMatherPhaseResult:
     """``eos.desmukh_mather_phase``, computed in Rust."""
     spec = _models_gen.model("eos.desmukh_mather_phase")
@@ -503,6 +641,62 @@ def desmukh_mather_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[floa
         ionic_strength=from_si(result.ionic_strength.magnitude_si, result.ionic_strength.unit),
         solvent_molar_mass=from_si(result.solvent_molar_mass.magnitude_si, result.solvent_molar_mass.unit),
         ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def dew_pressure(mixture: Mixture, T: Q, y: list[float]) -> DewPressureResult:
+    """``eos.dew_pressure``, computed in Rust."""
+    spec = _models_gen.model("eos.dew_pressure")
+    result = _core.dew_pressure(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        list(y),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return DewPressureResult(
+        pressure=from_si(result.pressure.magnitude_si, result.pressure.unit),
+        incipient=tuple(result.incipient),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def dew_temperature(mixture: Mixture, P: Q, y: list[float]) -> DewTemperatureResult:
+    """``eos.dew_temperature``, computed in Rust."""
+    spec = _models_gen.model("eos.dew_temperature")
+    result = _core.dew_temperature(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "P", P),
+        list(y),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return DewTemperatureResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        incipient=tuple(result.incipient),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 
@@ -1056,6 +1250,43 @@ def matcop_prumr_new_alpha(omega: float, mc1: float, mc2: float, mc3: float, mc4
     )
 
 
+def molar_enthalpy_entropy(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, P: Q, z: list[float], compressibility: float) -> MolarEnthalpyEntropyResult:
+    """``eos.molar_enthalpy_entropy``, computed in Rust."""
+    spec = _models_gen.model("eos.molar_enthalpy_entropy")
+    result = _core.molar_enthalpy_entropy(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        compressibility,
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return MolarEnthalpyEntropyResult(
+        h=from_si(result.h.magnitude_si, result.h.unit),
+        s=from_si(result.s.magnitude_si, result.s.unit),
+        h_ideal=from_si(result.h_ideal.magnitude_si, result.h_ideal.unit),
+        s_ideal=from_si(result.s_ideal.magnitude_si, result.s_ideal.unit),
+        h_departure=from_si(result.h_departure.magnitude_si, result.h_departure.unit),
+        s_departure=from_si(result.s_departure.magnitude_si, result.s_departure.unit),
+        psi_bar=result.psi_bar,
+        cp=from_si(result.cp.magnitude_si, result.cp.unit),
+        cp_ideal=from_si(result.cp_ideal.magnitude_si, result.cp_ideal.unit),
+        cp_departure=from_si(result.cp_departure.magnitude_si, result.cp_departure.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:
     """``eos.mollerup_alpha``, computed in Rust."""
     result = _core.mollerup_alpha(
@@ -1152,6 +1383,42 @@ def pcsaft_rahmat_phase(components: list[str], T: Q, P: Q, z: list[float], compr
         v=from_si(result.v.magnitude_si, result.v.unit),
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ph_flash(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, H: Q, z: list[float]) -> PhFlashResult:
+    """``eos.ph_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.ph_flash")
+    result = _core.ph_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "H", H),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PhFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 
@@ -1389,6 +1656,244 @@ def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
     )
     return PrsvKappaResult(
         kappa=result.kappa,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ps_flash(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, S: Q, z: list[float]) -> PsFlashResult:
+    """``eos.ps_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.ps_flash")
+    result = _core.ps_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "S", S),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PsFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=from_si(result.residual.magnitude_si, result.residual.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pt_flash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> PtFlashResult:
+    """``eos.pt_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.pt_flash")
+    result = _core.pt_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PtFlashResult(
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        ln_phi_liquid=tuple(result.ln_phi_liquid),
+        ln_phi_vapour=tuple(result.ln_phi_vapour),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        min_t_over_tc=result.min_t_over_tc,
+        phase=_Phase(result.phase),
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pt_phase_envelope(mixture: Mixture, P: Q, z: list[float]) -> PtPhaseEnvelopeResult:
+    """``eos.pt_phase_envelope``, computed in Rust."""
+    spec = _models_gen.model("eos.pt_phase_envelope")
+    result = _core.pt_phase_envelope(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PtPhaseEnvelopeResult(
+        dew_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.dew_temperature),
+        dew_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.dew_pressure),
+        bubble_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.bubble_temperature),
+        bubble_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.bubble_pressure),
+        cricondenbar_temperature=from_si(result.cricondenbar_temperature.magnitude_si, result.cricondenbar_temperature.unit),
+        cricondenbar_pressure=from_si(result.cricondenbar_pressure.magnitude_si, result.cricondenbar_pressure.unit),
+        cricondentherm_temperature=from_si(result.cricondentherm_temperature.magnitude_si, result.cricondentherm_temperature.unit),
+        cricondentherm_pressure=from_si(result.cricondentherm_pressure.magnitude_si, result.cricondentherm_pressure.unit),
+        critical_temperature=from_si(result.critical_temperature.magnitude_si, result.critical_temperature.unit),
+        critical_pressure=from_si(result.critical_pressure.magnitude_si, result.critical_pressure.unit),
+        iterations=result.iterations,
+        residual=from_si(result.residual.magnitude_si, result.residual.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pu_flash(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, U: Q, z: list[float]) -> PuFlashResult:
+    """``eos.pu_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.pu_flash")
+    result = _core.pu_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "U", U),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PuFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pv_flash(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q, z: list[float]) -> PvFlashResult:
+    """``eos.pv_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.pv_flash")
+    result = _core.pv_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "V", V),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PvFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pv_reflux_flash(mixture: Mixture, P: Q, reflux: float, phase: str, temperature: Q, z: list[float]) -> PvRefluxFlashResult:
+    """``eos.pv_reflux_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.pv_reflux_flash")
+    result = _core.pv_reflux_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "P", P),
+        reflux,
+        phase,
+        input_to_si(spec, "temperature", temperature),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PvRefluxFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        phase=_Phase(result.phase),
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def pvf_flash(mixture: Mixture, P: Q, vapour_fraction: float, temperature: Q, z: list[float]) -> PvfFlashResult:
+    """``eos.pvf_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.pvf_flash")
+    result = _core.pvf_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "P", P),
+        vapour_fraction,
+        input_to_si(spec, "temperature", temperature),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return PvfFlashResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        phase=_Phase(result.phase),
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 
@@ -1702,6 +2207,32 @@ def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult:
     )
 
 
+def stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> StabilityTestResult:
+    """``eos.stability_test``, computed in Rust."""
+    spec = _models_gen.model("eos.stability_test")
+    result = _core.stability_test(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return StabilityTestResult(
+        verdict=_StabilityVerdict(result.verdict),
+        tm=tuple(result.tm),
+        w=tuple(tuple(row) for row in result.w),
+        iterations=tuple(result.iterations),
+        min_t_over_tc=result.min_t_over_tc,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def tbp_fraction_properties(molar_mass: Q, density: Q) -> TbpFractionPropertiesResult:
     """``eos.tbp_fraction_properties``, computed in Rust."""
     spec = _spec_for("eos.tbp_fraction_properties")
@@ -1715,6 +2246,42 @@ def tbp_fraction_properties(molar_mass: Q, density: Q) -> TbpFractionPropertiesR
         boiling_temperature=from_si(result.boiling_temperature.magnitude_si, result.boiling_temperature.unit),
         acentric_factor=result.acentric_factor,
         attraction_exponent=result.attraction_exponent,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def th_flash(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, H: Q, z: list[float]) -> ThFlashResult:
+    """``eos.th_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.th_flash")
+    result = _core.th_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "H", H),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return ThFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 
@@ -1740,6 +2307,37 @@ def tp_flash_saft(components: list[str], T: Q, P: Q, z: list[float]) -> TpFlashS
         phase=_Phase(result.phase),
         iterations=result.iterations,
         residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashResult:
+    """``eos.tp_multiflash``, computed in Rust."""
+    spec = _models_gen.model("eos.tp_multiflash")
+    result = _core.tp_multiflash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TpMultiflashResult(
+        phase_count=result.phase_count,
+        phase_fractions=tuple(result.phase_fractions),
+        x=tuple(tuple(row) for row in result.x),
+        z_factor=tuple(result.z_factor),
+        ln_phi=tuple(tuple(row) for row in result.ln_phi),
+        seeded=_TpMultiflashSeed(result.seeded),
+        tm=tuple(result.tm),
+        iterations=result.iterations,
+        residual=result.residual,
+        min_t_over_tc=result.min_t_over_tc,
         warnings=_warnings(result.warnings),
     )
 
@@ -1786,6 +2384,148 @@ def tp_solid_flash(components: list[str], solid: str, T: Q, P: Q, z: list[float]
         iterations=result.iterations,
         residual=result.residual,
         converged=result.converged,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ts_flash(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, S: Q, z: list[float]) -> TsFlashResult:
+    """``eos.ts_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.ts_flash")
+    result = _core.ts_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "S", S),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TsFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tu_flash(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, U: Q, z: list[float]) -> TuFlashResult:
+    """``eos.tu_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.tu_flash")
+    result = _core.tu_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "U", U),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TuFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tv_flash(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, V: Q, z: list[float]) -> TvFlashResult:
+    """``eos.tv_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.tv_flash")
+    result = _core.tv_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "V", V),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TvFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tv_fraction_flash(mixture: Mixture, T: Q, fraction: float, P: Q, z: list[float]) -> TvFractionFlashResult:
+    """``eos.tv_fraction_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.tv_fraction_flash")
+    result = _core.tv_fraction_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        fraction,
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return TvFractionFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        volume_fraction=result.volume_fraction,
+        phase=_Phase(result.phase),
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
         warnings=_warnings(result.warnings),
     )
 
@@ -1900,6 +2640,147 @@ def vdw1f_mix_binary(z1: float, a1: float, a2: float, b1: float, b2: float, k12:
     return Vdw1fMixBinaryResult(
         a_mix=result.a_mix,
         b_mix=result.b_mix,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vh_flash(mixture: Mixture, ideal_gas: IdealGasModel, V: Q, H: Q, z: list[float]) -> VhFlashResult:
+    """``eos.vh_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.vh_flash")
+    result = _core.vh_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "H", H),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VhFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vs_flash(mixture: Mixture, ideal_gas: IdealGasModel, V: Q, S: Q, z: list[float]) -> VsFlashResult:
+    """``eos.vs_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.vs_flash")
+    result = _core.vs_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "S", S),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VsFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vu_flash(mixture: Mixture, ideal_gas: IdealGasModel, V: Q, U: Q, z: list[float]) -> VuFlashResult:
+    """``eos.vu_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.vu_flash")
+    result = _core.vu_flash(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "U", U),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VuFlashResult(
+        P=from_si(result.P.magnitude_si, result.P.unit),
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        x=tuple(result.x),
+        y=tuple(result.y),
+        k=tuple(result.k),
+        phase=_Phase(result.phase),
+        z_liquid=result.z_liquid,
+        z_vapour=result.z_vapour,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def vu_flash_single_comp(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q, U: Q) -> VuFlashSingleCompResult:
+    """``eos.vu_flash_single_comp``, computed in Rust."""
+    spec = _models_gen.model("eos.vu_flash_single_comp")
+    result = _core.vu_flash_single_comp(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "P", P),
+        input_to_si(spec, "V", V),
+        input_to_si(spec, "U", U),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return VuFlashSingleCompResult(
+        T=from_si(result.T.magnitude_si, result.T.unit),
+        vapour_fraction=result.vapour_fraction,
+        V=from_si(result.V.magnitude_si, result.V.unit),
+        phase=_Phase(result.phase),
         warnings=_warnings(result.warnings),
     )
 

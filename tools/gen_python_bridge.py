@@ -87,6 +87,36 @@ ARGUMENT_DEFAULTS: dict[tuple[str, str], str] = {
 #: millimetres, so the site scales it back and the comment says so. Generating the argument without
 #: it is a factor of a thousand on `downcommer_backup`, which is what a first run of this file
 #: produced and what `test_cross_impl` refused. A second entry would need its own reason here.
+#: **The parameters a Python boundary object resolves into**, and the expression for each.
+#:
+#: A model whose spec declares `components` is handed a `Mixture` instead, and the extension takes
+#: the expansion. The mapping is not a guess: across the thirty-one adapters that take one, `Tc`,
+#: `Pc`, `omega`, `kij`, `association`, `eos`, `alpha` and `alpha_params` each have **one spelling
+#: and one only**, and so does each `cp_*` an `IdealGasModel` resolves into. The two the table
+#: does not carry - `molar_mass` computed from the components with a guard, and the `params`
+#: record's `antoine_*`/`dij` columns - are refusals, because their expressions are per-id.
+MIXTURE_EXPANSION: dict[str, str] = {
+    "Tc": "[c.Tc.to_base_units().magnitude for c in mixture.components]",
+    "Pc": "[c.Pc.to_base_units().magnitude for c in mixture.components]",
+    "omega": "[c.omega for c in mixture.components]",
+    "kij": "mixture.flattened_kij()",
+    "association": "_association_spec(mixture)",
+    "eos": "mixture.cubic.name",
+    "alpha": "mixture.alpha",
+    # `ge_nrtl_flash` carries a parameter record *and* a mixture, so the extension spells the
+    # mixture's alpha out rather than letting the two collide.
+    "cubic_alpha": "mixture.alpha",
+    "alpha_params": "[list(c.alpha_params) for c in mixture.components]",
+}
+
+#: The parameters an `IdealGasModel` resolves into, one column per coefficient.
+IDEAL_GAS_EXPANSION: dict[str, str] = {
+    f"cp_{letter}": f"list(ideal_gas.cp_{letter})" for letter in "abcde"
+}
+
+#: The Python parameters that *are* a boundary object rather than an argument.
+BOUNDARY_OBJECTS = ("mixture", "ideal_gas")
+
 ARGUMENT_SCALES: dict[tuple[str, str], tuple[str, str]] = {
     ("hydraulics.tray_hydraulics", "hole_diameter"): (
         " * 1000.0",
@@ -118,6 +148,27 @@ def public_signatures() -> dict[str, ast.FunctionDef]:
         for node in tree.body:
             if isinstance(node, ast.FunctionDef):
                 out.setdefault(node.name, node)
+    return out
+
+
+def namespace_imports() -> dict[str, str]:
+    """Every name the public wrappers import, and a one-name import line for each.
+
+    **An emitted header is the public wrapper's verbatim, so an annotation it carries has to be
+    importable here too.** `Mixture` and `IdealGasModel` are the two this module would otherwise
+    name without importing, and reading them from the namespace rather than naming them here is
+    what keeps a third one from being a failure instead of a line.
+    """
+    out: dict[str, str] = {}
+    for namespace in NAMESPACES:
+        path = PY_SRC / namespace / "__init__.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in tree.body:
+            if isinstance(node, ast.ImportFrom) and node.module and not node.level:
+                for alias in node.names:
+                    out.setdefault(
+                        alias.asname or alias.name, f"from {node.module} import {alias.name}"
+                    )
     return out
 
 
@@ -362,7 +413,7 @@ def coerce(expression: str, rust_type: str | None, parameter: str) -> str:
 # --- the whole function -----------------------------------------------------
 
 
-def emit_function(calc_id: str, used: set[str]) -> str:
+def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
     """One bridge function, as source, or a `Refusal` naming what stopped it.
 
     `used` collects the names the function needs imported, so the module's import block is
@@ -384,18 +435,25 @@ def emit_function(calc_id: str, used: set[str]) -> str:
     # `(source, reaction, T)`, so a positional call built from the stub swaps two strings.
     types = wrapper_types().get(function, {})
     core_params = list(types)
-    if set(params) != set(core_params):
-        raise Refusal(
-            f"the public wrapper's parameters are not _core's: "
-            f"+{[p for p in params if p not in core_params]} "
-            f"-{[p for p in core_params if p not in params]}"
-        )
 
     spec = specs()[calc_id]
     declared = spec.get("inputs", {})
-    undeclared = [p for p in params if p not in declared]
-    if undeclared:
-        raise Refusal(f"{undeclared} is not an input the spec declares")
+
+    # **A boundary object's expansion is derived, and what is left has to be declared.** `mixture`
+    # and `ideal_gas` are parameters the extension does not take; the table above says what it
+    # takes instead. Everything else the call passes must be an input the spec names, and every
+    # parameter the caller gives must be one of the three.
+    expansion: dict[str, str] = {}
+    if "mixture" in params:
+        expansion.update(MIXTURE_EXPANSION)
+    if "ideal_gas" in params:
+        expansion.update(IDEAL_GAS_EXPANSION)
+    unexplained = [p for p in core_params if p not in declared and p not in expansion]
+    if unexplained:
+        raise Refusal(f"{unexplained}: neither a declared input nor a boundary expansion")
+    stale = [p for p in params if p not in declared and p not in BOUNDARY_OBJECTS]
+    if stale:
+        raise Refusal(f"{stale} is not an input the spec declares")
 
     annotations = {
         p.arg: (ast.unparse(p.annotation) if p.annotation else None)
@@ -407,6 +465,9 @@ def emit_function(calc_id: str, used: set[str]) -> str:
     # is copied into the other - the call follows the extension and the signature the caller.
     arguments: list[tuple[str, str | None]] = []
     for p in core_params:
+        if p in expansion:
+            arguments.append((expansion[p], None))
+            continue
         argument = coerce(argument_expr(p, declared[p], annotations.get(p) or ""), types.get(p), p)
         if (
             "None" in (annotations.get(p) or "")
@@ -442,6 +503,12 @@ def emit_function(calc_id: str, used: set[str]) -> str:
         for field, kind in fields.items()
     ]
     used.add(result_class)
+    # The annotation names the copied header carries - `Mixture`, `IdealGasModel` - which this
+    # module has to import for itself.
+    declared_names = namespace_imports()
+    for annotation_type in re.findall(r"\b[A-Z]\w*\b", ast.unparse(public.args)):
+        if annotation_type in declared_names:
+            external.add(annotation_type)
     # Read from the same decision `return_expr` made rather than from the emitted text: a scan for
     # `Name(` would import `Phase` for a `_Phase(` the module never declares.
     for field, kind in fields.items():
@@ -453,6 +520,8 @@ def emit_function(calc_id: str, used: set[str]) -> str:
         used.add("KComponent")
     if any("_si(" in expression for expression, _ in arguments):
         used.add("_si")
+    if "mixture" in params:
+        used.add("_association_spec")
     if "warnings" in fields:
         used.add("_warnings")
 
@@ -484,28 +553,31 @@ def covered() -> tuple[list[tuple[str, str, set[str]]], list[tuple[str, str]]]:
     out, left = [], []
     for calc_id, _, _ in rust_index.implementations():
         used: set[str] = set()
+        external: set[str] = set()
         try:
-            source = emit_function(calc_id, used)
+            source = emit_function(calc_id, used, external)
         except Refusal as refusal:
             left.append((calc_id, str(refusal)))
             continue
-        out.append((calc_id, source, used))
+        out.append((calc_id, source, used, external))
     return out, left
 
 
 def emit() -> str:
     """`_rust_bridge_gen.py`: every id this file can derive, in id order."""
     out, _ = covered()
-    bodies = "\n\n\n".join(source for _, source, _ in out)
+    bodies = "\n\n\n".join(source for _, source, _, _ in out)
 
-    used: set[str] = set().union(*(names for _, _, names in out)) if out else set()
+    used: set[str] = set().union(*(names for _, _, names, _ in out)) if out else set()
+    external: set[str] = set().union(*(names for _, _, _, names in out)) if out else set()
     # The four aliased enums are imported under their other name, so the alias is what appears in
     # the block and `from ... import X as _X` is what binds it.
     plain = {alias: rust for rust, alias in ENUM_ALIASES.items() if alias in used}
 
     # `_warnings` and `_si` come from the support module rather than from `azoth.core.result`,
     # and isort wants them named in the block they come from.
-    support = sorted(name for name in used if name in ("_si", "_warnings"))
+    # The helpers the adapters call that are not adapters, from `azoth.core.bridge_support`.
+    support = sorted(name for name in used if name in ("_association_spec", "_si", "_warnings"))
     imports = [
         "from collections.abc import Sequence",
         "",
@@ -522,6 +594,12 @@ def emit() -> str:
     for alias, rust in sorted(plain.items(), key=lambda item: item[1].lower()):
         imports += ["from azoth.core.result import (", f"    {rust} as {alias},", ")"]
     imports.append("from azoth.core.units import Q, from_si, input_to_si")
+    # **The annotation names are a separate accumulator, and they have to be.** `azoth.eos`
+    # imports the result dataclasses as well, so a name cannot be told from an annotation by
+    # looking it up in that module - `TpFlashSaftResult` is in both. `Sequence` and `Q` are the
+    # two the header already brings.
+    external_lines = [namespace_imports()[name] for name in external - {"Sequence", "Q"}]
+    imports.extend(sorted(external_lines, key=str.lower))
 
     header = (
         '"""The Rust backend\'s functions, emitted from the extension\'s own declarations.\n'
@@ -538,7 +616,7 @@ def emit() -> str:
         "\n"
         "__all__ = [\n"
     )
-    names = sorted(calc_id.rpartition(".")[2] for calc_id, _, _ in out)
+    names = sorted(calc_id.rpartition(".")[2] for calc_id, _, _, _ in out)
     header += "".join(f'    "{name}",\n' for name in names) + "]\n\n\n"
     return header + bodies + "\n"
 
