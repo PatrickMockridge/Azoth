@@ -46,6 +46,7 @@ the registry and the Rust sources
                 ─► tools/gen_python_transport.py ─► crates/azoth-python/src/transport_gen.rs
                 ─► tools/gen_python_register.py  ─► crates/azoth-python/src/register_gen.rs
                 ─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
+                ─► tools/gen_python_bridge.py    ─► python/src/azoth/_rust_bridge_gen.py
 ```
 
 The spec declares; the generators name. A field the spec does not name cannot be

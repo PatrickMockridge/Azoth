@@ -94,10 +94,18 @@ it rather than because a port writes them: another column's model, the flowsheet
 this page, `ROADMAP.md`, the batch exclusion list, and the port's NeqSim probe and its
 capture.
 
-**Of those eleven, the pyo3 wrapper is the one the tranche has taken.** It is generated for
-**148** of the registered ids and hand-written for **46**: a kernel that takes a record or a
-mixture the spec does not name is one the generator refuses rather than guesses at, and so
-is one whose signature disagrees with the order the bridge passes it in.
+**Of those eleven, the pyo3 wrapper and the bridge adapter are the two the tranche has taken.**
+The wrapper is generated for **148** of the registered ids and hand-written for **46**: a kernel
+that takes a record or a mixture the spec does not name is one the generator refuses rather than
+guesses at, and so is one whose signature disagrees with the order the bridge passes it in. The
+bridge adapter is generated for **123** and hand-written for **71**, and its rule is narrower
+because its boundary is a Python signature rather than a Rust one: the adapter's parameters must
+be `_core`'s, in that order, and every one of them an input the spec declares.
+
+**That pair is why the tranche started.** The two are the same contract written twice - the
+wrapper says what `_core` takes, the adapter says what the caller sends - and nothing compared
+them, so three adapters lost two arguments each when the capacity-limit port added them and
+`azoth.process.absorption_column` raised `TypeError` on the Rust backend for four commits.
 
 **A `process.*` model is dearer again**, because both languages carry a result record and a
 public wrapper of their own: measured over the four columns' capacity limits, **ten sites per

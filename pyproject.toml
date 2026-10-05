@@ -145,6 +145,7 @@ exclude = [
   "python/src/azoth/_registry_gen.py",
   "python/src/azoth/_models_gen.py",
   "python/src/azoth/_provenance_gen.py",
+  "python/src/azoth/_rust_bridge_gen.py",
   "python/src/azoth/core/_units_gen.py",
 ]
 
@@ -164,6 +165,10 @@ exclude = [
 # length is the tree's rather than the generator's, and the file's correctness is
 # asserted by the tests that recompute every hash rather than by a linter.
 "python/src/azoth/_provenance_gen.py" = ["E501"]
+# Emitted with the public wrapper's header verbatim, so its line length is that
+# signature's rather than this generator's, and the file is compared byte-for-byte
+# against a regeneration by `gen_python_bridge.py --check`.
+"python/src/azoth/_rust_bridge_gen.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -179,6 +184,7 @@ show_error_codes = true
 # Generated from the specs; its structure is asserted by tests rather than typed.
 exclude = [
   "python/src/azoth/_registry_gen\\.py",
+  "python/src/azoth/_rust_bridge_gen\\.py",
   "python/src/azoth/core/_units_gen\\.py",
 ]
 
