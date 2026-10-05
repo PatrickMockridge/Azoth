@@ -23,13 +23,19 @@ from types import ModuleType
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge.py"
 
-#: The adapters `_rust_bridge.py` may still carry by hand, and the cause each one is left for:
-#: `bwrs_phase`, whose record is per-component *arrays* rather than fields; `hydrogen_phase`, whose
-#: wrapper takes a mode the spec does not declare; `pure_saturation`, which takes the critical
-#: constants the spec resolves from a component name; and `rate_based_packed_column`, whose
-#: optional input the extension takes non-optionally with no default to send. Lowering this is the
-#: point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 4
+#: The adapters `_rust_bridge.py` may still carry by hand, and the cause each one is left for.
+#: Two, and both are deliberate rather than underived:
+#:
+#: * `hydrogen_phase` - the wrapper takes a `hydrogen_type` the spec does not declare, and the
+#:   kernel's own documentation says that is the design: "the spec declares `T` and `P`, and the
+#:   isomer is a caller's choice that the bridge carries as a string". Declaring it here would
+#:   overrule a decision that is written down.
+#: * `pure_saturation` - the wrapper takes the critical constants the spec resolves from a
+#:   component name, and the spec says why it no longer declares them: a caller holding them holds
+#:   quantities already, so they cross as `Tc.to("K").magnitude` rather than through the spec's
+#:   unit. The generator's whole conversion rule is "read the declaration", and there is none.
+#: Lowering this is still the point; raising it needs a reason in the diff.
+KNOWN_HAND_WRITTEN = 2
 
 
 def _tools_module(name: str) -> ModuleType:
@@ -178,6 +184,48 @@ def test_the_bridge_takes_exactly_what_the_wrapper_forwards() -> None:
                 f"{sorted(expected - actual)} sent that it does not take"
             )
     assert not problems, "\n  ".join(["the call and the bridge disagree:", *problems])
+
+
+def test_no_argument_falls_back_to_a_bare_none() -> None:
+    """**"Absent" is a default the extension takes, never a `None`.**
+
+    `ARGUMENT_DEFAULTS` is the value an optional argument carries when the caller states nothing,
+    and the generator writes it as the *else* of the guard `argument_expr` already put there.
+    Appending it instead of replacing left the whole expression as
+    `None if x is None else list(x) if x is not None else []`, whose absent branch is `None` -
+    which compiles, answers every case that states the argument, and sends a `None` that a
+    `Vec<String>` parameter cannot be. So the shape is read off the committed file: an argument
+    for `_core` may fall back to a bare `None` nowhere.
+    """
+    import ast as _ast
+
+    text = (REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text("utf-8")
+    checked, offenders = 0, []
+    for node in _ast.parse(text).body:
+        if not isinstance(node, _ast.FunctionDef):
+            continue
+        for call in _ast.walk(node):
+            if not (
+                isinstance(call, _ast.Call)
+                and isinstance(call.func, _ast.Attribute)
+                and isinstance(call.func.value, _ast.Name)
+                and call.func.value.id == "_core"
+            ):
+                continue
+            for index, argument in enumerate(call.args):
+                checked += 1
+                if (
+                    isinstance(argument, _ast.IfExp)
+                    and isinstance(argument.orelse, _ast.Constant)
+                    and argument.orelse.value is None
+                ):
+                    offenders.append(f"{node.name}(argument {index + 1})")
+
+    assert checked, "the generated bridge calls _core nowhere"
+    assert not offenders, (
+        f"{offenders} fall back to a bare `None`, which is what an argument may be *left out* as "
+        f"and never what it may be *sent* as"
+    )
 
 
 def test_every_molar_mass_boundary_finds_the_sentence_it_carries() -> None:

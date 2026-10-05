@@ -20,7 +20,7 @@ guarantee was being verified by nothing.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from azoth import _core, _models_gen
@@ -40,10 +40,8 @@ from azoth.core.bridge_support import _association_spec as _association_spec
 from azoth.core.bridge_support import _si as _si
 from azoth.core.bridge_support import _warnings as _warnings
 from azoth.core.result import (
-    BwrsPhaseResult,
     HydrogenPhaseResult,
     PureSaturationResult,
-    RateBasedPackedColumnResult,
 )
 from azoth.core.units import Q, from_si, input_to_si
 
@@ -119,30 +117,6 @@ def _boundary_temperature_result(raw: Any, result_type: Any) -> Any:
         iterations=raw.iterations,
         residual=raw.residual,
         warnings=_warnings(raw.warnings),
-    )
-
-
-def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
-    """The BWRS (MBWR-32) phase state, computed in Rust.
-
-    The per-component coefficient sets are unpacked into the flattened ``a`` vector
-    (32 per component, component-major) and the ``rhoc`` vector the boundary carries.
-    """
-    spec = _models_gen.model("eos.bwrs_phase")
-    result = _core.bwrs_phase(
-        [v for c in coeffs for v in c.a],
-        [c.rhoc for c in coeffs],
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(z),
-    )
-    return BwrsPhaseResult(
-        z_factor=result.z_factor,
-        ln_phi=tuple(result.ln_phi),
-        h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
-        s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
-        cp_res=from_si(result.cp_res.magnitude_si, result.cp_res.unit),
-        warnings=_warnings(result.warnings),
     )
 
 
@@ -265,116 +239,3 @@ def _optional_si(quantity: object) -> Q | None:
     magnitude_si = quantity.magnitude_si  # type: ignore[attr-defined]
     unit = quantity.unit  # type: ignore[attr-defined]
     return from_si(magnitude_si, unit)
-
-
-def rate_based_packed_column(
-    gas_components: Sequence[str],
-    gas_n: Q,
-    gas_z: Sequence[float],
-    gas_p: Q,
-    gas_t: Q,
-    liquid_components: Sequence[str],
-    liquid_n: Q,
-    liquid_z: Sequence[float],
-    liquid_p: Q,
-    liquid_t: Q,
-    transfer_components: Sequence[str] | None = None,
-    column_diameter: Q | None = None,
-    packed_height: Q | None = None,
-    number_of_segments: int | None = None,
-    packing_type: str | None = None,
-    max_iterations: int | None = None,
-    convergence_tolerance: Q | None = None,
-    mass_transfer_correction: float | None = None,
-    mass_transfer_correlation: str | None = None,
-    film_model: str | None = None,
-    heat_transfer_model: str | None = None,
-    segment_solver: str | None = None,
-    column_solver: str | None = None,
-) -> RateBasedPackedColumnResult:
-    """Solve a rate-based packed column; see the reference twin for the arithmetic."""
-    spec = _models_gen.model("process.rate_based_packed_column")
-
-    def si(name: str, value: Q | None) -> float | None:
-        return None if value is None else input_to_si(spec, name, value)
-
-    result = _core.rate_based_packed_column(
-        list(gas_components),
-        list(liquid_components),
-        [] if transfer_components is None else list(transfer_components),
-        input_to_si(spec, "gas_n", gas_n),
-        [_si(spec, "gas_z", v) for v in gas_z],
-        input_to_si(spec, "gas_p", gas_p),
-        input_to_si(spec, "gas_t", gas_t),
-        input_to_si(spec, "liquid_n", liquid_n),
-        [_si(spec, "liquid_z", v) for v in liquid_z],
-        input_to_si(spec, "liquid_p", liquid_p),
-        input_to_si(spec, "liquid_t", liquid_t),
-        si("column_diameter", column_diameter),
-        si("packed_height", packed_height),
-        None if number_of_segments is None else int(number_of_segments),
-        packing_type,
-        None if max_iterations is None else int(max_iterations),
-        si("convergence_tolerance", convergence_tolerance),
-        mass_transfer_correction,
-        mass_transfer_correlation,
-        film_model,
-        heat_transfer_model,
-        segment_solver,
-        column_solver,
-    )
-
-    def q(value: Any) -> Q:
-        return from_si(value.magnitude_si, value.unit)
-
-    def qs(values: Any) -> tuple[Q, ...]:
-        return tuple(from_si(value.magnitude_si, value.unit) for value in values)
-
-    return RateBasedPackedColumnResult(
-        gas_out_n=q(result.gas_out_n),
-        gas_out_z=tuple(result.gas_out_z),
-        gas_out_p=q(result.gas_out_p),
-        gas_out_t=q(result.gas_out_t),
-        gas_out_h=q(result.gas_out_h),
-        liquid_out_n=q(result.liquid_out_n),
-        liquid_out_z=tuple(result.liquid_out_z),
-        liquid_out_p=q(result.liquid_out_p),
-        liquid_out_t=q(result.liquid_out_t),
-        liquid_out_h=q(result.liquid_out_h),
-        iterations=result.iterations,
-        convergence_residual=q(result.convergence_residual),
-        converged=result.converged,
-        total_absolute_molar_transfer=q(result.total_absolute_molar_transfer),
-        component_transfer_totals=qs(result.component_transfer_totals),
-        transfer_components=tuple(result.transfer_components),
-        segment_height_from_bottom=qs(result.segment_height_from_bottom),
-        segment_gas_temperature=qs(result.segment_gas_temperature),
-        segment_liquid_temperature=qs(result.segment_liquid_temperature),
-        segment_gas_pressure=qs(result.segment_gas_pressure),
-        segment_liquid_pressure=qs(result.segment_liquid_pressure),
-        segment_gas_molar_flow=qs(result.segment_gas_molar_flow),
-        segment_liquid_molar_flow=qs(result.segment_liquid_molar_flow),
-        segment_gas_density=qs(result.segment_gas_density),
-        segment_liquid_density=qs(result.segment_liquid_density),
-        segment_gas_viscosity=qs(result.segment_gas_viscosity),
-        segment_liquid_viscosity=qs(result.segment_liquid_viscosity),
-        segment_gas_diffusivity=qs(result.segment_gas_diffusivity),
-        segment_liquid_diffusivity=qs(result.segment_liquid_diffusivity),
-        segment_wetted_area=tuple(result.segment_wetted_area),
-        segment_k_ga=tuple(result.segment_k_ga),
-        segment_k_la=tuple(result.segment_k_la),
-        segment_gas_heat_transfer_coefficient=tuple(result.segment_gas_heat_transfer_coefficient),
-        segment_liquid_heat_transfer_coefficient=tuple(
-            result.segment_liquid_heat_transfer_coefficient
-        ),
-        segment_overall_heat_transfer_coefficient=tuple(
-            result.segment_overall_heat_transfer_coefficient
-        ),
-        segment_interface_temperature=qs(result.segment_interface_temperature),
-        segment_heat_transfer_rate=qs(result.segment_heat_transfer_rate),
-        segment_pressure_drop_per_meter=qs(result.segment_pressure_drop_per_meter),
-        segment_percent_flood=tuple(result.segment_percent_flood),
-        segment_net_molar_transfer=qs(result.segment_net_molar_transfer),
-        segment_enthalpy_balance_residual=qs(result.segment_enthalpy_balance_residual),
-        warnings=_warnings(result.warnings),
-    )
