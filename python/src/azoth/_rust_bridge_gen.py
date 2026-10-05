@@ -1992,7 +1992,7 @@ def tray_hydraulics(tray_type: str, column_diameter: Q, tray_spacing: Q, weir_he
         input_to_si(spec, "weir_height", weir_height),
         input_to_si(spec, "weir_length", weir_length),
         float(downcommer_area_fraction),
-        input_to_si(spec, "hole_diameter", hole_diameter),
+        input_to_si(spec, "hole_diameter", hole_diameter) * 1000.0,  # millimetres on both sides of the wire: the spec declares them and the correlations that read the hole are written in them
         float(hole_area_fraction),
         float(design_flood_fraction),
         input_to_si(spec, "vapor_mass_flow", vapor_mass_flow),

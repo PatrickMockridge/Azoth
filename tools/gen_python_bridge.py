@@ -67,6 +67,22 @@ ENUM_ALIASES = {
 #: string and a caller reads the name.
 ENUMS_THAT_STAY_STRINGS = {"PitzerDataset"}
 
+#: The parameters whose boundary conversion is the site's own rather than the spec's.
+#:
+#: **One entry, and it is the reason this is a table and not silent generation.** `tray_hydraulics`
+#: declares `hole_diameter` in millimetres and `input_to_si` puts it in metres - which is what
+#: every other input wants - but the two correlations that read the hole in NeqSim are written in
+#: millimetres, so the site scales it back and the comment says so. Generating the argument without
+#: it is a factor of a thousand on `downcommer_backup`, which is what a first run of this file
+#: produced and what `test_cross_impl` refused. A second entry would need its own reason here.
+ARGUMENT_SCALES: dict[tuple[str, str], tuple[str, str]] = {
+    ("hydraulics.tray_hydraulics", "hole_diameter"): (
+        " * 1000.0",
+        "millimetres on both sides of the wire: the spec declares them and the correlations "
+        "that read the hole are written in them",
+    ),
+}
+
 
 class Refusal(Exception):
     """This file cannot derive the function, so it stays hand-written."""
@@ -290,8 +306,14 @@ def emit_function(calc_id: str, used: set[str]) -> str:
         p.arg: (ast.unparse(p.annotation) if p.annotation else None)
         for p in public.args.posonlyargs + public.args.args + public.args.kwonlyargs
     }
-    arguments = [coerce(argument_expr(p, declared[p]), annotations.get(p)) for p in params]
-    needs_spec = any("spec," in a for a in arguments)
+    arguments: list[tuple[str, str | None]] = []
+    for p in params:
+        argument = coerce(argument_expr(p, declared[p]), annotations.get(p))
+        scale = ARGUMENT_SCALES.get((calc_id, p))
+        # The reason travels with the argument, so a reader of the generated file sees why this
+        # one is not the spec's conversion without opening this one.
+        arguments.append((argument + scale[0], scale[1]) if scale else (argument, None))
+    needs_spec = any("spec," in expression for expression, _ in arguments)
     lookup = (
         f'_spec_for("{calc_id}")'
         if calc_id in {e["id"] for e in _calcs()}
@@ -328,7 +350,7 @@ def emit_function(calc_id: str, used: set[str]) -> str:
     if needs_spec:
         lines.append(f"    spec = {lookup}")
     lines.append(f"    result = _core.{function}(")
-    lines += [f"        {a}," for a in arguments]
+    lines += [f"        {a},{f'  # {why}' if why else ''}" for a, why in arguments]
     lines.append("    )")
     lines.append(f"    return {result_class}(")
     lines += [f"        {field}={expr}," for field, expr in returned]
