@@ -99,6 +99,7 @@ unit = "Pa"
 description = "the pressure at stage 0. The two fix the profile the tray pressures interpolate.\n"
 [inputs.temperature_tolerance]
 unit = "K"
+interval = true
 description = "the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob.\n"
 [inputs.max_iterations]
 unit = "dimensionless"
