@@ -13,12 +13,14 @@ from collections.abc import Sequence
 
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
-from azoth.core.bridge_support import _warnings
+from azoth.core.bridge_support import _si, _warnings
 from azoth.core.result import (
+    AbsorptionColumnResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
     ArgonSolidPhaseResult,
     ChapmanEnskogDiffusivityResult,
+    ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
     ChungViscosityResult,
@@ -33,7 +35,11 @@ from azoth.core.result import (
     CostaldMolarVolumeResult,
     DarcyWeisbachResult,
     DesmukhMatherPhaseResult,
+    DistillationColumnResult,
+    EffectiveDiffusionResult,
+    EjectorResult,
     EosCgPhaseResult,
+    EquilibriumConstantResult,
     ExpanderResult,
     FilterResult,
     FlareResult,
@@ -49,12 +55,16 @@ from azoth.core.result import (
     HaalandResult,
     HaydukMinhasDiffusivityResult,
     HeaterResult,
+    HeatExchangerResult,
     HeatOfVaporizationResult,
     HeliumPhaseResult,
+    HybridEosGeFlashResult,
     HydrateEquilibriumLineResult,
     HydrateFormationPressureResult,
     HydrateFormationTemperatureResult,
     HydrateFractionResult,
+    HydrateInhibitorConcentrationResult,
+    HydrateInhibitorWtResult,
     HydrateStructure,
     IapwsHenryLawResult,
     IdealGasCpResult,
@@ -63,15 +73,21 @@ from azoth.core.result import (
     KentEisenbergPhaseResult,
     KFactorsResult,
     KineticRateLawResult,
+    KineticsResult,
+    LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
     LiquidViscosityPureResult,
+    ManifoldResult,
+    MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
     MatcopAlphaResult,
     MatcopPrAlphaResult,
     MatcopPrumrAlphaResult,
     MatcopPrumrNewAlphaResult,
+    MixerResult,
     MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult,
+    PackedColumnResult,
     PackingHydraulicsResult,
     PackingSizingResult,
     ParachorMixtureSurfaceTensionResult,
@@ -101,12 +117,17 @@ from azoth.core.result import (
     RachfordRiceBinaryResult,
     RachfordRiceResult,
     RackettMolarVolumeResult,
+    ReactiveHybridEosGeFlashResult,
+    ReactivePhaseEquilibriumResult,
+    ReactivePhFlashResult,
+    ReactiveTpFlashResult,
     ReferencePotentialsResult,
     ReynoldsNumberResult,
     RkAlphaAbResult,
     RkDepartureResult,
     RootStructure,
     SaftVrMiePhaseResult,
+    SaltPrecipitationResult,
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SeparatorResult,
@@ -123,7 +144,9 @@ from azoth.core.result import (
     SrkPenelouxShiftResult,
     SrkZFactorResult,
     StirredTankReactorResult,
+    StrippingColumnResult,
     SwameeJainResult,
+    TankResult,
     TbpFractionPropertiesResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
@@ -142,6 +165,7 @@ from azoth.core.result import (
     WaterPhaseResult,
     WaxSolidFugacityResult,
     WilkeChangDiffusivityResult,
+    WilkeViscosityResult,
 )
 from azoth.core.result import (
     HenryStatus as _HenryStatus,
@@ -152,10 +176,12 @@ from azoth.core.result import (
 from azoth.core.units import Q, from_si, input_to_si
 
 __all__ = [
+    "absorption_column",
     "ammonia_phase",
     "antoine_vapor_pressure",
     "argon_solid_phase",
     "chapman_enskog_diffusivity",
+    "chemical_equilibrium",
     "choked_flow_area",
     "chung_conductivity",
     "chung_viscosity",
@@ -170,7 +196,11 @@ __all__ = [
     "crane_k_factors",
     "darcy_weisbach",
     "desmukh_mather_phase",
+    "distillation_column",
+    "effective_diffusion",
+    "ejector",
     "eos_cg_phase",
+    "equilibrium_constant",
     "expander",
     "filter",
     "flare",
@@ -186,27 +216,37 @@ __all__ = [
     "gerg2008_phase",
     "gibbs_reactor",
     "hayduk_minhas_diffusivity",
+    "heat_exchanger",
     "heat_of_vaporization",
     "heater",
     "helium_phase",
+    "hybrid_eos_ge_flash",
     "hydrate_equilibrium_line",
     "hydrate_formation_pressure",
     "hydrate_formation_temperature",
     "hydrate_fraction",
+    "hydrate_inhibitor_concentration",
+    "hydrate_inhibitor_wt",
     "iapws_henry_law",
     "ideal_gas_cp",
     "iso6976",
     "kent_eisenberg_phase",
     "kinetic_rate_law",
+    "kinetics",
+    "liquid_conductivity_polynom",
     "liquid_heat_capacity",
     "liquid_viscosity_pure",
+    "manifold",
+    "mason_saxena_conductivity",
     "matcop5_prumr_alpha",
     "matcop_alpha",
     "matcop_pr_alpha",
     "matcop_prumr_alpha",
     "matcop_prumr_new_alpha",
+    "mixer",
     "mollerup_alpha",
     "nitric_sulfuric_acid_vapor_pressure",
+    "packed_column",
     "packing_hydraulics",
     "packing_sizing",
     "parachor_mixture_surface_tension",
@@ -236,11 +276,16 @@ __all__ = [
     "rachford_rice",
     "rachford_rice_binary",
     "rackett_molar_volume",
+    "reactive_hybrid_eos_ge_flash",
+    "reactive_ph_flash",
+    "reactive_phase_equilibrium",
+    "reactive_tp_flash",
     "reference_potentials",
     "reynolds_number",
     "rk_alpha_ab",
     "rk_departure",
     "saft_vr_mie_phase",
+    "salt_precipitation",
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
     "separator",
@@ -257,6 +302,8 @@ __all__ = [
     "srk_peneloux_shift",
     "srk_z_factor",
     "stirred_tank_reactor",
+    "stripping_column",
+    "tank",
     "tbp_fraction_properties",
     "three_phase_separator",
     "throttling_valve",
@@ -275,6 +322,7 @@ __all__ = [
     "water_phase",
     "wax_solid_fugacity",
     "wilke_chang_diffusivity",
+    "wilke_viscosity",
 ]
 
 
@@ -301,11 +349,11 @@ def antoine_vapor_pressure(A: float, B: float, C: float, D: float, E: float, for
     """``eos.antoine_vapor_pressure``, computed in Rust."""
     spec = _spec_for("eos.antoine_vapor_pressure")
     result = _core.antoine_vapor_pressure(
-        float(A),
-        float(B),
-        float(C),
-        float(D),
-        float(E),
+        A,
+        B,
+        C,
+        D,
+        E,
         form,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
@@ -359,11 +407,11 @@ def chung_conductivity(Cv0: Q, M: Q, omega: float, Tc: Q, Vc: Q, dipole: float, 
     result = _core.chung_conductivity(
         input_to_si(spec, "Cv0", Cv0),
         input_to_si(spec, "M", M),
-        float(omega),
+        omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Vc", Vc),
-        float(dipole),
-        float(kappa),
+        dipole,
+        kappa,
         input_to_si(spec, "T", T),
     )
     return ChungConductivityResult(
@@ -376,12 +424,12 @@ def chung_viscosity(omega: float, Tc: Q, Vc: Q, M: Q, dipole: float, kappa: floa
     """``eos.chung_viscosity``, computed in Rust."""
     spec = _spec_for("eos.chung_viscosity")
     result = _core.chung_viscosity(
-        float(omega),
+        omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Vc", Vc),
         input_to_si(spec, "M", M),
-        float(dipole),
-        float(kappa),
+        dipole,
+        kappa,
         input_to_si(spec, "T", T),
         input_to_si(spec, "V", V),
     )
@@ -426,7 +474,7 @@ def costald_molar_volume(omega: float, Tc: Q, Vc: Q, M: Q, rho_normal: Q, T: Q) 
     """``eos.costald_molar_volume``, computed in Rust."""
     spec = _spec_for("eos.costald_molar_volume")
     result = _core.costald_molar_volume(
-        float(omega),
+        omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Vc", Vc),
         input_to_si(spec, "M", M),
@@ -455,6 +503,19 @@ def desmukh_mather_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[floa
         ionic_strength=from_si(result.ionic_strength.magnitude_si, result.ionic_strength.unit),
         solvent_molar_mass=from_si(result.solvent_molar_mass.magnitude_si, result.solvent_molar_mass.unit),
         ln_phi=tuple(result.ln_phi),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def effective_diffusion(binary_diffusion: Sequence[Sequence[Q]], x: Sequence[float]) -> EffectiveDiffusionResult:
+    """``eos.effective_diffusion``, computed in Rust."""
+    spec = _models_gen.model("eos.effective_diffusion")
+    result = _core.effective_diffusion(
+        [[_si(spec, "binary_diffusion", v) for v in row] for row in binary_diffusion],
+        list(x),
+    )
+    return EffectiveDiffusionResult(
+        effective_diffusion=tuple(from_si(q.magnitude_si, q.unit) for q in result.effective_diffusion),
         warnings=_warnings(result.warnings),
     )
 
@@ -616,10 +677,10 @@ def heat_of_vaporization(c0: float, c1: float, c2: float, c3: float, Tc: Q, T: Q
     """``eos.heat_of_vaporization``, computed in Rust."""
     spec = _spec_for("eos.heat_of_vaporization")
     result = _core.heat_of_vaporization(
-        float(c0),
-        float(c1),
-        float(c2),
-        float(c3),
+        c0,
+        c1,
+        c2,
+        c3,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "T", T),
     )
@@ -644,6 +705,29 @@ def helium_phase(T: Q, P: Q) -> HeliumPhaseResult:
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hybrid_eos_ge_flash(components: Sequence[str], cubic: str, T: Q, P: Q, moles: Sequence[float]) -> HybridEosGeFlashResult:
+    """``eos.hybrid_eos_ge_flash``, computed in Rust."""
+    spec = _models_gen.model("eos.hybrid_eos_ge_flash")
+    result = _core.hybrid_eos_ge_flash(
+        list(components),
+        cubic,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [_si(spec, "moles", v) for v in moles],
+    )
+    return HybridEosGeFlashResult(
+        phase_fractions=tuple(result.phase_fractions),
+        x=tuple(tuple(row) for row in result.x),
+        ln_phi=tuple(tuple(row) for row in result.ln_phi),
+        iterations=result.iterations,
+        residual=result.residual,
+        max_material_balance_residual=result.max_material_balance_residual,
+        max_log_fugacity_residual=result.max_log_fugacity_residual,
+        min_t_over_tc=result.min_t_over_tc,
         warnings=_warnings(result.warnings),
     )
 
@@ -725,6 +809,50 @@ def hydrate_fraction(components: list[str], T: Q, P: Q, z: list[float], eos: str
     )
 
 
+def hydrate_inhibitor_concentration(components: list[str], moles: list[Q], inhibitor: str, T_target: Q, P: Q, eos: str='srk', hydrate_model: str='pvtsim') -> HydrateInhibitorConcentrationResult:
+    """``eos.hydrate_inhibitor_concentration``, computed in Rust."""
+    spec = _models_gen.model("eos.hydrate_inhibitor_concentration")
+    result = _core.hydrate_inhibitor_concentration(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        inhibitor,
+        input_to_si(spec, "T_target", T_target),
+        input_to_si(spec, "P", P),
+        eos,
+        hydrate_model,
+    )
+    return HydrateInhibitorConcentrationResult(
+        inhibitor_moles=from_si(result.inhibitor_moles.magnitude_si, result.inhibitor_moles.unit),
+        weight_fraction=result.weight_fraction,
+        hydrate_temperature=from_si(result.hydrate_temperature.magnitude_si, result.hydrate_temperature.unit),
+        iterations=result.iterations,
+        residual=from_si(result.residual.magnitude_si, result.residual.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def hydrate_inhibitor_wt(components: list[str], moles: list[Q], inhibitor: str, wt_target: float, T: Q, P: Q, eos: str='srk') -> HydrateInhibitorWtResult:
+    """``eos.hydrate_inhibitor_wt``, computed in Rust."""
+    spec = _models_gen.model("eos.hydrate_inhibitor_wt")
+    result = _core.hydrate_inhibitor_wt(
+        list(components),
+        [input_to_si(spec, "moles", v) for v in moles],
+        inhibitor,
+        wt_target,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        eos,
+    )
+    return HydrateInhibitorWtResult(
+        inhibitor_moles=from_si(result.inhibitor_moles.magnitude_si, result.inhibitor_moles.unit),
+        weight_fraction=result.weight_fraction,
+        phases=result.phases,
+        iterations=result.iterations,
+        residual=result.residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
     """``eos.iapws_henry_law``, computed in Rust."""
     spec = _spec_for("eos.iapws_henry_law")
@@ -746,11 +874,11 @@ def ideal_gas_cp(cp_a: float, cp_b: float, cp_c: float, cp_d: float, cp_e: float
     """``eos.ideal_gas_cp``, computed in Rust."""
     spec = _spec_for("eos.ideal_gas_cp")
     result = _core.ideal_gas_cp(
-        float(input_to_si(spec, "cp_a", cp_a)),
-        float(input_to_si(spec, "cp_b", cp_b)),
-        float(input_to_si(spec, "cp_c", cp_c)),
-        float(input_to_si(spec, "cp_d", cp_d)),
-        float(input_to_si(spec, "cp_e", cp_e)),
+        input_to_si(spec, "cp_a", cp_a),
+        input_to_si(spec, "cp_b", cp_b),
+        input_to_si(spec, "cp_c", cp_c),
+        input_to_si(spec, "cp_d", cp_d),
+        input_to_si(spec, "cp_e", cp_e),
         input_to_si(spec, "T", T),
     )
     return IdealGasCpResult(
@@ -776,15 +904,30 @@ def kent_eisenberg_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[floa
     )
 
 
+def liquid_conductivity_polynom(liquid_conductivity: Sequence[Sequence[float]], molar_mass: Sequence[Q], z: Sequence[float], T: Q) -> LiquidConductivityPolynomResult:
+    """``eos.liquid_conductivity_polynom``, computed in Rust."""
+    spec = _models_gen.model("eos.liquid_conductivity_polynom")
+    result = _core.liquid_conductivity_polynom(
+        liquid_conductivity,
+        [input_to_si(spec, "molar_mass", v) for v in molar_mass],
+        list(z),
+        input_to_si(spec, "T", T),
+    )
+    return LiquidConductivityPolynomResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def liquid_heat_capacity(c0: float, c1: float, c2: float, c3: float, c4: float, T: Q) -> LiquidHeatCapacityResult:
     """``eos.liquid_heat_capacity``, computed in Rust."""
     spec = _spec_for("eos.liquid_heat_capacity")
     result = _core.liquid_heat_capacity(
-        float(c0),
-        float(c1),
-        float(c2),
-        float(c3),
-        float(c4),
+        c0,
+        c1,
+        c2,
+        c3,
+        c4,
         input_to_si(spec, "T", T),
     )
     return LiquidHeatCapacityResult(
@@ -799,13 +942,13 @@ def liquid_viscosity_pure(form: str, model: int, l1: float, l2: float, l3: float
     result = _core.liquid_viscosity_pure(
         form,
         int(model),
-        float(l1),
-        float(l2),
-        float(l3),
-        float(l4),
+        l1,
+        l2,
+        l3,
+        l4,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
-        float(omega),
+        omega,
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
     )
@@ -815,16 +958,36 @@ def liquid_viscosity_pure(form: str, model: int, l1: float, l2: float, l3: float
     )
 
 
+def mason_saxena_conductivity(Cv0: Sequence[Q], M: Sequence[Q], omega: Sequence[float], Tc: Sequence[Q], Vc: Sequence[Q], dipole: Sequence[float], kappa: Sequence[float], T: Q, z: Sequence[float]) -> MasonSaxenaConductivityResult:
+    """``eos.mason_saxena_conductivity``, computed in Rust."""
+    spec = _models_gen.model("eos.mason_saxena_conductivity")
+    result = _core.mason_saxena_conductivity(
+        [input_to_si(spec, "Cv0", v) for v in Cv0],
+        [input_to_si(spec, "M", v) for v in M],
+        list(omega),
+        [input_to_si(spec, "Tc", v) for v in Tc],
+        [input_to_si(spec, "Vc", v) for v in Vc],
+        list(dipole),
+        list(kappa),
+        input_to_si(spec, "T", T),
+        list(z),
+    )
+    return MasonSaxenaConductivityResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def matcop5_prumr_alpha(omega: float, mc1: float, mc2: float, mc3: float, mc4: float, mc5: float, Tr: float) -> Matcop5PrumrAlphaResult:
     """``eos.matcop5_prumr_alpha``, computed in Rust."""
     result = _core.matcop5_prumr_alpha(
-        float(omega),
-        float(mc1),
-        float(mc2),
-        float(mc3),
-        float(mc4),
-        float(mc5),
-        float(Tr),
+        omega,
+        mc1,
+        mc2,
+        mc3,
+        mc4,
+        mc5,
+        Tr,
     )
     return Matcop5PrumrAlphaResult(
         alpha=result.alpha,
@@ -835,10 +998,10 @@ def matcop5_prumr_alpha(omega: float, mc1: float, mc2: float, mc3: float, mc4: f
 def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaResult:
     """``eos.matcop_alpha``, computed in Rust."""
     result = _core.matcop_alpha(
-        float(mc1),
-        float(mc2),
-        float(mc3),
-        float(Tr),
+        mc1,
+        mc2,
+        mc3,
+        Tr,
     )
     return MatcopAlphaResult(
         alpha=result.alpha,
@@ -849,11 +1012,11 @@ def matcop_alpha(mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopAlphaRe
 def matcop_pr_alpha(omega: float, mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopPrAlphaResult:
     """``eos.matcop_pr_alpha``, computed in Rust."""
     result = _core.matcop_pr_alpha(
-        float(omega),
-        float(mc1),
-        float(mc2),
-        float(mc3),
-        float(Tr),
+        omega,
+        mc1,
+        mc2,
+        mc3,
+        Tr,
     )
     return MatcopPrAlphaResult(
         alpha=result.alpha,
@@ -864,11 +1027,11 @@ def matcop_pr_alpha(omega: float, mc1: float, mc2: float, mc3: float, Tr: float)
 def matcop_prumr_alpha(omega: float, mc1: float, mc2: float, mc3: float, Tr: float) -> MatcopPrumrAlphaResult:
     """``eos.matcop_prumr_alpha``, computed in Rust."""
     result = _core.matcop_prumr_alpha(
-        float(omega),
-        float(mc1),
-        float(mc2),
-        float(mc3),
-        float(Tr),
+        omega,
+        mc1,
+        mc2,
+        mc3,
+        Tr,
     )
     return MatcopPrumrAlphaResult(
         alpha=result.alpha,
@@ -879,13 +1042,13 @@ def matcop_prumr_alpha(omega: float, mc1: float, mc2: float, mc3: float, Tr: flo
 def matcop_prumr_new_alpha(omega: float, mc1: float, mc2: float, mc3: float, mc4: float, mc5: float, Tr: float) -> MatcopPrumrNewAlphaResult:
     """``eos.matcop_prumr_new_alpha``, computed in Rust."""
     result = _core.matcop_prumr_new_alpha(
-        float(omega),
-        float(mc1),
-        float(mc2),
-        float(mc3),
-        float(mc4),
-        float(mc5),
-        float(Tr),
+        omega,
+        mc1,
+        mc2,
+        mc3,
+        mc4,
+        mc5,
+        Tr,
     )
     return MatcopPrumrNewAlphaResult(
         alpha=result.alpha,
@@ -896,10 +1059,10 @@ def matcop_prumr_new_alpha(omega: float, mc1: float, mc2: float, mc3: float, mc4
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult:
     """``eos.mollerup_alpha``, computed in Rust."""
     result = _core.mollerup_alpha(
-        float(p1),
-        float(p2),
-        float(p3),
-        float(Tr),
+        p1,
+        p2,
+        p3,
+        Tr,
     )
     return MollerupAlphaResult(
         alpha=result.alpha,
@@ -943,7 +1106,7 @@ def parachor_surface_tension(parachor: float, rho_l: Q, rho_v: Q, M: Q) -> Parac
     """``eos.parachor_surface_tension``, computed in Rust."""
     spec = _spec_for("eos.parachor_surface_tension")
     result = _core.parachor_surface_tension(
-        float(parachor),
+        parachor,
         input_to_si(spec, "rho_l", rho_l),
         input_to_si(spec, "rho_v", rho_v),
         input_to_si(spec, "M", M),
@@ -1039,7 +1202,7 @@ def pitzer_phase(components: Sequence[str], T: Q, P: Q, x: Sequence[float]) -> P
 def pr78_kappa(omega: float) -> Pr78KappaResult:
     """``eos.pr78_kappa``, computed in Rust."""
     result = _core.pr78_kappa(
-        float(omega),
+        omega,
     )
     return Pr78KappaResult(
         kappa=result.kappa,
@@ -1050,9 +1213,9 @@ def pr78_kappa(omega: float) -> Pr78KappaResult:
 def pr_alpha_ab(kappa: float, Tr: float, Pr: float) -> PrAlphaAbResult:
     """``eos.pr_alpha_ab``, computed in Rust."""
     result = _core.pr_alpha_ab(
-        float(kappa),
-        float(Tr),
-        float(Pr),
+        kappa,
+        Tr,
+        Pr,
     )
     return PrAlphaAbResult(
         alpha=result.alpha,
@@ -1084,8 +1247,8 @@ def pr_cpa_phase(components: list[str], T: Q, P: Q, z: list[float], compressed_p
 def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
     """``eos.pr_danesh_alpha``, computed in Rust."""
     result = _core.pr_danesh_alpha(
-        float(omega),
-        float(Tr),
+        omega,
+        Tr,
     )
     return PrDaneshAlphaResult(
         alpha=result.alpha,
@@ -1096,8 +1259,8 @@ def pr_danesh_alpha(omega: float, Tr: float) -> PrDaneshAlphaResult:
 def pr_delft1998_alpha(omega: float, Tr: float) -> PrDelft1998AlphaResult:
     """``eos.pr_delft1998_alpha``, computed in Rust."""
     result = _core.pr_delft1998_alpha(
-        float(omega),
-        float(Tr),
+        omega,
+        Tr,
     )
     return PrDelft1998AlphaResult(
         alpha=result.alpha,
@@ -1108,11 +1271,11 @@ def pr_delft1998_alpha(omega: float, Tr: float) -> PrDelft1998AlphaResult:
 def pr_departure(a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float) -> PrDepartureResult:
     """``eos.pr_departure``, computed in Rust."""
     result = _core.pr_departure(
-        float(a_reduced),
-        float(b_reduced),
-        float(z),
-        float(kappa),
-        float(Tr),
+        a_reduced,
+        b_reduced,
+        z,
+        kappa,
+        Tr,
     )
     return PrDepartureResult(
         ln_phi=result.ln_phi,
@@ -1126,8 +1289,8 @@ def pr_departure(a_reduced: float, b_reduced: float, z: float, kappa: float, Tr:
 def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:
     """``eos.pr_gassem2001_alpha``, computed in Rust."""
     result = _core.pr_gassem2001_alpha(
-        float(omega),
-        float(Tr),
+        omega,
+        Tr,
     )
     return PrGassem2001AlphaResult(
         alpha=result.alpha,
@@ -1138,7 +1301,7 @@ def pr_gassem2001_alpha(omega: float, Tr: float) -> PrGassem2001AlphaResult:
 def pr_kappa(omega: float) -> PrKappaResult:
     """``eos.pr_kappa``, computed in Rust."""
     result = _core.pr_kappa(
-        float(omega),
+        omega,
     )
     return PrKappaResult(
         kappa=result.kappa,
@@ -1149,8 +1312,8 @@ def pr_kappa(omega: float) -> PrKappaResult:
 def pr_lee_kesler_alpha(omega: float, Tr: float) -> PrLeeKeslerAlphaResult:
     """``eos.pr_lee_kesler_alpha``, computed in Rust."""
     result = _core.pr_lee_kesler_alpha(
-        float(omega),
-        float(Tr),
+        omega,
+        Tr,
     )
     return PrLeeKeslerAlphaResult(
         alpha=result.alpha,
@@ -1175,7 +1338,7 @@ def pr_molar_volume(z: float, T: Q, P: Q) -> PrMolarVolumeResult:
     """``eos.pr_molar_volume``, computed in Rust."""
     spec = _spec_for("eos.pr_molar_volume")
     result = _core.pr_molar_volume(
-        float(z),
+        z,
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
     )
@@ -1189,10 +1352,10 @@ def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q, z_ra: float | None=None) -> Pr
     """``eos.pr_peneloux_shift``, computed in Rust."""
     spec = _spec_for("eos.pr_peneloux_shift")
     result = _core.pr_peneloux_shift(
-        float(omega),
+        omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
-        z_ra,
+        None if z_ra is None else z_ra,
     )
     return PrPenelouxShiftResult(
         c=from_si(result.c.magnitude_si, result.c.unit),
@@ -1203,8 +1366,8 @@ def pr_peneloux_shift(omega: float, Tc: Q, Pc: Q, z_ra: float | None=None) -> Pr
 def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
     """``eos.pr_z_factor``, computed in Rust."""
     result = _core.pr_z_factor(
-        float(a_reduced),
-        float(b_reduced),
+        a_reduced,
+        b_reduced,
     )
     return PrZFactorResult(
         z_min=result.z_min,
@@ -1220,9 +1383,9 @@ def pr_z_factor(a_reduced: float, b_reduced: float) -> PrZFactorResult:
 def prsv_kappa(omega: float, Tr: float, kappa1: float) -> PrsvKappaResult:
     """``eos.prsv_kappa``, computed in Rust."""
     result = _core.prsv_kappa(
-        float(omega),
-        float(Tr),
-        float(kappa1),
+        omega,
+        Tr,
+        kappa1,
     )
     return PrsvKappaResult(
         kappa=result.kappa,
@@ -1245,9 +1408,9 @@ def rachford_rice(z: Sequence[float], K: Sequence[float]) -> RachfordRiceResult:
 def rachford_rice_binary(z1: float, K1: float, K2: float) -> RachfordRiceBinaryResult:
     """``eos.rachford_rice_binary``, computed in Rust."""
     result = _core.rachford_rice_binary(
-        float(z1),
-        float(K1),
-        float(K2),
+        z1,
+        K1,
+        K2,
     )
     return RachfordRiceBinaryResult(
         vapour_fraction=result.vapour_fraction,
@@ -1259,7 +1422,7 @@ def rackett_molar_volume(omega: float, Tc: Q, Pc: Q, T: Q) -> RackettMolarVolume
     """``eos.rackett_molar_volume``, computed in Rust."""
     spec = _spec_for("eos.rackett_molar_volume")
     result = _core.rackett_molar_volume(
-        float(omega),
+        omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
         input_to_si(spec, "T", T),
@@ -1273,8 +1436,8 @@ def rackett_molar_volume(omega: float, Tc: Q, Pc: Q, T: Q) -> RackettMolarVolume
 def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult:
     """``eos.rk_alpha_ab``, computed in Rust."""
     result = _core.rk_alpha_ab(
-        float(Tr),
-        float(Pr),
+        Tr,
+        Pr,
     )
     return RkAlphaAbResult(
         alpha=result.alpha,
@@ -1287,9 +1450,9 @@ def rk_alpha_ab(Tr: float, Pr: float) -> RkAlphaAbResult:
 def rk_departure(a_reduced: float, b_reduced: float, z: float) -> RkDepartureResult:
     """``eos.rk_departure``, computed in Rust."""
     result = _core.rk_departure(
-        float(a_reduced),
-        float(b_reduced),
-        float(z),
+        a_reduced,
+        b_reduced,
+        z,
     )
     return RkDepartureResult(
         ln_phi=result.ln_phi,
@@ -1320,17 +1483,37 @@ def saft_vr_mie_phase(components: list[str], T: Q, P: Q, z: list[float], compres
     )
 
 
+def salt_precipitation(components: list[str], salt: str, T: Q, P: Q, z: list[float]) -> SaltPrecipitationResult:
+    """``eos.salt_precipitation``, computed in Rust."""
+    spec = _models_gen.model("eos.salt_precipitation")
+    result = _core.salt_precipitation(
+        list(components),
+        list(z),
+        salt,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+    )
+    return SaltPrecipitationResult(
+        precipitated_moles=result.precipitated_moles,
+        initial_saturation_ratio=result.initial_saturation_ratio,
+        final_saturation_ratio=result.final_saturation_ratio,
+        iterations=result.iterations,
+        extent_of_maximum=result.extent_of_maximum,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def scale_saturation_ratio(salt: str, x1: float, x2: float, x_water: float, gamma1: float, gamma2: float, water_activity: float, T: Q, P: Q, h3o_molality: Q | None=None) -> ScaleSaturationRatioResult:
     """``eos.scale_saturation_ratio``, computed in Rust."""
     spec = _spec_for("eos.scale_saturation_ratio")
     result = _core.scale_saturation_ratio(
         salt,
-        float(x1),
-        float(x2),
-        float(x_water),
-        float(gamma1),
-        float(gamma2),
-        float(water_activity),
+        x1,
+        x2,
+        x_water,
+        gamma1,
+        gamma2,
+        water_activity,
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         None if h3o_molality is None else input_to_si(spec, "h3o_molality", h3o_molality),
@@ -1346,11 +1529,11 @@ def scale_saturation_ratio(salt: str, x1: float, x2: float, x_water: float, gamm
 def schwartzentruber_alpha(omega: float, p1: float, p2: float, p3: float, Tr: float) -> SchwartzentruberAlphaResult:
     """``eos.schwartzentruber_alpha``, computed in Rust."""
     result = _core.schwartzentruber_alpha(
-        float(omega),
-        float(p1),
-        float(p2),
-        float(p3),
-        float(Tr),
+        omega,
+        p1,
+        p2,
+        p3,
+        Tr,
     )
     return SchwartzentruberAlphaResult(
         alpha=result.alpha,
@@ -1384,7 +1567,7 @@ def solid_fugacity(heat_of_fusion: Q, triple_point_temperature: Q, delta_cp_sl: 
         input_to_si(spec, "delta_solid_volume", delta_solid_volume),
         input_to_si(spec, "tc", tc),
         input_to_si(spec, "pc", pc),
-        float(omega),
+        omega,
         input_to_si(spec, "T", T),
         input_to_si(spec, "P", P),
         eos,
@@ -1398,8 +1581,8 @@ def solid_fugacity(heat_of_fusion: Q, triple_point_temperature: Q, delta_cp_sl: 
 def soreide_whitson_alpha(salinity: float, Tr: float) -> SoreideWhitsonAlphaResult:
     """``eos.soreide_whitson_alpha``, computed in Rust."""
     result = _core.soreide_whitson_alpha(
-        float(salinity),
-        float(Tr),
+        salinity,
+        Tr,
     )
     return SoreideWhitsonAlphaResult(
         alpha=result.alpha,
@@ -1428,9 +1611,9 @@ def soreide_whitson_phase(components: list[str], T: Q, P: Q, x: list[float], sal
 def srk_alpha_ab(kappa: float, Tr: float, Pr: float) -> SrkAlphaAbResult:
     """``eos.srk_alpha_ab``, computed in Rust."""
     result = _core.srk_alpha_ab(
-        float(kappa),
-        float(Tr),
-        float(Pr),
+        kappa,
+        Tr,
+        Pr,
     )
     return SrkAlphaAbResult(
         alpha=result.alpha,
@@ -1462,11 +1645,11 @@ def srk_cpa_phase(components: list[str], T: Q, P: Q, z: list[float], compressed_
 def srk_departure(a_reduced: float, b_reduced: float, z: float, kappa: float, Tr: float) -> SrkDepartureResult:
     """``eos.srk_departure``, computed in Rust."""
     result = _core.srk_departure(
-        float(a_reduced),
-        float(b_reduced),
-        float(z),
-        float(kappa),
-        float(Tr),
+        a_reduced,
+        b_reduced,
+        z,
+        kappa,
+        Tr,
     )
     return SrkDepartureResult(
         ln_phi=result.ln_phi,
@@ -1480,7 +1663,7 @@ def srk_departure(a_reduced: float, b_reduced: float, z: float, kappa: float, Tr
 def srk_kappa(omega: float) -> SrkKappaResult:
     """``eos.srk_kappa``, computed in Rust."""
     result = _core.srk_kappa(
-        float(omega),
+        omega,
     )
     return SrkKappaResult(
         kappa=result.kappa,
@@ -1492,7 +1675,7 @@ def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
     """``eos.srk_peneloux_shift``, computed in Rust."""
     spec = _spec_for("eos.srk_peneloux_shift")
     result = _core.srk_peneloux_shift(
-        float(omega),
+        omega,
         input_to_si(spec, "Tc", Tc),
         input_to_si(spec, "Pc", Pc),
     )
@@ -1505,8 +1688,8 @@ def srk_peneloux_shift(omega: float, Tc: Q, Pc: Q) -> SrkPenelouxShiftResult:
 def srk_z_factor(a_reduced: float, b_reduced: float) -> SrkZFactorResult:
     """``eos.srk_z_factor``, computed in Rust."""
     result = _core.srk_z_factor(
-        float(a_reduced),
-        float(b_reduced),
+        a_reduced,
+        b_reduced,
     )
     return SrkZFactorResult(
         z_min=result.z_min,
@@ -1610,7 +1793,7 @@ def tp_solid_flash(components: list[str], solid: str, T: Q, P: Q, z: list[float]
 def twu_kappa(omega: float) -> TwuKappaResult:
     """``eos.twu_kappa``, computed in Rust."""
     result = _core.twu_kappa(
-        float(omega),
+        omega,
     )
     return TwuKappaResult(
         kappa=result.kappa,
@@ -1621,8 +1804,8 @@ def twu_kappa(omega: float) -> TwuKappaResult:
 def twucoon_alpha(omega: float, Tr: float) -> TwucoonAlphaResult:
     """``eos.twucoon_alpha``, computed in Rust."""
     result = _core.twucoon_alpha(
-        float(omega),
-        float(Tr),
+        omega,
+        Tr,
     )
     return TwucoonAlphaResult(
         alpha=result.alpha,
@@ -1633,10 +1816,10 @@ def twucoon_alpha(omega: float, Tr: float) -> TwucoonAlphaResult:
 def twucoon_param_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonParamAlphaResult:
     """``eos.twucoon_param_alpha``, computed in Rust."""
     result = _core.twucoon_param_alpha(
-        float(a),
-        float(b),
-        float(c),
-        float(Tr),
+        a,
+        b,
+        c,
+        Tr,
     )
     return TwucoonParamAlphaResult(
         alpha=result.alpha,
@@ -1647,10 +1830,10 @@ def twucoon_param_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonParam
 def twucoon_statoil_alpha(a: float, b: float, c: float, Tr: float) -> TwucoonStatoilAlphaResult:
     """``eos.twucoon_statoil_alpha``, computed in Rust."""
     result = _core.twucoon_statoil_alpha(
-        float(a),
-        float(b),
-        float(c),
-        float(Tr),
+        a,
+        b,
+        c,
+        Tr,
     )
     return TwucoonStatoilAlphaResult(
         alpha=result.alpha,
@@ -1695,8 +1878,8 @@ def umr_cpa_phase(components: list[str], T: Q, P: Q, z: list[float], compressed_
 def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult:
     """``eos.umrpr_alpha``, computed in Rust."""
     result = _core.umrpr_alpha(
-        float(omega),
-        float(Tr),
+        omega,
+        Tr,
     )
     return UmrprAlphaResult(
         alpha=result.alpha,
@@ -1707,12 +1890,12 @@ def umrpr_alpha(omega: float, Tr: float) -> UmrprAlphaResult:
 def vdw1f_mix_binary(z1: float, a1: float, a2: float, b1: float, b2: float, k12: float) -> Vdw1fMixBinaryResult:
     """``eos.vdw1f_mix_binary``, computed in Rust."""
     result = _core.vdw1f_mix_binary(
-        float(z1),
-        float(a1),
-        float(a2),
-        float(b1),
-        float(b2),
-        float(k12),
+        z1,
+        a1,
+        a2,
+        b1,
+        b2,
+        k12,
     )
     return Vdw1fMixBinaryResult(
         a_mix=result.a_mix,
@@ -1747,7 +1930,7 @@ def wax_solid_fugacity(molar_mass: Q, tc: Q, pc: Q, omega: float, heat_of_fusion
         input_to_si(spec, "molar_mass", molar_mass),
         input_to_si(spec, "tc", tc),
         input_to_si(spec, "pc", pc),
-        float(omega),
+        omega,
         input_to_si(spec, "heat_of_fusion", heat_of_fusion),
         input_to_si(spec, "triple_point_temperature", triple_point_temperature),
         input_to_si(spec, "T", T),
@@ -1764,7 +1947,7 @@ def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChang
     """``eos.wilke_chang_diffusivity``, computed in Rust."""
     spec = _spec_for("eos.wilke_chang_diffusivity")
     result = _core.wilke_chang_diffusivity(
-        float(phi),
+        phi,
         input_to_si(spec, "M", M),
         input_to_si(spec, "T", T),
         input_to_si(spec, "eta", eta),
@@ -1776,6 +1959,26 @@ def wilke_chang_diffusivity(phi: float, M: Q, T: Q, eta: Q, VA: Q) -> WilkeChang
     )
 
 
+def wilke_viscosity(Tc: Sequence[Q], Vc: Sequence[Q], M: Sequence[Q], omega: Sequence[float], dipole: Sequence[float], kappa: Sequence[float], T: Q, V: Q, z: Sequence[float]) -> WilkeViscosityResult:
+    """``eos.wilke_viscosity``, computed in Rust."""
+    spec = _models_gen.model("eos.wilke_viscosity")
+    result = _core.wilke_viscosity(
+        [input_to_si(spec, "Tc", v) for v in Tc],
+        [input_to_si(spec, "Vc", v) for v in Vc],
+        [input_to_si(spec, "M", v) for v in M],
+        list(omega),
+        list(dipole),
+        list(kappa),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "V", V),
+        list(z),
+    )
+    return WilkeViscosityResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def choked_flow_area(m_dot: Q, P0: Q, rho0: Q, k: float) -> ChokedFlowAreaResult:
     """``hydraulics.choked_flow_area``, computed in Rust."""
     spec = _spec_for("hydraulics.choked_flow_area")
@@ -1783,7 +1986,7 @@ def choked_flow_area(m_dot: Q, P0: Q, rho0: Q, k: float) -> ChokedFlowAreaResult
         input_to_si(spec, "m_dot", m_dot),
         input_to_si(spec, "P0", P0),
         input_to_si(spec, "rho0", rho0),
-        float(k),
+        k,
     )
     return ChokedFlowAreaResult(
         a=from_si(result.a.magnitude_si, result.a.unit),
@@ -1795,9 +1998,9 @@ def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
     """``hydraulics.control_valve_cv``, computed in Rust."""
     spec = _spec_for("hydraulics.control_valve_cv")
     result = _core.control_valve_cv(
-        float(Cv),
+        Cv,
         input_to_si(spec, "dP", dP),
-        float(SG),
+        SG,
     )
     return ControlValveCvResult(
         q=from_si(result.q.magnitude_si, result.q.unit),
@@ -1809,7 +2012,7 @@ def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
     """``hydraulics.crane_k_factors``, computed in Rust."""
     result = _core.crane_k_factors(
         fittings,
-        float(f_t),
+        f_t,
     )
     return KFactorsResult(
         k_total=result.k_total,
@@ -1823,7 +2026,7 @@ def darcy_weisbach(f: float, L: Q, D: Q, rho: Q, v: Q, mu: Q | None=None) -> Dar
     """``hydraulics.darcy_weisbach``, computed in Rust."""
     spec = _spec_for("hydraulics.darcy_weisbach")
     result = _core.darcy_weisbach(
-        float(f),
+        f,
         input_to_si(spec, "L", L),
         input_to_si(spec, "D", D),
         input_to_si(spec, "rho", rho),
@@ -1842,8 +2045,8 @@ def darcy_weisbach(f: float, L: Q, D: Q, rho: Q, v: Q, mu: Q | None=None) -> Dar
 def friction_factor_colebrook(re: float, relative_roughness: float) -> ColebrookResult:
     """``hydraulics.friction_factor_colebrook``, computed in Rust."""
     result = _core.friction_factor_colebrook(
-        float(re),
-        float(relative_roughness),
+        re,
+        relative_roughness,
     )
     return ColebrookResult(
         f=result.f,
@@ -1857,8 +2060,8 @@ def friction_factor_colebrook(re: float, relative_roughness: float) -> Colebrook
 def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResult:
     """``hydraulics.friction_factor_haaland``, computed in Rust."""
     result = _core.friction_factor_haaland(
-        float(re),
-        float(relative_roughness),
+        re,
+        relative_roughness,
     )
     return HaalandResult(
         f=result.f,
@@ -1869,8 +2072,8 @@ def friction_factor_haaland(re: float, relative_roughness: float) -> HaalandResu
 def friction_factor_swamee_jain(re: float, relative_roughness: float) -> SwameeJainResult:
     """``hydraulics.friction_factor_swamee_jain``, computed in Rust."""
     result = _core.friction_factor_swamee_jain(
-        float(re),
-        float(relative_roughness),
+        re,
+        relative_roughness,
     )
     return SwameeJainResult(
         f=result.f,
@@ -1894,7 +2097,7 @@ def packing_hydraulics(packing: str, column_diameter: Q, packed_height: Q, vapor
         input_to_si(spec, "surface_tension", surface_tension),
         input_to_si(spec, "vapor_diffusivity", vapor_diffusivity),
         input_to_si(spec, "liquid_diffusivity", liquid_diffusivity),
-        float(hydraulic_capacity_factor),
+        hydraulic_capacity_factor,
     )
     return PackingHydraulicsResult(
         packing_name=result.packing_name,
@@ -1930,13 +2133,13 @@ def packing_sizing(packing: str, design_flood_fraction: float, vapor_mass_flow: 
     spec = _spec_for("hydraulics.packing_sizing")
     result = _core.packing_sizing(
         packing,
-        float(design_flood_fraction),
+        design_flood_fraction,
         input_to_si(spec, "vapor_mass_flow", vapor_mass_flow),
         input_to_si(spec, "liquid_mass_flow", liquid_mass_flow),
         input_to_si(spec, "vapor_density", vapor_density),
         input_to_si(spec, "liquid_density", liquid_density),
         input_to_si(spec, "liquid_viscosity", liquid_viscosity),
-        float(hydraulic_capacity_factor),
+        hydraulic_capacity_factor,
     )
     return PackingSizingResult(
         packing_name=result.packing_name,
@@ -1958,7 +2161,7 @@ def pump_power(rho: Q, q: Q, H: Q, eta: float) -> PumpPowerResult:
         input_to_si(spec, "rho", rho),
         input_to_si(spec, "q", q),
         input_to_si(spec, "H", H),
-        float(eta),
+        eta,
     )
     return PumpPowerResult(
         power=from_si(result.power.magnitude_si, result.power.unit),
@@ -1991,17 +2194,17 @@ def tray_hydraulics(tray_type: str, column_diameter: Q, tray_spacing: Q, weir_he
         input_to_si(spec, "tray_spacing", tray_spacing),
         input_to_si(spec, "weir_height", weir_height),
         input_to_si(spec, "weir_length", weir_length),
-        float(downcommer_area_fraction),
+        downcommer_area_fraction,
         input_to_si(spec, "hole_diameter", hole_diameter) * 1000.0,  # millimetres on both sides of the wire: the spec declares them and the correlations that read the hole are written in them
-        float(hole_area_fraction),
-        float(design_flood_fraction),
+        hole_area_fraction,
+        design_flood_fraction,
         input_to_si(spec, "vapor_mass_flow", vapor_mass_flow),
         input_to_si(spec, "liquid_mass_flow", liquid_mass_flow),
         input_to_si(spec, "vapor_density", vapor_density),
         input_to_si(spec, "liquid_density", liquid_density),
         input_to_si(spec, "liquid_viscosity", liquid_viscosity),
         input_to_si(spec, "surface_tension", surface_tension),
-        float(relative_volatility),
+        relative_volatility,
     )
     return TrayHydraulicsResult(
         flooding_velocity=from_si(result.flooding_velocity.magnitude_si, result.flooding_velocity.unit),
@@ -2028,6 +2231,82 @@ def tray_hydraulics(tray_type: str, column_diameter: Q, tray_spacing: Q, weir_he
         hole_area=from_si(result.hole_area.magnitude_si, result.hole_area.unit),
         downcommer_area=from_si(result.downcommer_area.magnitude_si, result.downcommer_area.unit),
         design_ok=result.design_ok,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], gas_p: Q, gas_t: Q, solvent_components: list[str], solvent_n: Q, solvent_z: list[float], solvent_p: Q, solvent_t: Q, number_of_stages: int, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float, max_iterations: int, tray_temperatures: list[float] | None=None, murphree_efficiency: float | None=None, component_murphree_efficiency: list[float] | None=None, max_allowable_gas_load_factor: float | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, tray_murphree_efficiency: list[float] | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None) -> AbsorptionColumnResult:
+    """``process.absorption_column``, computed in Rust."""
+    spec = _models_gen.model("process.absorption_column")
+    result = _core.absorption_column(
+        list(gas_components),
+        list(solvent_components),
+        input_to_si(spec, "gas_n", gas_n),
+        list(gas_z),
+        input_to_si(spec, "gas_p", gas_p),
+        input_to_si(spec, "gas_t", gas_t),
+        input_to_si(spec, "solvent_n", solvent_n),
+        list(solvent_z),
+        input_to_si(spec, "solvent_p", solvent_p),
+        input_to_si(spec, "solvent_t", solvent_t),
+        int(number_of_stages),
+        input_to_si(spec, "top_pressure", top_pressure),
+        input_to_si(spec, "bottom_pressure", bottom_pressure),
+        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        int(max_iterations),
+        None if tray_temperatures is None else [_si(spec, "tray_temperatures", v) for v in tray_temperatures],
+        None if murphree_efficiency is None else murphree_efficiency,
+        None if component_murphree_efficiency is None else list(component_murphree_efficiency),
+        None if max_allowable_gas_load_factor is None else max_allowable_gas_load_factor,
+        reactive,
+        None if reactive_start_tray is None else int(reactive_start_tray),
+        None if reactive_end_tray is None else int(reactive_end_tray),
+        solver_type,
+        None if tray_murphree_efficiency is None else list(tray_murphree_efficiency),
+        None if gas_side_draw_fractions is None else list(gas_side_draw_fractions),
+        None if liquid_side_draw_fractions is None else list(liquid_side_draw_fractions),
+        None if pumparound_fractions is None else list(pumparound_fractions),
+        None if side_draw_flow_tray is None else int(side_draw_flow_tray),
+        side_draw_flow_phase,
+        None if side_draw_flow_target is None else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        None if side_draw_flow_tolerance is None else side_draw_flow_tolerance,
+        None if side_draw_flow_max_iterations is None else int(side_draw_flow_max_iterations),
+        None if pumparound_return_tray is None else int(pumparound_return_tray),
+        None if pumparound_draw_tray is None else int(pumparound_draw_tray),
+        None if pumparound_draw_fraction is None else pumparound_draw_fraction,
+        None if pumparound_temperature_drop is None else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        None if pumparound_tolerance is None else pumparound_tolerance,
+        None if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        None if max_allowable_fs_factor is None else max_allowable_fs_factor,
+    )
+    return AbsorptionColumnResult(
+        tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
+        tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
+        tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_liquid_n),
+        gas_out_n=from_si(result.gas_out_n.magnitude_si, result.gas_out_n.unit),
+        gas_out_z=tuple(result.gas_out_z),
+        gas_out_p=from_si(result.gas_out_p.magnitude_si, result.gas_out_p.unit),
+        gas_out_t=from_si(result.gas_out_t.magnitude_si, result.gas_out_t.unit),
+        gas_out_h=from_si(result.gas_out_h.magnitude_si, result.gas_out_h.unit),
+        liquid_out_n=from_si(result.liquid_out_n.magnitude_si, result.liquid_out_n.unit),
+        liquid_out_z=tuple(result.liquid_out_z),
+        liquid_out_p=from_si(result.liquid_out_p.magnitude_si, result.liquid_out_p.unit),
+        liquid_out_t=from_si(result.liquid_out_t.magnitude_si, result.liquid_out_t.unit),
+        liquid_out_h=from_si(result.liquid_out_h.magnitude_si, result.liquid_out_h.unit),
+        iterations=result.iterations,
+        temperature_residual=from_si(result.temperature_residual.magnitude_si, result.temperature_residual.unit),
+        mass_residual=result.mass_residual,
+        energy_residual=result.energy_residual,
+        fs_factor=result.fs_factor,
+        fs_factor_utilization=result.fs_factor_utilization,
+        fs_factor_within_design_limit=result.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit=from_si(result.minimum_diameter_for_fs_limit.magnitude_si, result.minimum_diameter_for_fs_limit.unit),
+        gas_load_factor=from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
+        gas_load_factor_utilization=result.gas_load_factor_utilization,
+        gas_load_factor_within_design_limit=result.gas_load_factor_within_design_limit,
+        minimum_diameter_for_gas_load_limit=from_si(result.minimum_diameter_for_gas_load_limit.magnitude_si, result.minimum_diameter_for_gas_load_limit.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -2068,7 +2347,7 @@ def compressor(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p:
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
-        float(isentropic_efficiency),
+        isentropic_efficiency,
     )
     return CompressorResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -2104,6 +2383,142 @@ def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
     )
 
 
+def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, number_of_stages: int, feed_stage: int, has_reboiler: bool, has_condenser: bool, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float=1e-06, max_iterations: int=200, reboiler_temperature: Q | None=None, condenser_temperature: Q | None=None, murphree_efficiency: float | None=None, tray_murphree_efficiency: list[float] | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, top_specification_type: str | None=None, top_specification_target: float | None=None, top_specification_component: str | None=None, bottom_specification_type: str | None=None, bottom_specification_target: float | None=None, bottom_specification_component: str | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None, internals_type: str | None=None, tray_spacing: Q | None=None, weir_height: Q | None=None, hole_diameter: Q | None=None, hole_area_fraction: float | None=None, downcommer_area_fraction: float | None=None, design_flood_fraction: float | None=None, column_diameter_override: Q | None=None, hydraulic_pressure_drop_coupling: bool | None=None, hydraulic_pressure_drop_internals_type: str | None=None) -> DistillationColumnResult:
+    """``process.distillation_column``, computed in Rust."""
+    spec = _models_gen.model("process.distillation_column")
+    result = _core.distillation_column(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        list(feed_z),
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        int(number_of_stages),
+        int(feed_stage),
+        has_reboiler,
+        has_condenser,
+        input_to_si(spec, "top_pressure", top_pressure),
+        input_to_si(spec, "bottom_pressure", bottom_pressure),
+        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        int(max_iterations),
+        None if reboiler_temperature is None else input_to_si(spec, "reboiler_temperature", reboiler_temperature),
+        None if condenser_temperature is None else input_to_si(spec, "condenser_temperature", condenser_temperature),
+        None if murphree_efficiency is None else murphree_efficiency,
+        None if tray_murphree_efficiency is None else list(tray_murphree_efficiency),
+        solver_type,
+        top_specification_type,
+        None if top_specification_target is None else top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        None if bottom_specification_target is None else bottom_specification_target,
+        bottom_specification_component,
+        reactive,
+        None if reactive_start_tray is None else int(reactive_start_tray),
+        None if reactive_end_tray is None else int(reactive_end_tray),
+        None if gas_side_draw_fractions is None else list(gas_side_draw_fractions),
+        None if liquid_side_draw_fractions is None else list(liquid_side_draw_fractions),
+        None if pumparound_fractions is None else list(pumparound_fractions),
+        None if side_draw_flow_tray is None else int(side_draw_flow_tray),
+        side_draw_flow_phase,
+        None if side_draw_flow_target is None else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        None if side_draw_flow_tolerance is None else side_draw_flow_tolerance,
+        None if side_draw_flow_max_iterations is None else int(side_draw_flow_max_iterations),
+        None if pumparound_return_tray is None else int(pumparound_return_tray),
+        None if pumparound_draw_tray is None else int(pumparound_draw_tray),
+        None if pumparound_draw_fraction is None else pumparound_draw_fraction,
+        None if pumparound_temperature_drop is None else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        None if pumparound_tolerance is None else pumparound_tolerance,
+        None if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        None if max_allowable_fs_factor is None else max_allowable_fs_factor,
+        internals_type,
+        None if tray_spacing is None else input_to_si(spec, "tray_spacing", tray_spacing),
+        None if weir_height is None else input_to_si(spec, "weir_height", weir_height),
+        None if hole_diameter is None else input_to_si(spec, "hole_diameter", hole_diameter),
+        None if hole_area_fraction is None else hole_area_fraction,
+        None if downcommer_area_fraction is None else downcommer_area_fraction,
+        None if design_flood_fraction is None else design_flood_fraction,
+        None if column_diameter_override is None else input_to_si(spec, "column_diameter_override", column_diameter_override),
+        hydraulic_pressure_drop_coupling,
+        hydraulic_pressure_drop_internals_type,
+    )
+    return DistillationColumnResult(
+        tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
+        tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
+        tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_liquid_n),
+        distillate_n=from_si(result.distillate_n.magnitude_si, result.distillate_n.unit),
+        distillate_z=tuple(result.distillate_z),
+        distillate_p=from_si(result.distillate_p.magnitude_si, result.distillate_p.unit),
+        distillate_t=from_si(result.distillate_t.magnitude_si, result.distillate_t.unit),
+        distillate_h=from_si(result.distillate_h.magnitude_si, result.distillate_h.unit),
+        bottoms_n=from_si(result.bottoms_n.magnitude_si, result.bottoms_n.unit),
+        bottoms_z=tuple(result.bottoms_z),
+        bottoms_p=from_si(result.bottoms_p.magnitude_si, result.bottoms_p.unit),
+        bottoms_t=from_si(result.bottoms_t.magnitude_si, result.bottoms_t.unit),
+        bottoms_h=from_si(result.bottoms_h.magnitude_si, result.bottoms_h.unit),
+        gas_side_draw_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.gas_side_draw_n),
+        liquid_side_draw_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.liquid_side_draw_n),
+        pumparound_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.pumparound_n),
+        condenser_duty=from_si(result.condenser_duty.magnitude_si, result.condenser_duty.unit),
+        reboiler_duty=from_si(result.reboiler_duty.magnitude_si, result.reboiler_duty.unit),
+        iterations=result.iterations,
+        temperature_residual=result.temperature_residual,
+        mass_residual=result.mass_residual,
+        energy_residual=result.energy_residual,
+        fs_factor=result.fs_factor,
+        fs_factor_utilization=result.fs_factor_utilization,
+        fs_factor_within_design_limit=result.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit=from_si(result.minimum_diameter_for_fs_limit.magnitude_si, result.minimum_diameter_for_fs_limit.unit),
+        required_diameter=from_si(result.required_diameter.magnitude_si, result.required_diameter.unit),
+        controlling_tray_index=result.controlling_tray_index,
+        internals_design_ok=result.internals_design_ok,
+        max_percent_flood=result.max_percent_flood,
+        min_percent_flood=result.min_percent_flood,
+        average_tray_efficiency=result.average_tray_efficiency,
+        total_pressure_drop=from_si(result.total_pressure_drop.magnitude_si, result.total_pressure_drop.unit),
+        total_pressure_drop_mbar=result.total_pressure_drop_mbar,
+        tray_percent_flood=tuple(result.tray_percent_flood),
+        tray_pressure_drop=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure_drop),
+        tray_efficiency=tuple(result.tray_efficiency),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ejector(motive_components: list[str], motive_n: Q, motive_z: list[float], motive_p: Q, motive_t: Q, suction_components: list[str], suction_n: Q, suction_z: list[float], suction_p: Q, suction_t: Q, discharge_pressure: Q, motive_nozzle_efficiency: float, suction_nozzle_efficiency: float, mixing_efficiency: float, diffuser_efficiency: float) -> EjectorResult:
+    """``process.ejector``, computed in Rust."""
+    spec = _models_gen.model("process.ejector")
+    result = _core.ejector(
+        list(motive_components),
+        list(suction_components),
+        input_to_si(spec, "motive_n", motive_n),
+        list(motive_z),
+        input_to_si(spec, "motive_p", motive_p),
+        input_to_si(spec, "motive_t", motive_t),
+        input_to_si(spec, "suction_n", suction_n),
+        list(suction_z),
+        input_to_si(spec, "suction_p", suction_p),
+        input_to_si(spec, "suction_t", suction_t),
+        input_to_si(spec, "discharge_pressure", discharge_pressure),
+        motive_nozzle_efficiency,
+        suction_nozzle_efficiency,
+        mixing_efficiency,
+        diffuser_efficiency,
+    )
+    return EjectorResult(
+        outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
+        outlet_z=tuple(result.outlet_z),
+        outlet_p=from_si(result.outlet_p.magnitude_si, result.outlet_p.unit),
+        outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
+        outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
+        mixing_pressure=None if result.mixing_pressure is None else from_si(result.mixing_pressure.magnitude_si, result.mixing_pressure.unit),
+        motive_nozzle_velocity=None if result.motive_nozzle_velocity is None else from_si(result.motive_nozzle_velocity.magnitude_si, result.motive_nozzle_velocity.unit),
+        suction_nozzle_velocity=None if result.suction_nozzle_velocity is None else from_si(result.suction_nozzle_velocity.magnitude_si, result.suction_nozzle_velocity.unit),
+        mixing_velocity=None if result.mixing_velocity is None else from_si(result.mixing_velocity.magnitude_si, result.mixing_velocity.unit),
+        diffuser_velocity=None if result.diffuser_velocity is None else from_si(result.diffuser_velocity.magnitude_si, result.diffuser_velocity.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, inlet_t: Q, outlet_pressure: Q, isentropic_efficiency: float) -> ExpanderResult:
     """``process.expander``, computed in Rust."""
     spec = _models_gen.model("process.expander")
@@ -2114,7 +2529,7 @@ def expander(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
-        float(isentropic_efficiency),
+        isentropic_efficiency,
     )
     return ExpanderResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -2180,7 +2595,7 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
         input_to_si(spec, "pressure_drop", pressure_drop),
-        float(gas_in_liquid),
+        gas_in_liquid,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
     )
     return GasScrubberResult(
@@ -2208,10 +2623,10 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
         energy_mode,
-        float(damping_composition),
-        float(max_iterations),
-        float(convergence_tolerance),
-        float(min_iterations),
+        damping_composition,
+        max_iterations,
+        convergence_tolerance,
+        min_iterations,
     )
     return GibbsReactorResult(
         product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
@@ -2225,6 +2640,46 @@ def gibbs_reactor(components: list[str], feed_n: Q, feed_z: list[float], feed_p:
         lagrange_multipliers=tuple(from_si(q.magnitude_si, q.unit) for q in result.lagrange_multipliers),
         element_balance_difference=tuple(from_si(q.magnitude_si, q.unit) for q in result.element_balance_difference),
         gibbs_energy_history=tuple(from_si(q.magnitude_si, q.unit) for q in result.gibbs_energy_history),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def heat_exchanger(hot_components: list[str], hot_in_n: Q, hot_in_z: list[float], hot_in_p: Q, hot_in_t: Q, cold_components: list[str], cold_in_n: Q, cold_in_z: list[float], cold_in_p: Q, cold_in_t: Q, ua: Q | None=None, flow_arrangement: str='counterflow', hot_outlet_temperature: Q | None=None, cold_outlet_temperature: Q | None=None) -> HeatExchangerResult:
+    """``process.heat_exchanger``, computed in Rust."""
+    spec = _models_gen.model("process.heat_exchanger")
+    result = _core.heat_exchanger(
+        list(hot_components),
+        list(cold_components),
+        input_to_si(spec, "hot_in_n", hot_in_n),
+        list(hot_in_z),
+        input_to_si(spec, "hot_in_p", hot_in_p),
+        input_to_si(spec, "hot_in_t", hot_in_t),
+        input_to_si(spec, "cold_in_n", cold_in_n),
+        list(cold_in_z),
+        input_to_si(spec, "cold_in_p", cold_in_p),
+        input_to_si(spec, "cold_in_t", cold_in_t),
+        flow_arrangement,
+        None if ua is None else input_to_si(spec, "ua", ua),
+        None if hot_outlet_temperature is None else input_to_si(spec, "hot_outlet_temperature", hot_outlet_temperature),
+        None if cold_outlet_temperature is None else input_to_si(spec, "cold_outlet_temperature", cold_outlet_temperature),
+    )
+    return HeatExchangerResult(
+        hot_out_n=from_si(result.hot_out_n.magnitude_si, result.hot_out_n.unit),
+        hot_out_z=tuple(result.hot_out_z),
+        hot_out_p=from_si(result.hot_out_p.magnitude_si, result.hot_out_p.unit),
+        hot_out_t=from_si(result.hot_out_t.magnitude_si, result.hot_out_t.unit),
+        hot_out_h=from_si(result.hot_out_h.magnitude_si, result.hot_out_h.unit),
+        cold_out_n=from_si(result.cold_out_n.magnitude_si, result.cold_out_n.unit),
+        cold_out_z=tuple(result.cold_out_z),
+        cold_out_p=from_si(result.cold_out_p.magnitude_si, result.cold_out_p.unit),
+        cold_out_t=from_si(result.cold_out_t.magnitude_si, result.cold_out_t.unit),
+        cold_out_h=from_si(result.cold_out_h.magnitude_si, result.cold_out_h.unit),
+        duty=from_si(result.duty.magnitude_si, result.duty.unit),
+        ntu=result.ntu,
+        effectiveness=result.effectiveness,
+        c_min=None if result.c_min is None else from_si(result.c_min.magnitude_si, result.c_min.unit),
+        c_max=None if result.c_max is None else from_si(result.c_max.magnitude_si, result.c_max.unit),
+        capacity_ratio=result.capacity_ratio,
         warnings=_warnings(result.warnings),
     )
 
@@ -2249,6 +2704,139 @@ def heater(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
         outlet_t=from_si(result.outlet_t.magnitude_si, result.outlet_t.unit),
         outlet_h=from_si(result.outlet_h.magnitude_si, result.outlet_h.unit),
         outlet_duty=from_si(result.outlet_duty.magnitude_si, result.outlet_duty.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def manifold(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed_p: list[Q], feed_t: list[Q], split_factors: list[float]) -> ManifoldResult:
+    """``process.manifold``, computed in Rust."""
+    spec = _models_gen.model("process.manifold")
+    result = _core.manifold(
+        list(components),
+        [input_to_si(spec, "feed_n", v) for v in feed_n],
+        feed_z,
+        [input_to_si(spec, "feed_p", v) for v in feed_p],
+        [input_to_si(spec, "feed_t", v) for v in feed_t],
+        list(split_factors),
+    )
+    return ManifoldResult(
+        products_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_n),
+        products_z=tuple(tuple(row) for row in result.products_z),
+        products_p=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_p),
+        products_t=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_t),
+        products_h=tuple(from_si(q.magnitude_si, q.unit) for q in result.products_h),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def mixer(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed_p: list[Q], feed_t: list[Q], outlet_pressure: Q | None=None) -> MixerResult:
+    """``process.mixer``, computed in Rust."""
+    spec = _models_gen.model("process.mixer")
+    result = _core.mixer(
+        list(components),
+        [input_to_si(spec, "feed_n", v) for v in feed_n],
+        feed_z,
+        [input_to_si(spec, "feed_p", v) for v in feed_p],
+        [input_to_si(spec, "feed_t", v) for v in feed_t],
+        None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
+    )
+    return MixerResult(
+        product_n=from_si(result.product_n.magnitude_si, result.product_n.unit),
+        product_z=tuple(result.product_z),
+        product_p=from_si(result.product_p.magnitude_si, result.product_p.unit),
+        product_t=from_si(result.product_t.magnitude_si, result.product_t.unit),
+        product_h=from_si(result.product_h.magnitude_si, result.product_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def packed_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, packed_height: Q, feed_stage: int, has_reboiler: bool, has_condenser: bool, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float=1e-06, max_iterations: int=200, reboiler_temperature: Q | None=None, condenser_temperature: Q | None=None, packing_type: str | None=None, structured_packing: bool | None=None, design_flood_fraction: float | None=None, packing_hydraulic_capacity_factor: float | None=None, column_diameter: Q | None=None, murphree_efficiency: float | None=None, tray_murphree_efficiency: list[float] | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, top_specification_type: str | None=None, top_specification_target: float | None=None, top_specification_component: str | None=None, bottom_specification_type: str | None=None, bottom_specification_target: float | None=None, bottom_specification_component: str | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, max_allowable_fs_factor: float | None=None) -> PackedColumnResult:
+    """``process.packed_column``, computed in Rust."""
+    spec = _models_gen.model("process.packed_column")
+    result = _core.packed_column(
+        list(components),
+        input_to_si(spec, "feed_n", feed_n),
+        list(feed_z),
+        input_to_si(spec, "feed_p", feed_p),
+        input_to_si(spec, "feed_t", feed_t),
+        input_to_si(spec, "packed_height", packed_height),
+        int(feed_stage),
+        has_reboiler,
+        has_condenser,
+        input_to_si(spec, "top_pressure", top_pressure),
+        input_to_si(spec, "bottom_pressure", bottom_pressure),
+        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        int(max_iterations),
+        None if reboiler_temperature is None else input_to_si(spec, "reboiler_temperature", reboiler_temperature),
+        None if condenser_temperature is None else input_to_si(spec, "condenser_temperature", condenser_temperature),
+        packing_type,
+        structured_packing,
+        None if design_flood_fraction is None else design_flood_fraction,
+        None if packing_hydraulic_capacity_factor is None else packing_hydraulic_capacity_factor,
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        None if murphree_efficiency is None else murphree_efficiency,
+        reactive,
+        None if reactive_start_tray is None else int(reactive_start_tray),
+        None if reactive_end_tray is None else int(reactive_end_tray),
+        solver_type,
+        top_specification_type,
+        None if top_specification_target is None else top_specification_target,
+        top_specification_component,
+        bottom_specification_type,
+        None if bottom_specification_target is None else bottom_specification_target,
+        bottom_specification_component,
+        None if tray_murphree_efficiency is None else list(tray_murphree_efficiency),
+        None if gas_side_draw_fractions is None else list(gas_side_draw_fractions),
+        None if liquid_side_draw_fractions is None else list(liquid_side_draw_fractions),
+        None if pumparound_fractions is None else list(pumparound_fractions),
+        None if side_draw_flow_tray is None else int(side_draw_flow_tray),
+        side_draw_flow_phase,
+        None if side_draw_flow_target is None else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        None if side_draw_flow_tolerance is None else side_draw_flow_tolerance,
+        None if side_draw_flow_max_iterations is None else int(side_draw_flow_max_iterations),
+        None if pumparound_return_tray is None else int(pumparound_return_tray),
+        None if pumparound_draw_tray is None else int(pumparound_draw_tray),
+        None if pumparound_draw_fraction is None else pumparound_draw_fraction,
+        None if pumparound_temperature_drop is None else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        None if pumparound_tolerance is None else pumparound_tolerance,
+        None if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        None if max_allowable_fs_factor is None else max_allowable_fs_factor,
+    )
+    return PackedColumnResult(
+        tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
+        tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
+        tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_liquid_n),
+        distillate_n=from_si(result.distillate_n.magnitude_si, result.distillate_n.unit),
+        distillate_z=tuple(result.distillate_z),
+        distillate_p=from_si(result.distillate_p.magnitude_si, result.distillate_p.unit),
+        distillate_t=from_si(result.distillate_t.magnitude_si, result.distillate_t.unit),
+        distillate_h=from_si(result.distillate_h.magnitude_si, result.distillate_h.unit),
+        bottoms_n=from_si(result.bottoms_n.magnitude_si, result.bottoms_n.unit),
+        bottoms_z=tuple(result.bottoms_z),
+        bottoms_p=from_si(result.bottoms_p.magnitude_si, result.bottoms_p.unit),
+        bottoms_t=from_si(result.bottoms_t.magnitude_si, result.bottoms_t.unit),
+        bottoms_h=from_si(result.bottoms_h.magnitude_si, result.bottoms_h.unit),
+        gas_side_draw_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.gas_side_draw_n),
+        liquid_side_draw_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.liquid_side_draw_n),
+        pumparound_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.pumparound_n),
+        condenser_duty=from_si(result.condenser_duty.magnitude_si, result.condenser_duty.unit),
+        reboiler_duty=from_si(result.reboiler_duty.magnitude_si, result.reboiler_duty.unit),
+        iterations=result.iterations,
+        temperature_residual=result.temperature_residual,
+        mass_residual=result.mass_residual,
+        energy_residual=result.energy_residual,
+        fs_factor=result.fs_factor,
+        fs_factor_utilization=result.fs_factor_utilization,
+        fs_factor_within_design_limit=result.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit=from_si(result.minimum_diameter_for_fs_limit.magnitude_si, result.minimum_diameter_for_fs_limit.unit),
+        hetp=from_si(result.hetp.magnitude_si, result.hetp.unit),
+        theoretical_stages=result.theoretical_stages,
+        percent_flood=result.percent_flood,
+        flooding_velocity=from_si(result.flooding_velocity.magnitude_si, result.flooding_velocity.unit),
+        packing_pressure_drop=from_si(result.packing_pressure_drop.magnitude_si, result.packing_pressure_drop.unit),
+        hydraulics_ok=result.hydraulics_ok,
+        internal_diameter=from_si(result.internal_diameter.magnitude_si, result.internal_diameter.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -2286,27 +2874,27 @@ def plug_flow_reactor(components: list[str], feed_n: Q, feed_z: list[float], fee
         list(feed_z),
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
-        float(input_to_si(spec, "length", length)),
-        float(input_to_si(spec, "diameter", diameter)),
-        float(number_of_tubes),
+        input_to_si(spec, "length", length),
+        input_to_si(spec, "diameter", diameter),
+        number_of_tubes,
         energy_mode,
         input_to_si(spec, "coolant_temperature", coolant_temperature),
         input_to_si(spec, "overall_heat_transfer_coefficient", overall_heat_transfer_coefficient),
-        float(number_of_steps),
+        number_of_steps,
         integration_method,
-        float(property_update_frequency),
+        property_update_frequency,
         thermodynamic_coupling,
         reaction,
         list(reaction_orders),
         rate_type,
-        float(pre_exponential_factor),
-        float(input_to_si(spec, "activation_energy", activation_energy)),
-        float(temperature_exponent),
-        float(input_to_si(spec, "heat_of_reaction", heat_of_reaction)),
+        pre_exponential_factor,
+        input_to_si(spec, "activation_energy", activation_energy),
+        temperature_exponent,
+        input_to_si(spec, "heat_of_reaction", heat_of_reaction),
         None if catalyst_bulk_density is None else input_to_si(spec, "catalyst_bulk_density", catalyst_bulk_density),
-        catalyst_activity_factor,
+        None if catalyst_activity_factor is None else catalyst_activity_factor,
         None if catalyst_particle_diameter is None else input_to_si(spec, "catalyst_particle_diameter", catalyst_particle_diameter),
-        catalyst_void_fraction,
+        None if catalyst_void_fraction is None else catalyst_void_fraction,
         None if catalyst_molecular_diffusivity is None else input_to_si(spec, "catalyst_molecular_diffusivity", catalyst_molecular_diffusivity),
         catalyst_effectiveness_enabled,
         key_component,
@@ -2339,7 +2927,7 @@ def pump(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, in
         input_to_si(spec, "inlet_p", inlet_p),
         input_to_si(spec, "inlet_t", inlet_t),
         input_to_si(spec, "outlet_pressure", outlet_pressure),
-        float(isentropic_efficiency),
+        isentropic_efficiency,
     )
     return PumpResult(
         outlet_n=from_si(result.outlet_n.magnitude_si, result.outlet_n.unit),
@@ -2361,7 +2949,7 @@ def separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, 
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
         input_to_si(spec, "pressure_drop", pressure_drop),
-        float(gas_in_liquid),
+        gas_in_liquid,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
     )
     return SeparatorResult(
@@ -2390,9 +2978,9 @@ def shortcut_distillation_column(components: list[str], feed_n: Q, feed_z: list[
         input_to_si(spec, "feed_t", feed_t),
         light_key,
         heavy_key,
-        float(light_key_recovery_distillate),
-        float(heavy_key_recovery_bottoms),
-        float(reflux_ratio_multiplier),
+        light_key_recovery_distillate,
+        heavy_key_recovery_bottoms,
+        reflux_ratio_multiplier,
         None if condenser_pressure is None else input_to_si(spec, "condenser_pressure", condenser_pressure),
         None if reboiler_pressure is None else input_to_si(spec, "reboiler_pressure", reboiler_pressure),
     )
@@ -2451,8 +3039,8 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
         input_to_si(spec, "feed_t", feed_t),
         reaction,
         limiting_reactant,
-        float(conversion),
-        bool(isothermal),
+        conversion,
+        isothermal,
         None if reactor_temperature is None else input_to_si(spec, "reactor_temperature", reactor_temperature),
         None if reactor_pressure is None else input_to_si(spec, "reactor_pressure", reactor_pressure),
         None if pressure_drop is None else input_to_si(spec, "pressure_drop", pressure_drop),
@@ -2468,6 +3056,107 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
     )
 
 
+def stripping_column(stripping_gas_components: list[str], rich_liquid_components: list[str], stripping_gas_n: Q, stripping_gas_z: list[float], stripping_gas_p: Q, stripping_gas_t: Q, rich_liquid_n: Q, rich_liquid_z: list[float], rich_liquid_p: Q, rich_liquid_t: Q, number_of_stages: int, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float, max_iterations: int, tray_temperatures: list[float] | None=None, murphree_efficiency: float | None=None, component_murphree_efficiency: list[float] | None=None, max_allowable_gas_load_factor: float | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, tray_murphree_efficiency: list[float] | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None) -> StrippingColumnResult:
+    """``process.stripping_column``, computed in Rust."""
+    spec = _models_gen.model("process.stripping_column")
+    result = _core.stripping_column(
+        list(stripping_gas_components),
+        list(rich_liquid_components),
+        input_to_si(spec, "stripping_gas_n", stripping_gas_n),
+        list(stripping_gas_z),
+        input_to_si(spec, "stripping_gas_p", stripping_gas_p),
+        input_to_si(spec, "stripping_gas_t", stripping_gas_t),
+        input_to_si(spec, "rich_liquid_n", rich_liquid_n),
+        list(rich_liquid_z),
+        input_to_si(spec, "rich_liquid_p", rich_liquid_p),
+        input_to_si(spec, "rich_liquid_t", rich_liquid_t),
+        int(number_of_stages),
+        input_to_si(spec, "top_pressure", top_pressure),
+        input_to_si(spec, "bottom_pressure", bottom_pressure),
+        input_to_si(spec, "temperature_tolerance", temperature_tolerance),
+        int(max_iterations),
+        None if tray_temperatures is None else [_si(spec, "tray_temperatures", v) for v in tray_temperatures],
+        None if murphree_efficiency is None else murphree_efficiency,
+        None if component_murphree_efficiency is None else list(component_murphree_efficiency),
+        None if max_allowable_gas_load_factor is None else max_allowable_gas_load_factor,
+        reactive,
+        None if reactive_start_tray is None else int(reactive_start_tray),
+        None if reactive_end_tray is None else int(reactive_end_tray),
+        solver_type,
+        None if tray_murphree_efficiency is None else list(tray_murphree_efficiency),
+        None if gas_side_draw_fractions is None else list(gas_side_draw_fractions),
+        None if liquid_side_draw_fractions is None else list(liquid_side_draw_fractions),
+        None if pumparound_fractions is None else list(pumparound_fractions),
+        None if side_draw_flow_tray is None else int(side_draw_flow_tray),
+        side_draw_flow_phase,
+        None if side_draw_flow_target is None else input_to_si(spec, "side_draw_flow_target", side_draw_flow_target),
+        None if side_draw_flow_tolerance is None else side_draw_flow_tolerance,
+        None if side_draw_flow_max_iterations is None else int(side_draw_flow_max_iterations),
+        None if pumparound_return_tray is None else int(pumparound_return_tray),
+        None if pumparound_draw_tray is None else int(pumparound_draw_tray),
+        None if pumparound_draw_fraction is None else pumparound_draw_fraction,
+        None if pumparound_temperature_drop is None else input_to_si(spec, "pumparound_temperature_drop", pumparound_temperature_drop),
+        None if pumparound_tolerance is None else pumparound_tolerance,
+        None if pumparound_max_iterations is None else int(pumparound_max_iterations),
+        None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
+        None if max_allowable_fs_factor is None else max_allowable_fs_factor,
+    )
+    return StrippingColumnResult(
+        tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
+        tray_pressure=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure),
+        tray_gas_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_gas_n),
+        tray_liquid_n=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_liquid_n),
+        overhead_gas_n=from_si(result.overhead_gas_n.magnitude_si, result.overhead_gas_n.unit),
+        overhead_gas_z=tuple(result.overhead_gas_z),
+        overhead_gas_p=from_si(result.overhead_gas_p.magnitude_si, result.overhead_gas_p.unit),
+        overhead_gas_t=from_si(result.overhead_gas_t.magnitude_si, result.overhead_gas_t.unit),
+        overhead_gas_h=from_si(result.overhead_gas_h.magnitude_si, result.overhead_gas_h.unit),
+        lean_liquid_n=from_si(result.lean_liquid_n.magnitude_si, result.lean_liquid_n.unit),
+        lean_liquid_z=tuple(result.lean_liquid_z),
+        lean_liquid_p=from_si(result.lean_liquid_p.magnitude_si, result.lean_liquid_p.unit),
+        lean_liquid_t=from_si(result.lean_liquid_t.magnitude_si, result.lean_liquid_t.unit),
+        lean_liquid_h=from_si(result.lean_liquid_h.magnitude_si, result.lean_liquid_h.unit),
+        iterations=result.iterations,
+        temperature_residual=from_si(result.temperature_residual.magnitude_si, result.temperature_residual.unit),
+        mass_residual=result.mass_residual,
+        energy_residual=result.energy_residual,
+        fs_factor=result.fs_factor,
+        fs_factor_utilization=result.fs_factor_utilization,
+        fs_factor_within_design_limit=result.fs_factor_within_design_limit,
+        minimum_diameter_for_fs_limit=from_si(result.minimum_diameter_for_fs_limit.magnitude_si, result.minimum_diameter_for_fs_limit.unit),
+        gas_load_factor=from_si(result.gas_load_factor.magnitude_si, result.gas_load_factor.unit),
+        gas_load_factor_utilization=result.gas_load_factor_utilization,
+        gas_load_factor_within_design_limit=result.gas_load_factor_within_design_limit,
+        minimum_diameter_for_gas_load_limit=from_si(result.minimum_diameter_for_gas_load_limit.magnitude_si, result.minimum_diameter_for_gas_load_limit.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tank(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed_p: list[Q], feed_t: list[Q]) -> TankResult:
+    """``process.tank``, computed in Rust."""
+    spec = _models_gen.model("process.tank")
+    result = _core.tank(
+        list(components),
+        [input_to_si(spec, "feed_n", v) for v in feed_n],
+        feed_z,
+        [input_to_si(spec, "feed_p", v) for v in feed_p],
+        [input_to_si(spec, "feed_t", v) for v in feed_t],
+    )
+    return TankResult(
+        gas_n=from_si(result.gas_n.magnitude_si, result.gas_n.unit),
+        gas_z=tuple(result.gas_z),
+        gas_p=from_si(result.gas_p.magnitude_si, result.gas_p.unit),
+        gas_t=from_si(result.gas_t.magnitude_si, result.gas_t.unit),
+        gas_h=from_si(result.gas_h.magnitude_si, result.gas_h.unit),
+        liquid_n=from_si(result.liquid_n.magnitude_si, result.liquid_n.unit),
+        liquid_z=tuple(result.liquid_z),
+        liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
+        liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
+        liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_aqueous: float=0.0, gas_in_oil: float=0.0, oil_in_aqueous: float=0.0, oil_in_gas: float=0.0, aqueous_in_gas: float=0.0, aqueous_in_oil: float=0.0, heat_input: Q | None=None) -> ThreePhaseSeparatorResult:
     """``process.three_phase_separator``, computed in Rust."""
     spec = _models_gen.model("process.three_phase_separator")
@@ -2478,12 +3167,12 @@ def three_phase_separator(components: list[str], feed_n: Q, feed_z: list[float],
         input_to_si(spec, "feed_p", feed_p),
         input_to_si(spec, "feed_t", feed_t),
         input_to_si(spec, "pressure_drop", pressure_drop),
-        float(gas_in_aqueous),
-        float(gas_in_oil),
-        float(oil_in_aqueous),
-        float(oil_in_gas),
-        float(aqueous_in_gas),
-        float(aqueous_in_oil),
+        gas_in_aqueous,
+        gas_in_oil,
+        oil_in_aqueous,
+        oil_in_gas,
+        aqueous_in_gas,
+        aqueous_in_oil,
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
     )
     return ThreePhaseSeparatorResult(
@@ -2527,18 +3216,199 @@ def throttling_valve(components: list[str], inlet_n: Q, inlet_z: list[float], in
     )
 
 
+def chemical_equilibrium(a_matrix: list[list[float]], b: list[float], whole_system: bool, moles: list[float], chem_ref: list[float], log_activity: list[float], T: Q, max_iterations: float, tolerance: float, concentration_basis: str, solvent_weight: Q, solvent_mask: Sequence[float], phase_moles: Q) -> ChemicalEquilibriumResult:
+    """``reactions.chemical_equilibrium``, computed in Rust."""
+    spec = _models_gen.model("reactions.chemical_equilibrium")
+    result = _core.chemical_equilibrium(
+        a_matrix,
+        [_si(spec, "b", v) for v in b],
+        whole_system,
+        [_si(spec, "moles", v) for v in moles],
+        list(chem_ref),
+        list(log_activity),
+        input_to_si(spec, "T", T),
+        int(max_iterations),
+        tolerance,
+        concentration_basis,
+        input_to_si(spec, "solvent_weight", solvent_weight),
+        list(solvent_mask),
+        input_to_si(spec, "phase_moles", phase_moles),
+    )
+    return ChemicalEquilibriumResult(
+        moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.moles),
+        iterations=result.iterations,
+        error=result.error,
+        converged=result.converged,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def equilibrium_constant(source: str, reaction: str, T: Q) -> EquilibriumConstantResult:
+    """``reactions.equilibrium_constant``, computed in Rust."""
+    spec = _spec_for("reactions.equilibrium_constant")
+    result = _core.equilibrium_constant(
+        source,
+        reaction,
+        input_to_si(spec, "T", T),
+    )
+    return EquilibriumConstantResult(
+        ln_k=result.ln_k,
+        k=result.k,
+        ln_k_derivative=from_si(result.ln_k_derivative.magnitude_si, result.ln_k_derivative.unit),
+        reaction_heat=from_si(result.reaction_heat.magnitude_si, result.reaction_heat.unit),
+        reference=result.reference,
+        warnings=_warnings(result.warnings),
+    )
+
+
 def kinetic_rate_law(law: str, T: Q, reference_rate: float, activation_energy: Q, reference_temperature: Q) -> KineticRateLawResult:
     """``reactions.kinetic_rate_law``, computed in Rust."""
     spec = _models_gen.model("reactions.kinetic_rate_law")
     result = _core.kinetic_rate_law(
         law,
         input_to_si(spec, "T", T),
-        float(reference_rate),
+        reference_rate,
         input_to_si(spec, "activation_energy", activation_energy),
         input_to_si(spec, "reference_temperature", reference_temperature),
     )
     return KineticRateLawResult(
         rate_factor=result.rate_factor,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def kinetics(components: Sequence[str], reaction_components: Sequence[str], reaction_lengths: Sequence[float], reaction_coefficients: Sequence[float], rate_factors: Sequence[float], equilibrium_constants: Sequence[float], fractions: Sequence[float], molar_masses: Sequence[float], density: Q, inter_fractions: Sequence[float], inter_density: Q, diffusion: Sequence[float]) -> KineticsResult:
+    """``reactions.kinetics``, computed in Rust."""
+    spec = _models_gen.model("reactions.kinetics")
+    result = _core.kinetics(
+        list(components),
+        list(reaction_components),
+        list(reaction_lengths),
+        list(reaction_coefficients),
+        list(rate_factors),
+        list(equilibrium_constants),
+        list(fractions),
+        [_si(spec, "molar_masses", v) for v in molar_masses],
+        input_to_si(spec, "density", density),
+        list(inter_fractions),
+        input_to_si(spec, "inter_density", inter_density),
+        [_si(spec, "diffusion", v) for v in diffusion],
+    )
+    return KineticsResult(
+        coefficient=tuple(result.coefficient),
+        phi_infinite=tuple(result.phi_infinite),
+        irreversible=tuple(result.irreversible),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_hybrid_eos_ge_flash(components: Sequence[str], cubic: str, T: Q, P: Q, moles: Sequence[float]) -> ReactiveHybridEosGeFlashResult:
+    """``reactions.reactive_hybrid_eos_ge_flash``, computed in Rust."""
+    spec = _models_gen.model("reactions.reactive_hybrid_eos_ge_flash")
+    result = _core.reactive_hybrid_eos_ge_flash(
+        list(components),
+        cubic,
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [_si(spec, "moles", v) for v in moles],
+    )
+    return ReactiveHybridEosGeFlashResult(
+        phase_fractions=tuple(result.phase_fractions),
+        x=tuple(tuple(row) for row in result.x),
+        coupled_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.coupled_moles),
+        aqueous_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.aqueous_moles),
+        passes=result.passes,
+        chemical_deviation=result.chemical_deviation,
+        residual=result.residual,
+        max_material_balance_residual=result.max_material_balance_residual,
+        max_log_fugacity_residual=result.max_log_fugacity_residual,
+        element_residual=result.element_residual,
+        charge_residual=result.charge_residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_ph_flash(components: Sequence[str], T: Q, P: Q, moles: Sequence[Q], enthalpy: Q, max_phases: float, cubic: str | None=None) -> ReactivePhFlashResult:
+    """``reactions.reactive_ph_flash``, computed in Rust."""
+    spec = _models_gen.model("reactions.reactive_ph_flash")
+    result = _core.reactive_ph_flash(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "enthalpy", enthalpy),
+        max_phases,
+        cubic if cubic is not None else "srk",
+    )
+    return ReactivePhFlashResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        converged=result.converged,
+        outer_iterations=result.outer_iterations,
+        total_inner_iterations=result.total_inner_iterations,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_phase_equilibrium(components: list[str], source: str, phase: str, moles: list[Q], phase_charge: Q, phase_moles: Q, whole_system: bool, log_activity: list[float], T: Q, max_iterations: float, tolerance: float, concentration_basis: str='mole_fraction', seed: str='none') -> ReactivePhaseEquilibriumResult:
+    """``reactions.reactive_phase_equilibrium``, computed in Rust."""
+    spec = _models_gen.model("reactions.reactive_phase_equilibrium")
+    result = _core.reactive_phase_equilibrium(
+        list(components),
+        source,
+        phase,
+        [input_to_si(spec, "moles", v) for v in moles],
+        input_to_si(spec, "phase_charge", phase_charge),
+        input_to_si(spec, "phase_moles", phase_moles),
+        whole_system,
+        list(log_activity),
+        input_to_si(spec, "T", T),
+        int(max_iterations),
+        tolerance,
+        concentration_basis,
+        seed,
+    )
+    return ReactivePhaseEquilibriumResult(
+        skipped=result.skipped,
+        a_matrix=tuple(tuple(row) for row in result.a_matrix),
+        b=tuple(from_si(q.magnitude_si, q.unit) for q in result.b),
+        chem_ref=tuple(from_si(q.magnitude_si, q.unit) for q in result.chem_ref),
+        moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.moles),
+        iterations=result.iterations,
+        error=result.error,
+        converged=result.converged,
+        refinements=result.refinements,
+        certified=result.certified,
+        max_reaction_log_residual=result.max_reaction_log_residual,
+        net_charge_moles=from_si(result.net_charge_moles.magnitude_si, result.net_charge_moles.unit),
+        max_element_residual=from_si(result.max_element_residual.magnitude_si, result.max_element_residual.unit),
+        seed_applied=result.seed_applied,
+        seed_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.seed_moles),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def reactive_tp_flash(components: Sequence[str], T: Q, P: Q, moles: Sequence[Q], max_phases: float, cubic: str | None=None) -> ReactiveTpFlashResult:
+    """``reactions.reactive_tp_flash``, computed in Rust."""
+    spec = _models_gen.model("reactions.reactive_tp_flash")
+    result = _core.reactive_tp_flash(
+        list(components),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        [input_to_si(spec, "moles", v) for v in moles],
+        max_phases,
+        cubic if cubic is not None else "srk",
+    )
+    return ReactiveTpFlashResult(
+        phase_count=result.phase_count,
+        phase_type=tuple(result.phase_type),
+        phase_moles=tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in result.phase_moles),
+        phase_fraction=tuple(result.phase_fraction),
+        converged=result.converged,
+        total_iterations=result.total_iterations,
+        equilibrium_total_moles=from_si(result.equilibrium_total_moles.magnitude_si, result.equilibrium_total_moles.unit),
+        gibbs_energy=result.gibbs_energy,
+        residual=result.residual,
+        element_residual=result.element_residual,
         warnings=_warnings(result.warnings),
     )
 

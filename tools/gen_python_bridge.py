@@ -46,7 +46,8 @@ import rust_index
 ROOT = Path(__file__).resolve().parent.parent
 PY_SRC = ROOT / "python" / "src" / "azoth"
 OUT = PY_SRC / "_rust_bridge_gen.py"
-TRANSPORT = ROOT / "crates" / "azoth-python" / "src" / "transport_gen.rs"
+BINDING = ROOT / "crates" / "azoth-python" / "src"
+TRANSPORT = BINDING / "transport_gen.rs"
 CORE_PYI = PY_SRC / "_core.pyi"
 
 #: The packages whose `__init__.py` holds the public wrapper for a registered id.
@@ -66,6 +67,17 @@ ENUM_ALIASES = {
 #: `dataset` an enum and `PitzerPhaseResult.dataset` is annotated `str`, so the Python field is a
 #: string and a caller reads the name.
 ENUMS_THAT_STAY_STRINGS = {"PitzerDataset"}
+
+#: A parameter the caller may omit and the extension's own type does not accept as absent.
+#:
+#: The two are declarations of different things - "this argument is optional" and "this function
+#: takes a string" - and the hand-written adapters bridged them with a per-site literal, because
+#: the default is the class's own and not the first of the input's declared `values`. An id with
+#: this shape and no entry here is refused rather than sent a `None` the extension will reject.
+ARGUMENT_DEFAULTS: dict[tuple[str, str], str] = {
+    ("reactions.reactive_ph_flash", "cubic"): '"srk"',
+    ("reactions.reactive_tp_flash", "cubic"): '"srk"',
+}
 
 #: The parameters whose boundary conversion is the site's own rather than the spec's.
 #:
@@ -130,6 +142,43 @@ def transport_fields() -> dict[str, dict[str, str]]:
             field.group(1): field.group(2)
             for field in re.finditer(r"^\s*pub (\w+): (.+),$", block.group(2), re.M)
         }
+    return out
+
+
+def wrapper_types() -> dict[str, dict[str, str]]:
+    """The extension's own parameters, by wrapper name, as the Rust types pyo3 publishes.
+
+    **This is the authority for what the call must hand over**, and it is not the stub and not the
+    public wrapper: a count is `f64` in the spec's vocabulary and `usize` in the `#[pyfunction]`, so
+    a float reaches Rust as a float and is refused as an integer. `gen_stub.py` renders the stub
+    from the spec, so it says `float` for the same parameter.
+    """
+    out: dict[str, dict[str, str]] = {}
+    for name in (
+        "wrappers_gen",
+        "process",
+        "eos",
+        "hydraulics",
+        "thermal",
+        "reactions",
+        "standards",
+    ):
+        path = BINDING / f"{name}.rs"
+        if not path.exists():
+            continue
+        text = _blank(path.read_text(encoding="utf-8"))
+        for match in re.finditer(
+            # `\)` and not `\n\)`: a short wrapper is written on one line, and requiring the
+            # newline made the non-greedy group run past it to the next function's close.
+            r"pub fn (\w+)\(\s*(?:py: Python<'_>,\s*)?(.*?)\)\s*->",
+            text,
+            re.S,
+        ):
+            out[match.group(1)] = {
+                field.group(1): field.group(2)
+                for line in match.group(2).splitlines()
+                if (field := re.match(r"\s*(\w+): (.+?),?$", line))
+            }
     return out
 
 
@@ -224,9 +273,10 @@ def return_expr(field: str, transport: str, rust: str | None, declared: str | No
 # --- the arguments: one expression per declared input ----------------------
 
 
-def argument_expr(name: str, declaration: dict[str, Any]) -> str:
+def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> str:
     """The argument expression for one `_core` parameter, from the spec's declaration of it.
 
+    Three questions in this order: is it a container, does it carry a unit, and may it be absent.
     A bare number and a dimensionless quantity are the same thing to the extension, so the
     dimensionless case crosses unchanged; a dimensioned one goes through `input_to_si`, which reads
     the unit *and* the `interval` flag from the spec rather than restating them - a call site that
@@ -234,40 +284,79 @@ def argument_expr(name: str, declaration: dict[str, Any]) -> str:
     """
     kind = declaration.get("type", "quantity")
     unit = declaration.get("unit")
-    if kind == "vector":
-        if unit is None or unit == "dimensionless":
-            return f"list({name})"
-        raise Refusal(f"{name}: a unit-carrying vector has no rule yet")
+    dimensioned = unit is not None and unit != "dimensionless"
+    optional = bool(declaration.get("optional"))
+
     if kind == "matrix":
-        raise Refusal(f"{name}: a matrix input has no rule yet")
-    if kind == "components":
+        body = _matrix(name, dimensioned, annotation)
+    elif kind == "vector":
+        body = _vector(name, dimensioned, annotation)
+    elif kind == "components":
         # The extension takes an owned `Vec<String>`; everything else that is not a number is
         # already the thing the signature declares, an enum and a boolean included.
-        return f"list({name})"
-    if kind in ("string", "enum", "boolean"):
-        return name
-    if unit is None or unit == "dimensionless":
-        return name
-    if declaration.get("optional"):
-        return f'None if {name} is None else input_to_si(spec, "{name}", {name})'
-    return f'input_to_si(spec, "{name}", {name})'
+        body = f"list({name})"
+    elif kind in ("string", "enum", "boolean") or not dimensioned:
+        body = name
+    else:
+        body = f'input_to_si(spec, "{name}", {name})'
+    if optional and kind not in ("string", "enum", "boolean"):
+        return f"None if {name} is None else {body}"
+    return body
 
 
-def coerce(expression: str, annotation: str | None) -> str:
-    """The expression as the annotation the extension declares for it.
+def _vector(name: str, dimensioned: bool, annotation: str) -> str:
+    """A vector crosses element by element, and the element's unit is the annotation's.
 
-    A spec says an input is a number; the kernel says whether that number is a count. `models`,
-    `number_of_stages` and a solver's `max_iterations` are `int` in the signature pyo3 publishes
-    and `f64` in the spec's vocabulary, and a float reaches Rust as a `float` and is refused as an
-    integer - which is a `TypeError` at the boundary rather than a wrong answer.
+    `Sequence[Q]` is a vector of quantities and each entry converts; a vector of bare numbers
+    is already SI magnitudes, which is what `_si` is - the tolerant half of the same function,
+    which passes a number through and converts anything else.
     """
-    if annotation == "int" and not expression.startswith("int("):
-        return f"int({expression})"
-    if annotation == "float" and not expression.startswith("float("):
-        return f"float({expression})"
-    if annotation == "bool":
-        return f"bool({expression})"
-    return expression
+    if not dimensioned:
+        return f"list({name})"
+    if "Q" in annotation:
+        return f'[input_to_si(spec, "{name}", v) for v in {name}]'
+    return f'[_si(spec, "{name}", v) for v in {name}]'
+
+
+def _matrix(name: str, dimensioned: bool, annotation: str) -> str:
+    """A matrix is a `Vec<Vec<f64>>` either way; only a quantity's entries need converting."""
+    if not dimensioned or "Q" not in annotation:
+        return name
+    return f'[[_si(spec, "{name}", v) for v in row] for row in {name}]'
+
+
+#: The Rust parameter types that are counts, and so take an `int` on this side.
+INTEGERS = ("usize", "u32", "u64", "u8", "i32", "i64", "u16")
+
+
+def coerce(expression: str, rust_type: str | None, parameter: str) -> str:
+    """The expression as the type pyo3 publishes for the parameter.
+
+    A spec says an input is a number; the `#[pyfunction]` says whether that number is a *count*.
+    `max_phases`, `number_of_stages` and a solver's `max_iterations` are `usize` in the signature
+    the extension publishes and `f64` in the spec's vocabulary, and a float reaches Rust as a float
+    and is refused as an integer - a `TypeError` at the boundary rather than a wrong answer.
+    """
+    optional = bool(rust_type and rust_type.startswith("Option<") and rust_type.endswith(">"))
+    inner = rust_type[len("Option<") : -1] if optional else rust_type
+    if inner not in INTEGERS or expression.startswith("int("):
+        return expression
+    # An optional count is absent or a count: `None if x is None else int(x)`. The guard is added
+    # only where the expression *is* the parameter, because a dimensioned one already carries its
+    # own - `None if x is None else input_to_si(...)` - and wrapping that in `int` would convert
+    # the `None` branch.
+    if optional:
+        # The guard is already there - `argument_expr` writes one for anything that may be absent -
+        # so the count is taken inside its else-branch rather than around the whole expression,
+        # which would call `int(None)` on the branch that means "absent".
+        guarded = re.fullmatch(rf"None if {re.escape(parameter)} is None else (.+)", expression)
+        if guarded is None:
+            raise Refusal(
+                f"{parameter}: an optional count whose expression is `{expression}`, which this "
+                f"file cannot put the conversion inside"
+            )
+        return f"None if {parameter} is None else int({guarded.group(1)})"
+    return f"int({expression})"
 
 
 # --- the whole function -----------------------------------------------------
@@ -288,8 +377,14 @@ def emit_function(calc_id: str, used: set[str]) -> str:
 
     params = [p.arg for p in public.args.posonlyargs + public.args.args]
     params += [p.arg for p in public.args.kwonlyargs]
-    core_params, result_class = core_signatures()[function]
-    if params != core_params:
+    _, result_class = core_signatures()[function]
+    # **The call's order is the extension's own, read from the `#[pyfunction]` itself.** The stub
+    # describes that function and carries the *spec's* order, and for three ids the two disagree:
+    # `reactions.equilibrium_constant` declares `(reaction, source, T)` in the spec and takes
+    # `(source, reaction, T)`, so a positional call built from the stub swaps two strings.
+    types = wrapper_types().get(function, {})
+    core_params = list(types)
+    if set(params) != set(core_params):
         raise Refusal(
             f"the public wrapper's parameters are not _core's: "
             f"+{[p for p in params if p not in core_params]} "
@@ -306,9 +401,25 @@ def emit_function(calc_id: str, used: set[str]) -> str:
         p.arg: (ast.unparse(p.annotation) if p.annotation else None)
         for p in public.args.posonlyargs + public.args.args + public.args.kwonlyargs
     }
+    # **The call is in `_core`'s order and the signature in the public wrapper's.** They are not
+    # always the same: `absorption_column` declares its two component lists first and the public
+    # wrapper states them where the caller expects them. Both orders are declarations, so neither
+    # is copied into the other - the call follows the extension and the signature the caller.
     arguments: list[tuple[str, str | None]] = []
-    for p in params:
-        argument = coerce(argument_expr(p, declared[p]), annotations.get(p))
+    for p in core_params:
+        argument = coerce(argument_expr(p, declared[p], annotations.get(p) or ""), types.get(p), p)
+        if (
+            "None" in (annotations.get(p) or "")
+            and types.get(p) is not None
+            and not types[p].startswith("Option<")
+        ):
+            default = ARGUMENT_DEFAULTS.get((calc_id, p))
+            if default is None:
+                raise Refusal(
+                    f"{p}: the signature allows it to be absent and the extension takes "
+                    f"{types[p]}, with no default declared for this id"
+                )
+            argument = f"{argument} if {p} is not None else {default}"
         scale = ARGUMENT_SCALES.get((calc_id, p))
         # The reason travels with the argument, so a reader of the generated file sees why this
         # one is not the spec's conversion without opening this one.
@@ -340,6 +451,10 @@ def emit_function(calc_id: str, used: set[str]) -> str:
             used.add(_enum_class(rust.get(field)))
     if any("KComponent(" in expression for _, expression in returned):
         used.add("KComponent")
+    if any("_si(" in expression for expression, _ in arguments):
+        used.add("_si")
+    if "warnings" in fields:
+        used.add("_warnings")
 
     # `ast.unparse` of an `arguments` node is the list *without* its parentheses, so they are
     # put back here - the defaults, the annotations and any `*` marker all survive the trip.
@@ -388,17 +503,20 @@ def emit() -> str:
     # the block and `from ... import X as _X` is what binds it.
     plain = {alias: rust for rust, alias in ENUM_ALIASES.items() if alias in used}
 
+    # `_warnings` and `_si` come from the support module rather than from `azoth.core.result`,
+    # and isort wants them named in the block they come from.
+    support = sorted(name for name in used if name in ("_si", "_warnings"))
     imports = [
         "from collections.abc import Sequence",
         "",
         "from azoth import _core, _models_gen",
         "from azoth._registry_gen import spec as _spec_for",
-        "from azoth.core.bridge_support import _warnings",
+        f"from azoth.core.bridge_support import {', '.join(support)}",
         "from azoth.core.result import (",
     ]
     # isort compares names case-insensitively, so `HeaterResult` sorts before
     # `HeatOfVaporizationResult` and a plain `sorted()` would emit a block ruff rejects.
-    imports += [f"    {name}," for name in sorted(used - set(plain), key=str.lower)]
+    imports += [f"    {name}," for name in sorted(used - set(plain) - set(support), key=str.lower)]
     imports += [")"]
     # One block each, which is what isort settles on for a name imported under another name.
     for alias, rust in sorted(plain.items(), key=lambda item: item[1].lower()):

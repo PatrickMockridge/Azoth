@@ -15,9 +15,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from azoth import _core
+from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning, WarningCode
 
-__all__ = ["_warnings"]
+__all__ = ["_si", "_warnings"]
 
 
 def _warnings(raw: Sequence[_core.Warning]) -> tuple[Warning, ...]:
@@ -30,3 +31,18 @@ def _warnings(raw: Sequence[_core.Warning]) -> tuple[Warning, ...]:
     it ever happened, which is better than a string quietly failing to match.
     """
     return tuple(Warning(WarningCode(w.code), w.message, w.field) for w in raw)
+
+
+def _si(spec: dict[str, object], name: str, value: float | Q) -> float:
+    """A declared input as its SI magnitude, quantity or not.
+
+    **The boundary is mixed by design.** A vector whose spec declares a unit arrives as a
+    pint quantity and has to be converted; a dimensionless one - ``chem_ref``,
+    ``log_activity``, the element matrix - arrives as the bare number it is, and
+    ``input_to_si`` refuses that rather than passing it through.
+    """
+    # A quantity or a bare number. `Q` is a type alias rather than a class, so the check
+    # is made the other way round: the numeric branch is the one `isinstance` can name.
+    if isinstance(value, int | float):
+        return float(value)
+    return input_to_si(spec, name, value)
