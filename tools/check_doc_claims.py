@@ -65,8 +65,8 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
 import importlib
+import importlib.util
 import re
 import sys
 import tomllib
@@ -352,7 +352,7 @@ def _bridge_counts() -> tuple[int, int]:
     hand-written half is the registered functions still written out in `_rust_bridge.py`. A name
     in both is what `test_gen_python_bridge.py` refuses, so the two counts are disjoint.
     """
-    text = ((ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py")).read_text(encoding="utf-8")
+    text = (ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text(encoding="utf-8")
     block = text.partition("__all__ = [")[2].partition("]")[0]
     generated = len(re.findall(r'^    "\w+",', block, re.M))
     if generated == 0:
@@ -365,10 +365,8 @@ def _bridge_counts() -> tuple[int, int]:
             *importlib.import_module("azoth._models_gen").MODELS,
         ]
     }
-    source = ((ROOT / "python" / "src" / "azoth" / "_rust_bridge.py")).read_text(encoding="utf-8")
-    hand = len(
-        [name for name in re.findall(r"^def (\w+)\(", source, re.M) if name in registered]
-    )
+    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
+    hand = len([name for name in re.findall(r"^def (\w+)\(", source, re.M) if name in registered])
     return generated, hand
 
 
