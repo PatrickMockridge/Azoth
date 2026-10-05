@@ -12,6 +12,7 @@ made rather than a line that drifted in, so it is held here.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import re
 import subprocess
@@ -92,6 +93,58 @@ def test_no_id_is_both_generated_and_hand_written() -> None:
     assert generated | set(_hand_written()) == registered, (
         "the generated and hand-written sets do not account for the registry: "
         f"{sorted(registered - generated - set(_hand_written()))}"
+    )
+
+
+def test_a_scalar_the_wrapper_calls_a_float_is_not_refused_by_the_bridge() -> None:
+    """**A parameter the caller may leave out has to be a shape the bridge accepts.**
+
+    A public wrapper's default is what reaches the extension when the argument is not stated, and
+    `input_to_si` refuses a bare number where the spec declares a unit. So a dimensioned input the
+    signature defaults to a bare number is a call the Rust backend cannot make:
+    `process.distillation_column`'s `temperature_tolerance: float = 1.0e-6` was one, and the three
+    side-draw tests that omit it were red for four commits because nothing read the pair. The
+    annotation decides, exactly as it does for a vector - `Q` is a quantity the caller must state
+    and `_si` is the lax half for anything else - so this asserts the emitted call matches the
+    signature rather than restating what `argument_expr` does.
+    """
+    generator = _tools_module("gen_python_bridge")
+    wrappers = generator.public_signatures()
+    specs = generator.specs()
+    # **The committed file, not the generator's own output.** Reading `covered()` would compare
+    # `argument_expr` with itself and pass whatever it emitted, which is the one thing this has to
+    # be able to fail on.
+    text = (REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text("utf-8")
+    bodies = {
+        node.name: ast.get_source_segment(text, node) or ""
+        for node in ast.parse(text).body
+        if isinstance(node, ast.FunctionDef)
+    }
+
+    checked, refused = 0, []
+    for function_name, source in bodies.items():
+        calc_id = f"{generator.function_ids().get(function_name, '')}"
+        function = wrappers.get(function_name)
+        if function is None:
+            continue
+        for parameter in function.args.posonlyargs + function.args.args + function.args.kwonlyargs:
+            declaration = specs[calc_id].get("inputs", {}).get(parameter.arg)
+            if declaration is None:
+                continue
+            unit = declaration.get("unit")
+            if unit is None or unit == "dimensionless":
+                continue
+            annotation = ast.unparse(parameter.annotation) if parameter.annotation else ""
+            if "Q" in annotation:
+                continue
+            checked += 1
+            if f'input_to_si(spec, "{parameter.arg}", ' in source:
+                refused.append(f"{calc_id}.{parameter.arg} ({annotation or 'unannotated'})")
+
+    assert checked, "no adapter takes a dimensioned scalar its wrapper does not call a quantity"
+    assert not refused, (
+        f"{refused} are dimensioned inputs the public wrapper does not require as quantities, and "
+        f"the generated call refuses the bare number that is then its only shape"
     )
 
 

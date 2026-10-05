@@ -468,6 +468,14 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
     dimensionless case crosses unchanged; a dimensioned one goes through `input_to_si`, which reads
     the unit *and* the `interval` flag from the spec rather than restating them - a call site that
     writes `to_si(dT, "K", "dT")` is a flag the spec holds and the code ignores.
+
+    **A scalar's annotation decides the same way a vector's does.** `annotation` is the *public
+    wrapper's*, and `float` says the caller may hand over a bare number while `Q` says a quantity is
+    required; `input_to_si` refuses the first, so reading the annotation as "always a quantity" made
+    a declared default like `temperature_tolerance: float = 1.0e-6` unreachable through the Rust
+    backend - three side-draw tests failed on a call that never states the argument. The
+    hand-written bridge passed every input through `_si`, so this restores that laxity to exactly
+    the parameters whose own signature asks for it.
     """
     kind = declaration.get("type", "quantity")
     unit = declaration.get("unit")
@@ -485,7 +493,11 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
     elif kind in ("string", "enum", "boolean") or not dimensioned:
         body = name
     else:
-        body = f'input_to_si(spec, "{name}", {name})'
+        body = (
+            f'input_to_si(spec, "{name}", {name})'
+            if "Q" in annotation
+            else f'_si(spec, "{name}", {name})'
+        )
     if optional and kind not in ("string", "enum", "boolean"):
         return f"None if {name} is None else {body}"
     return body
