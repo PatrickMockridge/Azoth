@@ -87,6 +87,9 @@ ENUMS_THAT_STAY_STRINGS = {"PitzerDataset"}
 ARGUMENT_DEFAULTS: dict[tuple[str, str], str] = {
     ("reactions.reactive_ph_flash", "cubic"): '"srk"',
     ("reactions.reactive_tp_flash", "cubic"): '"srk"',
+    # "Transfer none of the components" is the empty list rather than an absent argument: the
+    # extension takes an owned `Vec<String>`, and it cannot tell a `None` from a list it never got.
+    ("process.rate_based_packed_column", "transfer_components"): "[]",
 }
 
 #: The parameters whose boundary conversion is the site's own rather than the spec's.
@@ -130,11 +133,19 @@ IDEAL_GAS_EXPANSION: dict[str, str] = {
     f"cp_{letter}": f"list(ideal_gas.cp_{letter})" for letter in "abcde"
 }
 
+#: The parameters a list of MBWR-32 coefficient sets resolves into. `eos.bwrs_phase` is the one:
+#: the spec declares `components` and the wrapper hands over the resolved records instead, whose
+#: 32 numbers apiece cross flattened component-major beside one `rhoc` per component.
+BWRS_EXPANSION: dict[str, str] = {
+    "a": "[v for c in coeffs for v in c.a]",
+    "rhoc": "[c.rhoc for c in coeffs]",
+}
+
 #: The Python parameters that *are* a boundary object rather than an argument.
 #:
 #: A `params` record belongs here for the same reason `mixture` does: the caller holds a Python
 #: object and the extension takes no such thing, so it is not an input any spec could declare.
-BOUNDARY_OBJECTS = ("mixture", "ideal_gas", "params")
+BOUNDARY_OBJECTS = ("mixture", "ideal_gas", "params", "coeffs")
 
 ARGUMENT_SCALES: dict[tuple[str, str], tuple[str, str]] = {
     ("hydraulics.tray_hydraulics", "hole_diameter"): (
@@ -765,6 +776,8 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
             used.add("_molar_masses")
     if "ideal_gas" in params:
         expansion.update(IDEAL_GAS_EXPANSION)
+    if "coeffs" in params:
+        expansion.update(BWRS_EXPANSION)
     if "params" in params:
         record = parameter_records().get(function, [])
         # **Both namespaces are closed, and a name in both is a refusal rather than a priority.**
@@ -817,7 +830,13 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
                     f"{p}: the signature allows it to be absent and the extension takes "
                     f"{types[p]}, with no default declared for this id"
                 )
-            argument = f"{argument} if {p} is not None else {default}"
+            # **The default *is* the absent branch, so `argument_expr`'s guard is replaced rather
+            # than nested.** For a container it already wrote `None if p is None else ...`, and
+            # appending to that leaves the absent branch returning `None` - the one thing a
+            # `Vec<String>` parameter cannot be sent.
+            guard = f"None if {p} is None else "
+            body = argument[len(guard) :] if argument.startswith(guard) else argument
+            argument = f"{body} if {p} is not None else {default}"
         scale = ARGUMENT_SCALES.get((calc_id, p))
         # The reason travels with the argument, so a reader of the generated file sees why this
         # one is not the spec's conversion without opening this one.
