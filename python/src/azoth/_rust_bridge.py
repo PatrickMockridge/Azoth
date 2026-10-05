@@ -39,21 +39,15 @@ from azoth._rust_bridge_gen import *  # noqa: F403
 from azoth.core.bridge_support import _association_spec as _association_spec
 from azoth.core.bridge_support import _si as _si
 from azoth.core.bridge_support import _warnings as _warnings
-from azoth.core.errors import PropertyUnavailableError
 from azoth.core.result import (
-    AqueousViscosityResult,
     BwrsPhaseResult,
     CapillaryDewPointResult,
     GeUniquacPhaseResult,
-    GeWilsonPhaseResult,
     HydrogenPhaseResult,
     OrificeFlowResult,
     PureSaturationResult,
     RateBasedPackedColumnResult,
-    ThermalConductivityResult,
     UniquacActivityCoefficientsResult,
-    ViscosityResult,
-    WilsonActivityCoefficientsResult,
 )
 from azoth.core.units import Q, from_si, input_to_si, to_si
 
@@ -109,145 +103,6 @@ def uniquac_activity_coefficients(
     return UniquacActivityCoefficientsResult(
         ln_gamma=tuple(result.ln_gamma),
         gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def wilson_activity_coefficients(
-    mixture: Any, T: Q, x: Sequence[float]
-) -> WilsonActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The mixture is flattened into the critical constants and the molar mass the boundary
-    carries, the same prefix `viscosity` sends.
-    """
-    spec = _models_gen.model("eos.wilson_activity_coefficients")
-    molar_mass = []
-    for c in mixture.components:
-        if c.molar_mass is None:
-            raise PropertyUnavailableError(
-                "component",
-                "molar mass",
-                "the paraffin-wax Wilson correlation needs a molar mass for the carbon "
-                "number, and a card-added component carries none",
-            )
-        molar_mass.append(c.molar_mass.to_base_units().magnitude)
-    result = _core.wilson_activity_coefficients(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        molar_mass,
-        input_to_si(spec, "T", T),
-        list(x),
-    )
-    return WilsonActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def aqueous_viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> AqueousViscosityResult:
-    """The liquid viscosity NeqSim gives an aqueous phase, computed in Rust.
-
-    The mixture's per-component data crosses as vectors, as `eos.viscosity`'s does, plus the
-    two the correlation reads: `liqvisc` flattened and the model number beside it.
-    """
-    spec = _models_gen.model("eos.aqueous_viscosity")
-    molar_mass = []
-    for c in mixture.components:
-        if c.molar_mass is None:
-            raise PropertyUnavailableError(
-                "component", "molar mass", "a card-added component needs its own molar mass"
-            )
-        molar_mass.append(c.molar_mass.to_base_units().magnitude)
-    result = _core.aqueous_viscosity(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        molar_mass,
-        [value for c in mixture.components for value in c.liqvisc],
-        [c.liqvisc_model for c in mixture.components],
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(z),
-        mixture.cubic.name,
-        mixture.alpha,
-        [list(c.alpha_params) for c in mixture.components],
-    )
-    return AqueousViscosityResult(
-        viscosity=from_si(result.viscosity.magnitude_si, result.viscosity.unit),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def viscosity(mixture: Any, T: Q, P: Q, z: Sequence[float]) -> ViscosityResult:
-    """The liquid viscosity from the Pedersen correlation, computed in Rust."""
-    spec = _models_gen.model("eos.viscosity")
-    molar_mass = []
-    for c in mixture.components:
-        if c.molar_mass is None:
-            raise PropertyUnavailableError(
-                "component", "molar mass", "a card-added component needs its own molar mass"
-            )
-        molar_mass.append(c.molar_mass.to_base_units().magnitude)
-    result = _core.viscosity(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        molar_mass,
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(z),
-        mixture.cubic.name,
-        mixture.alpha,
-        [list(c.alpha_params) for c in mixture.components],
-    )
-    return ViscosityResult(
-        mu=from_si(result.mu.magnitude_si, result.mu.unit),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def thermal_conductivity(
-    mixture: Any, ideal_gas: Any, T: Q, P: Q, z: Sequence[float]
-) -> ThermalConductivityResult:
-    """The liquid thermal conductivity from the Pedersen correlation, computed in Rust."""
-    spec = _models_gen.model("eos.thermal_conductivity")
-    molar_mass = []
-    for c in mixture.components:
-        if c.molar_mass is None:
-            raise PropertyUnavailableError(
-                "component", "molar mass", "a card-added component needs its own molar mass"
-            )
-        molar_mass.append(c.molar_mass.to_base_units().magnitude)
-    result = _core.thermal_conductivity(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        molar_mass,
-        list(ideal_gas.cp_a),
-        list(ideal_gas.cp_b),
-        list(ideal_gas.cp_c),
-        list(ideal_gas.cp_d),
-        list(ideal_gas.cp_e),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(z),
-        mixture.cubic.name,
-        mixture.alpha,
-        [list(c.alpha_params) for c in mixture.components],
-    )
-    return ThermalConductivityResult(
-        k=from_si(result.k.magnitude_si, result.k.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -384,43 +239,6 @@ def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
         cp_res=from_si(result.cp_res.magnitude_si, result.cp_res.unit),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def ge_wilson_phase(
-    params: Any, mixture: Any, T: Q, P: Q, x: Sequence[float]
-) -> GeWilsonPhaseResult:
-    """The fugacity coefficients of a Wilson liquid, computed in Rust.
-
-    Both objects cross: the mixture as three parallel lists - the Wilson correlation
-    reads the molar mass and the critical temperature, and nothing else - then the
-    record's own vapour-pressure fields.
-    """
-    spec = _models_gen.model("eos.ge_wilson_phase")
-    result = _core.ge_wilson_phase(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        [c.molar_mass.to_base_units().magnitude for c in mixture.components],
-        list(params.antoine_type),
-        list(params.antoine_coefficients),
-        list(params.antoine_tc),
-        list(params.antoine_pc),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(x),
-        mixture.cubic.name,
-        mixture.alpha,
-        [list(c.alpha_params) for c in mixture.components],
-    )
-    return GeWilsonPhaseResult(
-        gamma=tuple(result.gamma),
-        ln_gamma=tuple(result.ln_gamma),
-        ln_phi=tuple(result.ln_phi),
-        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
         warnings=_warnings(result.warnings),
     )
 

@@ -30,7 +30,13 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: 47 -> 46 when `process.packed_column` moved: slice 5c's last change made the generator able to
 #: derive it, and the committed `wrappers_gen.rs` was not regenerated, so for four commits the id
 #: was both covered and hand-written - which the disjointness below also catches.
-KNOWN_HAND_WRITTEN = 46
+#:
+#: 46 -> 45 when `eos.wilson_activity_coefficients` moved, and the cause was the bridge rather than
+#: the wrapper: this file decides coverage from the bridge's own call, and the *hand-written*
+#: bridge passed eight arguments where the `#[pyfunction]` takes eleven. Generating the bridge made
+#: the call the extension's own, the arity matched, and the emitted wrapper was byte-identical to
+#: the one in `eos.rs` - bar the `build_mixture_with_mass` every other mixture id already uses.
+KNOWN_HAND_WRITTEN = 45
 
 
 def _tools_module(name: str) -> ModuleType:

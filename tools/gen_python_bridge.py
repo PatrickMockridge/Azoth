@@ -43,7 +43,7 @@ import importlib
 import inspect
 import re
 import sys
-from functools import lru_cache
+from functools import cache, lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -100,8 +100,9 @@ ARGUMENT_DEFAULTS: dict[tuple[str, str], str] = {
 #: the expansion. The mapping is not a guess: across the thirty-one adapters that take one, `Tc`,
 #: `Pc`, `omega`, `kij`, `association`, `eos`, `alpha` and `alpha_params` each have **one spelling
 #: and one only**, and so does each `cp_*` an `IdealGasModel` resolves into. A `params` record is
-#: *not* here: its expansion is derived from the record's own fields by `parameter_records`, so the
-#: only one this table does not carry is `molar_mass`, computed from the components behind a guard.
+#: *not* here: its expansion is derived from the record's own fields by `parameter_records`, and
+#: `molar_mass` is not either, because it crosses behind a guard whose sentence comes from the
+#: reference implementation rather than from an expression (`molar_mass_reasons`).
 MIXTURE_EXPANSION: dict[str, str] = {
     "Tc": "[c.Tc.to_base_units().magnitude for c in mixture.components]",
     "Pc": "[c.Pc.to_base_units().magnitude for c in mixture.components]",
@@ -114,6 +115,11 @@ MIXTURE_EXPANSION: dict[str, str] = {
     # mixture's alpha out rather than letting the two collide.
     "cubic_alpha": "mixture.alpha",
     "alpha_params": "[list(c.alpha_params) for c in mixture.components]",
+    # The liquid-viscosity polynomial and the model number beside it. `aqueous_viscosity` is the
+    # one adapter that carries these, and it carries them once, so there is no second spelling to
+    # reconcile - the polynomial is flattened component-major and the model is one number each.
+    "liqvisc": "[value for c in mixture.components for value in c.liqvisc]",
+    "liqvisc_model": "[c.liqvisc_model for c in mixture.components]",
 }
 
 #: The parameters an `IdealGasModel` resolves into, one column per coefficient.
@@ -276,6 +282,91 @@ def parameter_records() -> dict[str, list[str]]:
             record = getattr(_components, annotation) if isinstance(annotation, str) else annotation
             out[node.name] = [field.name for field in dataclasses.fields(record)]
     return out
+
+
+@lru_cache(maxsize=1)
+def molar_mass_reasons() -> dict[str, str]:
+    """Each id's molar-mass refusal sentence, read from its own reference implementation.
+
+    **The sentence is the reference's, and the bridge was a second copy of it that had drifted.**
+    Both backends refuse a card-added component with no molar mass, and until now they refused it
+    in different words: `aqueous_viscosity`'s reference names the mass-fraction mixing rule and the
+    bridge said only that the mass was missing. Reading the sentence out of the reference is what
+    makes the two agree, and it is a derivation rather than a second table.
+
+    **A reference that delegates the guard has the delegate's sentence.** `ge_wilson_phase` reads
+    its activity coefficients through `wilson_activity_coefficients`, with the comment that going
+    through the same function is what keeps the two from disagreeing - so the sentence is the
+    callee's, and the callee is a public wrapper this file can name. An id that neither raises the
+    guard nor calls one that does has no sentence to read, and stays hand-written rather than
+    inventing words the Python side never says.
+    """
+    out: dict[str, str] = {}
+    for calc_id in specs():
+        reason = _molar_mass_reason(calc_id, set())
+        if reason is not None:
+            out[calc_id] = reason
+    return out
+
+
+def _reference_path(calc_id: str) -> Path | None:
+    """Where an id's Python reference implementation lives, by its own declared name."""
+    spec = specs()[calc_id]
+    parts = str((spec.get("implementations") or {}).get("python") or "").split(".")
+    if len(parts) != 3:
+        return None
+    path = PY_SRC / parts[1] / "reference" / f"{parts[2]}.py"
+    return path if path.exists() else None
+
+
+@lru_cache(maxsize=1)
+def function_ids() -> dict[str, str]:
+    """Each registered id by the public wrapper's own name, which is what a call site spells."""
+    return {function: calc_id for calc_id, _, function in rust_index.implementations()}
+
+
+@cache
+def _reference_scan(path: Path) -> tuple[frozenset[str], frozenset[str]]:
+    """A reference file's `(called names, molar-mass sentences)`, from one parse."""
+    calls: set[str] = set()
+    sentences: set[str] = set()
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            calls.add(node.func.id)
+        if not isinstance(node, ast.Raise) or not isinstance(node.exc, ast.Call):
+            continue
+        arguments = node.exc.args
+        if len(arguments) != 3 or any(not isinstance(a, ast.Constant) for a in arguments):
+            continue
+        first, second, third = (ast.literal_eval(a) for a in arguments)
+        if (first, second) == ("component", "molar mass") and isinstance(third, str):
+            sentences.add(third)
+    return frozenset(calls), frozenset(sentences)
+
+
+def _molar_mass_reason(calc_id: str, seen: set[str]) -> str | None:
+    """The sentence for `calc_id`, from its own guard or the guard of the id it delegates to.
+
+    Two sentences in one file is a question this cannot answer - which guard the boundary is
+    reproducing - and two delegations that both carry one is the same question one level out, so
+    either stops rather than picking.
+    """
+    if calc_id in seen:
+        return None
+    seen = seen | {calc_id}
+    path = _reference_path(calc_id)
+    if path is None:
+        return None
+    calls, sentences = _reference_scan(path)
+    if sentences:
+        return next(iter(sentences)) if len(sentences) == 1 else None
+    delegations = function_ids()
+    below = {
+        reason
+        for name in sorted(calls & set(delegations))
+        if (reason := _molar_mass_reason(delegations[name], seen)) is not None
+    }
+    return next(iter(below)) if len(below) == 1 else None
 
 
 def rust_result(calc_id: str) -> rust_index.ResultType:
@@ -491,6 +582,19 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
     expansion: dict[str, str] = {}
     if "mixture" in params:
         expansion.update(MIXTURE_EXPANSION)
+        # **The molar mass is the one mixture expansion that is not an expression.** A component
+        # added from a keycard carries none, and the correlations that read it cannot default one,
+        # so it crosses behind a guard whose sentence is the reference's own. Both names closed at
+        # once is a refusal for the reason the record's ambiguity is: the spec's `molar_mass` and
+        # the mixture's are different values and nothing here says which the pyfunction means.
+        if "molar_mass" in core_params:
+            if "molar_mass" in declared:
+                raise Refusal("molar_mass: both an input the spec declares and the mixture's own")
+            reason = molar_mass_reasons().get(calc_id)
+            if reason is None:
+                raise Refusal("molar_mass: the reference implementation raises no such guard")
+            expansion["molar_mass"] = f"_molar_masses(mixture, {reason!r})"
+            used.add("_molar_masses")
     if "ideal_gas" in params:
         expansion.update(IDEAL_GAS_EXPANSION)
     if "params" in params:
@@ -639,7 +743,9 @@ def emit() -> str:
     # `_warnings` and `_si` come from the support module rather than from `azoth.core.result`,
     # and isort wants them named in the block they come from.
     # The helpers the adapters call that are not adapters, from `azoth.core.bridge_support`.
-    support = sorted(name for name in used if name in ("_association_spec", "_si", "_warnings"))
+    support = sorted(
+        name for name in used if name in ("_association_spec", "_molar_masses", "_si", "_warnings")
+    )
     imports = [
         "from collections.abc import Sequence",
         "",

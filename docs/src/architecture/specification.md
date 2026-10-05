@@ -95,14 +95,16 @@ this page, `ROADMAP.md`, the batch exclusion list, and the port's NeqSim probe a
 capture.
 
 **Of those eleven, the pyo3 wrapper and the bridge adapter are the two the tranche has taken.**
-The wrapper is generated for **148** of the registered ids and hand-written for **46**: a kernel
+The wrapper is generated for **149** of the registered ids and hand-written for **45**: a kernel
 that takes a record or a mixture the spec does not name is one the generator refuses rather than
 guesses at, and so is one whose signature disagrees with the order the bridge passes it in. The
-bridge adapter is generated for **181** and hand-written for **13**, and its rule is narrower
+bridge adapter is generated for **186** and hand-written for **8**, and its rule is narrower
 because its boundary is a Python signature rather than a Rust one: its signature is the public
 wrapper's, its call is the `#[pyfunction]`'s own order, and every argument on either side must be
 an input the spec declares, a field of the `params` record the wrapper's annotation names, or one
-expression a boundary object resolves into.
+expression a boundary object resolves into. A `molar_mass` is the one expansion that is not an
+expression - a keycard component carries none and the correlation cannot default one, so it crosses
+behind a guard whose sentence is read from the id's own reference implementation.
 
 **That pair is why the tranche started.** The two are the same contract written twice - the
 wrapper says what `_core` takes, the adapter says what the caller sends - and nothing compared

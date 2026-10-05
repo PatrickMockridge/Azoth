@@ -13,11 +13,12 @@ from collections.abc import Sequence
 
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
-from azoth.core.bridge_support import _association_spec, _si, _warnings
+from azoth.core.bridge_support import _association_spec, _molar_masses, _si, _warnings
 from azoth.core.result import (
     AbsorptionColumnResult,
     AmmoniaPhaseResult,
     AntoineVaporPressureResult,
+    AqueousViscosityResult,
     ArgonSolidPhaseResult,
     BubblePressureResult,
     BubbleTemperatureResult,
@@ -60,6 +61,7 @@ from azoth.core.result import (
     Gerg2008PhaseResult,
     GeUnifacPhaseResult,
     GeVanLaarAcidPhaseResult,
+    GeWilsonPhaseResult,
     GibbsReactorResult,
     HaalandResult,
     HaydukMinhasDiffusivityResult,
@@ -168,6 +170,7 @@ from azoth.core.result import (
     SwameeJainResult,
     TankResult,
     TbpFractionPropertiesResult,
+    ThermalConductivityResult,
     ThFlashResult,
     ThreePhaseSeparatorResult,
     ThrottlingValveResult,
@@ -193,6 +196,7 @@ from azoth.core.result import (
     VanLaarAcidActivityCoefficientsResult,
     Vdw1fMixBinaryResult,
     VhFlashResult,
+    ViscosityResult,
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
@@ -200,6 +204,7 @@ from azoth.core.result import (
     WaxSolidFugacityResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
+    WilsonActivityCoefficientsResult,
 )
 from azoth.core.result import (
     HenryStatus as _HenryStatus,
@@ -218,6 +223,7 @@ from azoth.eos.components import (
     GeNrtlPhaseParameters,
     GeUnifacPhaseParameters,
     GeVanLaarAcidPhaseParameters,
+    GeWilsonPhaseParameters,
     NrtlParameters,
     UnifacParameters,
     UnifacPsrkParameters,
@@ -231,6 +237,7 @@ __all__ = [
     "absorption_column",
     "ammonia_phase",
     "antoine_vapor_pressure",
+    "aqueous_viscosity",
     "argon_solid_phase",
     "bubble_pressure",
     "bubble_temperature",
@@ -274,6 +281,7 @@ __all__ = [
     "ge_nrtl_phase",
     "ge_unifac_phase",
     "ge_van_laar_acid_phase",
+    "ge_wilson_phase",
     "gerg2008_phase",
     "gibbs_reactor",
     "hayduk_minhas_diffusivity",
@@ -378,6 +386,7 @@ __all__ = [
     "tank",
     "tbp_fraction_properties",
     "th_flash",
+    "thermal_conductivity",
     "three_phase_separator",
     "throttling_valve",
     "tp_flash_saft",
@@ -402,6 +411,7 @@ __all__ = [
     "van_laar_acid_activity_coefficients",
     "vdw1f_mix_binary",
     "vh_flash",
+    "viscosity",
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
@@ -409,6 +419,7 @@ __all__ = [
     "wax_solid_fugacity",
     "wilke_chang_diffusivity",
     "wilke_viscosity",
+    "wilson_activity_coefficients",
 ]
 
 
@@ -447,6 +458,31 @@ def antoine_vapor_pressure(A: float, B: float, C: float, D: float, E: float, for
     )
     return AntoineVaporPressureResult(
         p_sat=from_si(result.p_sat.magnitude_si, result.p_sat.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def aqueous_viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> AqueousViscosityResult:
+    """``eos.aqueous_viscosity``, computed in Rust."""
+    spec = _models_gen.model("eos.aqueous_viscosity")
+    result = _core.aqueous_viscosity(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        _molar_masses(mixture, 'a card-added component needs its own molar mass: the mixing rule weights by mass fraction'),
+        [value for c in mixture.components for value in c.liqvisc],
+        [c.liqvisc_model for c in mixture.components],
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return AqueousViscosityResult(
+        viscosity=from_si(result.viscosity.magnitude_si, result.viscosity.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -959,6 +995,36 @@ def ge_van_laar_acid_phase(params: GeVanLaarAcidPhaseParameters, T: Q, P: Q, x: 
         list(x),
     )
     return GeVanLaarAcidPhaseResult(
+        gamma=tuple(result.gamma),
+        ln_gamma=tuple(result.ln_gamma),
+        ln_phi=tuple(result.ln_phi),
+        p_sat=tuple(from_si(q.magnitude_si, q.unit) for q in result.p_sat),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def ge_wilson_phase(params: GeWilsonPhaseParameters, mixture: Mixture, T: Q, P: Q, x: Sequence[float]) -> GeWilsonPhaseResult:
+    """``eos.ge_wilson_phase``, computed in Rust."""
+    spec = _models_gen.model("eos.ge_wilson_phase")
+    result = _core.ge_wilson_phase(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        _molar_masses(mixture, 'the paraffin-wax Wilson correlation needs a molar mass for the carbon number, and a card-added component carries none'),
+        list(params.antoine_type),
+        list(params.antoine_coefficients),
+        list(params.antoine_tc),
+        list(params.antoine_pc),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(x),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return GeWilsonPhaseResult(
         gamma=tuple(result.gamma),
         ln_gamma=tuple(result.ln_gamma),
         ln_phi=tuple(result.ln_phi),
@@ -2438,6 +2504,34 @@ def th_flash(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, H: Q, z: list[flo
     )
 
 
+def thermal_conductivity(mixture: Mixture, ideal_gas: IdealGasModel, T: Q, P: Q, z: list[float]) -> ThermalConductivityResult:
+    """``eos.thermal_conductivity``, computed in Rust."""
+    spec = _models_gen.model("eos.thermal_conductivity")
+    result = _core.thermal_conductivity(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        _molar_masses(mixture, 'a card-added component needs its own molar mass'),
+        list(ideal_gas.cp_a),
+        list(ideal_gas.cp_b),
+        list(ideal_gas.cp_c),
+        list(ideal_gas.cp_d),
+        list(ideal_gas.cp_e),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return ThermalConductivityResult(
+        k=from_si(result.k.magnitude_si, result.k.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def tp_flash_saft(components: list[str], T: Q, P: Q, z: list[float]) -> TpFlashSaftResult:
     """``eos.tp_flash_saft``, computed in Rust."""
     spec = _models_gen.model("eos.tp_flash_saft")
@@ -2906,6 +3000,29 @@ def vh_flash(mixture: Mixture, ideal_gas: IdealGasModel, V: Q, H: Q, z: list[flo
     )
 
 
+def viscosity(mixture: Mixture, T: Q, P: Q, z: list[float]) -> ViscosityResult:
+    """``eos.viscosity``, computed in Rust."""
+    spec = _models_gen.model("eos.viscosity")
+    result = _core.viscosity(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        _molar_masses(mixture, 'a card-added component needs its own molar mass'),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return ViscosityResult(
+        mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def vs_flash(mixture: Mixture, ideal_gas: IdealGasModel, V: Q, S: Q, z: list[float]) -> VsFlashResult:
     """``eos.vs_flash``, computed in Rust."""
     spec = _models_gen.model("eos.vs_flash")
@@ -3081,6 +3198,29 @@ def wilke_viscosity(Tc: Sequence[Q], Vc: Sequence[Q], M: Sequence[Q], omega: Seq
     )
     return WilkeViscosityResult(
         mu=from_si(result.mu.magnitude_si, result.mu.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def wilson_activity_coefficients(mixture: Mixture, T: Q, x: Sequence[float]) -> WilsonActivityCoefficientsResult:
+    """``eos.wilson_activity_coefficients``, computed in Rust."""
+    spec = _models_gen.model("eos.wilson_activity_coefficients")
+    result = _core.wilson_activity_coefficients(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        _molar_masses(mixture, 'the paraffin-wax Wilson correlation needs a molar mass for the carbon number, and a card-added component carries none'),
+        input_to_si(spec, "T", T),
+        list(x),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return WilsonActivityCoefficientsResult(
+        ln_gamma=tuple(result.ln_gamma),
+        gamma=tuple(result.gamma),
         warnings=_warnings(result.warnings),
     )
 

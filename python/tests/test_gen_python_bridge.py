@@ -23,15 +23,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = REPO_ROOT / "python" / "src" / "azoth" / "_rust_bridge.py"
 
 #: The adapters `_rust_bridge.py` may still carry by hand, and the cause each one is left for:
-#: five whose boundary carries the per-component molar mass, resolved from `mixture.components`
-#: behind a guard rather than by one expression; three that take a keycard the public wrapper
-#: resolves into an argument before the bridge is reached; one whose record is per-component
-#: *arrays* rather than fields (`bwrs_phase`); and four single ids - `capillary_dew_point` and
-#: `rate_based_packed_column`, whose optional inputs the extension takes non-optionally with no
-#: default to send, `hydrogen_phase`, whose wrapper takes a mode the spec does not declare, and
-#: `pure_saturation`, which takes the critical constants the spec resolves from a component name.
-#: Lowering this is the point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = 13
+#: three that take a keycard the public wrapper resolves into an argument before the bridge is
+#: reached (`ge_uniquac_phase`, `uniquac_activity_coefficients`, `orifice_flow`); one whose record
+#: is per-component *arrays* rather than fields (`bwrs_phase`); and four single ids -
+#: `capillary_dew_point` and `rate_based_packed_column`, whose optional inputs the extension takes
+#: non-optionally with no default to send, `hydrogen_phase`, whose wrapper takes a mode the spec
+#: does not declare, and `pure_saturation`, which takes the critical constants the spec resolves
+#: from a component name. Lowering this is the point, and raising it needs a reason in the diff.
+KNOWN_HAND_WRITTEN = 8
 
 
 def _tools_module(name: str) -> ModuleType:
@@ -93,4 +92,33 @@ def test_no_id_is_both_generated_and_hand_written() -> None:
     assert generated | set(_hand_written()) == registered, (
         "the generated and hand-written sets do not account for the registry: "
         f"{sorted(registered - generated - set(_hand_written()))}"
+    )
+
+
+def test_every_molar_mass_boundary_finds_the_sentence_it_carries() -> None:
+    """**A guard whose words are read out of another file has to find them.**
+
+    `_molar_masses` raises with the sentence the id's own reference implementation already uses,
+    looked for in that file and then in the public wrappers it calls. A reader that stops looking
+    leaves the id hand-written, which is safe - and indistinguishable from an id that genuinely has
+    no guard, which is exactly the shape that hid five ids from the wrapper generator. So the ids
+    whose kernel takes a `molar_mass` behind a `mixture` are compared against the ones the reader
+    found a sentence for, rather than against the cap.
+    """
+    generator = _tools_module("gen_python_bridge")
+    reasons = generator.molar_mass_reasons()
+    wrappers = generator.public_signatures()
+    wanted = sorted(
+        function
+        for function, types in generator.wrapper_types().items()
+        if "molar_mass" in types
+        and function in wrappers
+        and "mixture" in {p.arg for p in wrappers[function].args.args}
+    )
+
+    assert wanted, "no kernel takes a molar mass behind a mixture - nothing is being checked here"
+    missing = [name for name in wanted if not any(k.endswith(f".{name}") for k in reasons)]
+    assert not missing, (
+        f"{missing} take a molar mass and the reference reader found no sentence to raise with, so "
+        f"their guard is silently absent rather than the id being left hand-written on purpose"
     )

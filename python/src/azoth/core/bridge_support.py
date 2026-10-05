@@ -16,10 +16,11 @@ from collections.abc import Sequence
 from typing import Any
 
 from azoth import _core
+from azoth.core.errors import PropertyUnavailableError
 from azoth.core.units import Q, input_to_si
 from azoth.core.warnings import Warning, WarningCode
 
-__all__ = ["_association_spec", "_si", "_warnings"]
+__all__ = ["_association_spec", "_molar_masses", "_si", "_warnings"]
 
 
 def _warnings(raw: Sequence[_core.Warning]) -> tuple[Warning, ...]:
@@ -87,3 +88,20 @@ def _association_spec(mixture: Any) -> Any:
             ]
         )
     return _core.AssociationSpec(bool(mixture.associating), schemes, values)
+
+
+def _molar_masses(mixture: Any, reason: str) -> list[float]:
+    """Each component's molar mass in kg/mol, refusing one that carries none.
+
+    **A keycard component has no molar mass and these correlations cannot default one**:
+    the mixing rule weights by mass fraction and the Wilson correlation reads the mass
+    directly, so a zero would be a wrong answer rather than a missing one. ``reason`` is
+    the sentence the id's own reference implementation already raises with, so both
+    backends refuse in the same words.
+    """
+    masses: list[float] = []
+    for component in mixture.components:
+        if component.molar_mass is None:
+            raise PropertyUnavailableError("component", "molar mass", reason)
+        masses.append(component.molar_mass.to_base_units().magnitude)
+    return masses

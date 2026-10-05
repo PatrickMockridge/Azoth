@@ -146,17 +146,18 @@ def test_the_committed_stub_is_current() -> None:
 #: is the reference kernel's and not the extension's.
 #:
 #: This is a **ratchet and not a fix**: the stub is generated in the `docs-drift` job, which
-#: does not build the extension, so it cannot ask it. The alternative is renaming nineteen
-#: pyfunction parameters or teaching the generator a per-model vocabulary, and until one of
-#: those is done this list is what stops the drift growing unnoticed - which is how it got to
-#: nineteen.
+#: does not build the extension, so it cannot ask it. The alternative is renaming the pyfunction
+#: parameters or teaching the generator a per-model vocabulary, and until one of those is done
+#: this list is what stops the drift growing unnoticed - which is how it once got to nineteen.
 KNOWN_SIGNATURE_DRIFT = frozenset(
     {
-        # The same cause as `viscosity`, which is below: a model whose spec declares a
-        # `components` input and whose pyfunction takes the mixture expanded into the
-        # vectors its boundary carries - `Tc`, `Pc`, `omega`, `kij`, `molar_mass`, and for
-        # this one `liqvisc` and `liqvisc_model` too. The stub renders the declared name;
-        # the extension takes the expansion.
+        # A model whose spec declares a `components` input and whose pyfunction takes the mixture
+        # expanded into the vectors its boundary carries - `Tc`, `Pc`, `omega`, `kij`,
+        # `molar_mass`, and for this one `liqvisc` and `liqvisc_model` too. The stub renders the
+        # declared name; the extension takes the expansion. `wilson_activity_coefficients` left
+        # this list when its wrapper was generated: the hand-written one omitted `alpha_params`
+        # from its `text_signature`, so the stub was right and the human-readable signature was
+        # the half that was wrong.
         "aqueous_viscosity",
         # **A calc, and the only entry here that is a *reordering* rather than a renaming.** The
         # spec declares `(reaction, source, T)`, the kernel and the `#[pyfunction]` take
@@ -168,7 +169,6 @@ KNOWN_SIGNATURE_DRIFT = frozenset(
         "ge_nrtl_flash",
         "ge_wilson_phase",
         "hydrogen_phase",
-        "wilson_activity_coefficients",
     }
 )
 
