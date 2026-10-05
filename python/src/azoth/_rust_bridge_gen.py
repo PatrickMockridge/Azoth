@@ -1304,7 +1304,7 @@ def liquid_conductivity_polynom(liquid_conductivity: Sequence[Sequence[float]], 
     """``eos.liquid_conductivity_polynom``, computed in Rust."""
     spec = _models_gen.model("eos.liquid_conductivity_polynom")
     result = _core.liquid_conductivity_polynom(
-        liquid_conductivity,
+        [list(row) for row in liquid_conductivity],
         [input_to_si(spec, "molar_mass", v) for v in molar_mass],
         list(z),
         input_to_si(spec, "T", T),
@@ -3257,7 +3257,7 @@ def control_valve_cv(Cv: float, dP: Q, SG: float) -> ControlValveCvResult:
 def crane_k_factors(fittings: Sequence[str], f_t: float) -> KFactorsResult:
     """``hydraulics.crane_k_factors``, computed in Rust."""
     result = _core.crane_k_factors(
-        fittings,
+        list(fittings),
         f_t,
     )
     return KFactorsResult(
@@ -3960,7 +3960,7 @@ def manifold(components: list[str], feed_n: list[Q], feed_z: list[list[float]], 
     result = _core.manifold(
         list(components),
         [input_to_si(spec, "feed_n", v) for v in feed_n],
-        feed_z,
+        [list(row) for row in feed_z],
         [input_to_si(spec, "feed_p", v) for v in feed_p],
         [input_to_si(spec, "feed_t", v) for v in feed_t],
         list(split_factors),
@@ -3981,7 +3981,7 @@ def mixer(components: list[str], feed_n: list[Q], feed_z: list[list[float]], fee
     result = _core.mixer(
         list(components),
         [input_to_si(spec, "feed_n", v) for v in feed_n],
-        feed_z,
+        [list(row) for row in feed_z],
         [input_to_si(spec, "feed_p", v) for v in feed_p],
         [input_to_si(spec, "feed_t", v) for v in feed_t],
         None if outlet_pressure is None else input_to_si(spec, "outlet_pressure", outlet_pressure),
@@ -4384,7 +4384,7 @@ def tank(components: list[str], feed_n: list[Q], feed_z: list[list[float]], feed
     result = _core.tank(
         list(components),
         [input_to_si(spec, "feed_n", v) for v in feed_n],
-        feed_z,
+        [list(row) for row in feed_z],
         [input_to_si(spec, "feed_p", v) for v in feed_p],
         [input_to_si(spec, "feed_t", v) for v in feed_t],
     )
@@ -4466,7 +4466,7 @@ def chemical_equilibrium(a_matrix: list[list[float]], b: list[float], whole_syst
     """``reactions.chemical_equilibrium``, computed in Rust."""
     spec = _models_gen.model("reactions.chemical_equilibrium")
     result = _core.chemical_equilibrium(
-        a_matrix,
+        [list(row) for row in a_matrix],
         [_si(spec, "b", v) for v in b],
         whole_system,
         [_si(spec, "moles", v) for v in moles],
@@ -4676,7 +4676,7 @@ def reference_potentials(components: list[str], source: str, T: Q) -> ReferenceP
     )
 
 
-def iso6976(components: list[str], z: list[float], volumetric_reference_temperature: object, energy_reference_temperature: object) -> Iso6976Result:
+def iso6976(components: list[str], z: list[float], volumetric_reference_temperature: float | Q, energy_reference_temperature: float | Q) -> Iso6976Result:
     """``standards.iso6976``, computed in Rust."""
     spec = _models_gen.model("standards.iso6976")
     result = _core.iso6976(

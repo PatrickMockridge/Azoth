@@ -104,9 +104,9 @@ def test_a_scalar_the_wrapper_calls_a_float_is_not_refused_by_the_bridge() -> No
     signature defaults to a bare number is a call the Rust backend cannot make:
     `process.distillation_column`'s `temperature_tolerance: float = 1.0e-6` was one, and the three
     side-draw tests that omit it were red for four commits because nothing read the pair. The
-    annotation decides, exactly as it does for a vector - `Q` is a quantity the caller must state
-    and `_si` is the lax half for anything else - so this asserts the emitted call matches the
-    signature rather than restating what `argument_expr` does.
+    annotation decides, exactly as it does for a vector - a parameter annotated `Q` alone is one
+    the caller must state as a quantity, and `_si` is the lax half for everything else - so this
+    asserts the emitted call matches the signature rather than restating what `argument_expr` does.
     """
     generator = _tools_module("gen_python_bridge")
     wrappers = generator.public_signatures()
@@ -135,7 +135,10 @@ def test_a_scalar_the_wrapper_calls_a_float_is_not_refused_by_the_bridge() -> No
             if unit is None or unit == "dimensionless":
                 continue
             annotation = ast.unparse(parameter.annotation) if parameter.annotation else ""
-            if "Q" in annotation:
+            # **`Q` and not `float`.** Measured over the six namespaces, the annotations a wrapper
+            # writes for a dimensioned scalar are `Q`, `float`, `Q | None`, `float | None` and
+            # `float | Q`, and only the first two say a quantity is the only shape accepted.
+            if "Q" in annotation and "float" not in annotation:
                 continue
             checked += 1
             if f'input_to_si(spec, "{parameter.arg}", ' in source:
