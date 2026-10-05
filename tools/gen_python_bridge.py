@@ -6,9 +6,11 @@ three statements: look the spec up, call the extension, rebuild the Python resul
 the transport object. Nothing in it is arithmetic - the arithmetic is in Rust - so every line of it
 is a function of declarations that already exist:
 
-* **the signature** is the public wrapper's, because the wrapper is the caller: it does
-  `resolve(...)(**kwargs)` and the bridge is what comes back. `python/src/azoth/{eos,hydraulics,
-  process,reactions,standards,thermal}/__init__.py` states it once, and that is the contract.
+* **the signature** is the call the public wrapper makes - the keywords it hands `resolve(**kwargs)`
+  - rather than the signature it declares. That is the contract: the wrapper is the caller and the
+  bridge is what comes back. The two differ for four ids, where the wrapper resolves a defaulted
+  input itself (`orifice_flow`'s `Cd` and the UNIQUAC pair's `aij`, from a keycard) or holds one it
+  never sends (`card`, on all four).
 * **the call's arguments** are the `#[pyfunction]`'s own parameter list, in its order, each
   converted according to the kind and unit the spec declares for it. Not the stub's: `gen_stub`
   renders a calc's parameters from the spec, and `reactions.equilibrium_constant` declares
@@ -38,6 +40,7 @@ one of the two and is left hand-written.
 from __future__ import annotations
 
 import ast
+import copy
 import dataclasses
 import importlib
 import inspect
@@ -164,6 +167,47 @@ def public_signatures() -> dict[str, ast.FunctionDef]:
         for node in tree.body:
             if isinstance(node, ast.FunctionDef):
                 out.setdefault(node.name, node)
+    return out
+
+
+def wrapper_forwards() -> dict[str, dict[str, str]]:
+    """What each public wrapper passes to `resolve(id)(...)`, by argument name.
+
+    **That call, and not the wrapper's signature, is what the bridge has to accept.** The wrapper
+    is the caller - it hands `resolve` its arguments and the bridge is what comes back - and two
+    kinds of parameter make the two differ. One the wrapper *resolves itself*: `orifice_flow`,
+    `ge_uniquac_phase` and `uniquac_activity_coefficients` each take a `card`, look a defaulted
+    input up through it and send the result, so the bridge must not declare the `card` at all.
+    One the wrapper *computes*: the same three send `keycard.coefficient_value(...)` where the
+    signature says `Cd: float | None = None`, because what reaches the extension is always a value.
+
+    The expression is kept rather than just the name, since "the caller's own name" and "something
+    the caller worked out" are the two cases - `ast.unparse` of a bare `Name` is that name.
+
+    Read from the AST rather than the text for the same reason the signatures are: the call is
+    `resolve(_ID)(...)`, so the outer node's keywords are the arguments.
+    """
+    out: dict[str, dict[str, str]] = {}
+    for namespace in NAMESPACES:
+        path = PY_SRC / namespace / "__init__.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in tree.body:
+            if not isinstance(node, ast.FunctionDef) or node.name in out:
+                continue
+            for call in ast.walk(node):
+                if not isinstance(call, ast.Call):
+                    continue
+                function = call.func
+                if not (
+                    isinstance(function, ast.Call)
+                    and isinstance(function.func, ast.Name)
+                    and function.func.id == "resolve"
+                ):
+                    continue
+                out[node.name] = {
+                    k.arg: ast.unparse(k.value) for k in call.keywords if k.arg is not None
+                }
+                break
     return out
 
 
@@ -492,8 +536,14 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
         # is a `Vec<String>` too - `crane_k_factors` is the one - and its wrapper declares a
         # `Sequence`, which is the same shape the components case rebuilds.
         body = f"list({name})"
-    elif kind in ("string", "enum", "boolean") or not dimensioned:
+    elif kind in ("string", "enum", "boolean"):
         body = name
+    elif not dimensioned:
+        # **A dimensionless input crosses as the bare number it is - unless the wrapper calls it a
+        # quantity.** `capillary_dew_point`'s `contact_angle` is the one: a radian is
+        # dimensionless, so the spec declares no unit, and the wrapper still takes a `Q`. The
+        # extension wants the magnitude either way, which is what `_si` is for.
+        body = name if "Q" not in annotation else f'_si(spec, "{name}", {name})'
     else:
         # **`Q` and not `float`.** The annotations a wrapper actually writes for a dimensioned
         # scalar are `Q`, `float`, `Q | None`, `float | None` and `float | Q`, and only the first
@@ -532,7 +582,7 @@ def _matrix(name: str, dimensioned: bool, annotation: str) -> str:
     """
     if not dimensioned or "Q" not in annotation:
         return f"[list(row) for row in {name}]"
-    return f'[[_si(spec, "{name}", v) for v in row] for row in {name}]'
+    return f'[[input_to_si(spec, "{name}", v) for v in row] for row in {name}]'
 
 
 #: The Rust parameter types that are counts, and so take an `int` on this side.
@@ -572,6 +622,76 @@ def coerce(expression: str, rust_type: str | None, parameter: str) -> str:
 # --- the whole function -----------------------------------------------------
 
 
+def _passes_through(expression: str, name: str) -> bool:
+    """The wrapper hands the caller's own value along rather than deciding one.
+
+    `list(x)` counts: four wrappers wrap a sequence in `list(...)` and mean nothing by it, and
+    reading that as "the wrapper computed this" would strip a `| None` and a default from a
+    parameter that is simply the caller's.
+    """
+    return expression in (name, f"list({name})")
+
+
+def _without_none(annotation: ast.expr | None) -> ast.expr | None:
+    """`X | None` as `X`; anything else unchanged. A `None` default is what this pairs with."""
+    if isinstance(annotation, ast.BinOp) and isinstance(annotation.op, ast.BitOr):
+        right = annotation.right
+        if isinstance(right, ast.Constant) and right.value is None:
+            return annotation.left
+    return annotation
+
+
+def forwarded_arguments(
+    node: ast.FunctionDef, resolved: set[str], computed: set[str]
+) -> ast.arguments:
+    """The wrapper's signature as the bridge sees it, which is the call the wrapper makes.
+
+    Three differences from the wrapper's own. A parameter the wrapper *resolves* is not here at
+    all - only keyword-only ones can be dropped, which is the refusal the caller leaves. A
+    parameter the wrapper *computes* is here but **required**: it loses its `| None` and its `None`
+    default, because the wrapper always sends a value and the optionality describes the wrapper's
+    interface rather than the call. Everything else is the wrapper's verbatim - annotations,
+    defaults, the `*` marker - which is the point of reading it as an AST rather than as text.
+    """
+    arguments = copy.deepcopy(node.args)
+    kept_kwonly, kept_kw_defaults = [], []
+    for argument, default in zip(arguments.kwonlyargs, arguments.kw_defaults, strict=True):
+        if argument.arg in resolved:
+            continue
+        if argument.arg in computed:
+            argument.annotation = _without_none(argument.annotation)
+            default = None
+        kept_kwonly.append(argument)
+        kept_kw_defaults.append(default)
+    arguments.kwonlyargs = kept_kwonly
+    arguments.kw_defaults = kept_kw_defaults
+
+    positional = arguments.posonlyargs + arguments.args
+    for argument in positional:
+        if argument.arg in computed:
+            argument.annotation = _without_none(argument.annotation)
+    if computed & {a.arg for a in positional}:
+        first_defaulted = len(positional) - len(arguments.defaults)
+        dropped = {
+            index
+            for index, argument in enumerate(positional)
+            if argument.arg in computed and index >= first_defaulted
+        }
+        # A required parameter after a defaulted one is a syntax error, so the default may only go
+        # if nothing but the tail is affected. The three that do this are all last before the `*`.
+        if dropped != set(range(len(positional) - len(dropped), len(positional))):
+            raise Refusal(
+                "a parameter the wrapper computes sits before one it forwards with a default, so "
+                "dropping that default would leave a required parameter after it"
+            )
+        arguments.defaults = [
+            default
+            for offset, default in enumerate(arguments.defaults)
+            if first_defaulted + offset not in dropped
+        ]
+    return arguments
+
+
 def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
     """One bridge function, as source, or a `Refusal` naming what stopped it.
 
@@ -587,6 +707,31 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
 
     params = [p.arg for p in public.args.posonlyargs + public.args.args]
     params += [p.arg for p in public.args.kwonlyargs]
+    # **A parameter the wrapper does not forward is one it resolved itself.** `orifice_flow`,
+    # `ge_uniquac_phase` and `uniquac_activity_coefficients` each take a `card`, resolve a
+    # defaulted input through it and send the *result*, so a bridge built from the signature would
+    # declare a `card` nothing forwards and nothing reads. The call is the contract - it is what
+    # `resolve` hands over - so the parameters are the keywords it names.
+    forwarded = wrapper_forwards().get(function)
+    if forwarded is None:
+        raise Refusal("the public wrapper does not call `resolve(...)(...)`")
+    resolved = {name for name in params if name not in forwarded}
+    keyword_only = {p.arg for p in public.args.kwonlyargs}
+    unforwardable = sorted(resolved - keyword_only)
+    if unforwardable:
+        raise Refusal(
+            f"{unforwardable}: the wrapper does not forward them and they are not keyword-only, so "
+            f"a caller would have to send a value nothing reads"
+        )
+    params = [name for name in params if name not in resolved]
+    # A parameter the wrapper forwards as something it worked out rather than as the caller's own
+    # value is one the wrapper has already resolved a default for, so it arrives required.
+    computed = {
+        name
+        for name, expression in forwarded.items()
+        if name in params and not _passes_through(expression, name)
+    }
+    signature = forwarded_arguments(public, resolved, computed)
     _, result_class = core_signatures()[function]
     # **The call's order is the extension's own, read from the `#[pyfunction]` itself.** The stub
     # describes that function and carries the *spec's* order, and for three ids the two disagree:
@@ -644,9 +789,12 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
     if stale:
         raise Refusal(f"{stale} is not an input the spec declares")
 
+    # **The emitted signature, not the wrapper's**, so a parameter the wrapper computes is read as
+    # the required one the bridge declares rather than as the optional one the caller sees: reading
+    # the wrapper's would put a `None` guard on a value that can no longer be absent.
     annotations = {
         p.arg: (ast.unparse(p.annotation) if p.annotation else None)
-        for p in public.args.posonlyargs + public.args.args + public.args.kwonlyargs
+        for p in signature.posonlyargs + signature.args + signature.kwonlyargs
     }
     # **The call is in `_core`'s order and the signature in the public wrapper's.** They are not
     # always the same: `absorption_column` declares its two component lists first and the public
@@ -695,7 +843,7 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
     # The annotation names the copied header carries - `Mixture`, `IdealGasModel` - which this
     # module has to import for itself.
     declared_names = namespace_imports()
-    for annotation_type in re.findall(r"\b[A-Z]\w*\b", ast.unparse(public.args)):
+    for annotation_type in re.findall(r"\b[A-Z]\w*\b", ast.unparse(signature)):
         if annotation_type in declared_names:
             external.add(annotation_type)
     # Read from the same decision `return_expr` made rather than from the emitted text: a scan for
@@ -717,7 +865,7 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
     # `ast.unparse` of an `arguments` node is the list *without* its parentheses, so they are
     # put back here - the defaults, the annotations and any `*` marker all survive the trip.
     lines = [
-        f"def {function}({ast.unparse(public.args)}) -> {ast.unparse(public.returns)}:",
+        f"def {function}({ast.unparse(signature)}) -> {ast.unparse(public.returns)}:",
         f'    """``{calc_id}``, computed in Rust."""',
     ]
     if needs_spec:

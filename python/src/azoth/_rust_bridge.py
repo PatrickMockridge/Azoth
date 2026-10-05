@@ -41,15 +41,11 @@ from azoth.core.bridge_support import _si as _si
 from azoth.core.bridge_support import _warnings as _warnings
 from azoth.core.result import (
     BwrsPhaseResult,
-    CapillaryDewPointResult,
-    GeUniquacPhaseResult,
     HydrogenPhaseResult,
-    OrificeFlowResult,
     PureSaturationResult,
     RateBasedPackedColumnResult,
-    UniquacActivityCoefficientsResult,
 )
-from azoth.core.units import Q, from_si, input_to_si, to_si
+from azoth.core.units import Q, from_si, input_to_si
 
 
 def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
@@ -77,47 +73,6 @@ def pure_saturation(Tc: Q, Pc: Q, omega: float, T: Q) -> PureSaturationResult:
         ln_phi=result.ln_phi,
         iterations=result.iterations,
         residual=result.residual,
-        warnings=_warnings(result.warnings),
-    )
-
-
-def uniquac_activity_coefficients(
-    params: Any,
-    T: Q,
-    x: Sequence[float],
-    aij: Sequence[Sequence[Q]],
-) -> UniquacActivityCoefficientsResult:
-    """The activity coefficients of a mixture, computed in Rust.
-
-    The resolved `r` and `q` cross the boundary flattened, in the dataclass's own field
-    order; `aij` crosses as the caller supplied it.
-    """
-    spec = _models_gen.model("eos.uniquac_activity_coefficients")
-    result = _core.uniquac_activity_coefficients(
-        list(params.r),
-        list(params.q),
-        input_to_si(spec, "T", T),
-        list(x),
-        [[input_to_si(spec, "aij", value) for value in row] for row in aij],
-    )
-    return UniquacActivityCoefficientsResult(
-        ln_gamma=tuple(result.ln_gamma),
-        gamma=tuple(result.gamma),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def orifice_flow(d: Q, dP: Q, rho: Q, Cd: float) -> OrificeFlowResult:
-    """Orifice flow, computed in Rust."""
-    result = _core.orifice_flow(
-        to_si(d, "mm", "d"),
-        to_si(dP, "Pa", "dP"),
-        to_si(rho, "kg/m**3", "rho"),
-        # Dimensionless: no unit to convert, so it crosses as a plain float.
-        Cd,
-    )
-    return OrificeFlowResult(
-        q=from_si(result.q.magnitude_si, result.q.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -167,58 +122,6 @@ def _boundary_temperature_result(raw: Any, result_type: Any) -> Any:
     )
 
 
-def capillary_dew_point(
-    mixture: Any,
-    P: Q,
-    y: Sequence[float],
-    pore_radius: Q,
-    contact_angle: Q,
-    surface_tension: Q,
-) -> CapillaryDewPointResult:
-    """The dew point of a vapour held in a pore, computed in Rust.
-
-    The same unpacking as `dew_temperature` plus the three curvature arguments. The surface
-    tension is the caller's, not the mixture's: it is a fitted quantity with its own provenance,
-    and reading one inside a model whose other inputs are all stated would hide which was used.
-    """
-    spec = _models_gen.model("eos.capillary_dew_point")
-    result = _core.capillary_dew_point(
-        [c.Tc.to_base_units().magnitude for c in mixture.components],
-        [c.Pc.to_base_units().magnitude for c in mixture.components],
-        [c.omega for c in mixture.components],
-        mixture.flattened_kij(),
-        _association_spec(mixture),
-        input_to_si(spec, "P", P),
-        list(y),
-        input_to_si(spec, "pore_radius", pore_radius),
-        # The angle is dimensionless and a bare number by this library's convention for
-        # dimensionless scalars; a caller who wrote it as a quantity is taken at its magnitude.
-        (
-            contact_angle.to_base_units().magnitude
-            if hasattr(contact_angle, "to_base_units")
-            else float(contact_angle)
-        ),
-        input_to_si(spec, "surface_tension", surface_tension),
-        mixture.cubic.name,
-        mixture.alpha,
-        [list(c.alpha_params) for c in mixture.components],
-    )
-    return CapillaryDewPointResult(
-        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
-        incipient=tuple(result.incipient),
-        k=tuple(result.k),
-        z_liquid=result.z_liquid,
-        z_vapour=result.z_vapour,
-        capillary_pressure=from_si(
-            result.capillary_pressure.magnitude_si, result.capillary_pressure.unit
-        ),
-        min_t_over_tc=result.min_t_over_tc,
-        iterations=result.iterations,
-        residual=result.residual,
-        warnings=_warnings(result.warnings),
-    )
-
-
 def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
     """The BWRS (MBWR-32) phase state, computed in Rust.
 
@@ -239,36 +142,6 @@ def bwrs_phase(coeffs: Any, T: Q, P: Q, z: Sequence[float]) -> BwrsPhaseResult:
         h_res=from_si(result.h_res.magnitude_si, result.h_res.unit),
         s_res=from_si(result.s_res.magnitude_si, result.s_res.unit),
         cp_res=from_si(result.cp_res.magnitude_si, result.cp_res.unit),
-        warnings=_warnings(result.warnings),
-    )
-
-
-def ge_uniquac_phase(
-    params: Any, T: Q, P: Q, x: Sequence[float], aij: Sequence[Sequence[Q]]
-) -> GeUniquacPhaseResult:
-    """The fugacity coefficients of a UNIQUAC liquid, computed in Rust.
-
-    Both the resolved record and `aij` cross flattened: the record's fields in the
-    dataclass's own order, then the interaction matrix row by row, row-major.
-    """
-    spec = _models_gen.model("eos.ge_uniquac_phase")
-    result = _core.ge_uniquac_phase(
-        list(params.r),
-        list(params.q),
-        list(params.antoine_type),
-        list(params.antoine_coefficients),
-        list(params.antoine_tc),
-        list(params.antoine_pc),
-        input_to_si(spec, "T", T),
-        input_to_si(spec, "P", P),
-        list(x),
-        [[input_to_si(spec, "aij", value) for value in row] for row in aij],
-    )
-    return GeUniquacPhaseResult(
-        gamma=tuple(result.gamma),
-        ln_gamma=tuple(result.ln_gamma),
-        ln_phi=tuple(result.ln_phi),
-        p_sat=tuple(from_si(value.magnitude_si, value.unit) for value in result.p_sat),
         warnings=_warnings(result.warnings),
     )
 
