@@ -33,7 +33,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `top_pressure` | Pa | the pressure at the top stage. |
 | `bottom_pressure` | Pa | the pressure at the bottom stage. The class's own tests state the same value for both. |
 | `tray_temperatures` | K | *Optional.* one outlet-temperature pin per tray, `NaN` where a tray has none. **A pinned column stops after its first sweep**, because the gate is the tray-temperature change it has made zero. |
-| `temperature_tolerance` | K | the convergence gate on the mean tray-temperature change. Where a solve stops is what its answer is, so this is a measurement and not a knob. |
+| `temperature_tolerance` | K (interval) | the convergence gate on the mean tray-temperature change. Where a solve stops is what its answer is, so this is a measurement and not a knob. |
 | `max_iterations` | dimensionless | the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named. |
 | `murphree_efficiency` | dimensionless | *Optional.* the column-wide Murphree tray efficiency. `StrippingColumn extends AbsorptionColumn`, so this is the same override: both phases corrected, through a limiting-component allocator. |
 | `component_murphree_efficiency` | dimensionless | *Optional.* one efficiency per component, which the inherited `setComponentMurphreeEfficiency(String, double)` sets. `getComponentMurphreeEfficiency` reads this, then the base's per-tray and column-wide pair. |

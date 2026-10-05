@@ -39,7 +39,7 @@ not an equation, and both implementations read it from here.
 | `has_condenser` | - | whether the column has a condenser at the top stage. |
 | `top_pressure` | Pa | the pressure at the top stage. |
 | `bottom_pressure` | Pa | the pressure at stage 0. The two fix the profile the tray pressures interpolate. |
-| `temperature_tolerance` | K | the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob. |
+| `temperature_tolerance` | K (interval) | the convergence gate on the mean tray-temperature change between iterations. Where a solve stops is what its answer is, so this is a measurement and not a knob. |
 | `max_iterations` | dimensionless | the iteration cap. A solve that reaches it without meeting the gate is refused, with its residuals named. |
 | `reboiler_temperature` | K | *Optional.* the reboiler's temperature, which pins the bottom tray's flash. **Absent means no pin**, and the end's flash is then at its own enthalpy - which is what `setReboilerTemperature` not having been called does, and what makes a duty specification reachable at all. |
 | `condenser_temperature` | K | *Optional.* the condenser's temperature, which pins the top tray's flash. Absent as the reboiler's is. **A pin wins over a directly-applied duty**: the tray tests its stated outlet temperature first and takes a `TPflash` there, so a heat input a duty specification wrote is never read. |
