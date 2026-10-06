@@ -23,6 +23,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
+use azoth_core::parameter_bounds_gen::parameter_bound;
 use azoth_core::unit_vocab_gen::{dimension, si_factor};
 use azoth_core::{AzothError, Result};
 use serde::Deserialize;
@@ -551,6 +552,7 @@ fn resolve_components(
                 ));
             };
             let value = converted(body.value, &body.unit, canonical, &field)?;
+            check_bound(parameter, value, canonical, &field)?;
             match parameter.as_str() {
                 "Tc" => override_.tc = Some(value),
                 "Pc" => override_.pc = Some(value),
@@ -877,6 +879,67 @@ fn check_models(models: Option<&BTreeMap<String, Model>>) -> Result<()> {
 }
 
 /// One declared value in whichever unit the card used, as an SI base magnitude.
+/// Refuse a value outside the domain `component.schema.json` declares for its parameter.
+///
+/// **A bound is a statement about the domain, not about the number.** `Tc > 0` says what the
+/// arithmetic over a critical temperature requires; it says nothing about whether a particular
+/// `Tc` is the right measurement. The bound is stated in the parameter's own declared unit, and
+/// `si` is the SI magnitude [`converted`] produced, so the declared magnitude is `si` over the
+/// canonical unit's own factor - the same pair of factors, read the other way round. A factor no
+/// unit names is a defect in the generated vocabulary and is reported rather than assumed to be
+/// one.
+///
+/// A parameter with no bound is not unchecked by accident:
+/// [`azoth_core::parameter_bounds_gen::UNBOUNDED`] carries the reason for each one, and
+/// `tools/gen_parameter_bounds.py` refuses a schema parameter that states neither.
+fn check_bound(parameter: &str, si: f64, canonical: &str, field: &str) -> Result<()> {
+    let Some(bound) = parameter_bound(parameter) else {
+        return Ok(());
+    };
+    let factor = si_factor(canonical).ok_or_else(|| {
+        AzothError::invalid_input(
+            "<vocabulary>",
+            format!("`{canonical}` has no conversion in this build"),
+        )
+    })?;
+    let declared = si / factor;
+    // NaN is outside every domain: each comparison below answers `false` for it, so without
+    // this it would satisfy a bound rather than violate it - the shape `range.rs` refuses for a
+    // calculation's input, for the same reason.
+    if declared.is_nan() {
+        return Err(AzothError::invalid_input(
+            field,
+            "is NaN, which is not a value in any domain",
+        ));
+    }
+    let below = bound.min.is_some_and(|low| {
+        if bound.min_inclusive {
+            declared < low
+        } else {
+            declared <= low
+        }
+    });
+    let above = bound.max.is_some_and(|high| {
+        if bound.max_inclusive {
+            declared > high
+        } else {
+            declared >= high
+        }
+    });
+    if below || above {
+        return Err(AzothError::invalid_input(
+            field,
+            format!(
+                "is {declared}, outside the domain this build states for a `{parameter}`. {}. A \
+                 bound is a statement about the domain the arithmetic requires, not a \
+                 judgement about the measurement.",
+                bound.rationale
+            ),
+        ));
+    }
+    Ok(())
+}
+
 fn converted(value: f64, unit: &str, canonical: &str, field: &str) -> Result<f64> {
     let Some(declared) = dimension(unit) else {
         return Err(AzothError::invalid_input(

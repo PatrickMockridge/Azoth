@@ -20,6 +20,7 @@ other.
 
 from __future__ import annotations
 
+import math
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -28,6 +29,7 @@ from typing import Any
 
 import pint
 
+from azoth.core._bounds_gen import PARAMETER_BOUNDS
 from azoth.core._units_gen import UNIT_VOCABULARY as _UNIT_VOCABULARY
 from azoth.core.errors import InvalidInputError, KeycardError
 from azoth.core.units import Q, ureg
@@ -395,6 +397,41 @@ def _quantity(value: Any, unit: Any, expected: str, where: str, field_name: str)
         ) from exc
 
 
+def _within_bound(parameter: str, value: Q, where: str, field_name: str) -> None:
+    """Refuse a value outside the domain `component.schema.json` declares for it.
+
+    **A bound is a statement about the domain, not about the number.** `Tc > 0` says what the
+    arithmetic over a critical temperature requires; it says nothing about whether a particular
+    `Tc` is the right measurement, which is empirical and is not this function's business. The
+    schema states the bound in the parameter's own declared unit, which is the unit
+    :func:`_quantity` has already converted to, so no factor is applied here and none is written
+    down.
+
+    A parameter with no bound is not unchecked by accident: `azoth.core._bounds_gen.UNBOUNDED`
+    carries the reason for each one, and `tools/gen_parameter_bounds.py` refuses a schema
+    parameter that states neither a bound nor a reason.
+    """
+    bound = PARAMETER_BOUNDS.get(parameter)
+    if bound is None:
+        return
+    magnitude = float(value.magnitude)
+    # **NaN is outside every domain.** Every comparison below answers `False` for it, so without
+    # this line a NaN would satisfy a bound rather than violate it - which is the shape
+    # `crates/azoth-core/src/range.rs` refuses for a calculation's inputs and for the same reason.
+    if math.isnan(magnitude):
+        raise KeycardError(where, f"`{field_name}` is NaN, which is not a value in any domain")
+    low, high = bound.min, bound.max
+    below = low is not None and (magnitude < low if bound.min_inclusive else magnitude <= low)
+    above = high is not None and (magnitude > high if bound.max_inclusive else magnitude >= high)
+    if below or above:
+        raise KeycardError(
+            where,
+            f"`{field_name}` is {magnitude} {value.units}, outside the domain this build "
+            f"states for a `{parameter}`. {bound.rationale} A bound is a statement about "
+            f"the domain the arithmetic requires, not a judgement about the measurement.",
+        )
+
+
 def _components(raw: Any, where: str) -> dict[str, Component]:
     if raw is None:
         return {}
@@ -439,6 +476,7 @@ def _components(raw: Any, where: str) -> dict[str, Component]:
                 where,
                 f"{field_name}.{parameter}",
             )
+            _within_bound(parameter, resolved[parameter], where, f"{field_name}.{parameter}")
         present = [p for p in resolved if p.startswith("cp_")]
         if present and len(present) != 5:
             raise KeycardError(

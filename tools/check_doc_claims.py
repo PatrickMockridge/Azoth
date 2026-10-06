@@ -412,6 +412,29 @@ def layout_results_hand() -> int:
     return _result_counts()[1]
 
 
+def _bound_counts() -> tuple[int, int]:
+    """`(bounded, unbounded)` card parameters, from the table both readers take.
+
+    `docs/src/calculus/values.md` states how many parameters carry a bound and how many state
+    why they have none. The two are the generated table's own length, so a parameter added to
+    the schema without a decision moves a count rather than leaving the page behind.
+    """
+    import azoth.core._bounds_gen as bounds
+
+    bounded, unbounded = len(bounds.PARAMETER_BOUNDS), len(bounds.UNBOUNDED)
+    if not bounded:
+        raise ProbeError("no card parameter carries a bound, so the page states nothing")
+    return bounded, unbounded
+
+
+def bounds_card_bounded() -> int:
+    return _bound_counts()[0]
+
+
+def bounds_card_unbounded() -> int:
+    return _bound_counts()[1]
+
+
 def layout_bridge_generated() -> int:
     return _bridge_counts()[0]
 
@@ -533,6 +556,8 @@ MEASURES = {
     "lean.modules": lean_modules,
     "layout.bridge_generated": layout_bridge_generated,
     "layout.bridge_hand": layout_bridge_hand,
+    "bounds.card_bounded": bounds_card_bounded,
+    "bounds.card_unbounded": bounds_card_unbounded,
     "layout.results_generated": layout_results_generated,
     "layout.results_hand": layout_results_hand,
     "layout.wrappers_generated": layout_wrappers_generated,

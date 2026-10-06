@@ -287,6 +287,43 @@ def test_an_unknown_unit_is_refused() -> None:
         keycard.use(minimal(components={"methane": {"Tc": {"value": 1.0, "unit": "kelvin"}}}))
 
 
+def test_a_parameter_outside_its_declared_domain_is_refused() -> None:
+    """**A bound is a statement about the domain, not about the number.**
+
+    `Tc > 0` is what the arithmetic over a critical temperature requires; whether a particular
+    `Tc` is the right measurement is empirical, and nothing here claims it. A negative critical
+    temperature is not a state, and before this bound existed the card loaded and every
+    calculation ran on it.
+
+    The bound lives in `specs/schema/component.schema.json` and reaches both readers through the
+    generated table, so this is the same claim as `a_parameter_outside_its_declared_domain_is_
+    refused` in `crates/azoth-eos/tests/card.rs` - which is what `test_card_agreement.py` holds
+    the two readers to everywhere else the card speaks.
+    """
+
+    def with_tc(value: float) -> dict[str, Any]:
+        return minimal(
+            components={
+                "unobtainium": {
+                    "Tc": {"value": value, "unit": "K"},
+                    "Pc": {"value": 4.0e6, "unit": "Pa"},
+                    "omega": {"value": 0.2, "unit": "dimensionless"},
+                }
+            }
+        )
+
+    for value in (
+        -1.0e9,  # a negative critical temperature
+        0.0,  # zero, which the bound excludes rather than admits
+        float("nan"),  # satisfies no comparison, so it would pass every bound
+    ):
+        with pytest.raises(KeycardError, match="domain"):
+            keycard.use(with_tc(value))
+
+    # A real critical temperature still loads, so the bound is a domain rather than a wall.
+    keycard.use(with_tc(400.0))
+
+
 # ---------------------------------------------------------------------------
 # Association
 # ---------------------------------------------------------------------------

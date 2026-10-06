@@ -30,6 +30,7 @@
 //! result dataclass, so the two implementations cannot drift apart unnoticed.
 
 pub mod error;
+pub mod parameter_bounds_gen;
 pub mod provenance;
 pub mod provenance_gen;
 pub mod range;

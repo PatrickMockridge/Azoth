@@ -936,3 +936,40 @@ fn a_card_cannot_reclassify_a_shipped_substance() {
         2.0
     );
 }
+
+#[test]
+fn a_parameter_outside_its_declared_domain_is_refused() {
+    // **A bound is a statement about the domain, not about the number.** `Tc > 0` is what the
+    // arithmetic over a critical temperature requires; whether a particular `Tc` is the right
+    // measurement is empirical and nothing here claims it. A negative critical temperature is
+    // not a state, and before this bound existed the card loaded and the flash ran on it.
+    //
+    // The bound lives in `specs/schema/component.schema.json` and reaches both readers through
+    // the generated table, so this test and `test_a_parameter_outside_its_declared_domain_is_
+    // refused` in `python/tests/test_keycard_loader.py` are the same claim twice - which is what
+    // `test_card_agreement.py` holds the two readers to everywhere else the card speaks.
+    let substance = |tc: &str| {
+        a_card(&format!(
+            "[components.unobtainium]\n\
+             [components.unobtainium.Tc]\nvalue = {tc}\nunit = \"K\"\n\
+             [components.unobtainium.Pc]\nvalue = 4.0e6\nunit = \"Pa\"\n\
+             [components.unobtainium.omega]\nvalue = 0.2\nunit = \"dimensionless\"\n"
+        ))
+    };
+
+    for (value, why) in [
+        ("-1.0e9", "a negative critical temperature"),
+        ("0.0", "zero, which the bound excludes rather than admits"),
+        ("nan", "NaN, which satisfies no comparison and so would pass every bound"),
+    ] {
+        let error = Card::from_toml(&substance(value))
+            .expect_err(&format!("{why} is not in any domain"));
+        assert!(
+            format!("{error}").contains("domain"),
+            "{why} was refused, but not for the domain: {error}"
+        );
+    }
+
+    // And a real critical temperature still loads, so the bound is a domain rather than a wall.
+    Card::from_toml(&substance("400.0")).expect("400 K is a critical temperature");
+}

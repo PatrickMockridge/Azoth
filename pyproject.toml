@@ -148,6 +148,7 @@ exclude = [
   "python/src/azoth/_rust_bridge_gen.py",
   "python/src/azoth/core/_units_gen.py",
   "python/src/azoth/core/result_gen.py",
+  "python/src/azoth/core/_bounds_gen.py",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -174,6 +175,9 @@ exclude = [
 # spec's rather than the generator's, and the file's correctness is asserted by
 # `test_gen_python_result.py` and `test_registry_contract.py` rather than by a linter.
 "python/src/azoth/core/result_gen.py" = ["E501"]
+# The same again: a bound's rationale is the schema's prose, so its line length is the
+# schema's rather than the generator's.
+"python/src/azoth/core/_bounds_gen.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

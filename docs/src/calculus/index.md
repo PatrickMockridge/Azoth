@@ -18,8 +18,7 @@ inlet and an outlet, and "the mole balance closes" is either a consequence of ho
 its channels are used or it is a sentence in a specification that nothing checks.
 That is the second thing.
 
-Twelve layers, each a page here and the Lean module it is stated against — where there is one, since
-a layer that is specified has nothing to state it against yet:
+Twelve layers, each a page here and the Lean module it is stated against, where there is one:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
@@ -30,7 +29,7 @@ a layer that is specified has nothing to state it against yet:
 | The sensitivity of a solution | how a solution moves with the equations that define it | `Azoth/Implicit.lean` (first order) | [The sensitivity of a solution](./implicit.md) |
 | Reflection and feedback | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` ✅ | [Reflection and feedback](./rho.md) |
 | The keycard as a capability | authority a process holds rather than a global it reads | `Azoth/Capability.lean` ✅ | [The keycard as a capability](./capability.md) |
-| What a card's value may be | the domain a datum has to lie in, and what is checked rather than proved | (specified) | [What a card's value may be](./values.md) |
+| What a card's value may be | the domain a datum has to lie in, and what is checked rather than proved | (checked) | [What a card's value may be](./values.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (general barbs) | [Barbs](./barbs.md) |
 | Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (the extensionality claim) | [Processes and channels](./process.md) |
 | The rendering | a rendering is a function of the document, and what the editor holds | `Azoth/View.lean` ✅ | [The rendering](./view.md) |
@@ -39,9 +38,9 @@ a layer that is specified has nothing to state it against yet:
 Three further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
 `#print axioms` line for each general theorem and for the witness theorems beside some of
 them, and the generated `Azoth/Gate.lean` and `Azoth/GuardGate.lean` the ones for the
-canonical units and for the guards. Seventeen modules in all, and every layer the calculus
-states has one except the one it specifies — a claim that is what will make its tranche checkable
-has, by definition, nothing yet to be checked against.
+canonical units and for the guards. Seventeen modules in all — one fewer than the layers, because
+the layer that is **checked** rather than proved is enforced by the two card readers, and a
+module is not what a checked claim needs.
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
 Python, JSON Schema and Lean. It is specified separately, in

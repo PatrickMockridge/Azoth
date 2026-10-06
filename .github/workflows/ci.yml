@@ -117,6 +117,9 @@ jobs:
       # The pages and the Lean tree against each other: a name a page calls proved has to be a
       # declaration, and a proved claim has to name a gated theorem. Stdlib only, like the rest.
       - run: python tools/audit_lean_claims.py --check
+      # The domain each card parameter has to lie in, against the schema it is declared in.
+      # Stdlib only: it reads the schema and emits both readers' tables.
+      - run: python tools/gen_parameter_bounds.py --check
 
   rust-test:
     name: rust-test
@@ -329,6 +332,7 @@ jobs:
           .venv/bin/python tools/gen_python_wrappers.py
           .venv/bin/python tools/gen_python_bridge.py
           .venv/bin/python tools/gen_python_result.py
+          .venv/bin/python tools/gen_parameter_bounds.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -344,6 +348,7 @@ jobs:
             echo "::error::  python tools/gen_python_wrappers.py"
             echo "::error::  python tools/gen_python_bridge.py"
             echo "::error::  python tools/gen_python_result.py"
+            echo "::error::  python tools/gen_parameter_bounds.py"
             exit 1
           fi
 

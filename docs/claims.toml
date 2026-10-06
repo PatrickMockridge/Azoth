@@ -120,6 +120,14 @@ page = "docs/src/calculus/index.md"
 text = "**{gated}** `#print axioms` lines in `Azoth/Axioms.lean`, {dim} of them `Azoth.Dim`'s, **{gate}** in the generated `Azoth/Gate.lean` - one per canonical unit, checking that the table's exponents name the dimension `lean-units` calls by that name, plus one for `Azoth.Inputs`, which holds the palette's input table to the vocabulary's own exponents - and **{guards}** in the generated `Azoth/GuardGate.lean`"
 measure = { gated = "lean.axioms_gated", dim = "lean.axioms_dim", gate = "lean.gate_printed", guards = "lean.guards_gated" }
 
+# The values layer's own measurement: how many card parameters carry a bound, and how many
+# state why they have none. Both are the generated table's length, and a parameter that got
+# neither is refused by `tools/gen_parameter_bounds.py` rather than counted here.
+[[claim]]
+page = "docs/src/calculus/values.md"
+text = "**{bounded}** of the fifteen are bounded today"
+measure = { bounded = "bounds.card_bounded" }
+
 [[claim]]
 page = "docs/src/calculus/index.md"
 text = "{modules} modules in all"

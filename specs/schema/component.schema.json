@@ -10,48 +10,60 @@
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "K",
       "x-azoth-column": "tc_k",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A critical temperature is an absolute temperature; zero and below are not states.",
       "description": "Critical temperature."
     },
     "Pc": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "Pa",
       "x-azoth-column": "pc_pa",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A critical pressure is an absolute pressure; zero and below are not states.",
       "description": "Critical pressure."
     },
     "omega": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "dimensionless",
       "x-azoth-column": "acentric_factor",
+      "x-azoth-unbounded": "the shipped table spans -0.39003 to 2.8353, so a sign bound would refuse neon, and no source states a band",
       "description": "Acentric factor."
     },
     "cp_a": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "J/(mol*K)",
       "x-azoth-column": "cpa",
+      "x-azoth-unbounded": "a fitted polynomial's constant term: the shipped table carries zeros for absent terms and both signs",
       "description": "Ideal-gas heat-capacity constant term."
     },
     "cp_b": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "J/(mol*K**2)",
       "x-azoth-column": "cpb",
+      "x-azoth-unbounded": "a fitted polynomial's linear coefficient: the shipped table carries zeros for absent terms and both signs",
       "description": "Ideal-gas heat-capacity linear coefficient."
     },
     "cp_c": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "J/(mol*K**3)",
       "x-azoth-column": "cpc",
+      "x-azoth-unbounded": "a fitted polynomial's quadratic coefficient: the shipped table carries zeros for absent terms and both signs",
       "description": "Ideal-gas heat-capacity quadratic coefficient."
     },
     "cp_d": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "J/(mol*K**4)",
       "x-azoth-column": "cpd",
+      "x-azoth-unbounded": "a fitted polynomial's cubic coefficient: the shipped table carries zeros for absent terms and both signs",
       "description": "Ideal-gas heat-capacity cubic coefficient."
     },
     "cp_e": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "J/(mol*K**5)",
       "x-azoth-column": "cpe",
+      "x-azoth-unbounded": "a fitted polynomial's quartic coefficient: the shipped table carries zeros for absent terms and both signs",
       "description": "Ideal-gas heat-capacity quartic coefficient."
     },
     "ion": {
@@ -63,42 +75,49 @@
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "dimensionless",
       "x-azoth-column": "ioniccharge",
+      "x-azoth-unbounded": "a charge is a class rather than a magnitude; 289 of the 348 shipped rows are zero",
       "description": "The ionic charge **as a charge number**, in units of the elementary charge: `1` for `Na+`, `-2` for `SO4--`. Dimensionless rather than coulombs because that is the quantity every electrolyte model consumes - Pitzer's ionic strength is `\u00bd \u03a3 m z\u00b2` - and NeqSim's own column holds the same number. Zero does not mean *not an ion*: `caco3` is a neutral salt filed with the ions."
     },
     "deshmukh_mather_diameter": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "angstrom",
       "x-azoth-column": "deshmationicdiameter",
+      "x-azoth-unbounded": "28 of the 348 shipped rows are zero - a placeholder rather than a state - so a positivity bound would refuse the table this derives from",
       "description": "The Deshmukh-Mather ion diameter. NeqSim carries it in \u00e5ngstr\u00f6m and multiplies by `1e-10` at the point of use (`ComponentDesmukhMather`), so this is the same quantity one conversion earlier. The table's absence marker is `0`, which is the infinite-dilution limit of the term it belongs to rather than a diameter."
     },
     "dielectric_1": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "dimensionless",
       "x-azoth-column": "dielectricparameter1",
+      "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
       "description": "The `d0` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
     },
     "dielectric_2": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "K",
       "x-azoth-column": "dielectricparameter2",
+      "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
       "description": "The `d1` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
     },
     "dielectric_3": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "1/K",
       "x-azoth-column": "dielectricparameter3",
+      "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
       "description": "The `d2` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
     },
     "dielectric_4": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "1/K**2",
       "x-azoth-column": "dielectricparameter4",
+      "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
       "description": "The `d3` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
     },
     "dielectric_5": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "1/K**3",
       "x-azoth-column": "dielectricparameter5",
+      "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
       "description": "The `d4` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
     }
   },

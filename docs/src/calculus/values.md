@@ -21,13 +21,17 @@ So the layer has one claim, and it is about admissibility rather than about trut
 **Claim (admissibility).** A datum a bank holds is inside the domain the layer declares for it, or
 the lookup is refused.
 
-*Status: **specified.** The layer does not exist. Nothing reads a bound on a component parameter
-today: `specs/schema/component.schema.json` declares a parameter as `{value, unit, citation}` with
-no `minimum` or `maximum`, and the two readers — `python/src/azoth/keycard.py` and
-`crates/azoth-eos/src/card.rs` — check a value's *unit* and its *dimension* and never its
-magnitude. The tranche that builds it adds the bound vocabulary to the schema, the enforcement to
-both readers at the site the unit check already uses (`_quantity` and `converted`), and this
-paragraph becomes the status it earns.*
+*Status: **checked**, and the claim is narrower than it looks. Each numeric parameter in
+`specs/schema/component.schema.json` carries either a bound (`x-azoth-min`/`x-azoth-max` with a
+`x-azoth-rationale`) or `x-azoth-unbounded` with the reason there is none, and a parameter
+carrying neither is refused by `tools/gen_parameter_bounds.py` rather than skipped. The bounds
+reach both readers through one generated table, and each refuses at the site its unit check
+already uses — `azoth.keycard._within_bound` and `azoth_eos::card::check_bound`.*
+
+*The layer's own measurement: **2** of the fifteen are bounded today: a critical temperature and a critical pressure, both of
+which are absolute and so have zero, and below it, outside any state. The other thirteen state
+why not, and each reason is measured rather than assumed — the acentric factor's band is refused
+because the shipped table spans `-0.39003` to `2.8353`, so a sign bound would reject neon.*
 
 ## What the layer does not do
 
@@ -51,4 +55,4 @@ carry.
 Keeping them apart is what stops a measurement being dressed as a theorem, and it is why nothing in
 `lean/` reads `data/`.
 
-*Enforcement: nothing — the layer is specified, so there is nothing in the implementation for a failure to appear against yet. The tranche that builds it replaces this line with the checker it adds.*
+*Enforcement: check — `tools/gen_parameter_bounds.py` refuses a parameter that states neither a bound nor a reason, and emits one table both readers take; `python/src/azoth/core/_bounds_gen.py` and `crates/azoth-core/src/parameter_bounds_gen.rs` are that table, enforced by `azoth.keycard._within_bound` and `azoth_eos::card::check_bound` at the site each reader already checks a value's unit.*
