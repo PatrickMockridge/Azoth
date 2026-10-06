@@ -325,6 +325,7 @@ jobs:
           .venv/bin/python tools/gen_dispatch.py
           .venv/bin/python tools/gen_python_wrappers.py
           .venv/bin/python tools/gen_python_bridge.py
+          .venv/bin/python tools/gen_python_result.py
       - name: Fail if anything drifted
         run: |
           if ! git diff --exit-code; then
@@ -339,6 +340,7 @@ jobs:
             echo "::error::  python tools/gen_dispatch.py"
             echo "::error::  python tools/gen_python_wrappers.py"
             echo "::error::  python tools/gen_python_bridge.py"
+            echo "::error::  python tools/gen_python_result.py"
             exit 1
           fi
 

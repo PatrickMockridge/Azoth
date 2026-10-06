@@ -374,6 +374,44 @@ def _bridge_counts() -> tuple[int, int]:
     return generated, hand
 
 
+def _result_counts() -> tuple[int, int]:
+    """`(generated, hand-written)` result dataclasses, the third of the same three pairs.
+
+    The generated half is the `CALC_ID`s `core/result_gen.py` declares, which is what the
+    generator wrote - one class per registered id, in `FIELDS` order. The hand-written half is any
+    result class still declared in `core/result.py` itself, which is a re-export shim: the number
+    is zero, and the claim states it so that a class drifting back into a module moves a count
+    rather than going unnoticed.
+    """
+    generated = len(
+        re.findall(
+            r'^    CALC_ID: ClassVar\[str\] = "',
+            (ROOT / "python" / "src" / "azoth" / "core" / "result_gen.py").read_text(
+                encoding="utf-8"
+            ),
+            re.M,
+        )
+    )
+    if generated == 0:
+        raise ProbeError("core/result_gen.py declares no results")
+    hand = len(
+        re.findall(
+            r"^class \w+\(_HasWarnings\):",
+            (ROOT / "python" / "src" / "azoth" / "core" / "result.py").read_text(encoding="utf-8"),
+            re.M,
+        )
+    )
+    return generated, hand
+
+
+def layout_results_generated() -> int:
+    return _result_counts()[0]
+
+
+def layout_results_hand() -> int:
+    return _result_counts()[1]
+
+
 def layout_bridge_generated() -> int:
     return _bridge_counts()[0]
 
@@ -495,6 +533,8 @@ MEASURES = {
     "lean.modules": lean_modules,
     "layout.bridge_generated": layout_bridge_generated,
     "layout.bridge_hand": layout_bridge_hand,
+    "layout.results_generated": layout_results_generated,
+    "layout.results_hand": layout_results_hand,
     "layout.wrappers_generated": layout_wrappers_generated,
     "layout.wrappers_hand": layout_wrappers_hand,
     "pairs.eos_files": pairs_eos_files,

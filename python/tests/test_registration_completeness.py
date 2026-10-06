@@ -2,11 +2,11 @@
 
 Adding a calculation needs five new files - a spec, a kernel and a test in each
 language - and then edits to the existing ones that still know an id by hand:
-the Rust result type and its `lib.rs` line, the bridge adapter, the Python result
-dataclass and the public package. None of those fails at generation time if
-forgotten, and this file exists to make the omission fail loudly, naming the file
-to go and edit. The registration lists the tranche has generated since - the
-extension's id tables, its register call, its transport structs and its wrappers -
+the Rust result type and its `lib.rs` line, and the public package. None of those
+fails at generation time if forgotten, and this file exists to make the omission
+fail loudly, naming the file to go and edit. The registration lists the tranche
+has generated since - the extension's id tables, its register call, its transport
+structs, its wrappers, the bridge's adapters and the Python result dataclasses -
 are not among them, because a generator that forgot one fails its own `--check`.
 
 # What is checked elsewhere, and deliberately not repeated here
@@ -119,7 +119,7 @@ def test_the_result_type_is_a_usable_dataclass(calc_id: str) -> None:
     # which has no `__name__` under mypy --strict even though a class always does.
     class_name: str = result_type.__name__
     assert dataclasses.is_dataclass(result_type), (
-        f"{calc_id}: {class_name} in python/src/azoth/core/result.py is not "
+        f"{calc_id}: {class_name} in python/src/azoth/core/result_gen.py is not "
         f"a dataclass - check for a missing @dataclass(frozen=True, slots=True, "
         f"eq=False) decorator"
     )
@@ -518,7 +518,7 @@ def test_the_stub_types_the_quantity_fields_the_transport_carries() -> None:
     assert not problems, (
         "\n  ".join(["_core.pyi and the transport disagree about a field's type:", *problems])
         + "\nRun `python tools/gen_stub.py` after correcting the annotation in "
-        "python/src/azoth/core/result.py - the stub is emitted from it."
+        "python/src/azoth/core/result_gen.py - the stub is emitted from it."
     )
 
 
