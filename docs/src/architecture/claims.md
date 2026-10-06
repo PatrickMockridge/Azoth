@@ -36,6 +36,12 @@ mapping is the table above. A guard owned by `lean` is **proved**; by `check` or
 is **checked**; by `port`, it is a fidelity claim and is **checked** by the oracle; and
 `unformalised` is **unheld**, which is the only one of the five that has to say why.
 
+**`construction` is presently named by no entry.** A member of a closed vocabulary that nothing uses
+is a row nothing checks, and unlike the statuses above nothing here would notice. It is kept rather
+than removed because "total by how the value is built" is a category a guard can genuinely be in, and
+a vocabulary that loses a member whenever it is momentarily empty is one that has to be widened
+again — but the emptiness is a fact about the tree and is stated rather than left to be discovered.
+
 The vocabulary is closed, and that is what `python/tests/test_claim_kinds.py` holds: every bold word
 after a `*Status:` in the two normative trees, and every `owner` in `lean/guards.toml`, has to be one
 the table above names.

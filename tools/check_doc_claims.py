@@ -115,8 +115,11 @@ IS_PATTERN = re.compile(r"[*?<>{}()\[\]]")
 #: The marker a calculus page carries once, after its last status.
 MARKER = re.compile(r"^\*Enforcement: (construction|check|nothing) — (.+)\*$", re.M)
 
-#: A calculus page's status line, and the words it holds in bold.
-STATUS = re.compile(r"^\*Status: .*$", re.M)
+#: A calculus page's status *block*, and the words it holds in bold. The block and not the
+#: line: a page is free to wrap an italic span, and `rho.md` does - reading only the first line
+#: left its `**proved**` and `**specified**` invisible to this sweep and to
+#: `python/tests/test_claim_kinds.py`, which is a claim compared by nothing.
+STATUS = re.compile(r"^\*Status: (.*?)\*\s*$", re.M | re.S)
 BOLD = re.compile(r"\*\*([a-z]+)\*\*")
 
 
@@ -412,6 +415,30 @@ def layout_results_hand() -> int:
     return _result_counts()[1]
 
 
+def _generated_lengths(path: Path, names: tuple[str, ...]) -> dict[str, int]:
+    """The length of each named module-level dict in a generated file.
+
+    **Read, not imported.** `spec-validate` runs these probes with neither `azoth` installed nor
+    `python/src` on the path, so a probe that imports the generated Python is a
+    `ModuleNotFoundError` there while passing in every checkout - which is what `_bridge_counts`
+    below already records, and what this function is the third instance of.
+    """
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    out: dict[str, int] = {}
+    for node in tree.body:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id in names
+            and isinstance(node.value, ast.Dict)
+        ):
+            out[node.target.id] = len(node.value.keys)
+    missing = sorted(set(names) - set(out))
+    if missing:
+        raise ProbeError(f"{path.name} declares no {missing}")
+    return out
+
+
 def _bound_counts() -> tuple[int, int]:
     """`(bounded, unbounded)` card parameters, from the table both readers take.
 
@@ -419,9 +446,11 @@ def _bound_counts() -> tuple[int, int]:
     why they have none. The two are the generated table's own length, so a parameter added to
     the schema without a decision moves a count rather than leaving the page behind.
     """
-    import azoth.core._bounds_gen as bounds
-
-    bounded, unbounded = len(bounds.PARAMETER_BOUNDS), len(bounds.UNBOUNDED)
+    lengths = _generated_lengths(
+        ROOT / "python" / "src" / "azoth" / "core" / "_bounds_gen.py",
+        ("PARAMETER_BOUNDS", "UNBOUNDED"),
+    )
+    bounded, unbounded = lengths["PARAMETER_BOUNDS"], lengths["UNBOUNDED"]
     if not bounded:
         raise ProbeError("no card parameter carries a bound, so the page states nothing")
     return bounded, unbounded
@@ -433,6 +462,10 @@ def bounds_card_bounded() -> int:
 
 def bounds_card_unbounded() -> int:
     return _bound_counts()[1]
+
+
+def bounds_card_total() -> int:
+    return _bound_counts()[0] + _bound_counts()[1]
 
 
 def layout_bridge_generated() -> int:
@@ -557,6 +590,7 @@ MEASURES = {
     "layout.bridge_generated": layout_bridge_generated,
     "layout.bridge_hand": layout_bridge_hand,
     "bounds.card_bounded": bounds_card_bounded,
+    "bounds.card_total": bounds_card_total,
     "bounds.card_unbounded": bounds_card_unbounded,
     "layout.results_generated": layout_results_generated,
     "layout.results_hand": layout_results_hand,
@@ -1025,7 +1059,7 @@ def sweep_sources() -> tuple[int, list[str], list[str]]:
 def swept_pages() -> list[Path]:
     """Every page that states where its claims are enforced.
 
-    Two trees. `docs/src/calculus/` is normative for the *types* - nine layers, each with
+    Two trees. `docs/src/calculus/` is normative for the *types* - twelve layers, each with
     a Lean module and a status. `docs/src/architecture/` is normative for the *surface* a
     front-end binds, and a claim about the surface is the same kind of claim: `dirty`
     means this, a failed run takes the values with it, the doors disagree about nothing.
@@ -1080,7 +1114,9 @@ def sweep_enforcement() -> tuple[int, list[str], list[str]]:
         checked += 1
         kind, reason = markers[0]
         statuses = STATUS.findall(text)
-        status_words = {word for line in statuses for word in BOLD.findall(line)}
+        # The word each block opens with: a status block states its status first and argues
+        # after, so the later bold words are the prose's emphasis rather than statuses.
+        status_words = {bold[0] for block in statuses if (bold := BOLD.findall(block))}
         if "*Status:" in text and text.index("*Enforcement:") < text.rindex("*Status:"):
             failures.append(
                 f"{where}: the marker sits above the last `*Status:*`; it summarises the page's "

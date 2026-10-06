@@ -125,8 +125,15 @@ measure = { gated = "lean.axioms_gated", dim = "lean.axioms_dim", gate = "lean.g
 # neither is refused by `tools/gen_parameter_bounds.py` rather than counted here.
 [[claim]]
 page = "docs/src/calculus/values.md"
-text = "**{bounded}** of the fifteen are bounded today"
-measure = { bounded = "bounds.card_bounded" }
+text = "**{bounded}** of the **{total}** are bounded today"
+measure = { bounded = "bounds.card_bounded", total = "bounds.card_total" }
+
+# The other half of the same measurement. Without this claim the numerator was held and the
+# denominator was not, so a parameter added with a decision would move neither.
+[[claim]]
+page = "docs/src/calculus/values.md"
+text = "The other **{unbounded}** state why not"
+measure = { unbounded = "bounds.card_unbounded" }
 
 [[claim]]
 page = "docs/src/calculus/index.md"

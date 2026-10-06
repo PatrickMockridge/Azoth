@@ -27,7 +27,10 @@ TREES = ("calculus", "architecture")
 #: A status line, and the words it holds in bold. Read only from `*Status:` because that is what
 #: makes a word a status: `index.md`'s "**one of them is proved**" is prose about a claim, not a
 #: claim's own status.
-_STATUS = re.compile(r"^\*Status: (.*)$", re.M)
+# **The block, not the line.** A page is free to wrap an italic span and `rho.md` does, so a
+# line-anchored pattern reads only its first line and its `**proved**` and `**specified**`
+# were compared by nothing at all.
+_STATUS = re.compile(r"^\*Status: (.*?)\*\s*$", re.M | re.S)
 _BOLD = re.compile(r"\*\*([a-z][a-z-]*)\*\*")
 
 #: The kinds `claims.md` names, and nothing else is one.
@@ -39,15 +42,21 @@ OWNERS = frozenset({"lean", "check", "construction", "port", "unformalised"})
 
 
 def _status_words() -> dict[str, list[str]]:
-    """Every bold word on a `*Status:` line, by the page it is on."""
+    """**The word each status block opens with**, by the page it is on.
+
+    The *first* bold word and not every one: a status block states its status first and then
+    argues, so the bold words after it are the prose's emphasis - `session.md` says
+    `**signature**` and `view.md` says `**two**` - and reading those as statuses would report
+    two pages for writing ordinary English.
+    """
     out: dict[str, list[str]] = {}
     for tree in TREES:
         for page in sorted((REPO_ROOT / "docs" / "src" / tree).glob("*.md")):
-            words = [
-                word
-                for line in _STATUS.findall(page.read_text(encoding="utf-8"))
-                for word in _BOLD.findall(line)
-            ]
+            words = []
+            for block in _STATUS.findall(page.read_text(encoding="utf-8")):
+                bold = _BOLD.findall(block)
+                if bold:
+                    words.append(bold[0])
             if words:
                 out[page.relative_to(REPO_ROOT).as_posix()] = words
     return out

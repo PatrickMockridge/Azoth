@@ -93,8 +93,8 @@ twelve name it because they read it or record it rather than because a port writ
 another column's model, the flowsheet designer, this page, `ROADMAP.md`, the batch
 exclusion list, and the port's NeqSim probe and its capture.
 
-**Of those nine, the bridge adapter and the Python result dataclass are the two the tranche has
-taken; the pyo3 wrapper is the third, and for this id it stays.** The wrapper is generated for
+**Three surfaces the tranche has taken are not in that nine, because it took them: the pyo3
+wrapper, the bridge adapter and the Python result dataclass.** The wrapper is generated for
 **149** of the registered ids and hand-written for **45**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
 whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated

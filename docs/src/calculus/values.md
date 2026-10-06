@@ -28,8 +28,8 @@ carrying neither is refused by `tools/gen_parameter_bounds.py` rather than skipp
 reach both readers through one generated table, and each refuses at the site its unit check
 already uses — `azoth.keycard._within_bound` and `azoth_eos::card::check_bound`.*
 
-*The layer's own measurement: **2** of the fifteen are bounded today: a critical temperature and a critical pressure, both of
-which are absolute and so have zero, and below it, outside any state. The other thirteen state
+*The layer's own measurement: **2** of the **15** are bounded today: a critical temperature and a critical pressure, both of
+which are absolute and so have zero, and below it, outside any state. The other **13** state
 why not, and each reason is measured rather than assumed — the acentric factor's band is refused
 because the shipped table spans `-0.39003` to `2.8353`, so a sign bound would reject neon.*
 

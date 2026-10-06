@@ -41,7 +41,9 @@ the registry, the Rust sources and the specs
         ├─► tools/gen_python_register.py  ─► crates/azoth-python/src/register_gen.rs
         ├─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
         ├─► tools/gen_python_bridge.py    ─► python/src/azoth/_rust_bridge_gen.py
-        └─► tools/gen_python_result.py    ─► python/src/azoth/core/result_gen.py
+        ├─► tools/gen_python_result.py    ─► python/src/azoth/core/result_gen.py
+        └─► tools/gen_parameter_bounds.py ─► python/src/azoth/core/_bounds_gen.py
+                                            crates/azoth-core/src/parameter_bounds_gen.rs
 
 databank/sources/neqsim/*.csv ─► tools/gen_databank.py ─► data/components/*.csv
                               └► tools/gen_keycard.py ─► databank/keycard.toml
@@ -66,7 +68,8 @@ holds the checkers, which generate nothing and are what fail the build: `spec_li
 `prose_lint`, `check_links`, `check_json_keys`, `check_numerics`, `check_manifest`,
 `check_lean_axioms`, `check_guards`, `check_doc_claims`, `check_unported`, `check_ui`,
 `check_versions`, `check_mcp_schema`, `check_user_data`, `check_wheel_data` and
-`validate_skills`.
+`validate_skills`; and one that reads the tree's own prose against it: `audit_lean_claims`,
+which holds every Lean name a page carries to a declaration under `lean/Azoth/`.
 
 ## What is true, and where it is written
 

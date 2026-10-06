@@ -38,9 +38,10 @@ Twelve layers, each a page here and the Lean module it is stated against, where 
 Three further modules are the gate rather than a layer: `Azoth/Axioms.lean` carries the
 `#print axioms` line for each general theorem and for the witness theorems beside some of
 them, and the generated `Azoth/Gate.lean` and `Azoth/GuardGate.lean` the ones for the
-canonical units and for the guards. Seventeen modules in all — one fewer than the layers, because
-the layer that is **checked** rather than proved is enforced by the two card readers, and a
-module is not what a checked claim needs.
+canonical units and for the guards. Seventeen modules in all: the twelve layers above name twelve
+of them — the values layer names none, being **checked** rather than proved, and the session's row
+names two — and the other five are the gate or a table rather than a layer (`Axioms`, `Gate`,
+`GuardGate`, `Guards`, `Inputs`).
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
 Python, JSON Schema and Lean. It is specified separately, in
