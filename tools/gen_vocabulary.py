@@ -808,7 +808,7 @@ def emit_lean(table: dict[str, Any]) -> str:
         "-- `specs/vocabulary/vocabulary.toml`.",
         "--",
         "-- One entry per canonical unit a spec may declare, with the dimension it",
-        "-- carries as exponents in `Azoth.Dim.slots` order, and the theorem saying those",
+        "-- carries as exponents in `Azoth.slots` order, and the theorem saying those",
         "-- exponents name the dimension `lean-units` calls by that name. The theorem's",
         "-- right-hand side is the hand-written `LEAN_DIMENSIONS` entry in the generator,",
         "-- so the statement checks the table rather than restating it.",
@@ -821,7 +821,7 @@ def emit_lean(table: dict[str, Any]) -> str:
         "",
         "/-- Every canonical unit string, with the dimension it carries.",
         "",
-        "Each exponent vector is written in `Azoth.Dim.slots` order, and has one",
+        "Each exponent vector is written in `Azoth.slots` order, and has one",
         f"entry per slot - {width} of them.",
         "-/",
         # `\u00d7` and not the character itself: it is Lean's product type, and

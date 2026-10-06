@@ -59,6 +59,18 @@ names the witness theorems beside the claims they keep from being vacuous, and s
 the line count is what the gate holds, and the claims are fewer than the lines. Those numbers
 are the files' own, and a reader can count them.
 
+**A claim and its theorem are held together by a checker, not by a reader.**
+`tools/audit_lean_claims.py` reads the two normative trees and requires that every Lean name they
+carry is a declaration under `lean/Azoth/`, or a module that exists — unless the paragraph carrying
+it says *specified* or *characterised*, which are exactly the two statuses that mean the layer is
+not there yet. It requires as well that a paragraph claiming a proof names a theorem the axiom gate
+covers, so a proof cannot be pointed at nothing.
+
+What it does not do is check that a theorem is the claim a page states: a proof of a weakened
+hypothesis has no gap and is still not the claim a reader expects. That is the limit
+`tools/check_lean_axioms.py` states for itself, and the audit says so in its own docstring rather
+than appearing to close it.
+
 Most of the eleven are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
 [Raw and normalised variables](./normalisation.md) and [Reflection and
 feedback](./rho.md) are complete, and [The keycard as a capability](./capability.md) is

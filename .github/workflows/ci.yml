@@ -114,6 +114,9 @@ jobs:
       # claims are true - which is the `lean-verify` job's, because it needs the toolchain.
       - run: python tools/gen_guard_theorems.py --check
       - run: python tools/check_guards.py
+      # The pages and the Lean tree against each other: a name a page calls proved has to be a
+      # declaration, and a proved claim has to name a gated theorem. Stdlib only, like the rest.
+      - run: python tools/audit_lean_claims.py --check
 
   rust-test:
     name: rust-test
