@@ -148,7 +148,7 @@ theorem u_mm_dimension :
   simp only [dimOf, units, ...] <;> simp <;> module
 ```
 
-The left is the table's exponents, read through `Azoth.Dim.slots`. The right is a
+The left is the table's exponents, read through `Azoth.slots`. The right is a
 dimension with a name **`lean-units` wrote** — and `LEAN_DIMENSIONS` in
 `tools/gen_vocabulary.py` is what decides which name each unit gets. That map is
 keyed by **unit**, not by dimension, and that is the whole reason the theorem is a
