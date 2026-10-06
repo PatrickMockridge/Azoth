@@ -52,6 +52,11 @@ jobs:
       # done with it. It also prints the tally, because the interesting number is how
       # many columns are absent because the model does not exist yet.
       - run: python tools/check_manifest.py
+      # And the half of a manifest row `check_manifest.py` cannot decide: a column recorded as
+      # unread, against whether the tree reads the field the readers put it in. `PARACHOR`,
+      # `LJEPS` and the three `LIQUIDCONDUCTIVITY` columns were each corrected by hand after
+      # going false, and this is what reads the claim.
+      - run: python tools/audit_manifest.py --check
       # The two version numbers, held to each other: `pyproject.toml`'s is what the wheel
       # is published as, `Cargo.toml`'s is what every binary reports - and it reaches a
       # client as `azoth mcp`'s `serverInfo.version`. Each is correct for the file it was

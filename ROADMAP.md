@@ -41,19 +41,22 @@ statements.
 The cubic Peng-Robinson core is ported: `ComponentPR`, `AttractiveTermPr`,
 `PhasePrEos`, `SystemPrEos`, `TPflash`, `PHflash`, `PSFlash`, the tangent-plane
 stability test, `CriticalPointFlash`, the phase envelope, `RachfordRice` and the
-classical vdW1f mixing rule, reading 14 of the databank's columns. What is still open on
-it is what the rest of the port stands on:
+classical vdW1f mixing rule, reading 14 of the databank's columns. **Both things it was
+waiting on are read rather than owed**, and `tools/audit_manifest.py` is what holds the second:
 
-- the single `databank → keycard → every calculation` path, so a calculation names its
-  components and every constant it reads comes through one route;
-- the **gas diffusivity method**, which is what the collision columns' `LJEPS` is unread
-  for: NeqSim's
-  `physicalproperties/methods/gasphysicalproperties/diffusivity/Diffusivity` is not ported,
-  and the manifest carries the column under `not-ported` with `roadmap:P1` as its consumer.
-  **`eos.viscosity` and `eos.thermal_conductivity` do not read it** — they port
-  `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod`, neither of which touches these
-  columns, and both are ported. `eos.molar_enthalpy_entropy` already reads the databank, and
-  `eos.ideal_gas_cp` stays a scalar calc by design.
+- **the single `databank → keycard → every calculation` path** — demonstrated rather than
+  declared: `eos.phase_transport` names its components, resolves them through the databank or a
+  card, and reads each one's parameters off the entry. Thirty-three specs still take a component
+  property as an *input* — `Tc`, `Pc`, `omega`, `molar_mass` — and those are the low-level terms
+  NeqSim also constructs with the constant: an `AttractiveTerm` is built *with* an omega, and it
+  is the `Component` that holds one. `eos.ideal_gas_cp` stays a scalar calc by design.
+- **the gas diffusivity method** — ported, as `eos.phase_transport`'s gas branch: NeqSim's base
+  `Diffusivity`, which `GasPhysicalProperties` assigns to a gas, taking the pair from the two
+  components' Lennard-Jones parameters. **The `LJEPS` row said `not-ported` and the tree read
+  it**, the same correction `PARACHOR` carries; the row, and the three
+  `LIQUIDCONDUCTIVITY` columns beside it, name their reader now. `eos.viscosity` and
+  `eos.thermal_conductivity` still do not read any of these — they port
+  `PFCTViscosityMethodHeavyOil` and `PFCTConductivityMethod`.
 
 ### Tier 1 — oil and gas
 
