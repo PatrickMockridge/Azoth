@@ -522,7 +522,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::wilke_viscosity, m)?)?;
     m.add_function(wrap_pyfunction!(
-        crate::eos::wilson_activity_coefficients,
+        crate::wrappers_gen::wilson_activity_coefficients,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::choked_flow_area, m)?)?;

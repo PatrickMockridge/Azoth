@@ -65,6 +65,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib
 import importlib.util
 import re
 import sys
@@ -344,6 +345,81 @@ def _wrapper_counts() -> tuple[int, int]:
     return generated, hand
 
 
+def _bridge_counts() -> tuple[int, int]:
+    """`(generated, hand-written)` adapters, the same way the wrappers' pair is measured.
+
+    The generated half is the emitted file's `__all__`, which is what the generator wrote; the
+    hand-written half is the registered functions still written out in `_rust_bridge.py`. A name
+    in both is what `test_gen_python_bridge.py` refuses, so the two counts are disjoint.
+
+    **The registry is read from the Rust, not imported.** `spec-validate` runs this with neither
+    `azoth` installed nor `python/src` on the path, so importing the generated tables made the probe
+    a `ModuleNotFoundError` there while passing in every checkout - the wrappers' pair above reads
+    `rust_index` for the same reason, and one reader is what keeps the two honest.
+    """
+    import sys as _sys
+
+    _sys.path.insert(0, str(ROOT / "tools"))
+    import rust_index
+
+    text = (ROOT / "python" / "src" / "azoth" / "_rust_bridge_gen.py").read_text(encoding="utf-8")
+    block = text.partition("__all__ = [")[2].partition("]")[0]
+    generated = len(re.findall(r'^    "\w+",', block, re.M))
+    if generated == 0:
+        raise ProbeError("_rust_bridge_gen.py declares no adapters")
+
+    registered = {function for _, _, function in rust_index.implementations()}
+    source = (ROOT / "python" / "src" / "azoth" / "_rust_bridge.py").read_text(encoding="utf-8")
+    hand = len([name for name in re.findall(r"^def (\w+)\(", source, re.M) if name in registered])
+    return generated, hand
+
+
+def _result_counts() -> tuple[int, int]:
+    """`(generated, hand-written)` result dataclasses, the third of the same three pairs.
+
+    The generated half is the `CALC_ID`s `core/result_gen.py` declares, which is what the
+    generator wrote - one class per registered id, in `FIELDS` order. The hand-written half is any
+    result class still declared in `core/result.py` itself, which is a re-export shim: the number
+    is zero, and the claim states it so that a class drifting back into a module moves a count
+    rather than going unnoticed.
+    """
+    generated = len(
+        re.findall(
+            r'^    CALC_ID: ClassVar\[str\] = "',
+            (ROOT / "python" / "src" / "azoth" / "core" / "result_gen.py").read_text(
+                encoding="utf-8"
+            ),
+            re.M,
+        )
+    )
+    if generated == 0:
+        raise ProbeError("core/result_gen.py declares no results")
+    hand = len(
+        re.findall(
+            r"^class \w+\(_HasWarnings\):",
+            (ROOT / "python" / "src" / "azoth" / "core" / "result.py").read_text(encoding="utf-8"),
+            re.M,
+        )
+    )
+    return generated, hand
+
+
+def layout_results_generated() -> int:
+    return _result_counts()[0]
+
+
+def layout_results_hand() -> int:
+    return _result_counts()[1]
+
+
+def layout_bridge_generated() -> int:
+    return _bridge_counts()[0]
+
+
+def layout_bridge_hand() -> int:
+    return _bridge_counts()[1]
+
+
 def layout_wrappers_generated() -> int:
     return _wrapper_counts()[0]
 
@@ -455,6 +531,10 @@ MEASURES = {
     "lean.gate_printed": lean_gate_printed,
     "lean.guards_gated": lean_guards_gated,
     "lean.modules": lean_modules,
+    "layout.bridge_generated": layout_bridge_generated,
+    "layout.bridge_hand": layout_bridge_hand,
+    "layout.results_generated": layout_results_generated,
+    "layout.results_hand": layout_results_hand,
     "layout.wrappers_generated": layout_wrappers_generated,
     "layout.wrappers_hand": layout_wrappers_hand,
     "pairs.eos_files": pairs_eos_files,

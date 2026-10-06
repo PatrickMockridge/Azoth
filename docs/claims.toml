@@ -98,6 +98,23 @@ page = "docs/src/architecture/specification.md"
 text = "generated for **{generated}** of the registered ids and hand-written for **{hand}**"
 measure = { generated = "layout.wrappers_generated", hand = "layout.wrappers_hand" }
 
+# The same pair for the bridge adapter, which is generated for the ids whose signature is the
+# public wrapper's and hand-written for the rest. The two counts are disjoint and together they
+# are the registry - `test_gen_python_bridge.py` holds that - so a reader can check the pair
+# against 194 without reading either file.
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "The bridge adapter is generated for **{generated}** and hand-written for **{hand}**"
+measure = { generated = "layout.bridge_generated", hand = "layout.bridge_hand" }
+
+# The third of the pair's three surfaces: the Python result dataclass. Every registered id has one
+# class and it is emitted, so the hand-written count is zero and the claim says so - a class that
+# drifted back into a module would move it.
+[[claim]]
+page = "docs/src/architecture/specification.md"
+text = "The result dataclass is generated for **{generated}** and hand-written for **{hand}**"
+measure = { generated = "layout.results_generated", hand = "layout.results_hand" }
+
 [[claim]]
 page = "docs/src/calculus/index.md"
 text = "**{gated}** `#print axioms` lines in `Azoth/Axioms.lean`, {dim} of them `Azoth.Dim`'s, **{gate}** in the generated `Azoth/Gate.lean` - one per canonical unit, checking that the table's exponents name the dimension `lean-units` calls by that name, plus one for `Azoth.Inputs`, which holds the palette's input table to the vocabulary's own exponents - and **{guards}** in the generated `Azoth/GuardGate.lean`"

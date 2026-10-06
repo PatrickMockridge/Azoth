@@ -79,7 +79,11 @@ SHARED = (
     # is hashed on one side and not the other is a hash that records half a change.
     "python/src/azoth/core/errors.py",
     "python/src/azoth/core/range.py",
+    # `core/result.py` is a re-export shim since the dataclasses were generated, so both halves
+    # are hashed: the base carries the mixin and the enums, the generated file the 194 results.
     "python/src/azoth/core/result.py",
+    "python/src/azoth/core/result_base.py",
+    "python/src/azoth/core/result_gen.py",
     "python/src/azoth/core/solver.py",
     "python/src/azoth/core/units.py",
     "python/src/azoth/core/warnings.py",

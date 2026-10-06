@@ -3105,6 +3105,47 @@ pub fn wilke_viscosity(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Activity coefficients from the paraffin-wax Wilson model.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, T, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn wilson_activity_coefficients(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    molar_mass: Vec<f64>,
+    T: f64,
+    x: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyWilsonActivityCoefficientsResult> {
+    let mixture = build_mixture_with_mass(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        &molar_mass,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::wilson_activity_coefficients::wilson_activity_coefficients(&mixture, T, &x)
+        .map(|r| crate::transport_gen::PyWilsonActivityCoefficientsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Choked-flow throat area for an ideal gas.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

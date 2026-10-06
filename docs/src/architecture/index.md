@@ -39,7 +39,9 @@ the registry, the Rust sources and the specs
         ├─► tools/gen_python_registry.py  ─► crates/azoth-python/src/registry_tables_gen.rs
         ├─► tools/gen_python_transport.py ─► crates/azoth-python/src/transport_gen.rs
         ├─► tools/gen_python_register.py  ─► crates/azoth-python/src/register_gen.rs
-        └─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
+        ├─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
+        ├─► tools/gen_python_bridge.py    ─► python/src/azoth/_rust_bridge_gen.py
+        └─► tools/gen_python_result.py    ─► python/src/azoth/core/result_gen.py
 
 databank/sources/neqsim/*.csv ─► tools/gen_databank.py ─► data/components/*.csv
                               └► tools/gen_keycard.py ─► databank/keycard.toml

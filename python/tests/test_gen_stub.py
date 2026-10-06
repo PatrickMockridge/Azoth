@@ -146,22 +146,29 @@ def test_the_committed_stub_is_current() -> None:
 #: is the reference kernel's and not the extension's.
 #:
 #: This is a **ratchet and not a fix**: the stub is generated in the `docs-drift` job, which
-#: does not build the extension, so it cannot ask it. The alternative is renaming nineteen
-#: pyfunction parameters or teaching the generator a per-model vocabulary, and until one of
-#: those is done this list is what stops the drift growing unnoticed - which is how it got to
-#: nineteen.
+#: does not build the extension, so it cannot ask it. The alternative is renaming the pyfunction
+#: parameters or teaching the generator a per-model vocabulary, and until one of those is done
+#: this list is what stops the drift growing unnoticed - which is how it once got to nineteen.
 KNOWN_SIGNATURE_DRIFT = frozenset(
     {
-        # The same cause as `viscosity`, which is below: a model whose spec declares a
-        # `components` input and whose pyfunction takes the mixture expanded into the
-        # vectors its boundary carries - `Tc`, `Pc`, `omega`, `kij`, `molar_mass`, and for
-        # this one `liqvisc` and `liqvisc_model` too. The stub renders the declared name;
-        # the extension takes the expansion.
+        # A model whose spec declares a `components` input and whose pyfunction takes the mixture
+        # expanded into the vectors its boundary carries - `Tc`, `Pc`, `omega`, `kij`,
+        # `molar_mass`, and for this one `liqvisc` and `liqvisc_model` too. The stub renders the
+        # declared name; the extension takes the expansion. `wilson_activity_coefficients` left
+        # this list when its wrapper was generated: the hand-written one omitted `alpha_params`
+        # from its `text_signature`, so the stub was right and the human-readable signature was
+        # the half that was wrong.
         "aqueous_viscosity",
+        # **A calc, and the only entry here that is a *reordering* rather than a renaming.** The
+        # spec declares `(reaction, source, T)`, the kernel and the `#[pyfunction]` take
+        # `(source, reaction, T)`, and `gen_stub` renders a calc's parameters from the spec. The
+        # port's bridge adapter calls the extension positionally, so an adapter built from the stub
+        # hands the reaction name where the source belongs and the extension refuses `co2water` as
+        # not one of `standard`, `pitzer`, `kent-eisenberg` - which is how this was found.
+        "equilibrium_constant",
         "ge_nrtl_flash",
         "ge_wilson_phase",
         "hydrogen_phase",
-        "wilson_activity_coefficients",
     }
 )
 
@@ -180,25 +187,58 @@ def test_the_stub_describes_the_extension_it_is_a_stub_for() -> None:
 
     from azoth import _core
 
-    rendered: dict[str, list[str]] = {}
-    pattern = r"^def (\w+)\(\n(.*?)^\) ->"
-    for name, body in re.findall(pattern, STUB.read_text(), re.M | re.S):
-        names = [
-            line.strip().split(":")[0].rstrip(",") for line in body.split("\n") if line.strip()
+    # **Both forms the generator emits, and the one-liner is not optional.** `gen_stub` writes a
+    # signature on one line when it fits and across lines when it does not, and the first version
+    # of this parser matched only the second - so 84 of the 228 functions were never compared, and
+    # `equilibrium_constant` was one of them: its stub lists `(reaction, source, T)` for a function
+    # that takes `(source, reaction, T)`, which is a `TypeError` for anyone calling `_core`
+    # positionally with the stub in front of them. The count assertion below is what keeps the hole
+    # from opening again in a form neither pattern covers.
+    text = STUB.read_text()
+
+    def parameters(body: str) -> list[str]:
+        """The parameter names out of a signature, **splitting only outside brackets**.
+
+        A plain `split(",")` reads `dict[str, list[float]]` as two parameters, which made four
+        correct signatures look drifted the first time this ran - `batch_run`, `overlay`,
+        `provenance_block` and `run_flowsheet`, all of them a `dict[...]` or a `list[...]` with a
+        comma inside.
+        """
+        parts, depth, current = [], 0, ""
+        for character in body:
+            if character in "[(":
+                depth += 1
+            elif character in "])":
+                depth -= 1
+            if character == "," and depth == 0:
+                parts.append(current)
+                current = ""
+            else:
+                current += character
+        parts.append(current)
+        return [
+            piece.split(":", 1)[0].split("=")[0].strip()
+            for piece in parts
+            if piece.strip() and piece.strip() != "*"
         ]
-        rendered[name] = names
-    assert rendered, "the stub parses into no signatures"
+
+    rendered: dict[str, list[str]] = {}
+    for match in re.finditer(r"^def (\w+)\((.*?)\) -> [^:]+: \.\.\.$", text, re.M | re.S):
+        rendered[match.group(1)] = parameters(match.group(2))
+    declared = len(re.findall(r"^def \w+\(", text, re.M))
+    assert len(rendered) == declared, (
+        f"the stub declares {declared} function(s) and this parser read {len(rendered)} - a form "
+        f"neither pattern covers is compared by nothing: "
+        f"{sorted(set(re.findall(r'^def (\\w+)\\(', text, re.M)) - set(rendered))}"
+    )
 
     drifted: set[str] = set()
     for name, params in rendered.items():
         function = getattr(_core, name, None)
-        text = getattr(function, "__text_signature__", None) if function else None
-        if not text:
+        signature = getattr(function, "__text_signature__", None) if function else None
+        if not signature:
             continue
-        real = [
-            piece.split("=")[0].strip() for piece in text.strip("()").split(",") if piece.strip()
-        ]
-        if real != params:
+        if parameters(signature.strip("()")) != params:
             drifted.add(name)
 
     assert drifted == set(KNOWN_SIGNATURE_DRIFT), (

@@ -86,26 +86,46 @@ kernels — result structs, transport classes, registration lines, `__all__` ent
 dispatch wrappers. Most of those are a function of the spec's `inputs:`, `outputs:` and the
 id, and the registration-hardening tranche has moved them into generators. **Four is a
 count of *kinds* of file and not of files.** Measured on `hydraulics.tray_hydraulics`,
-which thirty-nine files name: **sixteen** are emitted by a generator and **eleven** must
+which thirty-nine files name: **eighteen** are emitted by a generator and **nine** must
 still be edited by hand — the spec, a kernel and a test in each language, the crate's
-result type and its `lib.rs` line, the pyo3 wrapper, the bridge adapter, the Python result
-dataclass and the public package. The other twelve name it because they read it or record
-it rather than because a port writes them: another column's model, the flowsheet designer,
-this page, `ROADMAP.md`, the batch exclusion list, and the port's NeqSim probe and its
-capture.
+result type and its `lib.rs` line, the pyo3 wrapper and the public package. The other
+twelve name it because they read it or record it rather than because a port writes them:
+another column's model, the flowsheet designer, this page, `ROADMAP.md`, the batch
+exclusion list, and the port's NeqSim probe and its capture.
 
-**Of those eleven, the pyo3 wrapper is the one the tranche has taken.** It is generated for
-**148** of the registered ids and hand-written for **46**: a kernel that takes a record or a
-mixture the spec does not name is one the generator refuses rather than guesses at, and so
-is one whose signature disagrees with the order the bridge passes it in.
+**Of those nine, the bridge adapter and the Python result dataclass are the two the tranche has
+taken; the pyo3 wrapper is the third, and for this id it stays.** The wrapper is generated for
+**149** of the registered ids and hand-written for **45**: a kernel that takes a record or a
+mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
+whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated
+for **192** and hand-written for **2**, and its rule is narrower because its boundary is a Python
+signature rather than a Rust one: its signature is the public wrapper's, its call is the
+`#[pyfunction]`'s own order, and every argument on either side must be an input the spec declares,
+a field of the `params` record the wrapper's annotation names, or one expression a boundary object
+resolves into. A `molar_mass` is the one expansion that is not an expression - a keycard component
+carries none and the correlation cannot default one, so it crosses behind a guard whose sentence is
+read from the id's own reference implementation.
+
+**The result dataclass is generated for **194** and hand-written for **0**.** One frozen class per registered id, its fields
+in `CalcResult::FIELDS` order, each annotation from the transport's Rust type beside the unit the
+spec declares, and each doc from the spec's own `description` — so the field prose has one home
+and `tools/gen_python_result.py` can emit the whole file without a paraphrase. What stays
+hand-written is what a result *is* rather than what one holds: the enums a field may be, the
+`_HasWarnings` mixin that makes it self-describing, and the one record that is not a result.
+
+**That pair is why the tranche started.** The two are the same contract written twice - the
+wrapper says what `_core` takes, the adapter says what the caller sends - and nothing compared
+them, so three adapters lost two arguments each when the capacity-limit port added them and
+`azoth.process.absorption_column` raised `TypeError` on the Rust backend for four commits.
 
 **A `process.*` model is dearer again**, because both languages carry a result record and a
 public wrapper of their own: measured over the four columns' capacity limits, **ten sites per
 model** — its model spec, its case file and its palette entry, its model and its reference
 twin, plus a line each in the pyo3 wrapper, the transported results, the bridge, the Python
-result dataclass and the public package. The tranche has taken two of those ten — the pyo3
+result dataclass and the public package. The tranche has taken three of those ten — the pyo3
 wrapper and the transported result are generated for a model whose kernel takes the declared
-inputs — and the remaining eight are why the count below is still worth stating.
+inputs, and the result dataclass for every model — and the remaining seven are why the count
+below is still worth stating.
 
 **A spec declares every result field, in both directions.** A field the spec does not name
 cannot be emitted by a generator, and a declared output with no field is a promise the
