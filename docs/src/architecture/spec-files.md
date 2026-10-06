@@ -78,7 +78,7 @@ disagree. "Reads" names what consumes the field.
 | Field | Type | Req | Read by |
 |---|---|---|---|
 | `inputs` | map of name → quantity | yes | signatures, the stub, `gen_docs` tables, range-check `on_input` |
-| `outputs` | map of name → quantity or vector or matrix | yes | the result types, `gen_docs` tables, the transported fields, and the guard hypotheses |
+| `outputs` | map of name → quantity or vector or matrix | yes | the generated result dataclasses, `gen_docs` tables, the transported fields, and the guard hypotheses |
 
 A quantity carries `type`, `unit`, `description`, and optionally `optional`,
 `default`, `interval` and, for vectors and matrices, `length` or `shape`. `interval:

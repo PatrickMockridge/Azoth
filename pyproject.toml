@@ -147,6 +147,7 @@ exclude = [
   "python/src/azoth/_provenance_gen.py",
   "python/src/azoth/_rust_bridge_gen.py",
   "python/src/azoth/core/_units_gen.py",
+  "python/src/azoth/core/result_gen.py",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -169,6 +170,10 @@ exclude = [
 # signature's rather than this generator's, and the file is compared byte-for-byte
 # against a regeneration by `gen_python_bridge.py --check`.
 "python/src/azoth/_rust_bridge_gen.py" = ["E501"]
+# The same again: a field's doc comment is the spec's `description`, so its line length is the
+# spec's rather than the generator's, and the file's correctness is asserted by
+# `test_gen_python_result.py` and `test_registry_contract.py` rather than by a linter.
+"python/src/azoth/core/result_gen.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
