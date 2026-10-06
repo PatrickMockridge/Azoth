@@ -104,9 +104,10 @@ def test_the_two_readers_carry_the_same_bounds() -> None:
 
     rust = RUST_TABLE.read_text(encoding="utf-8")
     for name, bound in bounds.items():
-        assert f'("{name}", ParameterBound {{' in rust, (
-            f"{name} is in the Python table and not the Rust one"
-        )
+        # **Read the alias and the bound, not the layout.** The Rust table is emitted through
+        # `rustfmt`, which decides for itself whether a tuple fits on one line; an assertion on
+        # the pre-rustfmt shape passed until the generator started formatting its output.
+        assert f'"{name}"' in rust, f"{name} is in the Python table and not the Rust one"
         # `0` and `0.0` are the same bound and different spellings; the value is what is compared.
         assert f"min: Some({float(bound.min)!r})" in rust, (
             f"{name}: the minimum differs between the two readers"

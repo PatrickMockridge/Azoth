@@ -960,10 +960,13 @@ fn a_parameter_outside_its_declared_domain_is_refused() {
     for (value, why) in [
         ("-1.0e9", "a negative critical temperature"),
         ("0.0", "zero, which the bound excludes rather than admits"),
-        ("nan", "NaN, which satisfies no comparison and so would pass every bound"),
+        (
+            "nan",
+            "NaN, which satisfies no comparison and so would pass every bound",
+        ),
     ] {
-        let error = Card::from_toml(&substance(value))
-            .expect_err(&format!("{why} is not in any domain"));
+        let error =
+            Card::from_toml(&substance(value)).expect_err(&format!("{why} is not in any domain"));
         assert!(
             format!("{error}").contains("domain"),
             "{why} was refused, but not for the domain: {error}"

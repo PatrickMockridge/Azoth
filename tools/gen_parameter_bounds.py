@@ -32,6 +32,7 @@ two are kept apart everywhere, including on the page this serves.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -214,10 +215,37 @@ def _rust_float(value: object) -> str:
     return f"Some({float(value)!r})"
 
 
+def format_rust(text: str) -> str:
+    """The emitted Rust through rustfmt, which every generated file is compared against.
+
+    **A missing rustfmt is a refusal rather than a fallback.** These generators are checked by
+    comparing their output to the committed file, so emitting unformatted text reports the file
+    as stale and sends a reader looking for a drift that is not there - and `cargo fmt --check`
+    fails in `rust-lint` for a file nobody hand-edited. `gen_palette.py` states the policy and
+    this is the same one.
+    """
+    try:
+        proc = subprocess.run(
+            ["rustfmt", "--edition", "2024"],
+            input=text,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        sys.exit(
+            "gen_parameter_bounds: rustfmt is not on PATH, and the generated file is compared "
+            "against rustfmt's own output - install the Rust toolchain"
+        )
+    if proc.returncode != 0:
+        sys.exit(f"gen_parameter_bounds: rustfmt refused the output:\n{proc.stderr}")
+    return proc.stdout
+
+
 def emit() -> str:
     rows = decisions()
     PY_OUT.write_text(emit_python(rows), encoding="utf-8")
-    RUST_OUT.write_text(emit_rust(rows), encoding="utf-8")
+    RUST_OUT.write_text(format_rust(emit_rust(rows)), encoding="utf-8")
     return f"{len(rows)} parameter(s), {sum(1 for r in rows if 'bound' in r)} bounded"
 
 
