@@ -57,8 +57,13 @@ _MODULE = re.compile(r"`(Azoth/[A-Za-z_]+\.lean)`")
 #: looking for the two asterisks alone reads that block as claiming a proof.
 _UNPROVED = re.compile(r"\*\*[^*]*\b(?:specified|characterised)\b[^*]*\*\*", re.IGNORECASE)
 
+#: What a page may name. `theorem` and `lemma` are what a claim is *proved* by; `def`, `abbrev`,
+#: `structure` and `inductive` are what it is *about* - `capability.md` names `Answer` and
+#: `Computation`, both structures, and the pages are allowed to talk about the objects a claim
+#: ranges over as well as the theorem that discharges it.
 _DECLARED = re.compile(
-    r"^\s*(?:theorem|lemma|def|abbrev)\s+(?P<name>[A-Za-z0-9_'À-ÿ.]+)", re.MULTILINE
+    r"^\s*(?:theorem|lemma|def|abbrev|structure|inductive)\s+(?P<name>[A-Za-z0-9_'À-ÿ.]+)",
+    re.MULTILINE,
 )
 _PRINTED = re.compile(r"^\s*#print axioms\s+(?P<name>[A-Za-z0-9_.]+)\s*$", re.MULTILINE)
 

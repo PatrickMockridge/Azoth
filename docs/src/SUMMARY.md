@@ -14,6 +14,7 @@
   - [Processes and channels](./calculus/process.md)
   - [Reflection and feedback](./calculus/rho.md)
   - [The keycard as a capability](./calculus/capability.md)
+  - [What a card's value may be](./calculus/values.md)
   - [Raw and normalised variables](./calculus/normalisation.md)
   - [The sensitivity of a solution](./calculus/implicit.md)
   - [The vocabulary table](./calculus/vocabulary.md)

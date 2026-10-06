@@ -18,7 +18,8 @@ inlet and an outlet, and "the mole balance closes" is either a consequence of ho
 its channels are used or it is a sentence in a specification that nothing checks.
 That is the second thing.
 
-Eleven layers, each a page here and the Lean module it is stated against:
+Twelve layers, each a page here and the Lean module it is stated against — where there is one, since
+a layer that is specified has nothing to state it against yet:
 
 | Layer | What it fixes | Lean | Page |
 |---|---|---|---|
@@ -29,6 +30,7 @@ Eleven layers, each a page here and the Lean module it is stated against:
 | The sensitivity of a solution | how a solution moves with the equations that define it | `Azoth/Implicit.lean` (first order) | [The sensitivity of a solution](./implicit.md) |
 | Reflection and feedback | feedback, serialisation, and the interoperation surface | `Azoth/Rho.lean` ✅ | [Reflection and feedback](./rho.md) |
 | The keycard as a capability | authority a process holds rather than a global it reads | `Azoth/Capability.lean` ✅ | [The keycard as a capability](./capability.md) |
+| What a card's value may be | the domain a datum has to lie in, and what is checked rather than proved | (specified) | [What a card's value may be](./values.md) |
 | Barbs | what an observer of a channel can see, and therefore what equality means | `Azoth/Barb.lean` (general barbs) | [Barbs](./barbs.md) |
 | Processes and channels | a unit operation as a process on typed, directional channels | `Azoth/Process.lean` (the extensionality claim) | [Processes and channels](./process.md) |
 | The rendering | a rendering is a function of the document, and what the editor holds | `Azoth/View.lean` ✅ | [The rendering](./view.md) |
@@ -38,7 +40,8 @@ Three further modules are the gate rather than a layer: `Azoth/Axioms.lean` carr
 `#print axioms` line for each general theorem and for the witness theorems beside some of
 them, and the generated `Azoth/Gate.lean` and `Azoth/GuardGate.lean` the ones for the
 canonical units and for the guards. Seventeen modules in all, and every layer the calculus
-states has one.
+states has one except the one it specifies — a claim that is what will make its tranche checkable
+has, by definition, nothing yet to be checked against.
 
 The vocabulary is data rather than proof: one hand-written table, compiled into Rust,
 Python, JSON Schema and Lean. It is specified separately, in
@@ -71,7 +74,7 @@ hypothesis has no gap and is still not the claim a reader expects. That is the l
 `tools/check_lean_axioms.py` states for itself, and the audit says so in its own docstring rather
 than appearing to close it.
 
-Most of the eleven are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
+Most of the twelve are proved. [Dimensions](./dimensions.md), [Numerical safety](./numerics.md),
 [Raw and normalised variables](./normalisation.md) and [Reflection and
 feedback](./rho.md) are complete, and [The keycard as a capability](./capability.md) is
 proved against the grant a caller holds and passes (`crates/azoth-eos/src/card.rs`).
