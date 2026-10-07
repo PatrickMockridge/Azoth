@@ -252,17 +252,34 @@ fn labelled_phases(
     mixture: &Mixture,
     flash: &PtFlashResult,
 ) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
-    let reduced = mixture.reduced_parameters(stream.t, stream.p)?;
+    labelled_phases_at(mixture, stream.t, stream.p, &stream.z, flash)
+}
+
+/// [`labelled_phases`] at a state rather than at a stream.
+///
+/// **The pair a capacity read needs is the state's and not the stream's.** `process.gas_scrubber`
+/// asks about the system `run` left behind - the outlet's pressure, the outlet's temperature and
+/// the *feed's* composition - which no one of its three streams carries together.
+pub(crate) fn labelled_phases_at(
+    mixture: &Mixture,
+    t: ThermodynamicTemperature,
+    p: Pressure,
+    z: &[f64],
+    flash: &PtFlashResult,
+) -> Result<Vec<(PhaseLabel, Vec<f64>, f64)>> {
+    let reduced = mixture.reduced_parameters(t, p)?;
     Ok(match flash.phase {
         // **A single phase has the system's composition, and the flash's own `x` or `y` is not
         // it.** The flash answers a trial phase there - `column/tray.rs` records the
         // measurement - so the one phase *is* the system.
-        Phase::AllVapour => vec![(PhaseLabel::Gas, stream.z.clone(), flash.z_vapour)],
-        Phase::AllLiquid | Phase::Trivial => vec![(
-            label(mixture, &reduced, &stream.z, flash.z_liquid)?,
-            stream.z.clone(),
-            flash.z_liquid,
-        )],
+        Phase::AllVapour => vec![(PhaseLabel::Gas, z.to_vec(), flash.z_vapour)],
+        Phase::AllLiquid | Phase::Trivial => {
+            vec![(
+                label(mixture, &reduced, z, flash.z_liquid)?,
+                z.to_vec(),
+                flash.z_liquid,
+            )]
+        }
         Phase::TwoPhase => {
             if flash.vapour_fraction.is_none() {
                 return Err(AzothError::invalid_input(

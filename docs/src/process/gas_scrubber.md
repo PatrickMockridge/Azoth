@@ -26,6 +26,8 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `feed_t` | K | the inlet temperature, which the vessel holds and the outlets therefore share, unless a `heat_input` moves the flash. |
 | `pressure_drop` | Pa | the pressure drop across the vessel, which is `unit_ops.separator`'s own parameter. NeqSim's is in the thermo system's pressure unit and this one is in pascals, as every other pressure here is. |
 | `gas_in_liquid` | dimensionless | the fraction of the vapour's moles carried into the liquid outlet. Zero is the equilibrium split and no entrainment. |
+| `internal_diameter` | m | *Optional.* the vessel's internal diameter, which `getSepCrossArea` is `pi d**2 / 4` over. **Absent means the metric is not computed** - a vessel nobody stated a size for has nothing to check. |
+| `design_gas_load_factor` | m/s | *Optional.* the Souders-Brown `K` the vessel is designed to: the settling velocity per root of the density ratio, `0.04` to `0.10` m/s for a vertical scrubber and `0.11` by `Separator`'s own initialiser. **Absent means the metric is not computed**, as with the diameter. |
 | `heat_input` | W | *Optional.* heat added to the feed before the flash. When omitted the flash is at the feed's temperature; when given it is at the enthalpy the duty implies and both outlets are at the temperature that solves for. |
 
 
@@ -43,20 +45,25 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `liquid_p` | Pa | the liquid outlet's pressure, the same as the vapour's. |
 | `liquid_t` | K | the liquid outlet's temperature, the same as the vapour's - one flash decides both. |
 | `liquid_h` | J/mol | the liquid outlet's molar enthalpy at its own state. |
+| `capacity_utilization` | dimensionless | *Optional.* `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied. |
 
 | Bound | On violation | Why |
 |---|---|---|
 | `pressure_drop >= 0` | raises | a vessel passes pressure down, not up |
+| `internal_diameter > 0` | raises | a diameter is a positive length, and the cross-section divides by nothing but its own square - NeqSim's `getSepCrossArea` returns a zero area and its `getCapacityUtilization` then answers NaN, which this refuses at the input instead |
+| `design_gas_load_factor > 0` | raises | a Souders-Brown load factor is a positive velocity; zero is a vessel that admits no gas at all |
 | `gas_in_liquid >= 0 and gas_in_liquid <= 1` | raises | an entrainment fraction is a fraction |
 
 ## Assumptions
 
 - **its stream side is `process.separator`'s, and that is a measurement.** `GasScrubber extends Separator` and does not override `run` - `grep -c 'public void run'` returns zero - so this capture is that model's own row through the other entry.
-- **the Souders-Brown capacity metric is owed, and `ROADMAP.md` names it.** `getCapacityUtilization` needs the vapour's volumetric flow, the liquid's density and two *mechanical* parameters - `setInternalDiameter` and `setDesignGasLoadFactor` - which the palette declares neither of.
+- **the Souders-Brown capacity metric is ported, as a pair of optional inputs.** `getCapacityUtilization` is `Q / (K sqrt((rho_l - rho_g)/rho_g) A)` with `A = pi d**2 / 4`; `d` and `K` are `internal_diameter` and `design_gas_load_factor`, and **both or neither** - half a vessel has nothing to check.
+- **what the metric reads is measured.** `Separator.run` entrained the system before the getter read it, so `Q` is the vapour *left* and `rho_l` the oil *after* absorbing: `0.0033609430039118087` against the dry `0.003341057093792472`.
+- **its liquid density rule is its own.** The `oil` phase's, `aqueous`'s where there is no oil and `1000.0` where there is neither - not the columns' `10.0` floor. No gas phase answers `0.0`; a liquid no denser than the gas is refused where NeqSim answers `NaN`.
 - **the three parameters are the separator's**, and the entry declares all three for the reason the separator does: a scrubber holds its feed's temperature unless a `heat_input` moves the flash, and a pressure drop is not a throttling.
 - **an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.
 - the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.
-- NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the first three are what the capacity metric reads.
+- NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the capacity metric reads the vessel's size and its design K, and nothing else of them.
 
 ## Cases
 
@@ -64,11 +71,14 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `the_equilibrium_split` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0 | vapour_n = 0.8182211906421439, vapour_z = [0.8339243334525452, 0.16607566654745468], vapour_p = 2000000.0, vapour_t = 300.0, vapour_h = 530.1529163915932, liquid_n = 0.18177880935785606, liquid_z = [0.09718095876744991, 0.9028190412325501], liquid_p = 2000000.0, liquid_t = 300.0, liquid_h = -17268.958496924708 |
 | `a_pressure_drop_is_not_a_throttling` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 200000.0, gas_in_liquid = 0.0 | vapour_n = 0.8360536845155941, vapour_z = [0.8203430710096191, 0.1796569289903808], vapour_p = 1800000.0, vapour_t = 300.0, vapour_h = 594.757372548732, liquid_n = 0.16394631548440586, liquid_z = [0.08630357366533918, 0.9136964263346607], liquid_p = 1800000.0, liquid_t = 300.0, liquid_h = -17457.57964433711 |
+| `the_capacity_utilization_of_a_one_metre_vessel` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 1.0, design_gas_load_factor = 0.07 | capacity_utilization = 0.003341057093792472 |
+| `the_same_vessel_at_twice_the_diameter` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.0, internal_diameter = 2.0, design_gas_load_factor = 0.07 | capacity_utilization = 0.000835264273448118 |
+| `the_vessel_that_carries_five_per_cent_of_its_vapour` | components = ['methane', 'n-butane'], feed_n = 1.0, feed_z = [0.7, 0.3], feed_p = 2000000.0, feed_t = 300.0, pressure_drop = 0.0, gas_in_liquid = 0.05, internal_diameter = 1.0, design_gas_load_factor = 0.07 | vapour_n = 0.7773101311100368, liquid_n = 0.22268986888996328, capacity_utilization = 0.0033609430039118087 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 2 declared, every one run
+- Tests: 5 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`
@@ -78,4 +88,4 @@ declared checks *that call* could not evaluate.
 ## References
 
 - NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/GasScrubber.java`, whose steady state is `Separator.run`'s.
-- `validation/neqsim/captures/process_gas_scrubber.tsv` - the separator's own two rows through this class, and a fourth that prints the capacity metric the port leaves out.
+- `validation/neqsim/captures/process_gas_scrubber.tsv` - the separator's own two rows through this class, and three that print the capacity metric: one vessel, the same vessel at twice the diameter, and the first with entrainment on.

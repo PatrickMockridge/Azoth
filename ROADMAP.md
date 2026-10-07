@@ -535,9 +535,15 @@ a claim nothing holds.
   `pressure_drop` is the `FIXED` branch, and the other three need media geometry. Beside it,
   **`updateParticleCapturePerformance`**: `concentrationLoadingModelEnabled` is false by
   default, and with it off nothing about a particle reaches the fluid.
-- **`getCapacityUtilization`** — `process.gas_scrubber`'s Souders-Brown metric, which needs the
-  vapour's volumetric flow, the liquid's density and two mechanical parameters
-  (`setInternalDiameter`, `setDesignGasLoadFactor`) the entry declares neither of.
+- **`getCapacityUtilization` is ported**, as a pair of optional inputs — `internal_diameter` and
+  `design_gas_load_factor`, **both or neither**, because half a vessel has nothing to check — and
+  an optional `capacity_utilization`. **It reads the system `run` entrained rather than the flash
+  it started from**: `Separator.run` applies `addPhaseFractionToPhase` before the getter, which
+  the capture's pair settles at `0.0033609430039118087` against the dry `0.003341057093792472`.
+  Its two rules are its own — `rho_l` is the `oil` phase's, `aqueous`'s where there is no oil and
+  `1000.0` where there is neither, which is not the columns' `10.0` floor, and a stream with no
+  gas phase answers `0.0` — and NeqSim's `NaN` where the liquid is no denser than the gas is
+  refused rather than carried.
 - **The energy port** — `process.stirred_tank_reactor` runs `PHflash(inlet + duty)` when an
   `EnergyStream` is connected, and this library's five-field record has no place for one. The
   duty is declared out with the port named rather than guessed at.

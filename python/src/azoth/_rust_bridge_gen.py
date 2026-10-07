@@ -3954,7 +3954,7 @@ def flare(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, i
     )
 
 
-def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, heat_input: Q | None=None) -> GasScrubberResult:
+def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, pressure_drop: Q, gas_in_liquid: float, internal_diameter: Q | None=None, design_gas_load_factor: Q | None=None, heat_input: Q | None=None) -> GasScrubberResult:
     """``process.gas_scrubber``, computed in Rust."""
     spec = _models_gen.model("process.gas_scrubber")
     result = _core.gas_scrubber(
@@ -3965,6 +3965,8 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         input_to_si(spec, "feed_t", feed_t),
         input_to_si(spec, "pressure_drop", pressure_drop),
         gas_in_liquid,
+        None if internal_diameter is None else input_to_si(spec, "internal_diameter", internal_diameter),
+        None if design_gas_load_factor is None else input_to_si(spec, "design_gas_load_factor", design_gas_load_factor),
         None if heat_input is None else input_to_si(spec, "heat_input", heat_input),
     )
     return GasScrubberResult(
@@ -3978,6 +3980,7 @@ def gas_scrubber(components: list[str], feed_n: Q, feed_z: list[float], feed_p: 
         liquid_p=from_si(result.liquid_p.magnitude_si, result.liquid_p.unit),
         liquid_t=from_si(result.liquid_t.magnitude_si, result.liquid_t.unit),
         liquid_h=from_si(result.liquid_h.magnitude_si, result.liquid_h.unit),
+        capacity_utilization=result.capacity_utilization,
         warnings=_warnings(result.warnings),
     )
 

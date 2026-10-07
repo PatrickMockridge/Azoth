@@ -1240,6 +1240,20 @@ static ALL: &[ModelInputs] = &[
                 dimension: Some("dimensionless"),
             },
             ModelInput {
+                name: "internal_diameter",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("length"),
+            },
+            ModelInput {
+                name: "design_gas_load_factor",
+                kind: "quantity",
+                values: &[],
+                optional: true,
+                dimension: Some("velocity"),
+            },
+            ModelInput {
                 name: "heat_input",
                 kind: "quantity",
                 values: &[],

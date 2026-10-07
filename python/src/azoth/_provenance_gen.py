@@ -1822,12 +1822,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'process.gas_scrubber': {
         "calc_id": 'process.gas_scrubber',
         "name": 'Gas scrubber',
-        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': '5148642a1ec35ae58294a1ea1a2d75d7785730caf48a03ecb2c7e92182ac223b'},
-        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': 'ad8222761f71311e055f8b8b6a69872d36c3bfd862097ce3815dd69cfeae32ca'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': 'f703f1f64218a8b675556372e4dfc6727442433a4fe10b1b1d503b8f8275f581'}],
+        "spec": {'path': 'specs/models/process/gas_scrubber.toml', 'sha256': '5a82bba5d138ebb2cc8167d11db68888e8c3dcc86da34c6b139fd48b76c111a1'},
+        "code": [{'path': 'python/src/azoth/process/reference/gas_scrubber.py', 'sha256': 'ea286a919fcf7638a72184532ccc364efb242db3c092a4e52df81f2517b7ad4a'}, {'path': 'crates/azoth-process/src/models/gas_scrubber.rs', 'sha256': '147bcce19831efdf4343112fc94f822d17b92f3eafc5e5b5c1c09691848567b3'}],
         "source": 'NeqSim process/equipment/separator/GasScrubber.java',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 2,
+        "tests_active": 5,
         "tests_skipped": 0,
     },
     'process.gibbs_reactor': {

@@ -3,15 +3,17 @@ name = "Gas scrubber"
 kind = "direct"
 assumptions = [
     "**its stream side is `process.separator`'s, and that is a measurement.** `GasScrubber extends Separator` and does not override `run` - `grep -c 'public void run'` returns zero - so this capture is that model's own row through the other entry.",
-    "**the Souders-Brown capacity metric is owed, and `ROADMAP.md` names it.** `getCapacityUtilization` needs the vapour's volumetric flow, the liquid's density and two *mechanical* parameters - `setInternalDiameter` and `setDesignGasLoadFactor` - which the palette declares neither of.",
+    "**the Souders-Brown capacity metric is ported, as a pair of optional inputs.** `getCapacityUtilization` is `Q / (K sqrt((rho_l - rho_g)/rho_g) A)` with `A = pi d**2 / 4`; `d` and `K` are `internal_diameter` and `design_gas_load_factor`, and **both or neither** - half a vessel has nothing to check.",
+    "**what the metric reads is measured.** `Separator.run` entrained the system before the getter read it, so `Q` is the vapour *left* and `rho_l` the oil *after* absorbing: `0.0033609430039118087` against the dry `0.003341057093792472`.",
+    "**its liquid density rule is its own.** The `oil` phase's, `aqueous`'s where there is no oil and `1000.0` where there is neither - not the columns' `10.0` floor. No gas phase answers `0.0`; a liquid no denser than the gas is refused where NeqSim answers `NaN`.",
     "**the three parameters are the separator's**, and the entry declares all three for the reason the separator does: a scrubber holds its feed's temperature unless a `heat_input` moves the flash, and a pressure drop is not a throttling.",
     "**an inlet carries four of the record's five fields and an outlet all five.** `h` is a state function of `(T, P, z)`, so accepting one would let a case hand over a state that does not exist.",
     "the fluid is PR with the classic mixing rule, because `Stream::mixture()` resolves `databank::mixture_of(names, Cubic::Pr, None)` and has no other route.",
-    "NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the first three are what the capacity metric reads.",
+    "NeqSim's `GasScrubber` also carries a mechanical design with a mesh pad, a liquid level and a vessel sizing, and a `runTransient`. **None is here**: the capacity metric reads the vessel's size and its design K, and nothing else of them.",
 ]
 references = [
     "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `process/equipment/separator/GasScrubber.java`, whose steady state is `Separator.run`'s.",
-    "`validation/neqsim/captures/process_gas_scrubber.tsv` - the separator's own two rows through this class, and a fourth that prints the capacity metric the port leaves out.",
+    "`validation/neqsim/captures/process_gas_scrubber.tsv` - the separator's own two rows through this class, and three that print the capacity metric: one vessel, the same vessel at twice the diameter, and the first with entrainment on.",
 ]
 [source]
 standard = "NeqSim process/equipment/separator/GasScrubber.java"
@@ -40,6 +42,14 @@ description = "the pressure drop across the vessel, which is `unit_ops.separator
 [inputs.gas_in_liquid]
 unit = "dimensionless"
 description = "the fraction of the vapour's moles carried into the liquid outlet. Zero is the equilibrium split and no entrainment.\n"
+[inputs.internal_diameter]
+unit = "m"
+optional = true
+description = "the vessel's internal diameter, which `getSepCrossArea` is `pi d**2 / 4` over. **Absent means the metric is not computed** - a vessel nobody stated a size for has nothing to check.\n"
+[inputs.design_gas_load_factor]
+unit = "m/s"
+optional = true
+description = "the Souders-Brown `K` the vessel is designed to: the settling velocity per root of the density ratio, `0.04` to `0.10` m/s for a vertical scrubber and `0.11` by `Separator`'s own initialiser. **Absent means the metric is not computed**, as with the diameter.\n"
 [inputs.heat_input]
 unit = "W"
 optional = true
@@ -79,12 +89,28 @@ description = "the liquid outlet's temperature, the same as the vapour's - one f
 [outputs.liquid_h]
 unit = "J/mol"
 description = "the liquid outlet's molar enthalpy at its own state.\n"
+[outputs.capacity_utilization]
+unit = "dimensionless"
+optional = true
+description = "`getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.\n"
 [[valid_range]]
 quantity = "pressure_drop"
 min = 0
 min_inclusive = true
 severity = "error"
 rationale = "a vessel passes pressure down, not up\n"
+[[valid_range]]
+quantity = "internal_diameter"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a diameter is a positive length, and the cross-section divides by nothing but its own square - NeqSim's `getSepCrossArea` returns a zero area and its `getCapacityUtilization` then answers NaN, which this refuses at the input instead\n"
+[[valid_range]]
+quantity = "design_gas_load_factor"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a Souders-Brown load factor is a positive velocity; zero is a vessel that admits no gas at all\n"
 [[valid_range]]
 quantity = "gas_in_liquid"
 min = 0

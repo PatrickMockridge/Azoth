@@ -153,6 +153,8 @@ def rows : List (String × String × String × List Int) :=
     ("unit_ops.gas_scrubber", "feed_t", "K", [0, 0, 0, 0, 1, 0, 0]),
     ("unit_ops.gas_scrubber", "pressure_drop", "Pa", [-1, 1, -2, 0, 0, 0, 0]),
     ("unit_ops.gas_scrubber", "gas_in_liquid", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.gas_scrubber", "internal_diameter", "m", [1, 0, 0, 0, 0, 0, 0]),
+    ("unit_ops.gas_scrubber", "design_gas_load_factor", "m/s", [1, 0, -1, 0, 0, 0, 0]),
     ("unit_ops.gas_scrubber", "heat_input", "W", [2, 1, -3, 0, 0, 0, 0]),
     ("unit_ops.gibbs_reactor", "feed_n", "mol/s", [0, 0, -1, 0, 0, 1, 0]),
     ("unit_ops.gibbs_reactor", "feed_z", "dimensionless", [0, 0, 0, 0, 0, 0, 0]),

@@ -4067,6 +4067,9 @@ class GasScrubberResult(_HasWarnings):
     #: the liquid outlet's molar enthalpy at its own state.
     liquid_h: Q
 
+    #: `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.
+    capacity_utilization: float | None
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

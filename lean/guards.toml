@@ -118,6 +118,18 @@ owner = "check"
 checker = "crates/azoth-process/src/segment/heat.rs"
 reason = "the guard is the class's; its hypotheses are code predicates, not spec bounds"
 
+# The metric's radicand and its two divisors rest on a *state*, not on an input: the two
+# densities are the flash's, so no `valid_range` row can name their difference. The refusal above
+# the expression is the port's own - NeqSim answers `NaN` there and the caller never sees one -
+# and the diameter's bound is what keeps the area off zero.
+[[guard]]
+key = "gas_scrubber_capacity.radicand_positive"
+site = "crates/azoth-process/src/kernels/gas_scrubber.rs"
+spec = "process.gas_scrubber"
+owner = "check"
+checker = "crates/azoth-process/src/kernels/gas_scrubber.rs"
+reason = "the radicand's positivity is a property of the flashed state, not a bound the spec carries"
+
 # --- the classes -----------------------------------------------------------------------------
 #
 # One entry per shape a `valid_range` row in `specs/` actually takes, keyed by the shape itself:

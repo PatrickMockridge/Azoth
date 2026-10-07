@@ -3661,9 +3661,9 @@ pub fn flare(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, heat_input)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, pressure_drop, gas_in_liquid, internal_diameter, design_gas_load_factor, heat_input)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn gas_scrubber(
@@ -3675,6 +3675,8 @@ pub fn gas_scrubber(
     feed_t: f64,
     pressure_drop: f64,
     gas_in_liquid: f64,
+    internal_diameter: Option<f64>,
+    design_gas_load_factor: Option<f64>,
     heat_input: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyGasScrubberResult> {
     azoth_process::models::gas_scrubber::gas_scrubber(
@@ -3685,6 +3687,8 @@ pub fn gas_scrubber(
         kelvins(feed_t),
         pascals(pressure_drop),
         gas_in_liquid,
+        internal_diameter.map(meters),
+        design_gas_load_factor.map(meters_per_second),
         heat_input.map(watts),
     )
     .map(|r| crate::transport_gen::PyGasScrubberResult::from(&r))

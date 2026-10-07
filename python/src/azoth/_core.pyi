@@ -1636,6 +1636,7 @@ class GasScrubberResult:
     liquid_p: Qty
     liquid_t: Qty
     liquid_h: Qty
+    capacity_utilization: float | None
     warnings: list[Warning]
 
 @final
@@ -3397,6 +3398,8 @@ def gas_scrubber(
     feed_t: float,
     pressure_drop: float,
     gas_in_liquid: float,
+    internal_diameter: float | None = None,
+    design_gas_load_factor: float | None = None,
     heat_input: float | None = None,
 ) -> GasScrubberResult: ...
 def gibbs_reactor(

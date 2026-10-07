@@ -1509,6 +1509,8 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ),
     ("process.gas_scrubber", "pressure_drop", "pressure"),
     ("process.gas_scrubber", "gas_in_liquid", "dimensionless"),
+    ("process.gas_scrubber", "internal_diameter", "length"),
+    ("process.gas_scrubber", "design_gas_load_factor", "velocity"),
     ("process.gas_scrubber", "heat_input", "power"),
     ("process.gibbs_reactor", "feed_n", "molar_flow"),
     ("process.gibbs_reactor", "feed_z", "dimensionless"),

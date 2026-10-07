@@ -45,3 +45,53 @@ liquid_z = [0.08630357366533918, 0.9136964263346607]
 liquid_p = 1800000.0
 liquid_t = 300.0
 liquid_h = -17457.57964433711
+[[cases]]
+id = "the_capacity_utilization_of_a_one_metre_vessel"
+tolerance = 0.0002
+source = "The same feed with `setInternalDiameter(1.0)` and `setDesignGasLoadFactor(0.07)`, from `validation/neqsim/captures/process_gas_scrubber.tsv`. `getCapacityUtilization` is `Q / (K sqrt((rho_l - rho_g)/rho_g) A)` with `A = pi d**2 / 4`, and this row is the whole of it on a state with no entrainment.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 1.0
+design_gas_load_factor = 0.07
+[cases.expected]
+capacity_utilization = 0.003341057093792472
+[[cases]]
+id = "the_same_vessel_at_twice_the_diameter"
+tolerance = 0.0002
+source = "The same row with `setInternalDiameter(2.0)`, which is the capture's fourth. It is here because the area is the only place the diameter enters: the answer is the first row's divided by four, and a port that read the diameter anywhere else would agree with the first row and not this one.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.0
+internal_diameter = 2.0
+design_gas_load_factor = 0.07
+[cases.expected]
+capacity_utilization = 8.35264273448118e-4
+[[cases]]
+id = "the_vessel_that_carries_five_per_cent_of_its_vapour"
+tolerance = 0.0002
+source = "The same vessel with `setEntrainment(0.05, \\\"mole\\\", \\\"feed\\\", \\\"gas\\\", \\\"liquid\\\")`, which is the capture's fifth. **This is the row that settles what the metric reads**: `Separator.run` applies the entrainment to the thermo system before `getCapacityUtilization` reads it, so `Q` is the vapour that is left and the oil's density is the one it has after absorbing. Reading the flashed feed instead answers the first row's number, which is 0.6 per cent away.\\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 1.0
+feed_z = [0.7, 0.3]
+feed_p = 2000000.0
+feed_t = 300.0
+pressure_drop = 0.0
+gas_in_liquid = 0.05
+internal_diameter = 1.0
+design_gas_load_factor = 0.07
+[cases.expected]
+vapour_n = 0.7773101311100368
+liquid_n = 0.22268986888996328
+capacity_utilization = 0.0033609430039118087

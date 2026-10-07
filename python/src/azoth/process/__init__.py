@@ -1178,19 +1178,22 @@ def gas_scrubber(
     feed_t: Q,
     pressure_drop: Q,
     gas_in_liquid: float,
+    internal_diameter: Q | None = None,
+    design_gas_load_factor: Q | None = None,
     heat_input: Q | None = None,
 ) -> GasScrubberResult:
     """Flash a feed into vapour and liquid, as a scrubber does.
 
     ``GasScrubber extends Separator`` and does not override ``run``, so this is
     :func:`separator`'s arithmetic under the other entry, and its three parameters are the
-    separator's. **The Souders-Brown capacity metric is not ported**: it needs an internal
-    diameter and a design gas load factor, neither of which the palette declares, and it asks
-    whether the vessel is big enough rather than stating anything about the stream.
+    separator's. **The Souders-Brown capacity metric is the class's own addition**, computed
+    when ``internal_diameter`` and ``design_gas_load_factor`` are both given: stated one at a
+    time it is refused, because a vessel with a size and no design basis has nothing to check.
 
     Raises:
         InvalidInputError: where the shapes disagree, the pressure drop leaves a
-            non-positive pressure, or the entrainment fraction is outside ``[0, 1]``.
+            non-positive pressure, the entrainment fraction is outside ``[0, 1]``, only one
+            of the two mechanical inputs is given, or the state makes the metric undefined.
 
     See :func:`azoth.process.reference.gas_scrubber`.
     """
@@ -1202,6 +1205,8 @@ def gas_scrubber(
         feed_t=feed_t,
         pressure_drop=pressure_drop,
         gas_in_liquid=gas_in_liquid,
+        internal_diameter=internal_diameter,
+        design_gas_load_factor=design_gas_load_factor,
         heat_input=heat_input,
     )
 

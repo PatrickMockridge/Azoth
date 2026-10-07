@@ -79,3 +79,45 @@ liquid_s=-65.6413841675328
 liquid_z=methane:0.09718095876744991 n-butane:0.9028190412325501
 capacity_utilization=0.003341057093792472
 
+capacity_utilization_dn2000_k_007
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2705.348363948871
+feed_s=-26.962728758469062
+feed_z=methane:0.7 n-butane:0.3
+vapour_n=0.8182211906421439
+vapour_P=20.0
+vapour_T=300.0
+vapour_h=530.1529163915932
+vapour_s=-18.369746801714225
+vapour_z=methane:0.8339243334525452 n-butane:0.16607566654745468
+liquid_n=0.18177880935785606
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-17268.958496924708
+liquid_s=-65.6413841675328
+liquid_z=methane:0.09718095876744991 n-butane:0.9028190412325501
+capacity_utilization=8.35264273448118E-4
+
+capacity_utilization_dn1000_k_007_gas_in_liquid_005
+feed_n=1.0
+feed_P=20.0
+feed_T=300.0
+feed_h=-2705.348363948871
+feed_s=-26.962728758469062
+feed_z=methane:0.7 n-butane:0.3
+vapour_n=0.7773101311100368
+vapour_P=20.0
+vapour_T=300.0
+vapour_h=530.1529163915928
+vapour_s=-18.369746801714218
+vapour_z=methane:0.8339243334525452 n-butane:0.16607566654745468
+liquid_n=0.22268986888996328
+liquid_P=20.0
+liquid_T=300.0
+liquid_h=-13999.027492525918
+liquid_s=-56.956962284789704
+liquid_z=methane:0.23253041230060956 n-butane:0.7674695876993904
+capacity_utilization=0.0033609430039118087
+

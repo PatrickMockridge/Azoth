@@ -587,7 +587,9 @@ public class ProcessProbe {
   /// zero - so the first three rows are the separator's own rows through another class, and
   /// the capture records that they are the same numbers.
   ///
-  /// **The fourth row is the metric, and it is what the port leaves out.**
+  /// **The last three rows are the metric**, and it is what the port leaves out: `d` and
+  /// `K` separately, and then the same vessel with entrainment on, because `getCapacityUtilization`
+  /// reads the thermo system `run` already entrained rather than the flash it started from.
   /// `getCapacityUtilization` needs an internal diameter and a design gas load factor; the
   /// palette entry declares neither, and it is a statement about whether the *vessel* is
   /// big enough rather than about the stream.
@@ -595,16 +597,19 @@ public class ProcessProbe {
     String[] names = new String[] { "methane", "n-butane" };
     double[] z = new double[] { 0.7, 0.3 };
     scrubberRow("pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0", names, z, 0.0, null, 0.0,
-        false);
+        null, null);
     scrubberRow("pressure_drop_bara=2 heat_input_W=0 gas_in_liquid=0", names, z, 2.0, null, 0.0,
-        false);
+        null, null);
     scrubberRow("pressure_drop_bara=0 heat_input_W=0 gas_in_liquid=0.05", names, z, 0.0, null, 0.05,
-        false);
-    scrubberRow("capacity_utilization_dn1000_k_007", names, z, 0.0, null, 0.0, true);
+        null, null);
+    scrubberRow("capacity_utilization_dn1000_k_007", names, z, 0.0, null, 0.0, 1.0, 0.07);
+    scrubberRow("capacity_utilization_dn2000_k_007", names, z, 0.0, null, 0.0, 2.0, 0.07);
+    scrubberRow("capacity_utilization_dn1000_k_007_gas_in_liquid_005", names, z, 0.0, null, 0.05,
+        1.0, 0.07);
   }
 
   static void scrubberRow(String label, String[] names, double[] z, double dropBara,
-      Double heatInputW, double gasInLiquid, boolean withCapacity) {
+      Double heatInputW, double gasInLiquid, Double diameterM, Double kFactor) {
     Stream inlet = feed(names, z, 300.0, 20.0, 1.0);
     neqsim.process.equipment.separator.GasScrubber scrubber =
         new neqsim.process.equipment.separator.GasScrubber("gs1", inlet);
@@ -617,10 +622,10 @@ public class ProcessProbe {
     if (gasInLiquid != 0.0) {
       scrubber.setEntrainment(gasInLiquid, "mole", "feed", "gas", "liquid");
     }
-    if (withCapacity) {
+    if (diameterM != null) {
       // The two mechanical parameters the metric needs, and neither is on the palette.
-      scrubber.setInternalDiameter(1.0);
-      scrubber.setDesignGasLoadFactor(0.07);
+      scrubber.setInternalDiameter(diameterM);
+      scrubber.setDesignGasLoadFactor(kFactor);
     }
     scrubber.run();
 
@@ -628,7 +633,7 @@ public class ProcessProbe {
     print("feed", inlet);
     print("vapour", scrubber.getGasOutStream());
     print("liquid", scrubber.getLiquidOutStream());
-    if (withCapacity) {
+    if (diameterM != null) {
       System.out.println("capacity_utilization=" + scrubber.getCapacityUtilization());
     }
     System.out.println();

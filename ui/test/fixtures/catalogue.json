@@ -5622,7 +5622,10 @@
       "refusal": null,
       "runnable": true,
       "source": "NeqSim process/equipment/separator/GasScrubber.java",
-      "unmodelled_ranges": []
+      "unmodelled_ranges": [
+        "internal_diameter",
+        "design_gas_load_factor"
+      ]
     },
     {
       "family": "separator",

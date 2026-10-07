@@ -10127,6 +10127,9 @@ pub struct PyGasScrubberResult {
     /// the liquid outlet's molar enthalpy at its own state.
     #[pyo3(get)]
     pub liquid_h: PyQty,
+    /// `getCapacityUtilization`: the vapour's volumetric flow over what the cross-section admits at the design load factor, `Q / (K sqrt((rho_l - rho_g)/rho_g) A)`. Present only when both mechanical inputs are supplied.
+    #[pyo3(get)]
+    pub capacity_utilization: Option<f64>,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -10136,7 +10139,7 @@ pub struct PyGasScrubberResult {
 impl PyGasScrubberResult {
     fn __repr__(&self) -> String {
         format!(
-            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, {} warning(s))",
+            "GasScrubberResult(vapour_n={:?}, vapour_z={:?}, vapour_p={:?}, vapour_t={:?}, vapour_h={:?}, liquid_n={:?}, liquid_z={:?}, liquid_p={:?}, liquid_t={:?}, liquid_h={:?}, capacity_utilization={:?}, {} warning(s))",
             self.vapour_n,
             self.vapour_z,
             self.vapour_p,
@@ -10147,6 +10150,7 @@ impl PyGasScrubberResult {
             self.liquid_p,
             self.liquid_t,
             self.liquid_h,
+            self.capacity_utilization,
             self.warnings.len()
         )
     }
@@ -10189,6 +10193,7 @@ impl From<&azoth_process::models::gas_scrubber::GasScrubberResult> for PyGasScru
                 magnitude_si: r.liquid_h.value,
                 unit: "J/mol".to_string(),
             },
+            capacity_utilization: r.capacity_utilization,
             warnings: transport(&r.warnings),
         }
     }
