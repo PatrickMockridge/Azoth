@@ -15,6 +15,7 @@ pinned to them at once.
 from __future__ import annotations
 
 import math
+from dataclasses import FrozenInstanceError
 
 import pytest
 
@@ -23,7 +24,6 @@ from azoth.core.errors import InvalidInputError
 from azoth.process.reference.distillation_column import _States
 from azoth.process.reference.mechanical import (
     MechanicalGeometry,
-    MechanicalReport,
     mechanical_design,
     required_wall_thickness,
     resolve_internals_type,
@@ -159,7 +159,10 @@ def test_the_two_helpers_are_the_class_s_own() -> None:
     assert required_wall_thickness(0.01, 1.0) == 6.0
 
 
-def test_the_report_is_a_value_no_caller_can_mutate() -> None:
+def test_the_report_is_a_value_no_caller_can_mutate(binary: _States) -> None:
     """The two records are frozen, so a report handed to a caller is not a handle on the state."""
-    assert MechanicalReport.__dataclass_params__.frozen
-    assert MechanicalGeometry.__dataclass_params__.frozen
+    report = mechanical_design(binary, COMPONENTS, _geometry())
+    with pytest.raises(FrozenInstanceError):
+        report.vessel_diameter_m = 1.0  # type: ignore[misc]
+    with pytest.raises(FrozenInstanceError):
+        _geometry().tray_efficiency = 0.5  # type: ignore[misc]
