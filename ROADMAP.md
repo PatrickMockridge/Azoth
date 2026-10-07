@@ -492,15 +492,19 @@ a claim nothing holds.
 
 - **The mechanical-design tree** — `process/mechanicaldesign/` and the `*MechanicalDesign`
   class beside each equipment class — is where most of them are, and no entry declares a
-  parameter any of them read. **`DistillationColumnMechanicalDesign` is ported and not
-  wired**: `crates/azoth-process/src/column/mechanical.rs` is `calcDesign`, held to
-  `validation/neqsim/captures/process_column_mechanical_design.tsv`. What no model declares is
-  its inputs, so it runs behind no id yet. **Wiring it is deliberately deferred**: it is four new
-  inputs and about eight new outputs on `process.distillation_column`, and the same shape across
-  `absorption_column`, `stripping_column` and `packed_column`. The registration-hardening tranche
-  has since generated the pyo3 wrapper, the transported result and the registration lists, so the
-  wiring is cheaper than when it was deferred — and it is still owed, because what no model
-  declares is still its inputs.
+  parameter any of them read. **`DistillationColumnMechanicalDesign` is ported in both
+  languages and not wired**: `crates/azoth-process/src/column/mechanical.rs` is `calcDesign` and
+  `python/src/azoth/process/reference/mechanical.py` is its twin, the two halves held to the same
+  rows of `validation/neqsim/captures/process_column_mechanical_design.tsv` by the Rust module's
+  own `report` test and `python/tests/test_mechanical_report.py`. What no model declares is its
+  inputs, so it runs behind no id yet. **Wiring it is deliberately deferred**: it is six new
+  inputs, five of them class defaults, and eleven new outputs on `process.distillation_column`,
+  and the same shape across `absorption_column`, `stripping_column` and `packed_column`. Two of
+  its values have no vocabulary unit - the weir loading in m3/(hr·m) and the tray drop in mbar -
+  and would be declared dimensionless on `total_pressure_drop_mbar`'s precedent. The
+  registration-hardening tranche has since generated the pyo3 wrapper, the transported result and
+  the registration lists, so the wiring is cheaper than when it was deferred — and it is still
+  owed, because what no model declares is still its inputs.
   **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the
