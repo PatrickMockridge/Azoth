@@ -110,8 +110,8 @@ it. Two of the ten are left out of the deethanizer rows on purpose, and the prob
 `MESH_RESIDUAL` takes 594 s for the pair and `AUTO` had not returned after 900 s.
 
 **`ProcessProbe packed_column` is the equilibrium packed column, and it prints the report's
-inputs as well as its outputs.** Sixteen rows: eleven stage-count rows, where the height's
-`ceil(h / 0.5)` rule and its two-tray floor are visible, and five solved ones. **Every solved row
+inputs as well as its outputs.** Eighteen rows: eleven stage-count rows, where the height's
+`ceil(h / 0.5)` rule and its two-tray floor are visible, and seven solved ones. **Every solved row
 prints, per tray, the four properties `ColumnInternalsDesigner.getTrayProperties` reads** - the
 vapour's and the liquid's density, the liquid's viscosity, and the interphase surface tension -
 plus the calculator's own verdicts beside the column's.
@@ -121,12 +121,30 @@ java -cp .:neqsim-f0c7436.jar ProcessProbe packed_column \
   > captures/process_packed_column.tsv
 ```
 
-**Four things those keys pin, and each was unread before.** `isDesignOk()`, `isWettingOk()` and
-the column's `isHydraulicsOk()` are three predicates that all read as "the hydraulics are fine",
-and on these rows **all three are false**, so the row alone cannot tell them apart - which is
-what makes publishing one under another's name a way to reproduce every row while answering a
-different question. `getPressureDropPerMeter()` beside the column's `getPackingPressureDrop()`
-settles a name that does not say which it is: on the 2.3 m row they are `0.27862153390634686` and
+**Six things those keys pin, and each was unread before.**
+
+**`isDesignOk()` and the column's `isHydraulicsOk()` are the same boolean**, not two predicates
+that read alike: `javap` on the jar shows `calculatePackingHydraulics` doing
+`invokevirtual PackingHydraulicsCalculator.isDesignOk` and storing it into the `hydraulicsOk`
+field, and both are printed so the pair is the evidence rather than the doubt.
+
+**And the seventh solved row is the one that is not `false` on all three.**
+`packed_distillation_binary_2m3_diameter_0p132` states a diameter small enough that the middle
+tray is above the class's minimum wetting rate **and** floods at `77.75641566543024` %, inside the
+`40..=80` band the design verdict is defined on, so `wetting_ok`, `design_ok` and `hydraulics_ok`
+all come out **true**. It is also the only solved row that takes the stated-diameter branch
+instead of the sizing one, and without it a port that published a constant `false` would
+reproduce every other row. The window is narrow and that is the state's own property, not the
+probe's: both verdicts scale as one over the area, so the floor is met only near the top of the
+band.
+
+**`structured_packing` and `packing_category` are the flag and the name's resolution**, which no
+other row separates: `calcPackingHydraulics` forwards `isStructuredPacking()` *in addition to* the
+preset, so `packed_structured_mellapak_2m` states the flag and the calculator resolves
+`structured` from `Mellapak-250Y`.
+
+`getPressureDropPerMeter()` beside the column's `getPackingPressureDrop()` settles a name that
+does not say which it is: on the 2.3 m row they are `0.27862153390634686` and
 `0.6408295279845977`, **a ratio of exactly the bed height**, so the column's is the total.
 `resolved_packing` and `resolved_packing_factor` (`Pall-Ring-50`, `180.0`) and
 `calculated_diameter_m` (`0.3`) are the geometry and the sized diameter the report used.

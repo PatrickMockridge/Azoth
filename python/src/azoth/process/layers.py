@@ -1853,13 +1853,17 @@ UNCASED_ROWS: dict[str, int] = {
     # The packed column's thirteen: eleven stage-count rows and two solved rows. **The eleven are
     # the constructor's own arithmetic** - `PackedColumn(name, height, packing, true, true)` with
     # no feed and no solve, printing the trays it made - so there is no model state for them to be
-    # a case of; the port's own test asserts the rule against all eleven. The two solved rows are
-    # evidence rather than oracles: **the class's own test case converges to a state that is not a
-    # column**, reporting `RIGOROUS_CONVERGED` with residuals of exactly zero while the trays
-    # below the feed carry no traffic at all, and the contactor row reports
+    # a case of; the port's own test asserts the rule against all eleven. The four solved rows
+    # are evidence rather than oracles: **the class's own test case converges to a state that is
+    # not a column**, reporting `RIGOROUS_CONVERGED` with residuals of exactly zero while the
+    # trays below the feed carry no traffic at all, and the contactor row reports
     # `FALLBACK_PRODUCTS`, which the class's own warning says means the products are a single
-    # flash of the mixed feeds rather than the tray solution.
-    "process_packed_column.tsv": 13,
+    # flash of the mixed feeds rather than the tray solution. The other two are the rows the rest
+    # of the capture cannot reach - a stated diameter that turns all three verdicts *true*, and a
+    # structured packing beside the flag that states it - and they are evidence for now because
+    # the outputs they would be a case of are the ones `process.packed_column` does not publish
+    # yet.
+    "process_packed_column.tsv": 15,
 }
 
 

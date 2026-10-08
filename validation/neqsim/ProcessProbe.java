@@ -1263,6 +1263,21 @@ public class ProcessProbe {
     // middle trays are the four the height derives - the two ends stay equilibrium stages.
     packedColumnRow("packed_distillation_binary_2m_reactive", binary, binaryZ, 300.0, 20.0,
         1000.0, 2.0, "Pall-Ring-50", 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, true);
+
+    // **The two rows the rest of this capture cannot reach.** Every solved row above is `false`
+    // on all three verdicts, so a port that published a constant `false` for `hydraulics_ok`
+    // would reproduce every one of them; and no row tells the `structuredPacking` *flag* apart
+    // from the packing *name* it accompanies, though `calcPackingHydraulics` forwards both.
+    //
+    // The first states a diameter small enough that the middle tray both wets and floods inside
+    // the 40-80 % band the design verdict is defined on, so `design_ok` comes out true - and it
+    // is the only solved row that takes the stated-diameter branch rather than the sizing one.
+    // The second is the 2 m state on a structured packing: the sizing branch on a structured row,
+    // and the category the name resolves to beside the flag the caller states.
+    packedColumnRow("packed_distillation_binary_2m3_diameter_0p132", binary, binaryZ, 300.0, 20.0,
+        1000.0, 2.3, "Pall-Ring-50", 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, false, null, 0.132);
+    packedColumnRow("packed_structured_mellapak_2m", binary, binaryZ, 300.0, 20.0, 1000.0, 2.0,
+        "Mellapak-250Y", 2, -20.0, 100.0, 19.0, 20.0, 1.0e-6, 200, false, true, 0.0);
   }
 
   /// The contactor constructor, which fixes ten middle trays and reads its packed height only in
@@ -1338,6 +1353,20 @@ public class ProcessProbe {
       double feedPressureBara, double kgPerHour, double packedHeight, String packingType,
       int feedTray, Double condenserC, Double reboilerC, double topBara, double bottomBara,
       double tolerance, int maxIterations, boolean reactive) {
+    packedColumnRow(label, names, z, feedTemperatureK, feedPressureBara, kgPerHour, packedHeight,
+        packingType, feedTray, condenserC, reboilerC, topBara, bottomBara, tolerance,
+        maxIterations, reactive, null, 0.0);
+  }
+
+  /// **The two packing inputs the class keeps beside the preset name.** `structuredPacking` is a
+  /// flag `calcPackingHydraulics` forwards *in addition* to the name, and `columnDiameter` is
+  /// given to the report only when it is positive - otherwise the report sizes one. `null` and
+  /// `0.0` mean "not stated", so a row that states neither is unchanged.
+  static void packedColumnRow(String label, String[] names, double[] z, double feedTemperatureK,
+      double feedPressureBara, double kgPerHour, double packedHeight, String packingType,
+      int feedTray, Double condenserC, Double reboilerC, double topBara, double bottomBara,
+      double tolerance, int maxIterations, boolean reactive, Boolean structuredPacking,
+      double columnDiameter) {
     SystemInterface fluid = new SystemPrEos(feedTemperatureK, feedPressureBara);
     for (int i = 0; i < names.length; i++) {
       fluid.addComponent(names[i], z[i]);
@@ -1354,6 +1383,12 @@ public class ProcessProbe {
         new neqsim.process.equipment.distillation.PackedColumn(label, packedHeight, packingType,
             true, true);
     column.setReactive(reactive);
+    if (structuredPacking != null) {
+      column.setStructuredPacking(structuredPacking);
+    }
+    if (columnDiameter > 0.0) {
+      column.setColumnDiameter(columnDiameter);
+    }
     column.addFeedStream(inlet, feedTray);
     if (condenserC != null) {
       column.setCondenserTemperature(condenserC, "C");
@@ -1386,6 +1421,12 @@ public class ProcessProbe {
     }
     System.out.println("packed_height_m=" + packedHeight);
     System.out.println("packing_type=" + packingType);
+    if (structuredPacking != null) {
+      System.out.println("structured_packing_stated=" + structuredPacking);
+    }
+    if (columnDiameter > 0.0) {
+      System.out.println("column_diameter_stated_m=" + columnDiameter);
+    }
     System.out.println("stage_count_middle=" + (column.getNumberOfTrays() - 2));
     System.out.println("tray_count=" + column.getNumberOfTrays());
     System.out.println("feed_tray=" + feedTray);
@@ -1433,9 +1474,15 @@ public class ProcessProbe {
     System.out.println("packing_pressure_drop_Pa=" + column.getPackingPressureDrop());
     System.out.println("hydraulics_ok=" + column.isHydraulicsOk());
     System.out.println("internal_diameter_m=" + column.getInternalDiameter());
+    // **The flag the name does not carry**, echoed beside the name for the same reason
+    // `packed_height_m` is: it is an input to the report, and `PackingHydraulicsCalculator`
+    // resolves a *category* from the name as well. A row that states the flag and a row that
+    // states a name are the pair that tells the two apart.
+    System.out.println("structured_packing=" + column.isStructuredPacking());
     neqsim.process.equipment.distillation.internals.PackingHydraulicsCalculator hydraulics =
         column.getHydraulics();
     if (hydraulics != null) {
+      System.out.println("packing_category=" + hydraulics.getPackingCategory());
       System.out.println("fs_factor=" + hydraulics.getFsFactor());
       System.out.println("kga=" + hydraulics.getKGa());
       System.out.println("kla=" + hydraulics.getKLa());
@@ -1443,10 +1490,11 @@ public class ProcessProbe {
       System.out.println("htu_g_m=" + hydraulics.getHtuG());
       System.out.println("htu_l_m=" + hydraulics.getHtuL());
       System.out.println("htu_og_m=" + hydraulics.getHtuOG());
-      // **The calculator's own verdicts, printed beside the column's.** `isHydraulicsOk()` above
-      // and `isDesignOk()` here are *different predicates* that both read as "the hydraulics are
-      // fine" - and every row of this capture has both false, so a port that published one under
-      // the other's name would reproduce every row while answering a different question.
+      // **`isHydraulicsOk()` above and `isDesignOk()` here are the *same* boolean**, which the
+      // names invite a reader to doubt. `javap` on the pinned jar settles it:
+      // `calculatePackingHydraulics` does `invokevirtual PackingHydraulicsCalculator.isDesignOk`
+      // and stores the result into the `hydraulicsOk` field `isHydraulicsOk()` returns. Both are
+      // printed because the pair is the evidence, not because there are two predicates.
       System.out.println("design_ok=" + hydraulics.isDesignOk());
       System.out.println("wetting_ok=" + hydraulics.isWettingOk());
       // **Per metre or in total, which the name does not say.** The column's
