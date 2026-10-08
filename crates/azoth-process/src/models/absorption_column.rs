@@ -6,7 +6,8 @@
 //! parameter the palette declares and this stage does not implement.
 
 use azoth_core::units::{
-    Length, MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+    pascals, watts,
 };
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
@@ -15,6 +16,11 @@ use crate::column::absorber_murphree::AbsorberMurphree;
 use crate::column::capacity::{
     DEFAULT_INTERNAL_DIAMETER_M, DEFAULT_MAX_ALLOWABLE_FS_FACTOR_ABSORBER,
     DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR, FsLimits, GasLoadLimits, fs_limits, gas_load_limits,
+};
+use crate::column::mechanical::{
+    DEFAULT_CONTACTOR_INTERNALS_TYPE, DEFAULT_MATERIAL_GRADE, DEFAULT_MAX_FLOODING_FACTOR,
+    DEFAULT_MAX_OPERATION_PRESSURE_BARA, DEFAULT_TRAY_EFFICIENCY, DEFAULT_TRAY_TYPE,
+    MechanicalGeometry, MechanicalReport, mechanical_design,
 };
 use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
@@ -95,6 +101,37 @@ pub struct AbsorptionColumnResult {
     /// `getMinimumDiameterForGasLoadLimit`.
     #[serde(serialize_with = "scalar")]
     pub minimum_diameter_for_gas_load_limit: Length,
+    /// **`DistillationColumnMechanicalDesign`'s own report**, the vessel the absorber holds -
+    /// `AbsorptionColumn` inherits `getMechanicalDesign` and overrides it. Read from the
+    /// **repaired** design: see the assumptions on the density the class reads without asking its
+    /// fluid to initialise.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_diameter: Length,
+    /// `getColumnHeight()`.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_height: Length,
+    /// `getColumnWallThickness()`, recomputed at the final diameter. SI, shown in mm.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_wall_thickness: Length,
+    /// `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    pub actual_trays: usize,
+    /// `getFloodingFactor()`, at the first Souders-Brown pass's diameter.
+    pub flooding_factor: f64,
+    /// `getWeirLoading()`, m3/hr per metre of weir.
+    pub weir_loading: f64,
+    /// `getTrayPressureDrop()`, mbar per tray.
+    pub tray_pressure_drop_mbar: f64,
+    /// `getTotalPressureDrop()`. SI, shown in bar.
+    #[serde(serialize_with = "scalar")]
+    pub total_pressure_drop_bar: Pressure,
+    /// `getReboilerDuty()`, which is **always zero**: an absorber has no reboiler. SI, shown in kW.
+    #[serde(serialize_with = "scalar")]
+    pub reboiler_duty_kw: Power,
+    /// `getCondenserDuty()`, likewise always zero.
+    #[serde(serialize_with = "scalar")]
+    pub condenser_duty_kw: Power,
+    /// `getMaterialGrade()`.
+    pub material_grade: String,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -113,6 +150,7 @@ impl AbsorptionColumnResult {
         outcome: &AbsorberOutcome,
         fs: &FsLimits,
         gas_load: &GasLoadLimits,
+        mechanical: &MechanicalReport,
         warnings: Vec<Warning>,
     ) -> Self {
         Self {
@@ -142,6 +180,17 @@ impl AbsorptionColumnResult {
             gas_load_factor_utilization: gas_load.gas_load_factor_utilization,
             gas_load_factor_within_design_limit: gas_load.gas_load_factor_within_design_limit,
             minimum_diameter_for_gas_load_limit: gas_load.minimum_diameter_for_gas_load_limit,
+            vessel_diameter: mechanical.vessel_diameter,
+            vessel_height: mechanical.vessel_height,
+            vessel_wall_thickness: meters(mechanical.vessel_wall_thickness_mm / 1000.0),
+            actual_trays: mechanical.actual_trays,
+            flooding_factor: mechanical.flooding_factor,
+            weir_loading: mechanical.weir_loading,
+            tray_pressure_drop_mbar: mechanical.tray_pressure_drop_mbar,
+            total_pressure_drop_bar: pascals(mechanical.total_pressure_drop_bar * 1.0e5),
+            reboiler_duty_kw: watts(mechanical.reboiler_duty_kw * 1000.0),
+            condenser_duty_kw: watts(mechanical.condenser_duty_kw * 1000.0),
+            material_grade: mechanical.material_grade.clone(),
             warnings,
         }
     }
@@ -176,6 +225,17 @@ impl CalcResult for AbsorptionColumnResult {
         "gas_load_factor_utilization",
         "gas_load_factor_within_design_limit",
         "minimum_diameter_for_gas_load_limit",
+        "vessel_diameter",
+        "vessel_height",
+        "vessel_wall_thickness",
+        "actual_trays",
+        "flooding_factor",
+        "weir_loading",
+        "tray_pressure_drop_mbar",
+        "total_pressure_drop_bar",
+        "reboiler_duty_kw",
+        "condenser_duty_kw",
+        "material_grade",
         "warnings",
     ];
 
@@ -234,6 +294,12 @@ pub fn absorption_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
+    tray_efficiency: Option<f64>,
+    max_flooding_factor: Option<f64>,
+    tray_type: Option<&str>,
+    contactor_internals_type: Option<&str>,
+    material_grade: Option<&str>,
+    max_operation_pressure: Option<f64>,
 ) -> Result<AbsorptionColumnResult> {
     // **The two efficiency fields, resolved and clamped.** `AbsorptionColumn` inherits the
     // base's two setters and adds `setComponentMurphreeEfficiency`'s map, so the correction
@@ -293,6 +359,9 @@ pub fn absorption_column(
             "temperature_tolerance" => Some(temperature_tolerance),
             "gas_t" => Some(gas_t.value),
             "solvent_t" => Some(solvent_t.value),
+            // The vessel sizing always runs, so the efficiency it divides by always has a value
+            // and an omitted one is the default rather than a bound nothing could check.
+            "tray_efficiency" => Some(tray_efficiency.unwrap_or(DEFAULT_TRAY_EFFICIENCY)),
             _ => None,
         },
         &mut warnings,
@@ -382,5 +451,40 @@ pub fn absorption_column(
         max_allowable_gas_load_factor.unwrap_or(DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR),
     )?;
 
-    Ok(AbsorptionColumnResult::of(&out, &fs, &gas_load, warnings))
+    // **The vessel around the absorber**, on the same trays. **The geometry is the designer's
+    // own defaults and not a declared surface**: `AbsorptionColumn` carries no tray spacing, weir
+    // height or hole diameter of its own, so this entry declares none either - the capture's row
+    // is at exactly those defaults.
+    let mechanical = mechanical_design(
+        &out.trays,
+        &out.gas_out.components,
+        &out.gas_out,
+        &out.liquid_out,
+        None,
+        None,
+        &MechanicalGeometry {
+            tray_type: tray_type.unwrap_or(DEFAULT_TRAY_TYPE).to_string(),
+            contactor_internals_type: contactor_internals_type
+                .unwrap_or(DEFAULT_CONTACTOR_INTERNALS_TYPE)
+                .to_string(),
+            tray_efficiency: tray_efficiency.unwrap_or(DEFAULT_TRAY_EFFICIENCY),
+            max_flooding_factor: max_flooding_factor.unwrap_or(DEFAULT_MAX_FLOODING_FACTOR),
+            material_grade: material_grade.unwrap_or(DEFAULT_MATERIAL_GRADE).to_string(),
+            max_operation_pressure_bara: max_operation_pressure
+                .unwrap_or(DEFAULT_MAX_OPERATION_PRESSURE_BARA),
+            tray_spacing: meters(crate::column::designer::DEFAULT_TRAY_SPACING_M),
+            weir_height: meters(crate::column::designer::DEFAULT_WEIR_HEIGHT_M),
+            hole_diameter: meters(crate::column::designer::DEFAULT_HOLE_DIAMETER_MM / 1000.0),
+            hole_area_fraction: crate::column::designer::DEFAULT_HOLE_AREA_FRACTION,
+            downcommer_area_fraction: crate::column::designer::DEFAULT_DOWNCOMMER_AREA_FRACTION,
+            column_diameter_override: meters(crate::column::designer::UNSIZED_COLUMN_DIAMETER_M),
+        },
+    )?;
+    Ok(AbsorptionColumnResult::of(
+        &out,
+        &fs,
+        &gas_load,
+        &mechanical,
+        warnings,
+    ))
 }

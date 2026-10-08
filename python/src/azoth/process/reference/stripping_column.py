@@ -58,6 +58,12 @@ def stripping_column(
     pumparound_max_iterations: int | None = None,
     column_diameter: Q | None = None,
     max_allowable_fs_factor: float | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> StrippingColumnResult:
     """Solve a tray stripper.
 
@@ -137,6 +143,12 @@ def stripping_column(
         pumparound_max_iterations,
         column_diameter,
         max_allowable_fs_factor,
+        tray_efficiency,
+        max_flooding_factor,
+        tray_type,
+        contactor_internals_type,
+        material_grade,
+        max_operation_pressure,
     )
     return StrippingColumnResult(
         tray_temperature=out.tray_temperature,
@@ -167,5 +179,16 @@ def stripping_column(
         gas_load_factor_utilization=out.gas_load_factor_utilization,
         gas_load_factor_within_design_limit=out.gas_load_factor_within_design_limit,
         minimum_diameter_for_gas_load_limit=out.minimum_diameter_for_gas_load_limit,
+        vessel_diameter=out.vessel_diameter,
+        vessel_height=out.vessel_height,
+        vessel_wall_thickness=out.vessel_wall_thickness,
+        actual_trays=out.actual_trays,
+        flooding_factor=out.flooding_factor,
+        weir_loading=out.weir_loading,
+        tray_pressure_drop_mbar=out.tray_pressure_drop_mbar,
+        total_pressure_drop_bar=out.total_pressure_drop_bar,
+        reboiler_duty_kw=out.reboiler_duty_kw,
+        condenser_duty_kw=out.condenser_duty_kw,
+        material_grade=out.material_grade,
         warnings=out.warnings,
     )

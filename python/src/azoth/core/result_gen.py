@@ -3686,6 +3686,39 @@ class AbsorptionColumnResult(_HasWarnings):
     #: `getMinimumDiameterForGasLoadLimit`.
     minimum_diameter_for_gas_load_limit: Q
 
+    #: `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. On this id that is the class's own sizing rather than a stated override, and it is the **repaired** design - see the assumptions on the density the class reads without initialising.
+    vessel_diameter: Q
+
+    #: `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`.
+    vessel_height: Q
+
+    #: `getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm.
+    vessel_wall_thickness: Q
+
+    #: `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    actual_trays: int
+
+    #: `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter.
+    flooding_factor: float
+
+    #: `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).**
+    weir_loading: float
+
+    #: `getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.**
+    tray_pressure_drop_mbar: float
+
+    #: `getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar.
+    total_pressure_drop_bar: Q
+
+    #: `getReboilerDuty()`, which is **always zero here**: an absorber has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW.
+    reboiler_duty_kw: Q
+
+    #: `getCondenserDuty()`, likewise always zero. SI, shown in kW.
+    condenser_duty_kw: Q
+
+    #: `getMaterialGrade()`, carried and reported.
+    material_grade: str
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 
@@ -4873,6 +4906,39 @@ class StrippingColumnResult(_HasWarnings):
 
     #: `getMinimumDiameterForGasLoadLimit`.
     minimum_diameter_for_gas_load_limit: Q
+
+    #: `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. The stripper inherits the getter and overrides it.
+    vessel_diameter: Q
+
+    #: `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`.
+    vessel_height: Q
+
+    #: `getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm.
+    vessel_wall_thickness: Q
+
+    #: `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    actual_trays: int
+
+    #: `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter.
+    flooding_factor: float
+
+    #: `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).**
+    weir_loading: float
+
+    #: `getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.**
+    tray_pressure_drop_mbar: float
+
+    #: `getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar.
+    total_pressure_drop_bar: Q
+
+    #: `getReboilerDuty()`, which is **always zero here**: a stripper has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW.
+    reboiler_duty_kw: Q
+
+    #: `getCondenserDuty()`, likewise always zero. SI, shown in kW.
+    condenser_duty_kw: Q
+
+    #: `getMaterialGrade()`, carried and reported.
+    material_grade: str
 
     #: Caveats.
     warnings: tuple[Warning, ...]

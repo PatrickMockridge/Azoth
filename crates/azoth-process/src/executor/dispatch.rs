@@ -708,7 +708,9 @@ pub(crate) fn absorption_column(inlets: &[Stream], p: &Parameters<'_>) -> Result
     // says so here, and that is a fact about this run and not a document the checker can rule on.
     let warnings = out.warnings.clone();
     let (fs, gas_load) = absorber_capacity(&out, p)?;
-    let result = crate::models::AbsorptionColumnResult::of(&out, &fs, &gas_load, warnings);
+    let mechanical = absorber_mechanical(&out, p)?;
+    let result =
+        crate::models::AbsorptionColumnResult::of(&out, &fs, &gas_load, &mechanical, warnings);
     KernelOutcome::publishing(vec![out.gas_out, out.liquid_out], &result)
 }
 
@@ -750,6 +752,53 @@ fn absorber_capacity(
     ))
 }
 
+/// **The absorber pair's vessel design, from a form's own parameters.**
+///
+/// One helper for both arms, because the stripper inherits every quantity and overrides none -
+/// the same reason `absorber_capacity` is one. **The six geometry values are the designer's own
+/// defaults and not palette parameters**: `AbsorptionColumn` carries no tray spacing, weir height
+/// or hole diameter of its own, so neither entry declares one.
+fn absorber_mechanical(
+    out: &kernels::absorption_column::AbsorberOutcome,
+    p: &Parameters<'_>,
+) -> Result<crate::column::mechanical::MechanicalReport> {
+    use crate::column::mechanical as mech;
+    crate::column::mechanical::mechanical_design(
+        &out.trays,
+        &out.gas_out.components,
+        &out.gas_out,
+        &out.liquid_out,
+        None,
+        None,
+        &mech::MechanicalGeometry {
+            tray_type: p
+                .optional_text("tray_type")?
+                .unwrap_or_else(|| mech::DEFAULT_TRAY_TYPE.into()),
+            contactor_internals_type: p
+                .optional_text("contactor_internals_type")?
+                .unwrap_or_else(|| mech::DEFAULT_CONTACTOR_INTERNALS_TYPE.into()),
+            tray_efficiency: p
+                .optional_number("tray_efficiency")?
+                .unwrap_or(mech::DEFAULT_TRAY_EFFICIENCY),
+            max_flooding_factor: p
+                .optional_number("max_flooding_factor")?
+                .unwrap_or(mech::DEFAULT_MAX_FLOODING_FACTOR),
+            material_grade: p
+                .optional_text("material_grade")?
+                .unwrap_or_else(|| mech::DEFAULT_MATERIAL_GRADE.into()),
+            max_operation_pressure_bara: p
+                .optional_number("max_operation_pressure")?
+                .unwrap_or(mech::DEFAULT_MAX_OPERATION_PRESSURE_BARA),
+            tray_spacing: meters(crate::column::designer::DEFAULT_TRAY_SPACING_M),
+            weir_height: meters(crate::column::designer::DEFAULT_WEIR_HEIGHT_M),
+            hole_diameter: meters(crate::column::designer::DEFAULT_HOLE_DIAMETER_MM / 1000.0),
+            hole_area_fraction: crate::column::designer::DEFAULT_HOLE_AREA_FRACTION,
+            downcommer_area_fraction: crate::column::designer::DEFAULT_DOWNCOMMER_AREA_FRACTION,
+            column_diameter_override: meters(crate::column::designer::UNSIZED_COLUMN_DIAMETER_M),
+        },
+    )
+}
+
 pub(crate) fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<KernelOutcome> {
     // **A stripper is an absorber with its two feeds renamed**, which is the class's own
     // statement: absorption and stripping are the same counter-current stage equations.
@@ -784,7 +833,9 @@ pub(crate) fn stripping_column(inlets: &[Stream], p: &Parameters<'_>) -> Result<
     )?;
     let warnings = out.warnings.clone();
     let (fs, gas_load) = absorber_capacity(&out, p)?;
-    let result = crate::models::StrippingColumnResult::of(&out, &fs, &gas_load, warnings);
+    let mechanical = absorber_mechanical(&out, p)?;
+    let result =
+        crate::models::StrippingColumnResult::of(&out, &fs, &gas_load, &mechanical, warnings);
     KernelOutcome::publishing(vec![out.gas_out, out.liquid_out], &result)
 }
 

@@ -505,11 +505,16 @@ a claim nothing holds.
   languages. **`packed_column` is not one of the ids still owed this, and the reason is the
   refusal above**: its class builds the designer with `internalsType = "packed"`, so driving
   `calcDesign` on it takes exactly the branch this port refuses by name. **The absorber pair is
-  what is owed**, and the capture's fourth row — `absorber_mechanical`, on the lean-oil absorber —
-  is the Rust half's alone, because that state has no Python twin yet. **`stripping_column` has no
-  mechanical row of its own**: it inherits every getter and overrides none, so one row cannot
-  settle whether a second reading is needed there, and the capacity families' own experience —
-  where one row was not enough for the absorber pair — says to add one before claiming the shape.
+  landed too**, on `process.absorption_column` and `process.stripping_column`: the same six inputs
+  and the same eleven quantities, held to the capture's `absorber_mechanical` row by a case on the
+  absorber. **The geometry is not a declared surface on those two** — `AbsorptionColumn` carries
+  no tray spacing, weir height or hole diameter of its own, so the two entries declare the six
+  *class* inputs alone and the vessel is built at the designer's own defaults, which is what the
+  capture's row is. **`stripping_column` still has no mechanical row of its own**: it inherits
+  every getter and overrides none, so one absorber row cannot settle whether a second reading is
+  needed there, and the capacity families' own experience — where one row was not enough for the
+  absorber pair — says to add one rather than claim the shape. Its spec says so rather than
+  implying the row holds it.
   **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the

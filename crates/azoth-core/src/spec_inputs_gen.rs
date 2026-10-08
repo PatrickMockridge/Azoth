@@ -1269,6 +1269,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "max_allowable_fs_factor",
         "dimensionless",
     ),
+    (
+        "process.absorption_column",
+        "tray_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.absorption_column",
+        "max_flooding_factor",
+        "dimensionless",
+    ),
+    (
+        "process.absorption_column",
+        "max_operation_pressure",
+        "pressure",
+    ),
     ("process.component_splitter", "feed_n", "molar_flow"),
     ("process.component_splitter", "feed_z", "dimensionless"),
     ("process.component_splitter", "feed_p", "pressure"),
@@ -2101,6 +2116,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "process.stripping_column",
         "max_allowable_fs_factor",
         "dimensionless",
+    ),
+    (
+        "process.stripping_column",
+        "tray_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.stripping_column",
+        "max_flooding_factor",
+        "dimensionless",
+    ),
+    (
+        "process.stripping_column",
+        "max_operation_pressure",
+        "pressure",
     ),
     ("process.tank", "feed_n", "molar_flow"),
     ("process.tank", "feed_z", "dimensionless"),

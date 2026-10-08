@@ -374,6 +374,12 @@ def absorption_column(
     pumparound_max_iterations: int | None = None,
     column_diameter: Q | None = None,
     max_allowable_fs_factor: float | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber, or a stripper.
 
@@ -440,6 +446,12 @@ def absorption_column(
         pumparound_max_iterations=pumparound_max_iterations,
         column_diameter=column_diameter,
         max_allowable_fs_factor=max_allowable_fs_factor,
+        tray_efficiency=tray_efficiency,
+        max_flooding_factor=max_flooding_factor,
+        tray_type=tray_type,
+        contactor_internals_type=contactor_internals_type,
+        material_grade=material_grade,
+        max_operation_pressure=max_operation_pressure,
     )
 
 
@@ -669,6 +681,12 @@ def stripping_column(
     pumparound_max_iterations: int | None = None,
     column_diameter: Q | None = None,
     max_allowable_fs_factor: float | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> StrippingColumnResult:
     """Strip a rich liquid with a counter-current gas.
 
@@ -723,6 +741,12 @@ def stripping_column(
         pumparound_max_iterations=pumparound_max_iterations,
         column_diameter=column_diameter,
         max_allowable_fs_factor=max_allowable_fs_factor,
+        tray_efficiency=tray_efficiency,
+        max_flooding_factor=max_flooding_factor,
+        tray_type=tray_type,
+        contactor_internals_type=contactor_internals_type,
+        material_grade=material_grade,
+        max_operation_pressure=max_operation_pressure,
     )
 
 

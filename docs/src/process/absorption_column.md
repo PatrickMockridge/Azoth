@@ -59,6 +59,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `pumparound_max_iterations` | dimensionless | *Optional.* the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser. |
 | `column_diameter` | m | *Optional.* the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by. **Absent is the class's own `1.0` m**; a value at or below zero is the "no area" it answers a zero factor from. The solve is indifferent to it. |
 | `max_allowable_fs_factor` | dimensionless | *Optional.* the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `3.0`**, `AbsorptionColumn`'s own `DEFAULT_MAX_ALLOWABLE_FS_FACTOR` and not the base's `2.5`. Read by the limit family alone. |
+| `tray_efficiency` | dimensionless | *Optional.* the efficiency the vessel sizing divides the tray count by to get `actual_trays`, and so the number the height is built from. **Absent is `0.65`**, `DistillationColumnMechanicalDesign`'s own field initialiser - `AbsorptionColumn` inherits the getter and overrides it. |
+| `max_flooding_factor` | dimensionless | *Optional.* the fraction of flood the Souders-Brown design velocity is, `u_design = u_flood * max_flooding_factor`. **Absent is `0.85`.** A non-positive value is not refused: it reaches the class's own degenerate branch, which passes `0.5` m through the standard-diameter table. |
+| `tray_type` | sieve / valve / bubble-cap | *Optional.* `trayType`: the Souders-Brown `kFactor` the first pass is sized at - `0.1`, `0.12` or `0.08` - and, where `contactor_internals_type` is `auto`, the internals type the designer is built as. **Absent is `sieve`.** |
+| `contactor_internals_type` | auto / sieve / valve / bubble-cap / packed | *Optional.* `contactorInternalsType`. **`auto` resolves to `tray_type`** on this equipment; the other three are stated directly, and **`packed` is declared and refused by name**. **Absent is `auto`.** |
+| `material_grade` | - | *Optional.* `materialGrade`, a vessel statement the class carries and reports back. **Absent is `SA-516-70`.** Nothing in this id reads it beyond the report. |
+| `max_operation_pressure` | bar | *Optional.* `getMaxOperationPressure()`, **absolute**, the wall thickness's design basis. **Absent is `100.0`**, `MechanicalDesign`'s own field initialiser: NeqSim's equipment path would overwrite it from the endpoints' economic design pressure, a tree this id does not carry. |
 
 
 ## Outputs
@@ -91,6 +97,17 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `gas_load_factor_utilization` | dimensionless | `getGasLoadFactorUtilization`. |
 | `gas_load_factor_within_design_limit` | - | `isGasLoadFactorWithinDesignLimit`. |
 | `minimum_diameter_for_gas_load_limit` | m | `getMinimumDiameterForGasLoadLimit`. |
+| `vessel_diameter` | m | `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. On this id that is the class's own sizing rather than a stated override, and it is the **repaired** design - see the assumptions on the density the class reads without initialising. |
+| `vessel_height` | m | `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`. |
+| `vessel_wall_thickness` | mm | `getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm. |
+| `actual_trays` | dimensionless | `getActualTrays()`: `ceil(trays / tray_efficiency)`. |
+| `flooding_factor` | dimensionless | `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter. |
+| `weir_loading` | dimensionless | `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).** |
+| `tray_pressure_drop_mbar` | dimensionless | `getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.** |
+| `total_pressure_drop_bar` | bar | `getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar. |
+| `reboiler_duty_kw` | kW | `getReboilerDuty()`, which is **always zero here**: an absorber has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW. |
+| `condenser_duty_kw` | kW | `getCondenserDuty()`, likewise always zero. SI, shown in kW. |
+| `material_grade` | - | `getMaterialGrade()`, carried and reported. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -100,6 +117,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `temperature_tolerance > 0` | raises | a convergence tolerance is positive, and zero is a solve that never stops |
 | `gas_t > 0` | raises | an absolute temperature |
 | `solvent_t > 0` | raises | an absolute temperature |
+| `tray_efficiency > 0` | raises | `calcDesign` divides the tray count by it with no guard, so a non-positive efficiency is a number its own integer cast saturates rather than a tray count |
 
 ## Not carried
 
@@ -117,6 +135,7 @@ holds the declaration and the two languages to each other.
 | `solver_type` = `newton` | `TemperatureNewtonSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
 | `solver_type` = `mesh_residual` | `MeshResidualSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
 | `solver_type` = `auto` | `AutoSolver` | `validation/neqsim/captures/process_column_solvers.tsv` |
+| `contactor_internals_type` = `packed` | `PackedColumnMechanicalDesign` | `validation/neqsim/captures/process_column_mechanical_design.tsv` |
 
 
 ## Assumptions
@@ -142,11 +161,12 @@ holds the declaration and the two languages to each other.
 | Case | Inputs | Expected |
 |---|---|---|
 | `lean_oil_absorber` | gas_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], gas_n = 30.852602094576984, gas_z = [0.92, 0.04, 0.025, 0.01, 0.005, 0.0], gas_p = 1500000.0, gas_t = 303.15, solvent_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], solvent_n = 1.6632569898375, solvent_z = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], solvent_p = 1500000.0, solvent_t = 293.15, number_of_stages = 5, top_pressure = 1500000.0, bottom_pressure = 1500000.0, temperature_tolerance = 0.0001, max_iterations = 80 | tray_temperature = [299.10907966626354, 299.7940316636134, 300.49322271941304, 301.26748639388506, 301.7126561904438], tray_pressure = [1500000.0, 1500000.0, 1500000.0, 1500000.0, 1500000.0], tray_gas_n = [31.02657698982344, 30.994044668451405, 30.961128515891744, 30.91441340721759, 30.587796968266012], tray_liquid_n = [1.9280715291956925, 2.1020464244421477, 2.069511412099089, 2.0365923915807302, 1.9898748368771202], gas_out_n = 30.58779316625974, gas_out_z = [0.9232019625988978, 0.03925797304019808, 0.02291858320152024, 0.0070019486397466715, 0.0009070802787657044, 0.006712452240871433], gas_out_p = 1500000.0, gas_out_t = 301.7126561904438, gas_out_h = 757.4203577777466, liquid_out_n = 1.928065918154764, liquid_out_z = [0.075559265364807, 0.01726565673374861, 0.03645423585925705, 0.04893601577830049, 0.0656188283447739, 0.756165997919113], liquid_out_p = 1500000.0, liquid_out_t = 299.10907966626354, liquid_out_h = -27387.776830145922, fs_factor = 0.21051436885536753, fs_factor_utilization = 0.07017145628512252, minimum_diameter_for_fs_limit = 0.26489895485849413, gas_load_factor = 0.006694885232955643, gas_load_factor_utilization = 0.04463256821970429, minimum_diameter_for_gas_load_limit = 0.21126421424298125 |
+| `lean_oil_absorber_mechanical` | gas_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], gas_n = 30.852602094576984, gas_z = [0.92, 0.04, 0.025, 0.01, 0.005, 0.0], gas_p = 1500000.0, gas_t = 303.15, solvent_components = ['methane', 'ethane', 'propane', 'n-butane', 'n-pentane', 'n-heptane'], solvent_n = 1.6632569898375, solvent_z = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0], solvent_p = 1500000.0, solvent_t = 293.15, number_of_stages = 5, top_pressure = 1500000.0, bottom_pressure = 1500000.0, temperature_tolerance = 0.0001, max_iterations = 80 | vessel_diameter = 0.5, vessel_height = 8.8, vessel_wall_thickness = 216.19496855345912, actual_trays = 8, flooding_factor = 0.37784000600344486, weir_loading = 2.664675513235188, tray_pressure_drop_mbar = 8.164586402782746, total_pressure_drop_bar = 0.023629991163397854, reboiler_duty_kw = 0.0, condenser_duty_kw = 0.0 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 1 declared, every one run
+- Tests: 2 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

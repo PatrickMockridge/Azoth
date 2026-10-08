@@ -9043,6 +9043,39 @@ pub struct PyAbsorptionColumnResult {
     /// `getMinimumDiameterForGasLoadLimit`.
     #[pyo3(get)]
     pub minimum_diameter_for_gas_load_limit: PyQty,
+    /// `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. On this id that is the class's own sizing rather than a stated override, and it is the **repaired** design - see the assumptions on the density the class reads without initialising.
+    #[pyo3(get)]
+    pub vessel_diameter: PyQty,
+    /// `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`.
+    #[pyo3(get)]
+    pub vessel_height: PyQty,
+    /// `getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm.
+    #[pyo3(get)]
+    pub vessel_wall_thickness: PyQty,
+    /// `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    #[pyo3(get)]
+    pub actual_trays: usize,
+    /// `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter.
+    #[pyo3(get)]
+    pub flooding_factor: f64,
+    /// `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).**
+    #[pyo3(get)]
+    pub weir_loading: f64,
+    /// `getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.**
+    #[pyo3(get)]
+    pub tray_pressure_drop_mbar: f64,
+    /// `getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar.
+    #[pyo3(get)]
+    pub total_pressure_drop_bar: PyQty,
+    /// `getReboilerDuty()`, which is **always zero here**: an absorber has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW.
+    #[pyo3(get)]
+    pub reboiler_duty_kw: PyQty,
+    /// `getCondenserDuty()`, likewise always zero. SI, shown in kW.
+    #[pyo3(get)]
+    pub condenser_duty_kw: PyQty,
+    /// `getMaterialGrade()`, carried and reported.
+    #[pyo3(get)]
+    pub material_grade: String,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -9052,7 +9085,7 @@ pub struct PyAbsorptionColumnResult {
 impl PyAbsorptionColumnResult {
     fn __repr__(&self) -> String {
         format!(
-            "AbsorptionColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, gas_out_n={:?}, gas_out_z={:?}, gas_out_p={:?}, gas_out_t={:?}, gas_out_h={:?}, liquid_out_n={:?}, liquid_out_z={:?}, liquid_out_p={:?}, liquid_out_t={:?}, liquid_out_h={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, gas_load_factor={:?}, gas_load_factor_utilization={:?}, gas_load_factor_within_design_limit={:?}, minimum_diameter_for_gas_load_limit={:?}, {} warning(s))",
+            "AbsorptionColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, gas_out_n={:?}, gas_out_z={:?}, gas_out_p={:?}, gas_out_t={:?}, gas_out_h={:?}, liquid_out_n={:?}, liquid_out_z={:?}, liquid_out_p={:?}, liquid_out_t={:?}, liquid_out_h={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, gas_load_factor={:?}, gas_load_factor_utilization={:?}, gas_load_factor_within_design_limit={:?}, minimum_diameter_for_gas_load_limit={:?}, vessel_diameter={:?}, vessel_height={:?}, vessel_wall_thickness={:?}, actual_trays={:?}, flooding_factor={:?}, weir_loading={:?}, tray_pressure_drop_mbar={:?}, total_pressure_drop_bar={:?}, reboiler_duty_kw={:?}, condenser_duty_kw={:?}, material_grade={:?}, {} warning(s))",
             self.tray_temperature,
             self.tray_pressure,
             self.tray_gas_n,
@@ -9079,6 +9112,17 @@ impl PyAbsorptionColumnResult {
             self.gas_load_factor_utilization,
             self.gas_load_factor_within_design_limit,
             self.minimum_diameter_for_gas_load_limit,
+            self.vessel_diameter,
+            self.vessel_height,
+            self.vessel_wall_thickness,
+            self.actual_trays,
+            self.flooding_factor,
+            self.weir_loading,
+            self.tray_pressure_drop_mbar,
+            self.total_pressure_drop_bar,
+            self.reboiler_duty_kw,
+            self.condenser_duty_kw,
+            self.material_grade,
             self.warnings.len()
         )
     }
@@ -9179,6 +9223,35 @@ impl From<&azoth_process::models::absorption_column::AbsorptionColumnResult>
                 magnitude_si: r.minimum_diameter_for_gas_load_limit.value,
                 unit: "m".to_string(),
             },
+            vessel_diameter: PyQty {
+                magnitude_si: r.vessel_diameter.value,
+                unit: "m".to_string(),
+            },
+            vessel_height: PyQty {
+                magnitude_si: r.vessel_height.value,
+                unit: "m".to_string(),
+            },
+            vessel_wall_thickness: PyQty {
+                magnitude_si: r.vessel_wall_thickness.value,
+                unit: "mm".to_string(),
+            },
+            actual_trays: r.actual_trays,
+            flooding_factor: r.flooding_factor,
+            weir_loading: r.weir_loading,
+            tray_pressure_drop_mbar: r.tray_pressure_drop_mbar,
+            total_pressure_drop_bar: PyQty {
+                magnitude_si: r.total_pressure_drop_bar.value,
+                unit: "bar".to_string(),
+            },
+            reboiler_duty_kw: PyQty {
+                magnitude_si: r.reboiler_duty_kw.value,
+                unit: "kW".to_string(),
+            },
+            condenser_duty_kw: PyQty {
+                magnitude_si: r.condenser_duty_kw.value,
+                unit: "kW".to_string(),
+            },
+            material_grade: r.material_grade.clone(),
             warnings: transport(&r.warnings),
         }
     }
@@ -12257,6 +12330,39 @@ pub struct PyStrippingColumnResult {
     /// `getMinimumDiameterForGasLoadLimit`.
     #[pyo3(get)]
     pub minimum_diameter_for_gas_load_limit: PyQty,
+    /// `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. The stripper inherits the getter and overrides it.
+    #[pyo3(get)]
+    pub vessel_diameter: PyQty,
+    /// `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`.
+    #[pyo3(get)]
+    pub vessel_height: PyQty,
+    /// `getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm.
+    #[pyo3(get)]
+    pub vessel_wall_thickness: PyQty,
+    /// `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    #[pyo3(get)]
+    pub actual_trays: usize,
+    /// `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter.
+    #[pyo3(get)]
+    pub flooding_factor: f64,
+    /// `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).**
+    #[pyo3(get)]
+    pub weir_loading: f64,
+    /// `getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.**
+    #[pyo3(get)]
+    pub tray_pressure_drop_mbar: f64,
+    /// `getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar.
+    #[pyo3(get)]
+    pub total_pressure_drop_bar: PyQty,
+    /// `getReboilerDuty()`, which is **always zero here**: a stripper has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW.
+    #[pyo3(get)]
+    pub reboiler_duty_kw: PyQty,
+    /// `getCondenserDuty()`, likewise always zero. SI, shown in kW.
+    #[pyo3(get)]
+    pub condenser_duty_kw: PyQty,
+    /// `getMaterialGrade()`, carried and reported.
+    #[pyo3(get)]
+    pub material_grade: String,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -12266,7 +12372,7 @@ pub struct PyStrippingColumnResult {
 impl PyStrippingColumnResult {
     fn __repr__(&self) -> String {
         format!(
-            "StrippingColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, overhead_gas_n={:?}, overhead_gas_z={:?}, overhead_gas_p={:?}, overhead_gas_t={:?}, overhead_gas_h={:?}, lean_liquid_n={:?}, lean_liquid_z={:?}, lean_liquid_p={:?}, lean_liquid_t={:?}, lean_liquid_h={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, gas_load_factor={:?}, gas_load_factor_utilization={:?}, gas_load_factor_within_design_limit={:?}, minimum_diameter_for_gas_load_limit={:?}, {} warning(s))",
+            "StrippingColumnResult(tray_temperature={:?}, tray_pressure={:?}, tray_gas_n={:?}, tray_liquid_n={:?}, overhead_gas_n={:?}, overhead_gas_z={:?}, overhead_gas_p={:?}, overhead_gas_t={:?}, overhead_gas_h={:?}, lean_liquid_n={:?}, lean_liquid_z={:?}, lean_liquid_p={:?}, lean_liquid_t={:?}, lean_liquid_h={:?}, iterations={:?}, temperature_residual={:?}, mass_residual={:?}, energy_residual={:?}, fs_factor={:?}, fs_factor_utilization={:?}, fs_factor_within_design_limit={:?}, minimum_diameter_for_fs_limit={:?}, gas_load_factor={:?}, gas_load_factor_utilization={:?}, gas_load_factor_within_design_limit={:?}, minimum_diameter_for_gas_load_limit={:?}, vessel_diameter={:?}, vessel_height={:?}, vessel_wall_thickness={:?}, actual_trays={:?}, flooding_factor={:?}, weir_loading={:?}, tray_pressure_drop_mbar={:?}, total_pressure_drop_bar={:?}, reboiler_duty_kw={:?}, condenser_duty_kw={:?}, material_grade={:?}, {} warning(s))",
             self.tray_temperature,
             self.tray_pressure,
             self.tray_gas_n,
@@ -12293,6 +12399,17 @@ impl PyStrippingColumnResult {
             self.gas_load_factor_utilization,
             self.gas_load_factor_within_design_limit,
             self.minimum_diameter_for_gas_load_limit,
+            self.vessel_diameter,
+            self.vessel_height,
+            self.vessel_wall_thickness,
+            self.actual_trays,
+            self.flooding_factor,
+            self.weir_loading,
+            self.tray_pressure_drop_mbar,
+            self.total_pressure_drop_bar,
+            self.reboiler_duty_kw,
+            self.condenser_duty_kw,
+            self.material_grade,
             self.warnings.len()
         )
     }
@@ -12393,6 +12510,35 @@ impl From<&azoth_process::models::stripping_column::StrippingColumnResult>
                 magnitude_si: r.minimum_diameter_for_gas_load_limit.value,
                 unit: "m".to_string(),
             },
+            vessel_diameter: PyQty {
+                magnitude_si: r.vessel_diameter.value,
+                unit: "m".to_string(),
+            },
+            vessel_height: PyQty {
+                magnitude_si: r.vessel_height.value,
+                unit: "m".to_string(),
+            },
+            vessel_wall_thickness: PyQty {
+                magnitude_si: r.vessel_wall_thickness.value,
+                unit: "mm".to_string(),
+            },
+            actual_trays: r.actual_trays,
+            flooding_factor: r.flooding_factor,
+            weir_loading: r.weir_loading,
+            tray_pressure_drop_mbar: r.tray_pressure_drop_mbar,
+            total_pressure_drop_bar: PyQty {
+                magnitude_si: r.total_pressure_drop_bar.value,
+                unit: "bar".to_string(),
+            },
+            reboiler_duty_kw: PyQty {
+                magnitude_si: r.reboiler_duty_kw.value,
+                unit: "kW".to_string(),
+            },
+            condenser_duty_kw: PyQty {
+                magnitude_si: r.condenser_duty_kw.value,
+                unit: "kW".to_string(),
+            },
+            material_grade: r.material_grade.clone(),
             warnings: transport(&r.warnings),
         }
     }

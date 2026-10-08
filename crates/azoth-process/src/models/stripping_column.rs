@@ -5,11 +5,15 @@
 //! AbsorptionColumn` and adds no equations - only the names of its two inlets and of its two
 //! products. What is here is the boundary with those names, and the refusals the base carries.
 
-use azoth_core::units::{Length, MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
+use azoth_core::units::{
+    Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
+    pascals, watts,
+};
 use azoth_core::{CalcResult, Result, Warning};
 use serde::Serialize;
 
 use crate::column::capacity::{FsLimits, GasLoadLimits};
+use crate::column::mechanical::MechanicalReport;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
 use crate::kernels::absorption_column::AbsorberOutcome;
 use crate::models::absorption_column::absorption_column as absorber;
@@ -83,6 +87,35 @@ pub struct StrippingColumnResult {
     /// `getMinimumDiameterForGasLoadLimit`.
     #[serde(serialize_with = "scalar")]
     pub minimum_diameter_for_gas_load_limit: Length,
+    /// **`DistillationColumnMechanicalDesign`'s own report**, which `StrippingColumn` inherits
+    /// from the absorber pair and overrides none of.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_diameter: Length,
+    /// `getColumnHeight()`.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_height: Length,
+    /// `getColumnWallThickness()`, taken at the final diameter. SI, shown in mm.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_wall_thickness: Length,
+    /// `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    pub actual_trays: usize,
+    /// `getFloodingFactor()`, at the first Souders-Brown pass's diameter.
+    pub flooding_factor: f64,
+    /// `getWeirLoading()`, m3/hr per metre of weir.
+    pub weir_loading: f64,
+    /// `getTrayPressureDrop()`, mbar per tray.
+    pub tray_pressure_drop_mbar: f64,
+    /// `getTotalPressureDrop()`. SI, shown in bar.
+    #[serde(serialize_with = "scalar")]
+    pub total_pressure_drop_bar: Pressure,
+    /// `getReboilerDuty()`, which is **always zero**: a stripper has no reboiler.
+    #[serde(serialize_with = "scalar")]
+    pub reboiler_duty_kw: Power,
+    /// `getCondenserDuty()`, likewise always zero.
+    #[serde(serialize_with = "scalar")]
+    pub condenser_duty_kw: Power,
+    /// `getMaterialGrade()`.
+    pub material_grade: String,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -101,6 +134,7 @@ impl StrippingColumnResult {
         outcome: &AbsorberOutcome,
         fs: &FsLimits,
         gas_load: &GasLoadLimits,
+        mechanical: &MechanicalReport,
         warnings: Vec<Warning>,
     ) -> Self {
         Self {
@@ -130,6 +164,17 @@ impl StrippingColumnResult {
             gas_load_factor_utilization: gas_load.gas_load_factor_utilization,
             gas_load_factor_within_design_limit: gas_load.gas_load_factor_within_design_limit,
             minimum_diameter_for_gas_load_limit: gas_load.minimum_diameter_for_gas_load_limit,
+            vessel_diameter: mechanical.vessel_diameter,
+            vessel_height: mechanical.vessel_height,
+            vessel_wall_thickness: meters(mechanical.vessel_wall_thickness_mm / 1000.0),
+            actual_trays: mechanical.actual_trays,
+            flooding_factor: mechanical.flooding_factor,
+            weir_loading: mechanical.weir_loading,
+            tray_pressure_drop_mbar: mechanical.tray_pressure_drop_mbar,
+            total_pressure_drop_bar: pascals(mechanical.total_pressure_drop_bar * 1.0e5),
+            reboiler_duty_kw: watts(mechanical.reboiler_duty_kw * 1000.0),
+            condenser_duty_kw: watts(mechanical.condenser_duty_kw * 1000.0),
+            material_grade: mechanical.material_grade.clone(),
             warnings,
         }
     }
@@ -164,6 +209,17 @@ impl CalcResult for StrippingColumnResult {
         "gas_load_factor_utilization",
         "gas_load_factor_within_design_limit",
         "minimum_diameter_for_gas_load_limit",
+        "vessel_diameter",
+        "vessel_height",
+        "vessel_wall_thickness",
+        "actual_trays",
+        "flooding_factor",
+        "weir_loading",
+        "tray_pressure_drop_mbar",
+        "total_pressure_drop_bar",
+        "reboiler_duty_kw",
+        "condenser_duty_kw",
+        "material_grade",
         "warnings",
     ];
 
@@ -222,6 +278,12 @@ pub fn stripping_column(
     pumparound_max_iterations: Option<usize>,
     column_diameter: Option<f64>,
     max_allowable_fs_factor: Option<f64>,
+    tray_efficiency: Option<f64>,
+    max_flooding_factor: Option<f64>,
+    tray_type: Option<&str>,
+    contactor_internals_type: Option<&str>,
+    material_grade: Option<&str>,
+    max_operation_pressure: Option<f64>,
 ) -> Result<StrippingColumnResult> {
     let out = absorber(
         stripping_gas_components,
@@ -264,6 +326,12 @@ pub fn stripping_column(
         pumparound_max_iterations,
         column_diameter,
         max_allowable_fs_factor,
+        tray_efficiency,
+        max_flooding_factor,
+        tray_type,
+        contactor_internals_type,
+        material_grade,
+        max_operation_pressure,
     )?;
 
     Ok(StrippingColumnResult {
@@ -294,6 +362,17 @@ pub fn stripping_column(
         gas_load_factor_utilization: out.gas_load_factor_utilization,
         gas_load_factor_within_design_limit: out.gas_load_factor_within_design_limit,
         minimum_diameter_for_gas_load_limit: out.minimum_diameter_for_gas_load_limit,
+        vessel_diameter: out.vessel_diameter,
+        vessel_height: out.vessel_height,
+        vessel_wall_thickness: out.vessel_wall_thickness,
+        actual_trays: out.actual_trays,
+        flooding_factor: out.flooding_factor,
+        weir_loading: out.weir_loading,
+        tray_pressure_drop_mbar: out.tray_pressure_drop_mbar,
+        total_pressure_drop_bar: out.total_pressure_drop_bar,
+        reboiler_duty_kw: out.reboiler_duty_kw,
+        condenser_duty_kw: out.condenser_duty_kw,
+        material_grade: out.material_grade,
         warnings: out.warnings,
     })
 }

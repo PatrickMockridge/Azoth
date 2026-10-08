@@ -1503,6 +1503,17 @@ class AbsorptionColumnResult:
     gas_load_factor_utilization: float
     gas_load_factor_within_design_limit: bool
     minimum_diameter_for_gas_load_limit: Qty
+    vessel_diameter: Qty
+    vessel_height: Qty
+    vessel_wall_thickness: Qty
+    actual_trays: int
+    flooding_factor: float
+    weir_loading: float
+    tray_pressure_drop_mbar: float
+    total_pressure_drop_bar: Qty
+    reboiler_duty_kw: Qty
+    condenser_duty_kw: Qty
+    material_grade: str
     warnings: list[Warning]
 
 @final
@@ -1915,6 +1926,17 @@ class StrippingColumnResult:
     gas_load_factor_utilization: float
     gas_load_factor_within_design_limit: bool
     minimum_diameter_for_gas_load_limit: Qty
+    vessel_diameter: Qty
+    vessel_height: Qty
+    vessel_wall_thickness: Qty
+    actual_trays: int
+    flooding_factor: float
+    weir_loading: float
+    tray_pressure_drop_mbar: float
+    total_pressure_drop_bar: Qty
+    reboiler_duty_kw: Qty
+    condenser_duty_kw: Qty
+    material_grade: str
     warnings: list[Warning]
 
 @final
@@ -3277,6 +3299,12 @@ def absorption_column(
     pumparound_max_iterations: float | None = None,
     column_diameter: float | None = None,
     max_allowable_fs_factor: float | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> AbsorptionColumnResult: ...
 def component_splitter(
     components: list[str],
@@ -3684,6 +3712,12 @@ def stripping_column(
     pumparound_max_iterations: float | None = None,
     column_diameter: float | None = None,
     max_allowable_fs_factor: float | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> StrippingColumnResult: ...
 def tank(
     components: list[str],

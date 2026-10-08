@@ -40,3 +40,34 @@ minimum_diameter_for_fs_limit = 0.26489895485849413
 gas_load_factor = 0.006694885232955643
 gas_load_factor_utilization = 0.04463256821970429
 minimum_diameter_for_gas_load_limit = 0.21126421424298125
+[[cases]]
+id = "lean_oil_absorber_mechanical"
+tolerance = 0.0002
+source = "The same unpinned lean-oil absorber, from `validation/neqsim/captures/process_column_mechanical_design.tsv`'s `absorber_mechanical` row. **The capture's block is two designs and this holds the repaired one**: the probe calls `calcDesign` once *before* it asks the liquid outlet's fluid to initialise and once after, and the class reads `0.0` for that density because it never asks - `equinor/neqsim#4140`. The un-suffixed keys are the *defect's* (`column_diameter_m = 1.0`, `weir_loading = Infinity`, `tray_pressure_drop = 5.0`); the `_after_init` keys and the block's path-independent ones are what a call with `initProperties()` reads, which is what azoth always computes from `(T, P, z)`. **This is also the one row of the family whose flooding factor is not the capture's own key**: the block prints it only at the defect diameter, so it is derived there and held here.\\n"
+[cases.inputs]
+gas_components = ["methane", "ethane", "propane", "n-butane", "n-pentane", "n-heptane"]
+gas_n = 30.852602094576984
+gas_z = [0.92, 0.04, 0.025, 0.01, 0.005, 0.0]
+gas_p = 1500000.0
+gas_t = 303.15
+solvent_components = ["methane", "ethane", "propane", "n-butane", "n-pentane", "n-heptane"]
+solvent_n = 1.6632569898375
+solvent_z = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+solvent_p = 1500000.0
+solvent_t = 293.15
+number_of_stages = 5
+top_pressure = 1500000.0
+bottom_pressure = 1500000.0
+temperature_tolerance = 1e-04
+max_iterations = 80
+[cases.expected]
+vessel_diameter = 0.5
+vessel_height = 8.8
+vessel_wall_thickness = 216.19496855345912
+actual_trays = 8
+flooding_factor = 0.37784000600344486
+weir_loading = 2.664675513235188
+tray_pressure_drop_mbar = 8.164586402782746
+total_pressure_drop_bar = 0.023629991163397854
+reboiler_duty_kw = 0.0
+condenser_duty_kw = 0.0

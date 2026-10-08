@@ -37,6 +37,22 @@ unit = "dimensionless"
 description = "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; this class defaults it to 3.0"
 [parameters.solver_type]
 description = "which of the base's ten solving strategies runs, by the same names `unit_ops.distillation_column` declares"
+[parameters.tray_efficiency]
+unit = "dimensionless"
+description = "the efficiency the vessel sizing divides the tray count by; the class defaults it to 0.65"
+[parameters.max_flooding_factor]
+unit = "dimensionless"
+description = "the fraction of flood the Souders-Brown design velocity is; the class defaults it to 0.85"
+[parameters.tray_type]
+description = "the tray type the first Souders-Brown pass is sized at, and the internals type where the contactor type is auto - sieve, valve or bubble-cap; the class defaults it to sieve"
+[parameters.contactor_internals_type]
+description = "which contactor the designer is built as; auto resolves to the tray type, and the class defaults it to auto. A packed contactor is refused by name"
+[parameters.material_grade]
+description = "the vessel's material grade, which the class carries and reports back; it defaults to SA-516-70"
+[parameters.max_operation_pressure]
+unit = "bar"
+description = "the wall thickness's design pressure, absolute; the class's own field defaults to 100.0 bara, and NeqSim's equipment path overwrites it from the endpoint pressures"
+
 [[ports]]
 name = "gas_in"
 direction = "in"

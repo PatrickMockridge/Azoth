@@ -31,7 +31,15 @@ from azoth.process.reference.capacity import (
     fs_limits,
     gas_load_limits,
 )
+from azoth.process.reference.designer import (
+    DEFAULT_TRAY_SPACING_M,
+    DEFAULT_WEIR_HEIGHT_M,
+    UNSIZED_COLUMN_DIAMETER_M,
+)
 from azoth.process.reference.distillation_column import (
+    DEFAULT_DOWNCOMMER_AREA_FRACTION,
+    DEFAULT_HOLE_AREA_FRACTION,
+    DEFAULT_HOLE_DIAMETER_MM,
     UNPORTED_SOLVERS,
     Draws,
     _AbsorberMurphree,
@@ -45,6 +53,16 @@ from azoth.process.reference.distillation_column import (
     _States,
     _states,
     reactive_section,
+)
+from azoth.process.reference.mechanical import (
+    DEFAULT_CONTACTOR_INTERNALS_TYPE,
+    DEFAULT_MATERIAL_GRADE,
+    DEFAULT_MAX_FLOODING_FACTOR,
+    DEFAULT_MAX_OPERATION_PRESSURE_BARA,
+    DEFAULT_TRAY_EFFICIENCY,
+    DEFAULT_TRAY_TYPE,
+    MechanicalGeometry,
+    mechanical_design,
 )
 
 #: The class's own `DEFAULT_MAX_ALLOWABLE_GAS_LOAD_FACTOR`.
@@ -92,6 +110,12 @@ def absorption_column(
     pumparound_max_iterations: int | None = None,
     column_diameter: Q | None = None,
     max_allowable_fs_factor: float | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> AbsorptionColumnResult:
     """Solve a tray absorber.
 
@@ -212,16 +236,20 @@ def absorption_column(
     gas_flow = input_to_si(spec, "gas_n", gas_n)
     solvent_flow = input_to_si(spec, "solvent_n", solvent_n)
 
+    # **Only the bounds this solve resolves.** `tray_efficiency` is the vessel's, not the
+    # solve's, and it is applied where its value is known - so carrying it here would report a
+    # bound as unchecked that the run does check.
+    resolvable = {
+        "number_of_stages": float(stages),
+        "top_pressure": top,
+        "bottom_pressure": bottom,
+        "temperature_tolerance": tolerance,
+        "gas_t": gas_temperature,
+        "solvent_t": solvent_temperature,
+    }
     apply_checks(
-        checks.on_input,
-        {
-            "number_of_stages": float(stages),
-            "top_pressure": top,
-            "bottom_pressure": bottom,
-            "temperature_tolerance": tolerance,
-            "gas_t": gas_temperature,
-            "solvent_t": solvent_temperature,
-        }.get,
+        [check for check in checks.on_input if check.quantity in resolvable],
+        resolvable.get,
         warnings,
     )
 
@@ -326,6 +354,51 @@ def absorption_column(
         states = solve_once(draws)
     warnings.extend(states.warnings)
 
+    # **The vessel around the absorber**, on the same trays. **The six geometry values are the
+    # designer's own defaults and not declared inputs**: `AbsorptionColumn` carries no tray
+    # spacing, weir height or hole diameter of its own, so this entry declares none either - the
+    # capture's row is at exactly those defaults.
+    resolved_efficiency = (
+        DEFAULT_TRAY_EFFICIENCY if tray_efficiency is None else float(tray_efficiency)
+    )
+    geometry = MechanicalGeometry(
+        tray_type=DEFAULT_TRAY_TYPE if tray_type is None else str(tray_type),
+        contactor_internals_type=(
+            DEFAULT_CONTACTOR_INTERNALS_TYPE
+            if contactor_internals_type is None
+            else str(contactor_internals_type)
+        ),
+        tray_efficiency=resolved_efficiency,
+        max_flooding_factor=(
+            DEFAULT_MAX_FLOODING_FACTOR
+            if max_flooding_factor is None
+            else float(max_flooding_factor)
+        ),
+        material_grade=DEFAULT_MATERIAL_GRADE if material_grade is None else str(material_grade),
+        max_operation_pressure_bara=(
+            DEFAULT_MAX_OPERATION_PRESSURE_BARA
+            if max_operation_pressure is None
+            else float(max_operation_pressure)
+        ),
+        tray_spacing_m=DEFAULT_TRAY_SPACING_M,
+        weir_height_m=DEFAULT_WEIR_HEIGHT_M,
+        hole_diameter_m=DEFAULT_HOLE_DIAMETER_MM / 1000.0,
+        hole_area_fraction=DEFAULT_HOLE_AREA_FRACTION,
+        downcommer_area_fraction=DEFAULT_DOWNCOMMER_AREA_FRACTION,
+        column_diameter_override_m=UNSIZED_COLUMN_DIAMETER_M,
+    )
+    # The declared value the vessel cannot take, refused from the id's own `[[unported]]` row.
+    if str(geometry.contactor_internals_type).lower() == "packed":
+        raise _unported.refuse("contactor_internals_type=packed")
+    # **The vessel sizing's own bound, applied where the value is known.** The solve resolves the
+    # six *it* takes; this one is the record's.
+    apply_checks(
+        [check for check in checks_for(_spec()).on_input if check.quantity == "tray_efficiency"],
+        {"tray_efficiency": resolved_efficiency}.get,
+        warnings,
+    )
+    mechanical = mechanical_design(states, list(gas_components), geometry)
+
     return AbsorptionColumnResult(
         tray_temperature=tuple(from_si(value, "K") for value in states.tray_temperature),
         tray_pressure=tuple(from_si(value, "Pa") for value in states.tray_pressure),
@@ -352,6 +425,17 @@ def absorption_column(
             max_allowable_fs_factor,
             max_allowable_gas_load_factor,
         ),
+        vessel_diameter=from_si(mechanical.vessel_diameter_m, "m"),
+        vessel_height=from_si(mechanical.vessel_height_m, "m"),
+        vessel_wall_thickness=from_si(mechanical.vessel_wall_thickness_mm / 1000.0, "mm"),
+        actual_trays=mechanical.actual_trays,
+        flooding_factor=mechanical.flooding_factor,
+        weir_loading=mechanical.weir_loading,
+        tray_pressure_drop_mbar=mechanical.tray_pressure_drop_mbar,
+        total_pressure_drop_bar=from_si(mechanical.total_pressure_drop_bar * 1.0e5, "bar"),
+        reboiler_duty_kw=from_si(mechanical.reboiler_duty_kw * 1000.0, "kW"),
+        condenser_duty_kw=from_si(mechanical.condenser_duty_kw * 1000.0, "kW"),
+        material_grade=mechanical.material_grade,
         warnings=tuple(warnings),
     )
 

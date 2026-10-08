@@ -189,6 +189,33 @@ unit = "dimensionless"
 optional = true
 description = "the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `3.0`**, `AbsorptionColumn`'s own `DEFAULT_MAX_ALLOWABLE_FS_FACTOR` and not the base's `2.5`. Read by the limit family alone.\n"
 
+[inputs.tray_efficiency]
+unit = "dimensionless"
+optional = true
+description = "the efficiency the vessel sizing divides the tray count by to get `actual_trays`, and so the number the height is built from. **Absent is `0.65`**, `DistillationColumnMechanicalDesign`'s own field initialiser - `AbsorptionColumn` inherits the getter and overrides it.\n"
+[inputs.max_flooding_factor]
+unit = "dimensionless"
+optional = true
+description = "the fraction of flood the Souders-Brown design velocity is, `u_design = u_flood * max_flooding_factor`. **Absent is `0.85`.** A non-positive value is not refused: it reaches the class's own degenerate branch, which passes `0.5` m through the standard-diameter table.\n"
+[inputs.tray_type]
+type = "enum"
+values = ["sieve", "valve", "bubble-cap"]
+optional = true
+description = "`trayType`: the Souders-Brown `kFactor` the first pass is sized at - `0.1`, `0.12` or `0.08` - and, where `contactor_internals_type` is `auto`, the internals type the designer is built as. **Absent is `sieve`.**\n"
+[inputs.contactor_internals_type]
+type = "enum"
+values = ["auto", "sieve", "valve", "bubble-cap", "packed"]
+optional = true
+description = "`contactorInternalsType`. **`auto` resolves to `tray_type`** on this equipment; the other three are stated directly, and **`packed` is declared and refused by name**. **Absent is `auto`.**\n"
+[inputs.material_grade]
+type = "string"
+optional = true
+description = "`materialGrade`, a vessel statement the class carries and reports back. **Absent is `SA-516-70`.** Nothing in this id reads it beyond the report.\n"
+[inputs.max_operation_pressure]
+unit = "bar"
+optional = true
+description = "`getMaxOperationPressure()`, **absolute**, the wall thickness's design basis. **Absent is `100.0`**, `MechanicalDesign`'s own field initialiser: NeqSim's equipment path would overwrite it from the endpoints' economic design pressure, a tree this id does not carry.\n"
+
 [outputs]
 [outputs.tray_temperature]
 type = "vector"
@@ -280,6 +307,39 @@ description = "`isGasLoadFactorWithinDesignLimit`.\n"
 [outputs.minimum_diameter_for_gas_load_limit]
 unit = "m"
 description = "`getMinimumDiameterForGasLoadLimit`.\n"
+[outputs.vessel_diameter]
+unit = "m"
+description = "`calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. On this id that is the class's own sizing rather than a stated override, and it is the **repaired** design - see the assumptions on the density the class reads without initialising.\n"
+[outputs.vessel_height]
+unit = "m"
+description = "`getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`.\n"
+[outputs.vessel_wall_thickness]
+unit = "mm"
+description = "`getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm.\n"
+[outputs.actual_trays]
+unit = "dimensionless"
+description = "`getActualTrays()`: `ceil(trays / tray_efficiency)`.\n"
+[outputs.flooding_factor]
+unit = "dimensionless"
+description = "`getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter.\n"
+[outputs.weir_loading]
+unit = "dimensionless"
+description = "`getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).**\n"
+[outputs.tray_pressure_drop_mbar]
+unit = "dimensionless"
+description = "`getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.**\n"
+[outputs.total_pressure_drop_bar]
+unit = "bar"
+description = "`getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar.\n"
+[outputs.reboiler_duty_kw]
+unit = "kW"
+description = "`getReboilerDuty()`, which is **always zero here**: an absorber has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW.\n"
+[outputs.condenser_duty_kw]
+unit = "kW"
+description = "`getCondenserDuty()`, likewise always zero. SI, shown in kW.\n"
+[outputs.material_grade]
+type = "string"
+description = "`getMaterialGrade()`, carried and reported.\n"
 [[valid_range]]
 quantity = "number_of_stages"
 min = 1
@@ -316,6 +376,12 @@ min = 0
 min_inclusive = false
 severity = "error"
 rationale = "an absolute temperature\n"
+[[valid_range]]
+quantity = "tray_efficiency"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "`calcDesign` divides the tray count by it with no guard, so a non-positive efficiency is a number its own integer cast saturates rather than a tray count\n"
 [implementations]
 python = "azoth.process.absorption_column"
 rust = "azoth_process::absorption_column"
@@ -360,3 +426,8 @@ parameter = "solver_type"
 value = "auto"
 class = "AutoSolver"
 capture = "validation/neqsim/captures/process_column_solvers.tsv"
+[[unported]]
+parameter = "contactor_internals_type"
+value = "packed"
+class = "PackedColumnMechanicalDesign"
+capture = "validation/neqsim/captures/process_column_mechanical_design.tsv"

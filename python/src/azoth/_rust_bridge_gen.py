@@ -3604,7 +3604,7 @@ def tray_hydraulics(tray_type: str, column_diameter: Q, tray_spacing: Q, weir_he
     )
 
 
-def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], gas_p: Q, gas_t: Q, solvent_components: list[str], solvent_n: Q, solvent_z: list[float], solvent_p: Q, solvent_t: Q, number_of_stages: int, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float, max_iterations: int, tray_temperatures: list[float] | None=None, murphree_efficiency: float | None=None, component_murphree_efficiency: list[float] | None=None, max_allowable_gas_load_factor: float | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, tray_murphree_efficiency: list[float] | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None) -> AbsorptionColumnResult:
+def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], gas_p: Q, gas_t: Q, solvent_components: list[str], solvent_n: Q, solvent_z: list[float], solvent_p: Q, solvent_t: Q, number_of_stages: int, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float, max_iterations: int, tray_temperatures: list[float] | None=None, murphree_efficiency: float | None=None, component_murphree_efficiency: list[float] | None=None, max_allowable_gas_load_factor: float | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, tray_murphree_efficiency: list[float] | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None, tray_efficiency: float | None=None, max_flooding_factor: float | None=None, tray_type: str | None=None, contactor_internals_type: str | None=None, material_grade: str | None=None, max_operation_pressure: float | None=None) -> AbsorptionColumnResult:
     """``process.absorption_column``, computed in Rust."""
     spec = _models_gen.model("process.absorption_column")
     result = _core.absorption_column(
@@ -3648,6 +3648,12 @@ def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], g
         None if pumparound_max_iterations is None else int(pumparound_max_iterations),
         None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
         None if max_allowable_fs_factor is None else max_allowable_fs_factor,
+        None if tray_efficiency is None else tray_efficiency,
+        None if max_flooding_factor is None else max_flooding_factor,
+        tray_type,
+        contactor_internals_type,
+        material_grade,
+        None if max_operation_pressure is None else _si(spec, "max_operation_pressure", max_operation_pressure),
     )
     return AbsorptionColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -3676,6 +3682,17 @@ def absorption_column(gas_components: list[str], gas_n: Q, gas_z: list[float], g
         gas_load_factor_utilization=result.gas_load_factor_utilization,
         gas_load_factor_within_design_limit=result.gas_load_factor_within_design_limit,
         minimum_diameter_for_gas_load_limit=from_si(result.minimum_diameter_for_gas_load_limit.magnitude_si, result.minimum_diameter_for_gas_load_limit.unit),
+        vessel_diameter=from_si(result.vessel_diameter.magnitude_si, result.vessel_diameter.unit),
+        vessel_height=from_si(result.vessel_height.magnitude_si, result.vessel_height.unit),
+        vessel_wall_thickness=from_si(result.vessel_wall_thickness.magnitude_si, result.vessel_wall_thickness.unit),
+        actual_trays=result.actual_trays,
+        flooding_factor=result.flooding_factor,
+        weir_loading=result.weir_loading,
+        tray_pressure_drop_mbar=result.tray_pressure_drop_mbar,
+        total_pressure_drop_bar=from_si(result.total_pressure_drop_bar.magnitude_si, result.total_pressure_drop_bar.unit),
+        reboiler_duty_kw=from_si(result.reboiler_duty_kw.magnitude_si, result.reboiler_duty_kw.unit),
+        condenser_duty_kw=from_si(result.condenser_duty_kw.magnitude_si, result.condenser_duty_kw.unit),
+        material_grade=result.material_grade,
         warnings=_warnings(result.warnings),
     )
 
@@ -4519,7 +4536,7 @@ def stirred_tank_reactor(components: list[str], feed_n: Q, feed_z: list[float], 
     )
 
 
-def stripping_column(stripping_gas_components: list[str], rich_liquid_components: list[str], stripping_gas_n: Q, stripping_gas_z: list[float], stripping_gas_p: Q, stripping_gas_t: Q, rich_liquid_n: Q, rich_liquid_z: list[float], rich_liquid_p: Q, rich_liquid_t: Q, number_of_stages: int, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float, max_iterations: int, tray_temperatures: list[float] | None=None, murphree_efficiency: float | None=None, component_murphree_efficiency: list[float] | None=None, max_allowable_gas_load_factor: float | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, tray_murphree_efficiency: list[float] | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None) -> StrippingColumnResult:
+def stripping_column(stripping_gas_components: list[str], rich_liquid_components: list[str], stripping_gas_n: Q, stripping_gas_z: list[float], stripping_gas_p: Q, stripping_gas_t: Q, rich_liquid_n: Q, rich_liquid_z: list[float], rich_liquid_p: Q, rich_liquid_t: Q, number_of_stages: int, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float, max_iterations: int, tray_temperatures: list[float] | None=None, murphree_efficiency: float | None=None, component_murphree_efficiency: list[float] | None=None, max_allowable_gas_load_factor: float | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, tray_murphree_efficiency: list[float] | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None, tray_efficiency: float | None=None, max_flooding_factor: float | None=None, tray_type: str | None=None, contactor_internals_type: str | None=None, material_grade: str | None=None, max_operation_pressure: float | None=None) -> StrippingColumnResult:
     """``process.stripping_column``, computed in Rust."""
     spec = _models_gen.model("process.stripping_column")
     result = _core.stripping_column(
@@ -4563,6 +4580,12 @@ def stripping_column(stripping_gas_components: list[str], rich_liquid_components
         None if pumparound_max_iterations is None else int(pumparound_max_iterations),
         None if column_diameter is None else input_to_si(spec, "column_diameter", column_diameter),
         None if max_allowable_fs_factor is None else max_allowable_fs_factor,
+        None if tray_efficiency is None else tray_efficiency,
+        None if max_flooding_factor is None else max_flooding_factor,
+        tray_type,
+        contactor_internals_type,
+        material_grade,
+        None if max_operation_pressure is None else _si(spec, "max_operation_pressure", max_operation_pressure),
     )
     return StrippingColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -4591,6 +4614,17 @@ def stripping_column(stripping_gas_components: list[str], rich_liquid_components
         gas_load_factor_utilization=result.gas_load_factor_utilization,
         gas_load_factor_within_design_limit=result.gas_load_factor_within_design_limit,
         minimum_diameter_for_gas_load_limit=from_si(result.minimum_diameter_for_gas_load_limit.magnitude_si, result.minimum_diameter_for_gas_load_limit.unit),
+        vessel_diameter=from_si(result.vessel_diameter.magnitude_si, result.vessel_diameter.unit),
+        vessel_height=from_si(result.vessel_height.magnitude_si, result.vessel_height.unit),
+        vessel_wall_thickness=from_si(result.vessel_wall_thickness.magnitude_si, result.vessel_wall_thickness.unit),
+        actual_trays=result.actual_trays,
+        flooding_factor=result.flooding_factor,
+        weir_loading=result.weir_loading,
+        tray_pressure_drop_mbar=result.tray_pressure_drop_mbar,
+        total_pressure_drop_bar=from_si(result.total_pressure_drop_bar.magnitude_si, result.total_pressure_drop_bar.unit),
+        reboiler_duty_kw=from_si(result.reboiler_duty_kw.magnitude_si, result.reboiler_duty_kw.unit),
+        condenser_duty_kw=from_si(result.condenser_duty_kw.magnitude_si, result.condenser_duty_kw.unit),
+        material_grade=result.material_grade,
         warnings=_warnings(result.warnings),
     )
 

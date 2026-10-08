@@ -376,6 +376,12 @@ fn the_stripping_column_id_reaches_the_absorber_model() {
         // The two capacity inputs, unstated: this test is about the product names and numbers.
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
     .expect("the stripper converges");
 

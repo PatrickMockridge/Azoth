@@ -87,6 +87,12 @@ pub static UNPORTED: &[Unported] = &[
     },
     Unported {
         key: "contactor_internals_type=packed",
+        model: "process.absorption_column",
+        class: "PackedColumnMechanicalDesign",
+        capture: "validation/neqsim/captures/process_column_mechanical_design.tsv",
+    },
+    Unported {
+        key: "contactor_internals_type=packed",
         model: "process.distillation_column",
         class: "PackedColumnMechanicalDesign",
         capture: "validation/neqsim/captures/process_column_mechanical_design.tsv",
@@ -168,5 +174,11 @@ pub static UNPORTED: &[Unported] = &[
         model: "process.rate_based_packed_column",
         class: "RateBasedPackedColumn.ColumnSolver.EQUATION_ORIENTED",
         capture: "validation/neqsim/captures/process_rate_based_solvers.tsv",
+    },
+    Unported {
+        key: "contactor_internals_type=packed",
+        model: "process.stripping_column",
+        class: "PackedColumnMechanicalDesign",
+        capture: "validation/neqsim/captures/process_column_mechanical_design.tsv",
     },
 ];

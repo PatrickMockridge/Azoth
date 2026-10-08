@@ -59,6 +59,12 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `pumparound_max_iterations` | dimensionless | *Optional.* the outer loop's cap. **Omitted means `12`**, `maxPumparoundIterations`' own initialiser. |
 | `column_diameter` | m | *Optional.* the column's internal diameter, which both capacity-limit families divide the gas outlet's volumetric flow by. **Absent is the class's own `1.0` m**; a value at or below zero is the "no area" it answers a zero factor from. The solve is indifferent to it. |
 | `max_allowable_fs_factor` | dimensionless | *Optional.* the `Fs` limit `isFsFactorWithinDesignLimit` and its two siblings read. **Absent is `3.0`**, the absorber's own `DEFAULT_MAX_ALLOWABLE_FS_FACTOR`. Read by the limit family alone. |
+| `tray_efficiency` | dimensionless | *Optional.* the efficiency the vessel sizing divides the tray count by to get `actual_trays`, and so the number the height is built from. **Absent is `0.65`**, `DistillationColumnMechanicalDesign`'s own field initialiser - `StrippingColumn` inherits the getter and overrides it. |
+| `max_flooding_factor` | dimensionless | *Optional.* the fraction of flood the Souders-Brown design velocity is, `u_design = u_flood * max_flooding_factor`. **Absent is `0.85`.** A non-positive value is not refused: it reaches the class's own degenerate branch, which passes `0.5` m through the standard-diameter table. |
+| `tray_type` | sieve / valve / bubble-cap | *Optional.* `trayType`: the Souders-Brown `kFactor` the first pass is sized at - `0.1`, `0.12` or `0.08` - and, where `contactor_internals_type` is `auto`, the internals type the designer is built as. **Absent is `sieve`.** |
+| `contactor_internals_type` | auto / sieve / valve / bubble-cap / packed | *Optional.* `contactorInternalsType`. **`auto` resolves to `tray_type`** on this equipment; the other three are stated directly, and **`packed` is declared and refused by name**. **Absent is `auto`.** |
+| `material_grade` | - | *Optional.* `materialGrade`, a vessel statement the class carries and reports back. **Absent is `SA-516-70`.** Nothing in this id reads it beyond the report. |
+| `max_operation_pressure` | bar | *Optional.* `getMaxOperationPressure()`, **absolute**, the wall thickness's design basis. **Absent is `100.0`**, `MechanicalDesign`'s own field initialiser: NeqSim's equipment path would overwrite it from the endpoints' economic design pressure, a tree this id does not carry. |
 
 
 ## Outputs
@@ -91,6 +97,17 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `gas_load_factor_utilization` | dimensionless | `getGasLoadFactorUtilization`. |
 | `gas_load_factor_within_design_limit` | - | `isGasLoadFactorWithinDesignLimit`. |
 | `minimum_diameter_for_gas_load_limit` | m | `getMinimumDiameterForGasLoadLimit`. |
+| `vessel_diameter` | m | `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered**. The stripper inherits the getter and overrides it. |
+| `vessel_height` | m | `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`. |
+| `vessel_wall_thickness` | mm | `getColumnWallThickness()`, taken at the **final** diameter. SI, shown in mm. |
+| `actual_trays` | dimensionless | `getActualTrays()`: `ceil(trays / tray_efficiency)`. |
+| `flooding_factor` | dimensionless | `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, at the first Souders-Brown pass's diameter. |
+| `weir_loading` | dimensionless | `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m).** |
+| `tray_pressure_drop_mbar` | dimensionless | `getTrayPressureDrop()`: the class's own `5.0` plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.** |
+| `total_pressure_drop_bar` | bar | `getTotalPressureDrop()`: the designer's summed tray pressure drop. SI, shown in bar. |
+| `reboiler_duty_kw` | kW | `getReboilerDuty()`, which is **always zero here**: a stripper has no reboiler, and the class reports zero for an end it does not have. SI, shown in kW. |
+| `condenser_duty_kw` | kW | `getCondenserDuty()`, likewise always zero. SI, shown in kW. |
+| `material_grade` | - | `getMaterialGrade()`, carried and reported. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -100,6 +117,18 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `temperature_tolerance > 0` | raises | a convergence tolerance is positive, and zero is a solve that never stops |
 | `stripping_gas_t > 0` | raises | an absolute temperature |
 | `rich_liquid_t > 0` | raises | an absolute temperature |
+| `tray_efficiency > 0` | raises | `calcDesign` divides the tray count by it with no guard, so a non-positive efficiency is a number its own integer cast saturates rather than a tray count |
+
+## Not carried
+
+Values this model's inputs declare and the port does not carry. Each is refused
+by **both** implementations from the same row, and `tools/check_unported.py`
+holds the declaration and the two languages to each other.
+
+| Value | NeqSim | Measured by |
+|---|---|---|
+| `contactor_internals_type` = `packed` | `PackedColumnMechanicalDesign` | `validation/neqsim/captures/process_column_mechanical_design.tsv` |
+
 
 ## Assumptions
 
@@ -115,6 +144,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **the Murphree efficiencies and the eight strategies the base declines are refused by name there**, because this entry delegates `solver_type` and `tray_murphree_efficiency` to `process.distillation_column` and that spec's rows carry them.
 - **`reactive` is measured rather than assumed**: no sibling test calls `setReactive`. On a fluid with no independent reaction the reactive route *is* the equilibrium one - bit-identical across all sixty-nine captured keys of the packed column's oracle.
 - **On a reacting fluid the class does not converge it**: the hydrocarbon absorber at this port's own gate ends `FALLBACK_PRODUCTS`, mass residual `6.4e5` - its own log calls that not a rigorous result. The states neither library converges are refused.
+- **The vessel the last eleven outputs carry has no row of its own.** The capture's one `absorber_mechanical` row is the lean-oil absorber's, and a stripper overrides none of the getters - so these are held by cross-implementation agreement alone until a stripper row exists.
 
 ## Cases
 

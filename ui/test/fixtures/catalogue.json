@@ -1935,6 +1935,32 @@
           "values": []
         },
         {
+          "description": "which contactor the designer is built as; auto resolves to the tray type, and the class defaults it to auto. A packed contactor is refused by name",
+          "dimension": null,
+          "kind": "enum",
+          "name": "contactor_internals_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "auto",
+            "sieve",
+            "valve",
+            "bubble-cap",
+            "packed"
+          ]
+        },
+        {
+          "description": "the vessel's material grade, which the class carries and reports back; it defaults to SA-516-70",
+          "dimension": null,
+          "kind": "string",
+          "name": "material_grade",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
           "description": "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; this class defaults it to 3.0",
           "dimension": "dimensionless",
           "kind": "quantity",
@@ -1952,6 +1978,26 @@
           "range": [],
           "required": false,
           "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of flood the Souders-Brown design velocity is; the class defaults it to 0.85",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_flooding_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the wall thickness's design pressure, absolute; the class's own field defaults to 100.0 bara, and NeqSim's equipment path overwrites it from the endpoint pressures",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "max_operation_pressure",
+          "range": [],
+          "required": false,
+          "unit": "bar",
           "values": []
         },
         {
@@ -2058,6 +2104,42 @@
           "required": true,
           "unit": "Pa",
           "values": []
+        },
+        {
+          "description": "the efficiency the vessel sizing divides the tray count by; the class defaults it to 0.65",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "tray_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "`calcDesign` divides the tray count by it with no guard, so a non-positive efficiency is a number its own integer cast saturates rather than a tray count",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the tray type the first Souders-Brown pass is sized at, and the internals type where the contactor type is auto - sieve, valve or bubble-cap; the class defaults it to sieve",
+          "dimension": null,
+          "kind": "enum",
+          "name": "tray_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "sieve",
+            "valve",
+            "bubble-cap"
+          ]
         }
       ],
       "ports": [
@@ -4052,6 +4134,32 @@
           "values": []
         },
         {
+          "description": "which contactor the designer is built as; auto resolves to the tray type, and the class defaults it to auto. A packed contactor is refused by name",
+          "dimension": null,
+          "kind": "enum",
+          "name": "contactor_internals_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "auto",
+            "sieve",
+            "valve",
+            "bubble-cap",
+            "packed"
+          ]
+        },
+        {
+          "description": "the vessel's material grade, which the class carries and reports back; it defaults to SA-516-70",
+          "dimension": null,
+          "kind": "string",
+          "name": "material_grade",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": []
+        },
+        {
           "description": "the `Fs` limit `isFsFactorWithinDesignLimit` reads and the solve does not; the absorber this class extends defaults it to 3.0",
           "dimension": "dimensionless",
           "kind": "quantity",
@@ -4069,6 +4177,26 @@
           "range": [],
           "required": false,
           "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the fraction of flood the Souders-Brown design velocity is; the class defaults it to 0.85",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "max_flooding_factor",
+          "range": [],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the wall thickness's design pressure, absolute; the class's own field defaults to 100.0 bara, and NeqSim's equipment path overwrites it from the endpoint pressures",
+          "dimension": "pressure",
+          "kind": "quantity",
+          "name": "max_operation_pressure",
+          "range": [],
+          "required": false,
+          "unit": "bar",
           "values": []
         },
         {
@@ -4175,6 +4303,42 @@
           "required": true,
           "unit": "Pa",
           "values": []
+        },
+        {
+          "description": "the efficiency the vessel sizing divides the tray count by; the class defaults it to 0.65",
+          "dimension": "dimensionless",
+          "kind": "quantity",
+          "name": "tray_efficiency",
+          "range": [
+            {
+              "band": "outside",
+              "code": "OUT_OF_VALID_RANGE",
+              "equals": null,
+              "max": null,
+              "max_inclusive": true,
+              "min": 0.0,
+              "min_inclusive": false,
+              "rationale": "`calcDesign` divides the tray count by it with no guard, so a non-positive efficiency is a number its own integer cast saturates rather than a tray count",
+              "severity": "error"
+            }
+          ],
+          "required": false,
+          "unit": "dimensionless",
+          "values": []
+        },
+        {
+          "description": "the tray type the first Souders-Brown pass is sized at, and the internals type where the contactor type is auto - sieve, valve or bubble-cap; the class defaults it to sieve",
+          "dimension": null,
+          "kind": "enum",
+          "name": "tray_type",
+          "range": [],
+          "required": false,
+          "unit": null,
+          "values": [
+            "sieve",
+            "valve",
+            "bubble-cap"
+          ]
         }
       ],
       "ports": [
