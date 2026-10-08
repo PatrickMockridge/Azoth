@@ -3903,6 +3903,39 @@ class DistillationColumnResult(_HasWarnings):
     #: The per-tray efficiency, which `average_tray_efficiency` means - O'Connell's, from the tray's own relative volatility and liquid viscosity.
     tray_efficiency: tuple[float, ...]
 
+    #: `calcDesign`'s `getColumnDiameter()`: **the diameter the internals designer answered, not the Souders-Brown one it was driven at**. The two are the same only where no override was stated.
+    vessel_diameter: Q
+
+    #: `getColumnHeight()`: `actual_trays * tray_spacing + 1 + 2 + 2 * 0.5`, the two disengagement and holdup sections and two heads.
+    vessel_height: Q
+
+    #: `getColumnWallThickness()`, mm, taken at the **final** diameter - the class recomputes it after the designer has replaced the one the first pass resolved.
+    vessel_wall_thickness: Q
+
+    #: `getActualTrays()`: `ceil(trays / tray_efficiency)`, the integer the height is built from.
+    actual_trays: int
+
+    #: `getFloodingFactor()`: the actual vapour velocity over the flooding velocity, **at the first pass's diameter** - the class's own order of statements, so a stated override moves the published diameter and not this.
+    flooding_factor: float
+
+    #: `getWeirLoading()`: the liquid volume flow over `0.7 * D`, in m3/hr per metre of weir, at the same first pass's diameter. **Declared dimensionless because no vocabulary unit expresses m3/(hr*m)**, the spelling `total_pressure_drop_mbar` already takes.
+    weir_loading: float
+
+    #: `getTrayPressureDrop()`: the class's own `5.0` constant plus `weir_height * rho_liquid * 9.81 / 100`, in mbar per tray. **Declared dimensionless because no vocabulary unit expresses mbar.** This is the estimate the class computes and then discards from `totalPressureDrop`.
+    tray_pressure_drop_mbar: float
+
+    #: `getTotalPressureDrop()`: the designer's summed tray pressure drop over `1e5`, which is what overwrote the estimate above.
+    total_pressure_drop_bar: Q
+
+    #: `getReboilerDuty()`, the column's own reboiler duty over `1000` - zero where the column has no reboiler.
+    reboiler_duty_kw: Q
+
+    #: `getCondenserDuty()`, the column's own condenser duty over `1000`, **taken absolute** - the class's own `Math.abs`.
+    condenser_duty_kw: Q
+
+    #: `getMaterialGrade()`, carried and reported.
+    material_grade: str
+
     #: Caveats.
     warnings: tuple[Warning, ...]
 

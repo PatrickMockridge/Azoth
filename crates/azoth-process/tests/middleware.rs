@@ -486,7 +486,7 @@ fn every_model_bound_lands_on_a_parameter_or_in_the_unmodelled_list() {
         }
         checked += spec.input_checks().count();
     }
-    assert_eq!(checked, 91, "the bounds this test walked");
+    assert_eq!(checked, 92, "the bounds this test walked");
 }
 
 /// **The generated input table is the spec files' own, read a second time.**
@@ -594,8 +594,11 @@ fn the_generated_input_table_is_the_models_own() {
     // same entry: `hydraulic_pressure_drop_coupling` and `hydraulic_pressure_drop_internals_type`.
     // `413 + 2 = 415`, and every one is a deliberate move. **And then the scrubber's two**, on
     // `process.gas_scrubber`: `internal_diameter` and `design_gas_load_factor`, the pair the
-    // Souders-Brown metric cannot be computed without. `415 + 2 = 417`.
-    assert_eq!(walked, 417, "the inputs this test walked");
+    // Souders-Brown metric cannot be computed without. `415 + 2 = 417`. **And then the
+    // mechanical design's six**, five of them class defaults, on `process.distillation_column`:
+    // `tray_efficiency`, `max_flooding_factor`, `tray_type`, `contactor_internals_type`,
+    // `material_grade` and `max_operation_pressure`. `417 + 6 = 423`.
+    assert_eq!(walked, 423, "the inputs this test walked");
 }
 
 /// Every bound the models state names an input the models declare - `model_gen`'s `quantity`

@@ -3752,7 +3752,7 @@ def cooler(components: list[str], inlet_n: Q, inlet_z: list[float], inlet_p: Q, 
     )
 
 
-def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, number_of_stages: int, feed_stage: int, has_reboiler: bool, has_condenser: bool, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float=1e-06, max_iterations: int=200, reboiler_temperature: Q | None=None, condenser_temperature: Q | None=None, murphree_efficiency: float | None=None, tray_murphree_efficiency: list[float] | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, top_specification_type: str | None=None, top_specification_target: float | None=None, top_specification_component: str | None=None, bottom_specification_type: str | None=None, bottom_specification_target: float | None=None, bottom_specification_component: str | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None, internals_type: str | None=None, tray_spacing: Q | None=None, weir_height: Q | None=None, hole_diameter: Q | None=None, hole_area_fraction: float | None=None, downcommer_area_fraction: float | None=None, design_flood_fraction: float | None=None, column_diameter_override: Q | None=None, hydraulic_pressure_drop_coupling: bool | None=None, hydraulic_pressure_drop_internals_type: str | None=None) -> DistillationColumnResult:
+def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], feed_p: Q, feed_t: Q, number_of_stages: int, feed_stage: int, has_reboiler: bool, has_condenser: bool, top_pressure: Q, bottom_pressure: Q, temperature_tolerance: float=1e-06, max_iterations: int=200, reboiler_temperature: Q | None=None, condenser_temperature: Q | None=None, murphree_efficiency: float | None=None, tray_murphree_efficiency: list[float] | None=None, reactive: bool | None=None, reactive_start_tray: int | None=None, reactive_end_tray: int | None=None, solver_type: str | None=None, top_specification_type: str | None=None, top_specification_target: float | None=None, top_specification_component: str | None=None, bottom_specification_type: str | None=None, bottom_specification_target: float | None=None, bottom_specification_component: str | None=None, gas_side_draw_fractions: list[float] | None=None, liquid_side_draw_fractions: list[float] | None=None, pumparound_fractions: list[float] | None=None, side_draw_flow_tray: int | None=None, side_draw_flow_phase: str | None=None, side_draw_flow_target: Q | None=None, side_draw_flow_tolerance: float | None=None, side_draw_flow_max_iterations: int | None=None, pumparound_return_tray: int | None=None, pumparound_draw_tray: int | None=None, pumparound_draw_fraction: float | None=None, pumparound_temperature_drop: Q | None=None, pumparound_tolerance: float | None=None, pumparound_max_iterations: int | None=None, column_diameter: Q | None=None, max_allowable_fs_factor: float | None=None, internals_type: str | None=None, tray_spacing: Q | None=None, weir_height: Q | None=None, hole_diameter: Q | None=None, hole_area_fraction: float | None=None, downcommer_area_fraction: float | None=None, design_flood_fraction: float | None=None, column_diameter_override: Q | None=None, hydraulic_pressure_drop_coupling: bool | None=None, hydraulic_pressure_drop_internals_type: str | None=None, tray_efficiency: float | None=None, max_flooding_factor: float | None=None, tray_type: str | None=None, contactor_internals_type: str | None=None, material_grade: str | None=None, max_operation_pressure: float | None=None) -> DistillationColumnResult:
     """``process.distillation_column``, computed in Rust."""
     spec = _models_gen.model("process.distillation_column")
     result = _core.distillation_column(
@@ -3809,6 +3809,12 @@ def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], f
         None if column_diameter_override is None else input_to_si(spec, "column_diameter_override", column_diameter_override),
         hydraulic_pressure_drop_coupling,
         hydraulic_pressure_drop_internals_type,
+        None if tray_efficiency is None else tray_efficiency,
+        None if max_flooding_factor is None else max_flooding_factor,
+        tray_type,
+        contactor_internals_type,
+        material_grade,
+        None if max_operation_pressure is None else _si(spec, "max_operation_pressure", max_operation_pressure),
     )
     return DistillationColumnResult(
         tray_temperature=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_temperature),
@@ -3849,6 +3855,17 @@ def distillation_column(components: list[str], feed_n: Q, feed_z: list[float], f
         tray_percent_flood=tuple(result.tray_percent_flood),
         tray_pressure_drop=tuple(from_si(q.magnitude_si, q.unit) for q in result.tray_pressure_drop),
         tray_efficiency=tuple(result.tray_efficiency),
+        vessel_diameter=from_si(result.vessel_diameter.magnitude_si, result.vessel_diameter.unit),
+        vessel_height=from_si(result.vessel_height.magnitude_si, result.vessel_height.unit),
+        vessel_wall_thickness=from_si(result.vessel_wall_thickness.magnitude_si, result.vessel_wall_thickness.unit),
+        actual_trays=result.actual_trays,
+        flooding_factor=result.flooding_factor,
+        weir_loading=result.weir_loading,
+        tray_pressure_drop_mbar=result.tray_pressure_drop_mbar,
+        total_pressure_drop_bar=from_si(result.total_pressure_drop_bar.magnitude_si, result.total_pressure_drop_bar.unit),
+        reboiler_duty_kw=from_si(result.reboiler_duty_kw.magnitude_si, result.reboiler_duty_kw.unit),
+        condenser_duty_kw=from_si(result.condenser_duty_kw.magnitude_si, result.condenser_duty_kw.unit),
+        material_grade=result.material_grade,
         warnings=_warnings(result.warnings),
     )
 

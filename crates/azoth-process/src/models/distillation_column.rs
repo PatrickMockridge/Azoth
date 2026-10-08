@@ -7,7 +7,7 @@
 
 use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
-    millimeters,
+    millimeters, pascals, watts,
 };
 use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
 use serde::Serialize;
@@ -17,6 +17,11 @@ use crate::column::capacity::{
 };
 use crate::column::designer::{
     DesignerGeometry, DesignerReport, UNSIZED_COLUMN_DIAMETER_M, designer_report,
+};
+use crate::column::mechanical::{
+    DEFAULT_CONTACTOR_INTERNALS_TYPE, DEFAULT_MATERIAL_GRADE, DEFAULT_MAX_FLOODING_FACTOR,
+    DEFAULT_MAX_OPERATION_PRESSURE_BARA, DEFAULT_TRAY_EFFICIENCY, DEFAULT_TRAY_TYPE,
+    MechanicalGeometry, MechanicalReport, mechanical_design,
 };
 use crate::column::murphree::Murphree;
 use crate::executor::json::{scalar, scalars, warnings as wire_warnings};
@@ -134,6 +139,39 @@ pub struct DistillationColumnResult {
     pub tray_pressure_drop: Vec<f64>,
     /// Each tray's efficiency - the entries `average_tray_efficiency` means.
     pub tray_efficiency: Vec<f64>,
+    /// **`DistillationColumnMechanicalDesign`'s own report**, the vessel around the internals
+    /// tree. `getColumnDiameter()`, which is the *designer's* answer rather than the
+    /// Souders-Brown one it was driven at.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_diameter: Length,
+    /// `getColumnHeight()`: `actual_trays * spacing + 1 + 2 + 2 * 0.5`.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_height: Length,
+    /// `getColumnWallThickness()` - recomputed at the final diameter. **The magnitude is SI and
+    /// the declared unit is how it is shown**: a dimensioned scalar crosses as a base value the
+    /// boundary presents in the spec's unit, which is what `from_si` is the inverse of.
+    #[serde(serialize_with = "scalar")]
+    pub vessel_wall_thickness: Length,
+    /// `getActualTrays()`: `ceil(trays / tray_efficiency)`.
+    pub actual_trays: usize,
+    /// `getFloodingFactor()`, at the *first pass's* diameter.
+    pub flooding_factor: f64,
+    /// `getWeirLoading()`, m3/hr per metre of weir, at the same diameter.
+    pub weir_loading: f64,
+    /// `getTrayPressureDrop()`, mbar/tray - the estimate the class computes and discards.
+    pub tray_pressure_drop_mbar: f64,
+    /// `getTotalPressureDrop()` - the designer's sum, which overwrote that estimate. SI, shown
+    /// in bar.
+    #[serde(serialize_with = "scalar")]
+    pub total_pressure_drop_bar: Pressure,
+    /// `getReboilerDuty()`. SI, shown in kW.
+    #[serde(serialize_with = "scalar")]
+    pub reboiler_duty_kw: Power,
+    /// `getCondenserDuty()`, **absolute**. SI, shown in kW.
+    #[serde(serialize_with = "scalar")]
+    pub condenser_duty_kw: Power,
+    /// `getMaterialGrade()`, carried and reported.
+    pub material_grade: String,
     /// Caveats.
     #[serde(serialize_with = "wire_warnings")]
     pub warnings: Vec<Warning>,
@@ -153,6 +191,7 @@ impl DistillationColumnResult {
         outcome: &kernel::ColumnOutcome,
         limits: &FsLimits,
         internals: &DesignerReport,
+        mechanical: &MechanicalReport,
         warnings: Vec<Warning>,
     ) -> Self {
         Self {
@@ -210,6 +249,17 @@ impl DistillationColumnResult {
                 .map(|t| t.total_pressure_drop.value)
                 .collect(),
             tray_efficiency: internals.trays.iter().map(|t| t.tray_efficiency).collect(),
+            vessel_diameter: mechanical.vessel_diameter,
+            vessel_height: mechanical.vessel_height,
+            vessel_wall_thickness: meters(mechanical.vessel_wall_thickness_mm / 1000.0),
+            actual_trays: mechanical.actual_trays,
+            flooding_factor: mechanical.flooding_factor,
+            weir_loading: mechanical.weir_loading,
+            tray_pressure_drop_mbar: mechanical.tray_pressure_drop_mbar,
+            total_pressure_drop_bar: pascals(mechanical.total_pressure_drop_bar * 1.0e5),
+            reboiler_duty_kw: watts(mechanical.reboiler_duty_kw * 1000.0),
+            condenser_duty_kw: watts(mechanical.condenser_duty_kw * 1000.0),
+            material_grade: mechanical.material_grade.clone(),
             warnings,
         }
     }
@@ -256,6 +306,17 @@ impl CalcResult for DistillationColumnResult {
         "tray_percent_flood",
         "tray_pressure_drop",
         "tray_efficiency",
+        "vessel_diameter",
+        "vessel_height",
+        "vessel_wall_thickness",
+        "actual_trays",
+        "flooding_factor",
+        "weir_loading",
+        "tray_pressure_drop_mbar",
+        "total_pressure_drop_bar",
+        "reboiler_duty_kw",
+        "condenser_duty_kw",
+        "material_grade",
         "warnings",
     ];
 
@@ -395,8 +456,21 @@ pub(crate) fn distillation_column_outcome(
 
     let spec = &crate::model_gen::DISTILLATION_COLUMN_SPEC;
     let mut warnings = Vec::new();
+    // **Only the bounds this solve resolves.** It is `process.packed_column`'s solve as well as
+    // this id's - `PackedColumn.run` is `super.run(id)` - so a bound the *distillation* spec
+    // declares and this solve does not take would otherwise arrive as a `RangeCheckSkipped` on
+    // every packed-column case. `tray_efficiency` is exactly that one, and [`distillation_column`]
+    // applies it where the value is known.
+    const RESOLVED: &[&str] = &[
+        "number_of_stages",
+        "top_pressure",
+        "bottom_pressure",
+        "temperature_tolerance",
+        "feed_t",
+    ];
     apply_checks(
-        spec.input_checks(),
+        spec.input_checks()
+            .filter(|check| RESOLVED.contains(&check.quantity)),
         |quantity| match quantity {
             "number_of_stages" => Some(number_of_stages as f64),
             "top_pressure" => Some(top_pressure.value),
@@ -584,6 +658,12 @@ pub fn distillation_column(
     column_diameter_override: Option<f64>,
     hydraulic_pressure_drop_coupling: Option<bool>,
     hydraulic_pressure_drop_internals_type: Option<&str>,
+    tray_efficiency: Option<f64>,
+    max_flooding_factor: Option<f64>,
+    tray_type: Option<&str>,
+    contactor_internals_type: Option<&str>,
+    material_grade: Option<&str>,
+    max_operation_pressure: Option<f64>,
 ) -> Result<DistillationColumnResult> {
     // **The coupling's own settings, resolved from the two declared inputs.** The flag decides
     // whether the outer loop runs at all; the type is `hydraulicPressureDropInternalsType`, whose
@@ -596,7 +676,7 @@ pub fn distillation_column(
                 .to_string(),
             ..HydraulicCoupling::default()
         });
-    let (out, warnings) = distillation_column_outcome(
+    let (out, mut warnings) = distillation_column_outcome(
         coupling.as_ref(),
         components,
         feed_n,
@@ -640,6 +720,22 @@ pub fn distillation_column(
         pumparound_tolerance,
         pumparound_max_iterations,
     )?;
+    // **The declared value this id refuses**, from its own `[[unported]]` row: the class's packed
+    // arm is a second machine - a preset, a bed height and a hydraulic capacity factor this entry
+    // carries none of - so it is refused by name rather than half-carried.
+    if contactor_internals_type.is_some_and(|kind| kind.eq_ignore_ascii_case("packed")) {
+        return Err(unported::refuse("contactor_internals_type=packed"));
+    }
+    // **The vessel sizing's own bound, applied where the value is known.** The shared solve
+    // resolves the five *it* takes; this one is the record's, and an omitted efficiency is the
+    // default the sizing runs at rather than a bound nothing could check.
+    apply_checks(
+        crate::model_gen::DISTILLATION_COLUMN_SPEC
+            .input_checks()
+            .filter(|check| check.quantity == "tray_efficiency"),
+        |_| Some(tray_efficiency.unwrap_or(DEFAULT_TRAY_EFFICIENCY)),
+        &mut warnings,
+    )?;
     // **The internal diameter the class carries, which its own constructor defaults to `1.0`.**
     // A stated one that is not positive is the class's own "not stated" value, so it is the
     // default that answers rather than a refusal.
@@ -669,8 +765,43 @@ pub fn distillation_column(
             ),
         },
     )?;
+    // **The vessel around the internals, on the same trays and the same geometry.** The two
+    // duties and the tray type are the only things here the designer above does not also take;
+    // everything else is stated once and read by both.
+    let mechanical = mechanical_design(
+        &out.trays,
+        components,
+        &out.distillate,
+        &out.bottoms,
+        has_reboiler.then_some(out.reboiler_duty),
+        has_condenser.then_some(out.condenser_duty),
+        &MechanicalGeometry {
+            tray_type: tray_type.unwrap_or(DEFAULT_TRAY_TYPE).to_string(),
+            contactor_internals_type: contactor_internals_type
+                .unwrap_or(DEFAULT_CONTACTOR_INTERNALS_TYPE)
+                .to_string(),
+            tray_efficiency: tray_efficiency.unwrap_or(DEFAULT_TRAY_EFFICIENCY),
+            max_flooding_factor: max_flooding_factor.unwrap_or(DEFAULT_MAX_FLOODING_FACTOR),
+            material_grade: material_grade.unwrap_or(DEFAULT_MATERIAL_GRADE).to_string(),
+            max_operation_pressure_bara: max_operation_pressure
+                .unwrap_or(DEFAULT_MAX_OPERATION_PRESSURE_BARA),
+            tray_spacing: meters(tray_spacing.unwrap_or(DEFAULT_TRAY_SPACING_M)),
+            weir_height: meters(weir_height.unwrap_or(DEFAULT_WEIR_HEIGHT_M)),
+            hole_diameter: millimeters(hole_diameter.unwrap_or(DEFAULT_HOLE_DIAMETER_MM)),
+            hole_area_fraction: hole_area_fraction.unwrap_or(DEFAULT_HOLE_AREA_FRACTION),
+            downcommer_area_fraction: downcommer_area_fraction
+                .unwrap_or(DEFAULT_DOWNCOMMER_AREA_FRACTION),
+            column_diameter_override: meters(
+                column_diameter_override.unwrap_or(UNSIZED_COLUMN_DIAMETER_M),
+            ),
+        },
+    )?;
     Ok(DistillationColumnResult::of(
-        &out, &limits, &internals, warnings,
+        &out,
+        &limits,
+        &internals,
+        &mechanical,
+        warnings,
     ))
 }
 

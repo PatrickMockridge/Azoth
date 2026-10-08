@@ -1463,6 +1463,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "column_diameter_override",
         "length",
     ),
+    (
+        "process.distillation_column",
+        "tray_efficiency",
+        "dimensionless",
+    ),
+    (
+        "process.distillation_column",
+        "max_flooding_factor",
+        "dimensionless",
+    ),
+    (
+        "process.distillation_column",
+        "max_operation_pressure",
+        "pressure",
+    ),
     ("process.ejector", "motive_n", "molar_flow"),
     ("process.ejector", "motive_z", "dimensionless"),
     ("process.ejector", "motive_p", "pressure"),

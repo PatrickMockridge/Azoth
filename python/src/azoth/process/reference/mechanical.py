@@ -356,11 +356,13 @@ def resolve_internals_type(geometry: MechanicalGeometry) -> str:
     if geometry.contactor_internals_type.lower() == "auto":
         return geometry.tray_type
     if geometry.contactor_internals_type.lower() == "packed":
+        # The *id* refuses this value from its own declaration, and `distillation_column` is
+        # where that refusal is written - a refusal is a claim about a declaration, and this
+        # module carries none. This guard is for a caller that reaches the vessel directly.
         raise InvalidInputError(
             "contactor_internals_type",
-            "`packed` is refused: this port carries the trayed contactor, and the class's packed "
-            "branch reads a preset, a bed height and a hydraulic capacity factor this id declares "
-            "nowhere",
+            "a packed contactor has no trayed design to build, so this vessel cannot be sized "
+            "from it - `process.distillation_column` refuses the value from its declaration",
         )
     return geometry.contactor_internals_type
 

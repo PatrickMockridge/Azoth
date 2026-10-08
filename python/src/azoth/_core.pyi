@@ -1578,6 +1578,17 @@ class DistillationColumnResult:
     tray_percent_flood: list[float]
     tray_pressure_drop: list[Qty]
     tray_efficiency: list[float]
+    vessel_diameter: Qty
+    vessel_height: Qty
+    vessel_wall_thickness: Qty
+    actual_trays: int
+    flooding_factor: float
+    weir_loading: float
+    tray_pressure_drop_mbar: float
+    total_pressure_drop_bar: Qty
+    reboiler_duty_kw: Qty
+    condenser_duty_kw: Qty
+    material_grade: str
     warnings: list[Warning]
 
 @final
@@ -3348,6 +3359,12 @@ def distillation_column(
     column_diameter_override: float | None = None,
     hydraulic_pressure_drop_coupling: bool | None = None,
     hydraulic_pressure_drop_internals_type: str | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> DistillationColumnResult: ...
 def ejector(
     motive_components: list[str],

@@ -239,6 +239,12 @@ def distillation_column(
     column_diameter_override: Q | None = None,
     hydraulic_pressure_drop_coupling: bool | None = None,
     hydraulic_pressure_drop_internals_type: str | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -318,6 +324,12 @@ def distillation_column(
         column_diameter_override=column_diameter_override,
         hydraulic_pressure_drop_coupling=hydraulic_pressure_drop_coupling,
         hydraulic_pressure_drop_internals_type=hydraulic_pressure_drop_internals_type,
+        tray_efficiency=tray_efficiency,
+        max_flooding_factor=max_flooding_factor,
+        tray_type=tray_type,
+        contactor_internals_type=contactor_internals_type,
+        material_grade=material_grade,
+        max_operation_pressure=max_operation_pressure,
     )
 
 

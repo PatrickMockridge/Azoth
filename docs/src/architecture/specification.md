@@ -67,7 +67,7 @@ their units, the valid range, the assumptions that are *not* checked, and the ca
 class that would close it, and `tools/check_unported.py` holds every row to *both*
 implementations — so a row neither refuses fails the build, and a row one refuses and the
 other carries is the divergence the field was built to make visible. The models declare
-**21 refusals**, and no spec may say the same thing in a sentence instead,
+**22 refusals**, and no spec may say the same thing in a sentence instead,
 because a sentence is a claim nothing holds: it drifts from the code silently, and the same
 fact written twice in two files is how a corrected claim left its twin lying.
 

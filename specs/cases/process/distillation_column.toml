@@ -510,3 +510,87 @@ bottoms_n = 3.6807025213745574
 bottoms_z = [0.017723206709389927, 0.9822767932906101]
 bottoms_p = 1901781.5747452257
 bottoms_t = 373.15
+[[cases]]
+id = "binary_mechanical_defaults"
+tolerance = 0.0002
+source = "The `binary_rigorous` column with the class's own mechanical-design defaults, from `validation/neqsim/captures/process_column_mechanical_design.tsv`'s `binary_mechanical_defaults` row. **It is the same solve as `binary_rigorous`** - the vessel is read after the column converges - so the two rows differ in what they publish and not in what they solve. The tolerance is this case's own: the three quantities the report computes from a tray's *density* agree to `4e-6` relative, while the two duties carry the libraries' enthalpy offset and agree to `2e-5`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+[cases.expected]
+vessel_diameter = 0.5
+vessel_height = 10.0
+vessel_wall_thickness = 216.19496855345912
+actual_trays = 10
+flooding_factor = 0.029981966003039984
+weir_loading = 4.992709047038033
+tray_pressure_drop_mbar = 7.137331084047494
+total_pressure_drop_bar = 0.017801361694102846
+reboiler_duty_kw = 47.78658389381015
+condenser_duty_kw = 21.323042789303567
+[[cases]]
+id = "binary_mechanical_override"
+tolerance = 0.0002
+source = "The same column with `column_diameter_override = 2.0`, which is the capture's `binary_mechanical_override` row and **the whole of the finding**: a stated diameter replaces the one the Souders-Brown pass resolved, and it moves *one* published quantity - the wall thickness, recomputed after the swap. The flooding factor and the weir loading are the defaults row's to the last digit, because the class computed them at the `0.5` m it then threw away.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+column_diameter_override = 2.0
+[cases.expected]
+vessel_diameter = 2.0
+vessel_wall_thickness = 864.7798742138365
+total_pressure_drop_bar = 0.016680181876092014
+flooding_factor = 0.029981966003039984
+weir_loading = 4.992709047038033
+[[cases]]
+id = "binary_mechanical_valve"
+tolerance = 0.0002
+source = "The same column with `tray_type = \"valve\"`, which is the capture's `binary_mechanical_valve` row: one tray type answering twice - the Souders-Brown `kFactor` the first pass is sized at, and the internals type the designer is built as, `contactor_internals_type` being `auto`.\n"
+[cases.inputs]
+components = ["methane", "n-butane"]
+feed_n = 7.490704036290964
+feed_z = [0.49999999999999994, 0.49999999999999994]
+feed_p = 2000000.0
+feed_t = 300.0
+number_of_stages = 4
+feed_stage = 2
+has_reboiler = true
+has_condenser = true
+top_pressure = 1900000.0
+bottom_pressure = 2000000.0
+reboiler_temperature = 373.15
+condenser_temperature = 253.14999999999998
+temperature_tolerance = 1e-06
+max_iterations = 200
+tray_type = "valve"
+[cases.expected]
+vessel_diameter = 0.5
+flooding_factor = 0.02498497166919999
+total_pressure_drop_bar = 0.017755928607031072
+weir_loading = 4.992709047038033

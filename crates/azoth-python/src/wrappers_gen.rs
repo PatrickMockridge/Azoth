@@ -3453,9 +3453,9 @@ pub fn cooler(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, murphree_efficiency, tray_murphree_efficiency, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, reactive, reactive_start_tray, reactive_end_tray, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, column_diameter, max_allowable_fs_factor, internals_type, tray_spacing, weir_height, hole_diameter, hole_area_fraction, downcommer_area_fraction, design_flood_fraction, column_diameter_override, hydraulic_pressure_drop_coupling, hydraulic_pressure_drop_internals_type))]
+#[pyo3(signature = (components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, murphree_efficiency, tray_murphree_efficiency, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, reactive, reactive_start_tray, reactive_end_tray, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, column_diameter, max_allowable_fs_factor, internals_type, tray_spacing, weir_height, hole_diameter, hole_area_fraction, downcommer_area_fraction, design_flood_fraction, column_diameter_override, hydraulic_pressure_drop_coupling, hydraulic_pressure_drop_internals_type, tray_efficiency, max_flooding_factor, tray_type, contactor_internals_type, material_grade, max_operation_pressure))]
 #[pyo3(
-    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, murphree_efficiency, tray_murphree_efficiency, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, reactive, reactive_start_tray, reactive_end_tray, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, column_diameter, max_allowable_fs_factor, internals_type, tray_spacing, weir_height, hole_diameter, hole_area_fraction, downcommer_area_fraction, design_flood_fraction, column_diameter_override, hydraulic_pressure_drop_coupling, hydraulic_pressure_drop_internals_type)"
+    text_signature = "(components, feed_n, feed_z, feed_p, feed_t, number_of_stages, feed_stage, has_reboiler, has_condenser, top_pressure, bottom_pressure, temperature_tolerance, max_iterations, reboiler_temperature, condenser_temperature, murphree_efficiency, tray_murphree_efficiency, solver_type, top_specification_type, top_specification_target, top_specification_component, bottom_specification_type, bottom_specification_target, bottom_specification_component, reactive, reactive_start_tray, reactive_end_tray, gas_side_draw_fractions, liquid_side_draw_fractions, pumparound_fractions, side_draw_flow_tray, side_draw_flow_phase, side_draw_flow_target, side_draw_flow_tolerance, side_draw_flow_max_iterations, pumparound_return_tray, pumparound_draw_tray, pumparound_draw_fraction, pumparound_temperature_drop, pumparound_tolerance, pumparound_max_iterations, column_diameter, max_allowable_fs_factor, internals_type, tray_spacing, weir_height, hole_diameter, hole_area_fraction, downcommer_area_fraction, design_flood_fraction, column_diameter_override, hydraulic_pressure_drop_coupling, hydraulic_pressure_drop_internals_type, tray_efficiency, max_flooding_factor, tray_type, contactor_internals_type, material_grade, max_operation_pressure)"
 )]
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
 pub fn distillation_column(
@@ -3513,6 +3513,12 @@ pub fn distillation_column(
     column_diameter_override: Option<f64>,
     hydraulic_pressure_drop_coupling: Option<bool>,
     hydraulic_pressure_drop_internals_type: Option<&str>,
+    tray_efficiency: Option<f64>,
+    max_flooding_factor: Option<f64>,
+    tray_type: Option<&str>,
+    contactor_internals_type: Option<&str>,
+    material_grade: Option<&str>,
+    max_operation_pressure: Option<f64>,
 ) -> PyResult<crate::transport_gen::PyDistillationColumnResult> {
     azoth_process::models::distillation_column::distillation_column(
         &components,
@@ -3568,6 +3574,12 @@ pub fn distillation_column(
         column_diameter_override,
         hydraulic_pressure_drop_coupling,
         hydraulic_pressure_drop_internals_type,
+        tray_efficiency,
+        max_flooding_factor,
+        tray_type,
+        contactor_internals_type,
+        material_grade,
+        max_operation_pressure,
     )
     .map(|r| crate::transport_gen::PyDistillationColumnResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

@@ -922,7 +922,67 @@ pub(crate) fn distillation_column(inlets: &[Stream], p: &Parameters<'_>) -> Resu
             ),
         },
     )?;
-    let result = crate::models::DistillationColumnResult::of(&out, &limits, &internals, warnings);
+    // **And the vessel around the internals**, on the same trays and the same geometry. The tray
+    // type is read once here and answers twice - the Souders-Brown factor and, where the
+    // contactor type is `auto`, the designer's own internals type.
+    let mechanical = crate::column::mechanical::mechanical_design(
+        &out.trays,
+        &out.distillate.components,
+        &out.distillate,
+        &out.bottoms,
+        setup.has_reboiler.then_some(out.reboiler_duty),
+        setup.has_condenser.then_some(out.condenser_duty),
+        &crate::column::mechanical::MechanicalGeometry {
+            tray_type: p
+                .optional_text("tray_type")?
+                .unwrap_or_else(|| crate::column::mechanical::DEFAULT_TRAY_TYPE.into()),
+            contactor_internals_type: p.optional_text("contactor_internals_type")?.unwrap_or_else(
+                || crate::column::mechanical::DEFAULT_CONTACTOR_INTERNALS_TYPE.into(),
+            ),
+            tray_efficiency: p
+                .optional_number("tray_efficiency")?
+                .unwrap_or(crate::column::mechanical::DEFAULT_TRAY_EFFICIENCY),
+            max_flooding_factor: p
+                .optional_number("max_flooding_factor")?
+                .unwrap_or(crate::column::mechanical::DEFAULT_MAX_FLOODING_FACTOR),
+            material_grade: p
+                .optional_text("material_grade")?
+                .unwrap_or_else(|| crate::column::mechanical::DEFAULT_MATERIAL_GRADE.into()),
+            max_operation_pressure_bara: p
+                .optional_number("max_operation_pressure")?
+                .unwrap_or(crate::column::mechanical::DEFAULT_MAX_OPERATION_PRESSURE_BARA),
+            tray_spacing: meters(
+                p.optional_si("tray_spacing")?
+                    .unwrap_or(crate::models::distillation_column::DEFAULT_TRAY_SPACING_M),
+            ),
+            weir_height: meters(
+                p.optional_si("weir_height")?
+                    .unwrap_or(crate::models::distillation_column::DEFAULT_WEIR_HEIGHT_M),
+            ),
+            hole_diameter: meters(
+                p.optional_si("hole_diameter")?
+                    .unwrap_or(crate::models::distillation_column::DEFAULT_HOLE_DIAMETER_MM)
+                    / 1000.0,
+            ),
+            hole_area_fraction: p
+                .optional_number("hole_area_fraction")?
+                .unwrap_or(crate::models::distillation_column::DEFAULT_HOLE_AREA_FRACTION),
+            downcommer_area_fraction: p
+                .optional_number("downcommer_area_fraction")?
+                .unwrap_or(crate::models::distillation_column::DEFAULT_DOWNCOMMER_AREA_FRACTION),
+            column_diameter_override: meters(
+                p.optional_si("column_diameter_override")?
+                    .unwrap_or(crate::column::designer::UNSIZED_COLUMN_DIAMETER_M),
+            ),
+        },
+    )?;
+    let result = crate::models::DistillationColumnResult::of(
+        &out,
+        &limits,
+        &internals,
+        &mechanical,
+        warnings,
+    );
     KernelOutcome::publishing(vec![out.distillate, out.bottoms], &result)
 }
 

@@ -68,6 +68,17 @@ from azoth.process.reference.designer import (
     DesignerReport,
     designer_report,
 )
+from azoth.process.reference.mechanical import (
+    DEFAULT_CONTACTOR_INTERNALS_TYPE,
+    DEFAULT_MATERIAL_GRADE,
+    DEFAULT_MAX_FLOODING_FACTOR,
+    DEFAULT_MAX_OPERATION_PRESSURE_BARA,
+    DEFAULT_TRAY_EFFICIENCY,
+    DEFAULT_TRAY_TYPE,
+    MechanicalGeometry,
+    MechanicalReport,
+    mechanical_design,
+)
 
 _DrawVector = tuple[float, ...] | None
 _Draws = tuple[_DrawVector, _DrawVector, _DrawVector] | None
@@ -427,15 +438,21 @@ def _distillation_column_states(
     tolerance = _si(spec, "temperature_tolerance", temperature_tolerance)
     iterations_cap = int(_si(spec, "max_iterations", max_iterations))
 
+    # **Only the bounds this function resolves.** It is `process.packed_column`'s solve as well as
+    # this id's - `PackedColumn.run` is `super.run(id)` - so a bound the *distillation* spec
+    # declares and this solve does not take would otherwise arrive as a `RangeCheckSkipped` on
+    # every packed-column case. `tray_efficiency` is exactly that one, and `distillation_column`
+    # applies it where the value is known.
+    resolvable = {
+        "number_of_stages": float(stages),
+        "top_pressure": top,
+        "bottom_pressure": bottom,
+        "temperature_tolerance": tolerance,
+        "feed_t": t,
+    }
     apply_checks(
-        checks.on_input,
-        {
-            "number_of_stages": float(stages),
-            "top_pressure": top,
-            "bottom_pressure": bottom,
-            "temperature_tolerance": tolerance,
-            "feed_t": t,
-        }.get,
+        [check for check in checks.on_input if check.quantity in resolvable],
+        resolvable.get,
         warnings,
     )
 
@@ -588,18 +605,19 @@ def _record(
     internal_diameter: Q,
     max_allowable_fs_factor: float,
     internals: DesignerReport,
+    mechanical: MechanicalReport,
     warnings: list[Warning],
 ) -> DistillationColumnResult:
-    """The base column's record, from the stages that solved it and its two reports.
+    """The base column's record, from the stages that solved it and its three reports.
 
     **One construction with one caller.** `distillation_column` is this and
     `_distillation_column_states` together.
 
-    **The two capacity inputs and the internals report are the caller's**, because none is read
-    by the solve: the diameter is the column's internal one and the geometry reaches nothing on
-    the run path. **`process.packed_column` does not come through here** - its class builds the
-    designer with `internalsType = "packed"`, so `calculateTrayed` never runs for it and there is
-    no trayed report to carry.
+    **The two capacity inputs and the two reports are the caller's**, because none is read by the
+    solve: the diameter is the column's internal one and the geometry reaches nothing on the run
+    path. **`process.packed_column` does not come through here** - its class builds the designer
+    with `internalsType = "packed"`, so `calculateTrayed` never runs for it and there is no trayed
+    report to carry.
     """
     gas_out = Stream.from_pt(
         components,
@@ -650,6 +668,17 @@ def _record(
             from_si(tray.total_pressure_drop_pa, "Pa") for tray in internals.trays
         ),
         tray_efficiency=tuple(tray.tray_efficiency for tray in internals.trays),
+        vessel_diameter=from_si(mechanical.vessel_diameter_m, "m"),
+        vessel_height=from_si(mechanical.vessel_height_m, "m"),
+        vessel_wall_thickness=from_si(mechanical.vessel_wall_thickness_mm / 1000.0, "mm"),
+        actual_trays=mechanical.actual_trays,
+        flooding_factor=mechanical.flooding_factor,
+        weir_loading=mechanical.weir_loading,
+        tray_pressure_drop_mbar=mechanical.tray_pressure_drop_mbar,
+        total_pressure_drop_bar=from_si(mechanical.total_pressure_drop_bar * 1.0e5, "bar"),
+        reboiler_duty_kw=from_si(mechanical.reboiler_duty_kw * 1000.0, "kW"),
+        condenser_duty_kw=from_si(mechanical.condenser_duty_kw * 1000.0, "kW"),
+        material_grade=mechanical.material_grade,
         warnings=tuple(warnings),
     )
 
@@ -708,6 +737,12 @@ def distillation_column(
     column_diameter_override: Q | None = None,
     hydraulic_pressure_drop_coupling: bool | None = None,
     hydraulic_pressure_drop_internals_type: str | None = None,
+    tray_efficiency: float | None = None,
+    max_flooding_factor: float | None = None,
+    tray_type: str | None = None,
+    contactor_internals_type: str | None = None,
+    material_grade: str | None = None,
+    max_operation_pressure: float | None = None,
 ) -> DistillationColumnResult:
     """Solve a distillation column by sequential substitution.
 
@@ -769,10 +804,18 @@ def distillation_column(
         design_flood_fraction: the fraction of flood the internals are sized to.
         column_diameter_override: a stated diameter for the internals tree, which replaces its
             sizing branch entirely.
+        tray_efficiency: the efficiency the vessel sizing divides the tray count by.
+        max_flooding_factor: the fraction of flood the Souders-Brown design velocity is.
+        tray_type: the tray type the first sizing pass is sized at, and the internals type where
+            ``contactor_internals_type`` is ``auto``.
+        contactor_internals_type: which contactor the designer is built as; ``auto`` resolves to
+            ``tray_type``, and ``packed`` is refused by name.
+        material_grade: the vessel's material grade, carried and reported.
+        max_operation_pressure: the wall thickness's design pressure, absolute, in bar.
 
     Returns:
-        The tray profile, both products, both duties, the three residuals, the Fs family and the
-        internals tree.
+        The tray profile, both products, both duties, the three residuals, the Fs family, the
+        internals tree and the vessel around it.
 
     Raises:
         InvalidInputError: for a stage or a feed stage outside the column, for any declared
@@ -843,48 +886,90 @@ def distillation_column(
         states, warnings = solve(top_pressure, bottom_pressure)
     # **The internals tree, read after the solve and from the trays it left.** Its geometry
     # reaches nothing on the run path, which is the class's own split.
-    internals = designer_report(
+    geometry = DesignerGeometry(
+        internals_type=(DEFAULT_INTERNALS_TYPE if internals_type is None else str(internals_type)),
+        tray_spacing_m=(
+            DEFAULT_TRAY_SPACING_M
+            if tray_spacing is None
+            else float(tray_spacing.to("m").magnitude)
+        ),
+        weir_height_m=(
+            DEFAULT_WEIR_HEIGHT_M if weir_height is None else float(weir_height.to("m").magnitude)
+        ),
+        hole_diameter_m=(
+            DEFAULT_HOLE_DIAMETER_MM / 1000.0
+            if hole_diameter is None
+            else float(hole_diameter.to("mm").magnitude) / 1000.0
+        ),
+        hole_area_fraction=(
+            DEFAULT_HOLE_AREA_FRACTION if hole_area_fraction is None else float(hole_area_fraction)
+        ),
+        downcommer_area_fraction=(
+            DEFAULT_DOWNCOMMER_AREA_FRACTION
+            if downcommer_area_fraction is None
+            else float(downcommer_area_fraction)
+        ),
+        design_flood_fraction=(
+            DEFAULT_DESIGNER_FLOOD_FRACTION
+            if design_flood_fraction is None
+            else float(design_flood_fraction)
+        ),
+        column_diameter_override_m=(
+            UNSIZED_COLUMN_DIAMETER_M
+            if column_diameter_override is None
+            else float(column_diameter_override.to("m").magnitude)
+        ),
+    )
+    internals = designer_report(states, components, geometry)
+    # **The declared value this id refuses**, from its own `[[unported]]` row: the class's packed
+    # arm is a second machine - a preset, a bed height and a hydraulic capacity factor this entry
+    # carries none of - so it is refused by name rather than half-carried.
+    if contactor_internals_type is not None and str(contactor_internals_type).lower() == "packed":
+        raise _unported.refuse("contactor_internals_type=packed")
+    # **The vessel sizing's own bound, applied where the value is known.** The solve resolves the
+    # five *it* takes; this one is the record's, and an omitted efficiency is the default the
+    # sizing runs at rather than a bound nothing could check.
+    resolved_efficiency = (
+        DEFAULT_TRAY_EFFICIENCY if tray_efficiency is None else float(tray_efficiency)
+    )
+    apply_checks(
+        [check for check in checks_for(_spec()).on_input if check.quantity == "tray_efficiency"],
+        {"tray_efficiency": resolved_efficiency}.get,
+        warnings,
+    )
+    # **And the vessel around it, on the same trays and the same geometry.** The six values the
+    # designer above already resolved are read back off it rather than re-derived, so a stated
+    # weir height reaches both.
+    mechanical = mechanical_design(
         states,
         components,
-        DesignerGeometry(
-            internals_type=(
-                DEFAULT_INTERNALS_TYPE if internals_type is None else str(internals_type)
+        MechanicalGeometry(
+            tray_type=DEFAULT_TRAY_TYPE if tray_type is None else str(tray_type),
+            contactor_internals_type=(
+                DEFAULT_CONTACTOR_INTERNALS_TYPE
+                if contactor_internals_type is None
+                else str(contactor_internals_type)
             ),
-            tray_spacing_m=(
-                DEFAULT_TRAY_SPACING_M
-                if tray_spacing is None
-                else float(tray_spacing.to("m").magnitude)
+            tray_efficiency=resolved_efficiency,
+            max_flooding_factor=(
+                DEFAULT_MAX_FLOODING_FACTOR
+                if max_flooding_factor is None
+                else float(max_flooding_factor)
             ),
-            weir_height_m=(
-                DEFAULT_WEIR_HEIGHT_M
-                if weir_height is None
-                else float(weir_height.to("m").magnitude)
+            material_grade=(
+                DEFAULT_MATERIAL_GRADE if material_grade is None else str(material_grade)
             ),
-            hole_diameter_m=(
-                DEFAULT_HOLE_DIAMETER_MM / 1000.0
-                if hole_diameter is None
-                else float(hole_diameter.to("mm").magnitude) / 1000.0
+            max_operation_pressure_bara=(
+                DEFAULT_MAX_OPERATION_PRESSURE_BARA
+                if max_operation_pressure is None
+                else float(max_operation_pressure)
             ),
-            hole_area_fraction=(
-                DEFAULT_HOLE_AREA_FRACTION
-                if hole_area_fraction is None
-                else float(hole_area_fraction)
-            ),
-            downcommer_area_fraction=(
-                DEFAULT_DOWNCOMMER_AREA_FRACTION
-                if downcommer_area_fraction is None
-                else float(downcommer_area_fraction)
-            ),
-            design_flood_fraction=(
-                DEFAULT_DESIGNER_FLOOD_FRACTION
-                if design_flood_fraction is None
-                else float(design_flood_fraction)
-            ),
-            column_diameter_override_m=(
-                UNSIZED_COLUMN_DIAMETER_M
-                if column_diameter_override is None
-                else float(column_diameter_override.to("m").magnitude)
-            ),
+            tray_spacing_m=geometry.tray_spacing_m,
+            weir_height_m=geometry.weir_height_m,
+            hole_diameter_m=geometry.hole_diameter_m,
+            hole_area_fraction=geometry.hole_area_fraction,
+            downcommer_area_fraction=geometry.downcommer_area_fraction,
+            column_diameter_override_m=geometry.column_diameter_override_m,
         ),
     )
 
@@ -898,6 +983,7 @@ def distillation_column(
         if max_allowable_fs_factor is not None
         else DEFAULT_MAX_ALLOWABLE_FS_FACTOR,
         internals,
+        mechanical,
         warnings,
     )
 

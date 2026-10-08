@@ -86,6 +86,12 @@ pub static UNPORTED: &[Unported] = &[
         capture: "validation/neqsim/captures/process_column_solvers.tsv",
     },
     Unported {
+        key: "contactor_internals_type=packed",
+        model: "process.distillation_column",
+        class: "PackedColumnMechanicalDesign",
+        capture: "validation/neqsim/captures/process_column_mechanical_design.tsv",
+    },
+    Unported {
         key: "solver_type=damped_substitution",
         model: "process.distillation_column",
         class: "DampedSubstitutionSolver",
