@@ -502,9 +502,14 @@ a claim nothing holds.
   the eleven have no vocabulary unit — the weir loading in m3/(hr·m) and the tray drop in mbar —
   and are declared dimensionless on `total_pressure_drop_mbar`'s precedent. **`packed` is a
   `[[unported]]` row**: the class's packed arm is a second machine, refused by name in both
-  languages. **The same shape is still owed across `absorption_column`, `stripping_column` and
-  `packed_column`**, and the capture's fourth row — `absorber_mechanical`, on the lean-oil
-  absorber — is the Rust half's alone, because that state has no Python twin yet.
+  languages. **`packed_column` is not one of the ids still owed this, and the reason is the
+  refusal above**: its class builds the designer with `internalsType = "packed"`, so driving
+  `calcDesign` on it takes exactly the branch this port refuses by name. **The absorber pair is
+  what is owed**, and the capture's fourth row — `absorber_mechanical`, on the lean-oil absorber —
+  is the Rust half's alone, because that state has no Python twin yet. **`stripping_column` has no
+  mechanical row of its own**: it inherits every getter and overrides none, so one row cannot
+  settle whether a second reading is needed there, and the capacity families' own experience —
+  where one row was not enough for the absorber pair — says to add one before claiming the shape.
   **`AbsorberMechanicalDesign` is a measured
   non-port**: its only `src/main` caller is `SimpleAbsorber.getMechanicalDesign()`, and
   `SimpleAbsorber extends Separator`, so driving it on an `AbsorptionColumn` throws — it is the
