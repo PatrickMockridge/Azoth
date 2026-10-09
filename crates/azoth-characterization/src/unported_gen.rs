@@ -4,6 +4,7 @@
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/models/characterization/tbp_density.toml
+//!   - specs/models/characterization/whitson_gamma_split.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.

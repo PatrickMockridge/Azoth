@@ -24,6 +24,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "characterization.tbp_closure" => azoth_characterization::results::TbpClosureResult::FIELDS.to_vec(),
         "characterization.tbp_cut_properties" => azoth_characterization::results::TbpCutPropertiesResult::FIELDS.to_vec(),
         "characterization.tbp_density" => azoth_characterization::results::TbpDensityResult::FIELDS.to_vec(),
+        "characterization.whitson_gamma_split" => azoth_characterization::results::WhitsonGammaSplitResult::FIELDS.to_vec(),
         "eos.ammonia_phase" => azoth_eos::results::AmmoniaPhaseResult::FIELDS.to_vec(),
         "eos.antoine_vapor_pressure" => azoth_eos::results::AntoineVaporPressureResult::FIELDS.to_vec(),
         "eos.aqueous_viscosity" => azoth_eos::results::AqueousViscosityResult::FIELDS.to_vec(),

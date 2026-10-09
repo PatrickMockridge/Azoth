@@ -244,6 +244,87 @@ impl From<&azoth_characterization::results::TbpDensityResult> for PyTbpDensityRe
         }
     }
 }
+/// Result of `characterization.whitson_gamma_split`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WhitsonGammaSplitResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWhitsonGammaSplitResult {
+    /// Each cut's mole fraction, the gamma density integrated across its window and renormalised to sum to `mole_fraction`.
+    #[pyo3(get)]
+    pub cut_z: Vec<f64>,
+    /// Each cut's molar mass: the window's first gamma moment, or the window's midpoint where that moment has no denominator.
+    #[pyo3(get)]
+    pub cut_molar_mass: Vec<PyQty>,
+    /// Each cut's normal liquid density from the selected correlation, in the class's own g/cm3 scale converted to kg/m3.
+    #[pyo3(get)]
+    pub cut_density: Vec<PyQty>,
+    /// The shape parameter actually used: `alpha` as given, or the estimate when `auto_estimate_shape` is set.
+    #[pyo3(get)]
+    pub shape: f64,
+    /// The minimum molar mass actually used, which is `eta` as given or its default.
+    #[pyo3(get)]
+    pub minimum_molar_mass: PyQty,
+    /// The derived gamma scale, `(M_plus - eta)/alpha` in the class's own g/mol scale converted to kg/mol.
+    #[pyo3(get)]
+    pub scale: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWhitsonGammaSplitResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WhitsonGammaSplitResult(cut_z={:?}, cut_molar_mass={:?}, cut_density={:?}, shape={:?}, minimum_molar_mass={:?}, scale={:?}, {} warning(s))",
+            self.cut_z,
+            self.cut_molar_mass,
+            self.cut_density,
+            self.shape,
+            self.minimum_molar_mass,
+            self.scale,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::WhitsonGammaSplitResult> for PyWhitsonGammaSplitResult {
+    fn from(r: &azoth_characterization::results::WhitsonGammaSplitResult) -> Self {
+        Self {
+            cut_z: r.cut_z.clone(),
+            cut_molar_mass: r
+                .cut_molar_mass
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/mol".to_string(),
+                })
+                .collect(),
+            cut_density: r
+                .cut_density
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/m**3".to_string(),
+                })
+                .collect(),
+            shape: r.shape,
+            minimum_molar_mass: PyQty {
+                magnitude_si: r.minimum_molar_mass.value,
+                unit: "kg/mol".to_string(),
+            },
+            scale: PyQty {
+                magnitude_si: r.scale.value,
+                unit: "kg/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.ammonia_phase`, transported.
 #[pyclass(
     frozen,

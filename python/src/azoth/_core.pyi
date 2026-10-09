@@ -215,6 +215,16 @@ class TbpDensityResult:
     warnings: list[Warning]
 
 @final
+class WhitsonGammaSplitResult:
+    cut_z: list[float]
+    cut_molar_mass: list[Qty]
+    cut_density: list[Qty]
+    shape: float
+    minimum_molar_mass: Qty
+    scale: Qty
+    warnings: list[Warning]
+
+@final
 class AmmoniaPhaseResult:
     z_factor: float
     u: Qty
@@ -2149,6 +2159,17 @@ def tbp_density(
     molar_mass: float,
     closure: str | None = None,
 ) -> TbpDensityResult: ...
+def whitson_gamma_split(
+    molar_mass: float,
+    density: float,
+    mole_fraction: float,
+    first_carbon_number: float,
+    last_carbon_number: float,
+    alpha: float | None = None,
+    eta: float | None = None,
+    density_model: str | None = None,
+    auto_estimate_shape: bool | None = None,
+) -> WhitsonGammaSplitResult: ...
 def ammonia_phase(T: float, P: float) -> AmmoniaPhaseResult: ...
 def antoine_vapor_pressure(
     A: float,

@@ -59,6 +59,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'characterization.whitson_gamma_split': {
+        "calc_id": 'characterization.whitson_gamma_split',
+        "name": "A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma",
+        "spec": {'path': 'specs/models/characterization/whitson_gamma_split.toml', 'sha256': '763c92b5eb60c78bebe4fce815d227ec5bb9faab83d6315ec7e7b4a86e128bf1'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/whitson_gamma_split.py', 'sha256': '22566999e69a2cd6f65677ef9e78cdaa56a333a78b3c920783838c1f1cff17e7'}, {'path': 'crates/azoth-characterization/src/whitson_gamma_split.rs', 'sha256': '36131be06f97ce6a724ed9d33eaa2509e03b3fa3615e702be1f41ecf2f4c454d'}],
+        "source": 'NeqSim master `PlusFractionModel.WhitsonGammaModel`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 6,
+        "tests_skipped": 0,
+    },
     'eos.ammonia_phase': {
         "calc_id": 'eos.ammonia_phase',
         "name": 'Ammonia reference phase state',

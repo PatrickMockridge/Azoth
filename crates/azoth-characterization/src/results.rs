@@ -102,6 +102,42 @@ impl CalcResult for PedersenPlusSplitResult {
     }
 }
 
+/// Result of `characterization.whitson_gamma_split`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WhitsonGammaSplitResult {
+    /// Each cut's mole fraction, the gamma density integrated across its window.
+    pub cut_z: Vec<f64>,
+    /// Each cut's molar mass: its window's first gamma moment, or the window's midpoint.
+    pub cut_molar_mass: Vec<MolarMass>,
+    /// Each cut's normal liquid density from the selected correlation.
+    pub cut_density: Vec<MassDensity>,
+    /// The shape parameter actually used, given or estimated.
+    pub shape: f64,
+    /// The minimum molar mass actually used.
+    pub minimum_molar_mass: MolarMass,
+    /// The derived gamma scale, `(M_plus - eta)/alpha`.
+    pub scale: MolarMass,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WhitsonGammaSplitResult {
+    const CALC_ID: &'static str = "characterization.whitson_gamma_split";
+    const FIELDS: &'static [&'static str] = &[
+        "cut_z",
+        "cut_molar_mass",
+        "cut_density",
+        "shape",
+        "minimum_molar_mass",
+        "scale",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.tbp_density`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpDensityResult {

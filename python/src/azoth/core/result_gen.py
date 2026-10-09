@@ -122,6 +122,34 @@ class TbpDensityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class WhitsonGammaSplitResult(_HasWarnings):
+    """Result of ``characterization.whitson_gamma_split``."""
+
+    CALC_ID: ClassVar[str] = "characterization.whitson_gamma_split"
+
+    #: Each cut's mole fraction, the gamma density integrated across its window and renormalised to sum to `mole_fraction`.
+    cut_z: tuple[float, ...]
+
+    #: Each cut's molar mass: the window's first gamma moment, or the window's midpoint where that moment has no denominator.
+    cut_molar_mass: tuple[Q, ...]
+
+    #: Each cut's normal liquid density from the selected correlation, in the class's own g/cm3 scale converted to kg/m3.
+    cut_density: tuple[Q, ...]
+
+    #: The shape parameter actually used: `alpha` as given, or the estimate when `auto_estimate_shape` is set.
+    shape: float
+
+    #: The minimum molar mass actually used, which is `eta` as given or its default.
+    minimum_molar_mass: Q
+
+    #: The derived gamma scale, `(M_plus - eta)/alpha` in the class's own g/mol scale converted to kg/mol.
+    scale: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AmmoniaPhaseResult(_HasWarnings):
     """Result of ``eos.ammonia_phase``."""
 

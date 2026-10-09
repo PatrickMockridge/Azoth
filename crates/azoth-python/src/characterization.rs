@@ -5,14 +5,55 @@
 //! conversion site used by both backends cannot disagree with itself about what a number is in.
 
 use azoth_characterization::{
-    TbpClosureKind, TbpModel, tbp_closure as closure_kernel, tbp_cut_properties as kernel,
-    tbp_density as density_kernel,
+    TbpClosureKind, TbpModel, WhitsonDensityModel, tbp_closure as closure_kernel,
+    tbp_cut_properties as kernel, tbp_density as density_kernel,
+    whitson_gamma_split as gamma_kernel,
 };
 use azoth_core::units::{kelvins, kilograms_per_cubic_meter, kilograms_per_mole};
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::transport_gen::{PyTbpClosureResult, PyTbpCutPropertiesResult, PyTbpDensityResult};
+use crate::transport_gen::{
+    PyTbpClosureResult, PyTbpCutPropertiesResult, PyTbpDensityResult, PyWhitsonGammaSplitResult,
+};
+
+/// A plus fraction split into cuts by Whitson's three-parameter gamma distribution.
+///
+/// All arguments are SI magnitudes. `eta` is absent by default, taking the class's own 90 g/mol;
+/// `density_model` names one of the two gravity correlations, `uop` by default.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number, alpha=None, eta=None, density_model=None, auto_estimate_shape=None))]
+#[pyo3(text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number, alpha=None, eta=None, density_model=None, auto_estimate_shape=None)")]
+#[allow(clippy::too_many_arguments)] // one per declared input, as the spec states them
+pub fn whitson_gamma_split(
+    py: Python<'_>,
+    molar_mass: f64,
+    density: f64,
+    mole_fraction: f64,
+    first_carbon_number: usize,
+    last_carbon_number: usize,
+    alpha: Option<f64>,
+    eta: Option<f64>,
+    density_model: Option<&str>,
+    auto_estimate_shape: Option<bool>,
+) -> PyResult<PyWhitsonGammaSplitResult> {
+    let parsed: WhitsonDensityModel = density_model
+        .map(|name| name.parse().unwrap_or_default())
+        .unwrap_or_default();
+    gamma_kernel(
+        kilograms_per_mole(molar_mass),
+        kilograms_per_cubic_meter(density),
+        mole_fraction,
+        first_carbon_number,
+        last_carbon_number,
+        alpha,
+        eta.map(kilograms_per_mole),
+        parsed,
+        auto_estimate_shape.unwrap_or(false),
+    )
+    .map(|result| PyWhitsonGammaSplitResult::from(&result))
+    .map_err(|error| to_pyerr(py, error))
+}
 
 /// A cut's molar mass, from its normal boiling point and its specific gravity.
 ///

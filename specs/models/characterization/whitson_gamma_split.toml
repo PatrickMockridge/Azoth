@@ -1,0 +1,136 @@
+id = "characterization.whitson_gamma_split"
+name = "A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma"
+kind = "direct"
+assumptions = [
+    "**the other way to divide a C7+ end.** Where the Pedersen model fits an exponential abundance and a logarithmic gravity, this puts the abundance on Whitson's gamma distribution and derives the gravity from a Watson factor. NeqSim carries both and `setPlusFractionModel` chooses.",
+    "**the mean fixes the scale**, so only two parameters are free: `beta = (M_plus - eta)/alpha`, refused if not positive. `alpha` is the shape, `eta` the minimum molar mass the distribution starts from.",
+    "**a cut is a window in molar mass, not a carbon number.** The windows begin at `eta` and step by the SCN increment of 14 g/mol, with the last widened to 10 000 to catch the tail - so the two carbon numbers set **how many** cuts there are, not where the windows start.",
+    "**the abundance is the gamma difference across the window**, `z_i = z_plus * (P0(M_i^upper) - P0(M_i^lower))`, with a floor of `1e-15` on any window that rounds to nothing, and the whole row is then renormalised so it sums to `z_plus`.",
+    "**the cut's molar mass is the window's first moment**, `eta + alpha*beta*(P1^upper - P1^lower)/(P0^upper - P0^lower)`, or the window's midpoint when that denominator vanishes. The `P0` used here is the **unfloored** one, so a window the floor rescued takes the midpoint.",
+    "**`P0` and `P1` are one incomplete-gamma series each**, summing `Q * S` and `Q * (S - 1/alpha)` for `S = sum_j prod (Y/(alpha + k))`, stopped when a term falls to `1e-8` or after 10 000 terms. A window at exactly `eta` returns `(0, 0)` without evaluating.",
+    "**`gamma` is an eight-term polynomial on the reduced argument**, the classical fit for `Gamma(1+z)` on `[0, 1)`, with the reflection `/= X` below one. Reproduced as written, including that its reflection divides by `X` rather than by `X + 1`.",
+    "**the gravity comes from a second correlation, and there are two of them.** `uop` is `6.0108 * M^0.17947 * Kw^-1.18241`; `soreide` is `0.2855 + C_f*(M - 66)^0.13` clamped to `[0.6, 1.2]`, falling back to the Watson form when its factor is non-positive.",
+    "**the Watson factor is the plus fraction's own**, `Kw = 4.5579 * (M_plus*1000)^0.15178 * rho_plus^-1.18241` - one number for the whole row, so every cut's gravity is that factor pushed through the cut's molar mass.",
+    "**`auto_estimate_shape` replaces `alpha` with a correlation on the same Watson factor**, in four bands between 10.5 and 12.5, and the class's log line is the only record that it did. It runs **before** `beta` is derived, so the estimate changes both parameters.",
+    "**NeqSim works in g/mol and g/cm3 and this declares kg/mol and kg/m3.** The specific gravity is the tabulated 0.66-1.00 and crosses as a density a thousand larger.",
+    "**a plus fraction whose molar mass is below `eta` is refused.** `beta` would be zero or negative and the class logs and returns false, leaving the fluid with its single plus row; here it is an error naming both numbers.",
+    "this is a fitted distribution and not a measurement of the fluid, and no databank is involved. **The split is not unique**: the same three numbers with `last_carbon_number` at 60 and at 180 give two fluids that both satisfy them.",
+]
+references = [
+    "Whitson, C. H. (1983). \"Characterizing Hydrocarbon Plus Fractions.\" Society of Petroleum Engineers Journal 23(4), 683-694. DOI 10.2118/12233-PA. The three-parameter gamma distribution.",
+    "Whitson, C. H.; Brulé, M. R. (2000). \"Phase Behavior.\" SPE Monograph 20. The SCN windowing and the molar-mass first moment.",
+    "Søreide, I. (1989). \"Improved phase behavior predictions of petroleum reservoir fluids from a cubic equation of state.\" Dr.Ing. thesis, NTNU Trondheim. The density correlation that `soreide` selects.",
+    "Watson, K. M.; Nelson, E. F. (1933). \"Improved Methods for Approximating Critical and Thermal Properties of Petroleum Fractions.\" Industrial & Engineering Chemistry 25(8), 880-887. The characterization factor every cut's gravity is built on.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PlusFractionModel.java`'s `WhitsonGammaModel` is the port source, over its parent's three numbers.",
+    "`validation/neqsim/captures/plus_fraction_probe.tsv` - `# gamma variant = ...` rows from `validation/neqsim/PlusFractionProbe.java`, one per switch.",
+]
+[source]
+standard = "NeqSim master `PlusFractionModel.WhitsonGammaModel`"
+edition = "Its `characterizePlusFraction` override, its `P0P1`, its `gamma`, and its `densityUOP`/`densitySoreide`. `Characterise.setGammaShapeParameter`, `setGammaMinMW`, `setGammaDensityModel` and `setAutoEstimateGammaAlpha` are the four switches."
+[inputs]
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The plus fraction's molar mass, which fixes the gamma scale. NeqSim works in g/mol and this multiplies by 1000.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "The plus fraction's normal liquid density at 15 C, carried by the class as a specific gravity in g/cm3 - the same number a thousand smaller. It is the whole row's Watson factor.\n"
+[inputs.mole_fraction]
+unit = "dimensionless"
+description = "The plus fraction's mole fraction, which the abundance row is normalised to.\n"
+[inputs.first_carbon_number]
+unit = "dimensionless"
+description = "The first cut's carbon number, which **labels** the row: the molar-mass windows start at `eta` whatever this is. `WhitsonGammaModel` never reads the plus component's name, so this is the outer object's field, one by default.\n"
+[inputs.last_carbon_number]
+unit = "dimensionless"
+description = "One past the last cut, the class's own half-open convention and the only bound the windowing respects - it decides how many windows there are.\n"
+[inputs.alpha]
+unit = "dimensionless"
+optional = true
+description = "The gamma shape parameter, Whitson's three bands being roughly 0.5-1.0 for a condensate, 1.0-2.0 for a black oil and 2.0-4.0 for a heavy oil. Absent takes the class's own default of 1.0.\n"
+[inputs.eta]
+unit = "kg/mol"
+optional = true
+description = "The minimum molar mass the distribution starts from, which is also the first window's lower edge. NeqSim's own scale is g/mol and it defaults to 90 there, typically 84-90; absent takes 0.090 kg/mol.\n"
+[inputs.density_model]
+type = "enum"
+values = ["uop", "soreide"]
+optional = true
+description = "which gravity correlation the cuts take. `uop` is the class's default, and `soreide` reaches it as its own fallback when its factor comes out non-positive.\n"
+[inputs.auto_estimate_shape]
+type = "boolean"
+optional = true
+description = "whether the shape is estimated from the plus fraction's Watson factor instead of taken from `alpha`. It runs before the scale is derived, so it moves both parameters.\n"
+[outputs]
+[outputs.cut_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, from `first_carbon_number` to `last_carbon_number - 1`"
+description = "Each cut's mole fraction, the gamma density integrated across its window and renormalised to sum to `mole_fraction`.\n"
+[outputs.cut_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per cut, aligned with `cut_z`"
+description = "Each cut's molar mass: the window's first gamma moment, or the window's midpoint where that moment has no denominator.\n"
+[outputs.cut_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per cut, aligned with `cut_z`"
+description = "Each cut's normal liquid density from the selected correlation, in the class's own g/cm3 scale converted to kg/m3.\n"
+[outputs.shape]
+unit = "dimensionless"
+description = "The shape parameter actually used: `alpha` as given, or the estimate when `auto_estimate_shape` is set.\n"
+[outputs.minimum_molar_mass]
+unit = "kg/mol"
+description = "The minimum molar mass actually used, which is `eta` as given or its default.\n"
+[outputs.scale]
+unit = "kg/mol"
+description = "The derived gamma scale, `(M_plus - eta)/alpha` in the class's own g/mol scale converted to kg/mol.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass, and the one the scale is derived from\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a specific gravity; the Watson factor divides by it to the 1.18241 power\n"
+[[valid_range]]
+quantity = "mole_fraction"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a mole fraction the abundance row is normalised to\n"
+[[valid_range]]
+quantity = "first_carbon_number"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a label on the cuts rather than a window bound, so it only has to be a carbon number\n"
+[[valid_range]]
+quantity = "last_carbon_number"
+min = 1
+min_inclusive = true
+max = 200
+max_inclusive = true
+severity = "error"
+rationale = "the molar-mass table's own reach, so a row of cuts stays comparable with the other plus model's\n"
+[[valid_range]]
+quantity = "alpha"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the gamma shape; the residual series divides by it and the incomplete-gamma series is written in `1/alpha`\n"
+[[valid_range]]
+quantity = "eta"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass, and the lower edge of the first window\n"
+[implementations]
+python = "azoth.characterization.whitson_gamma_split"
+rust = "azoth_characterization::whitson_gamma_split"

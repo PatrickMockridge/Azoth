@@ -212,6 +212,7 @@ from azoth.core.result import (
     VuFlashSingleCompResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
+    WhitsonGammaSplitResult,
     WilkeChangDiffusivityResult,
     WilkeViscosityResult,
     WilsonActivityCoefficientsResult,
@@ -440,6 +441,7 @@ __all__ = [
     "vu_flash_single_comp",
     "water_phase",
     "wax_solid_fugacity",
+    "whitson_gamma_split",
     "wilke_chang_diffusivity",
     "wilke_viscosity",
     "wilson_activity_coefficients",
@@ -513,6 +515,31 @@ def tbp_density(boiling_point: Q, molar_mass: Q, closure: str | None=None) -> Tb
     )
     return TbpDensityResult(
         density=from_si(result.density.magnitude_si, result.density.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def whitson_gamma_split(molar_mass: Q, density: Q, mole_fraction: float, first_carbon_number: int, last_carbon_number: int, alpha: float | None=None, eta: Q | None=None, density_model: str | None=None, auto_estimate_shape: bool | None=None) -> WhitsonGammaSplitResult:
+    """``characterization.whitson_gamma_split``, computed in Rust."""
+    spec = _models_gen.model("characterization.whitson_gamma_split")
+    result = _core.whitson_gamma_split(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "density", density),
+        mole_fraction,
+        int(first_carbon_number),
+        int(last_carbon_number),
+        None if alpha is None else alpha,
+        None if eta is None else input_to_si(spec, "eta", eta),
+        density_model,
+        auto_estimate_shape,
+    )
+    return WhitsonGammaSplitResult(
+        cut_z=tuple(result.cut_z),
+        cut_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.cut_molar_mass),
+        cut_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.cut_density),
+        shape=result.shape,
+        minimum_molar_mass=from_si(result.minimum_molar_mass.magnitude_si, result.minimum_molar_mass.unit),
+        scale=from_si(result.scale.magnitude_si, result.scale.unit),
         warnings=_warnings(result.warnings),
     )
 

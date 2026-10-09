@@ -5,6 +5,7 @@
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/calcs/characterization/tbp_cut_properties.toml
 //!   - specs/models/characterization/tbp_density.toml
+//!   - specs/models/characterization/whitson_gamma_split.toml
 //!   - specs/models/eos/ammonia_phase.toml
 //!   - specs/calcs/eos/antoine_vapor_pressure.toml
 //!   - specs/models/eos/aqueous_viscosity.toml
@@ -264,6 +265,37 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("characterization.tbp_density", "molar_mass", "molar_mass"),
+    (
+        "characterization.whitson_gamma_split",
+        "molar_mass",
+        "molar_mass",
+    ),
+    (
+        "characterization.whitson_gamma_split",
+        "density",
+        "mass_density",
+    ),
+    (
+        "characterization.whitson_gamma_split",
+        "mole_fraction",
+        "dimensionless",
+    ),
+    (
+        "characterization.whitson_gamma_split",
+        "first_carbon_number",
+        "dimensionless",
+    ),
+    (
+        "characterization.whitson_gamma_split",
+        "last_carbon_number",
+        "dimensionless",
+    ),
+    (
+        "characterization.whitson_gamma_split",
+        "alpha",
+        "dimensionless",
+    ),
+    ("characterization.whitson_gamma_split", "eta", "molar_mass"),
     ("eos.ammonia_phase", "T", "thermodynamic_temperature"),
     ("eos.ammonia_phase", "P", "pressure"),
     ("eos.antoine_vapor_pressure", "A", "dimensionless"),

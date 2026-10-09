@@ -27,6 +27,7 @@ from azoth.core.result import (
     TbpClosureResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
+    WhitsonGammaSplitResult,
 )
 from azoth.core.units import Q
 
@@ -35,12 +36,14 @@ __all__ = [
     "tbp_closure",
     "tbp_cut_properties",
     "tbp_density",
+    "whitson_gamma_split",
 ]
 
 _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
 _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
 _PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
+_WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 
 
 def tbp_closure(
@@ -136,4 +139,42 @@ def pedersen_plus_split(
         mole_fraction=mole_fraction,
         first_carbon_number=first_carbon_number,
         last_carbon_number=last_carbon_number,
+    )
+
+
+def whitson_gamma_split(
+    molar_mass: Q,
+    density: Q,
+    mole_fraction: float,
+    first_carbon_number: int,
+    last_carbon_number: int,
+    alpha: float | None = None,
+    eta: Q | None = None,
+    density_model: str | None = None,
+    auto_estimate_shape: bool | None = None,
+) -> WhitsonGammaSplitResult:
+    """A plus fraction split into cuts by Whitson's three-parameter gamma distribution.
+
+    The cuts are windows in molar mass that step from ``eta`` by 14 g/mol, so
+    ``first_carbon_number`` labels the row and ``last_carbon_number`` is the only bound the
+    windowing respects. ``density_model`` selects the gravity correlation, ``uop`` by default;
+    ``auto_estimate_shape`` replaces ``alpha`` with a correlation on the plus fraction's Watson
+    factor.
+
+    Raises:
+        InvalidInputError: if the plus fraction's molar mass is not above ``eta``.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.characterization.reference.whitson_gamma_split`.
+    """
+    return resolve(_WHITSON_GAMMA_SPLIT)(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        density=density,
+        mole_fraction=mole_fraction,
+        first_carbon_number=first_carbon_number,
+        last_carbon_number=last_carbon_number,
+        alpha=alpha,
+        eta=eta,
+        density_model=density_model,
+        auto_estimate_shape=auto_estimate_shape,
     )
