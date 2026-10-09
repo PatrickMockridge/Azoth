@@ -1,0 +1,48 @@
+# assay = tbp_volume_basis
+# basis = volume
+declared_fraction = [0.250000000000000, 0.300000000000000, 0.250000000000000, 0.200000000000000]
+cut_count = 4
+density = [680.000000000000, 780.000000000000, 850.000000000000, 920.000000000000]
+mass_fraction = [0.212367270455965, 0.292317301686446, 0.265459088069956, 0.229856339787633]
+total_declared_fraction = 1.00000000000000
+bulk_specific_gravity = 0.800500000000000
+
+# assay = mass_basis
+# basis = mass
+declared_fraction = [0.400000000000000, 0.350000000000000, 0.250000000000000]
+cut_count = 3
+density = [700.000000000000, 820.000000000000, 900.000000000000]
+mass_fraction = [0.400000000000000, 0.350000000000000, 0.250000000000000]
+total_declared_fraction = 1.00000000000000
+bulk_specific_gravity = 0.783677184466019
+
+# assay = inside_the_closure_tolerance
+# basis = mass
+declared_fraction = [0.500000000000000, 0.500500000000000]
+cut_count = 2
+density = [750.000000000000, 850.000000000000]
+mass_fraction = [0.499750124937531, 0.500249875062469]
+total_declared_fraction = 1.00050000000000
+bulk_specific_gravity = 0.796899890676245
+
+# assay = outside_the_closure_tolerance
+# basis = mass
+declared_fraction = [0.500000000000000, 0.510000000000000]
+cut_count = 2
+density = [750.000000000000, 850.000000000000]
+# refused: Assay fractions must sum to 1.0 within 0.001; supplied sum=1.01
+
+# assay = a_cut_with_both_bases
+# basis = mass
+declared_fraction = [0.500000000000000, 0.500000000000000]
+cut_count = 2
+density = [800.000000000000, 800.000000000000]
+# refused: Assay cut X1 must define exactly one mass or volume fraction
+
+# assay = a_cut_with_neither_basis
+# basis = mass
+declared_fraction = [0.00000000000000, 1.00000000000000]
+cut_count = 2
+density = [800.000000000000, 800.000000000000]
+# refused: Assay cut N1 must define exactly one mass or volume fraction
+
