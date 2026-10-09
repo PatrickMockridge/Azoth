@@ -21,10 +21,10 @@ Run `guard_bash.py --selftest` to check the rule table.
 from __future__ import annotations
 
 import json
-import os
 import re
 import shlex
 import sys
+from pathlib import Path
 
 WRAPPER = "tools/gated.sh"
 FULL_GATE_TOKEN = "AZOTH_FULL_GATE=1"
@@ -41,9 +41,22 @@ WIDE_PYTEST_ROOTS = {
 
 # pytest flags that consume the next token, so it is not a positional path.
 PYTEST_VALUE_FLAGS = {
-    "-k", "-m", "-p", "-n", "-c", "-o", "-W", "-x",
-    "--maxfail", "--ignore", "--ignore-glob", "--rootdir", "--deselect",
-    "--junitxml", "--tb", "--capture",
+    "-k",
+    "-m",
+    "-p",
+    "-n",
+    "-c",
+    "-o",
+    "-W",
+    "-x",
+    "--maxfail",
+    "--ignore",
+    "--ignore-glob",
+    "--rootdir",
+    "--deselect",
+    "--junitxml",
+    "--tb",
+    "--capture",
 }
 
 HEAVY_CARGO_SUBCOMMANDS = {"build", "test", "clippy", "run", "bench", "install"}
@@ -70,7 +83,7 @@ def program(tokens: list[str]) -> str:
     for tok in tokens:
         if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", tok):
             continue
-        return os.path.basename(tok)
+        return Path(tok).name
     return ""
 
 
@@ -87,7 +100,7 @@ def is_pytest(tokens: list[str]) -> bool:
 
 def pytest_positionals(tokens: list[str]) -> list[str]:
     idx = tokens.index("pytest") if "pytest" in tokens else -1
-    args = tokens[idx + 1:] if idx >= 0 else []
+    args = tokens[idx + 1 :] if idx >= 0 else []
     positional, skip = [], False
     for tok in args:
         if skip:
@@ -167,14 +180,18 @@ def decide(cmd: str) -> tuple[bool, str]:
 
 
 def emit_deny(reason: str) -> None:
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        },
-        "systemMessage": "Resource guard blocked a heavy command.",
-    }))
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": reason,
+                },
+                "systemMessage": "Resource guard blocked a heavy command.",
+            }
+        )
+    )
 
 
 SELFTEST: list[tuple[str, bool]] = [
@@ -222,8 +239,7 @@ def selftest() -> int:
         allow, _ = decide(cmd)
         if allow != expected:
             bad += 1
-            print(f"FAIL: {cmd!r} -> allow={allow}, expected {expected}",
-                  file=sys.stderr)
+            print(f"FAIL: {cmd!r} -> allow={allow}, expected {expected}", file=sys.stderr)
     print(f"{len(SELFTEST) - bad}/{len(SELFTEST)} passed")
     return 1 if bad else 0
 
@@ -233,16 +249,15 @@ def main() -> int:
         return selftest()
     try:
         payload = json.load(sys.stdin)
-    except Exception as exc:  # noqa: BLE001 - fail open
-        print(f"guard_bash: unreadable hook input ({exc}); allowing",
-              file=sys.stderr)
+    except Exception as exc:
+        print(f"guard_bash: unreadable hook input ({exc}); allowing", file=sys.stderr)
         return 0
     if payload.get("tool_name") != "Bash":
         return 0
     cmd = (payload.get("tool_input") or {}).get("command") or ""
     try:
         allow, reason = decide(cmd)
-    except Exception as exc:  # noqa: BLE001 - fail open
+    except Exception as exc:
         print(f"guard_bash: internal error ({exc}); allowing", file=sys.stderr)
         return 0
     if not allow:
