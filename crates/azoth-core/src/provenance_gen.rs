@@ -15,6 +15,21 @@ use crate::provenance::{ProvenanceStatic, VerificationStatus};
 /// one form a reader can check against the registry by eye.
 pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
     ProvenanceStatic {
+        calc_id: "characterization.tbp_cut_properties",
+        name: "TBP cut properties by any of NeqSim's ten models",
+        spec_path: "specs/calcs/characterization/tbp_cut_properties.toml",
+        spec_sha256: "e3734a374293472583984a019b6c44c3438a985f801749ddfe1564c62c06d1b0",
+        python_path: "python/src/azoth/characterization/reference/tbp_cut_properties.py",
+        python_sha256: "1b9f8bf900da3e38e6abc25302a65ddd22865c49e3822324cf9ea811d76cb918",
+        rust_path: "crates/azoth-characterization/src/tbp_cut_properties.rs",
+        rust_sha256: "5b3098a1cd2fb073db17c9bf5e22d03f04fd987fb0d14a08972c11d785b928d7",
+        source: "NeqSim master `TBPfractionModel`, all ten models",
+        verification: VerificationStatus::PartiallyVerified,
+        validation_cases: 0,
+        tests_active: 9,
+        tests_skipped: 0,
+    },
+    ProvenanceStatic {
         calc_id: "eos.ammonia_phase",
         name: "Ammonia reference phase state",
         spec_path: "specs/models/eos/ammonia_phase.toml",

@@ -350,8 +350,10 @@ def string_accessor(type_name: str) -> str:
 
 
 #: The crate a spec's `implementations.rust` names, to the module of the binding that carries
-#: the `#[pyfunction]` wrapping it. Exhaustive by intent: a seventh crate is a refusal, because a
-#: calculation this map could not place is one the extension does not register.
+#: the `#[pyfunction]` wrapping it. Exhaustive by intent: an eighth crate is a refusal, because a
+#: calculation this map could not place is one the extension does not register. Seven are here:
+#: `characterization` joined on 2026-10-09 because NeqSim carries a whole package for it and it is
+#: reached from no equation of state.
 NAMESPACES = {
     "azoth_hydraulics": "hydraulics",
     "azoth_eos": "eos",
@@ -359,6 +361,7 @@ NAMESPACES = {
     "azoth_reactions": "reactions",
     "azoth_standards": "standards",
     "azoth_process": "process",
+    "azoth_characterization": "characterization",
 }
 
 

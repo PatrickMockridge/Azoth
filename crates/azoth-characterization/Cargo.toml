@@ -1,0 +1,18 @@
+[package]
+name = "azoth-characterization"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Petroleum-fraction characterisation: a cut's properties, the plus-fraction splits and lumping"
+
+[dependencies]
+azoth-core.workspace = true
+uom.workspace = true
+
+[dev-dependencies]
+azoth-test-support.workspace = true
+
+[lints]
+workspace = true
