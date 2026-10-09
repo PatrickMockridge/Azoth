@@ -9,10 +9,21 @@
 // CD Jacobian leaves the `(1,1)` entry at zero. All three are reproduced rather than improved,
 // so they are printed where the port can be held to them.
 //
-//   javac -proc:none -cp neqsim-f0c7436.jar PlusFractionProbe.java
-//   java -cp .:neqsim-f0c7436.jar PlusFractionProbe > captures/plus_fraction_probe.tsv
+// Two sections per case:
+//
+//   * the **raw split** - the four coefficients and the model's own `z`, `M` and `dens` arrays,
+//     over the half-open carbon-number range `[first, last)` the class fills. This is what a
+//     characterisation kernel returns, and it is what `characterization.pedersen_plus_split` is
+//     held to.
+//   * the **lumped fluid** - what `Characterise` then puts into the system, which is the split
+//     after `LumpingModel.generateLumpedComposition` has grouped it. That is a different id's
+//     number, and it is here because the two are easy to confuse.
+//
+//   javac -proc:none -cp /path/to/neqsim-f0c7436.jar PlusFractionProbe.java
+//   java -cp .:/path/to/neqsim-f0c7436.jar PlusFractionProbe > captures/plus_fraction_probe.tsv
 
 import neqsim.thermo.characterization.Characterise;
+import neqsim.thermo.characterization.PlusFractionModelInterface;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkEos;
 
@@ -20,6 +31,58 @@ public class PlusFractionProbe {
 
   private static void row(String key, double value) {
     System.out.printf("%s = %.15g%n", key, value);
+  }
+
+  /** A bracketed vector, one `%.15g` per entry, over the half-open index range. */
+  private static String vector(double[] values, int from, int to) {
+    StringBuilder line = new StringBuilder();
+    for (int i = from; i < to; i++) {
+      if (i > from) {
+        line.append(", ");
+      }
+      line.append(String.format("%.15g", values[i]));
+    }
+    return line.toString();
+  }
+
+  /** The carbon numbers the split was filled at, which is the half-open range itself. */
+  private static String carbonNumbers(int from, int to) {
+    StringBuilder line = new StringBuilder();
+    for (int i = from; i < to; i++) {
+      if (i > from) {
+        line.append(", ");
+      }
+      line.append(i);
+    }
+    return line.toString();
+  }
+
+  /**
+   * The split before it is lumped: the four solved coefficients, and the model's own per-cut
+   * `z`, molar mass and specific gravity. A model that refused prints nothing but the refusal.
+   */
+  private static void rawSplit(Characterise characterise) {
+    PlusFractionModelInterface model = characterise.getPlusFractionModel();
+    System.out.printf("# raw split, model = %s%n", model.getName());
+    System.out.printf("# first = %d last = %d%n",
+        model.getFirstPlusFractionNumber(), model.getLastPlusFractionNumber());
+    double[] coefs = model.getCoefs();
+    System.out.printf("coefficient = [%s]%n", vector(coefs, 0, coefs.length));
+    double[] z = model.getZ();
+    double[] m = model.getM();
+    double[] dens = model.getDens();
+    if (z == null || m == null || dens == null) {
+      System.out.println("# refused: the model returned no split");
+      return;
+    }
+    int first = model.getFirstPlusFractionNumber();
+    int last = model.getLastPlusFractionNumber();
+    System.out.printf("number_of_plus_pseudocomponents = %.15g%n",
+        model.getNumberOfPlusPseudocomponents());
+    System.out.printf("carbon_number = [%s]%n", carbonNumbers(first, last));
+    System.out.printf("cut_z = [%s]%n", vector(z, first, last));
+    System.out.printf("cut_molar_mass = [%s]%n", vector(m, first, last));
+    System.out.printf("cut_density = [%s]%n", vector(dens, first, last));
   }
 
   /** A fluid with a C7+ end, described by the three numbers a plus fraction carries. */
@@ -48,6 +111,7 @@ public class PlusFractionProbe {
       return;
     }
     System.out.printf("# selected_model = %s%n", characterise.getPlusFractionModel().getName());
+    rawSplit(characterise);
     int n = system.getPhase(0).getNumberOfComponents();
     row("component_count", n);
     for (int i = 0; i < n; i++) {
