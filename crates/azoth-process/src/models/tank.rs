@@ -4,7 +4,7 @@
 //! is here is the boundary a case and a cross-impl test address.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::tank as kernel;
 use crate::model_gen;
@@ -37,17 +37,6 @@ pub struct TankResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for TankResult {
-    const CALC_ID: &'static str = "process.tank";
-    const FIELDS: &'static [&'static str] = &[
-        "gas_n", "gas_z", "gas_p", "gas_t", "gas_h", "liquid_n", "liquid_z", "liquid_p",
-        "liquid_t", "liquid_h", "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Join a tank's inlets and split the result into a gas and a liquid outlet.
 ///

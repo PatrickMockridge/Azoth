@@ -11,7 +11,7 @@
 use azoth_core::units::{
     MolarEnergy, Pressure, ThermodynamicTemperature, Velocity, joules_per_mole,
 };
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
@@ -89,26 +89,6 @@ impl EjectorResult {
     }
 }
 
-impl CalcResult for EjectorResult {
-    const CALC_ID: &'static str = "process.ejector";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n",
-        "outlet_z",
-        "outlet_p",
-        "outlet_t",
-        "outlet_h",
-        "mixing_pressure",
-        "motive_nozzle_velocity",
-        "suction_nozzle_velocity",
-        "mixing_velocity",
-        "diffuser_velocity",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Expand a motive stream, entrain a suction stream with it, and diffuse the mixture.
 ///

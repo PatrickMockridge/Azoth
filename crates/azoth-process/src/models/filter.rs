@@ -6,7 +6,7 @@
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_core::{CalcResult, Result, apply_checks};
+use azoth_core::{Result, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -57,22 +57,6 @@ impl FilterResult {
     }
 }
 
-impl CalcResult for FilterResult {
-    const CALC_ID: &'static str = "process.filter";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n",
-        "outlet_z",
-        "outlet_p",
-        "outlet_t",
-        "outlet_h",
-        "applied_drop",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Drop a stream's pressure by a fixed amount at a constant temperature.
 ///

@@ -11,7 +11,7 @@
 //! implementations are held to, and the case is what holds them.
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -103,34 +103,6 @@ impl ShortcutDistillationColumnResult {
     }
 }
 
-impl CalcResult for ShortcutDistillationColumnResult {
-    const CALC_ID: &'static str = "process.shortcut_distillation_column";
-    const FIELDS: &'static [&'static str] = &[
-        "distillate_n",
-        "distillate_z",
-        "distillate_p",
-        "distillate_t",
-        "distillate_h",
-        "bottoms_n",
-        "bottoms_z",
-        "bottoms_p",
-        "bottoms_t",
-        "bottoms_h",
-        "minimum_stages",
-        "minimum_reflux_ratio",
-        "actual_stages",
-        "actual_reflux_ratio",
-        "feed_tray_number",
-        "condenser_duty",
-        "reboiler_duty",
-        "relative_volatility",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Solve a shortcut distillation column.
 ///

@@ -9,7 +9,7 @@
 //! under the ports' own names rather than a list.
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::separator as kernel;
 use crate::model_gen;
@@ -42,17 +42,6 @@ pub struct SeparatorResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for SeparatorResult {
-    const CALC_ID: &'static str = "process.separator";
-    const FIELDS: &'static [&'static str] = &[
-        "vapour_n", "vapour_z", "vapour_p", "vapour_t", "vapour_h", "liquid_n", "liquid_z",
-        "liquid_p", "liquid_t", "liquid_h", "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Flash a stream into vapour and liquid outlets.
 ///

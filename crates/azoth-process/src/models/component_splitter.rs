@@ -9,7 +9,7 @@
 //! kernel.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::component_splitter as kernel;
 use crate::model_gen;
@@ -42,26 +42,6 @@ pub struct ComponentSplitterResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for ComponentSplitterResult {
-    const CALC_ID: &'static str = "process.component_splitter";
-    const FIELDS: &'static [&'static str] = &[
-        "overhead_n",
-        "overhead_z",
-        "overhead_p",
-        "overhead_t",
-        "overhead_h",
-        "bottoms_n",
-        "bottoms_z",
-        "bottoms_p",
-        "bottoms_t",
-        "bottoms_h",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Divide a stream between two outlets component by component.
 ///

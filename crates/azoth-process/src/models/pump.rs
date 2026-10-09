@@ -5,7 +5,7 @@
 //! address, which is the same split every other namespace makes.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::pump as kernel;
 use crate::model_gen;
@@ -28,16 +28,6 @@ pub struct PumpResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for PumpResult {
-    const CALC_ID: &'static str = "process.pump";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Raise a stream's pressure, adding the pump's work as enthalpy.
 ///

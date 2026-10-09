@@ -9,7 +9,7 @@
 //! and `z` a matrix with one row per outlet.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::splitter as kernel;
 use crate::model_gen;
@@ -32,21 +32,6 @@ pub struct SplitterResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for SplitterResult {
-    const CALC_ID: &'static str = "process.splitter";
-    const FIELDS: &'static [&'static str] = &[
-        "products_n",
-        "products_z",
-        "products_p",
-        "products_t",
-        "products_h",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Split a stream into several with the same state, in proportion to `split_factors`.
 ///

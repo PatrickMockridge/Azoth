@@ -7,7 +7,7 @@
 //! **The compressor's route with the efficiency multiplying rather than dividing**, which `Expander.run` is and which the physical rule requires: an expansion's isentropic difference is negative.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::expander as kernel;
 use crate::model_gen;
@@ -31,16 +31,6 @@ pub struct ExpanderResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for ExpanderResult {
-    const CALC_ID: &'static str = "process.expander";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Expander a stream's pressure along an isentrope.
 ///

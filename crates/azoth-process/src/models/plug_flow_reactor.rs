@@ -14,7 +14,7 @@ use azoth_core::units::{
     DiffusionCoefficient, HeatTransfer, MassDensity, MolarEnergy, Power, Pressure,
     ThermodynamicTemperature, joules_per_mole, kelvins, pascals, watts,
 };
-use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 use azoth_reactions::databank::stoichiometry;
 use serde::Serialize;
 
@@ -69,29 +69,6 @@ pub struct PlugFlowReactorResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for PlugFlowReactorResult {
-    const CALC_ID: &'static str = "process.plug_flow_reactor";
-    const FIELDS: &'static [&'static str] = &[
-        "product_n",
-        "product_z",
-        "product_p",
-        "product_t",
-        "product_h",
-        "conversion",
-        "pressure_drop",
-        "outlet_temperature",
-        "heat_duty",
-        "positions",
-        "temperature_profile",
-        "pressure_profile",
-        "conversion_profile",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// The rate type a declaration's name selects.
 fn rate_type(name: &str) -> Result<RateType> {

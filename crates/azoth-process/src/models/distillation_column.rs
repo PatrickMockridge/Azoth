@@ -9,7 +9,7 @@ use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
     millimeters, pascals, watts,
 };
-use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::column::capacity::{
@@ -265,65 +265,6 @@ impl DistillationColumnResult {
     }
 }
 
-impl CalcResult for DistillationColumnResult {
-    const CALC_ID: &'static str = "process.distillation_column";
-    const FIELDS: &'static [&'static str] = &[
-        "tray_temperature",
-        "tray_pressure",
-        "tray_gas_n",
-        "tray_liquid_n",
-        "distillate_n",
-        "distillate_z",
-        "distillate_p",
-        "distillate_t",
-        "distillate_h",
-        "bottoms_n",
-        "bottoms_z",
-        "bottoms_p",
-        "bottoms_t",
-        "bottoms_h",
-        "gas_side_draw_n",
-        "liquid_side_draw_n",
-        "pumparound_n",
-        "condenser_duty",
-        "reboiler_duty",
-        "iterations",
-        "temperature_residual",
-        "mass_residual",
-        "energy_residual",
-        "fs_factor",
-        "fs_factor_utilization",
-        "fs_factor_within_design_limit",
-        "minimum_diameter_for_fs_limit",
-        "required_diameter",
-        "controlling_tray_index",
-        "internals_design_ok",
-        "max_percent_flood",
-        "min_percent_flood",
-        "average_tray_efficiency",
-        "total_pressure_drop",
-        "total_pressure_drop_mbar",
-        "tray_percent_flood",
-        "tray_pressure_drop",
-        "tray_efficiency",
-        "vessel_diameter",
-        "vessel_height",
-        "vessel_wall_thickness",
-        "actual_trays",
-        "flooding_factor",
-        "weir_loading",
-        "tray_pressure_drop_mbar",
-        "total_pressure_drop_bar",
-        "reboiler_duty_kw",
-        "condenser_duty_kw",
-        "material_grade",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// **The two efficiency fields, resolved and clamped, or `None` where neither is stated.**
 ///

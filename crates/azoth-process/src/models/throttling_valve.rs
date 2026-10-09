@@ -11,7 +11,7 @@
 //! not about its arithmetic.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::throttling_valve as kernel;
 use crate::model_gen;
@@ -34,16 +34,6 @@ pub struct ThrottlingValveResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for ThrottlingValveResult {
-    const CALC_ID: &'static str = "process.throttling_valve";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n", "outlet_z", "outlet_p", "outlet_t", "outlet_h", "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Drop a stream to a lower pressure without heat or work.
 ///

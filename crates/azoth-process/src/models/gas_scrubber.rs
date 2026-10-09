@@ -11,7 +11,7 @@
 use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, Velocity, joules_per_mole,
 };
-use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::gas_scrubber as kernel;
 use crate::model_gen;
@@ -47,27 +47,6 @@ pub struct GasScrubberResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for GasScrubberResult {
-    const CALC_ID: &'static str = "process.gas_scrubber";
-    const FIELDS: &'static [&'static str] = &[
-        "vapour_n",
-        "vapour_z",
-        "vapour_p",
-        "vapour_t",
-        "vapour_h",
-        "liquid_n",
-        "liquid_z",
-        "liquid_p",
-        "liquid_t",
-        "liquid_h",
-        "capacity_utilization",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Flash a stream into vapour and liquid outlets.
 ///

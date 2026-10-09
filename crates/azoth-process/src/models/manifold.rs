@@ -8,7 +8,7 @@
 //! vectors a `many` inlet writes and the outlets as the ones a `many` outlet does.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::manifold::manifold as kernel;
 use crate::model_gen;
@@ -31,21 +31,6 @@ pub struct ManifoldResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for ManifoldResult {
-    const CALC_ID: &'static str = "process.manifold";
-    const FIELDS: &'static [&'static str] = &[
-        "products_n",
-        "products_z",
-        "products_p",
-        "products_t",
-        "products_h",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Join a manifold's feeds and divide the mixture between its outlets.
 ///

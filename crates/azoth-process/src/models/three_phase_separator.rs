@@ -9,7 +9,7 @@
 //! out under the ports' own names rather than a list.
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 
 use crate::kernels::three_phase_separator::{Entrainment, three_phase_separator as kernel};
 use crate::model_gen;
@@ -52,31 +52,6 @@ pub struct ThreePhaseSeparatorResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for ThreePhaseSeparatorResult {
-    const CALC_ID: &'static str = "process.three_phase_separator";
-    const FIELDS: &'static [&'static str] = &[
-        "vapour_n",
-        "vapour_z",
-        "vapour_p",
-        "vapour_t",
-        "vapour_h",
-        "light_liquid_n",
-        "light_liquid_z",
-        "light_liquid_p",
-        "light_liquid_t",
-        "light_liquid_h",
-        "heavy_liquid_n",
-        "heavy_liquid_z",
-        "heavy_liquid_p",
-        "heavy_liquid_t",
-        "heavy_liquid_h",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Flash a stream into vapour, oil and aqueous outlets.
 ///

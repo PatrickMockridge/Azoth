@@ -11,7 +11,7 @@
 use azoth_core::units::{
     MolarEnergy, Power, Pressure, ThermalConductance, ThermodynamicTemperature, joules_per_mole,
 };
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{optional_scalar, scalar, warnings as wire_warnings};
@@ -78,32 +78,6 @@ pub struct HeatExchangerResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for HeatExchangerResult {
-    const CALC_ID: &'static str = "process.heat_exchanger";
-    const FIELDS: &'static [&'static str] = &[
-        "hot_out_n",
-        "hot_out_z",
-        "hot_out_p",
-        "hot_out_t",
-        "hot_out_h",
-        "cold_out_n",
-        "cold_out_z",
-        "cold_out_p",
-        "cold_out_t",
-        "cold_out_h",
-        "duty",
-        "ntu",
-        "effectiveness",
-        "c_min",
-        "c_max",
-        "capacity_ratio",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Exchange heat between two streams.
 ///

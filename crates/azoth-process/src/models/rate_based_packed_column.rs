@@ -13,7 +13,7 @@ use azoth_core::units::{
     kilograms_per_cubic_meter, pascal_seconds, square_meters_per_second, watts,
 };
 use azoth_core::warning::{Warning, WarningCode};
-use azoth_core::{AzothError, CalcResult, Result};
+use azoth_core::{AzothError, Result};
 
 use serde::Serialize;
 
@@ -117,57 +117,6 @@ pub struct RateBasedPackedColumnResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for RateBasedPackedColumnResult {
-    const CALC_ID: &'static str = "process.rate_based_packed_column";
-    const FIELDS: &'static [&'static str] = &[
-        "gas_out_n",
-        "gas_out_z",
-        "gas_out_p",
-        "gas_out_t",
-        "gas_out_h",
-        "liquid_out_n",
-        "liquid_out_z",
-        "liquid_out_p",
-        "liquid_out_t",
-        "liquid_out_h",
-        "iterations",
-        "convergence_residual",
-        "converged",
-        "total_absolute_molar_transfer",
-        "component_transfer_totals",
-        "transfer_components",
-        "segment_height_from_bottom",
-        "segment_gas_temperature",
-        "segment_liquid_temperature",
-        "segment_gas_pressure",
-        "segment_liquid_pressure",
-        "segment_gas_molar_flow",
-        "segment_liquid_molar_flow",
-        "segment_gas_density",
-        "segment_liquid_density",
-        "segment_gas_viscosity",
-        "segment_liquid_viscosity",
-        "segment_gas_diffusivity",
-        "segment_liquid_diffusivity",
-        "segment_wetted_area",
-        "segment_k_ga",
-        "segment_k_la",
-        "segment_gas_heat_transfer_coefficient",
-        "segment_liquid_heat_transfer_coefficient",
-        "segment_overall_heat_transfer_coefficient",
-        "segment_interface_temperature",
-        "segment_heat_transfer_rate",
-        "segment_pressure_drop_per_meter",
-        "segment_percent_flood",
-        "segment_net_molar_transfer",
-        "segment_enthalpy_balance_residual",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 impl RateBasedPackedColumnResult {
     /// The flat record, from the kernel's own outcome.

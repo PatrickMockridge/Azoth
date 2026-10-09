@@ -10,7 +10,7 @@
 use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole,
 };
-use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::column::capacity::{DEFAULT_MAX_ALLOWABLE_FS_FACTOR, FsLimits, fs_limits};
 use crate::kernels::distillation_column as kernel;
@@ -182,50 +182,6 @@ impl PackedColumnResult {
     }
 }
 
-impl CalcResult for PackedColumnResult {
-    const CALC_ID: &'static str = "process.packed_column";
-    const FIELDS: &'static [&'static str] = &[
-        "tray_temperature",
-        "tray_pressure",
-        "tray_gas_n",
-        "tray_liquid_n",
-        "distillate_n",
-        "distillate_z",
-        "distillate_p",
-        "distillate_t",
-        "distillate_h",
-        "bottoms_n",
-        "bottoms_z",
-        "bottoms_p",
-        "bottoms_t",
-        "bottoms_h",
-        "gas_side_draw_n",
-        "liquid_side_draw_n",
-        "pumparound_n",
-        "condenser_duty",
-        "reboiler_duty",
-        "iterations",
-        "temperature_residual",
-        "mass_residual",
-        "energy_residual",
-        "fs_factor",
-        "fs_factor_utilization",
-        "fs_factor_within_design_limit",
-        "minimum_diameter_for_fs_limit",
-        "hetp",
-        "theoretical_stages",
-        "percent_flood",
-        "flooding_velocity",
-        "packing_pressure_drop",
-        "hydraulics_ok",
-        "internal_diameter",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Solve a packed column.
 ///

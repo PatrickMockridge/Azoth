@@ -11,7 +11,7 @@
 use azoth_core::units::{
     MassRate, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole,
 };
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -66,23 +66,6 @@ impl FlareResult {
     }
 }
 
-impl CalcResult for FlareResult {
-    const CALC_ID: &'static str = "process.flare";
-    const FIELDS: &'static [&'static str] = &[
-        "product_n",
-        "product_z",
-        "product_p",
-        "product_t",
-        "product_h",
-        "heat_duty",
-        "co2_emission",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// A flare's steady state: the record through, and the two numbers beside it.
 ///

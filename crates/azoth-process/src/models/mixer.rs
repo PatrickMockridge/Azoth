@@ -10,7 +10,7 @@
 //! that computes.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{AzothError, CalcResult, Result, Warning, apply_checks};
+use azoth_core::{AzothError, Result, Warning, apply_checks};
 
 use crate::kernels::mixer as kernel;
 use crate::model_gen;
@@ -33,21 +33,6 @@ pub struct MixerResult {
     pub warnings: Vec<Warning>,
 }
 
-impl CalcResult for MixerResult {
-    const CALC_ID: &'static str = "process.mixer";
-    const FIELDS: &'static [&'static str] = &[
-        "product_n",
-        "product_z",
-        "product_p",
-        "product_t",
-        "product_h",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Join several streams into one, conserving molar flow and enthalpy.
 ///

@@ -7,7 +7,7 @@
 use azoth_core::units::{
     MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, watts,
 };
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -65,22 +65,6 @@ impl HeaterResult {
     }
 }
 
-impl CalcResult for HeaterResult {
-    const CALC_ID: &'static str = "process.heater";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n",
-        "outlet_z",
-        "outlet_p",
-        "outlet_t",
-        "outlet_h",
-        "outlet_duty",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Heat or cool a stream to a stated temperature, or by a stated duty.
 ///

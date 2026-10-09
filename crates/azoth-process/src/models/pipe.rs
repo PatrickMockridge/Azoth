@@ -6,7 +6,7 @@
 use azoth_core::units::{
     Length, MolarEnergy, Pressure, ThermodynamicTemperature, joules_per_mole, pascals,
 };
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -61,22 +61,6 @@ impl PipeResult {
     }
 }
 
-impl CalcResult for PipeResult {
-    const CALC_ID: &'static str = "process.pipe";
-    const FIELDS: &'static [&'static str] = &[
-        "outlet_n",
-        "outlet_z",
-        "outlet_p",
-        "outlet_t",
-        "outlet_h",
-        "pressure_drop",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Drop a stream's pressure along a line.
 ///

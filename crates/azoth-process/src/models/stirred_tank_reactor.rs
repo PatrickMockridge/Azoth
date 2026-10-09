@@ -5,7 +5,7 @@
 //! cross-impl test address.
 
 use azoth_core::units::{MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -57,22 +57,6 @@ impl StirredTankReactorResult {
     }
 }
 
-impl CalcResult for StirredTankReactorResult {
-    const CALC_ID: &'static str = "process.stirred_tank_reactor";
-    const FIELDS: &'static [&'static str] = &[
-        "product_n",
-        "product_z",
-        "product_p",
-        "product_t",
-        "product_h",
-        "heat_duty",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// React a feed stoichiometrically and flash the product.
 ///

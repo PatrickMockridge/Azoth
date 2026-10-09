@@ -6,7 +6,7 @@
 //! the executor calls kernels and a case calls models, and neither wraps the other's types.
 
 use azoth_core::units::{MolarEnergy, Pressure, ThermodynamicTemperature, kelvins, pascals};
-use azoth_core::{CalcResult, Result, Warning, apply_checks};
+use azoth_core::{Result, Warning, apply_checks};
 use serde::Serialize;
 
 use crate::executor::json::{scalar, warnings as wire_warnings};
@@ -82,27 +82,6 @@ impl GibbsReactorResult {
     }
 }
 
-impl CalcResult for GibbsReactorResult {
-    const CALC_ID: &'static str = "process.gibbs_reactor";
-    const FIELDS: &'static [&'static str] = &[
-        "product_n",
-        "product_z",
-        "product_p",
-        "product_t",
-        "product_h",
-        "converged",
-        "iterations",
-        "final_error",
-        "lagrange_multipliers",
-        "element_balance_difference",
-        "gibbs_energy_history",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 ///

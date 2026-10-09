@@ -9,7 +9,7 @@ use azoth_core::units::{
     Length, MolarEnergy, Power, Pressure, ThermodynamicTemperature, joules_per_mole, meters,
     pascals, watts,
 };
-use azoth_core::{CalcResult, Result, Warning};
+use azoth_core::{Result, Warning};
 use serde::Serialize;
 
 use crate::column::capacity::{FsLimits, GasLoadLimits};
@@ -180,53 +180,6 @@ impl StrippingColumnResult {
     }
 }
 
-impl CalcResult for StrippingColumnResult {
-    const CALC_ID: &'static str = "process.stripping_column";
-    const FIELDS: &'static [&'static str] = &[
-        "tray_temperature",
-        "tray_pressure",
-        "tray_gas_n",
-        "tray_liquid_n",
-        "overhead_gas_n",
-        "overhead_gas_z",
-        "overhead_gas_p",
-        "overhead_gas_t",
-        "overhead_gas_h",
-        "lean_liquid_n",
-        "lean_liquid_z",
-        "lean_liquid_p",
-        "lean_liquid_t",
-        "lean_liquid_h",
-        "iterations",
-        "temperature_residual",
-        "mass_residual",
-        "energy_residual",
-        "fs_factor",
-        "fs_factor_utilization",
-        "fs_factor_within_design_limit",
-        "minimum_diameter_for_fs_limit",
-        "gas_load_factor",
-        "gas_load_factor_utilization",
-        "gas_load_factor_within_design_limit",
-        "minimum_diameter_for_gas_load_limit",
-        "vessel_diameter",
-        "vessel_height",
-        "vessel_wall_thickness",
-        "actual_trays",
-        "flooding_factor",
-        "weir_loading",
-        "tray_pressure_drop_mbar",
-        "total_pressure_drop_bar",
-        "reboiler_duty_kw",
-        "condenser_duty_kw",
-        "material_grade",
-        "warnings",
-    ];
-
-    fn warnings(&self) -> &[Warning] {
-        &self.warnings
-    }
-}
 
 /// Solve a tray stripper.
 ///
