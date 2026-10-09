@@ -1,0 +1,233 @@
+id = "characterization.tbp_cut_properties"
+name = "TBP cut properties by any of NeqSim's ten models"
+equation = "One dispatch over `TBPfractionModel.getAvailableModels()`, each model evaluating the same five quantities from a cut's g/mol molar mass `M` and its specific gravity `d`. The Pedersen family, which five of the ten are:\n\n  oil = M < 1120\n  tc = c_tc[oil][0]*d + c_tc[oil][1]*ln(M) + c_tc[oil][2]*M + c_tc[oil][3]/M                              [K]\n  pc = exp(0.01325 + c_pc[oil][0] + c_pc[oil][1]*d**c_pc[oil][4] + c_pc[oil][2]/M + c_pc[oil][3]/M**2)    [bar]\n  tb = 2e-6*M**3 - 0.0035*M**2 + 2.4003*M + 171.74                       if M < 540                       [K]\n  tb = 97.58*M**0.3323*d**0.04609                                       otherwise                        [K]\n  m  = c_m[oil][0] + c_m[oil][1]*M + c_m[oil][2]*d + c_m[oil][3]*M**2\n  omega = 3/7 * log10(pc / 1.01325) / (tc/tb - 1) - 1\n\nThe other five take their own forms: `PedersenPR2` substitutes a Soreide boiling point, `RiaziDaubert` its own exponential-power pair below `M = 300` and its parent above, `LeeKesler` and `Cavett` the Lee-Kesler pair with Cavett's API correction, `Twu` the n-alkane method with a Newton solve, and `Standing` the Riazi-Daubert pair without its switch. `validation/neqsim/captures/characterization_probe.tsv` carries every one of them, over twelve cuts."
+latex = '''\begin{aligned}
+T_{c} &= c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, &
+P_{c} &= \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \\
+\omega &= \frac{3}{7}\frac{\log_{10}(P_{c}/P_{\mathrm{ref}})}{T_{c}/T_{b} - 1} - 1, &
+m &= c_{0} + c_{1}M + c_{2}d + c_{3}M^{2}
+\end{aligned}'''
+assumptions = [
+    "**this is `PedersenSRK`'s class, ten times over.** The seam id `eos.tbp_fraction_properties` is the same class's `PedersenTBPModelSRK` and the two agree exactly on it, which `pedersen_srk_agrees_with_the_seam_id` pins. It is separate because that one is the seam a wax fluid calls.",
+    "**the units are g/mol and specific gravity, and this states SI.** `molar_mass` crosses in kg/mol and `density` in kg/m3, and the kernels convert at the boundary; NeqSim's own caller passes g/mol. `pc` is computed in **bar** - its coefficients and `0.01325` say so - and reported in pascals.",
+    "**the models do not share one unit for `molar_mass`.** `addTBPfraction` passes `molarMass * 1000.0` to `calcCriticalViscosity` but the bare kg/mol `molarMass` to `calcParachorParameter`, which multiplies by 1000 inside. This id converts once at the boundary and uses g/mol throughout.",
+    "**`PedersenSRKHeavyOil` is a no-op, reproduced rather than repaired.** It re-declares the two coefficient arrays, shadowing its parent's fields, and the parent's `calcTC` reads the parent's. Measured at `M = 500` g/mol it returns `PedersenSRK`'s `tc` exactly.",
+    "**`attraction_exponent` is absent for five of the ten, for two reasons.** `RiaziDaubert` sets `calcm = false`, so its caller ignores the exponent; `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit `TBPBaseModel.calcm`, which **throws**. Absent means no exponent to use, not zero.",
+    "**four base-class quantities are not published.** `calcRacketZ` takes a flashed reference system. `calcParachorParameter`, `calcCriticalViscosity` and `calcCriticalVolume` have no unit NeqSim states anywhere, and `addTBPfraction` never calls `calcCriticalVolume` - it sets `critVol`.",
+    "the correlations are fits to petroleum assays, so this is a property of a *cut* and not of a substance, and no databank is involved.\n",
+]
+references = [
+    "Pedersen, K. S.; Thomassen, P.; Fredenslund, A. (1989). \"Characterization of gas condensate mixtures.\" Advances in Thermodynamics 1, 137-152.",
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press.",
+    "Riazi, M. R.; Daubert, T. E. (1980). \"Simplify Property Predictions.\" Hydrocarbon Processing 59(3), 115-116.",
+    "Kesler, M. G.; Lee, B. I. (1976). \"Improve Prediction of Enthalpy of Fractions.\" Hydrocarbon Processing 55(3), 153-158.",
+    "Cavett, R. H. (1962). \"Physical Data for Distillation Calculations, Vapor-Liquid Equilibria.\" Proc. 27th API Meeting, San Francisco.",
+    "Twu, C. H. (1984). \"An internally consistent correlation for predicting the critical properties and molecular weights of petroleum and coal-tar liquids.\" Fluid Phase Equilibria 16(2), 137-150.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TBPfractionModel` and the ten models `getAvailableModels()` names are the port source.",
+]
+[source]
+standard = "NeqSim master `TBPfractionModel`, all ten models"
+edition = "`getAvailableModels()` returns `PedersenSRK`, `PedersenSRKHeavyOil`, `PedersenPR`, `PedersenPR2`, `PedersenPRHeavyOil`, `RiaziDaubert`, `Lee-Kesler`, `Twu`, `Cavett` and `Standing`. The seam id `eos.tbp_fraction_properties` is the first of them."
+[inputs]
+[inputs.model]
+type = "enum"
+values = ["pedersen_srk", "pedersen_srk_heavy_oil", "pedersen_pr", "pedersen_pr2", "pedersen_pr_heavy_oil", "riazi_daubert", "lee_kesler", "twu", "cavett", "standing"]
+optional = true
+description = "which of the ten models evaluates the cut. Absent takes the class's own default, `PedersenSRK` - `Characterise.TBPFractionModelName`, which is what `addTBPfraction` runs when nothing sets it.\n"
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The cut's molar mass. A pseudo-component has no databank row, so this is what stands in for its identity. NeqSim's correlations take g/mol and the kernels convert.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "The cut's normal liquid density at 15 C, which the correlations take as a specific gravity in g/cm3. The two are the same number in units a thousand apart.\n"
+[inputs.boiling_point]
+unit = "K"
+optional = true
+description = "The cut's normal boiling point, when it is known. Every model returns this instead of correlating one when it is positive; absent means zero, which is what `addTBPfraction` leaves it at, so the correlation runs.\n"
+[outputs]
+[outputs.tc]
+unit = "K"
+description = "Critical temperature.\n"
+[outputs.pc]
+unit = "Pa"
+description = "Critical pressure. Every model's correlation is written in bar and this reports pascals.\n"
+[outputs.boiling_temperature]
+unit = "K"
+description = "Normal boiling point. Six of the ten correlate it; `LeeKesler`, `Twu` and `Standing` inherit `TBPBaseModel.calcTB`'s fallback, which they reach because `addTBPfraction` never sets a boiling point.\n"
+[outputs.acentric_factor]
+unit = "dimensionless"
+description = "Pitzer's acentric factor. The Pedersen family takes Edmister's three-parameter form; `RiaziDaubert`, `LeeKesler` and `Standing` take Kesler-Lee's, and `Cavett` takes Edmister bounded to `[0, 1.5]`.\n"
+[outputs.attraction_exponent]
+unit = "dimensionless"
+optional = true
+description = "The `m` of the cubic's alpha function, present for the five Pedersen models and **absent** for the other five - `RiaziDaubert` sets `calcm = false` while `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit a method that throws.\n"
+[outputs.watson_k]
+unit = "dimensionless"
+description = "Watson's characterization factor, `(1.8*Tb)**(1/3)/d`. Every model inherits the base's form, so it follows whatever that model's `boiling_temperature` is.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass; four coefficients divide by it and `Twu` takes its logarithm\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a specific gravity; `RiaziDaubert` and `Cavett` raise it to a fractional power and divide by it\n"
+[[valid_range]]
+quantity = "boiling_point"
+min = 0
+min_inclusive = true
+severity = "error"
+rationale = "a boiling point; zero and below mean 'not supplied' and select the correlation, so a supplied one must be positive\n"
+[[valid_range]]
+quantity = "acentric_factor"
+min = -1
+max = 2
+min_inclusive = true
+max_inclusive = true
+severity = "warning"
+rationale = "**Measured outside this** above `M = 1120` g/mol, where the heavy set gives a boiling point above the critical temperature: `-44.6358323245519` at `M = 1121`, `d = 1.0`. A Pitzer factor outside `[-1, 2]` describes no fluid, so it is reported rather than passed on.\n"
+[worked_example]
+source = "NeqSim master, `TBPfractionModel.LeeKesler`, from `validation/neqsim/captures/characterization_probe.tsv` cut[4]"
+derivation = "A `C19`-scale cut at `M = 500.0` g/mol and `d = 0.88` g/cm3, which is the same cut `eos.tbp_fraction_properties` works. `LeeKesler` does not override `calcTB`, so it takes `TBPBaseModel.calcTB`'s fallback:\n\n  tb = (M / 5.805e-5 * d**0.9371)**(1/2.3776)\n     = (500.0/5.805e-5 * 0.88**0.9371)**(1/2.3776) = 785.228404434496  K\n  tc = 189.8 + 450.6*d + (0.4244 + 0.1174*d)*tb + (0.1441 - 1.0069*d)*1e5/tb = 906.211218915845  K\n  log(pc) = 3.3864 - 0.0566/d - (0.43639 + 4.1216/d + 0.21343/d**2)*1e-3*tb\n          + (0.47579 + 1.182/d + 0.15302/d**2)*1e-6*tb**2 - (2.4505 + 9.9099/d**2)*1e-10*tb**3\n  pc = exp(log(pc))*10 = 6.63946297092384 bar = 663946.297092384  Pa\n  omega = Kesler-Lee at Tbr = tb/tc = 0.8664 >= 0.8: -7.904 + 0.1352*Kw - 0.007465*Kw**2 + 8.359*Tbr + (1.408 - 0.01063*Kw)/Tbr = 1.43229568844577\n  watson_k = (1.8*tb)**(1/3)/d = 12.7528376205790\n\n`attraction_exponent` is absent: `LeeKesler` inherits `TBPBaseModel.calcm`, which throws."
+tolerance = 1e-12
+[worked_example.inputs]
+model = "lee_kesler"
+molar_mass = 0.5
+density = 880.0
+[worked_example.expected]
+tc = 906.211218915845
+pc = 663946.297092384
+boiling_temperature = 785.228404434496
+acentric_factor = 1.43229568844577
+watson_k = 12.752837620579
+[implementations]
+python = "azoth.characterization.tbp_cut_properties"
+rust = "azoth_characterization::tbp_cut_properties"
+[[tests]]
+id = "lee_kesler_worked_example"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "pedersen_srk_agrees_with_the_seam_id"
+type = "reference"
+status = "active"
+source = "The capture's `PedersenSRK` cut[4], which is `eos.tbp_fraction_properties`'s worked example too: the two ids are one class and must not drift apart. `M = 500.0` g/mol, `d = 0.88`.\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "pedersen_srk"
+molar_mass = 0.5
+density = 880.0
+[tests.expected]
+tc = 891.945256085426
+pc = 1196293.59599742
+boiling_temperature = 746.89
+acentric_factor = 1.36586663262266
+attraction_exponent = 2.228110216
+watson_k = 12.5418146375894
+[[tests]]
+id = "pedersen_srk_heavy_oil_is_a_no_op"
+type = "reference"
+status = "active"
+source = "The capture's `PedersenSRKHeavyOil` cut[4]. The class shadows its parent's coefficient fields, so it must give `PedersenSRK`'s numbers exactly rather than the heavy set's. The case would fail if a port 'fixed' the shadowing.\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "pedersen_srk_heavy_oil"
+molar_mass = 0.5
+density = 880.0
+[tests.expected]
+tc = 891.945256085426
+pc = 1196293.59599742
+boiling_temperature = 746.89
+acentric_factor = 1.36586663262266
+attraction_exponent = 2.228110216
+watson_k = 12.5418146375894
+[[tests]]
+id = "riazi_daubert_switches_to_its_parent_above_mw_300"
+type = "reference"
+status = "active"
+source = "The capture's `RiaziDaubert` cut[3] is at exactly `M = 300` g/mol and takes the **Riazi-Daubert** pair, because the test is `M > 300` and 300 is not greater; its cut[4] at `M = 500` falls back to `PedersenSRK`'s `tc` and `pc` and still uses its own boiling point. A port that read the threshold as `>=` would agree at cut[4] and differ at cut[3].\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "riazi_daubert"
+molar_mass = 0.3
+density = 850.0
+[tests.expected]
+tc = 815.802701858322
+pc = 1081341.69675997
+boiling_temperature = 644.547792011568
+acentric_factor = 0.697599640892113
+watson_k = 12.3620439797047
+[[tests]]
+id = "cavett_applies_its_api_correction_below_30"
+type = "reference"
+status = "active"
+source = "The capture's `Cavett` cut[4]: `d = 0.88` gives API `141.5/0.88 - 131.5 = 29.295`, below 30, so both corrections apply. At cut[3], `d = 0.85` gives API 34.9 and neither does.\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "cavett"
+molar_mass = 0.5
+density = 880.0
+[tests.expected]
+tc = 894.305850190858
+pc = 735341.797507176
+boiling_temperature = 765.014651094374
+acentric_factor = 1.18279252714060
+watson_k = 12.6424549207867
+[[tests]]
+id = "standing_is_riazi_daubert_without_the_switch"
+type = "reference"
+status = "active"
+source = "The capture's `Standing` cut[4]. It uses the Riazi-Daubert pair at every molar mass, where `RiaziDaubert` itself falls back above 300 g/mol, so the two agree at cut[3] and must differ at cut[4] - `tc = 942.447643628006` against `891.945256085426`.\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "standing"
+molar_mass = 0.5
+density = 880.0
+[tests.expected]
+tc = 942.447643628006
+pc = 522599.858109319
+boiling_temperature = 785.228404434496
+acentric_factor = 1.21363914242666
+watson_k = 12.752837620579
+[[tests]]
+id = "twu_solves_its_n_alkane_molar_mass"
+type = "reference"
+status = "active"
+source = "The capture's `Twu` cut[4]. `TwuModel.calcTC` and `calcPC` both call `solveMW`, a damped Newton with a numeric gradient, so this case holds that iteration as much as the correlations.\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "twu"
+molar_mass = 0.5
+density = 880.0
+[tests.expected]
+tc = 917.899204856315
+pc = 724270.609562486
+boiling_temperature = 785.228404434496
+acentric_factor = 1.16668324925980
+watson_k = 12.752837620579
+[[tests]]
+id = "the_pr_family_differs_from_the_srk_family"
+type = "reference"
+status = "active"
+source = "The capture's `PedersenPR` cut[4], which carries a different coefficient set and whose boiling point is the SRK family's. `PedersenPR2` shares those coefficients and substitutes a Soreide boiling point, so the two agree on `tc` and `pc` and differ on `tb`.\n"
+tolerance = 1e-12
+[tests.inputs]
+model = "pedersen_pr"
+molar_mass = 0.5
+density = 880.0
+[tests.expected]
+tc = 974.879772951610
+pc = 1239174.46749789
+boiling_temperature = 746.89
+acentric_factor = 0.526722654332295
+attraction_exponent = 1.897865692
+watson_k = 12.5418146375894
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"
