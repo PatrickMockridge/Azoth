@@ -37,6 +37,28 @@ from azoth.core.warnings import Warning
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class LumpingResult(_HasWarnings):
+    """Result of ``characterization.lumping``."""
+
+    CALC_ID: ClassVar[str] = "characterization.lumping"
+
+    #: Each lump's share of the plus fraction, which the class publishes as `getFractionOfHeavyEnd`. Sums to one.
+    fraction_of_heavy_end: tuple[float, ...]
+
+    #: Each lump's accumulated mole fraction, which sums to `sum(cut_z)` rather than to one.
+    lump_mole_fraction: tuple[float, ...]
+
+    #: Each lump's mass-weighted mean molar mass, `sum(z*M)/sum(z)` over its cuts.
+    lump_molar_mass: tuple[Q, ...]
+
+    #: Each lump's mass-weighted harmonic mean density, `sum(z*M)/sum(z*M/rho)` over its cuts.
+    lump_density: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PedersenPlusSplitResult(_HasWarnings):
     """Result of ``characterization.pedersen_plus_split``."""
 

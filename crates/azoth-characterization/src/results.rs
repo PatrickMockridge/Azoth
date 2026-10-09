@@ -138,6 +138,36 @@ impl CalcResult for WhitsonGammaSplitResult {
     }
 }
 
+/// Result of `characterization.lumping`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LumpingResult {
+    /// Each lump's share of the plus fraction, which sums to one only as far as the split does.
+    pub fraction_of_heavy_end: Vec<f64>,
+    /// Each lump's accumulated mole fraction, which sums to the cut table's own total.
+    pub lump_mole_fraction: Vec<f64>,
+    /// Each lump's mass-weighted mean molar mass.
+    pub lump_molar_mass: Vec<MolarMass>,
+    /// Each lump's mass-weighted harmonic mean density.
+    pub lump_density: Vec<MassDensity>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for LumpingResult {
+    const CALC_ID: &'static str = "characterization.lumping";
+    const FIELDS: &'static [&'static str] = &[
+        "fraction_of_heavy_end",
+        "lump_mole_fraction",
+        "lump_molar_mass",
+        "lump_density",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.tbp_density`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpDensityResult {

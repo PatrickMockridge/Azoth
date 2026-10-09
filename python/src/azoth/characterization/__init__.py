@@ -11,6 +11,8 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
 * :func:`tbp_density` - the same pair inverted for gravity, which only one closure supports
 * :func:`pedersen_plus_split` - a plus fraction divided into carbon-number cuts
+* :func:`whitson_gamma_split` - the same, on Whitson's three-parameter gamma
+* :func:`lumping` - a cut table grouped into equal-mass lumps
 
 # Which implementation answers
 
@@ -23,6 +25,7 @@ from __future__ import annotations
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    LumpingResult,
     PedersenPlusSplitResult,
     TbpClosureResult,
     TbpCutPropertiesResult,
@@ -32,6 +35,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 
 __all__ = [
+    "lumping",
     "pedersen_plus_split",
     "tbp_closure",
     "tbp_cut_properties",
@@ -43,6 +47,7 @@ _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
 _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
 _PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
+_LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 
 
@@ -177,4 +182,39 @@ def whitson_gamma_split(
         eta=eta,
         density_model=density_model,
         auto_estimate_shape=auto_estimate_shape,
+    )
+
+
+def lumping(
+    molar_mass: Q,
+    mole_fraction: float,
+    cut_z: list[float],
+    cut_molar_mass: list[Q],
+    cut_density: list[Q],
+    number_of_lumps: int | None = None,
+) -> LumpingResult:
+    """A cut table grouped into equal-mass lumps.
+
+    A split hands back sixty-odd cuts and no cubic wants sixty components, so the cuts are
+    grouped into a handful of pseudo-components of equal *mass* - the partition runs on the
+    accumulated ``cut_z * cut_molar_mass``, not on the cut count.
+
+    ``molar_mass`` and ``mole_fraction`` are the **plus fraction's** own two numbers rather than
+    the table's sums; the class reads them off the fluid and the difference moves a partition
+    boundary. ``number_of_lumps`` is the class's ``numberOfPseudocomponents``, 7 by default.
+
+    Raises:
+        InvalidInputError: if the three vectors are not one table, or if more lumps are asked for
+            than there are cuts.
+        OutOfRangeError: if an input is outside its declared range.
+
+    See :func:`azoth.characterization.reference.lumping`.
+    """
+    return resolve(_LUMPING)(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        mole_fraction=mole_fraction,
+        cut_z=cut_z,
+        cut_molar_mass=cut_molar_mass,
+        cut_density=cut_density,
+        number_of_lumps=number_of_lumps,
     )

@@ -15,6 +15,41 @@ use azoth_core::units::{
 };
 use pyo3::prelude::*;
 
+/// A cut table grouped into equal-mass lumps.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, mole_fraction, cut_z, cut_molar_mass, cut_density, number_of_lumps))]
+#[pyo3(
+    text_signature = "(molar_mass, mole_fraction, cut_z, cut_molar_mass, cut_density, number_of_lumps)"
+)]
+pub fn lumping(
+    py: Python<'_>,
+    molar_mass: f64,
+    mole_fraction: f64,
+    cut_z: Vec<f64>,
+    cut_molar_mass: Vec<f64>,
+    cut_density: Vec<f64>,
+    number_of_lumps: Option<usize>,
+) -> PyResult<crate::transport_gen::PyLumpingResult> {
+    azoth_characterization::lumping::lumping(
+        kilograms_per_mole(molar_mass),
+        mole_fraction,
+        &cut_z,
+        &cut_molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &cut_density
+            .iter()
+            .map(|v| kilograms_per_cubic_meter(*v))
+            .collect::<Vec<_>>(),
+        number_of_lumps,
+    )
+    .map(|r| crate::transport_gen::PyLumpingResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -91,6 +91,7 @@ from azoth.core.result import (
     LiquidConductivityPolynomResult,
     LiquidHeatCapacityResult,
     LiquidViscosityPureResult,
+    LumpingResult,
     ManifoldResult,
     MasonSaxenaConductivityResult,
     Matcop5PrumrAlphaResult,
@@ -322,6 +323,7 @@ __all__ = [
     "liquid_conductivity_polynom",
     "liquid_heat_capacity",
     "liquid_viscosity_pure",
+    "lumping",
     "manifold",
     "mason_saxena_conductivity",
     "matcop5_prumr_alpha",
@@ -446,6 +448,26 @@ __all__ = [
     "wilke_viscosity",
     "wilson_activity_coefficients",
 ]
+
+
+def lumping(molar_mass: Q, mole_fraction: float, cut_z: list[float], cut_molar_mass: list[Q], cut_density: list[Q], number_of_lumps: int | None=None) -> LumpingResult:
+    """``characterization.lumping``, computed in Rust."""
+    spec = _models_gen.model("characterization.lumping")
+    result = _core.lumping(
+        input_to_si(spec, "molar_mass", molar_mass),
+        mole_fraction,
+        list(cut_z),
+        [input_to_si(spec, "cut_molar_mass", v) for v in cut_molar_mass],
+        [input_to_si(spec, "cut_density", v) for v in cut_density],
+        None if number_of_lumps is None else int(number_of_lumps),
+    )
+    return LumpingResult(
+        fraction_of_heavy_end=tuple(result.fraction_of_heavy_end),
+        lump_mole_fraction=tuple(result.lump_mole_fraction),
+        lump_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_molar_mass),
+        lump_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_density),
+        warnings=_warnings(result.warnings),
+    )
 
 
 def pedersen_plus_split(molar_mass: Q, density: Q, mole_fraction: float, first_carbon_number: int, last_carbon_number: int) -> PedersenPlusSplitResult:

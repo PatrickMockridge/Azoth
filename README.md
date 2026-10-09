@@ -27,7 +27,7 @@ r.provenance.rust_sha256  # the bytes of the kernel that produced this number
 
 The last line is the one that changes what is possible. It is not a claim in a manual; it is
 a claim a machine can check against the tree, and
-`python/tests/test_provenance.py` recomputes all 199 of them. `r.to_json()`
+`python/tests/test_provenance.py` recomputes all 200 of them. `r.to_json()`
 carries the block, so the same holds for a result written to a file, served over MCP, or
 handed to an agent.
 
@@ -157,7 +157,7 @@ Units cross the API as `pint` quantities; a bare number where a length is expect
 
 ## The book
 
-The full catalog — 74 calculations and 125 models, each with its equation, source, valid
+The full catalog — 74 calculations and 126 models, each with its equation, source, valid
 range and a worked example — is in [the book](docs/src/index.md), generated from the same
 spec files as the code.
 

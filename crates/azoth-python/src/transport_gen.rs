@@ -16,6 +16,71 @@
 use crate::results::{PyKComponent, PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
+/// Result of `characterization.lumping`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "LumpingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyLumpingResult {
+    /// Each lump's share of the plus fraction, which the class publishes as `getFractionOfHeavyEnd`. Sums to one.
+    #[pyo3(get)]
+    pub fraction_of_heavy_end: Vec<f64>,
+    /// Each lump's accumulated mole fraction, which sums to `sum(cut_z)` rather than to one.
+    #[pyo3(get)]
+    pub lump_mole_fraction: Vec<f64>,
+    /// Each lump's mass-weighted mean molar mass, `sum(z*M)/sum(z)` over its cuts.
+    #[pyo3(get)]
+    pub lump_molar_mass: Vec<PyQty>,
+    /// Each lump's mass-weighted harmonic mean density, `sum(z*M)/sum(z*M/rho)` over its cuts.
+    #[pyo3(get)]
+    pub lump_density: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyLumpingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "LumpingResult(fraction_of_heavy_end={:?}, lump_mole_fraction={:?}, lump_molar_mass={:?}, lump_density={:?}, {} warning(s))",
+            self.fraction_of_heavy_end,
+            self.lump_mole_fraction,
+            self.lump_molar_mass,
+            self.lump_density,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::LumpingResult> for PyLumpingResult {
+    fn from(r: &azoth_characterization::results::LumpingResult) -> Self {
+        Self {
+            fraction_of_heavy_end: r.fraction_of_heavy_end.clone(),
+            lump_mole_fraction: r.lump_mole_fraction.clone(),
+            lump_molar_mass: r
+                .lump_molar_mass
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/mol".to_string(),
+                })
+                .collect(),
+            lump_density: r
+                .lump_density
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/m**3".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.pedersen_plus_split`, transported.
 #[pyclass(
     frozen,

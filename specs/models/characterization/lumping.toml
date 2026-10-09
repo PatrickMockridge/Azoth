@@ -1,0 +1,97 @@
+id = "characterization.lumping"
+name = "A cut table grouped into equal-mass lumps"
+kind = "direct"
+assumptions = [
+    "**this is the last thing a characterisation does.** A split gives sixty-odd cuts and no cubic wants sixty components, so `StandardLumpingModel` groups them into a handful of pseudo-components of equal mass and hands those to the fluid.",
+    "**the lumps carry equal mass, not equal cut counts.** The target is `W/N` and is re-derived after every lump from what is left, `(W - accumulated)/(N - k - 1)` - so the last lump takes whatever remains and is free to be the largest or the smallest.",
+    "**`W` and the mole-fraction total are the fluid's, not the table's.** The class accumulates both over the system's TBP and plus rows, which for a fluid with one plus end is `z_plus` and `z_plus * M_plus`.",
+    "**and the two differ by about `1e-11`.** The cut table's own `sum(z*M)` carries the abundance solve's residual, and on the heavy rows that is enough to move a partition boundary: the last lump reads `0.041863` from the fluid's numbers against `0.048901` from the table's.",
+    "**a lump's molar mass is its mass-weighted mean**, `sum(z*M)/sum(z)` over the cuts it holds.",
+    "**and its gravity is the mass-weighted harmonic mean**, `sum(z*M)/sum(z*M/rho)`, in the same g/cm3 scale the cut table uses.",
+    "**the partition is `weightFrac >= meanWeightFrac`, taken cut by cut, with two carve-outs.** A lump is never opened once `N - pseudoNumber` reaches zero, so the count is closed by the final cut instead, and the final cut always closes a lump.",
+    "**the comparison is on the running sum of `z*M` against a target that moves**, so a cut lands in a lump by its accumulated mass and not by any window on the carbon number.",
+    "**the target is computed before the lump counter advances**, so the k-th lump divides by `N - k - 1` and not by `N - k`. On the last of `N` lumps that denominator is zero and the class's Java division gives an infinity it never reads, because the loop ends on the same cut.",
+    "**`fraction_of_heavy_end` is the class's own array**, each lump's accumulated mole fraction over the total, so the entries sum to one and a lump's mole fraction in the fluid is its fraction times `sum(cut_z)`.",
+    "**a lump's gravity is passed to `addTBPfraction` in g/cm3 and the class converts anything above 10 to g/cm3 by dividing by 1000.** A petroleum gravity is 0.66-1.00 and never reaches the threshold, so the guard is inert here - it is a caller-mistake guard and not a step in this arithmetic.",
+    "**the class then replaces the fluid's rows**, removing the plus component and adding one `addTBPfraction` per lump. This id stops at the table: a pseudo-component still cannot enter a `Mixture`, so the caller is handed the three vectors and nothing is added to a fluid.",
+    "**a lump count above the cut count is refused rather than half-answered.** The class can close only one lump per cut, so more lumps than cuts leaves it with array entries it never fills and never reports as unfilled. This refuses, naming both numbers.",
+    "this is a bookkeeping choice and not a measurement. **A different lump count is a different fluid**: seven lumps satisfy the same plus fraction as twelve, and the class states no rule for picking one.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/LumpingModel.java`'s `StandardLumpingModel.generateLumpedComposition` is the port source; `LumpingModel.getModel(\"\")` is what selects it.",
+    "Whitson, C. H. (1983). \"Characterizing Hydrocarbon Plus Fractions.\" Society of Petroleum Engineers Journal 23(4), 683-694. DOI 10.2118/12233-PA. The lumping step a characterisation ends with.",
+    "`validation/neqsim/captures/plus_fraction_probe.tsv` - seven lumped rows from `validation/neqsim/PlusFractionProbe.java`, each with the lumping model's own `fractionOfHeavyEnd` and the added components' moles.",
+]
+[source]
+standard = "NeqSim master `LumpingModel.StandardLumpingModel`"
+edition = "`generateLumpedComposition`, for a fluid whose only TBP or plus row is the one plus fraction `characterization.pedersen_plus_split` or `.whitson_gamma_split` divided. `PVTLumpingModel` and `NoLumpingModel` are the sibling models and are not this id."
+[inputs]
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The plus fraction's own molar mass, which with `mole_fraction` fixes the mass the lumps divide. **Not the cut table's `sum(z*M)`** - the two differ by the abundance solve's residual and the partition is sensitive to it.\n"
+[inputs.mole_fraction]
+unit = "dimensionless"
+description = "The plus fraction's mole fraction in the fluid, which both fixes the mass above and is the denominator `fraction_of_heavy_end` is taken over.\n"
+[inputs.cut_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, as the split produced them"
+description = "Each cut's mole fraction. The lumps partition on the running sum of `cut_z * cut_molar_mass`.\n"
+[inputs.cut_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per cut, aligned with `cut_z`"
+description = "Each cut's molar mass, the other half of the mass the partition runs on.\n"
+[inputs.cut_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per cut, aligned with `cut_z`"
+description = "Each cut's normal liquid density, which each lump's gravity is the mass-weighted harmonic mean of.\n"
+[inputs.number_of_lumps]
+unit = "dimensionless"
+optional = true
+description = "How many pseudo-components to make, the class's `numberOfPseudocomponents`. Absent takes the class's own default of 7.\n"
+[outputs]
+[outputs.fraction_of_heavy_end]
+type = "vector"
+unit = "dimensionless"
+length = "one per lump"
+description = "Each lump's share of the plus fraction, which the class publishes as `getFractionOfHeavyEnd`. Sums to one.\n"
+[outputs.lump_mole_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per lump, aligned with `fraction_of_heavy_end`"
+description = "Each lump's accumulated mole fraction, which sums to `sum(cut_z)` rather than to one.\n"
+[outputs.lump_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per lump, aligned with `fraction_of_heavy_end`"
+description = "Each lump's mass-weighted mean molar mass, `sum(z*M)/sum(z)` over its cuts.\n"
+[outputs.lump_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per lump, aligned with `fraction_of_heavy_end`"
+description = "Each lump's mass-weighted harmonic mean density, `sum(z*M)/sum(z*M/rho)` over its cuts.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass, and half of the total mass the partition divides\n"
+[[valid_range]]
+quantity = "mole_fraction"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a mole fraction, and the denominator `fraction_of_heavy_end` is taken over\n"
+[[valid_range]]
+quantity = "number_of_lumps"
+min = 1
+min_inclusive = true
+severity = "error"
+rationale = "a lump count; a table to group into no groups is not a grouping\n"
+[implementations]
+python = "azoth.characterization.lumping"
+rust = "azoth_characterization::lumping"

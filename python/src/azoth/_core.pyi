@@ -184,6 +184,14 @@ class Stream:
 # cannot disagree about a field.
 
 @final
+class LumpingResult:
+    fraction_of_heavy_end: list[float]
+    lump_mole_fraction: list[float]
+    lump_molar_mass: list[Qty]
+    lump_density: list[Qty]
+    warnings: list[Warning]
+
+@final
 class PedersenPlusSplitResult:
     cut_z: list[float]
     cut_molar_mass: list[Qty]
@@ -2135,6 +2143,14 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
+def lumping(
+    molar_mass: float,
+    mole_fraction: float,
+    cut_z: list[float],
+    cut_molar_mass: list[float],
+    cut_density: list[float],
+    number_of_lumps: float | None = None,
+) -> LumpingResult: ...
 def pedersen_plus_split(
     molar_mass: float,
     density: float,

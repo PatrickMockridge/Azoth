@@ -15,6 +15,17 @@ from typing import Any, Final
 
 #: Every id's block, by id.
 PROVENANCE: Final[dict[str, dict[str, Any]]] = {
+    'characterization.lumping': {
+        "calc_id": 'characterization.lumping',
+        "name": 'A cut table grouped into equal-mass lumps',
+        "spec": {'path': 'specs/models/characterization/lumping.toml', 'sha256': 'f0c4871993b9af39984dd9726dbaea26e9bd96961191b7be1602035240f1eaa0'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/lumping.py', 'sha256': '33f556771b1b1d221c5abb962b73f0caf43fd94d32e6feac7750532ccbb4c5d7'}, {'path': 'crates/azoth-characterization/src/lumping.rs', 'sha256': 'e011a6469e912d51c5472437db26aacb22c1dbe9cf4d9f491a65256da519aa29'}],
+        "source": 'NeqSim master `LumpingModel.StandardLumpingModel`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 4,
+        "tests_skipped": 0,
+    },
     'characterization.pedersen_plus_split': {
         "calc_id": 'characterization.pedersen_plus_split',
         "name": "A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves",
