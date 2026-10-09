@@ -5367,3 +5367,36 @@ class ConductionPlaneWallResult(_HasWarnings):
 
     #: Caveats.
     warnings: tuple[Warning, ...]
+
+
+# HAND-PLACED BOOTSTRAP, to be overwritten by `tools/gen_python_result.py` once the Rust
+# extension is built in this worktree. That generator derives this class from `_core.pyi`, which
+# `tools/gen_stub.py` writes from the built extension - and the extension cannot be built until
+# the crate and its binding exist, which is what this commit is. The cycle is broken here, as
+# the repo breaks it elsewhere: one hand-placed artifact, then the generator owns it.
+@dataclass(frozen=True, slots=True, eq=False)
+class TbpCutPropertiesResult(_HasWarnings):
+    """Result of ``characterization.tbp_cut_properties``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_cut_properties"
+
+    #: Critical temperature.
+    tc: Q
+
+    #: Critical pressure.
+    pc: Q
+
+    #: Normal boiling point.
+    boiling_temperature: Q
+
+    #: Pitzer's acentric factor.
+    acentric_factor: float
+
+    #: The cubic alpha function's `m`, absent for the five models that have none.
+    attraction_exponent: float | None
+
+    #: Watson's characterization factor.
+    watson_k: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]

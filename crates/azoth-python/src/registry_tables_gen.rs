@@ -20,6 +20,7 @@ use pyo3::prelude::*;
 #[must_use]
 pub fn result_fields(calc_id: &str) -> Vec<String> {
     match calc_id {
+        "characterization.tbp_cut_properties" => azoth_characterization::results::TbpCutPropertiesResult::FIELDS.to_vec(),
         "eos.ammonia_phase" => azoth_eos::results::AmmoniaPhaseResult::FIELDS.to_vec(),
         "eos.antoine_vapor_pressure" => azoth_eos::results::AntoineVaporPressureResult::FIELDS.to_vec(),
         "eos.aqueous_viscosity" => azoth_eos::results::AqueousViscosityResult::FIELDS.to_vec(),
@@ -226,6 +227,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
 #[must_use]
 pub fn calc_ids() -> Vec<String> {
     vec![
+        "characterization.tbp_cut_properties".to_string(),
         "eos.antoine_vapor_pressure".to_string(),
         "eos.chapman_enskog_diffusivity".to_string(),
         "eos.chung_conductivity".to_string(),

@@ -339,7 +339,7 @@ def tbp_cut_properties(
     molar_mass: Q,
     density: Q,
     boiling_point: Q | None = None,
-) -> TbpCutPropertiesResult:
+) -> "TbpCutPropertiesResult":
     """A TBP cut's critical properties, by any of NeqSim's ten models.
 
     Args:

@@ -16,6 +16,76 @@
 use crate::results::{PyKComponent, PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
+/// Result of `characterization.tbp_cut_properties`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpCutPropertiesResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpCutPropertiesResult {
+    /// Critical temperature.
+    #[pyo3(get)]
+    pub tc: PyQty,
+    /// Critical pressure. Every model's correlation is written in bar and this reports pascals.
+    #[pyo3(get)]
+    pub pc: PyQty,
+    /// Normal boiling point. Six of the ten correlate it; `LeeKesler`, `Twu` and `Standing` inherit `TBPBaseModel.calcTB`'s fallback, which they reach because `addTBPfraction` never sets a boiling point.
+    #[pyo3(get)]
+    pub boiling_temperature: PyQty,
+    /// Pitzer's acentric factor. The Pedersen family takes Edmister's three-parameter form; `RiaziDaubert`, `LeeKesler` and `Standing` take Kesler-Lee's, and `Cavett` takes Edmister bounded to `[0, 1.5]`.
+    #[pyo3(get)]
+    pub acentric_factor: f64,
+    /// The `m` of the cubic's alpha function, present for the five Pedersen models and **absent** for the other five - `RiaziDaubert` sets `calcm = false` while `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit a method that throws.
+    #[pyo3(get)]
+    pub attraction_exponent: Option<f64>,
+    /// Watson's characterization factor, `(1.8*Tb)**(1/3)/d`. Every model inherits the base's form, so it follows whatever that model's `boiling_temperature` is.
+    #[pyo3(get)]
+    pub watson_k: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpCutPropertiesResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpCutPropertiesResult(tc={:?}, pc={:?}, boiling_temperature={:?}, acentric_factor={:?}, attraction_exponent={:?}, watson_k={:?}, {} warning(s))",
+            self.tc,
+            self.pc,
+            self.boiling_temperature,
+            self.acentric_factor,
+            self.attraction_exponent,
+            self.watson_k,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpCutPropertiesResult> for PyTbpCutPropertiesResult {
+    fn from(r: &azoth_characterization::results::TbpCutPropertiesResult) -> Self {
+        Self {
+            tc: PyQty {
+                magnitude_si: r.tc.value,
+                unit: "K".to_string(),
+            },
+            pc: PyQty {
+                magnitude_si: r.pc.value,
+                unit: "Pa".to_string(),
+            },
+            boiling_temperature: PyQty {
+                magnitude_si: r.boiling_temperature.value,
+                unit: "K".to_string(),
+            },
+            acentric_factor: r.acentric_factor,
+            attraction_exponent: r.attraction_exponent,
+            watson_k: r.watson_k,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.ammonia_phase`, transported.
 #[pyclass(
     frozen,

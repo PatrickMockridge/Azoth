@@ -34,7 +34,7 @@ def tbp_cut_properties(
     molar_mass: Q,
     density: Q,
     boiling_point: Q | None = None,
-) -> TbpCutPropertiesResult:
+) -> "TbpCutPropertiesResult":
     """A TBP cut's critical properties, by any of NeqSim's ten models.
 
     ``model`` is one of ``pedersen_srk``, ``pedersen_srk_heavy_oil``, ``pedersen_pr``,
