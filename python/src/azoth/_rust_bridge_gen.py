@@ -174,6 +174,7 @@ from azoth.core.result import (
     StrippingColumnResult,
     SwameeJainResult,
     TankResult,
+    TbpCutPropertiesResult,
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
@@ -398,6 +399,7 @@ __all__ = [
     "stirred_tank_reactor",
     "stripping_column",
     "tank",
+    "tbp_cut_properties",
     "tbp_fraction_properties",
     "th_flash",
     "thermal_conductivity",
@@ -436,6 +438,21 @@ __all__ = [
     "wilke_viscosity",
     "wilson_activity_coefficients",
 ]
+
+
+def tbp_cut_properties(model: str | None, molar_mass: Q, density: Q, boiling_point: Q | None=None) -> 'TbpCutPropertiesResult':
+    """``characterization.tbp_cut_properties``, computed in Rust."""
+    result = _core.tbp_cut_properties(
+    )
+    return TbpCutPropertiesResult(
+        tc=from_si(result.tc.magnitude_si, result.tc.unit),
+        pc=from_si(result.pc.magnitude_si, result.pc.unit),
+        boiling_temperature=from_si(result.boiling_temperature.magnitude_si, result.boiling_temperature.unit),
+        acentric_factor=result.acentric_factor,
+        attraction_exponent=result.attraction_exponent,
+        watson_k=result.watson_k,
+        warnings=_warnings(result.warnings),
+    )
 
 
 def ammonia_phase(T: Q, P: Q) -> AmmoniaPhaseResult:

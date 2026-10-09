@@ -184,6 +184,16 @@ class Stream:
 # cannot disagree about a field.
 
 @final
+class TbpCutPropertiesResult:
+    tc: Qty
+    pc: Qty
+    boiling_temperature: Qty
+    acentric_factor: float
+    attraction_exponent: float | None
+    watson_k: float
+    warnings: list[Warning]
+
+@final
 class AmmoniaPhaseResult:
     z_factor: float
     u: Qty
@@ -2094,6 +2104,12 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
+def tbp_cut_properties(
+    molar_mass: float,
+    density: float,
+    model: str | None = None,
+    boiling_point: float | None = None,
+) -> TbpCutPropertiesResult: ...
 def ammonia_phase(T: float, P: float) -> AmmoniaPhaseResult: ...
 def antoine_vapor_pressure(
     A: float,

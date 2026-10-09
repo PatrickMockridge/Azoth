@@ -61,7 +61,15 @@ TRANSPORT = BINDING / "transport_gen.rs"
 CORE_PYI = PY_SRC / "_core.pyi"
 
 #: The packages whose `__init__.py` holds the public wrapper for a registered id.
-NAMESPACES = ("eos", "hydraulics", "process", "reactions", "standards", "thermal")
+NAMESPACES = (
+    "characterization",
+    "eos",
+    "hydraulics",
+    "process",
+    "reactions",
+    "standards",
+    "thermal",
+)
 
 #: The Python class an enum field is rebuilt as, where the Rust type's own name is not the name
 #: the module imported. Four of the ten enums are spelled with a leading underscore and six are

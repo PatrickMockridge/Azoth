@@ -37,6 +37,34 @@ from azoth.core.warnings import Warning
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpCutPropertiesResult(_HasWarnings):
+    """Result of ``characterization.tbp_cut_properties``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_cut_properties"
+
+    #: Critical temperature.
+    tc: Q
+
+    #: Critical pressure. Every model's correlation is written in bar and this reports pascals.
+    pc: Q
+
+    #: Normal boiling point. Six of the ten correlate it; `LeeKesler`, `Twu` and `Standing` inherit `TBPBaseModel.calcTB`'s fallback, which they reach because `addTBPfraction` never sets a boiling point.
+    boiling_temperature: Q
+
+    #: Pitzer's acentric factor. The Pedersen family takes Edmister's three-parameter form; `RiaziDaubert`, `LeeKesler` and `Standing` take Kesler-Lee's, and `Cavett` takes Edmister bounded to `[0, 1.5]`.
+    acentric_factor: float
+
+    #: The `m` of the cubic's alpha function, present for the five Pedersen models and **absent** for the other five - `RiaziDaubert` sets `calcm = false` while `LeeKesler`, `Twu`, `Cavett` and `Standing` inherit a method that throws.
+    attraction_exponent: float | None
+
+    #: Watson's characterization factor, `(1.8*Tb)**(1/3)/d`. Every model inherits the base's form, so it follows whatever that model's `boiling_temperature` is.
+    watson_k: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class AmmoniaPhaseResult(_HasWarnings):
     """Result of ``eos.ammonia_phase``."""
 
@@ -5364,39 +5392,6 @@ class ConductionPlaneWallResult(_HasWarnings):
 
     #: Heat flow rate through the wall, positive in the direction of decreasing temperature.
     q: Q
-
-    #: Caveats.
-    warnings: tuple[Warning, ...]
-
-
-# HAND-PLACED BOOTSTRAP, to be overwritten by `tools/gen_python_result.py` once the Rust
-# extension is built in this worktree. That generator derives this class from `_core.pyi`, which
-# `tools/gen_stub.py` writes from the built extension - and the extension cannot be built until
-# the crate and its binding exist, which is what this commit is. The cycle is broken here, as
-# the repo breaks it elsewhere: one hand-placed artifact, then the generator owns it.
-@dataclass(frozen=True, slots=True, eq=False)
-class TbpCutPropertiesResult(_HasWarnings):
-    """Result of ``characterization.tbp_cut_properties``."""
-
-    CALC_ID: ClassVar[str] = "characterization.tbp_cut_properties"
-
-    #: Critical temperature.
-    tc: Q
-
-    #: Critical pressure.
-    pc: Q
-
-    #: Normal boiling point.
-    boiling_temperature: Q
-
-    #: Pitzer's acentric factor.
-    acentric_factor: float
-
-    #: The cubic alpha function's `m`, absent for the five models that have none.
-    attraction_exponent: float | None
-
-    #: Watson's characterization factor.
-    watson_k: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]

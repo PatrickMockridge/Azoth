@@ -132,6 +132,7 @@ dependencies = [
 name = "azoth-python"
 version = "0.1.1"
 dependencies = [
+ "azoth-characterization",
  "azoth-core",
  "azoth-eos",
  "azoth-hydraulics",
