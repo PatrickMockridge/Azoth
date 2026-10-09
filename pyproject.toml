@@ -82,6 +82,7 @@ include = [
   "data/reactors/*.csv",
   "data/reactions/*.csv",
   "data/standards/*.csv",
+  "data/characterization/*.csv",
   "specs/unit_ops/**/*.toml",
 ]
 

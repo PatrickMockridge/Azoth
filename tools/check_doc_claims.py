@@ -334,7 +334,19 @@ def _wrapper_counts() -> tuple[int, int]:
         )
     )
     hand = 0
-    for module in ("hydraulics", "eos", "thermal", "reactions", "standards", "process"):
+    # **A new namespace belongs on this list too.** It is not the generator's, so nothing refuses
+    # when it is missing: the hand-written count just comes up short, and a claim whose two numbers
+    # are supposed to partition the registry quietly stops partitioning it. `characterization` was
+    # absent through three of its ids.
+    for module in (
+        "hydraulics",
+        "eos",
+        "thermal",
+        "reactions",
+        "standards",
+        "process",
+        "characterization",
+    ):
         source = (ROOT / "crates" / "azoth-python" / "src" / f"{module}.rs").read_text(
             encoding="utf-8"
         )

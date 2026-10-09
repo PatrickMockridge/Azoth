@@ -63,6 +63,45 @@ impl CalcResult for TbpClosureResult {
     }
 }
 
+/// Result of `characterization.pedersen_plus_split`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PedersenPlusSplitResult {
+    /// Each cut's mole fraction, `exp(a + b*CN)`.
+    pub cut_z: Vec<f64>,
+    /// Each cut's molar mass, its own row of the PVTsim table.
+    pub cut_molar_mass: Vec<MolarMass>,
+    /// Each cut's normal liquid density, `c + d*ln(CN)`.
+    pub cut_density: Vec<MassDensity>,
+    /// The solved `a` of `z = exp(a + b*CN)`.
+    pub z_intercept: f64,
+    /// The solved `b` of `z = exp(a + b*CN)`.
+    pub z_slope: f64,
+    /// The solved `c` of `rho = c + d*ln(CN)`, in NeqSim's g/cm3 scale.
+    pub density_intercept: f64,
+    /// The solved `d` of `rho = c + d*ln(CN)`, in NeqSim's g/cm3 scale.
+    pub density_slope: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for PedersenPlusSplitResult {
+    const CALC_ID: &'static str = "characterization.pedersen_plus_split";
+    const FIELDS: &'static [&'static str] = &[
+        "cut_z",
+        "cut_molar_mass",
+        "cut_density",
+        "z_intercept",
+        "z_slope",
+        "density_intercept",
+        "density_slope",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.tbp_density`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpDensityResult {

@@ -86,6 +86,7 @@ Five sections, and the difference between them is the point:
 
 *Models* — whose specs fix a procedure rather than an equation:
 
+- [`characterization.pedersen_plus_split`](./characterization/pedersen_plus_split.md) — A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves
 - [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity
 - [`characterization.tbp_density`](./characterization/tbp_density.md) — TBP cut specific gravity from its boiling point and molar mass
 

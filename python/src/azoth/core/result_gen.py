@@ -37,6 +37,37 @@ from azoth.core.warnings import Warning
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class PedersenPlusSplitResult(_HasWarnings):
+    """Result of ``characterization.pedersen_plus_split``."""
+
+    CALC_ID: ClassVar[str] = "characterization.pedersen_plus_split"
+
+    #: Each cut's mole fraction, `exp(a + b*CN)`, which sums to `mole_fraction` by the abundance solve's first equation.
+    cut_z: tuple[float, ...]
+
+    #: Each cut's molar mass, its own row of the PVTsim table.
+    cut_molar_mass: tuple[Q, ...]
+
+    #: Each cut's normal liquid density, `c + d*ln(CN)` converted back to kg/m3.
+    cut_density: tuple[Q, ...]
+
+    #: The solved `a` of `z = exp(a + b*CN)`.
+    z_intercept: float
+
+    #: The solved `b` of `z = exp(a + b*CN)`, the abundance distribution's decay per carbon number.
+    z_slope: float
+
+    #: The solved `c` of `rho = c + d*ln(CN)`, in the class's own g/cm3 scale.
+    density_intercept: float
+
+    #: The solved `d` of `rho = c + d*ln(CN)`, per natural logarithm of the carbon number and in the class's own g/cm3 scale.
+    density_slope: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpClosureResult(_HasWarnings):
     """Result of ``characterization.tbp_closure``."""
 

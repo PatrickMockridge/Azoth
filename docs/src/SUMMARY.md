@@ -24,6 +24,7 @@
 <!-- BEGIN GENERATED: calcs -->
 - [Petroleum fraction characterisation](./characterization/index.md)
   - [TBP cut properties by any of NeqSim's ten models](./characterization/tbp_cut_properties.md)
+  - [A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves](./characterization/pedersen_plus_split.md)
   - [TBP cut molar mass from its normal boiling point and specific gravity](./characterization/tbp_closure.md)
   - [TBP cut specific gravity from its boiling point and molar mass](./characterization/tbp_density.md)
 - [Equations of state](./eos/index.md)

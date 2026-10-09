@@ -184,6 +184,17 @@ class Stream:
 # cannot disagree about a field.
 
 @final
+class PedersenPlusSplitResult:
+    cut_z: list[float]
+    cut_molar_mass: list[Qty]
+    cut_density: list[Qty]
+    z_intercept: float
+    z_slope: float
+    density_intercept: float
+    density_slope: float
+    warnings: list[Warning]
+
+@final
 class TbpClosureResult:
     molar_mass: Qty
     warnings: list[Warning]
@@ -2114,6 +2125,13 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
+def pedersen_plus_split(
+    molar_mass: float,
+    density: float,
+    mole_fraction: float,
+    first_carbon_number: float,
+    last_carbon_number: float,
+) -> PedersenPlusSplitResult: ...
 def tbp_closure(
     closure: str,
     boiling_point: float,

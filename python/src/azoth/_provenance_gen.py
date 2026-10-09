@@ -15,6 +15,17 @@ from typing import Any, Final
 
 #: Every id's block, by id.
 PROVENANCE: Final[dict[str, dict[str, Any]]] = {
+    'characterization.pedersen_plus_split': {
+        "calc_id": 'characterization.pedersen_plus_split',
+        "name": "A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves",
+        "spec": {'path': 'specs/models/characterization/pedersen_plus_split.toml', 'sha256': '1188e8efaaca4cada2a636a76cc0018aa1143e916212258927c03c686be5936e'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/pedersen_plus_split.py', 'sha256': 'a3f067a894ae92c2b44ec805707c0e61018f3d15f563db3b2cda332340dda9a6'}, {'path': 'crates/azoth-characterization/src/pedersen_plus_split.rs', 'sha256': '6866d116e61820818520f0b24b39f230fa0d9b2555d16e5b9892e52f02f9ad4a'}],
+        "source": 'NeqSim master `PlusFractionModel.PedersenPlusModel` with `PedersenPlusModelSolver`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.tbp_closure': {
         "calc_id": 'characterization.tbp_closure',
         "name": 'TBP cut molar mass from its normal boiling point and specific gravity',

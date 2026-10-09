@@ -111,6 +111,7 @@ from azoth.core.result import (
     ParachorSurfaceTensionResult,
     ParahydrogenSolidPhaseResult,
     PcsaftRahmatPhaseResult,
+    PedersenPlusSplitResult,
     PhaseTransportResult,
     PhFlashResult,
     PipeResult,
@@ -340,6 +341,7 @@ __all__ = [
     "parachor_surface_tension",
     "parahydrogen_solid_phase",
     "pcsaft_rahmat_phase",
+    "pedersen_plus_split",
     "ph_flash",
     "phase_transport",
     "pipe",
@@ -442,6 +444,28 @@ __all__ = [
     "wilke_viscosity",
     "wilson_activity_coefficients",
 ]
+
+
+def pedersen_plus_split(molar_mass: Q, density: Q, mole_fraction: float, first_carbon_number: int, last_carbon_number: int) -> PedersenPlusSplitResult:
+    """``characterization.pedersen_plus_split``, computed in Rust."""
+    spec = _models_gen.model("characterization.pedersen_plus_split")
+    result = _core.pedersen_plus_split(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "density", density),
+        mole_fraction,
+        int(first_carbon_number),
+        int(last_carbon_number),
+    )
+    return PedersenPlusSplitResult(
+        cut_z=tuple(result.cut_z),
+        cut_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.cut_molar_mass),
+        cut_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.cut_density),
+        z_intercept=result.z_intercept,
+        z_slope=result.z_slope,
+        density_intercept=result.density_intercept,
+        density_slope=result.density_slope,
+        warnings=_warnings(result.warnings),
+    )
 
 
 def tbp_closure(closure: str, boiling_point: Q, density: Q, model: str | None=None) -> TbpClosureResult:

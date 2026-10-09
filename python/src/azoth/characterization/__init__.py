@@ -8,6 +8,9 @@ It is a namespace of its own rather than a family under :mod:`azoth.eos`, mirror
 own package split: what is here is not an equation of state and is not reached from one.
 
 * :func:`tbp_cut_properties` - a cut's critical properties, by any of NeqSim's ten models
+* :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
+* :func:`tbp_density` - the same pair inverted for gravity, which only one closure supports
+* :func:`pedersen_plus_split` - a plus fraction divided into carbon-number cuts
 
 # Which implementation answers
 
@@ -19,10 +22,16 @@ to :mod:`azoth.characterization.reference` otherwise. Both are always reachable 
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import TbpClosureResult, TbpCutPropertiesResult, TbpDensityResult
+from azoth.core.result import (
+    PedersenPlusSplitResult,
+    TbpClosureResult,
+    TbpCutPropertiesResult,
+    TbpDensityResult,
+)
 from azoth.core.units import Q
 
 __all__ = [
+    "pedersen_plus_split",
     "tbp_closure",
     "tbp_cut_properties",
     "tbp_density",
@@ -31,6 +40,7 @@ __all__ = [
 _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
 _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
+_PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
 
 
 def tbp_closure(
@@ -97,4 +107,33 @@ def tbp_cut_properties(
     """
     return resolve(_TBP_CUT_PROPERTIES)(  # type: ignore[no-any-return]
         model=model, molar_mass=molar_mass, density=density, boiling_point=boiling_point
+    )
+
+
+def pedersen_plus_split(
+    molar_mass: Q,
+    density: Q,
+    mole_fraction: float,
+    first_carbon_number: int,
+    last_carbon_number: int,
+) -> PedersenPlusSplitResult:
+    """A plus fraction divided into carbon-number cuts, by Pedersen's two Newton solves.
+
+    ``first_carbon_number`` opens the range and ``last_carbon_number`` is one past its last cut,
+    which is NeqSim's own half-open convention: ``80`` is ``PedersenPlusModel``'s default range
+    and ``200`` is the heavy-oil model's, and the two are the same two solves either way.
+
+    Raises:
+        InvalidInputError: if the plus fraction is lighter than the first cut the table gives it,
+            or if the range is empty.
+        OutOfRangeError: if a carbon number falls outside the tables the model carries.
+
+    See :func:`azoth.characterization.reference.pedersen_plus_split`.
+    """
+    return resolve(_PEDERSEN_PLUS_SPLIT)(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        density=density,
+        mole_fraction=mole_fraction,
+        first_carbon_number=first_carbon_number,
+        last_carbon_number=last_carbon_number,
     )

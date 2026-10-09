@@ -9,6 +9,7 @@ description = "Petroleum-fraction characterisation: a cut's properties, the plus
 
 [dependencies]
 azoth-core.workspace = true
+csv.workspace = true
 uom.workspace = true
 
 [dev-dependencies]

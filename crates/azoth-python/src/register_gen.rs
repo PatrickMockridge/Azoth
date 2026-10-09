@@ -19,6 +19,7 @@ use pyo3::types::PyModule;
 /// introspection helpers.
 pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // The result class each registered id answers with.
+    m.add_class::<crate::transport_gen::PyPedersenPlusSplitResult>()?;
     m.add_class::<crate::transport_gen::PyTbpClosureResult>()?;
     m.add_class::<crate::transport_gen::PyTbpCutPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpDensityResult>()?;
@@ -218,6 +219,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
 
     // The calculations and models themselves.
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::pedersen_plus_split,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::characterization::tbp_closure, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::characterization::tbp_cut_properties,

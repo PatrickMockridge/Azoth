@@ -16,6 +16,86 @@
 use crate::results::{PyKComponent, PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
+/// Result of `characterization.pedersen_plus_split`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "PedersenPlusSplitResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyPedersenPlusSplitResult {
+    /// Each cut's mole fraction, `exp(a + b*CN)`, which sums to `mole_fraction` by the abundance solve's first equation.
+    #[pyo3(get)]
+    pub cut_z: Vec<f64>,
+    /// Each cut's molar mass, its own row of the PVTsim table.
+    #[pyo3(get)]
+    pub cut_molar_mass: Vec<PyQty>,
+    /// Each cut's normal liquid density, `c + d*ln(CN)` converted back to kg/m3.
+    #[pyo3(get)]
+    pub cut_density: Vec<PyQty>,
+    /// The solved `a` of `z = exp(a + b*CN)`.
+    #[pyo3(get)]
+    pub z_intercept: f64,
+    /// The solved `b` of `z = exp(a + b*CN)`, the abundance distribution's decay per carbon number.
+    #[pyo3(get)]
+    pub z_slope: f64,
+    /// The solved `c` of `rho = c + d*ln(CN)`, in the class's own g/cm3 scale.
+    #[pyo3(get)]
+    pub density_intercept: f64,
+    /// The solved `d` of `rho = c + d*ln(CN)`, per natural logarithm of the carbon number and in the class's own g/cm3 scale.
+    #[pyo3(get)]
+    pub density_slope: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyPedersenPlusSplitResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "PedersenPlusSplitResult(cut_z={:?}, cut_molar_mass={:?}, cut_density={:?}, z_intercept={:?}, z_slope={:?}, density_intercept={:?}, density_slope={:?}, {} warning(s))",
+            self.cut_z,
+            self.cut_molar_mass,
+            self.cut_density,
+            self.z_intercept,
+            self.z_slope,
+            self.density_intercept,
+            self.density_slope,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::PedersenPlusSplitResult> for PyPedersenPlusSplitResult {
+    fn from(r: &azoth_characterization::results::PedersenPlusSplitResult) -> Self {
+        Self {
+            cut_z: r.cut_z.clone(),
+            cut_molar_mass: r
+                .cut_molar_mass
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/mol".to_string(),
+                })
+                .collect(),
+            cut_density: r
+                .cut_density
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/m**3".to_string(),
+                })
+                .collect(),
+            z_intercept: r.z_intercept,
+            z_slope: r.z_slope,
+            density_intercept: r.density_intercept,
+            density_slope: r.density_slope,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.tbp_closure`, transported.
 #[pyclass(
     frozen,

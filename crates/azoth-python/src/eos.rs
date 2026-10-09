@@ -1275,6 +1275,7 @@ pub fn aqueous_viscosity(
 fn all_models() -> impl Iterator<Item = &'static azoth_core::ModelSpec> {
     azoth_eos::model_gen::models()
         .iter()
+        .chain(azoth_characterization::model_gen::models().iter())
         .chain(azoth_reactions::model_gen::models().iter())
         .chain(azoth_standards::model_gen::models().iter())
         .chain(azoth_process::model_gen::models().iter())

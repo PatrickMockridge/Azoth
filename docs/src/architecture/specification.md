@@ -39,7 +39,7 @@ SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash oper
 and ~60 saturation operations, **~60 physical-property methods**, 25 alpha functions and
 15 mixing rules, over a **~90-field component model**.
 
-azoth has **197 ids** — 74 calculations and 123 models.
+azoth has **198 ids** — 74 calculations and 124 models.
 
 ## The ledger
 
@@ -67,7 +67,7 @@ their units, the valid range, the assumptions that are *not* checked, and the ca
 class that would close it, and `tools/check_unported.py` holds every row to *both*
 implementations — so a row neither refuses fails the build, and a row one refuses and the
 other carries is the divergence the field was built to make visible. The models declare
-**24 refusals**, and no spec may say the same thing in a sentence instead,
+**27 refusals**, and no spec may say the same thing in a sentence instead,
 because a sentence is a claim nothing holds: it drifts from the code silently, and the same
 fact written twice in two files is how a corrected claim left its twin lying.
 
@@ -95,10 +95,10 @@ exclusion list, and the port's NeqSim probe and its capture.
 
 **Three surfaces the tranche has taken are not in that nine, because it took them: the pyo3
 wrapper, the bridge adapter and the Python result dataclass.** The wrapper is generated for
-**149** of the registered ids and hand-written for **45**: a kernel that takes a record or a
+**150** of the registered ids and hand-written for **48**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
 whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated
-for **192** and hand-written for **2**, and its rule is narrower because its boundary is a Python
+for **196** and hand-written for **2**, and its rule is narrower because its boundary is a Python
 signature rather than a Rust one: its signature is the public wrapper's, its call is the
 `#[pyfunction]`'s own order, and every argument on either side must be an input the spec declares,
 a field of the `params` record the wrapper's annotation names, or one expression a boundary object
@@ -106,7 +106,7 @@ resolves into. A `molar_mass` is the one expansion that is not an expression - a
 carries none and the correlation cannot default one, so it crosses behind a guard whose sentence is
 read from the id's own reference implementation.
 
-**The result dataclass is generated for **194** and hand-written for **0**.** One frozen class per registered id, its fields
+**The result dataclass is generated for **198** and hand-written for **0**.** One frozen class per registered id, its fields
 in `CalcResult::FIELDS` order, each annotation from the transport's Rust type beside the unit the
 spec declares, and each doc from the spec's own `description` — so the field prose has one home
 and `tools/gen_python_result.py` can emit the whole file without a paraphrase. What stays

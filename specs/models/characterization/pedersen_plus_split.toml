@@ -1,0 +1,126 @@
+id = "characterization.pedersen_plus_split"
+name = "A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves"
+kind = "procedure"
+assumptions = [
+    "**this is what a crude assay's C7+ end is made of.** One pseudo-component, described by its mole fraction, its molar mass and its specific gravity, is divided into one cut per carbon number.",
+    "**two 2x2 damped Newton solves, not one 4x4.** The abundance is the exponential `z_i = exp(a + b*i)` and the gravity the logarithm `rho_i = c + d*ln(i)`, and AB is solved for `a` and `b` before CD for `c` and `d`.",
+    "AB's two equations are `sum z_i = z_plus` and `sum (z_i M_i) / sum z_i = M_plus`.",
+    "CD's two are `c + d*ln(first - 1) = rho_table[first]` and `sum (z_i M_i) / sum (z_i M_i / rho_i) = rho_plus`.",
+    "**the two loops are damped by different constants.** AB's step is scaled by `iter/(iter + 50)` and CD's by `iter/(iter + 5)`; a port that unified them reaches a different answer in the same number of steps.",
+    "**neither loop stops at its tolerance.** Both run while `(norm2 > 1e-6 || iter < 3) && iter < 200`: three iterations always, the residual measured before the step it follows, 1e-6 on the 2-norm, 200 steps.",
+    "**each AB iteration also re-solves the density slope by a fixed point**, with the intercept held at `0.80`: `d = d * rho_plus / <rho>` for the mass-weighted harmonic mean `<rho>`, until it moves by under 1e-6 or 1000 times.",
+    "**the CD solve starts from the constructor's own values, not from what AB left.** `solCD` is seeded `(0.80, 0.0408709562)` before any iteration, while each new `(c, d)` is written back to the model.",
+    "**the AB Jacobian's `(1,0)` entry is identically zero.** The class writes `mTot1*zSum - mTot1*zSum`, so the two equations are solved as a triangular system rather than a coupled one.",
+    "**the AB Jacobian's `(1,1)` entry divides by the sum of squares of `z`** where the derivative divides by the square of the sum. Reproduced rather than corrected.",
+    "**the CD Jacobian's `(1,1)` entry is zeroed and never set**, so the derivative in `d` is treated as absent; the line that would have set it is commented out in the class.",
+    "**the CD Jacobian's `(1,0)` entry carries the opposite sign to the derivative**, because the class accumulates its sum by subtracting where the derivative adds.",
+    "**the density table is read at exactly one row, and it is not the first cut's.** The anchor is `c + d*ln(first - 1) = rho_table[first]`: the carbon number below the first cut against the tabulated gravity of the first.",
+    "**the molar-mass table is the cut's molar mass and nothing fits it.** `PVTsimMolarMass` runs C6 to C200, one row per carbon number, divided by 1000 for kg/mol.",
+    "**the range is half-open.** The cuts run from `first_carbon_number` to `last_carbon_number - 1`, and the class's `numberOfPlusPseudocomponents` is one more than the number of cuts it fills.",
+    "**Pedersen Heavy Oil is this arithmetic over a longer range, not a second model.** `PedersenHeavyOilPlusModel` overrides only its constructor, which sets the last carbon number to 200 instead of 80.",
+    "**NeqSim works in g/mol and g/cm3 and this declares kg/mol and kg/m3.** The conversion is at the boundary in each direction, and the specific gravity is the tabulated 0.66-1.00.",
+    "**the two residuals do not share one molar-mass scale** - AB uses kg/mol and CD the table's g/mol - which is faithful and, each residual being a ratio, numerically identical.",
+    "**a plus fraction lighter than the table's first cut is refused.** The class compares `PVTsimMolarMass[first - 6]` with `M_plus * 1000` and silently returns false; here it is an error naming both numbers.",
+    "**a carbon number outside the tables is refused rather than run off the end.** NeqSim indexes all three unguarded and throws; the limits are C6 below, C80 on the density table and C200 on the molar-mass table.",
+    "**the split is not unique.** The same plus fraction into 60 cuts and into 180 gives two fluids that both satisfy the three inputs, and the class states no rule for choosing beyond its default range.",
+    "these are fits to petroleum assays, so a cut is a property of the *bookkeeping* and not of a substance, and no databank is involved.",
+]
+references = [
+    "Pedersen, K. S.; Thomassen, P.; Fredenslund, A. (1989). \"Characterization of gas condensate mixtures.\" Advances in Thermodynamics 1, 137-152. The exponential abundance distribution and the logarithmic gravity line.",
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. The tables and the model named after the first two authors.",
+    "Whitson, C. H. (1983). \"Characterizing Hydrocarbon Plus Fractions.\" Society of Petroleum Engineers Journal 23(4), 683-694. DOI 10.2118/12233-PA. The three-parameter gamma distribution NeqSim carries beside this one, as its own plus-fraction model.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `PlusFractionModel`'s `PedersenPlusModel` and `PedersenPlusModelSolver` are the port source; the two PVTsim tables are compiled into `data/characterization/plus_fraction.csv`.",
+    "`validation/neqsim/captures/plus_fraction_probe.tsv` - the raw split, per cut, from `validation/neqsim/PlusFractionProbe.java`. Three feeds against three plus models, including the one the abundance test refuses.",
+]
+[source]
+standard = "NeqSim master `PlusFractionModel.PedersenPlusModel` with `PedersenPlusModelSolver`"
+edition = "`characterizePlusFraction` and the solver's `solve`. `PedersenHeavyOilPlusModel` is the same class with `lastPlusFractionNumber = 200`. `Characterise.characterisePlusFraction` is the caller, and it swaps to the heavy model when `M_plus > 0.605` kg/mol."
+[algorithm]
+scheme = "plus_fraction_split_newton"
+initialisation = "seed_from_plus_fraction"
+convergence = "absolute"
+tolerance = 1.0e-06
+max_iterations = 200
+[inputs]
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The plus fraction's molar mass, the mean the abundance distribution has to reproduce. NeqSim works in g/mol and this multiplies by 1000 for its own comparison.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "The plus fraction's normal liquid density at 15 C, which the class carries as a specific gravity in g/cm3 - the same number a thousand smaller.\n"
+[inputs.mole_fraction]
+unit = "dimensionless"
+description = "The plus fraction's mole fraction in the fluid, which the abundance distribution has to sum to. The class takes its logarithm to seed the abundance slope, so a non-positive one has no starting point.\n"
+[inputs.first_carbon_number]
+unit = "dimensionless"
+description = "The carbon number the cuts begin at, which NeqSim reads off the plus component's own name - `C20` gives 20. It is also the row of the density table the gravity line is anchored to, and the first cut's molar mass comes from the same row of the other table.\n"
+[inputs.last_carbon_number]
+unit = "dimensionless"
+description = "One past the last carbon number, which is the class's own convention: the cuts run over the half-open range `[first_carbon_number, last_carbon_number)`. `80` is `PedersenPlusModel`'s default and `200` is `PedersenHeavyOilPlusModel`'s.\n"
+[outputs]
+[outputs.cut_z]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, from `first_carbon_number` to `last_carbon_number - 1`"
+description = "Each cut's mole fraction, `exp(a + b*CN)`, which sums to `mole_fraction` by the abundance solve's first equation.\n"
+[outputs.cut_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per cut, aligned with `cut_z`"
+description = "Each cut's molar mass, its own row of the PVTsim table.\n"
+[outputs.cut_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per cut, aligned with `cut_z`"
+description = "Each cut's normal liquid density, `c + d*ln(CN)` converted back to kg/m3.\n"
+[outputs.z_intercept]
+unit = "dimensionless"
+description = "The solved `a` of `z = exp(a + b*CN)`.\n"
+[outputs.z_slope]
+unit = "dimensionless"
+description = "The solved `b` of `z = exp(a + b*CN)`, the abundance distribution's decay per carbon number.\n"
+[outputs.density_intercept]
+unit = "dimensionless"
+description = "The solved `c` of `rho = c + d*ln(CN)`, in the class's own g/cm3 scale.\n"
+[outputs.density_slope]
+unit = "dimensionless"
+description = "The solved `d` of `rho = c + d*ln(CN)`, per natural logarithm of the carbon number and in the class's own g/cm3 scale.\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a molar mass; the abundance residual divides a sum of them by another and the table test compares it against a tabulated cut\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a specific gravity; the gravity residual divides by a sum of `z*M/rho`\n"
+[[valid_range]]
+quantity = "mole_fraction"
+min = 0
+min_inclusive = false
+max = 1
+max_inclusive = true
+severity = "error"
+rationale = "a mole fraction, and one the class takes the logarithm of to seed the abundance slope\n"
+[[valid_range]]
+quantity = "first_carbon_number"
+min = 6
+min_inclusive = true
+max = 80
+max_inclusive = true
+severity = "error"
+rationale = "the molar-mass table begins at C6 and the density table ends at C80, which is the one row its anchor reads\n"
+[[valid_range]]
+quantity = "last_carbon_number"
+min = 7
+min_inclusive = true
+max = 200
+max_inclusive = true
+severity = "error"
+rationale = "the molar-mass table ends at C200, and the range is half-open so this must exceed `first_carbon_number` by at least one to leave a cut\n"
+[implementations]
+python = "azoth.characterization.pedersen_plus_split"
+rust = "azoth_characterization::pedersen_plus_split"

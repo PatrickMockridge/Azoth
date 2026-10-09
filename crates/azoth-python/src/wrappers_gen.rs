@@ -15,6 +15,33 @@ use azoth_core::units::{
 };
 use pyo3::prelude::*;
 
+/// A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number))]
+#[pyo3(
+    text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, last_carbon_number)"
+)]
+pub fn pedersen_plus_split(
+    py: Python<'_>,
+    molar_mass: f64,
+    density: f64,
+    mole_fraction: f64,
+    first_carbon_number: usize,
+    last_carbon_number: usize,
+) -> PyResult<crate::transport_gen::PyPedersenPlusSplitResult> {
+    azoth_characterization::pedersen_plus_split::pedersen_plus_split(
+        kilograms_per_mole(molar_mass),
+        kilograms_per_cubic_meter(density),
+        mole_fraction,
+        first_carbon_number,
+        last_carbon_number,
+    )
+    .map(|r| crate::transport_gen::PyPedersenPlusSplitResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Ammonia reference phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

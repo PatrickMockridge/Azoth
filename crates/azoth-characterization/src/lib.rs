@@ -12,6 +12,7 @@
 //! * [`tbp_cut_properties`] — a cut's critical properties, by any of NeqSim's ten models
 
 pub mod model_gen;
+pub mod pedersen_plus_split;
 pub mod results;
 pub mod spec_gen;
 pub mod tbp_closure;
@@ -20,7 +21,10 @@ pub mod tbp_density;
 pub mod unported;
 pub mod unported_gen;
 
-pub use results::{TbpClosureResult, TbpCutPropertiesResult, TbpDensityResult};
+pub use pedersen_plus_split::pedersen_plus_split;
+pub use results::{
+    PedersenPlusSplitResult, TbpClosureResult, TbpCutPropertiesResult, TbpDensityResult,
+};
 pub use tbp_closure::{TbpClosureKind, tbp_closure};
 pub use tbp_cut_properties::{TbpModel, tbp_cut_properties};
 pub use tbp_density::tbp_density;
