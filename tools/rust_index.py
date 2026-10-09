@@ -279,8 +279,7 @@ def result_types() -> tuple[ResultType, ...]:
                 candidates = [
                     (other, other_structs[rust_name])
                     for other, _, other_structs in parsed
-                    if rust_name in other_structs
-                    and other.relative_to(CRATES).parts[0] == crate
+                    if rust_name in other_structs and other.relative_to(CRATES).parts[0] == crate
                 ]
                 if len(candidates) != 1:
                     sys.exit(

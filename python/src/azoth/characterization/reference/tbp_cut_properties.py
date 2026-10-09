@@ -64,7 +64,13 @@ PEDERSEN_HEAVY_SWITCH = 1120.0
 BOILING_POINT_SWITCH = 540.0
 RIAZI_DAUBERT_SWITCH = 300.0
 
-_PEDERSEN = ("pedersen_srk", "pedersen_srk_heavy_oil", "pedersen_pr", "pedersen_pr2", "pedersen_pr_heavy_oil")
+_PEDERSEN = (
+    "pedersen_srk",
+    "pedersen_srk_heavy_oil",
+    "pedersen_pr",
+    "pedersen_pr2",
+    "pedersen_pr_heavy_oil",
+)
 
 
 def _pedersen_coefs(model: str, molar_mass: float):
@@ -82,12 +88,7 @@ def _pedersen_coefs(model: str, molar_mass: float):
 def _srk_tb(molar_mass: float, density: float) -> float:
     """The boiling point the SRK family correlates, in K."""
     if molar_mass < BOILING_POINT_SWITCH:
-        return (
-            2.0e-6 * molar_mass**3
-            - 0.0035 * molar_mass**2
-            + 2.4003 * molar_mass
-            + 171.74
-        )
+        return 2.0e-6 * molar_mass**3 - 0.0035 * molar_mass**2 + 2.4003 * molar_mass + 171.74
     return 97.58 * molar_mass**0.3323 * density**0.04609
 
 
@@ -114,7 +115,9 @@ def _acentric_kesler_lee(tc: float, tb: float, pc_bar: float, density: float) ->
 def _twu_tfunc(mw: float, tb: float) -> float:
     phi = math.log(mw)
     return (
-        math.exp(5.1264 + 2.71579 * phi - 0.28659 * phi * phi - 39.8544 / phi - 0.122488 / phi / phi)
+        math.exp(
+            5.1264 + 2.71579 * phi - 0.28659 * phi * phi - 39.8544 / phi - 0.122488 / phi / phi
+        )
         - 13.7512 * phi
         + 19.6197 * phi * phi
         - tb
@@ -140,7 +143,7 @@ def _twu_solve_mw(tb: float) -> float:
     return mw
 
 
-def _twu_tc_pc(molar_mass: float, density: float, tb: float) -> tuple[float, float]:
+def _twu_tc_pc(density: float, tb: float) -> tuple[float, float]:
     """``TwuModel``'s critical temperature and pressure, ``(K, bar)``."""
     # Computed by the class and never read - kept, with its result dropped.
     _twu_solve_mw(tb)
@@ -159,26 +162,19 @@ def _twu_tc_pc(molar_mass: float, density: float, tb: float) -> tuple[float, flo
     vc_n_alkane = (0.82055 + 0.715468 * phi + 2.21266 * phi**3 + 13411.1 * phi**14) ** -8
 
     delta_st = math.exp(5.0 * (sg_n_alkane - density)) - 1.0
-    f_t = delta_st * (
-        -0.270159 * tb**-0.5 + (0.0398285 - 0.706691 * tb**-0.5) * delta_st
-    )
+    f_t = delta_st * (-0.270159 * tb**-0.5 + (0.0398285 - 0.706691 * tb**-0.5) * delta_st)
     tc = tc_n_alkane * ((1 + 2 * f_t) / (1 - 2 * f_t)) ** 2
 
     delta_sp = math.exp(0.5 * (sg_n_alkane - density)) - 1.0
     delta_sv = math.exp(4.0 * (sg_n_alkane**2 - density**2)) - 1.0
-    f_v = delta_sv * (
-        0.347776 * tb**-0.5 + (-0.182421 + 2.24890 * tb**-0.5) * delta_sv
-    )
+    f_v = delta_sv * (0.347776 * tb**-0.5 + (-0.182421 + 2.24890 * tb**-0.5) * delta_sv)
     vc = vc_n_alkane * ((1 + 2 * f_v) / (1 - 2 * f_v)) ** 2
     f_p = delta_sp * (
         (2.53262 - 34.4321 * tb**-0.5 - 0.00230193 * tb)
         + (-11.4277 + 187.934 * tb**-0.5 + 0.00414963 * tb) * delta_sp
     )
     pc = (
-        pc_n_alkane
-        * (tc / tc_n_alkane)
-        * (vc_n_alkane / vc)
-        * ((1 + 2 * f_p) / (1 - 2 * f_p)) ** 2
+        pc_n_alkane * (tc / tc_n_alkane) * (vc_n_alkane / vc) * ((1 + 2 * f_p) / (1 - 2 * f_p)) ** 2
     )
     # MPa to bar, the class's own conversion.
     return tc, pc * 10.0
@@ -224,9 +220,20 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
     """One model over one cut, in g/mol and g/cm3."""
     tb_override = supplied_tb if (supplied_tb is not None and supplied_tb > 0.0) else None
 
-    if model in ("pedersen_srk", "pedersen_srk_heavy_oil", "pedersen_pr", "pedersen_pr2", "pedersen_pr_heavy_oil"):
+    if model in (
+        "pedersen_srk",
+        "pedersen_srk_heavy_oil",
+        "pedersen_pr",
+        "pedersen_pr2",
+        "pedersen_pr_heavy_oil",
+    ):
         coefs = _pedersen_coefs(model, molar_mass)
-        tc = coefs[0][0] * density + coefs[0][1] * math.log(molar_mass) + coefs[0][2] * molar_mass + coefs[0][3] / molar_mass
+        tc = (
+            coefs[0][0] * density
+            + coefs[0][1] * math.log(molar_mass)
+            + coefs[0][2] * molar_mass
+            + coefs[0][3] / molar_mass
+        )
         pc_bar = math.exp(
             0.01325
             + coefs[1][0]
@@ -241,13 +248,20 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
             + coefs[2][3] * molar_mass**2
         )
         if model == "pedersen_pr2":
-            tb = tb_override if tb_override is not None else (
-                1928.3
-                - 1.695e5
-                * molar_mass**-0.03522
-                * density**3.266
-                * math.exp(-4.922e-3 * molar_mass - 4.7685 * density + 3.462e-3 * molar_mass * density)
-            ) / 1.8
+            tb = (
+                tb_override
+                if tb_override is not None
+                else (
+                    1928.3
+                    - 1.695e5
+                    * molar_mass**-0.03522
+                    * density**3.266
+                    * math.exp(
+                        -4.922e-3 * molar_mass - 4.7685 * density + 3.462e-3 * molar_mass * density
+                    )
+                )
+                / 1.8
+            )
         else:
             tb = tb_override if tb_override is not None else _srk_tb(molar_mass, density)
         return {
@@ -260,7 +274,12 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
 
     if model == "riazi_daubert":
         if molar_mass > RIAZI_DAUBERT_SWITCH:
-            tc = SRK_OIL[0][0] * density + SRK_OIL[0][1] * math.log(molar_mass) + SRK_OIL[0][2] * molar_mass + SRK_OIL[0][3] / molar_mass
+            tc = (
+                SRK_OIL[0][0] * density
+                + SRK_OIL[0][1] * math.log(molar_mass)
+                + SRK_OIL[0][2] * molar_mass
+                + SRK_OIL[0][3] / molar_mass
+            )
             pc_bar = math.exp(
                 0.01325
                 + SRK_OIL[1][0]
@@ -270,7 +289,11 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
             )
         else:
             tc, pc_bar = _riazi_daubert_tc_pc(molar_mass, density)
-        tb = tb_override if tb_override is not None else 97.58 * molar_mass**0.3323 * density**0.04609
+        tb = (
+            tb_override
+            if tb_override is not None
+            else 97.58 * molar_mass**0.3323 * density**0.04609
+        )
         return {
             "tc": tc,
             "pc_bar": pc_bar,
@@ -292,7 +315,7 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
 
     if model == "twu":
         tb = tb_override if tb_override is not None else _base_tb(molar_mass, density)
-        tc, pc_bar = _twu_tc_pc(molar_mass, density, tb)
+        tc, pc_bar = _twu_tc_pc(density, tb)
         return {
             "tc": tc,
             "pc_bar": pc_bar,
@@ -302,7 +325,11 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
         }
 
     if model == "cavett":
-        tb = tb_override if tb_override is not None else 97.58 * molar_mass**0.3323 * density**0.04609
+        tb = (
+            tb_override
+            if tb_override is not None
+            else 97.58 * molar_mass**0.3323 * density**0.04609
+        )
         tc_base, pc_base = _lee_kesler_tc_pc(tb, density)
         api = 141.5 / density - 131.5
         if api < 30.0:
@@ -335,11 +362,11 @@ def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float 
 
 
 def tbp_cut_properties(
-    model: str | None,
     molar_mass: Q,
     density: Q,
+    model: str | None = None,
     boiling_point: Q | None = None,
-) -> "TbpCutPropertiesResult":
+) -> TbpCutPropertiesResult:
     """A TBP cut's critical properties, by any of NeqSim's ten models.
 
     Args:
@@ -395,7 +422,9 @@ def tbp_cut_properties(
         lambda name: (
             cut["acentric_factor"]
             if name == "acentric_factor"
-            else cut["attraction_exponent"] if name == "attraction_exponent" else None
+            else cut["attraction_exponent"]
+            if name == "attraction_exponent"
+            else None
         ),
         warnings,
     )

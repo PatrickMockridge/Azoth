@@ -130,12 +130,20 @@ fn pedersen_coefs(model: TbpModel, m: f64) -> &'static [[f64; 5]; 3] {
         // `PedersenSRKHeavyOil` shadows its parent's fields and changes nothing, so it reads the
         // parent's set by the same switch.
         TbpModel::PedersenSrk | TbpModel::PedersenSrkHeavyOil => {
-            if heavy { &SRK_HEAVY_OIL } else { &SRK_OIL }
+            if heavy {
+                &SRK_HEAVY_OIL
+            } else {
+                &SRK_OIL
+            }
         }
         // Its constructor assigns the heavy set to *both* fields, so both branches are heavy.
         TbpModel::PedersenPrHeavyOil => &PR_HEAVY_OIL,
         _ => {
-            if heavy { &PR_HEAVY_OIL } else { &PR_OIL }
+            if heavy {
+                &PR_HEAVY_OIL
+            } else {
+                &PR_OIL
+            }
         }
     }
 }
@@ -239,37 +247,36 @@ fn twu_tc_pc(d: f64, tb: f64) -> (f64, f64) {
     // Computed by the class and never read - kept, with its result dropped, because that is what
     // the class does.
     let _discarded = twu_solve_mw(tb);
-    let tc_n_alkane =
-        tb / (0.533272 + 0.343831e-3 * tb + 2.526167e-7 * tb.powi(2) - 1.65848e-10 * tb.powi(3)
+    let tc_n_alkane = tb
+        / (0.533272 + 0.343831e-3 * tb + 2.526167e-7 * tb.powi(2) - 1.65848e-10 * tb.powi(3)
             + 4.60774e24 * tb.powf(-13.0));
     let phi = 1.0 - tb / tc_n_alkane;
-    let sg_n_alkane =
-        0.843593 - 0.128624 * phi - 3.36159 * phi.powi(3) - 13749.0 * phi.powf(12.0);
+    let sg_n_alkane = 0.843593 - 0.128624 * phi - 3.36159 * phi.powi(3) - 13749.0 * phi.powf(12.0);
     let pc_n_alkane = (0.318317
         + 0.099334 * phi.sqrt()
         + 2.89698 * phi
         + 3.0054 * phi * phi
         + 8.65163 * phi.powi(4))
     .powi(2);
-    let vc_n_alkane = (0.82055 + 0.715468 * phi + 2.21266 * phi.powi(3) + 13411.1 * phi.powf(14.0))
-        .powf(-8.0);
+    let vc_n_alkane =
+        (0.82055 + 0.715468 * phi + 2.21266 * phi.powi(3) + 13411.1 * phi.powf(14.0)).powf(-8.0);
 
     let delta_st = (5.0 * (sg_n_alkane - d)).exp() - 1.0;
-    let f_t = delta_st
-        * (-0.270159 * tb.powf(-0.5)
-            + (0.0398285 - 0.706691 * tb.powf(-0.5)) * delta_st);
+    let f_t =
+        delta_st * (-0.270159 * tb.powf(-0.5) + (0.0398285 - 0.706691 * tb.powf(-0.5)) * delta_st);
     let tc = tc_n_alkane * ((1.0 + 2.0 * f_t) / (1.0 - 2.0 * f_t)).powi(2);
 
     let delta_sp = (0.5 * (sg_n_alkane - d)).exp() - 1.0;
     let delta_sv = (4.0 * (sg_n_alkane * sg_n_alkane - d * d)).exp() - 1.0;
-    let f_v = delta_sv
-        * (0.347776 * tb.powf(-0.5)
-            + (-0.182421 + 2.24890 * tb.powf(-0.5)) * delta_sv);
+    let f_v =
+        delta_sv * (0.347776 * tb.powf(-0.5) + (-0.182421 + 2.24890 * tb.powf(-0.5)) * delta_sv);
     let vc = vc_n_alkane * ((1.0 + 2.0 * f_v) / (1.0 - 2.0 * f_v)).powi(2);
     let f_p = delta_sp
         * ((2.53262 - 34.4321 * tb.powf(-0.5) - 0.00230193 * tb)
             + (-11.4277 + 187.934 * tb.powf(-0.5) + 0.00414963 * tb) * delta_sp);
-    let pc = pc_n_alkane * (tc / tc_n_alkane) * (vc_n_alkane / vc)
+    let pc = pc_n_alkane
+        * (tc / tc_n_alkane)
+        * (vc_n_alkane / vc)
         * ((1.0 + 2.0 * f_p) / (1.0 - 2.0 * f_p)).powi(2);
     // MPa to bar, the class's own conversion.
     (tc, pc * 10.0)
@@ -278,9 +285,7 @@ fn twu_tc_pc(d: f64, tb: f64) -> (f64, f64) {
 /// `LeeKesler`'s critical pair, `(tc [K], pc [bar])`, from its boiling point.
 fn lee_kesler_tc_pc(tb: f64, d: f64) -> (f64, f64) {
     let tc = 189.8 + 450.6 * d + (0.4244 + 0.1174 * d) * tb + (0.1441 - 1.0069 * d) * 1e5 / tb;
-    let log_pc = 3.3864
-        - 0.0566 / d
-        - ((0.43639 + 4.1216 / d + 0.21343 / (d * d)) * 1e-3 * tb)
+    let log_pc = 3.3864 - 0.0566 / d - ((0.43639 + 4.1216 / d + 0.21343 / (d * d)) * 1e-3 * tb)
         + ((0.47579 + 1.182 / d + 0.15302 / (d * d)) * 1e-6 * tb * tb)
         - ((2.4505 + 9.9099 / (d * d)) * 1e-10 * tb.powi(3));
     (tc, log_pc.exp() * 10.0)
@@ -289,11 +294,8 @@ fn lee_kesler_tc_pc(tb: f64, d: f64) -> (f64, f64) {
 /// `RiaziDaubert`'s own pair, `(tc [K], pc [bar])`, which `StandingModel` uses at every molar
 /// mass and `RiaziDaubert` only up to 300 g/mol.
 fn riazi_daubert_tc_pc(m: f64, d: f64) -> (f64, f64) {
-    let tc = 5.0 / 9.0
-        * 554.4
-        * (-1.3478e-4 * m - 0.61641 * d).exp()
-        * m.powf(0.2998)
-        * d.powf(1.0555);
+    let tc =
+        5.0 / 9.0 * 554.4 * (-1.3478e-4 * m - 0.61641 * d).exp() * m.powf(0.2998) * d.powf(1.0555);
     let pc = 0.068947
         * 4.5203e4
         * (-1.8078e-3 * m + -0.3084 * d).exp()

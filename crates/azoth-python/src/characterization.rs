@@ -5,7 +5,7 @@
 //! conversion site used by both backends cannot disagree with itself about what a number is in.
 
 use azoth_characterization::{TbpModel, tbp_cut_properties as kernel};
-use azoth_core::units::{kilograms_per_cubic_meter, kilograms_per_mole, kelvins};
+use azoth_core::units::{kelvins, kilograms_per_cubic_meter, kilograms_per_mole};
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
@@ -17,13 +17,13 @@ use crate::transport_gen::PyTbpCutPropertiesResult;
 /// `None` takes NeqSim's own default. An unrecognised name falls back to that default, which is
 /// what the NeqSim class does - the spec's vocabulary check is what refuses.
 #[pyfunction]
-#[pyo3(signature = (model, molar_mass, density, boiling_point=None))]
-#[pyo3(text_signature = "(model, molar_mass, density, boiling_point=None)")]
+#[pyo3(signature = (molar_mass, density, model=None, boiling_point=None))]
+#[pyo3(text_signature = "(molar_mass, density, model=None, boiling_point=None)")]
 pub fn tbp_cut_properties(
     py: Python<'_>,
-    model: Option<&str>,
     molar_mass: f64,
     density: f64,
+    model: Option<&str>,
     boiling_point: Option<f64>,
 ) -> PyResult<PyTbpCutPropertiesResult> {
     let parsed: Option<TbpModel> = model.map(|name| name.parse().unwrap_or_default());

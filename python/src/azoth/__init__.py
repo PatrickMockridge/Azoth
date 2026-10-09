@@ -98,6 +98,7 @@ __all__ = [
     "available",
     "backends",
     "batch",
+    "characterization",
     "core",
     "describe",
     "eos",

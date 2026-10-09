@@ -440,9 +440,14 @@ __all__ = [
 ]
 
 
-def tbp_cut_properties(model: str | None, molar_mass: Q, density: Q, boiling_point: Q | None=None) -> 'TbpCutPropertiesResult':
+def tbp_cut_properties(molar_mass: Q, density: Q, model: str | None=None, boiling_point: Q | None=None) -> TbpCutPropertiesResult:
     """``characterization.tbp_cut_properties``, computed in Rust."""
+    spec = _spec_for("characterization.tbp_cut_properties")
     result = _core.tbp_cut_properties(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "density", density),
+        model,
+        None if boiling_point is None else input_to_si(spec, "boiling_point", boiling_point),
     )
     return TbpCutPropertiesResult(
         tc=from_si(result.tc.magnitude_si, result.tc.unit),

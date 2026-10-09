@@ -82,6 +82,6 @@ def test_the_emitter_renders_a_result_the_tree_does_not_have() -> None:
     )
     block = _tools_module("gen_rust_model_records").emit_block(synthetic)
     assert "impl CalcResult for SyntheticResult {" in block
-    assert "const CALC_ID: &'static str = \"process.synthetic\";" in block
+    assert 'const CALC_ID: &\'static str = "process.synthetic";' in block
     assert '"outlet_n",' in block
     assert "&self.warnings" in block

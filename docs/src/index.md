@@ -80,6 +80,10 @@ Five sections, and the difference between them is the point:
   it, running through the same specs, generators, tests and documentation as the rest.
 
 <!-- BEGIN GENERATED: implemented -->
+**Petroleum fraction characterisation** - [`characterization/index.md`](./characterization/index.md):
+
+- [`characterization.tbp_cut_properties`](./characterization/tbp_cut_properties.md)
+
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.antoine_vapor_pressure`](./eos/antoine_vapor_pressure.md)

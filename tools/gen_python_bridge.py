@@ -284,8 +284,14 @@ def wrapper_types() -> dict[str, dict[str, str]]:
     from the spec, so it says `float` for the same parameter.
     """
     out: dict[str, dict[str, str]] = {}
+    # **Every module that carries a `#[pyfunction]`, and a namespace missing from this tuple is
+    # silently uncallable rather than refused.** It is the third place the namespaces are listed -
+    # `rust_index.NAMESPACES` and this file's own `NAMESPACES` are the others - and
+    # `characterization` was absent, which produced an id this generator claimed to cover while
+    # emitting no arguments for it.
     for name in (
         "wrappers_gen",
+        "characterization",
         "process",
         "eos",
         "hydraulics",

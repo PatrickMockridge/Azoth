@@ -23,16 +23,96 @@ struct Expected {
 }
 
 const CUT4: [Expected; 10] = [
-    Expected { model: TbpModel::PedersenSrk, tc: 891.945256085426, pc: 1196293.59599742, tb: 746.89, acentric: 1.36586663262266, exponent: Some(2.228110216), watson_k: 12.5418146375894 },
-    Expected { model: TbpModel::PedersenSrkHeavyOil, tc: 891.945256085426, pc: 1196293.59599742, tb: 746.89, acentric: 1.36586663262266, exponent: Some(2.228110216), watson_k: 12.5418146375894 },
-    Expected { model: TbpModel::PedersenPr, tc: 974.879772951610, pc: 1239174.46749789, tb: 746.89, acentric: 0.526722654332295, exponent: Some(1.897865692), watson_k: 12.5418146375894 },
-    Expected { model: TbpModel::PedersenPr2, tc: 974.879772951610, pc: 1239174.46749789, tb: 777.612898051266, acentric: 0.837080393811892, exponent: Some(1.897865692), watson_k: 12.7114759871488 },
-    Expected { model: TbpModel::PedersenPrHeavyOil, tc: 862.021877542583, pc: 1686247.92785472, tb: 746.89, acentric: 2.39525799802058, exponent: Some(-1598.7338588), watson_k: 12.5418146375894 },
-    Expected { model: TbpModel::RiaziDaubert, tc: 891.945256085426, pc: 1196293.59599742, tb: 765.014651094374, acentric: 1.37706289398442, exponent: None, watson_k: 12.6424549207867 },
-    Expected { model: TbpModel::LeeKesler, tc: 906.211218915845, pc: 663946.297092384, tb: 785.228404434496, acentric: 1.43229568844577, exponent: None, watson_k: 12.752837620579 },
-    Expected { model: TbpModel::Twu, tc: 917.899204856315, pc: 724270.609562486, tb: 785.228404434496, acentric: 1.16668324925980, exponent: None, watson_k: 12.752837620579 },
-    Expected { model: TbpModel::Cavett, tc: 894.305850190858, pc: 735341.797507176, tb: 765.014651094374, acentric: 1.18279252714060, exponent: None, watson_k: 12.6424549207867 },
-    Expected { model: TbpModel::Standing, tc: 942.447643628006, pc: 522599.858109319, tb: 785.228404434496, acentric: 1.21363914242666, exponent: None, watson_k: 12.752837620579 },
+    Expected {
+        model: TbpModel::PedersenSrk,
+        tc: 891.945256085426,
+        pc: 1196293.59599742,
+        tb: 746.89,
+        acentric: 1.36586663262266,
+        exponent: Some(2.228110216),
+        watson_k: 12.5418146375894,
+    },
+    Expected {
+        model: TbpModel::PedersenSrkHeavyOil,
+        tc: 891.945256085426,
+        pc: 1196293.59599742,
+        tb: 746.89,
+        acentric: 1.36586663262266,
+        exponent: Some(2.228110216),
+        watson_k: 12.5418146375894,
+    },
+    Expected {
+        model: TbpModel::PedersenPr,
+        tc: 974.879772951610,
+        pc: 1239174.46749789,
+        tb: 746.89,
+        acentric: 0.526722654332295,
+        exponent: Some(1.897865692),
+        watson_k: 12.5418146375894,
+    },
+    Expected {
+        model: TbpModel::PedersenPr2,
+        tc: 974.879772951610,
+        pc: 1239174.46749789,
+        tb: 777.612898051266,
+        acentric: 0.837080393811892,
+        exponent: Some(1.897865692),
+        watson_k: 12.7114759871488,
+    },
+    Expected {
+        model: TbpModel::PedersenPrHeavyOil,
+        tc: 862.021877542583,
+        pc: 1686247.92785472,
+        tb: 746.89,
+        acentric: 2.39525799802058,
+        exponent: Some(-1598.7338588),
+        watson_k: 12.5418146375894,
+    },
+    Expected {
+        model: TbpModel::RiaziDaubert,
+        tc: 891.945256085426,
+        pc: 1196293.59599742,
+        tb: 765.014651094374,
+        acentric: 1.37706289398442,
+        exponent: None,
+        watson_k: 12.6424549207867,
+    },
+    Expected {
+        model: TbpModel::LeeKesler,
+        tc: 906.211218915845,
+        pc: 663946.297092384,
+        tb: 785.228404434496,
+        acentric: 1.43229568844577,
+        exponent: None,
+        watson_k: 12.752837620579,
+    },
+    Expected {
+        model: TbpModel::Twu,
+        tc: 917.899204856315,
+        pc: 724270.609562486,
+        tb: 785.228404434496,
+        acentric: 1.16668324925980,
+        exponent: None,
+        watson_k: 12.752837620579,
+    },
+    Expected {
+        model: TbpModel::Cavett,
+        tc: 894.305850190858,
+        pc: 735341.797507176,
+        tb: 765.014651094374,
+        acentric: 1.18279252714060,
+        exponent: None,
+        watson_k: 12.6424549207867,
+    },
+    Expected {
+        model: TbpModel::Standing,
+        tc: 942.447643628006,
+        pc: 522599.858109319,
+        tb: 785.228404434496,
+        acentric: 1.21363914242666,
+        exponent: None,
+        watson_k: 12.752837620579,
+    },
 ];
 
 fn check(molar_mass: f64, density: f64, expected: &Expected) {
@@ -126,7 +206,11 @@ fn riazi_daubert_takes_its_own_form_at_exactly_300() {
         None,
     )
     .expect("in range");
-    assert!((r.tc.value - 815.802701858322).abs() < 1e-9, "tc {}", r.tc.value);
+    assert!(
+        (r.tc.value - 815.802701858322).abs() < 1e-9,
+        "tc {}",
+        r.tc.value
+    );
     assert!((r.boiling_temperature.value - 644.547792011568).abs() < 1e-9);
     assert!((r.acentric_factor - 0.697599640892113).abs() < 1e-12);
 }
@@ -142,8 +226,16 @@ fn cavett_applies_no_correction_above_api_30() {
         None,
     )
     .expect("in range");
-    assert!((r.tc.value - 800.246923082386).abs() < 1e-9, "tc {}", r.tc.value);
-    assert!((r.pc.value - 1165584.40264508).abs() < 1e-3, "pc {}", r.pc.value);
+    assert!(
+        (r.tc.value - 800.246923082386).abs() < 1e-9,
+        "tc {}",
+        r.tc.value
+    );
+    assert!(
+        (r.pc.value - 1165584.40264508).abs() < 1e-3,
+        "pc {}",
+        r.pc.value
+    );
     assert!((r.acentric_factor - 0.882074292558076).abs() < 1e-12);
 }
 

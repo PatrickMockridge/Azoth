@@ -62,6 +62,7 @@ NAMESPACES = {
     "reactions": "Reactions",
     "standards": "Standards",
     "process": "Unit operations",
+    "characterization": "Petroleum fraction characterisation",
 }
 
 #: The book's prose pages — architecture, calculus, agentic — are listed by hand in
