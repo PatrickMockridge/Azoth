@@ -23,6 +23,7 @@
 //   java -cp .:/path/to/neqsim-f0c7436.jar PlusFractionProbe > captures/plus_fraction_probe.tsv
 
 import neqsim.thermo.characterization.Characterise;
+import neqsim.thermo.characterization.LumpingModelInterface;
 import neqsim.thermo.characterization.PlusFractionModelInterface;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkEos;
@@ -141,13 +142,35 @@ public class PlusFractionProbe {
     }
     System.out.printf("# selected_model = %s%n", characterise.getPlusFractionModel().getName());
     rawSplit(characterise);
+    // `LumpingModel.generateLumpedComposition`'s own state, which is what it decided rather
+    // than what the system then reports.
+    LumpingModelInterface lumping = characterise.getLumpingModel();
+    System.out.printf("# lumping_model = %s%n", lumping.getName());
+    // A plus model that returned without a split leaves the lumping model untouched, so its
+    // arrays are null and `Characterise` never called `generateLumpedComposition` at all.
+    if (lumping.getLumpedComponentNames() == null) {
+      System.out.println("# no lumping: the plus model returned no split");
+    } else {
+      System.out.printf("# lump_names = %s%n", String.join(",", lumping.getLumpedComponentNames()));
+      row("number_of_lumped_components", lumping.getNumberOfLumpedComponents());
+      row("number_of_pseudo_components", lumping.getNumberOfPseudoComponents());
+      for (int k = 0; k < lumping.getNumberOfLumpedComponents(); k++) {
+        row("fraction_of_heavy_end[" + k + "]", lumping.getFractionOfHeavyEnd(k));
+      }
+    }
     int n = system.getPhase(0).getNumberOfComponents();
     row("component_count", n);
+    row("total_moles", system.getNumberOfMoles());
     for (int i = 0; i < n; i++) {
       var component = system.getPhase(0).getComponent(i);
       String name = component.getComponentName();
       System.out.printf("# cut %s%n", name);
       row(name + ".z", component.getz());
+      // **`getz()` is not the whole story for a component added after the last `init`.**
+      // `addTBPfraction` adds *moles* - `totalNumberOfMoles * zPlus[k]` - and NeqSim derives `z`
+      // from them, so a reading taken before the next initialisation says nothing about what was
+      // added. Both are printed so the row is not read as either.
+      row(name + ".moles", component.getNumberOfMolesInPhase());
       row(name + ".molar_mass", component.getMolarMass());
       row(name + ".density", component.getNormalLiquidDensity());
       row(name + ".tc", component.getTC());
