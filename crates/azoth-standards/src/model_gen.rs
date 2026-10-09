@@ -5,6 +5,11 @@
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
 //! on any difference.
+//!
+//! `approx_constant` is allowed because these tables carry **measured data**: a cut's
+//! molar mass of `0.318` kg/mol is a number from the PVTsim table before it is an
+//! approximation of `1/pi`, and clippy cannot tell the two apart.
+#![allow(clippy::approx_constant)]
 
 use azoth_core::{Band, ModelSpec, RangeCheck, Severity, SpecCheck, TestCase, WarningCode};
 

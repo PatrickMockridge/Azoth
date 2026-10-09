@@ -5,8 +5,9 @@
 //! conversion site used by both backends cannot disagree with itself about what a number is in.
 
 use azoth_characterization::{
-    AssayBasis, TbpClosureKind, TbpModel, WhitsonDensityModel,
-    assay_mass_fractions as assay_kernel, tbp_closure as closure_kernel,
+    AssayBasis, PlusModel, TbpClosureKind, TbpModel, WhitsonDensityModel,
+    assay_mass_fractions as assay_kernel, characterise_plus_fraction as facade_kernel,
+    tbp_closure as closure_kernel,
     tbp_cut_properties as kernel, tbp_density as density_kernel,
     whitson_gamma_split as gamma_kernel,
 };
@@ -15,9 +16,40 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::transport_gen::{
-    PyAssayMassFractionsResult, PyTbpClosureResult, PyTbpCutPropertiesResult, PyTbpDensityResult,
-    PyWhitsonGammaSplitResult,
+    PyAssayMassFractionsResult, PyCharacterisePlusFractionResult, PyTbpClosureResult,
+    PyTbpCutPropertiesResult, PyTbpDensityResult, PyWhitsonGammaSplitResult,
 };
+
+/// A C7+ end characterised end to end: model, split and lumps.
+///
+/// All arguments are SI magnitudes. `plus_model` names one of the three the spec declares;
+/// `None` takes `pedersen`. **`selected_model` on the result is not always this**: a plus
+/// fraction heavier than the requested model's maximum is re-modelled, silently. **This wrapper
+/// is hand-written** because an optional enum is a shape `gen_python_wrappers` refuses.
+#[pyfunction]
+#[pyo3(signature = (molar_mass, density, mole_fraction, first_carbon_number, plus_model=None, number_of_lumps=None))]
+#[pyo3(text_signature = "(molar_mass, density, mole_fraction, first_carbon_number, plus_model=None, number_of_lumps=None)")]
+pub fn characterise_plus_fraction(
+    py: Python<'_>,
+    molar_mass: f64,
+    density: f64,
+    mole_fraction: f64,
+    first_carbon_number: usize,
+    plus_model: Option<&str>,
+    number_of_lumps: Option<usize>,
+) -> PyResult<PyCharacterisePlusFractionResult> {
+    let parsed: Option<PlusModel> = plus_model.map(|name| name.parse().unwrap_or_default());
+    facade_kernel(
+        kilograms_per_mole(molar_mass),
+        kilograms_per_cubic_meter(density),
+        mole_fraction,
+        first_carbon_number,
+        parsed,
+        number_of_lumps,
+    )
+    .map(|result| PyCharacterisePlusFractionResult::from(&result))
+    .map_err(|error| to_pyerr(py, error))
+}
 
 /// An oil assay's declared yields, resolved to a mass basis.
 ///

@@ -1,0 +1,176 @@
+model = "characterization.characterise_plus_fraction"
+
+[[cases]]
+id = "row0_pedersen_m04"
+tolerance = 1.0e-9
+source = "NeqSim master, `Characterise.characterisePlusFraction` with `Pedersen` at 0.4 kg/mol and 850 kg/m3, from `validation/neqsim/captures/plus_fraction_probe.tsv`. The requested model is the one that runs, and the seven lumps are the default. The capture prints the class's own g/cm3 for a gravity and this states kg/m3, so the densities below are its numbers a thousand larger.\n"
+[cases.inputs]
+plus_model = "pedersen"
+molar_mass = 0.4
+density = 850.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "pedersen"
+fraction_of_heavy_end = [
+    0.27222033580343, 0.19824690889526, 0.144375095161537, 0.133406330037424,
+    0.104070555071275, 0.0852878888532923, 0.0623928861941116,
+]
+lump_molar_mass = [
+    0.289277063762394, 0.330384423804666, 0.372646183776485, 0.421156089058717,
+    0.483054647410447, 0.569323543381005, 0.752117047045582,
+]
+lump_density = [
+    860.277716031825, 856.553847513065, 853.263374660817, 849.9084182465681, 846.1156733095529,
+    841.5495752237409, 833.605652436018,
+]
+
+[[cases]]
+id = "row1_pedersen_m04"
+tolerance = 1.0e-9
+source = "The same feed with `Pedersen Heavy Oil` asked for. **180 cuts where the row above had 60**, both lumped into seven - so the lump count is the grouping's and not the split's, and two fluids with the same plus fraction and different ranges give different lumps.\n"
+[cases.inputs]
+plus_model = "pedersen_heavy_oil"
+molar_mass = 0.4
+density = 850.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "pedersen_heavy_oil"
+fraction_of_heavy_end = [
+    0.274347914026313, 0.199081136428011, 0.144463642168124, 0.132940642687823,
+    0.103160672023937, 0.0839219683620322, 0.0620840243159791,
+]
+lump_molar_mass = [
+    0.28926514937762, 0.330373740166637, 0.372634679640625, 0.421135369791453,
+    0.483021663600308, 0.56923882073684, 0.764094341424205,
+]
+lump_density = [
+    860.2887552084741, 856.578410059353, 853.2998988965351, 849.957784434912, 846.179478046555,
+    841.632371917169, 833.1514824059501,
+]
+
+[[cases]]
+id = "row2_whitson_m04"
+tolerance = 1.0e-9
+source = "The same feed with `Whitson Gamma Model`. The gamma split's own cuts, grouped by the same code: nothing about the lumping is model-specific.\n"
+[cases.inputs]
+plus_model = "whitson_gamma"
+molar_mass = 0.4
+density = 850.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "whitson_gamma"
+fraction_of_heavy_end = [
+    0.39150963064231, 0.203230111306477, 0.135353148750561, 0.0980840956118252,
+    0.0762999060475517, 0.0585207701097249, 0.0370023375315508,
+]
+lump_molar_mass = [
+    0.160650800016754, 0.302743962632893, 0.428743962732209, 0.560749006109037,
+    0.71814643535316, 0.942105535412943, 1.42199999821484,
+]
+lump_density = [
+    680.2393574512689, 758.703038710744, 807.173813612509, 846.8867589732761, 885.345217371716,
+    929.712781078714, 1001.1973920789501,
+]
+
+[[cases]]
+id = "row5_whitson_m02"
+tolerance = 1.0e-9
+source = "A plus fraction of 0.2 kg/mol, which `Pedersen` and `Pedersen Heavy Oil` both decline - their abundance test compares the table's first cut against the plus fraction's molar mass - while the gamma model has no such test and computes. This is the row that says the model choice is not cosmetic.\n"
+[cases.inputs]
+plus_model = "whitson_gamma"
+molar_mass = 0.2
+density = 780.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "whitson_gamma"
+fraction_of_heavy_end = [
+    0.317380845490511, 0.216650244383129, 0.147889606376961, 0.126900367964111,
+    0.0900044924640694, 0.0596643295599683, 0.0415101137612495,
+]
+lump_molar_mass = [
+    0.109666872162527, 0.151666872159978, 0.193666872154004, 0.241634441726609,
+    0.303312693606111, 0.383818707881673, 0.549999998084875,
+]
+lump_density = [
+    634.8328501969061, 672.616422260683, 702.669907933803, 731.173973729267, 761.6247639284979,
+    794.5455584907511, 849.448601875363,
+]
+
+[[cases]]
+id = "row6_pedersen_m065"
+tolerance = 1.0e-9
+source = "0.65 kg/mol against `Pedersen`, whose maximum is 0.605. **`selected_model` is `pedersen_heavy_oil` and the request was `pedersen`** - the class replaced it before using it, logged an error and did not ask.\n"
+[cases.inputs]
+plus_model = "pedersen"
+molar_mass = 0.65
+density = 900.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "pedersen_heavy_oil"
+fraction_of_heavy_end = [
+    0.289571319263453, 0.205810521645071, 0.159658727622619, 0.126553952815292,
+    0.0998728543813162, 0.0766697916279824, 0.0418630853216722,
+]
+lump_molar_mass = [
+    0.328260990622746, 0.454466027886078, 0.586628694313664, 0.738692516760305,
+    0.929782302198654, 1.21032817893151, 1.76492524387331,
+]
+lump_density = [
+    871.446504691937, 883.229298292171, 892.564808560777, 901.025779322432, 909.4973991922441,
+    919.2578246044369, 933.483649149615,
+]
+
+[[cases]]
+id = "row7_pedersen_m065"
+tolerance = 1.0e-9
+source = "The same feed with the heavy-oil model asked for directly, which is the same run: the replacement is idempotent and this row is the same numbers as the one above.\n"
+[cases.inputs]
+plus_model = "pedersen_heavy_oil"
+molar_mass = 0.65
+density = 900.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "pedersen_heavy_oil"
+fraction_of_heavy_end = [
+    0.289571319263453, 0.205810521645071, 0.159658727622619, 0.126553952815292,
+    0.0998728543813162, 0.0766697916279824, 0.0418630853216722,
+]
+lump_molar_mass = [
+    0.328260990622746, 0.454466027886078, 0.586628694313664, 0.738692516760305,
+    0.929782302198654, 1.21032817893151, 1.76492524387331,
+]
+lump_density = [
+    871.446504691937, 883.229298292171, 892.564808560777, 901.025779322432, 909.4973991922441,
+    919.2578246044369, 933.483649149615,
+]
+
+[[cases]]
+id = "row8_whitson_m065"
+tolerance = 1.0e-9
+source = "The same feed with `Whitson Gamma Model`, whose maximum molar mass is **0.605** - inherited from `PedersenPlusModel`'s constructor - so it too is replaced, and `selected_model` reports `pedersen_heavy_oil` for a request that named the gamma model.\n"
+[cases.inputs]
+plus_model = "whitson_gamma"
+molar_mass = 0.65
+density = 900.0
+mole_fraction = 0.1
+first_carbon_number = 20
+[cases.expected]
+selected_model = "pedersen_heavy_oil"
+fraction_of_heavy_end = [
+    0.289571319263453, 0.205810521645071, 0.159658727622619, 0.126553952815292,
+    0.0998728543813162, 0.0766697916279824, 0.0418630853216722,
+]
+lump_molar_mass = [
+    0.328260990622746, 0.454466027886078, 0.586628694313664, 0.738692516760305,
+    0.929782302198654, 1.21032817893151, 1.76492524387331,
+]
+lump_density = [
+    871.446504691937, 883.229298292171, 892.564808560777, 901.025779322432, 909.4973991922441,
+    919.2578246044369, 933.483649149615,
+]

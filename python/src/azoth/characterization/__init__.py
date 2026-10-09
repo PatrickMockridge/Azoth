@@ -8,6 +8,7 @@ It is a namespace of its own rather than a family under :mod:`azoth.eos`, mirror
 own package split: what is here is not an equation of state and is not reached from one.
 
 * :func:`assay_mass_fractions` - an oil assay's cuts resolved to a mass basis
+* :func:`characterise_plus_fraction` - the whole chain, from a C7+ end to lumps
 * :func:`characterize_to_reference` - a fluid re-cut onto another's cut slate
 * :func:`tbp_cut_properties` - a cut's critical properties, by any of NeqSim's ten models
 * :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
@@ -29,6 +30,7 @@ from __future__ import annotations
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AssayMassFractionsResult,
+    CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
     LumpingResult,
     PedersenPlusSplitResult,
@@ -42,6 +44,7 @@ from azoth.core.units import Q
 
 __all__ = [
     "assay_mass_fractions",
+    "characterise_plus_fraction",
     "characterize_to_reference",
     "lumping",
     "pedersen_plus_split",
@@ -58,6 +61,7 @@ _TBP_DENSITY = "characterization.tbp_density"
 _TBP_GROUPING = "characterization.tbp_grouping"
 _PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
 _ASSAY_MASS_FRACTIONS = "characterization.assay_mass_fractions"
+_CHARACTERISE_PLUS_FRACTION = "characterization.characterise_plus_fraction"
 _CHARACTERIZE_TO_REFERENCE = "characterization.characterize_to_reference"
 _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
@@ -116,6 +120,40 @@ def characterize_to_reference(
         source_boiling_point=source_boiling_point,
         reference_molar_mass=reference_molar_mass,
         reference_boiling_point=reference_boiling_point,
+    )
+
+
+def characterise_plus_fraction(
+    molar_mass: Q,
+    density: Q,
+    mole_fraction: float,
+    first_carbon_number: int,
+    plus_model: str | None = None,
+    number_of_lumps: int | None = None,
+) -> CharacterisePlusFractionResult:
+    """A C7+ end characterised end to end: model, split and lumps.
+
+    This is the chain the whole namespace exists for - one pseudo-component described by three
+    numbers in, a table of lumps out. ``plus_model`` is ``pedersen``, ``pedersen_heavy_oil`` or
+    ``whitson_gamma``.
+
+    **``selected_model`` on the result is not always ``plus_model``.** A plus fraction heavier
+    than the requested model's maximum molar mass is re-modelled to ``pedersen_heavy_oil``, and
+    Whitson Gamma's maximum is ``0.605`` rather than the 2.10 its sibling's name suggests.
+
+    Raises:
+        InvalidInputError, OutOfRangeError: from the split or the lumping, including a plus
+            fraction the split declines - which is raised here rather than skipped.
+
+    See :func:`azoth.characterization.reference.characterise_plus_fraction`.
+    """
+    return resolve(_CHARACTERISE_PLUS_FRACTION)(  # type: ignore[no-any-return]
+        molar_mass=molar_mass,
+        density=density,
+        mole_fraction=mole_fraction,
+        first_carbon_number=first_carbon_number,
+        plus_model=plus_model,
+        number_of_lumps=number_of_lumps,
     )
 
 

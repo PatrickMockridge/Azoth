@@ -27,6 +27,7 @@ from azoth.core.result_base import (
     HydrateStructure,
     KComponent,
     Phase,
+    PlusModel,
     RootStructure,
     StabilityVerdict,
     TpMultiflashSeed,
@@ -50,6 +51,28 @@ class AssayMassFractionsResult(_HasWarnings):
 
     #: The assay's bulk density, `1 / sum(w_i / rho_i)`, present only when a density is supplied for every cut.
     bulk_density: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class CharacterisePlusFractionResult(_HasWarnings):
+    """Result of ``characterization.characterise_plus_fraction``."""
+
+    CALC_ID: ClassVar[str] = "characterization.characterise_plus_fraction"
+
+    #: Which model actually ran. **Not always `plus_model`**: a plus fraction heavier than the requested model's maximum is re-modelled to `Pedersen Heavy Oil`, silently, and this is the only thing that reports it.
+    selected_model: PlusModel
+
+    #: Each lump's share of the plus fraction, which sums to one as far as the split does.
+    fraction_of_heavy_end: tuple[float, ...]
+
+    #: Each lump's mass-weighted mean molar mass over the cuts it holds.
+    lump_molar_mass: tuple[Q, ...]
+
+    #: Each lump's mass-weighted harmonic mean density over the cuts it holds.
+    lump_density: tuple[Q, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

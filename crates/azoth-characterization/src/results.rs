@@ -6,7 +6,39 @@
 //! deliberate.
 
 use azoth_core::{CalcResult, Warning};
+
+use crate::characterise_plus_fraction::PlusModel;
 use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
+
+/// Result of `characterization.characterise_plus_fraction`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CharacterisePlusFractionResult {
+    /// Which model actually ran, which is not always the one asked for.
+    pub selected_model: PlusModel,
+    /// Each lump's share of the plus fraction.
+    pub fraction_of_heavy_end: Vec<f64>,
+    /// Each lump's mass-weighted mean molar mass.
+    pub lump_molar_mass: Vec<MolarMass>,
+    /// Each lump's mass-weighted harmonic mean density.
+    pub lump_density: Vec<MassDensity>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CharacterisePlusFractionResult {
+    const CALC_ID: &'static str = "characterization.characterise_plus_fraction";
+    const FIELDS: &'static [&'static str] = &[
+        "selected_model",
+        "fraction_of_heavy_end",
+        "lump_molar_mass",
+        "lump_density",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
 
 /// Result of `characterization.characterize_to_reference`.
 #[derive(Debug, Clone, PartialEq)]

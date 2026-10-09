@@ -20,6 +20,7 @@ use pyo3::types::PyModule;
 pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // The result class each registered id answers with.
     m.add_class::<crate::transport_gen::PyAssayMassFractionsResult>()?;
+    m.add_class::<crate::transport_gen::PyCharacterisePlusFractionResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterizeToReferenceResult>()?;
     m.add_class::<crate::transport_gen::PyLumpingResult>()?;
     m.add_class::<crate::transport_gen::PyPedersenPlusSplitResult>()?;
@@ -226,6 +227,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // The calculations and models themselves.
     m.add_function(wrap_pyfunction!(
         crate::characterization::assay_mass_fractions,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::characterization::characterise_plus_fraction,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(

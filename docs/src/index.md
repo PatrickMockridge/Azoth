@@ -87,6 +87,7 @@ Five sections, and the difference between them is the point:
 *Models* — whose specs fix a procedure rather than an equation:
 
 - [`characterization.assay_mass_fractions`](./characterization/assay_mass_fractions.md) — An oil assay's declared fractions resolved to a mass basis
+- [`characterization.characterise_plus_fraction`](./characterization/characterise_plus_fraction.md) — A C7+ end characterised end to end: model, split and lumps
 - [`characterization.characterize_to_reference`](./characterization/characterize_to_reference.md) — A fluid's pseudo-components re-cut onto another fluid's slate
 - [`characterization.lumping`](./characterization/lumping.md) — A cut table grouped into equal-mass lumps
 - [`characterization.pedersen_plus_split`](./characterization/pedersen_plus_split.md) — A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves

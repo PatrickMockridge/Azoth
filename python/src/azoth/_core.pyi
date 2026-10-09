@@ -191,6 +191,14 @@ class AssayMassFractionsResult:
     warnings: list[Warning]
 
 @final
+class CharacterisePlusFractionResult:
+    selected_model: PlusModel
+    fraction_of_heavy_end: list[float]
+    lump_molar_mass: list[Qty]
+    lump_density: list[Qty]
+    warnings: list[Warning]
+
+@final
 class CharacterizeToReferenceResult:
     reference_index: list[float]
     group_moles: list[Qty]
@@ -2168,6 +2176,14 @@ def assay_mass_fractions(
     declared_fraction: list[float],
     density: list[float] | None = None,
 ) -> AssayMassFractionsResult: ...
+def characterise_plus_fraction(
+    molar_mass: float,
+    density: float,
+    mole_fraction: float,
+    first_carbon_number: float,
+    plus_model: str | None = None,
+    number_of_lumps: float | None = None,
+) -> CharacterisePlusFractionResult: ...
 def characterize_to_reference(
     source_moles: list[float],
     source_molar_mass: list[float],

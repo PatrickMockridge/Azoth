@@ -67,6 +67,73 @@ impl From<&azoth_characterization::results::AssayMassFractionsResult>
         }
     }
 }
+/// Result of `characterization.characterise_plus_fraction`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CharacterisePlusFractionResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCharacterisePlusFractionResult {
+    /// Which model actually ran. **Not always `plus_model`**: a plus fraction heavier than the requested model's maximum is re-modelled to `Pedersen Heavy Oil`, silently, and this is the only thing that reports it.
+    #[pyo3(get)]
+    pub selected_model: String,
+    /// Each lump's share of the plus fraction, which sums to one as far as the split does.
+    #[pyo3(get)]
+    pub fraction_of_heavy_end: Vec<f64>,
+    /// Each lump's mass-weighted mean molar mass over the cuts it holds.
+    #[pyo3(get)]
+    pub lump_molar_mass: Vec<PyQty>,
+    /// Each lump's mass-weighted harmonic mean density over the cuts it holds.
+    #[pyo3(get)]
+    pub lump_density: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCharacterisePlusFractionResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CharacterisePlusFractionResult(selected_model={:?}, fraction_of_heavy_end={:?}, lump_molar_mass={:?}, lump_density={:?}, {} warning(s))",
+            self.selected_model,
+            self.fraction_of_heavy_end,
+            self.lump_molar_mass,
+            self.lump_density,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::CharacterisePlusFractionResult>
+    for PyCharacterisePlusFractionResult
+{
+    fn from(r: &azoth_characterization::results::CharacterisePlusFractionResult) -> Self {
+        Self {
+            selected_model: r.selected_model.as_str().to_string(),
+            fraction_of_heavy_end: r.fraction_of_heavy_end.clone(),
+            lump_molar_mass: r
+                .lump_molar_mass
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/mol".to_string(),
+                })
+                .collect(),
+            lump_density: r
+                .lump_density
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/m**3".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.characterize_to_reference`, transported.
 #[pyclass(
     frozen,

@@ -43,13 +43,17 @@ const MASS_TOLERANCE: f64 = 1.0e-12;
 struct Row {
     /// Where it sits on the grid.
     key: f64,
-    /// Its mole amount.
+    /// Its mole amount, and its mass, which are the two the group accumulates.
     moles: f64,
-    /// Its molar mass.
-    molar_mass: f64,
-    /// Its gravity, and its mass, which are the two the group accumulates.
+    /// Its gravity, which the group's volume is taken through.
     density: f64,
     mass: f64,
+}
+
+/// `!(value > MASS_TOLERANCE)`, NaN included: the class's own comparison drops an accumulation it
+/// cannot order rather than reporting it, where `value <= MASS_TOLERANCE` would keep the NaN.
+fn below_tolerance(value: f64) -> bool {
+    value.is_nan() || value <= MASS_TOLERANCE
 }
 
 /// A group's running totals, as `PseudoComponentGroupBuilder` keeps them.
@@ -103,7 +107,6 @@ fn rows(
         .map(|(((amount, mass), rho), tb)| Row {
             key: sorting_key(*tb, mass.value),
             moles: *amount,
-            molar_mass: mass.value,
             density: rho.value,
             mass: amount * mass.value,
         })
@@ -215,7 +218,7 @@ pub fn characterize_to_reference(
     let mut group_molar_mass = Vec::new();
     let mut group_density = Vec::new();
     for (index, group) in groups.iter().enumerate() {
-        if !(group.mass > MASS_TOLERANCE) || !(group.moles > MASS_TOLERANCE) {
+        if below_tolerance(group.mass) || below_tolerance(group.moles) {
             continue;
         }
         reference_index.push(index as f64);

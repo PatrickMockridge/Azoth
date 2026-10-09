@@ -26,6 +26,7 @@ from azoth.core.result import (
     BwrsPhaseResult,
     CapillaryDewPointResult,
     ChapmanEnskogDiffusivityResult,
+    CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
     ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
@@ -228,6 +229,9 @@ from azoth.core.result import (
     Phase as _Phase,
 )
 from azoth.core.result import (
+    PlusModel as _PlusModel,
+)
+from azoth.core.result import (
     StabilityVerdict as _StabilityVerdict,
 )
 from azoth.core.result import (
@@ -263,6 +267,7 @@ __all__ = [
     "bwrs_phase",
     "capillary_dew_point",
     "chapman_enskog_diffusivity",
+    "characterise_plus_fraction",
     "characterize_to_reference",
     "chemical_equilibrium",
     "choked_flow_area",
@@ -468,6 +473,26 @@ def assay_mass_fractions(basis: str, declared_fraction: list[float], density: li
         mass_fraction=tuple(result.mass_fraction),
         total_declared_fraction=result.total_declared_fraction,
         bulk_density=None if result.bulk_density is None else from_si(result.bulk_density.magnitude_si, result.bulk_density.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def characterise_plus_fraction(molar_mass: Q, density: Q, mole_fraction: float, first_carbon_number: int, plus_model: str | None=None, number_of_lumps: int | None=None) -> CharacterisePlusFractionResult:
+    """``characterization.characterise_plus_fraction``, computed in Rust."""
+    spec = _models_gen.model("characterization.characterise_plus_fraction")
+    result = _core.characterise_plus_fraction(
+        input_to_si(spec, "molar_mass", molar_mass),
+        input_to_si(spec, "density", density),
+        mole_fraction,
+        int(first_carbon_number),
+        plus_model,
+        None if number_of_lumps is None else int(number_of_lumps),
+    )
+    return CharacterisePlusFractionResult(
+        selected_model=_PlusModel(result.selected_model),
+        fraction_of_heavy_end=tuple(result.fraction_of_heavy_end),
+        lump_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_molar_mass),
+        lump_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_density),
         warnings=_warnings(result.warnings),
     )
 

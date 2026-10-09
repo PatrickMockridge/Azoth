@@ -76,6 +76,7 @@ NAMESPACES = (
 #: not, and nothing derives the difference - they are names in a module.
 ENUM_ALIASES = {
     "Phase": "_Phase",
+    "PlusModel": "_PlusModel",
     "StabilityVerdict": "_StabilityVerdict",
     "TpMultiflashSeed": "_TpMultiflashSeed",
     "HenryStatus": "_HenryStatus",

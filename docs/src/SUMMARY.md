@@ -25,6 +25,7 @@
 - [Petroleum fraction characterisation](./characterization/index.md)
   - [TBP cut properties by any of NeqSim's ten models](./characterization/tbp_cut_properties.md)
   - [An oil assay's declared fractions resolved to a mass basis](./characterization/assay_mass_fractions.md)
+  - [A C7+ end characterised end to end: model, split and lumps](./characterization/characterise_plus_fraction.md)
   - [A fluid's pseudo-components re-cut onto another fluid's slate](./characterization/characterize_to_reference.md)
   - [A cut table grouped into equal-mass lumps](./characterization/lumping.md)
   - [A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves](./characterization/pedersen_plus_split.md)

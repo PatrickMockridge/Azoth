@@ -24,6 +24,7 @@ from azoth.core.result_base import HenryStatus as HenryStatus
 from azoth.core.result_base import HydrateStructure as HydrateStructure
 from azoth.core.result_base import KComponent as KComponent
 from azoth.core.result_base import Phase as Phase
+from azoth.core.result_base import PlusModel as PlusModel
 from azoth.core.result_base import RootStructure as RootStructure
 from azoth.core.result_base import StabilityVerdict as StabilityVerdict
 from azoth.core.result_base import TpMultiflashSeed as TpMultiflashSeed

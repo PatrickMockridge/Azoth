@@ -340,7 +340,12 @@ def emit_rust(models: list[dict[str, Any]], namespace: str) -> str:
         + "".join(f"//!   - {m['_path']}\n" for m in mine)
         + "//!\n"
         "//! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails\n"
-        "//! on any difference.\n\n"
+        "//! on any difference.\n"
+        "//!\n"
+        "//! `approx_constant` is allowed because these tables carry **measured data**: a cut's\n"
+        "//! molar mass of `0.318` kg/mol is a number from the PVTsim table before it is an\n"
+        "//! approximation of `1/pi`, and clippy cannot tell the two apart.\n"
+        "#![allow(clippy::approx_constant)]\n\n"
         "use azoth_core::{\n"
         f"    {', '.join(name for name in imports if name in body)},\n"
         "};\n"

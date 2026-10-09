@@ -39,7 +39,7 @@ SAFT, reference/Helmholtz, electrolyte, solid/hydrate, bases), **~105 flash oper
 and ~60 saturation operations, **~60 physical-property methods**, 25 alpha functions and
 15 mixing rules, over a **~90-field component model**.
 
-azoth has **203 ids** — 74 calculations and 129 models.
+azoth has **204 ids** — 74 calculations and 130 models.
 
 ## The ledger
 
@@ -95,10 +95,10 @@ exclusion list, and the port's NeqSim probe and its capture.
 
 **Three surfaces the tranche has taken are not in that nine, because it took them: the pyo3
 wrapper, the bridge adapter and the Python result dataclass.** The wrapper is generated for
-**153** of the registered ids and hand-written for **50**: a kernel that takes a record or a
+**153** of the registered ids and hand-written for **51**: a kernel that takes a record or a
 mixture the spec does not name is one the generator refuses rather than guesses at, and so is one
 whose signature disagrees with the order the bridge passes it in. The bridge adapter is generated
-for **201** and hand-written for **2**, and its rule is narrower because its boundary is a Python
+for **202** and hand-written for **2**, and its rule is narrower because its boundary is a Python
 signature rather than a Rust one: its signature is the public wrapper's, its call is the
 `#[pyfunction]`'s own order, and every argument on either side must be an input the spec declares,
 a field of the `params` record the wrapper's annotation names, or one expression a boundary object
@@ -106,7 +106,7 @@ resolves into. A `molar_mass` is the one expansion that is not an expression - a
 carries none and the correlation cannot default one, so it crosses behind a guard whose sentence is
 read from the id's own reference implementation.
 
-**The result dataclass is generated for **203** and hand-written for **0**.** One frozen class per registered id, its fields
+**The result dataclass is generated for **204** and hand-written for **0**.** One frozen class per registered id, its fields
 in `CalcResult::FIELDS` order, each annotation from the transport's Rust type beside the unit the
 spec declares, and each doc from the spec's own `description` — so the field prose has one home
 and `tools/gen_python_result.py` can emit the whole file without a paraphrase. What stays

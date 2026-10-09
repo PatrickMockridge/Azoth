@@ -1,0 +1,73 @@
+id = "characterization.characterise_plus_fraction"
+name = "A C7+ end characterised end to end: model, split and lumps"
+kind = "direct"
+assumptions = [
+    "**this is the front door.** One pseudo-component described by three numbers goes in; a table a cubic can use comes out. Everything between is three ids this namespace carries, and there is no arithmetic here that is not one of theirs.",
+    "**the three are** `characterization.pedersen_plus_split` or `.whitson_gamma_split`, then `characterization.lumping`.",
+    "**the model is asked for and the model that runs is an output.** When the plus fraction is heavier than the requested model's `getMaxPlusMolarMass()`, the class **replaces the model with `Pedersen Heavy Oil`** and carries on - logging an error, never asking the caller.",
+    "**`selected_model` is what actually ran**, and it is the only thing that reports the replacement.",
+    "**the swap is not model-specific.** It fires before the model is used, so a request for `Whitson Gamma` above the threshold is swept away with the rest.",
+    "**and Whitson's own threshold is 0.605**, not the 2.10 the heavy-oil name suggests, because `WhitsonGammaModel` extends `PedersenPlusModel` and inherits the constructor that sets it.",
+    "**1.0e-12 is the line between the two groups of rows the capture carries**, measured: a plus fraction of 0.65 kg/mol against a threshold of 0.605 swaps on all three models, and 0.4 does not on any.",
+    "**the first carbon number is the Pedersen path's and not the gamma path's.** `PedersenPlusModel` reads it off the plus component's name - `C20` gives 20 - while `WhitsonGammaModel`'s override never touches it, so the gamma model's cuts always begin at one.",
+    "**the input therefore reaches one of the two and is ignored by the other**, which is what the class does rather than what a caller would expect.",
+    "**the range ends at the model's own last carbon number, which is not an input.** `PedersenPlusModel` sets 80, `PedersenHeavyOilPlusModel` sets 200, and Whitson Gamma inherits the first - so the heavy-oil model the swap selects is the only route to the 180-cut split.",
+    "**a split that returns false is refused here rather than skipped.** The class takes the boolean and, when it is false, leaves the fluid with its single plus row and no lumps - a silent no-op.",
+    "**an id returning a table has no fluid to leave unchanged**, so the split's own message is raised instead. That is a stated divergence and not a reproduction.",
+    "**the lumps are seven unless the caller says otherwise**, which is `LumpingModel.numberOfPseudocomponents`' own default and the number every captured row shows.",
+    "**the last step is `characterization.lumping`'s and not this id's**: the mass it partitions is the *plus fraction's*, `mole_fraction * molar_mass`, not the cut table's own `sum(z*M)`.",
+    "**the two differ by the split's residual**, and that difference moves a partition boundary on the heavy rows - which is why the plus fraction's own two numbers have to cross into the lumping and the table's do not.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/Characterise.java`'s `characterisePlusFraction` is the port source, over `PlusFractionModel.getMaxPlusMolarMass` and `LumpingModel.getModel`.",
+    "Whitson, C. H. (1983). \"Characterizing Hydrocarbon Plus Fractions.\" Society of Petroleum Engineers Journal 23(4), 683-694. DOI 10.2118/12233-PA.",
+    "`validation/neqsim/captures/plus_fraction_probe.tsv` - nine sweep rows from `validation/neqsim/PlusFractionProbe.java`, each carrying the model that actually ran, the lumping model's `fractionOfHeavyEnd`, and the added components' molar masses and gravities.",
+]
+[source]
+standard = "NeqSim master `Characterise.characterisePlusFraction`"
+edition = "Its four statements: `init(0)`, `hasPlusFraction()`, the `getMPlus() > getMaxPlusMolarMass()` replacement, and `generateLumpedComposition` gated on the split's boolean."
+[inputs]
+[inputs.plus_model]
+type = "enum"
+values = ["pedersen", "pedersen_heavy_oil", "whitson_gamma"]
+optional = true
+description = "which plus model is asked for, over the names `PlusFractionModel.getModel` resolves. Absent takes `pedersen`, which is what `getModel(\"\")` returns.\n"
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "The plus fraction's molar mass, which fixes the split and is what the replacement threshold is compared against.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "The plus fraction's normal liquid density at 15 C.\n"
+[inputs.mole_fraction]
+unit = "dimensionless"
+description = "The plus fraction's mole fraction in the fluid, which the split normalises to and which the lumping divides by - as its own number and not as the cut table's sum.\n"
+[inputs.first_carbon_number]
+unit = "dimensionless"
+description = "The carbon number the Pedersen split's cuts begin at, which the class reads off the plus component's own name. **Ignored by the gamma model**, whose cuts always begin at one.\n"
+[inputs.number_of_lumps]
+unit = "dimensionless"
+optional = true
+description = "How many pseudo-components the split is grouped into. Absent takes `LumpingModel.numberOfPseudocomponents`' own 7.\n"
+[outputs]
+[outputs.selected_model]
+type = "enum"
+values = ["pedersen", "pedersen_heavy_oil", "whitson_gamma"]
+description = "Which model actually ran. **Not always `plus_model`**: a plus fraction heavier than the requested model's maximum is re-modelled to `Pedersen Heavy Oil`, silently, and this is the only thing that reports it.\n"
+[outputs.fraction_of_heavy_end]
+type = "vector"
+unit = "dimensionless"
+length = "one per lump"
+description = "Each lump's share of the plus fraction, which sums to one as far as the split does.\n"
+[outputs.lump_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per lump, aligned with `fraction_of_heavy_end`"
+description = "Each lump's mass-weighted mean molar mass over the cuts it holds.\n"
+[outputs.lump_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per lump, aligned with `fraction_of_heavy_end`"
+description = "Each lump's mass-weighted harmonic mean density over the cuts it holds.\n"
+[implementations]
+python = "azoth.characterization.characterise_plus_fraction"
+rust = "azoth_characterization::characterise_plus_fraction"

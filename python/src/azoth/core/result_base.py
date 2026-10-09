@@ -219,6 +219,23 @@ class KComponent:
     k: float
 
 
+class PlusModel(StrEnum):
+    """Which plus model a characterisation resolved to.
+
+    **An output and not an echo of the input.** ``Characterise.characterisePlusFraction``
+    replaces a model whose maximum molar mass the plus fraction exceeds, before using it and
+    without asking - so a caller who requested ``WHITSON_GAMMA`` and reads it back as
+    ``PEDERSEN_HEAVY_OIL`` is reading the one report of a substitution the class makes silently.
+    """
+
+    #: `PedersenPlusModel`: 80 cuts, and a maximum molar mass of 0.605 kg/mol.
+    PEDERSEN = "pedersen"
+    #: `PedersenHeavyOilPlusModel`: the same solve over 200 carbon numbers, and 2.10 kg/mol.
+    PEDERSEN_HEAVY_OIL = "pedersen_heavy_oil"
+    #: `WhitsonGammaModel`, which inherits the 0.605 threshold and the 80-cut range.
+    WHITSON_GAMMA = "whitson_gamma"
+
+
 class StabilityVerdict(StrEnum):
     """Whether a feed is stable as a single phase.
 
