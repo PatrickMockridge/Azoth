@@ -265,7 +265,6 @@ impl DistillationColumnResult {
     }
 }
 
-
 /// **The two efficiency fields, resolved and clamped, or `None` where neither is stated.**
 ///
 /// `DistillationColumn` clamps rather than refusing - `clampMurphreeEfficiency` is

@@ -37,7 +37,6 @@ pub struct TankResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Join a tank's inlets and split the result into a gas and a liquid outlet.
 ///
 /// # Errors

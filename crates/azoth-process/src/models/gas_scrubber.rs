@@ -47,7 +47,6 @@ pub struct GasScrubberResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Flash a stream into vapour and liquid outlets.
 ///
 /// # Errors

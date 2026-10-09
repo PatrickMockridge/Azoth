@@ -182,7 +182,6 @@ impl PackedColumnResult {
     }
 }
 
-
 /// Solve a packed column.
 ///
 /// # Errors

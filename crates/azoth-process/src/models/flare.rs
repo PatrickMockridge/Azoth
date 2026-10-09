@@ -66,7 +66,6 @@ impl FlareResult {
     }
 }
 
-
 /// A flare's steady state: the record through, and the two numbers beside it.
 ///
 /// # Errors

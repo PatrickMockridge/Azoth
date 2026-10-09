@@ -62,7 +62,6 @@ impl CoolerResult {
     }
 }
 
-
 /// Cool a stream to a stated temperature, or by a stated duty.
 ///
 /// # Errors

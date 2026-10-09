@@ -57,7 +57,6 @@ impl FilterResult {
     }
 }
 
-
 /// Drop a stream's pressure by a fixed amount at a constant temperature.
 ///
 /// # Errors

@@ -52,7 +52,6 @@ pub struct ThreePhaseSeparatorResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Flash a stream into vapour, oil and aqueous outlets.
 ///
 /// # Errors

@@ -69,7 +69,6 @@ pub struct PlugFlowReactorResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// The rate type a declaration's name selects.
 fn rate_type(name: &str) -> Result<RateType> {
     match name {

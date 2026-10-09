@@ -78,7 +78,6 @@ pub struct HeatExchangerResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Exchange heat between two streams.
 ///
 /// # Errors

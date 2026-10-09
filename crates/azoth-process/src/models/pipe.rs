@@ -61,7 +61,6 @@ impl PipeResult {
     }
 }
 
-
 /// Drop a stream's pressure along a line.
 ///
 /// # Errors

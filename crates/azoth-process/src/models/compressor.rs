@@ -31,7 +31,6 @@ pub struct CompressorResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Compressor a stream's pressure along an isentrope.
 ///
 /// # Errors

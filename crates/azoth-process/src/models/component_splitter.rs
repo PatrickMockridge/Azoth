@@ -42,7 +42,6 @@ pub struct ComponentSplitterResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Divide a stream between two outlets component by component.
 ///
 /// # Errors

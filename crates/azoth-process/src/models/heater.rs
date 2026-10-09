@@ -65,7 +65,6 @@ impl HeaterResult {
     }
 }
 
-
 /// Heat or cool a stream to a stated temperature, or by a stated duty.
 ///
 /// # Errors

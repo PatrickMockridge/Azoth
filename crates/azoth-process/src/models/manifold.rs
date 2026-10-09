@@ -31,7 +31,6 @@ pub struct ManifoldResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Join a manifold's feeds and divide the mixture between its outlets.
 ///
 /// # Errors

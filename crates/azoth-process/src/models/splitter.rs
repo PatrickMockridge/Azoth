@@ -32,7 +32,6 @@ pub struct SplitterResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Split a stream into several with the same state, in proportion to `split_factors`.
 ///
 /// # Errors

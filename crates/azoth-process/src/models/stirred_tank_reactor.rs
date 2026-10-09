@@ -57,7 +57,6 @@ impl StirredTankReactorResult {
     }
 }
 
-
 /// React a feed stoichiometrically and flash the product.
 ///
 /// # Errors

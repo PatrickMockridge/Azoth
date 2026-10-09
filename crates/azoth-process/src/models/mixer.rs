@@ -33,7 +33,6 @@ pub struct MixerResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Join several streams into one, conserving molar flow and enthalpy.
 ///
 /// # Errors

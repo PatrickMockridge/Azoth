@@ -82,7 +82,6 @@ impl GibbsReactorResult {
     }
 }
 
-
 /// Bring a feed to its Gibbs equilibrium at its own temperature and pressure.
 ///
 /// **The class's own arithmetic is in kJ/mol and two of its outputs cross in other units.** The

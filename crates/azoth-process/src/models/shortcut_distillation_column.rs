@@ -103,7 +103,6 @@ impl ShortcutDistillationColumnResult {
     }
 }
 
-
 /// Solve a shortcut distillation column.
 ///
 /// # Errors

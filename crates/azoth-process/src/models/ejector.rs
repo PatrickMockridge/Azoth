@@ -89,7 +89,6 @@ impl EjectorResult {
     }
 }
 
-
 /// Expand a motive stream, entrain a suction stream with it, and diffuse the mixture.
 ///
 /// # Errors

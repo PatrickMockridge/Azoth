@@ -31,7 +31,6 @@ pub struct ExpanderResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Expander a stream's pressure along an isentrope.
 ///
 /// # Errors

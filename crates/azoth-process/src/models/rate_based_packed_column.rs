@@ -117,7 +117,6 @@ pub struct RateBasedPackedColumnResult {
     pub warnings: Vec<Warning>,
 }
 
-
 impl RateBasedPackedColumnResult {
     /// The flat record, from the kernel's own outcome.
     ///

@@ -180,7 +180,6 @@ impl StrippingColumnResult {
     }
 }
 
-
 /// Solve a tray stripper.
 ///
 /// **The base's own parameters under this class's names**, so the two ids read as the two

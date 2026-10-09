@@ -337,6 +337,7 @@ jobs:
           .venv/bin/python tools/gen_python_wrappers.py
           .venv/bin/python tools/gen_python_bridge.py
           .venv/bin/python tools/gen_python_result.py
+          .venv/bin/python tools/gen_rust_model_records.py
           .venv/bin/python tools/gen_parameter_bounds.py
       - name: Fail if anything drifted
         run: |
@@ -353,6 +354,7 @@ jobs:
             echo "::error::  python tools/gen_python_wrappers.py"
             echo "::error::  python tools/gen_python_bridge.py"
             echo "::error::  python tools/gen_python_result.py"
+            echo "::error::  python tools/gen_rust_model_records.py"
             echo "::error::  python tools/gen_parameter_bounds.py"
             exit 1
           fi

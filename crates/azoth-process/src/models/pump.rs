@@ -28,7 +28,6 @@ pub struct PumpResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Raise a stream's pressure, adding the pump's work as enthalpy.
 ///
 /// # Errors

@@ -34,7 +34,6 @@ pub struct ThrottlingValveResult {
     pub warnings: Vec<Warning>,
 }
 
-
 /// Drop a stream to a lower pressure without heat or work.
 ///
 /// # Errors

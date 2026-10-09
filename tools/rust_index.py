@@ -261,16 +261,37 @@ def result_types() -> tuple[ResultType, ...]:
     if not files:
         sys.exit(f"rust_index: no Rust sources under {CRATES}")
 
-    for path in files:
-        impls, structs = _parse_file(path)
+    parsed = [(path, *_parse_file(path)) for path in files]
+
+    for path, impls, structs in parsed:
         for rust_name, (calc_id, fields) in impls.items():
+            # A struct and its `impl CalcResult` may sit in different files: the process models'
+            # blocks are generated into `model_records_gen.rs` while their structs stay in
+            # `models/*.rs`. **The struct's own file is the one that matters** - it is where the
+            # type is reachable, and `tools/provenance.py` derives a kernel's Rust path from it.
+            owner = path
             rust_fields = structs.get(rust_name)
             if rust_fields is None:
-                sys.exit(f"rust_index: {path}: `{rust_name}` has no `pub struct` body")
+                # The impl resolves a name the file does not declare, so the struct is somewhere
+                # else - in the same crate, since a type is only nameable without a path within
+                # one. Names do repeat across crates (`PipeResult` is also `azoth-cli`'s).
+                crate = path.relative_to(CRATES).parts[0]
+                candidates = [
+                    (other, other_structs[rust_name])
+                    for other, _, other_structs in parsed
+                    if rust_name in other_structs
+                    and other.relative_to(CRATES).parts[0] == crate
+                ]
+                if len(candidates) != 1:
+                    sys.exit(
+                        f"rust_index: {path}: `{rust_name}` has no `pub struct` body here and "
+                        f"{len(candidates)} file(s) in `{crate}` declare one; exactly one must"
+                    )
+                owner, rust_fields = candidates[0]
             if len(fields) != len(rust_fields):
                 names = [name for name, _ in rust_fields]
                 sys.exit(
-                    f"rust_index: {path}: `{rust_name}` declares {len(fields)} `FIELDS` "
+                    f"rust_index: {owner}: `{rust_name}` declares {len(fields)} `FIELDS` "
                     f"{fields} against {len(names)} struct field(s) {names}; they pair "
                     "by index and must be the same list in two spellings"
                 )
@@ -278,8 +299,8 @@ def result_types() -> tuple[ResultType, ...]:
                 ResultType(
                     calc_id=calc_id,
                     rust_name=rust_name,
-                    item_path=_item_path(path, rust_name),
-                    module_file=path,
+                    item_path=_item_path(owner, rust_name),
+                    module_file=owner,
                     fields=tuple(
                         (public, rust)
                         for public, (rust, _) in zip(fields, rust_fields, strict=True)
