@@ -1,0 +1,1331 @@
+# model = PedersenSRK
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 535.169104844647
+cut[0].pc = 27.5604011071500
+cut[0].tb = 378.770000000000
+cut[0].acentric = 0.488969986466721
+cut[0].calcm = 1.19390549000000
+cut[0].critical_volume = 397.852351959720
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.54516592972896e-05
+cut[0].watson_k = 12.5733591092666
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 606.211688327571
+cut[1].pc = 19.4552984032327
+cut[1].tb = 459.785000000000
+cut[1].acentric = 0.727003311666610
+cut[1].calcm = 1.38851902500000
+cut[1].critical_volume = 581.186940414803
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.42051489900621e-05
+cut[1].watson_k = 12.5183715634023
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 663.989806026192
+cut[2].pc = 16.8324740537767
+cut[2].tb = 527.800000000000
+cut[2].acentric = 1.02703548418577
+cut[2].calcm = 1.56454056000000
+cut[2].critical_volume = 644.451910806595
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.49954512947566e-05
+cut[2].watson_k = 12.2882671182104
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 753.640889509115
+cut[3].pc = 14.2441948454205
+cut[3].tb = 630.830000000000
+cut[3].acentric = 1.52703227245165
+cut[3].calcm = 1.86032409500000
+cut[3].critical_volume = 660.262343665686
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.68163340097647e-05
+cut[3].watson_k = 12.2737146496259
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 891.945256085426
+cut[4].pc = 11.9629359599742
+cut[4].tb = 746.890000000000
+cut[4].acentric = 1.36586663262266
+cut[4].calcm = 2.22811021600000
+cut[4].critical_volume = 1023.16042062022
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 2.99636515612832e-05
+cut[4].watson_k = 12.5418146375894
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 917.266537424744
+cut[5].pc = 11.9280162245329
+cut[5].tb = 761.859838000000
+cut[5].acentric = 1.24987220957008
+cut[5].calcm = 2.26520943660000
+cut[5].critical_volume = 1124.11217921457
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 3.09051974334586e-05
+cut[5].watson_k = 12.4831978854065
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 920.098825487549
+cut[6].pc = 12.2139708968457
+cut[6].tb = 786.128067244078
+cut[6].acentric = 1.71887064048366
+cut[6].calcm = 2.26689879960000
+cut[6].critical_volume = 828.580761625236
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 3.14392172269506e-05
+cut[6].watson_k = 12.4742016319706
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 954.997590690660
+cut[7].pc = 11.7898356866090
+cut[7].tb = 813.638539448401
+cut[7].acentric = 1.62907642095268
+cut[7].calcm = 2.30049963000000
+cut[7].critical_volume = 947.067755343089
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 3.21381839014961e-05
+cut[7].watson_k = 12.6180476401022
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1129.51267417358
+cut[8].pc = 11.9732471055350
+cut[8].tb = 933.316364373987
+cut[8].acentric = 1.18653619987072
+cut[8].calcm = 2.07136316500000
+cut[8].critical_volume = 1425.09234993863
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 3.86712565999909e-05
+cut[8].watson_k = 12.5134440638763
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1250.39775284238
+cut[9].pc = 12.6690001503336
+cut[9].tb = 1005.27730396894
+cut[9].acentric = 0.928174621647348
+cut[9].calcm = 1.48149033060000
+cut[9].critical_volume = 1687.72321968125
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 4.40226475180056e-05
+cut[9].watson_k = 12.3088534124109
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 994.658850370848
+cut[10].pc = 15.4016795450655
+cut[10].tb = 1006.34005439028
+cut[10].acentric = -44.6358323245519
+cut[10].calcm = -7177.99524606000
+cut[10].critical_volume = 23808.7408707686
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 5.21406875668607e-05
+cut[10].watson_k = 12.1900575133568
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1090.85859361806
+cut[11].pc = 14.8606945509713
+cut[11].tb = 1222.55863129697
+cut[11].acentric = -5.64008208774161
+cut[11].calcm = -22945.2300325000
+cut[11].critical_volume = 4975.39396362750
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 6.69659309669646e-05
+cut[11].watson_k = 12.3877215474042
+
+# model = PedersenSRKHeavyOil
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 535.169104844647
+cut[0].pc = 27.5604011071500
+cut[0].tb = 378.770000000000
+cut[0].acentric = 0.488969986466721
+cut[0].calcm = 1.19390549000000
+cut[0].critical_volume = 397.852351959720
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.54516592972896e-05
+cut[0].watson_k = 12.5733591092666
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 606.211688327571
+cut[1].pc = 19.4552984032327
+cut[1].tb = 459.785000000000
+cut[1].acentric = 0.727003311666610
+cut[1].calcm = 1.38851902500000
+cut[1].critical_volume = 581.186940414803
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.42051489900621e-05
+cut[1].watson_k = 12.5183715634023
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 663.989806026192
+cut[2].pc = 16.8324740537767
+cut[2].tb = 527.800000000000
+cut[2].acentric = 1.02703548418577
+cut[2].calcm = 1.56454056000000
+cut[2].critical_volume = 644.451910806595
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.49954512947566e-05
+cut[2].watson_k = 12.2882671182104
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 753.640889509115
+cut[3].pc = 14.2441948454205
+cut[3].tb = 630.830000000000
+cut[3].acentric = 1.52703227245165
+cut[3].calcm = 1.86032409500000
+cut[3].critical_volume = 660.262343665686
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.68163340097647e-05
+cut[3].watson_k = 12.2737146496259
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 891.945256085426
+cut[4].pc = 11.9629359599742
+cut[4].tb = 746.890000000000
+cut[4].acentric = 1.36586663262266
+cut[4].calcm = 2.22811021600000
+cut[4].critical_volume = 1023.16042062022
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 2.99636515612832e-05
+cut[4].watson_k = 12.5418146375894
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 917.266537424744
+cut[5].pc = 11.9280162245329
+cut[5].tb = 761.859838000000
+cut[5].acentric = 1.24987220957008
+cut[5].calcm = 2.26520943660000
+cut[5].critical_volume = 1124.11217921457
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 3.09051974334586e-05
+cut[5].watson_k = 12.4831978854065
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 920.098825487549
+cut[6].pc = 12.2139708968457
+cut[6].tb = 786.128067244078
+cut[6].acentric = 1.71887064048366
+cut[6].calcm = 2.26689879960000
+cut[6].critical_volume = 828.580761625236
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 3.14392172269506e-05
+cut[6].watson_k = 12.4742016319706
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 954.997590690660
+cut[7].pc = 11.7898356866090
+cut[7].tb = 813.638539448401
+cut[7].acentric = 1.62907642095268
+cut[7].calcm = 2.30049963000000
+cut[7].critical_volume = 947.067755343089
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 3.21381839014961e-05
+cut[7].watson_k = 12.6180476401022
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1129.51267417358
+cut[8].pc = 11.9732471055350
+cut[8].tb = 933.316364373987
+cut[8].acentric = 1.18653619987072
+cut[8].calcm = 2.07136316500000
+cut[8].critical_volume = 1425.09234993863
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 3.86712565999909e-05
+cut[8].watson_k = 12.5134440638763
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1250.39775284238
+cut[9].pc = 12.6690001503336
+cut[9].tb = 1005.27730396894
+cut[9].acentric = 0.928174621647348
+cut[9].calcm = 1.48149033060000
+cut[9].critical_volume = 1687.72321968125
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 4.40226475180056e-05
+cut[9].watson_k = 12.3088534124109
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 994.658850370848
+cut[10].pc = 15.4016795450655
+cut[10].tb = 1006.34005439028
+cut[10].acentric = -44.6358323245519
+cut[10].calcm = -7177.99524606000
+cut[10].critical_volume = 23808.7408707686
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 5.21406875668607e-05
+cut[10].watson_k = 12.1900575133568
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1090.85859361806
+cut[11].pc = 14.8606945509713
+cut[11].tb = 1222.55863129697
+cut[11].acentric = -5.64008208774161
+cut[11].calcm = -22945.2300325000
+cut[11].critical_volume = 4975.39396362750
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 6.69659309669646e-05
+cut[11].watson_k = 12.3877215474042
+
+# model = PedersenPR
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 541.006079661094
+cut[0].pc = 27.7245472674791
+cut[0].tb = 378.770000000000
+cut[0].acentric = 0.437979832059761
+cut[0].calcm = 0.881984480000000
+cut[0].critical_volume = 407.487681683022
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.55064608232982e-05
+cut[0].watson_k = 12.5733591092666
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 621.952436819094
+cut[1].pc = 20.8092213057548
+cut[1].tb = 459.785000000000
+cut[1].acentric = 0.594874995978620
+cut[1].calcm = 1.09557752500000
+cut[1].critical_volume = 587.952399630943
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.52075654755352e-05
+cut[1].watson_k = 12.5183715634023
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 687.999685201124
+cut[2].pc = 17.7068597691164
+cut[2].tb = 527.800000000000
+cut[2].acentric = 0.754288843000958
+cut[2].calcm = 1.28451812000000
+cut[2].critical_volume = 716.549666928856
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.57011313137634e-05
+cut[2].watson_k = 12.2882671182104
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 796.451042359124
+cut[3].pc = 14.7100008266541
+cut[3].tb = 630.830000000000
+cut[3].acentric = 0.896650579151929
+cut[3].calcm = 1.58785229000000
+cut[3].critical_volume = 939.021963126158
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.71466865691422e-05
+cut[3].watson_k = 12.2737146496259
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 974.879772951610
+cut[4].pc = 12.3917446749789
+cut[4].tb = 746.890000000000
+cut[4].acentric = 0.526722654332295
+cut[4].calcm = 1.89786569200000
+cut[4].critical_volume = 1588.97212953421
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 3.02242626003769e-05
+cut[4].watson_k = 12.5418146375894
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 1007.35501926676
+cut[5].pc = 12.2015336101572
+cut[5].tb = 761.859838000000
+cut[5].acentric = 0.437340270138798
+cut[5].calcm = 1.91241015071000
+cut[5].critical_volume = 1724.43787705824
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 3.08897567189158e-05
+cut[5].watson_k = 12.4831978854065
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 1009.70125352573
+cut[6].pc = 12.2617547448376
+cut[6].tb = 786.128067244078
+cut[6].acentric = 0.631772056567449
+cut[6].calcm = 1.91286360631000
+cut[6].critical_volume = 1596.43041637256
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 3.10367199527167e-05
+cut[6].watson_k = 12.4742016319706
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 1056.65883289915
+cut[7].pc = 11.9326182108708
+cut[7].tb = 813.638539448401
+cut[7].acentric = 0.536771913254600
+cut[7].calcm = 1.90501666000000
+cut[7].critical_volume = 1781.66583644853
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 3.18555109137418e-05
+cut[7].watson_k = 12.6180476401022
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1286.57085672382
+cut[8].pc = 11.2848043724028
+cut[8].tb = 933.316364373987
+cut[8].acentric = 0.185273975037991
+cut[8].calcm = 1.33469283000000
+cut[8].critical_volume = 2603.06351148033
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 3.63763603739484e-05
+cut[8].watson_k = 12.5134440638763
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1446.66356192074
+cut[9].pc = 11.1558641053171
+cut[9].tb = 1005.27730396894
+cut[9].acentric = 0.0168784711927907
+cut[9].calcm = 0.357993287109999
+cut[9].critical_volume = 3129.29344750072
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 3.94727011961997e-05
+cut[9].watson_k = 12.3088534124109
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1023.03277556798
+cut[10].pc = 14.9663093048200
+cut[10].tb = 1006.34005439028
+cut[10].acentric = 29.2136517828680
+cut[10].calcm = -8124.65868077000
+cut[10].critical_volume = 1130.99859570516
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 5.09141631659985e-05
+cut[10].watson_k = 12.1900575133568
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1119.79936693433
+cut[11].pc = 14.3001989063645
+cut[11].tb = 1222.55863129697
+cut[11].acentric = -6.86176360035257
+cut[11].calcm = -25959.4993155000
+cut[11].critical_volume = 6045.71573653161
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 6.49871160287592e-05
+cut[11].watson_k = 12.3877215474042
+
+# model = PedersenPR2
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 541.006079661094
+cut[0].pc = 27.7245472674791
+cut[0].tb = 380.431676548738
+cut[0].acentric = 0.459234265900788
+cut[0].calcm = 0.881984480000000
+cut[0].critical_volume = 404.287538885930
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.55064608232982e-05
+cut[0].watson_k = 12.5917188681941
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 621.952436819094
+cut[1].pc = 20.8092213057548
+cut[1].tb = 462.424498952229
+cut[1].acentric = 0.630570520410721
+cut[1].calcm = 1.09557752500000
+cut[1].critical_volume = 579.720553464103
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.52075654755352e-05
+cut[1].watson_k = 12.5422807098773
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 687.999685201124
+cut[2].pc = 17.7068597691164
+cut[2].tb = 530.965121745835
+cut[2].acentric = 0.800379736064577
+cut[2].calcm = 1.28451812000000
+cut[2].critical_volume = 702.731706360530
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.57011313137634e-05
+cut[2].watson_k = 12.3127816899939
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 796.451042359124
+cut[3].pc = 14.7100008266541
+cut[3].tb = 636.805344321511
+cut[3].acentric = 0.986277771136080
+cut[3].calcm = 1.58785229000000
+cut[3].critical_volume = 901.579163631279
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.71466865691422e-05
+cut[3].watson_k = 12.3123459340787
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 974.879772951610
+cut[4].pc = 12.3917446749789
+cut[4].tb = 777.612898051266
+cut[4].acentric = 0.837080393811892
+cut[4].calcm = 1.89786569200000
+cut[4].critical_volume = 1400.57975617186
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 3.02242626003769e-05
+cut[4].watson_k = 12.7114759871488
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 1007.35501926676
+cut[5].pc = 12.2015336101572
+cut[5].tb = 796.893023361396
+cut[5].acentric = 0.753694037254370
+cut[5].calcm = 1.91241015071000
+cut[5].critical_volume = 1522.91549930971
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 3.08897567189158e-05
+cut[5].watson_k = 12.6716792085634
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 1009.70125352573
+cut[6].pc = 12.2617547448376
+cut[6].tb = 795.869217258050
+cut[6].acentric = 0.727248568587530
+cut[6].calcm = 1.91286360631000
+cut[6].critical_volume = 1535.76810565648
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 3.10367199527167e-05
+cut[6].watson_k = 12.5255141341694
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 1056.65883289915
+cut[7].pc = 11.9326182108708
+cut[7].tb = 824.609548034932
+cut[7].acentric = 0.631129975036952
+cut[7].calcm = 1.90501666000000
+cut[7].critical_volume = 1717.19546268730
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 3.18555109137418e-05
+cut[7].watson_k = 12.6745080616980
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1286.57085672382
+cut[8].pc = 11.2848043724028
+cut[8].tb = 915.901107792768
+cut[8].acentric = 0.108508434701464
+cut[8].calcm = 1.33469283000000
+cut[8].critical_volume = 2670.59216965875
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 3.63763603739484e-05
+cut[8].watson_k = 12.4351231660505
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1446.66356192074
+cut[9].pc = 11.1558641053171
+cut[9].tb = 952.238768642204
+cut[9].acentric = -0.140100688378247
+cut[9].calcm = 0.357993287109999
+cut[9].critical_volume = 3286.36171786428
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 3.94727011961997e-05
+cut[9].watson_k = 12.0884585802470
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1023.03277556798
+cut[10].pc = 14.9663093048200
+cut[10].tb = 949.725124249377
+cut[10].acentric = 5.49283283526632
+cut[10].calcm = -8124.65868077000
+cut[10].critical_volume = 1130.99859570516
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 5.09141631659985e-05
+cut[10].watson_k = 11.9570343641535
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1119.79936693433
+cut[11].pc = 14.3001989063645
+cut[11].tb = 1028.16836218618
+cut[11].acentric = 4.52842443104012
+cut[11].calcm = -25959.4993155000
+cut[11].critical_volume = 1295.64306198238
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 6.49871160287592e-05
+cut[11].watson_k = 11.6929191820448
+
+# model = PedersenPRHeavyOil
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 554.501268158972
+cut[0].pc = 27.5464053189620
+cut[0].tb = 378.770000000000
+cut[0].acentric = 0.324964904589123
+cut[0].calcm = -58.4171670000000
+cut[0].critical_volume = 437.906422495475
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.52930061168675e-05
+cut[0].watson_k = 12.5733591092666
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 651.823968983313
+cut[1].pc = 25.2576151991969
+cut[1].tb = 459.785000000000
+cut[1].acentric = 0.433125535353738
+cut[1].calcm = -136.808632500000
+cut[1].critical_volume = 539.874791814223
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.84594424466940e-05
+cut[1].watson_k = 12.5183715634023
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 725.310482854847
+cut[2].pc = 22.8134150433470
+cut[2].tb = 527.800000000000
+cut[2].acentric = 0.548928158562523
+cut[2].calcm = -247.803448000000
+cut[2].critical_volume = 636.695135019310
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 3.01644532088809e-05
+cut[2].watson_k = 12.2882671182104
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 802.259153679188
+cut[3].pc = 19.6815314718167
+cut[3].tb = 630.830000000000
+cut[3].acentric = 1.03180549490990
+cut[3].calcm = -567.669303500000
+cut[3].critical_volume = 664.436318480686
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 3.29221627301096e-05
+cut[3].watson_k = 12.2737146496259
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 862.021877542583
+cut[4].pc = 16.8624792785472
+cut[4].tb = 746.890000000000
+cut[4].acentric = 2.39525799802058
+cut[4].calcm = -1598.73385880000
+cut[4].critical_volume = 295.488879709028
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 3.78838252129041e-05
+cut[4].watson_k = 12.5418146375894
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 875.651253847039
+cut[5].pc = 16.5917218741933
+cut[5].tb = 761.859838000000
+cut[5].acentric = 2.48393485101155
+cut[5].calcm = -1860.56511967000
+cut[5].critical_volume = 268.948723631628
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 3.88097707215089e-05
+cut[5].watson_k = 12.4831978854065
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 885.004959346886
+cut[6].pc = 16.6333486562955
+cut[6].tb = 786.128067244078
+cut[6].acentric = 3.14087397613807
+cut[6].calcm = -1874.51450257000
+cut[6].critical_volume = 1.44613377191553
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 3.88778040510318e-05
+cut[6].watson_k = 12.4742016319706
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 891.201148375063
+cut[7].pc = 16.2194690899411
+cut[7].tb = 813.638539448401
+cut[7].acentric = 4.41432379010695
+cut[7].calcm = -2309.87961900000
+cut[7].critical_volume = 909.130729236403
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 4.02140989868351e-05
+cut[7].watson_k = 12.6180476401022
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 962.137032532737
+cut[8].pc = 15.2212168783674
+cut[8].tb = 933.316364373987
+cut[8].acentric = 15.3314932312773
+cut[8].calcm = -5225.81053450000
+cut[8].critical_volume = 1045.86298140884
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 4.66110550055752e-05
+cut[8].watson_k = 12.5134440638763
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1013.76999415663
+cut[9].pc = 14.9223797584093
+cut[9].tb = 1005.27730396894
+cut[9].acentric = 58.2586590107643
+cut[9].calcm = -8095.58134347000
+cut[9].critical_volume = 1124.05763280935
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 5.08461546387058e-05
+cut[9].watson_k = 12.3088534124109
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1023.03277556798
+cut[10].pc = 14.9663093048200
+cut[10].tb = 1006.34005439028
+cut[10].acentric = 29.2136517828680
+cut[10].calcm = -8124.65868077000
+cut[10].critical_volume = 1130.99859570516
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 5.09141631659985e-05
+cut[10].watson_k = 12.1900575133568
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1119.79936693433
+cut[11].pc = 14.3001989063645
+cut[11].tb = 1222.55863129697
+cut[11].acentric = -6.86176360035257
+cut[11].calcm = -25959.4993155000
+cut[11].critical_volume = 6045.71573653161
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 6.49871160287592e-05
+cut[11].watson_k = 12.3877215474042
+
+# model = RiaziDaubert
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 538.773037435810
+cut[0].pc = 28.8894912995912
+cut[0].tb = 443.426233137262
+cut[0].acentric = 1.13269437163119
+cut[0].calcm = # not applicable (isCalcm false)
+cut[0].critical_volume = 289.475477999874
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.62341222626563e-05
+cut[0].watson_k = 13.2515472418053
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 630.249212567874
+cut[1].pc = 20.9310452012462
+cut[1].tb = 508.999684087238
+cut[1].acentric = 1.04342748495031
+cut[1].calcm = # not applicable (isCalcm false)
+cut[1].critical_volume = 488.116162876363
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.52500226488078e-05
+cut[1].watson_k = 12.9499694109162
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 708.339367198868
+cut[2].pc = 16.5572464795567
+cut[2].tb = 561.728551640692
+cut[2].acentric = 1.05902561605181
+cut[2].calcm = # not applicable (isCalcm false)
+cut[2].critical_volume = 688.364897475332
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.44572577962673e-05
+cut[2].watson_k = 12.5461270449213
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 815.802701858322
+cut[3].pc = 10.8134169675997
+cut[3].tb = 644.547792011568
+cut[3].acentric = 0.697599640892113
+cut[3].calcm = # not applicable (isCalcm false)
+cut[3].critical_volume = 1424.30253500732
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.20231441484272e-05
+cut[3].watson_k = 12.3620439797047
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 891.945256085426
+cut[4].pc = 11.9629359599742
+cut[4].tb = 765.014651094374
+cut[4].acentric = 1.37706289398442
+cut[4].calcm = # not applicable (isCalcm false)
+cut[4].critical_volume = 1016.71938672968
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 2.99636515612832e-05
+cut[4].watson_k = 12.6424549207867
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 917.266537424744
+cut[5].pc = 11.9280162245329
+cut[5].tb = 784.756905271208
+cut[5].acentric = 1.36380486070285
+cut[5].calcm = # not applicable (isCalcm false)
+cut[5].critical_volume = 1056.51047154639
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 3.09051974334586e-05
+cut[5].watson_k = 12.6070229570825
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 920.098825487549
+cut[6].pc = 12.2139708968457
+cut[6].tb = 786.128067244078
+cut[6].acentric = 1.35967999338297
+cut[6].calcm = # not applicable (isCalcm false)
+cut[6].critical_volume = 1037.35876951453
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 3.14392172269506e-05
+cut[6].watson_k = 12.4742016319706
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 954.997590690660
+cut[7].pc = 11.7898356866090
+cut[7].tb = 813.638539448401
+cut[7].acentric = 1.34010205858416
+cut[7].calcm = # not applicable (isCalcm false)
+cut[7].critical_volume = 1127.67533466741
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 3.21381839014961e-05
+cut[7].watson_k = 12.6180476401022
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1129.51267417358
+cut[8].pc = 11.9732471055350
+cut[8].tb = 933.316364373987
+cut[8].acentric = 1.17552606665792
+cut[8].calcm = # not applicable (isCalcm false)
+cut[8].critical_volume = 1433.10643357770
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 3.86712565999909e-05
+cut[8].watson_k = 12.5134440638763
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1250.39775284238
+cut[9].pc = 12.6690001503336
+cut[9].tb = 1005.27730396894
+cut[9].acentric = 1.03760055576205
+cut[9].calcm = # not applicable (isCalcm false)
+cut[9].critical_volume = 1604.39190374472
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 4.40226475180056e-05
+cut[9].watson_k = 12.3088534124109
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 994.658850370848
+cut[10].pc = 15.4016795450655
+cut[10].tb = 1006.34005439028
+cut[10].acentric = 2.44473563528752
+cut[10].calcm = # not applicable (isCalcm false)
+cut[10].critical_volume = 348.638879482536
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 5.21406875668607e-05
+cut[10].watson_k = 12.1900575133568
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1090.85859361806
+cut[11].pc = 14.8606945509713
+cut[11].tb = 1222.55863129697
+cut[11].acentric = 3.22658037266551
+cut[11].calcm = # not applicable (isCalcm false)
+cut[11].critical_volume = 1214.55331579254
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 6.69659309669646e-05
+cut[11].watson_k = 12.3877215474042
+
+# model = Lee-Kesler
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 536.146800258208
+cut[0].pc = 28.8653989299186
+cut[0].tb = 364.622545258779
+cut[0].acentric = 0.320317547765091
+cut[0].calcm = # not applicable (isCalcm false)
+cut[0].critical_volume = 404.729751802338
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.62408968226895e-05
+cut[0].watson_k = 12.4148259254072
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 617.928117275321
+cut[1].pc = 22.0191793268410
+cut[1].tb = 444.340337563194
+cut[1].acentric = 0.473569215635489
+cut[1].calcm = # not applicable (isCalcm false)
+cut[1].critical_volume = 578.315424299258
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.62038018288859e-05
+cut[1].watson_k = 12.3766037048226
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 688.332213142267
+cut[2].pc = 18.3194924971883
+cut[2].tb = 514.412073849007
+cut[2].acentric = 0.614428416641025
+cut[2].calcm = # not applicable (isCalcm false)
+cut[2].critical_volume = 733.469132674937
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.62884627933062e-05
+cut[2].watson_k = 12.1834765720917
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 786.415170537086
+cut[3].pc = 12.8383261122489
+cut[3].tb = 624.814313326537
+cut[3].acentric = 0.881407741955015
+cut[3].calcm = # not applicable (isCalcm false)
+cut[3].critical_volume = 1069.56706230027
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.48445899388900e-05
+cut[3].watson_k = 12.2345753290025
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 906.211218915845
+cut[4].pc = 6.63946297092384
+cut[4].tb = 785.228404434496
+cut[4].acentric = 1.43229568844577
+cut[4].calcm = # not applicable (isCalcm false)
+cut[4].critical_volume = 1803.05079532377
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 2.01825629579191e-05
+cut[4].watson_k = 12.7528376205790
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 928.988920892774
+cut[5].pc = 6.03305890037471
+cut[5].tb = 814.046773240191
+cut[5].acentric = 1.49706700927948
+cut[5].calcm = # not applicable (isCalcm false)
+cut[5].critical_volume = 1957.20172771574
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 1.95775610874740e-05
+cut[5].watson_k = 12.7619571310943
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 936.350224234504
+cut[6].pc = 6.18873920511562
+cut[6].tb = 818.914257391389
+cut[6].acentric = 1.48894863639352
+cut[6].calcm = # not applicable (isCalcm false)
+cut[6].critical_volume = 1932.56358756085
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 1.99236063030708e-05
+cut[6].watson_k = 12.6452611558881
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 959.629955036106
+cut[7].pc = 5.14750446345543
+cut[7].tb = 855.353678802991
+cut[7].acentric = 1.59609789405846
+cut[7].calcm = # not applicable (isCalcm false)
+cut[7].critical_volume = 2227.12162928853
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 1.84812098260549e-05
+cut[7].watson_k = 12.8301057145675
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1094.82198409241
+cut[8].pc = 2.64022487874310
+cut[8].tb = 1036.24656495190
+cut[8].acentric = 1.96886663415172
+cut[8].calcm = # not applicable (isCalcm false)
+cut[8].critical_volume = 3761.13057565603
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 1.41883600215994e-05
+cut[8].watson_k = 12.9575113437781
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1186.04312172357
+cut[9].pc = 1.77200847119672
+cut[9].tb = 1154.26498012712
+cut[9].acentric = 2.15651301469130
+cut[9].calcm = # not applicable (isCalcm false)
+cut[9].critical_volume = 5101.78987720267
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 1.19669389814736e-05
+cut[9].watson_k = 12.8891461136773
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1194.33722183920
+cut[10].pc = 1.83383078489834
+cut[10].tb = 1159.71701980196
+cut[10].acentric = 2.14416100986299
+cut[10].calcm = # not applicable (isCalcm false)
+cut[10].critical_volume = 5026.34303874486
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 1.22403941265535e-05
+cut[10].watson_k = 12.7803136418650
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1428.36362517255
+cut[11].pc = 0.300958043217346
+cut[11].tb = 1508.17122095286
+cut[11].acentric = 2.73174357308518
+cut[11].calcm = # not applicable (isCalcm false)
+cut[11].critical_volume = 15111.2345273683
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 4.75685691231942e-06
+cut[11].watson_k = 13.2857197061471
+
+# model = Twu
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 537.788246727880
+cut[0].pc = 28.9880222172632
+cut[0].tb = 364.622545258779
+cut[0].acentric = 0.314364842698893
+cut[0].calcm = # not applicable (isCalcm false)
+cut[0].critical_volume = 404.351229578940
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.63017567333917e-05
+cut[0].watson_k = 12.4148259254072
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 621.642636031932
+cut[1].pc = 22.2242890143941
+cut[1].tb = 444.340337563194
+cut[1].acentric = 0.440420852169106
+cut[1].calcm = # not applicable (isCalcm false)
+cut[1].critical_volume = 579.437745635657
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.63399531895530e-05
+cut[1].watson_k = 12.3766037048226
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 694.801100663216
+cut[2].pc = 18.4086245630627
+cut[2].tb = 514.412073849007
+cut[2].acentric = 0.539058353678501
+cut[2].calcm = # not applicable (isCalcm false)
+cut[2].critical_volume = 751.406971637057
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.63325788086064e-05
+cut[2].watson_k = 12.1834765720917
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 795.783788685534
+cut[3].pc = 13.2204846916013
+cut[3].tb = 624.814313326537
+cut[3].acentric = 0.747178020918796
+cut[3].calcm = # not applicable (isCalcm false)
+cut[3].critical_volume = 1101.28749375681
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.52852517433319e-05
+cut[3].watson_k = 12.2345753290025
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 917.899204856315
+cut[4].pc = 7.24270609562486
+cut[4].tb = 785.228404434496
+cut[4].acentric = 1.16668324925980
+cut[4].calcm = # not applicable (isCalcm false)
+cut[4].critical_volume = 1866.22988801622
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 2.13416173442688e-05
+cut[4].watson_k = 12.7528376205790
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 941.507522288913
+cut[5].pc = 6.67728104793088
+cut[5].tb = 814.046773240191
+cut[5].acentric = 1.24139286930855
+cut[5].calcm = # not applicable (isCalcm false)
+cut[5].critical_volume = 1992.66553868496
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 2.09008735785771e-05
+cut[5].watson_k = 12.7619571310943
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 949.584019985966
+cut[6].pc = 6.89766461677117
+cut[6].tb = 818.914257391389
+cut[6].acentric = 1.23729868044895
+cut[6].calcm = # not applicable (isCalcm false)
+cut[6].critical_volume = 1960.17686678957
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 2.13674173615559e-05
+cut[6].watson_k = 12.6452611558881
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 973.344219557461
+cut[7].pc = 5.82354057456370
+cut[7].tb = 855.353678802991
+cut[7].acentric = 1.35956886113268
+cut[7].calcm = # not applicable (isCalcm false)
+cut[7].critical_volume = 2200.75488590685
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 2.00184387710423e-05
+cut[7].watson_k = 12.8301057145675
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1120.00961669269
+cut[8].pc = 3.39474200376219
+cut[8].tb = 1036.24656495190
+cut[8].acentric = 1.78399023852572
+cut[8].calcm = # not applicable (isCalcm false)
+cut[8].critical_volume = 3017.90330786261
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 1.67133328694606e-05
+cut[8].watson_k = 12.9575113437781
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1227.65915156650
+cut[9].pc = NaN
+cut[9].tb = 1154.26498012712
+cut[9].acentric = NaN
+cut[9].calcm = # not applicable (isCalcm false)
+cut[9].critical_volume = 3352.81564312333
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = NaN
+cut[9].watson_k = 12.8891461136773
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1238.18002614650
+cut[10].pc = NaN
+cut[10].tb = 1159.71701980196
+cut[10].acentric = NaN
+cut[10].calcm = # not applicable (isCalcm false)
+cut[10].critical_volume = 3269.16378347762
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = NaN
+cut[10].watson_k = 12.7803136418650
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1581.73967226201
+cut[11].pc = NaN
+cut[11].tb = 1508.17122095286
+cut[11].acentric = NaN
+cut[11].calcm = # not applicable (isCalcm false)
+cut[11].critical_volume = 3788.05325977664
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = NaN
+cut[11].watson_k = 13.2857197061471
+
+# model = Cavett
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 603.396908282141
+cut[0].pc = 18.1715770968942
+cut[0].tb = 443.426233137262
+cut[0].acentric = 0.489325187438060
+cut[0].calcm = # not applicable (isCalcm false)
+cut[0].critical_volume = 680.250379175592
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 1.88988546386636e-05
+cut[0].watson_k = 13.2515472418053
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 668.532786093564
+cut[1].pc = 15.4636363782402
+cut[1].tb = 508.999684087238
+cut[1].acentric = 0.618426740865652
+cut[1].calcm = # not applicable (isCalcm false)
+cut[1].critical_volume = 842.599839103356
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.04333942424507e-05
+cut[1].watson_k = 12.9499694109162
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 723.687879004564
+cut[2].pc = 14.3772015648232
+cut[2].tb = 561.728551640692
+cut[2].acentric = 0.712301746551259
+cut[2].calcm = # not applicable (isCalcm false)
+cut[2].critical_volume = 944.581795941572
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.21809566520234e-05
+cut[2].watson_k = 12.5461270449213
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 800.246923082386
+cut[3].pc = 11.6558440264508
+cut[3].tb = 644.547792011568
+cut[3].acentric = 0.882074292558076
+cut[3].calcm = # not applicable (isCalcm false)
+cut[3].critical_volume = 1198.44163527919
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.32270128797954e-05
+cut[3].watson_k = 12.3620439797047
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 894.305850190858
+cut[4].pc = 7.35341797507176
+cut[4].tb = 765.014651094374
+cut[4].acentric = 1.18279252714060
+cut[4].calcm = # not applicable (isCalcm false)
+cut[4].critical_volume = 1840.73087737657
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 2.16523186175386e-05
+cut[4].watson_k = 12.6424549207867
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 914.620562729228
+cut[5].pc = 7.00468642756896
+cut[5].tb = 784.756905271208
+cut[5].acentric = 1.17460532024352
+cut[5].calcm = # not applicable (isCalcm false)
+cut[5].critical_volume = 1984.51596359902
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 2.16830783316898e-05
+cut[5].watson_k = 12.6070229570825
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 922.919384985882
+cut[6].pc = 7.30851082977050
+cut[6].tb = 786.128067244078
+cut[6].acentric = 1.11349926880289
+cut[6].calcm = # not applicable (isCalcm false)
+cut[6].critical_volume = 1978.81396186477
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 2.23133538093298e-05
+cut[6].watson_k = 12.4742016319706
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 940.932252361913
+cut[7].pc = 6.38085871548244
+cut[7].tb = 813.638539448401
+cut[7].acentric = 1.18918708634607
+cut[7].calcm = # not applicable (isCalcm false)
+cut[7].critical_volume = 2224.61392697340
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 2.13965080996417e-05
+cut[7].watson_k = 12.6180476401022
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1056.89573172589
+cut[8].pc = 4.56616984044892
+cut[8].tb = 933.316364373987
+cut[8].acentric = 1.11628712915929
+cut[8].calcm = # not applicable (isCalcm false)
+cut[8].critical_volume = 3622.04298291006
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 2.05632389541485e-05
+cut[8].watson_k = 12.5134440638763
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1135.20064303443
+cut[9].pc = 3.96073579311203
+cut[9].tb = 1005.27730396894
+cut[9].acentric = 0.963301947304271
+cut[9].calcm = # not applicable (isCalcm false)
+cut[9].critical_volume = 4823.40126531272
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 2.06076168612313e-05
+cut[9].watson_k = 12.3088534124109
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1143.89455967822
+cut[10].pc = 4.15645132540293
+cut[10].tb = 1006.34005439028
+cut[10].acentric = 0.922020170128749
+cut[10].calcm = # not applicable (isCalcm false)
+cut[10].critical_volume = 4719.14196841790
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 2.12729567571404e-05
+cut[10].watson_k = 12.1900575133568
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1325.05959257240
+cut[11].pc = 1.82797841671143
+cut[11].tb = 1222.55863129697
+cut[11].acentric = 0.309894716715102
+cut[11].calcm = # not applicable (isCalcm false)
+cut[11].critical_volume = 15853.4294221127
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 1.60348187746147e-05
+cut[11].watson_k = 12.3877215474042
+
+# model = Standing
+# cut[0] MW = 100.000000000000 g/mol, density = 0.700000000000000 g/cm3
+cut[0].tc = 538.773037435810
+cut[0].pc = 28.8894912995912
+cut[0].tb = 364.622545258779
+cut[0].acentric = 0.300226727333981
+cut[0].calcm = # not applicable (isCalcm false)
+cut[0].critical_volume = 409.264068794774
+cut[0].parachor = 234059.300000000
+cut[0].critical_viscosity = 2.62341222626563e-05
+cut[0].watson_k = 12.4148259254072
+
+# cut[1] MW = 150.000000000000 g/mol, density = 0.750000000000000 g/cm3
+cut[1].tc = 630.249212567874
+cut[1].pc = 20.9310452012462
+cut[1].tb = 444.340337563194
+cut[1].acentric = 0.348336875431784
+cut[1].calcm = # not applicable (isCalcm false)
+cut[1].critical_volume = 649.605908982225
+cut[1].parachor = 351059.300000000
+cut[1].critical_viscosity = 2.52500226488078e-05
+cut[1].watson_k = 12.3766037048226
+
+# cut[2] MW = 200.000000000000 g/mol, density = 0.800000000000000 g/cm3
+cut[2].tc = 708.339367198868
+cut[2].pc = 16.5572464795567
+cut[2].tb = 514.412073849007
+cut[2].acentric = 0.386158515958181
+cut[2].calcm = # not applicable (isCalcm false)
+cut[2].critical_volume = 910.473149032575
+cut[2].parachor = 468059.300000000
+cut[2].critical_viscosity = 2.44572577962673e-05
+cut[2].watson_k = 12.1834765720917
+
+# cut[3] MW = 300.000000000000 g/mol, density = 0.850000000000000 g/cm3
+cut[3].tc = 815.802701858322
+cut[3].pc = 10.8134169675997
+cut[3].tb = 624.814313326537
+cut[3].acentric = 0.459838911172959
+cut[3].calcm = # not applicable (isCalcm false)
+cut[3].critical_volume = 1562.70519873679
+cut[3].parachor = 702059.300000000
+cut[3].critical_viscosity = 2.20231441484272e-05
+cut[3].watson_k = 12.2345753290025
+
+# cut[4] MW = 500.000000000000 g/mol, density = 0.880000000000000 g/cm3
+cut[4].tc = 942.447643628006
+cut[4].pc = 5.22599858109319
+cut[4].tb = 785.228404434496
+cut[4].acentric = 1.21363914242666
+cut[4].calcm = # not applicable (isCalcm false)
+cut[4].critical_volume = 2686.56770472141
+cut[4].parachor = 1170059.30000000
+cut[4].critical_viscosity = 1.70934308359032e-05
+cut[4].watson_k = 12.7528376205790
+
+# cut[5] MW = 539.000000000000 g/mol, density = 0.890000000000000 g/cm3
+cut[5].tc = 964.397687146790
+cut[5].pc = 4.65338437880087
+cut[5].tb = 814.046773240191
+cut[5].acentric = 1.28452491518413
+cut[5].calcm = # not applicable (isCalcm false)
+cut[5].critical_volume = 2974.07788877141
+cut[5].parachor = 1261319.30000000
+cut[5].critical_viscosity = 1.63633376403233e-05
+cut[5].watson_k = 12.7619571310943
+
+# cut[6] MW = 541.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[6].tc = 970.657695657741
+cut[6].pc = 4.69173720219472
+cut[6].tb = 818.914257391389
+cut[6].acentric = 1.28491502236853
+cut[6].calcm = # not applicable (isCalcm false)
+cut[6].critical_volume = 2968.29067045662
+cut[6].parachor = 1265999.30000000
+cut[6].critical_viscosity = 1.64658561991955e-05
+cut[6].watson_k = 12.6452611558881
+
+# cut[7] MW = 600.000000000000 g/mol, density = 0.900000000000000 g/cm3
+cut[7].tc = 993.321392047647
+cut[7].pc = 3.87940698483218
+cut[7].tb = 855.353678802991
+cut[7].acentric = 1.39442920197098
+cut[7].calcm = # not applicable (isCalcm false)
+cut[7].critical_volume = 3457.29569307298
+cut[7].parachor = 1404059.30000000
+cut[7].critical_viscosity = 1.52175641113184e-05
+cut[7].watson_k = 12.8301057145675
+
+# cut[8] MW = 900.000000000000 g/mol, density = 0.950000000000000 g/cm3
+cut[8].tc = 1105.91260590615
+cut[8].pc = 1.74644875132551
+cut[8].tb = 1036.24656495190
+cut[8].acentric = 1.90338107286327
+cut[8].calcm = # not applicable (isCalcm false)
+cut[8].critical_volume = 6063.51274901439
+cut[8].parachor = 2106059.30000000
+cut[8].critical_viscosity = 1.07534033157793e-05
+cut[8].watson_k = 12.9575113437781
+
+# cut[9] MW = 1119.00000000000 g/mol, density = 0.990000000000000 g/cm3
+cut[9].tc = 1168.03731170648
+cut[9].pc = 1.04058386974776
+cut[9].tb = 1154.26498012712
+cut[9].acentric = 2.26171123833422
+cut[9].calcm = # not applicable (isCalcm false)
+cut[9].critical_volume = 7644.82699020356
+cut[9].parachor = 2618519.30000000
+cut[9].critical_viscosity = 8.41326498424789e-06
+cut[9].watson_k = 12.8891461136773
+
+# cut[10] MW = 1121.00000000000 g/mol, density = 1.00000000000000 g/cm3
+cut[10].tc = 1173.55154045327
+cut[10].pc = 1.04889597633462
+cut[10].tb = 1159.71701980196
+cut[10].acentric = 2.26468815693152
+cut[10].calcm = # not applicable (isCalcm false)
+cut[10].critical_volume = 7594.35018245602
+cut[10].parachor = 2623199.30000000
+cut[10].critical_viscosity = 8.45892112333718e-06
+cut[10].watson_k = 12.7803136418650
+
+# cut[11] MW = 2000.00000000000 g/mol, density = 1.05000000000000 g/cm3
+cut[11].tc = 1265.92436625535
+cut[11].pc = 0.142931661380781
+cut[11].tb = 1508.17122095286
+cut[11].acentric = 3.72512717557345
+cut[11].calcm = # not applicable (isCalcm false)
+cut[11].critical_volume = 146543.497258772
+cut[11].parachor = 4680059.30000000
+cut[11].critical_viscosity = 2.95442917438422e-06
+cut[11].watson_k = 13.2857197061471
+
+# racketZ needs a flashed reference system and is not a function of (MW, density)
