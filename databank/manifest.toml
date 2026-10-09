@@ -2879,6 +2879,26 @@ reason = """\
     for the array's own name finds only its definition."""
 
 [[upstreams.files]]
+id = "neqsim/src/main/java/neqsim/thermo/characterization/PlusFractionModel.java"
+upstream_path = "src/main/java/neqsim/thermo/characterization/PlusFractionModel.java"
+vendored_source = "databank/sources/neqsim/PlusFractionModel.java"
+compiled_to = "data/characterization/plus_fraction.csv"
+source_rows = 2
+compiled_rows = 195
+#: **The second vendored source that is not tabular**, and the reason it needs saying twice:
+#: `PlusFractionModel` is 732 lines of Java whose two `double[]` arrays are the PVTsim molar
+#: masses and densities a plus-fraction split interpolates, and the class does no file I/O.
+#:
+#: **The two arrays are different lengths** - 195 molar masses against 75 densities - so the
+#: compiled table is one row per carbon number with the density empty past C80. NeqSim indexes
+#: both as `[cn - 6]`, so a cut above C80 reads past the density table's end and throws; a
+#: transcription that assumed one length would have extrapolated instead, on the heaviest cuts
+#: where a wrong density is least visible.
+#:
+#: `source_rows` counts arrays and `compiled_rows` counts molar masses, as the Fürst entry does.
+generated = ["carbon_number", "molar_mass_g_per_mol", "density_g_per_cm3"]
+
+[[upstreams.files]]
 id = "neqsim/element.csv"
 compiled_to = "data/reactions/elements.csv"
 upstream_path = "src/main/resources/data/element.csv"

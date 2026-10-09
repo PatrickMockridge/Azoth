@@ -54,6 +54,7 @@ import manifest as manifest_module
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "databank" / "sources" / "neqsim"
 OUT_DIR = ROOT / "data" / "components"
+CHARACTERIZATION_DIR = ROOT / "data" / "characterization"
 
 #: The small tables carried verbatim, re-rendered like the component and interaction
 #: tables so their compiled headers match the manifest's `as` names: group-contribution
@@ -127,6 +128,23 @@ FURST_CONSTANTS = (
     "neqsim/src/main/java/neqsim/thermo/util/constants/FurstElectrolyteConstants.java",
     "FurstElectrolyteConstants.java",
     "furst_parameters.csv",
+)
+
+#: The two PVTsim arrays a plus-fraction split is built from, in `PlusFractionModel.java`.
+#:
+#: **They are different lengths, and that is the point of compiling them together.** The
+#: molar-mass table carries **195** values, carbon numbers 6 to 200; the density table carries
+#: **75**, carbon numbers 6 to 80. NeqSim indexes both as `PVTsimMolarMass[cn - 6]`, so a cut
+#: above C80 reads past the density table's end and throws - and a port that transcribed "a
+#: 195-row table" would have extrapolated instead, on exactly the heavy cuts where a wrong
+#: density is least visible.
+#:
+#: Compiling them as one row per carbon number, with the density empty where that table has
+#: run out, is what makes the asymmetry readable rather than a length to be rediscovered.
+PLUS_FRACTION_SOURCE = (
+    "neqsim/src/main/java/neqsim/thermo/characterization/PlusFractionModel.java",
+    "PlusFractionModel.java",
+    "plus_fraction.csv",
 )
 
 #: ISO 6976's per-component gas-quality constants, compiled to `data/standards/`.
@@ -968,6 +986,76 @@ def build_furst(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
     return header, rows
 
 
+#: The carbon number the first entry of either PVTsim table describes. Both are indexed
+#: `[cn - 6]` at every NeqSim call site, so this is the offset and not a choice.
+FIRST_PLUS_CARBON_NUMBER = 6
+
+
+def build_plus_fraction(source: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+    """The two PVTsim arrays, one row per carbon number, densities empty past C80.
+
+    **A length check rather than a padding.** The molar-mass table is 195 values and the
+    density table 75, and a compiled file that quietly repeated the last density - or dropped
+    the molar masses past 75 - would answer a different question with a plausible number. The
+    empty cell is the honest form of "this table has no entry here".
+
+    Comments are stripped for the reason `build_furst` strips them: the class keeps
+    superseded arrays commented out, and a parser that matched one would compile numbers
+    NeqSim stopped using.
+    """
+    header = ("carbon_number", "molar_mass_g_per_mol", "density_g_per_cm3")
+    text = source.read_text(encoding="utf-8")
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    text = re.sub(r"//[^\n]*", "", text)
+
+    tables: dict[str, list[str]] = {}
+    for match in re.finditer(
+        r"public double\[\]\s+(PVTsimMolarMass|PVTsimDensities)\s*=\s*\{(.*?)\};",
+        text,
+        re.DOTALL,
+    ):
+        name, body = match.group(1), match.group(2)
+        if name in tables:
+            raise ValueError(f"{source.name}: `{name}` is declared twice")
+        tables[name] = [token.strip() for token in body.split(",") if token.strip()]
+
+    # Measured on the pinned source, and asserted rather than assumed: a table that moved is
+    # a compiled row describing a different cut.
+    for name, expected in (("PVTsimMolarMass", 195), ("PVTsimDensities", 75)):
+        if name not in tables:
+            raise ValueError(f"{source.name}: `{name}` was not found")
+        if len(tables[name]) != expected:
+            raise ValueError(
+                f"{source.name}: `{name}` carries {len(tables[name])} values and this reader "
+                f"was written for {expected}; the table moved"
+            )
+
+    def number(name: str, index: int) -> str:
+        raw = tables[name][index]
+        try:
+            value = float(raw)
+        except ValueError:
+            raise ValueError(f"{source.name}: `{name}[{index}]` is {raw!r}, not a number") from None
+        if not math.isfinite(value):
+            raise ValueError(f"{source.name}: `{name}[{index}]` is {raw!r}")
+        return repr(value)
+
+    masses = tables["PVTsimMolarMass"]
+    densities = tables["PVTsimDensities"]
+    rows: list[dict[str, str]] = []
+    for offset in range(len(masses)):
+        rows.append(
+            {
+                "carbon_number": str(FIRST_PLUS_CARBON_NUMBER + offset),
+                "molar_mass_g_per_mol": number("PVTsimMolarMass", offset),
+                "density_g_per_cm3": number("PVTsimDensities", offset)
+                if offset < len(densities)
+                else "",
+            }
+        )
+    return header, rows
+
+
 def canonical_species(name: str) -> str:
     """One species name in NeqSim's spelling: `PhreeqcPitzerParameterCatalog`.
 
@@ -1045,6 +1133,8 @@ def main(argv: list[str] | None = None) -> int:
         phreeqc = build_phreeqc(resources / PHREEQC_CATALOG[1])
         # Java rather than data, so its own parser too. See `FURST_CONSTANTS`.
         furst = build_furst(SOURCES / FURST_CONSTANTS[1])
+        # And the same again: two arrays of different lengths in a class that does no I/O.
+        plus_fraction = build_plus_fraction(SOURCES / PLUS_FRACTION_SOURCE[1])
     except ValueError as error:
         print(f"gen_databank: {error}", file=sys.stderr)
         return 1
@@ -1086,6 +1176,7 @@ def main(argv: list[str] | None = None) -> int:
         ],
         (OUT_DIR / PHREEQC_CATALOG[2], *phreeqc),
         (OUT_DIR / FURST_CONSTANTS[2], *furst),
+        (CHARACTERIZATION_DIR / PLUS_FRACTION_SOURCE[2], *plus_fraction),
         (STANDARDS_DIR / ISO6976_CONSTANTS[1], *iso6976),
         (REACTORS_DIR / GIBBS_REACTOR[1], *reactor),
         (REACTORS_DIR / GIBBS_COEFFS[1], *coeffs),
