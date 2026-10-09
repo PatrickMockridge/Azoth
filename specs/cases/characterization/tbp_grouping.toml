@@ -1,0 +1,57 @@
+model = "characterization.tbp_grouping"
+
+[[cases]]
+id = "a_spread_of_n_alkanes"
+tolerance = 1.0e-12
+source = "NeqSim master, `Phase.groupTBPfractions` on fifteen n-alkanes, from `validation/neqsim/captures/tbp_grouping_probe.tsv`. The boiling points are the **stored kelvin**, which is the number the class subtracts 273.15 from. **Thirty-six of the fluid's 71 moles reach no bin**: methane through n-hexane sit below the lowest threshold, and n-hexane at 341.9 K is 68.75 C against a lowest threshold of 69.2.\n"
+[cases.inputs]
+boiling_point = [
+    111.6, 231.1, 272.7, 309.2, 341.9, 371.6, 398.8, 424.0, 447.3, 469.1, 489.5, 508.6, 526.7,
+    543.8, 560.0,
+]
+mole_fraction = [
+    0.140845070422535, 0.112676056338028, 0.0985915492957746, 0.0845070422535211,
+    0.0704225352112676, 0.0704225352112676, 0.0563380281690141, 0.0563380281690141,
+    0.0563380281690141, 0.0422535211267606, 0.0422535211267606, 0.0422535211267606,
+    0.0422535211267606, 0.0422535211267606, 0.0422535211267606,
+]
+[cases.expected]
+group_fraction = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0704225352112676, 0.0563380281690141, 0.0563380281690141,
+    0.0563380281690141, 0.0422535211267606, 0.0422535211267606, 0.0422535211267606,
+    0.0422535211267606, 0.0422535211267606, 0.0422535211267606, 0.0, 0.0, 0.0, 0.0,
+]
+
+[[cases]]
+id = "two_inside_one_bin"
+tolerance = 1.0e-12
+source = "Three components, one per bin, which is what makes a bin a sum rather than a slot: the class has no carbon number to separate two components by, only their boiling points.\n"
+[cases.inputs]
+boiling_point = [
+    371.6, 398.8, 424.0,
+]
+mole_fraction = [
+    0.2, 0.3, 0.5,
+]
+[cases.expected]
+group_fraction = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.3, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0,
+]
+
+[[cases]]
+id = "a_fluid_below_the_lowest_threshold"
+tolerance = 1.0e-12
+source = "A fluid entirely below 69.2 C. The class returns twenty zeros rather than refusing, so a caller reading the sum as a recovery reads zero - which is the row that says the refusal is not there.\n"
+[cases.inputs]
+boiling_point = [
+    111.6, 231.1,
+]
+mole_fraction = [
+    0.5, 0.5,
+]
+[cases.expected]
+group_fraction = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0,
+]

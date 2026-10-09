@@ -6,6 +6,7 @@
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/calcs/characterization/tbp_cut_properties.toml
 //!   - specs/models/characterization/tbp_density.toml
+//!   - specs/models/characterization/tbp_grouping.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml
 //!   - specs/models/eos/ammonia_phase.toml
 //!   - specs/calcs/eos/antoine_vapor_pressure.toml
@@ -276,6 +277,16 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("characterization.tbp_density", "molar_mass", "molar_mass"),
+    (
+        "characterization.tbp_grouping",
+        "boiling_point",
+        "thermodynamic_temperature",
+    ),
+    (
+        "characterization.tbp_grouping",
+        "mole_fraction",
+        "dimensionless",
+    ),
     (
         "characterization.whitson_gamma_split",
         "molar_mass",

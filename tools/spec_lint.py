@@ -684,7 +684,10 @@ def check_range_checks(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     outputs = spec["outputs"]
     optional_inputs = {n for n, d in inputs.items() if d.get("optional", False)}
 
-    for check in spec["valid_range"]:
+    # **A spec may declare no range at all**, which the schema allows and
+    # `azoth.core.range.checks_for` also tolerates: a model whose inputs are all vectors has
+    # nowhere for `apply_checks` to put a bound, since it takes one value per quantity.
+    for check in spec.get("valid_range", []):
         quantity = check["quantity"]
 
         # `enum` is a bound kind the schema permits and neither implementation can

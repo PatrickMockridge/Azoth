@@ -138,6 +138,24 @@ impl CalcResult for WhitsonGammaSplitResult {
     }
 }
 
+/// Result of `characterization.tbp_grouping`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpGroupingResult {
+    /// Each bin's summed mole fraction, over twenty bins of which the last fourteen can fill.
+    pub group_fraction: Vec<f64>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpGroupingResult {
+    const CALC_ID: &'static str = "characterization.tbp_grouping";
+    const FIELDS: &'static [&'static str] = &["group_fraction", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.lumping`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LumpingResult {

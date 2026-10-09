@@ -5,6 +5,7 @@
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/models/characterization/tbp_density.toml
+//!   - specs/models/characterization/tbp_grouping.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml
 //!
 //! Regenerate with `python tools/gen_models.py`; CI runs `--check` and fails
@@ -2948,6 +2949,141 @@ pub static TBP_DENSITY_SPEC: ModelSpec = ModelSpec {
     cases: TBP_DENSITY_CASES,
 };
 
+static TBP_GROUPING_CHECKS: &[SpecCheck] = &[];
+
+static TBP_GROUPING_CASES: &[TestCase] = &[
+    TestCase {
+        id: "a_spread_of_n_alkanes",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            (
+                "boiling_point",
+                &[
+                    111.6, 231.1, 272.7, 309.2, 341.9, 371.6, 398.8, 424.0, 447.3, 469.1, 489.5,
+                    508.6, 526.7, 543.8, 560.0,
+                ],
+            ),
+            (
+                "mole_fraction",
+                &[
+                    0.140845070422535,
+                    0.112676056338028,
+                    0.0985915492957746,
+                    0.0845070422535211,
+                    0.0704225352112676,
+                    0.0704225352112676,
+                    0.0563380281690141,
+                    0.0563380281690141,
+                    0.0563380281690141,
+                    0.0422535211267606,
+                    0.0422535211267606,
+                    0.0422535211267606,
+                    0.0422535211267606,
+                    0.0422535211267606,
+                    0.0422535211267606,
+                ],
+            ),
+        ],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[(
+            "group_fraction",
+            &[
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0704225352112676,
+                0.0563380281690141,
+                0.0563380281690141,
+                0.0563380281690141,
+                0.0422535211267606,
+                0.0422535211267606,
+                0.0422535211267606,
+                0.0422535211267606,
+                0.0422535211267606,
+                0.0422535211267606,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "two_inside_one_bin",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("boiling_point", &[371.6, 398.8, 424.0]),
+            ("mole_fraction", &[0.2, 0.3, 0.5]),
+        ],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[(
+            "group_fraction",
+            &[
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.3, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+            ],
+        )],
+        expected_strings: &[],
+    },
+    TestCase {
+        id: "a_fluid_below_the_lowest_threshold",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[
+            ("boiling_point", &[111.6, 231.1]),
+            ("mole_fraction", &[0.5, 0.5]),
+        ],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[(
+            "group_fraction",
+            &[
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0,
+            ],
+        )],
+        expected_strings: &[],
+    },
+];
+
+/// Registry entry for `characterization.tbp_grouping`.
+pub static TBP_GROUPING_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.tbp_grouping",
+    kind: "direct",
+    algorithm: None,
+    checks: TBP_GROUPING_CHECKS,
+    cases: TBP_GROUPING_CASES,
+};
+
 static WHITSON_GAMMA_SPLIT_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -4731,6 +4867,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PEDERSEN_PLUS_SPLIT_SPEC,
     &TBP_CLOSURE_SPEC,
     &TBP_DENSITY_SPEC,
+    &TBP_GROUPING_SPEC,
     &WHITSON_GAMMA_SPLIT_SPEC,
 ];
 

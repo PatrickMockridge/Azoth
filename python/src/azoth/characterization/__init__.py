@@ -13,6 +13,7 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`pedersen_plus_split` - a plus fraction divided into carbon-number cuts
 * :func:`whitson_gamma_split` - the same, on Whitson's three-parameter gamma
 * :func:`lumping` - a cut table grouped into equal-mass lumps
+* :func:`tbp_grouping` - a phase's components grouped by boiling point
 
 # Which implementation answers
 
@@ -30,6 +31,7 @@ from azoth.core.result import (
     TbpClosureResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
+    TbpGroupingResult,
     WhitsonGammaSplitResult,
 )
 from azoth.core.units import Q
@@ -40,12 +42,14 @@ __all__ = [
     "tbp_closure",
     "tbp_cut_properties",
     "tbp_density",
+    "tbp_grouping",
     "whitson_gamma_split",
 ]
 
 _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
 _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
+_TBP_GROUPING = "characterization.tbp_grouping"
 _PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
 _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
@@ -115,6 +119,30 @@ def tbp_cut_properties(
     """
     return resolve(_TBP_CUT_PROPERTIES)(  # type: ignore[no-any-return]
         model=model, molar_mass=molar_mass, density=density, boiling_point=boiling_point
+    )
+
+
+def tbp_grouping(
+    boiling_point: list[Q],
+    mole_fraction: list[float],
+) -> TbpGroupingResult:
+    """A phase's components grouped into boiling-point bins.
+
+    Fourteen thresholds in degrees Celsius, the lowest at 69.2, each opening one of twenty bins -
+    so bins 0 to 5 are always zero, and a component below the lowest threshold is in no bin at
+    all rather than in the first. That is why the bins do not sum to one.
+
+    ``boiling_point`` is the **stored kelvin**, the number the class subtracts 273.15 from before
+    comparing; passing a Celsius value would shift every threshold by 273.
+
+    Raises:
+        InvalidInputError: if the two vectors are not the same length.
+
+    See :func:`azoth.characterization.reference.tbp_grouping`.
+    """
+    return resolve(_TBP_GROUPING)(  # type: ignore[no-any-return]
+        boiling_point=boiling_point,
+        mole_fraction=mole_fraction,
     )
 
 

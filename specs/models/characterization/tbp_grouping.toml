@@ -1,0 +1,43 @@
+id = "characterization.tbp_grouping"
+name = "A fluid's components grouped into boiling-point bins"
+kind = "direct"
+assumptions = [
+    "**one name, three implementations.** `PlusCharacterize.groupTBPfractions` returns `true` and bins nothing. `TBPCharacterize`'s does the binning, and no accessor reaches it - `Characterise.TBPCharacterise` has no getter.",
+    "**and `Phase`'s is the one a caller can reach.** Public on a public class, though not on the `PhaseInterface` that `SystemInterface.getPhase` returns, so it takes a cast to the concrete `Phase`. It is the one ported.",
+    "**nothing in NeqSim calls any of the three**, and nothing in its tests either. `Phase.groupTBPfractions` is still public API a user can reach, which is why it is the one ported rather than a note.",
+    "**the bins are opened by boiling point and never by carbon number.** Fourteen thresholds run from `69.2` C upward, each adding one to a bin index that starts at six, so bins 0 to 5 exist in the returned array and can never be filled.",
+    "**the input is the stored kelvin.** The class compares `getNormalBoilingPoint(\"C\")`, which is the stored value minus 273.15, against the `C` thresholds, so this takes kelvin and subtracts 273.15 to compare - the same operation, on the same number, and bit-identical rather than round-tripped.",
+    "**a component below the lowest threshold reaches no bin at all.** Methane through n-hexane are not in bin zero; they are absent from the answer, which is why the twenty entries do not sum to one.",
+    "**two components between one pair of thresholds sum into one bin**, so a fluid's light end can be merged with its heavy end by boiling point alone. The class carries no carbon number here to separate them by.",
+    "**every bin is a phase mole fraction**, taken from `getx` rather than `getz`, so the answer is a property of the phase the method is called on.",
+    "**a fluid entirely below the lowest threshold returns twenty zeros rather than refusing.** There is no exception and no empty result; a caller reading the sum as a recovery gets zero.",
+    "**`PlusCharacterize.setHeavyTBPtoPlus` is owed and is not this id.** It is reachable through `SystemThermo.setLastTBPasPlus`, and it scans a fluid's TBP rows for the one whose **name** carries the largest carbon number, flags it as the plus end, and takes the row below it as `densLastTBP`.",
+    "**a name vector is what it needs, and `vector_string` is declared but produced by no generator**, so that id waits on the same change the scheme's other name-carried data waits on.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/phase/Phase.java`'s `groupTBPfractions` is the port source; `PlusCharacterize`'s and `TBPCharacterize`'s are the other two implementations of the name.",
+    "`validation/neqsim/captures/tbp_grouping_probe.tsv` - three fluids from `validation/neqsim/TbpGroupingProbe.java`, each with its components' stored boiling points in kelvin and its twenty bins.",
+]
+[source]
+standard = "NeqSim master `Phase.groupTBPfractions`"
+edition = "Its twenty-bin grouping on fourteen boiling-point thresholds in degrees Celsius. `TBPCharacterize`'s override does the same binning and adds per-bin moles, molar mass and density; it is unreachable and is named in the assumptions rather than ported."
+[inputs]
+[inputs.boiling_point]
+type = "vector"
+unit = "K"
+length = "one per component of the phase"
+description = "Each component's normal boiling point, which the class reads as its own value less 273.15 and compares against the thresholds in degrees Celsius. A component below the lowest threshold is not grouped.\n"
+[inputs.mole_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per component, aligned with `boiling_point`"
+description = "Each component's mole fraction in the phase, taken as `x` rather than `z`.\n"
+[outputs]
+[outputs.group_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "always twenty, bins 6 to 19 being the ones a threshold can open"
+description = "Each bin's summed mole fraction. Bins 0 to 5 are always zero, and the entries do not sum to one because the light end is in no bin.\n"
+[implementations]
+python = "azoth.characterization.tbp_grouping"
+rust = "azoth_characterization::tbp_grouping"

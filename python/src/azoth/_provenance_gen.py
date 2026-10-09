@@ -70,6 +70,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'characterization.tbp_grouping': {
+        "calc_id": 'characterization.tbp_grouping',
+        "name": "A fluid's components grouped into boiling-point bins",
+        "spec": {'path': 'specs/models/characterization/tbp_grouping.toml', 'sha256': 'c34ba87dedd457cb4be1b7a46bcb5d6eed310487b41ce83a5ecb9d15fbed7c5f'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_grouping.py', 'sha256': '02405bcc55ae1ace208f93efc09242062f907ec9a2309482730052173b876f69'}, {'path': 'crates/azoth-characterization/src/tbp_grouping.rs', 'sha256': '6abf90c5853750fd78df6f3ebc7de833c57c45db2693bb3e58f6de7b2224b70c'}],
+        "source": 'NeqSim master `Phase.groupTBPfractions`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.whitson_gamma_split': {
         "calc_id": 'characterization.whitson_gamma_split',
         "name": "A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma",

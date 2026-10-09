@@ -28,6 +28,7 @@
   - [A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves](./characterization/pedersen_plus_split.md)
   - [TBP cut molar mass from its normal boiling point and specific gravity](./characterization/tbp_closure.md)
   - [TBP cut specific gravity from its boiling point and molar mass](./characterization/tbp_density.md)
+  - [A fluid's components grouped into boiling-point bins](./characterization/tbp_grouping.md)
   - [A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma](./characterization/whitson_gamma_split.md)
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)

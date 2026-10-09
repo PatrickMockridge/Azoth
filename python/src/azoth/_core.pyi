@@ -223,6 +223,11 @@ class TbpDensityResult:
     warnings: list[Warning]
 
 @final
+class TbpGroupingResult:
+    group_fraction: list[float]
+    warnings: list[Warning]
+
+@final
 class WhitsonGammaSplitResult:
     cut_z: list[float]
     cut_molar_mass: list[Qty]
@@ -2175,6 +2180,7 @@ def tbp_density(
     molar_mass: float,
     closure: str | None = None,
 ) -> TbpDensityResult: ...
+def tbp_grouping(boiling_point: list[float], mole_fraction: list[float]) -> TbpGroupingResult: ...
 def whitson_gamma_split(
     molar_mass: float,
     density: float,

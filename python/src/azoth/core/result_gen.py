@@ -144,6 +144,19 @@ class TbpDensityResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpGroupingResult(_HasWarnings):
+    """Result of ``characterization.tbp_grouping``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_grouping"
+
+    #: Each bin's summed mole fraction. Bins 0 to 5 are always zero, and the entries do not sum to one because the light end is in no bin.
+    group_fraction: tuple[float, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WhitsonGammaSplitResult(_HasWarnings):
     """Result of ``characterization.whitson_gamma_split``."""
 

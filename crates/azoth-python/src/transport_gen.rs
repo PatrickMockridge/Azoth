@@ -309,6 +309,42 @@ impl From<&azoth_characterization::results::TbpDensityResult> for PyTbpDensityRe
         }
     }
 }
+/// Result of `characterization.tbp_grouping`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpGroupingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpGroupingResult {
+    /// Each bin's summed mole fraction. Bins 0 to 5 are always zero, and the entries do not sum to one because the light end is in no bin.
+    #[pyo3(get)]
+    pub group_fraction: Vec<f64>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpGroupingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpGroupingResult(group_fraction={:?}, {} warning(s))",
+            self.group_fraction,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpGroupingResult> for PyTbpGroupingResult {
+    fn from(r: &azoth_characterization::results::TbpGroupingResult) -> Self {
+        Self {
+            group_fraction: r.group_fraction.clone(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.whitson_gamma_split`, transported.
 #[pyclass(
     frozen,

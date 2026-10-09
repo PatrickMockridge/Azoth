@@ -19,6 +19,7 @@ pub mod spec_gen;
 pub mod tbp_closure;
 pub mod tbp_cut_properties;
 pub mod tbp_density;
+pub mod tbp_grouping;
 pub mod unported;
 pub mod unported_gen;
 pub mod whitson_gamma_split;
@@ -27,9 +28,10 @@ pub use lumping::lumping;
 pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{
     LumpingResult, PedersenPlusSplitResult, TbpClosureResult, TbpCutPropertiesResult,
-    TbpDensityResult, WhitsonGammaSplitResult,
+    TbpDensityResult, TbpGroupingResult, WhitsonGammaSplitResult,
 };
 pub use tbp_closure::{TbpClosureKind, tbp_closure};
 pub use tbp_cut_properties::{TbpModel, tbp_cut_properties};
 pub use tbp_density::tbp_density;
+pub use tbp_grouping::tbp_grouping;
 pub use whitson_gamma_split::{WhitsonDensityModel, gamma, p0_p1, whitson_gamma_split};

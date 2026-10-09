@@ -90,6 +90,7 @@ Five sections, and the difference between them is the point:
 - [`characterization.pedersen_plus_split`](./characterization/pedersen_plus_split.md) — A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves
 - [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity
 - [`characterization.tbp_density`](./characterization/tbp_density.md) — TBP cut specific gravity from its boiling point and molar mass
+- [`characterization.tbp_grouping`](./characterization/tbp_grouping.md) — A fluid's components grouped into boiling-point bins
 - [`characterization.whitson_gamma_split`](./characterization/whitson_gamma_split.md) — A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma
 
 **Equations of state** - [`eos/index.md`](./eos/index.md):

@@ -15,6 +15,7 @@ from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_s
 from azoth.characterization.reference.tbp_closure import tbp_closure
 from azoth.characterization.reference.tbp_cut_properties import tbp_cut_properties
 from azoth.characterization.reference.tbp_density import tbp_density
+from azoth.characterization.reference.tbp_grouping import tbp_grouping
 from azoth.characterization.reference.whitson_gamma_split import whitson_gamma_split
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "tbp_closure",
     "tbp_cut_properties",
     "tbp_density",
+    "tbp_grouping",
     "whitson_gamma_split",
 ]

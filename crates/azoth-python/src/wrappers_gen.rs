@@ -77,6 +77,28 @@ pub fn pedersen_plus_split(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A fluid's components grouped into boiling-point bins.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (boiling_point, mole_fraction))]
+#[pyo3(text_signature = "(boiling_point, mole_fraction)")]
+pub fn tbp_grouping(
+    py: Python<'_>,
+    boiling_point: Vec<f64>,
+    mole_fraction: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyTbpGroupingResult> {
+    azoth_characterization::tbp_grouping::tbp_grouping(
+        &boiling_point
+            .iter()
+            .map(|v| kelvins(*v))
+            .collect::<Vec<_>>(),
+        &mole_fraction,
+    )
+    .map(|r| crate::transport_gen::PyTbpGroupingResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Ammonia reference phase state.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

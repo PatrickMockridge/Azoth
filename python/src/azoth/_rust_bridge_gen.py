@@ -180,6 +180,7 @@ from azoth.core.result import (
     TbpCutPropertiesResult,
     TbpDensityResult,
     TbpFractionPropertiesResult,
+    TbpGroupingResult,
     ThermalConductivityResult,
     ThFlashResult,
     ThreePhaseSeparatorResult,
@@ -410,6 +411,7 @@ __all__ = [
     "tbp_cut_properties",
     "tbp_density",
     "tbp_fraction_properties",
+    "tbp_grouping",
     "th_flash",
     "thermal_conductivity",
     "three_phase_separator",
@@ -537,6 +539,19 @@ def tbp_density(boiling_point: Q, molar_mass: Q, closure: str | None=None) -> Tb
     )
     return TbpDensityResult(
         density=from_si(result.density.magnitude_si, result.density.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tbp_grouping(boiling_point: list[Q], mole_fraction: list[float]) -> TbpGroupingResult:
+    """``characterization.tbp_grouping``, computed in Rust."""
+    spec = _models_gen.model("characterization.tbp_grouping")
+    result = _core.tbp_grouping(
+        [input_to_si(spec, "boiling_point", v) for v in boiling_point],
+        list(mole_fraction),
+    )
+    return TbpGroupingResult(
+        group_fraction=tuple(result.group_fraction),
         warnings=_warnings(result.warnings),
     )
 

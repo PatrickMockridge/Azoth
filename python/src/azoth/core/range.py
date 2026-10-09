@@ -203,11 +203,18 @@ class SpecChecks:
 
 
 def checks_for(spec: Mapping[str, Any]) -> SpecChecks:
-    """Split a spec's ``valid_range`` into input and derived checks."""
+    """Split a spec's ``valid_range`` into input and derived checks.
+
+    **A spec may declare none.** The schema's `required` list does not carry `valid_range`, so a
+    model whose inputs are all vectors - and whose bounds therefore have nowhere to be applied by
+    :func:`apply_checks`, which takes one value per quantity - has an empty block and a spec that
+    is still valid. Reading the key directly made the first such model raise `KeyError` here
+    while the Rust side, which emits an empty check list, ran it happily.
+    """
     inputs = spec["inputs"]
     on_input: list[RangeCheck] = []
     derived: list[RangeCheck] = []
-    for raw in spec["valid_range"]:
+    for raw in spec.get("valid_range", []):
         check = RangeCheck.from_spec(raw)
         (on_input if check.quantity in inputs else derived).append(check)
     return SpecChecks(on_input=tuple(on_input), derived=tuple(derived))
