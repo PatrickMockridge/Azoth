@@ -16,6 +16,45 @@
 use crate::results::{PyKComponent, PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
+/// Result of `characterization.tbp_closure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpClosureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpClosureResult {
+    /// The cut's molar mass, the number a cubic needs.
+    #[pyo3(get)]
+    pub molar_mass: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpClosureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpClosureResult(molar_mass={:?}, {} warning(s))",
+            self.molar_mass,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpClosureResult> for PyTbpClosureResult {
+    fn from(r: &azoth_characterization::results::TbpClosureResult) -> Self {
+        Self {
+            molar_mass: PyQty {
+                magnitude_si: r.molar_mass.value,
+                unit: "kg/mol".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.tbp_cut_properties`, transported.
 #[pyclass(
     frozen,
@@ -82,6 +121,45 @@ impl From<&azoth_characterization::results::TbpCutPropertiesResult> for PyTbpCut
             acentric_factor: r.acentric_factor,
             attraction_exponent: r.attraction_exponent,
             watson_k: r.watson_k,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `characterization.tbp_density`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpDensityResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpDensityResult {
+    /// The cut's normal liquid density at 15 C, which is the specific gravity in the correlations' own g/cm3 scale.
+    #[pyo3(get)]
+    pub density: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpDensityResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpDensityResult(density={:?}, {} warning(s))",
+            self.density,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpDensityResult> for PyTbpDensityResult {
+    fn from(r: &azoth_characterization::results::TbpDensityResult) -> Self {
+        Self {
+            density: PyQty {
+                magnitude_si: r.density.value,
+                unit: "kg/m**3".to_string(),
+            },
             warnings: transport(&r.warnings),
         }
     }

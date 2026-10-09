@@ -4,12 +4,62 @@
 //! quantity. Unit handling happens once, in Python, before the call crosses this boundary - one
 //! conversion site used by both backends cannot disagree with itself about what a number is in.
 
-use azoth_characterization::{TbpModel, tbp_cut_properties as kernel};
+use azoth_characterization::{
+    TbpClosureKind, TbpModel, tbp_closure as closure_kernel, tbp_cut_properties as kernel,
+    tbp_density as density_kernel,
+};
 use azoth_core::units::{kelvins, kilograms_per_cubic_meter, kilograms_per_mole};
 use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
-use crate::transport_gen::PyTbpCutPropertiesResult;
+use crate::transport_gen::{PyTbpClosureResult, PyTbpCutPropertiesResult, PyTbpDensityResult};
+
+/// A cut's molar mass, from its normal boiling point and its specific gravity.
+///
+/// All arguments are SI magnitudes. `closure` is one of the four members the spec's enum
+/// declares; `model` is needed only for `tbp_model`.
+#[pyfunction]
+#[pyo3(signature = (boiling_point, density, closure, model=None))]
+#[pyo3(text_signature = "(boiling_point, density, closure, model=None)")]
+pub fn tbp_closure(
+    py: Python<'_>,
+    boiling_point: f64,
+    density: f64,
+    closure: &str,
+    model: Option<&str>,
+) -> PyResult<PyTbpClosureResult> {
+    let parsed_model: Option<TbpModel> = model.map(|name| name.parse().unwrap_or_default());
+    closure_kernel(
+        closure.parse().unwrap_or_default(),
+        kelvins(boiling_point),
+        kilograms_per_cubic_meter(density),
+        parsed_model,
+    )
+    .map(|result| PyTbpClosureResult::from(&result))
+    .map_err(|error| to_pyerr(py, error))
+}
+
+/// A cut's normal liquid density, from its normal boiling point and its molar mass.
+///
+/// Only `riazi_daubert_1980` supports this direction; the other three closures are refused.
+#[pyfunction]
+#[pyo3(signature = (boiling_point, molar_mass, closure=None))]
+#[pyo3(text_signature = "(boiling_point, molar_mass, closure=None)")]
+pub fn tbp_density(
+    py: Python<'_>,
+    boiling_point: f64,
+    molar_mass: f64,
+    closure: Option<&str>,
+) -> PyResult<PyTbpDensityResult> {
+    let parsed: Option<TbpClosureKind> = closure.map(|name| name.parse().unwrap_or_default());
+    density_kernel(
+        parsed.unwrap_or_default(),
+        kelvins(boiling_point),
+        kilograms_per_mole(molar_mass),
+    )
+    .map(|result| PyTbpDensityResult::from(&result))
+    .map_err(|error| to_pyerr(py, error))
+}
 
 /// A TBP cut's critical properties, by any of NeqSim's ten models.
 ///

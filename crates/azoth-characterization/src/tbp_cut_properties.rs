@@ -42,6 +42,15 @@ use crate::spec_gen;
 /// `pc` is in when they run. `ThermodynamicConstantsInterface.referencePressure`.
 const REFERENCE_PRESSURE_BAR: f64 = 1.01325;
 
+/// One model's correlated boiling point, in the correlations' own g/mol and g/cm3.
+///
+/// `characterization.tbp_closure`'s `tbp_model` member inverts exactly this, so the two ids must
+/// agree on it rather than each carrying its own copy of the switch at 540 g/mol.
+#[must_use]
+pub fn model_boiling_point(model: TbpModel, molar_mass_gmol: f64, density: f64) -> f64 {
+    evaluate(model, molar_mass_gmol, density, None).tb
+}
+
 /// Which of NeqSim's ten TBP models evaluates a cut.
 ///
 /// `TBPfractionModel.getAvailableModels()` names them; the spelling each variant carries is the

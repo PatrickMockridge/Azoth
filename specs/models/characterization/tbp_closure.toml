@@ -1,0 +1,66 @@
+id = "characterization.tbp_closure"
+name = "TBP cut molar mass from its normal boiling point and specific gravity"
+kind = "procedure"
+assumptions = [
+    "**this is the inverse of a cut's correlations.** A cut is usually described by a boiling point and a specific gravity, and a cubic needs a molar mass; all four of `TbpClosure`'s members answer that, two in closed form and two by bisection over `[0.010, 0.800]` kg/mol.",
+    "**the bisection is NeqSim's, not a better one.** Bracket `[0.010, 0.800]`, a `1e-9` tolerance on the *bracket width*, at most 200 halvings, and the **final bracket's midpoint** returned. Endpoints sharing a sign refuse rather than narrowing.",
+    "**`tbp_model` bisects the model's own `calcTB`**, so it needs the `model` input, which the other three ignore. NeqSim refuses a null model there with its own sentence, reproduced here.",
+    "**every correlation takes a specific gravity in g/cm3 and returns a molar mass in kg/mol**, and this declares kg/m3 in and kg/mol out - the same quantities, a thousand apart on the density. The conversion is at the boundary and the coefficients keep NeqSim's scale.",
+    "the three correlations are fits to petroleum assays: what they return is a property of a *cut* and not of a substance, and no databank is involved.",
+    "**none of the four is a measurement of the fluid.** The boiling point and the gravity are the two numbers a caller has; this is the inverse that recovers the third, and `characterization.tbp_density` is the other direction, which only one member supports.",
+]
+references = [
+    "Riazi, M. R.; Daubert, T. E. (1980). \"Simplify Property Predictions.\" Hydrocarbon Processing 59(3), 115-116.",
+    "Riazi, M. R.; Daubert, T. E. (1987). \"Characterization parameters for petroleum fractions.\" Industrial & Engineering Chemistry Research 26(4), 755-759. DOI 10.1021/ie00064a023.",
+    "Soreide, I. (1989). \"Improved phase behavior predictions of petroleum reservoir fluids from a cubic equation of state.\" Dr.Ing. thesis, NTNU Trondheim.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TbpClosure` is the port source; its four members are the enum's values.",
+]
+[source]
+standard = "NeqSim master `TbpClosure`"
+edition = "All four members: `RIAZI_DAUBERT_1980` and `RIAZI_DAUBERT_1987` in closed form, `SOREIDE` and `TBP_MODEL` by bisection. `SystemThermo.addTBPfraction_Mw_Tb`, `_Sg_Tb`, `_Tb_Kw` and `_Tb_Pna` are its callers."
+[algorithm]
+scheme = "molar_mass_bisection"
+initialisation = "bracket_midpoint"
+convergence = "absolute"
+tolerance = 1e-09
+max_iterations = 200
+[algorithm.bracket]
+scheme = "fixed_span"
+lower = 0.01
+upper = 0.8
+steps = 2
+[inputs]
+[inputs.closure]
+type = "enum"
+values = ["riazi_daubert_1980", "riazi_daubert_1987", "soreide", "tbp_model"]
+description = "which of the four closures inverts the pair. `riazi_daubert_1980` is the one `SystemThermo.addTBPfraction_Mw_Tb` passes.\n"
+[inputs.boiling_point]
+unit = "K"
+description = "the cut's normal boiling point. NeqSim's 1980 and Soreide correlations take it in kelvin and scale to Rankine internally; the 1987 pair takes it in kelvin directly.\n"
+[inputs.density]
+unit = "kg/m**3"
+description = "the cut's specific gravity, at 15 C and 1 atm. The same number as the 0.65-0.95 the correlations are written against, a thousand times larger in kg/m3.\n"
+[inputs.model]
+type = "enum"
+values = ["pedersen_srk", "pedersen_srk_heavy_oil", "pedersen_pr", "pedersen_pr2", "pedersen_pr_heavy_oil", "riazi_daubert", "lee_kesler", "twu", "cavett", "standing"]
+optional = true
+description = "the TBP model `tbp_model` bisects, from `characterization.tbp_cut_properties`'s own vocabulary. Ignored by the other three closures; `tbp_model` refuses its absence.\n"
+[outputs]
+[outputs.molar_mass]
+unit = "kg/mol"
+description = "The cut's molar mass, the number a cubic needs.\n"
+[[valid_range]]
+quantity = "boiling_point"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a normal boiling point; the 1980 and Soreide correlations raise it to a fractional power\n"
+[[valid_range]]
+quantity = "density"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a specific gravity; the 1987 pair raises it to the 4.98308 power and the 1980 pair to -1.0164\n"
+[implementations]
+python = "azoth.characterization.tbp_closure"
+rust = "azoth_characterization::tbp_closure"

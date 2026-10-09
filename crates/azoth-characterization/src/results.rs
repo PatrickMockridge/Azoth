@@ -6,7 +6,7 @@
 //! deliberate.
 
 use azoth_core::{CalcResult, Warning};
-use uom::si::f64::{Pressure, ThermodynamicTemperature};
+use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
 
 /// Result of `characterization.tbp_cut_properties`.
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +39,42 @@ impl CalcResult for TbpCutPropertiesResult {
         "watson_k",
         "warnings",
     ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.tbp_closure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpClosureResult {
+    /// The cut's molar mass, the number a cubic needs.
+    pub molar_mass: MolarMass,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpClosureResult {
+    const CALC_ID: &'static str = "characterization.tbp_closure";
+    const FIELDS: &'static [&'static str] = &["molar_mass", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
+/// Result of `characterization.tbp_density`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpDensityResult {
+    /// The cut's normal liquid density at 15 C.
+    pub density: MassDensity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpDensityResult {
+    const CALC_ID: &'static str = "characterization.tbp_density";
+    const FIELDS: &'static [&'static str] = &["density", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

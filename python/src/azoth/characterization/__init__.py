@@ -19,14 +19,60 @@ to :mod:`azoth.characterization.reference` otherwise. Both are always reachable 
 from __future__ import annotations
 
 from azoth._dispatch import resolve
-from azoth.core.result import TbpCutPropertiesResult
+from azoth.core.result import TbpClosureResult, TbpCutPropertiesResult, TbpDensityResult
 from azoth.core.units import Q
 
 __all__ = [
+    "tbp_closure",
     "tbp_cut_properties",
+    "tbp_density",
 ]
 
 _TBP_CUT_PROPERTIES = "characterization.tbp_cut_properties"
+_TBP_CLOSURE = "characterization.tbp_closure"
+_TBP_DENSITY = "characterization.tbp_density"
+
+
+def tbp_closure(
+    closure: str,
+    boiling_point: Q,
+    density: Q,
+    model: str | None = None,
+) -> TbpClosureResult:
+    """A cut's molar mass, from its normal boiling point and its specific gravity.
+
+    ``closure`` is one of ``riazi_daubert_1980``, ``riazi_daubert_1987``, ``soreide`` or
+    ``tbp_model``; the last needs ``model``.
+
+    Raises:
+        InvalidInputError: if a `tbp_model` closure has no `model`, or the boiling point is not
+            attainable over the search bracket.
+
+    See :func:`azoth.characterization.reference.tbp_closure`.
+    """
+    return resolve(_TBP_CLOSURE)(  # type: ignore[no-any-return]
+        closure=closure, boiling_point=boiling_point, density=density, model=model
+    )
+
+
+def tbp_density(
+    boiling_point: Q,
+    molar_mass: Q,
+    closure: str | None = None,
+) -> TbpDensityResult:
+    """A cut's normal liquid density, from its normal boiling point and its molar mass.
+
+    Only ``riazi_daubert_1980`` supports this direction; the other three closures are refused,
+    each naming the class that would close it.
+
+    Raises:
+        InvalidInputError: for the three closures that cannot be inverted.
+
+    See :func:`azoth.characterization.reference.tbp_density`.
+    """
+    return resolve(_TBP_DENSITY)(  # type: ignore[no-any-return]
+        boiling_point=boiling_point, molar_mass=molar_mass, closure=closure
+    )
 
 
 def tbp_cut_properties(

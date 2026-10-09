@@ -84,6 +84,11 @@ Five sections, and the difference between them is the point:
 
 - [`characterization.tbp_cut_properties`](./characterization/tbp_cut_properties.md)
 
+*Models* — whose specs fix a procedure rather than an equation:
+
+- [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity
+- [`characterization.tbp_density`](./characterization/tbp_density.md) — TBP cut specific gravity from its boiling point and molar mass
+
 **Equations of state** - [`eos/index.md`](./eos/index.md):
 
 - [`eos.antoine_vapor_pressure`](./eos/antoine_vapor_pressure.md)

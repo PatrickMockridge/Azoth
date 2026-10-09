@@ -174,7 +174,9 @@ from azoth.core.result import (
     StrippingColumnResult,
     SwameeJainResult,
     TankResult,
+    TbpClosureResult,
     TbpCutPropertiesResult,
+    TbpDensityResult,
     TbpFractionPropertiesResult,
     ThermalConductivityResult,
     ThFlashResult,
@@ -399,7 +401,9 @@ __all__ = [
     "stirred_tank_reactor",
     "stripping_column",
     "tank",
+    "tbp_closure",
     "tbp_cut_properties",
+    "tbp_density",
     "tbp_fraction_properties",
     "th_flash",
     "thermal_conductivity",
@@ -440,6 +444,21 @@ __all__ = [
 ]
 
 
+def tbp_closure(closure: str, boiling_point: Q, density: Q, model: str | None=None) -> TbpClosureResult:
+    """``characterization.tbp_closure``, computed in Rust."""
+    spec = _models_gen.model("characterization.tbp_closure")
+    result = _core.tbp_closure(
+        input_to_si(spec, "boiling_point", boiling_point),
+        input_to_si(spec, "density", density),
+        closure,
+        model,
+    )
+    return TbpClosureResult(
+        molar_mass=from_si(result.molar_mass.magnitude_si, result.molar_mass.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
 def tbp_cut_properties(molar_mass: Q, density: Q, model: str | None=None, boiling_point: Q | None=None) -> TbpCutPropertiesResult:
     """``characterization.tbp_cut_properties``, computed in Rust."""
     spec = _spec_for("characterization.tbp_cut_properties")
@@ -456,6 +475,20 @@ def tbp_cut_properties(molar_mass: Q, density: Q, model: str | None=None, boilin
         acentric_factor=result.acentric_factor,
         attraction_exponent=result.attraction_exponent,
         watson_k=result.watson_k,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tbp_density(boiling_point: Q, molar_mass: Q, closure: str | None=None) -> TbpDensityResult:
+    """``characterization.tbp_density``, computed in Rust."""
+    spec = _models_gen.model("characterization.tbp_density")
+    result = _core.tbp_density(
+        input_to_si(spec, "boiling_point", boiling_point),
+        input_to_si(spec, "molar_mass", molar_mass),
+        closure,
+    )
+    return TbpDensityResult(
+        density=from_si(result.density.magnitude_si, result.density.unit),
         warnings=_warnings(result.warnings),
     )
 

@@ -1,0 +1,36 @@
+model = "characterization.tbp_density"
+[[cases]]
+id = "riazi_daubert_1980_light"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1980"
+boiling_point = 300.0
+molar_mass = 0.2
+[cases.expected]
+density = 234.340430850704
+[[cases]]
+id = "riazi_daubert_1980_mid"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1980"
+boiling_point = 500.0
+molar_mass = 0.2
+[cases.expected]
+density = 706.659009094508
+[[cases]]
+id = "riazi_daubert_1980_heavy"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1980"
+boiling_point = 800.0
+molar_mass = 0.2
+[cases.expected]
+density = 1951.03429727196
+[[cases]]
+id = "the_default_closure_is_the_supported_one"
+tolerance = 1.0e-12
+[cases.inputs]
+boiling_point = 500.0
+molar_mass = 0.2
+[cases.expected]
+density = 706.659009094508

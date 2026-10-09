@@ -1,0 +1,103 @@
+model = "characterization.tbp_closure"
+[[cases]]
+id = "riazi_daubert_1980_light"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1980"
+boiling_point = 300.0
+density = 650.0
+[cases.expected]
+molar_mass = 0.0709083824627520
+[[cases]]
+id = "riazi_daubert_1980_mid"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1980"
+boiling_point = 500.0
+density = 850.0
+[cases.expected]
+molar_mass = 0.165769849054666
+[[cases]]
+id = "riazi_daubert_1980_heavy"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1980"
+boiling_point = 800.0
+density = 650.0
+[cases.expected]
+molar_mass = 0.611237665466643
+[[cases]]
+id = "riazi_daubert_1987_light"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1987"
+boiling_point = 300.0
+density = 650.0
+[cases.expected]
+molar_mass = 0.0672714199532221
+[[cases]]
+id = "riazi_daubert_1987_heavy"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "riazi_daubert_1987"
+boiling_point = 800.0
+density = 650.0
+[cases.expected]
+molar_mass = 0.506257785428009
+[[cases]]
+id = "soreide_light"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "soreide"
+boiling_point = 300.0
+density = 650.0
+[cases.expected]
+molar_mass = 0.0581047898856923
+[[cases]]
+id = "soreide_mid"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "soreide"
+boiling_point = 500.0
+density = 850.0
+[cases.expected]
+molar_mass = 0.171633653691970
+[[cases]]
+id = "soreide_heavy"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "soreide"
+boiling_point = 800.0
+density = 650.0
+[cases.expected]
+molar_mass = 0.423035819674842
+[[cases]]
+id = "tbp_model_light"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "tbp_model"
+boiling_point = 300.0
+density = 650.0
+model = "pedersen_srk"
+[cases.expected]
+molar_mass = 0.0582117252470926
+[[cases]]
+id = "tbp_model_mid"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "tbp_model"
+boiling_point = 500.0
+density = 850.0
+model = "pedersen_srk"
+[cases.expected]
+molar_mass = 0.178462372985669
+[[cases]]
+id = "tbp_model_heavy"
+tolerance = 1.0e-12
+[cases.inputs]
+closure = "tbp_model"
+boiling_point = 800.0
+density = 650.0
+model = "pedersen_srk"
+[cases.expected]
+molar_mass = 0.596568801482208

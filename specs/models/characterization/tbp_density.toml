@@ -1,0 +1,64 @@
+id = "characterization.tbp_density"
+name = "TBP cut specific gravity from its boiling point and molar mass"
+kind = "direct"
+assumptions = [
+    "**only the 1980 Riazi-Daubert pair inverts for density, measured rather than chosen.** `supportsDensityFromMolarMass` reports it and the probe records the others' refusals: the 1987 pair turns over in gravity, Soreide is not monotonic, Pedersen ignores density below 540 g/mol.",
+    "**`SystemThermo.addTBPfraction_Tb_Sg` is the one caller**, and it passes `RIAZI_DAUBERT_1980` - so the single supported route is the one the assay path needs.",
+    "**this is the same correlation as `characterization.tbp_closure`'s 1980 member, rearranged.** NeqSim carries it as `Math.pow(4.5673e-5 * TbR**2.1962 / M_g, -1.0 / -1.0164)`; the double negative is the class's own spelling of the inverse exponent and is written here as one positive power.",
+    "**the pair is not symmetric**: `calcMolarMass` divides by 1000 to reach kg/mol and `calcDensity` multiplies by 1000 to reach g/mol, so a port that shared one conversion between them would be wrong in one direction by 10^6 on a density.",
+    "the returned number is a specific gravity in g/cm3 numerically and this declares kg/m3, so the boundary multiplies by 1000 - the same conversion `characterization.tbp_closure` makes in the other direction.",
+    "the correlation is a fit to petroleum assays, so what it returns is a property of a *cut* and not of a substance, and no databank is involved.",
+]
+references = [
+    "Riazi, M. R.; Daubert, T. E. (1980). \"Simplify Property Predictions.\" Hydrocarbon Processing 59(3), 115-116.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TbpClosure.RIAZI_DAUBERT_1980.calcDensity` is the port source; `SystemThermo.addTBPfraction_Tb_Sg` is its caller.",
+]
+[source]
+standard = "NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity`"
+edition = "The one member of four that can be inverted for specific gravity. The other three are refused by name below, which is what `supportsDensityFromMolarMass` reports and what the probe measures."
+[[unported]]
+parameter = "closure"
+value = "riazi_daubert_1987"
+class = "TbpClosure.RIAZI_DAUBERT_1987.calcDensity"
+capture = "validation/neqsim/captures/tbp_closure_probe.tsv"
+[[unported]]
+parameter = "closure"
+value = "soreide"
+class = "TbpClosure.SOREIDE.calcDensity"
+capture = "validation/neqsim/captures/tbp_closure_probe.tsv"
+[[unported]]
+parameter = "closure"
+value = "tbp_model"
+class = "TbpClosure.TBP_MODEL.calcDensity"
+capture = "validation/neqsim/captures/tbp_closure_probe.tsv"
+[inputs]
+[inputs.closure]
+type = "enum"
+values = ["riazi_daubert_1980", "riazi_daubert_1987", "soreide", "tbp_model"]
+optional = true
+description = "which closure inverts the pair. Absent takes `riazi_daubert_1980`, the only member that supports this direction and the one NeqSim's caller passes; the other three are refused.\n"
+[inputs.boiling_point]
+unit = "K"
+description = "the cut's normal boiling point, scaled to Rankine inside the correlation as its `1.8` factor says.\n"
+[inputs.molar_mass]
+unit = "kg/mol"
+description = "the cut's molar mass, the number the correlation inverts for. NeqSim's own working scale for it is g/mol and the class multiplies by 1000.\n"
+[outputs]
+[outputs.density]
+unit = "kg/m**3"
+description = "The cut's normal liquid density at 15 C, which is the specific gravity in the correlations' own g/cm3 scale.\n"
+[[valid_range]]
+quantity = "boiling_point"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "a normal boiling point; the correlation raises it to the 2.1962 power\n"
+[[valid_range]]
+quantity = "molar_mass"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the correlation divides by it, so zero has no answer and below it the density has no meaning\n"
+[implementations]
+python = "azoth.characterization.tbp_density"
+rust = "azoth_characterization::tbp_density"

@@ -24,6 +24,8 @@
 <!-- BEGIN GENERATED: calcs -->
 - [Petroleum fraction characterisation](./characterization/index.md)
   - [TBP cut properties by any of NeqSim's ten models](./characterization/tbp_cut_properties.md)
+  - [TBP cut molar mass from its normal boiling point and specific gravity](./characterization/tbp_closure.md)
+  - [TBP cut specific gravity from its boiling point and molar mass](./characterization/tbp_density.md)
 - [Equations of state](./eos/index.md)
   - [Antoine vapour pressure from NeqSim's correlation](./eos/antoine_vapor_pressure.md)
   - [Gas binary diffusivity from the Chapman-Enskog theory](./eos/chapman_enskog_diffusivity.md)

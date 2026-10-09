@@ -15,15 +15,37 @@ from typing import Any, Final
 
 #: Every id's block, by id.
 PROVENANCE: Final[dict[str, dict[str, Any]]] = {
+    'characterization.tbp_closure': {
+        "calc_id": 'characterization.tbp_closure',
+        "name": 'TBP cut molar mass from its normal boiling point and specific gravity',
+        "spec": {'path': 'specs/models/characterization/tbp_closure.toml', 'sha256': '6ca89e3a6d097a0ada10679c84af6ef478d6b681b64a1e16561a2d1a4558a20a'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_closure.py', 'sha256': '1315caffb1f40231b90c2e57abd1de5313d2fff00857af879cfd620ebeec961a'}, {'path': 'crates/azoth-characterization/src/tbp_closure.rs', 'sha256': '767cc5aa8fc0a34df8af7c4ea8e97319f3dc7bfc0671e232615b9db67e3b8dae'}],
+        "source": 'NeqSim master `TbpClosure`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 11,
+        "tests_skipped": 0,
+    },
     'characterization.tbp_cut_properties': {
         "calc_id": 'characterization.tbp_cut_properties',
         "name": "TBP cut properties by any of NeqSim's ten models",
         "spec": {'path': 'specs/calcs/characterization/tbp_cut_properties.toml', 'sha256': 'e3734a374293472583984a019b6c44c3438a985f801749ddfe1564c62c06d1b0'},
-        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_cut_properties.py', 'sha256': '950b88c1005295d693002f74e30ec4f11613f54a7d7286005e58baadd56ce086'}, {'path': 'crates/azoth-characterization/src/tbp_cut_properties.rs', 'sha256': '91de94295d6da230abbb6a358c43ef2fe13ddc8a3d5ba9eb92fb3286d8f95340'}],
+        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_cut_properties.py', 'sha256': '950b88c1005295d693002f74e30ec4f11613f54a7d7286005e58baadd56ce086'}, {'path': 'crates/azoth-characterization/src/tbp_cut_properties.rs', 'sha256': 'e11d402bbbf1c964d1e9129078636e0efdc01b76880a60fda3f68f06cbda51b5'}],
         "source": 'NeqSim master `TBPfractionModel`, all ten models',
         "verification": 'partially_verified',
         "validation_cases": 0,
         "tests_active": 9,
+        "tests_skipped": 0,
+    },
+    'characterization.tbp_density': {
+        "calc_id": 'characterization.tbp_density',
+        "name": 'TBP cut specific gravity from its boiling point and molar mass',
+        "spec": {'path': 'specs/models/characterization/tbp_density.toml', 'sha256': 'b2a5b095111f6294c4b76395f0adecdf39292f599db1012fccaf125879f5057e'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_density.py', 'sha256': '36c14f0ecbe6af893d01f70971a6e1477f07f7bcc734cdb85c1fb1684bcc804c'}, {'path': 'crates/azoth-characterization/src/tbp_density.rs', 'sha256': 'eccc0027cc97b01bd30f8c8cd33ecafe34190a8df06cd0b05d2c1e60917ebb9a'}],
+        "source": 'NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 4,
         "tests_skipped": 0,
     },
     'eos.ammonia_phase': {

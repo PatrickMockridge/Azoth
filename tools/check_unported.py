@@ -172,11 +172,16 @@ def porting_prose(specs_root: Path = SPECS) -> list[str]:
 #: Where a refusal is written in code, in each language.
 SOURCE_SUFFIXES = (".rs", ".py")
 
-#: The two helper modules, which are the only places the phrase is allowed: they are what a
-#: refusal goes *through*, and each has to spell the sentence it builds.
+#: The helper modules, which are the only places the phrase is allowed: they are what a refusal
+#: goes *through*, and each has to spell the sentence it builds. One pair per namespace that has
+#: rows, because the helper is local to a namespace - `azoth-process`'s copy is reachable only
+#: through `azoth.process`, whose `__init__` imports the compiled extension, and
+#: `characterization`'s reference must import with or without it.
 SENTINELS = (
     "crates/azoth-process/src/unported.rs",
     "python/src/azoth/process/reference/_unported.py",
+    "crates/azoth-characterization/src/unported.rs",
+    "python/src/azoth/characterization/reference/_unported.py",
 )
 
 

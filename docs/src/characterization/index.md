@@ -7,3 +7,12 @@ Every calculation in this section is generated from its specification. Each page
 | Calculation | Equation | Source |
 |---|---|---|
 | [`characterization.tbp_cut_properties`](./tbp_cut_properties.md) | $\begin{aligned} T_{c} &= c_{0}d + c_{1}\ln M + c_{2}M + \frac{c_{3}}{M}, & P_{c} &= \exp\left(0.01325 + c_{0} + c_{1}d^{c_{4}} + \frac{c_{2}}{M} + \frac{c_{3}}{M^{2}}\right), \\ \omega &= \frac{3}{7}\frac{\log_{10}(P_{c}/P_{\mathrm{ref}})}{T_{c}/T_{b} - 1} - 1, & m &= c_{0} + c_{1}M + c_{2}d + c_{3}M^{2} \end{aligned}$ | NeqSim master `TBPfractionModel`, all ten models |
+
+## Models
+
+The calculations above are equations; these are *procedures*. A model's spec fixes a scheme, a tolerance and an iteration cap rather than a formula, and two implementations that differ even slightly in those diverge - so each page leads with the algorithm and its settings, and the equations below it are the ones it composes rather than its own.
+
+| Model | Scheme | Source |
+|---|---|---|
+| [`characterization.tbp_closure`](./tbp_closure.md) | `molar_mass_bisection` | NeqSim master `TbpClosure` |
+| [`characterization.tbp_density`](./tbp_density.md) | `direct composition` | NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity` |

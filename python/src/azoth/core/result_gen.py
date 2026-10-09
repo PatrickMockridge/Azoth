@@ -37,6 +37,19 @@ from azoth.core.warnings import Warning
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpClosureResult(_HasWarnings):
+    """Result of ``characterization.tbp_closure``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_closure"
+
+    #: The cut's molar mass, the number a cubic needs.
+    molar_mass: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpCutPropertiesResult(_HasWarnings):
     """Result of ``characterization.tbp_cut_properties``."""
 
@@ -59,6 +72,19 @@ class TbpCutPropertiesResult(_HasWarnings):
 
     #: Watson's characterization factor, `(1.8*Tb)**(1/3)/d`. Every model inherits the base's form, so it follows whatever that model's `boiling_temperature` is.
     watson_k: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class TbpDensityResult(_HasWarnings):
+    """Result of ``characterization.tbp_density``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_density"
+
+    #: The cut's normal liquid density at 15 C, which is the specific gravity in the correlations' own g/cm3 scale.
+    density: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]
