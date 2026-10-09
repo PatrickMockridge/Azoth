@@ -48,6 +48,9 @@ the registry and the Rust sources
                 ─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
                 ─► tools/gen_python_bridge.py    ─► python/src/azoth/_rust_bridge_gen.py
                 ─► tools/gen_python_result.py    ─► python/src/azoth/core/result_gen.py
+
+the specs and the process models' own structs
+                ─► tools/gen_rust_model_records.py ─► crates/azoth-process/src/model_records_gen.rs
 ```
 
 The spec declares; the generators name. A field the spec does not name cannot be
