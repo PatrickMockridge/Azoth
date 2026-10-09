@@ -42,7 +42,12 @@ public class CharacterizationProbe {
         System.out.printf("cut[%d].calcm = # not applicable (isCalcm false)%n", i);
       }
       row("cut[" + i + "].critical_volume", model.calcCriticalVolume(molarMass, density));
-      row("cut[" + i + "].parachor", model.calcParachorParameter(molarMass, density));
+      // **The models do not share one unit for `molarMass`, and `addTBPfraction` compensates per
+      // call site.** There the local is kg/mol, and it passes `molarMass * 1000.0` to
+      // `calcCriticalViscosity` (g/mol) but the bare `molarMass` to `calcParachorParameter`, which
+      // multiplies by 1000 inside. This probe works in g/mol throughout, so parachor takes the
+      // thousandth and the others do not.
+      row("cut[" + i + "].parachor", model.calcParachorParameter(molarMass / 1000.0, density));
       row("cut[" + i + "].critical_viscosity", model.calcCriticalViscosity(molarMass, density));
       row("cut[" + i + "].watson_k", model.calcWatsonCharacterizationFactor(molarMass, density));
       System.out.println();
