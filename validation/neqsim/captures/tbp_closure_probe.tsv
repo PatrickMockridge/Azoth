@@ -1,0 +1,476 @@
+# closure = RIAZI_DAUBERT_1980
+# supports_density_from_molar_mass = true
+# tb = 300.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.0709083824627520
+density = 0.234340430850704
+
+# tb = 300.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.0613098771762349
+density = 0.234340430850704
+
+# tb = 300.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.0539860208525875
+density = 0.234340430850704
+
+# tb = 300.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0482152520909658
+density = 0.234340430850704
+
+# tb = 400.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.133379176546419
+density = 0.436325186746886
+
+# tb = 400.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.115324319183615
+density = 0.436325186746886
+
+# tb = 400.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.101548092852328
+density = 0.436325186746886
+
+# tb = 400.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0906932353766376
+density = 0.436325186746886
+
+# tb = 500.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.217731769667880
+density = 0.706659009094508
+
+# tb = 500.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.188258532941634
+density = 0.706659009094508
+
+# tb = 500.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.165769849054666
+density = 0.706659009094508
+
+# tb = 500.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.148050086578459
+density = 0.706659009094508
+
+# tb = 600.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.324952329747399
+density = 1.04785657971296
+
+# tb = 600.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.280965193859976
+density = 1.04785657971296
+
+# tb = 600.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.247402107346832
+density = 1.04785657971296
+
+# tb = 600.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.220956365836545
+density = 1.04785657971296
+
+# tb = 700.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.455877538218310
+density = 1.46203585308411
+
+# tb = 700.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.394167726083032
+density = 1.46203585308411
+
+# tb = 700.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.347081874239735
+density = 1.46203585308411
+
+# tb = 700.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.309980987640648
+density = 1.46203585308411
+
+# tb = 800.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.611237665466643
+density = 1.95103429727196
+
+# tb = 800.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.528497547027447
+density = 1.95103429727196
+
+# tb = 800.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.465365140307678
+density = 1.95103429727196
+
+# tb = 800.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.415620510642006
+density = 1.95103429727196
+
+soreide_tb[0.05,0.65] = 278.935801625858
+soreide_tb[0.05,0.75] = 272.709523578970
+soreide_tb[0.05,0.85] = 312.231105801763
+soreide_tb[0.05,0.95] = 381.902225469722
+soreide_tb[0.1,0.65] = 394.735160060034
+soreide_tb[0.1,0.75] = 377.513116422442
+soreide_tb[0.1,0.85] = 400.333813171777
+soreide_tb[0.1,0.95] = 451.278354723999
+soreide_tb[0.2,0.65] = 565.846136554595
+soreide_tb[0.2,0.75] = 534.722197494597
+soreide_tb[0.2,0.85] = 534.092542591066
+soreide_tb[0.2,0.95] = 557.394628394140
+soreide_tb[0.4,0.65] = 782.210297798887
+soreide_tb[0.4,0.75] = 742.409430337577
+soreide_tb[0.4,0.85] = 718.418145418282
+soreide_tb[0.4,0.95] = 709.524198399355
+soreide_tb[0.7,0.65] = 944.118496039043
+soreide_tb[0.7,0.75] = 910.777151777973
+soreide_tb[0.7,0.85] = 880.220996554018
+soreide_tb[0.7,0.95] = 853.968063214512
+
+# closure = RIAZI_DAUBERT_1987
+# supports_density_from_molar_mass = false
+# tb = 300.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.0672714199532221
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.6957964682089094 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 300.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.0670641237115089
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.6957964682089094 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 300.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.0611407135043416
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.6957964682089094 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 300.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0520005878959316
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.6957964682089094 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 400.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.113036913003547
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7166583060270242 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 400.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.115062537056255
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7166583060270242 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 400.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.107109549245783
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7166583060270242 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 400.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0930164885098291
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7166583060270242 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 500.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.175102291116235
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.738809798450348 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 500.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.181995011207083
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.738809798450348 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 500.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.172984713641891
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.738809798450348 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 500.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.153388737634225
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.738809798450348 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 600.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.257646282940453
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7623743471805914 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 600.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.273429604132719
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7623743471805914 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 600.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.265367525602956
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7623743471805914 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 600.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.240263344856560
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7623743471805914 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 700.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.365880835756190
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7874916163436576 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 700.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.396474547846547
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7874916163436576 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 700.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.392890521314278
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7874916163436576 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 700.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.363216268971114
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.7874916163436576 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 800.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.506257785428009
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.8143203026745491 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 800.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.560146159540720
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.8143203026745491 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 800.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.566776192309412
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.8143203026745491 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+# tb = 800.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.535006844916707
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with RIAZI_DAUBERT_1987: molar mass turns over in specific gravity at SG = 0.8143203026745491 for this boiling point, so two specific gravities reproduce the same molar mass and the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead. Evaluating this closure forward, i.e. molar mass from boiling point and specific gravity, is unaffected and remains the default.
+
+soreide_tb[0.05,0.65] = 278.935801625858
+soreide_tb[0.05,0.75] = 272.709523578970
+soreide_tb[0.05,0.85] = 312.231105801763
+soreide_tb[0.05,0.95] = 381.902225469722
+soreide_tb[0.1,0.65] = 394.735160060034
+soreide_tb[0.1,0.75] = 377.513116422442
+soreide_tb[0.1,0.85] = 400.333813171777
+soreide_tb[0.1,0.95] = 451.278354723999
+soreide_tb[0.2,0.65] = 565.846136554595
+soreide_tb[0.2,0.75] = 534.722197494597
+soreide_tb[0.2,0.85] = 534.092542591066
+soreide_tb[0.2,0.95] = 557.394628394140
+soreide_tb[0.4,0.65] = 782.210297798887
+soreide_tb[0.4,0.75] = 742.409430337577
+soreide_tb[0.4,0.85] = 718.418145418282
+soreide_tb[0.4,0.95] = 709.524198399355
+soreide_tb[0.7,0.65] = 944.118496039043
+soreide_tb[0.7,0.75] = 910.777151777973
+soreide_tb[0.7,0.85] = 880.220996554018
+soreide_tb[0.7,0.95] = 853.968063214512
+
+# closure = SOREIDE
+# supports_density_from_molar_mass = false
+# tb = 300.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.0581047898856923
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 300.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.0617545948689804
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 300.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.0441413609078154
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 300.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0120127973752096
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.102587389131077
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.112398701733910
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.0997866940172389
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0617410682002083
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.157326712072827
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.175053453803994
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.171633653691970
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.142479949318804
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.224655028632842
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.252266396996565
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.261370043731295
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.248328558946960
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.309691226105206
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.349870155104436
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.375422239159234
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.384916155119427
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.423035819674842
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.480022027143277
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.527901485976763
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.568654260630719
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with SOREIDE: the boiling point is not monotonic in specific gravity over 0.60 to 1.00, so the inverse has no unique root. Use RIAZI_DAUBERT_1980 instead.
+
+soreide_tb[0.05,0.65] = 278.935801625858
+soreide_tb[0.05,0.75] = 272.709523578970
+soreide_tb[0.05,0.85] = 312.231105801763
+soreide_tb[0.05,0.95] = 381.902225469722
+soreide_tb[0.1,0.65] = 394.735160060034
+soreide_tb[0.1,0.75] = 377.513116422442
+soreide_tb[0.1,0.85] = 400.333813171777
+soreide_tb[0.1,0.95] = 451.278354723999
+soreide_tb[0.2,0.65] = 565.846136554595
+soreide_tb[0.2,0.75] = 534.722197494597
+soreide_tb[0.2,0.85] = 534.092542591066
+soreide_tb[0.2,0.95] = 557.394628394140
+soreide_tb[0.4,0.65] = 782.210297798887
+soreide_tb[0.4,0.75] = 742.409430337577
+soreide_tb[0.4,0.85] = 718.418145418282
+soreide_tb[0.4,0.95] = 709.524198399355
+soreide_tb[0.7,0.65] = 944.118496039043
+soreide_tb[0.7,0.75] = 910.777151777973
+soreide_tb[0.7,0.85] = 880.220996554018
+soreide_tb[0.7,0.95] = 853.968063214512
+
+# closure = TBP_MODEL
+# supports_density_from_molar_mass = false
+# tb = 300.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.0582117252470926
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 300.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.0582117252470926
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 300.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.0582117252470926
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 300.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.0582117252470926
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.112307888013311
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.112307888013311
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.112307888013311
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 400.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.112307888013311
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.178462372985669
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.178462372985669
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.178462372985669
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 500.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.178462372985669
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.265775770614855
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.265775770614855
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.265775770614855
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 600.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.265775770614855
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.400249989046715
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.400249989046715
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.400249989046715
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 700.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.400249989046715
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.650000000000000
+molar_mass = 0.596568801482208
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.750000000000000
+molar_mass = 0.584844789220951
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.850000000000000
+molar_mass = 0.574779431284406
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+# tb = 800.000000000000 K, sg = 0.950000000000000
+molar_mass = 0.565980360102840
+density = # refused: neqsim.util.exception.InvalidInputException: TbpClosure:calcDensity - Input molarMass cannot be inverted with TBP_MODEL: the Pedersen boiling point correlation is independent of density below 540 g/mol, so the inverse problem has no solution. Use RIAZI_DAUBERT_1980 instead.
+
+soreide_tb[0.05,0.65] = 278.935801625858
+soreide_tb[0.05,0.75] = 272.709523578970
+soreide_tb[0.05,0.85] = 312.231105801763
+soreide_tb[0.05,0.95] = 381.902225469722
+soreide_tb[0.1,0.65] = 394.735160060034
+soreide_tb[0.1,0.75] = 377.513116422442
+soreide_tb[0.1,0.85] = 400.333813171777
+soreide_tb[0.1,0.95] = 451.278354723999
+soreide_tb[0.2,0.65] = 565.846136554595
+soreide_tb[0.2,0.75] = 534.722197494597
+soreide_tb[0.2,0.85] = 534.092542591066
+soreide_tb[0.2,0.95] = 557.394628394140
+soreide_tb[0.4,0.65] = 782.210297798887
+soreide_tb[0.4,0.75] = 742.409430337577
+soreide_tb[0.4,0.85] = 718.418145418282
+soreide_tb[0.4,0.95] = 709.524198399355
+soreide_tb[0.7,0.65] = 944.118496039043
+soreide_tb[0.7,0.75] = 910.777151777973
+soreide_tb[0.7,0.85] = 880.220996554018
+soreide_tb[0.7,0.95] = 853.968063214512
+
