@@ -11,6 +11,7 @@
 //!
 //! * [`tbp_cut_properties`] — a cut's critical properties, by any of NeqSim's ten models
 
+pub mod assay_mass_fractions;
 pub mod lumping;
 pub mod model_gen;
 pub mod pedersen_plus_split;
@@ -24,10 +25,12 @@ pub mod unported;
 pub mod unported_gen;
 pub mod whitson_gamma_split;
 
+pub use assay_mass_fractions::{AssayBasis, assay_mass_fractions};
 pub use lumping::lumping;
 pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{
-    LumpingResult, PedersenPlusSplitResult, TbpClosureResult, TbpCutPropertiesResult,
+    AssayMassFractionsResult, LumpingResult, PedersenPlusSplitResult, TbpClosureResult,
+    TbpCutPropertiesResult,
     TbpDensityResult, TbpGroupingResult, WhitsonGammaSplitResult,
 };
 pub use tbp_closure::{TbpClosureKind, tbp_closure};

@@ -8,6 +8,34 @@
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
 
+/// Result of `characterization.assay_mass_fractions`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssayMassFractionsResult {
+    /// Each cut's resolved mass fraction, which sums to one.
+    pub mass_fraction: Vec<f64>,
+    /// The declared fractions' own sum, before normalisation.
+    pub total_declared_fraction: f64,
+    /// The assay's bulk density, the mass-weighted harmonic mean, present only when every cut
+    /// carries a density.
+    pub bulk_density: Option<MassDensity>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for AssayMassFractionsResult {
+    const CALC_ID: &'static str = "characterization.assay_mass_fractions";
+    const FIELDS: &'static [&'static str] = &[
+        "mass_fraction",
+        "total_declared_fraction",
+        "bulk_density",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.tbp_cut_properties`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TbpCutPropertiesResult {

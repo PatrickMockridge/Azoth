@@ -20,6 +20,7 @@ from azoth.core.result import (
     AntoineVaporPressureResult,
     AqueousViscosityResult,
     ArgonSolidPhaseResult,
+    AssayMassFractionsResult,
     BubblePressureResult,
     BubbleTemperatureResult,
     BwrsPhaseResult,
@@ -255,6 +256,7 @@ __all__ = [
     "antoine_vapor_pressure",
     "aqueous_viscosity",
     "argon_solid_phase",
+    "assay_mass_fractions",
     "bubble_pressure",
     "bubble_temperature",
     "bwrs_phase",
@@ -450,6 +452,22 @@ __all__ = [
     "wilke_viscosity",
     "wilson_activity_coefficients",
 ]
+
+
+def assay_mass_fractions(basis: str, declared_fraction: list[float], density: list[Q] | None=None) -> AssayMassFractionsResult:
+    """``characterization.assay_mass_fractions``, computed in Rust."""
+    spec = _models_gen.model("characterization.assay_mass_fractions")
+    result = _core.assay_mass_fractions(
+        basis,
+        list(declared_fraction),
+        None if density is None else [input_to_si(spec, "density", v) for v in density],
+    )
+    return AssayMassFractionsResult(
+        mass_fraction=tuple(result.mass_fraction),
+        total_declared_fraction=result.total_declared_fraction,
+        bulk_density=None if result.bulk_density is None else from_si(result.bulk_density.magnitude_si, result.bulk_density.unit),
+        warnings=_warnings(result.warnings),
+    )
 
 
 def lumping(molar_mass: Q, mole_fraction: float, cut_z: list[float], cut_molar_mass: list[Q], cut_density: list[Q], number_of_lumps: int | None=None) -> LumpingResult:

@@ -16,6 +16,57 @@
 use crate::results::{PyKComponent, PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
+/// Result of `characterization.assay_mass_fractions`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "AssayMassFractionsResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyAssayMassFractionsResult {
+    /// Each cut's resolved mass fraction, which sums to one.
+    #[pyo3(get)]
+    pub mass_fraction: Vec<f64>,
+    /// The declared fractions' own sum, before normalisation, which the closure test is taken on.
+    #[pyo3(get)]
+    pub total_declared_fraction: f64,
+    /// The assay's bulk density, `1 / sum(w_i / rho_i)`, present only when a density is supplied for every cut.
+    #[pyo3(get)]
+    pub bulk_density: Option<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyAssayMassFractionsResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AssayMassFractionsResult(mass_fraction={:?}, total_declared_fraction={:?}, bulk_density={:?}, {} warning(s))",
+            self.mass_fraction,
+            self.total_declared_fraction,
+            self.bulk_density,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::AssayMassFractionsResult>
+    for PyAssayMassFractionsResult
+{
+    fn from(r: &azoth_characterization::results::AssayMassFractionsResult) -> Self {
+        Self {
+            mass_fraction: r.mass_fraction.clone(),
+            total_declared_fraction: r.total_declared_fraction,
+            bulk_density: r.bulk_density.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/m**3".to_string(),
+            }),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.lumping`, transported.
 #[pyclass(
     frozen,

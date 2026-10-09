@@ -37,6 +37,25 @@ from azoth.core.warnings import Warning
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class AssayMassFractionsResult(_HasWarnings):
+    """Result of ``characterization.assay_mass_fractions``."""
+
+    CALC_ID: ClassVar[str] = "characterization.assay_mass_fractions"
+
+    #: Each cut's resolved mass fraction, which sums to one.
+    mass_fraction: tuple[float, ...]
+
+    #: The declared fractions' own sum, before normalisation, which the closure test is taken on.
+    total_declared_fraction: float
+
+    #: The assay's bulk density, `1 / sum(w_i / rho_i)`, present only when a density is supplied for every cut.
+    bulk_density: Q | None
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LumpingResult(_HasWarnings):
     """Result of ``characterization.lumping``."""
 

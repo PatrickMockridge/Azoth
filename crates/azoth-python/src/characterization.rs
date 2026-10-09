@@ -5,7 +5,8 @@
 //! conversion site used by both backends cannot disagree with itself about what a number is in.
 
 use azoth_characterization::{
-    TbpClosureKind, TbpModel, WhitsonDensityModel, tbp_closure as closure_kernel,
+    AssayBasis, TbpClosureKind, TbpModel, WhitsonDensityModel,
+    assay_mass_fractions as assay_kernel, tbp_closure as closure_kernel,
     tbp_cut_properties as kernel, tbp_density as density_kernel,
     whitson_gamma_split as gamma_kernel,
 };
@@ -14,8 +15,32 @@ use pyo3::prelude::*;
 
 use crate::errors::to_pyerr;
 use crate::transport_gen::{
-    PyTbpClosureResult, PyTbpCutPropertiesResult, PyTbpDensityResult, PyWhitsonGammaSplitResult,
+    PyAssayMassFractionsResult, PyTbpClosureResult, PyTbpCutPropertiesResult, PyTbpDensityResult,
+    PyWhitsonGammaSplitResult,
 };
+
+/// An oil assay's declared yields, resolved to a mass basis.
+///
+/// All arguments are SI magnitudes. `basis` is one of the two the spec declares; `density` is one
+/// entry per cut and is needed by a volume basis, and only wanted by a mass basis for the bulk
+/// density. **This wrapper is hand-written** because an optional dimensioned slice is a shape
+/// `gen_python_wrappers` refuses rather than guesses at.
+#[pyfunction]
+#[pyo3(signature = (basis, declared_fraction, density=None))]
+#[pyo3(text_signature = "(basis, declared_fraction, density=None)")]
+pub fn assay_mass_fractions(
+    py: Python<'_>,
+    basis: &str,
+    declared_fraction: Vec<f64>,
+    density: Option<Vec<f64>>,
+) -> PyResult<PyAssayMassFractionsResult> {
+    let parsed: AssayBasis = basis.parse().unwrap_or_default();
+    let densities: Option<Vec<_>> = density
+        .map(|values| values.into_iter().map(kilograms_per_cubic_meter).collect());
+    assay_kernel(parsed, &declared_fraction, densities.as_deref())
+        .map(|result| PyAssayMassFractionsResult::from(&result))
+        .map_err(|error| to_pyerr(py, error))
+}
 
 /// A plus fraction split into cuts by Whitson's three-parameter gamma distribution.
 ///

@@ -7,6 +7,7 @@ two numbers by correlation. NeqSim's ``thermo/characterization/`` is that subsys
 It is a namespace of its own rather than a family under :mod:`azoth.eos`, mirroring NeqSim's
 own package split: what is here is not an equation of state and is not reached from one.
 
+* :func:`assay_mass_fractions` - an oil assay's cuts resolved to a mass basis
 * :func:`tbp_cut_properties` - a cut's critical properties, by any of NeqSim's ten models
 * :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
 * :func:`tbp_density` - the same pair inverted for gravity, which only one closure supports
@@ -26,6 +27,7 @@ from __future__ import annotations
 
 from azoth._dispatch import resolve
 from azoth.core.result import (
+    AssayMassFractionsResult,
     LumpingResult,
     PedersenPlusSplitResult,
     TbpClosureResult,
@@ -37,6 +39,7 @@ from azoth.core.result import (
 from azoth.core.units import Q
 
 __all__ = [
+    "assay_mass_fractions",
     "lumping",
     "pedersen_plus_split",
     "tbp_closure",
@@ -51,8 +54,36 @@ _TBP_CLOSURE = "characterization.tbp_closure"
 _TBP_DENSITY = "characterization.tbp_density"
 _TBP_GROUPING = "characterization.tbp_grouping"
 _PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
+_ASSAY_MASS_FRACTIONS = "characterization.assay_mass_fractions"
 _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
+
+
+def assay_mass_fractions(
+    basis: str,
+    declared_fraction: list[float],
+    density: list[Q] | None = None,
+) -> AssayMassFractionsResult:
+    """An oil assay's declared yields, resolved to a mass basis.
+
+    An assay states each cut's yield as a mass fraction or as a liquid-volume fraction, never both
+    and never neither, and the whole row shares one basis. The row must close on one within
+    ``1e-3`` - a tenth of a percent is a **hard error** here, not a warning.
+
+    ``density`` is one entry per cut. A volume basis needs it to convert; a mass basis needs it
+    only for ``bulk_density``, which is absent without it.
+
+    Raises:
+        InvalidInputError: if the densities do not match the cuts, if a volume basis has none, or
+            if the declared fractions do not close on one.
+
+    See :func:`azoth.characterization.reference.assay_mass_fractions`.
+    """
+    return resolve(_ASSAY_MASS_FRACTIONS)(  # type: ignore[no-any-return]
+        basis=basis,
+        declared_fraction=declared_fraction,
+        density=density,
+    )
 
 
 def tbp_closure(

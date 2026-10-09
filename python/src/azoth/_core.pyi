@@ -184,6 +184,13 @@ class Stream:
 # cannot disagree about a field.
 
 @final
+class AssayMassFractionsResult:
+    mass_fraction: list[float]
+    total_declared_fraction: float
+    bulk_density: Qty | None
+    warnings: list[Warning]
+
+@final
 class LumpingResult:
     fraction_of_heavy_end: list[float]
     lump_mole_fraction: list[float]
@@ -2148,6 +2155,11 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
+def assay_mass_fractions(
+    basis: str,
+    declared_fraction: list[float],
+    density: list[float] | None = None,
+) -> AssayMassFractionsResult: ...
 def lumping(
     molar_mass: float,
     mole_fraction: float,

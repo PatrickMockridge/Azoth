@@ -15,6 +15,21 @@ use crate::provenance::{ProvenanceStatic, VerificationStatus};
 /// one form a reader can check against the registry by eye.
 pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
     ProvenanceStatic {
+        calc_id: "characterization.assay_mass_fractions",
+        name: "An oil assay's declared fractions resolved to a mass basis",
+        spec_path: "specs/models/characterization/assay_mass_fractions.toml",
+        spec_sha256: "72ccee0c704d50e669291996e321365b01a658f2964eb351f4d62ed744a4e491",
+        python_path: "python/src/azoth/characterization/reference/assay_mass_fractions.py",
+        python_sha256: "e9412ce22c82923ade43c8aff49234d03d10ddf2c4a0416dd87dbe7c2b66c6d3",
+        rust_path: "crates/azoth-characterization/src/assay_mass_fractions.rs",
+        rust_sha256: "ea60bd2a079306dffd7423099e5f4c9440f27f24d1b5dca3d70832cdad3e3ae3",
+        source: "NeqSim master `OilAssayCharacterisation.resolveMassFractions`",
+        verification: VerificationStatus::PartiallyVerified,
+        validation_cases: 0,
+        tests_active: 3,
+        tests_skipped: 0,
+    },
+    ProvenanceStatic {
         calc_id: "characterization.lumping",
         name: "A cut table grouped into equal-mass lumps",
         spec_path: "specs/models/characterization/lumping.toml",

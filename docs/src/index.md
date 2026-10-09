@@ -86,6 +86,7 @@ Five sections, and the difference between them is the point:
 
 *Models* — whose specs fix a procedure rather than an equation:
 
+- [`characterization.assay_mass_fractions`](./characterization/assay_mass_fractions.md) — An oil assay's declared fractions resolved to a mass basis
 - [`characterization.lumping`](./characterization/lumping.md) — A cut table grouped into equal-mass lumps
 - [`characterization.pedersen_plus_split`](./characterization/pedersen_plus_split.md) — A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves
 - [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity

@@ -20,6 +20,7 @@ use pyo3::prelude::*;
 #[must_use]
 pub fn result_fields(calc_id: &str) -> Vec<String> {
     match calc_id {
+        "characterization.assay_mass_fractions" => azoth_characterization::results::AssayMassFractionsResult::FIELDS.to_vec(),
         "characterization.lumping" => azoth_characterization::results::LumpingResult::FIELDS.to_vec(),
         "characterization.pedersen_plus_split" => azoth_characterization::results::PedersenPlusSplitResult::FIELDS.to_vec(),
         "characterization.tbp_closure" => azoth_characterization::results::TbpClosureResult::FIELDS.to_vec(),

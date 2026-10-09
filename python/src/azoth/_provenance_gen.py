@@ -15,6 +15,17 @@ from typing import Any, Final
 
 #: Every id's block, by id.
 PROVENANCE: Final[dict[str, dict[str, Any]]] = {
+    'characterization.assay_mass_fractions': {
+        "calc_id": 'characterization.assay_mass_fractions',
+        "name": "An oil assay's declared fractions resolved to a mass basis",
+        "spec": {'path': 'specs/models/characterization/assay_mass_fractions.toml', 'sha256': '72ccee0c704d50e669291996e321365b01a658f2964eb351f4d62ed744a4e491'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/assay_mass_fractions.py', 'sha256': 'e9412ce22c82923ade43c8aff49234d03d10ddf2c4a0416dd87dbe7c2b66c6d3'}, {'path': 'crates/azoth-characterization/src/assay_mass_fractions.rs', 'sha256': 'ea60bd2a079306dffd7423099e5f4c9440f27f24d1b5dca3d70832cdad3e3ae3'}],
+        "source": 'NeqSim master `OilAssayCharacterisation.resolveMassFractions`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.lumping': {
         "calc_id": 'characterization.lumping',
         "name": 'A cut table grouped into equal-mass lumps',

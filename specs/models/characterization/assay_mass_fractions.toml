@@ -1,0 +1,64 @@
+id = "characterization.assay_mass_fractions"
+name = "An oil assay's declared fractions resolved to a mass basis"
+kind = "direct"
+assumptions = [
+    "**an assay declares its cuts on one basis and everything downstream wants mass.** `OilAssayCharacterisation.apply` resolves the mass fractions first and derives a molar mass, a mole amount and a pseudo-component from each; this is the resolution, and the derivation is a different id's work.",
+    "**exactly one basis per cut and one basis per assay.** A cut carrying both a mass and a volume fraction is refused, and so is one carrying neither - each by name - and an assay mixing the two bases is refused too. The class cannot tell what a bare number is a fraction of.",
+    "**the declared fractions must sum to one within `1e-3`, and that is a hard error.** `1.0005` passes and is normalised; `1.003` raises, naming the tolerance and the sum it saw - a tenth of a percent of closure is a broken assay, not a rounding artefact.",
+    "**a mass basis resolves to itself.** The normalised fractions *are* the answer, and the densities are read for the bulk gravity alone.",
+    "**a volume basis is a mass-weighted conversion and a second normalisation.** Each normalised volume fraction times its cut's gravity, renormalised: `v_i * SG_i / sum(v_j * SG_j)`, which is what makes an assay's light end lose share to its heavy end.",
+    "**the bulk density is the mass-weighted harmonic mean**, `1 / sum(w_i / rho_i)`, on the resolved mass fractions. The class calls it a bulk specific gravity because it carries the cuts' gravities in g/cm3; a density in kg/m3 is the same number a thousand larger, and SI is what this declares.",
+    "**it is a screening property.** The class states it as ideal additive liquid volumes with no temperature correction, no excess volume and no blend contraction.",
+    "**`declared_fraction` and `basis` are what a cut table carries; a cut's own density, boiling point, molar mass and Watson factor are not.** `AssayCut` holds six optional fields each, and a parallel vector cannot say \"absent\" per entry - only per vector.",
+    "**so the assay's per-cut properties cannot be stated at this boundary at all**, which is what puts them out of this id rather than merely unwritten.",
+    "**that is the `record_list` input the plan costed and deferred, and it costs more than ergonomics.** The plan's own note says making a `record_list` input real \"buys ergonomics only\"; for this id it is the difference between the assay being expressible and not.",
+    "**what is owed, named rather than implied.** `apply`'s per-cut molar mass and the databank lookups for its standard components; and on `AssayCut` itself, an API gravity resolved to a density and a Watson factor resolved to a boiling point.",
+    "**`AssayCut.resolveMolarMass` is not new arithmetic**: `5.805e-5 * Tb^2.3776 / SG^0.9371` is `characterization.tbp_cut_properties`' `TBPBaseModel.calcTB` fallback rearranged, in closed form where that id bisects it.",
+    "**and `addTBPCutBoundariesKelvin`'s cumulative-yield binning is the step above all of this** - it turns a cumulative volume curve into the cuts this id is then handed.",
+    "the assay is a laboratory report and not a measurement of a fluid at a state, and no databank is involved. **The result is a bookkeeping choice**: the same crude reported on a volume basis and on a mass basis gives one fluid, and only the second of those numbers is the one a cubic is handed.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/OilAssayCharacterisation.java`'s `resolveMassFractions` is the port source; `getBulkSpecificGravity` is the other method ported from it.",
+    "`validation/neqsim/captures/oil_assay_probe.tsv` - six assays from `validation/neqsim/OilAssayProbe.java`, two of them resolved and four refused by name.",
+]
+[source]
+standard = "NeqSim master `OilAssayCharacterisation.resolveMassFractions`"
+edition = "Its basis validation, its `ASSAY_CLOSURE_TOLERANCE`, the normalisation, and the volume-to-mass conversion. `apply`'s per-cut derivation and the databank lookups are named in the assumptions as owed."
+[inputs]
+[inputs.basis]
+type = "enum"
+values = ["mass", "volume"]
+description = "whether the declared fractions are fractions of the assay's mass or of its liquid volume. A cut cannot be on one basis and its neighbour on the other.\n"
+[inputs.declared_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut"
+description = "Each cut's declared yield, on `basis`. The row is normalised whether or not it already sums to one, so only the ratios between the entries mean anything.\n"
+[inputs.density]
+type = "vector"
+unit = "kg/m**3"
+optional = true
+length = "one per cut, aligned with `declared_fraction`"
+description = "Each cut's density, needed to convert a volume basis and to report the bulk gravity. Absent on a mass basis, where the fractions resolve without it - and then `bulk_density` is absent too.\n"
+[outputs]
+[outputs.mass_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, in the declared order"
+description = "Each cut's resolved mass fraction, which sums to one.\n"
+[outputs.total_declared_fraction]
+unit = "dimensionless"
+description = "The declared fractions' own sum, before normalisation, which the closure test is taken on.\n"
+[outputs.bulk_density]
+unit = "kg/m**3"
+optional = true
+description = "The assay's bulk density, `1 / sum(w_i / rho_i)`, present only when a density is supplied for every cut.\n"
+[[valid_range]]
+quantity = "total_declared_fraction"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "the declared fractions' sum, which a row of non-negative fractions cannot make zero or less\n"
+[implementations]
+python = "azoth.characterization.assay_mass_fractions"
+rust = "azoth_characterization::assay_mass_fractions"
