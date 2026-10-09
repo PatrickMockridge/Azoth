@@ -85,6 +85,35 @@ public class PlusFractionProbe {
     System.out.printf("cut_density = [%s]%n", vector(dens, first, last));
   }
 
+  /**
+   * One of `WhitsonGammaModel`'s switches, run over the same feed.
+   *
+   * The gamma model is the only plus model with settable shape parameters and a choice of density
+   * correlation, so its defaults are the only configuration the `sweep` rows carry. Each variant
+   * below moves one switch, so the port's handling of each is an oracle row rather than a default
+   * that happens to be right.
+   */
+  private static void whitsonVariant(
+      String label, double mPlus, double densityPlus, java.util.function.Consumer<Characterise> configure) {
+    SystemInterface system = feed(mPlus, densityPlus);
+    Characterise characterise = new Characterise(system);
+    characterise.setPlusFractionModel("Whitson Gamma Model");
+    configure.accept(characterise);
+    System.out.printf("# gamma variant = %s, m_plus = %.15g kg/mol, density_plus = %.15g%n",
+        label, mPlus, densityPlus);
+    try {
+      characterise.characterisePlusFraction();
+    } catch (RuntimeException e) {
+      System.out.printf("# refused: %s%n",
+          e.getMessage() == null ? e.toString() : e.getMessage().split("\n")[0]);
+      System.out.println();
+      return;
+    }
+    System.out.printf("# selected_model = %s%n", characterise.getPlusFractionModel().getName());
+    rawSplit(characterise);
+    System.out.println();
+  }
+
   /** A fluid with a C7+ end, described by the three numbers a plus fraction carries. */
   private static SystemInterface feed(double mPlus, double densityPlus) {
     SystemInterface system = new SystemSrkEos(298.15, 50.0);
@@ -140,6 +169,16 @@ public class PlusFractionProbe {
       for (String model : new String[] {"Pedersen", "Pedersen Heavy Oil", "Whitson Gamma Model"}) {
         sweep(model, f[0], f[1]);
       }
+    }
+    // The gamma model's switches, each over the feed the rows above use. `0.4` kg/mol is below
+    // every model's `maxPlusMolarMass`, so none of these is swept away by `Characterise`'s swap.
+    double[][] gammaFeeds = {{0.4, 850.0}, {0.2, 780.0}};
+    for (double[] f : gammaFeeds) {
+      whitsonVariant("default", f[0], f[1], c -> {});
+      whitsonVariant("shape=0.7", f[0], f[1], c -> c.setGammaShapeParameter(0.7));
+      whitsonVariant("minMW=84", f[0], f[1], c -> c.setGammaMinMW(84.0));
+      whitsonVariant("density=soreide", f[0], f[1], c -> c.setGammaDensityModel("Soreide"));
+      whitsonVariant("autoAlpha", f[0], f[1], c -> c.setAutoEstimateGammaAlpha(true));
     }
   }
 }
