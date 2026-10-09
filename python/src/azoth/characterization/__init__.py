@@ -8,6 +8,7 @@ It is a namespace of its own rather than a family under :mod:`azoth.eos`, mirror
 own package split: what is here is not an equation of state and is not reached from one.
 
 * :func:`assay_mass_fractions` - an oil assay's cuts resolved to a mass basis
+* :func:`characterize_to_reference` - a fluid re-cut onto another's cut slate
 * :func:`tbp_cut_properties` - a cut's critical properties, by any of NeqSim's ten models
 * :func:`tbp_closure` - a cut's molar mass, from its boiling point and gravity
 * :func:`tbp_density` - the same pair inverted for gravity, which only one closure supports
@@ -28,6 +29,7 @@ from __future__ import annotations
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AssayMassFractionsResult,
+    CharacterizeToReferenceResult,
     LumpingResult,
     PedersenPlusSplitResult,
     TbpClosureResult,
@@ -40,6 +42,7 @@ from azoth.core.units import Q
 
 __all__ = [
     "assay_mass_fractions",
+    "characterize_to_reference",
     "lumping",
     "pedersen_plus_split",
     "tbp_closure",
@@ -55,6 +58,7 @@ _TBP_DENSITY = "characterization.tbp_density"
 _TBP_GROUPING = "characterization.tbp_grouping"
 _PEDERSEN_PLUS_SPLIT = "characterization.pedersen_plus_split"
 _ASSAY_MASS_FRACTIONS = "characterization.assay_mass_fractions"
+_CHARACTERIZE_TO_REFERENCE = "characterization.characterize_to_reference"
 _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 
@@ -83,6 +87,35 @@ def assay_mass_fractions(
         basis=basis,
         declared_fraction=declared_fraction,
         density=density,
+    )
+
+
+def characterize_to_reference(
+    source_moles: list[float],
+    source_molar_mass: list[Q],
+    source_density: list[Q],
+    source_boiling_point: list[Q],
+    reference_molar_mass: list[Q],
+    reference_boiling_point: list[Q],
+) -> CharacterizeToReferenceResult:
+    """A fluid's pseudo-components re-cut onto another fluid's cut slate.
+
+    ``reference_*`` decides where the cuts are and nothing else; its densities and amounts are not
+    read. The groups are **not** the reference rows - a group that comes out empty is dropped -
+    so ``reference_index`` is what re-aligns the answer with the caller's own slate.
+
+    Raises:
+        InvalidInputError: if any table is not internally aligned.
+
+    See :func:`azoth.characterization.reference.characterize_to_reference`.
+    """
+    return resolve(_CHARACTERIZE_TO_REFERENCE)(  # type: ignore[no-any-return]
+        source_moles=source_moles,
+        source_molar_mass=source_molar_mass,
+        source_density=source_density,
+        source_boiling_point=source_boiling_point,
+        reference_molar_mass=reference_molar_mass,
+        reference_boiling_point=reference_boiling_point,
     )
 
 

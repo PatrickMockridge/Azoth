@@ -15,6 +15,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | Model | Scheme | Source |
 |---|---|---|
 | [`characterization.assay_mass_fractions`](./assay_mass_fractions.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.resolveMassFractions` |
+| [`characterization.characterize_to_reference`](./characterize_to_reference.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.characterizeToReference` |
 | [`characterization.lumping`](./lumping.md) | `direct composition` | NeqSim master `LumpingModel.StandardLumpingModel` |
 | [`characterization.pedersen_plus_split`](./pedersen_plus_split.md) | `plus_fraction_split_newton` | NeqSim master `PlusFractionModel.PedersenPlusModel` with `PedersenPlusModelSolver` |
 | [`characterization.tbp_closure`](./tbp_closure.md) | `molar_mass_bisection` | NeqSim master `TbpClosure` |

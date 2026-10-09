@@ -56,6 +56,28 @@ class AssayMassFractionsResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class CharacterizeToReferenceResult(_HasWarnings):
+    """Result of ``characterization.characterize_to_reference``."""
+
+    CALC_ID: ClassVar[str] = "characterization.characterize_to_reference"
+
+    #: Which reference cut each group belongs to. **The groups are not the reference rows**: an empty group is dropped, so this is how a caller re-aligns the answer with its own slate.
+    reference_index: tuple[float, ...]
+
+    #: Each group's summed mole amount, which over all groups is the source's own total.
+    group_moles: tuple[Q, ...]
+
+    #: Each group's molar mass, its accumulated mass over its accumulated moles.
+    group_molar_mass: tuple[Q, ...]
+
+    #: Each group's density, the mass over the volume its rows occupy.
+    group_density: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class LumpingResult(_HasWarnings):
     """Result of ``characterization.lumping``."""
 

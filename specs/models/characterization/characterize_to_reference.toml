@@ -1,0 +1,83 @@
+id = "characterization.characterize_to_reference"
+name = "A fluid's pseudo-components re-cut onto another fluid's slate"
+kind = "direct"
+assumptions = [
+    "**this is how two fluids are made comparable.** A report and a model fluid rarely share a cut slate, and a cubic cannot mix two fluids cut at different boiling points. `characterizeToReference` re-cuts one onto the other's boundaries, leaving the two differing only in mole fraction.",
+    "**the reference decides where the cuts are and nothing else.** Its densities, its mole amounts and its own properties are not read by this path - only its sorting keys, and only adjacent pairs of them.",
+    "**the sorting key is the normal boiling point, and the molar mass without one.** A cut with no boiling point still gets a place on the grid, at a scale a hundred times smaller than the kelvins it would otherwise be sorted among.",
+    "**the boundaries are the midpoints of adjacent reference keys**, `0.5*(k_i + k_i+1)`, or the larger of the two when either is not finite. They belong to the reference alone: the source's own keys decide only which group each of its rows joins.",
+    "**a row joins a group by a strict comparison.** The walk advances while the row's key is **greater than** the boundary, so a key exactly on a boundary stays in the lower group. Both tables are sorted by key first, so the groups are contiguous runs of the source in ascending boiling point.",
+    "**an empty group is dropped rather than reported empty.** A group whose accumulated mass or moles is at or below `1e-12` produces no profile, so a source entirely below the reference's first cut resolves to one component against a reference of many.",
+    "**the outputs are therefore shorter than the reference**, and `reference_index` is what re-aligns them with it.",
+    "**a group's molar mass is its accumulated mass over its accumulated moles**, and its density the mass over the volume its rows occupy: `sum(m) / sum(m/rho)`, the mass-weighted harmonic mean of the gravities and not their mass-weighted mean.",
+    "**the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row at zero density contributes to neither sum.",
+    "**`inheritReferenceProperties` is not this id.** With it set, the groups take the *reference's* molar mass and density instead of their own, which is Pedersen's common-EoS slate - a variant of the same walk whose outputs are the reference rows, and it is owed rather than implied.",
+    "**what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool before cutting; and `delumpContributions` and `determineReferenceEqualMassBoundaries`, which rebuild a fine composition and cut it equally by mass.",
+    "**and three more**: `transferBinaryInteractionParameters`, which moves a two-dimensional interaction table between slates; `normalizeComposition`; and `generateValidationReport`.",
+    "**all of those are blocked on the same two things this chunk named.** Every public method of the class takes or returns a `SystemInterface`, and its rows carry some twenty optional fields.",
+    "**so they need the card width before a pseudo-component can enter a `Mixture`**, and the `record_list` input kind before a row can be stated at all. This id is the part that is a function of two tables and nothing else.",
+    "the result is a bookkeeping choice and not a measurement: the same source re-cut onto two different references gives two fluids with the same mass and different components.",
+]
+references = [
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. Chapter 5.6, the common equation of state and the cut grid.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `extractComponents`, `determineReferenceBoundaries` and `distributeToProfiles` are the port source.",
+    "`validation/neqsim/captures/pseudo_component_combiner_probe.tsv` - three source-and-reference pairs from `validation/neqsim/PseudoComponentCombinerProbe.java`.",
+]
+[source]
+standard = "NeqSim master `PseudoComponentCombiner.characterizeToReference`"
+edition = "Its `characterizeToReferenceCore` through `determineReferenceBoundaries` and `distributeToProfiles`, for the default options: no delumping, the boiling-point boundaries, and each group's own properties rather than the reference's."
+[inputs]
+[inputs.source_moles]
+type = "vector"
+unit = "mol"
+length = "one per pseudo-component of the source fluid"
+description = "Each source pseudo-component's mole amount. **Only rows with a positive amount are read**: `extractComponents` skips the rest, so a zero here is a row that is not on the grid.\n"
+[inputs.source_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per source row, aligned with `source_moles`"
+description = "Each source row's molar mass, which is its sorting key when it has no boiling point.\n"
+[inputs.source_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per source row, aligned with `source_moles`"
+description = "Each source row's normal liquid density, which the group's volume is the mass over.\n"
+[inputs.source_boiling_point]
+type = "vector"
+unit = "K"
+length = "one per source row, aligned with `source_moles`"
+description = "Each source row's normal boiling point, its sorting key where it has one.\n"
+[inputs.reference_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per pseudo-component of the reference fluid"
+description = "Each reference row's molar mass, the fallback sorting key. The reference's densities, moles and amounts are not read: it decides where the cuts are and nothing else.\n"
+[inputs.reference_boiling_point]
+type = "vector"
+unit = "K"
+length = "one per reference row, aligned with `reference_molar_mass`"
+description = "Each reference row's normal boiling point, and with it the boundaries the source is cut at.\n"
+[outputs]
+[outputs.reference_index]
+type = "vector"
+unit = "dimensionless"
+length = "one per non-empty group, ascending"
+description = "Which reference cut each group belongs to. **The groups are not the reference rows**: an empty group is dropped, so this is how a caller re-aligns the answer with its own slate.\n"
+[outputs.group_moles]
+type = "vector"
+unit = "mol"
+length = "one per non-empty group, aligned with `reference_index`"
+description = "Each group's summed mole amount, which over all groups is the source's own total.\n"
+[outputs.group_molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per non-empty group, aligned with `reference_index`"
+description = "Each group's molar mass, its accumulated mass over its accumulated moles.\n"
+[outputs.group_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per non-empty group, aligned with `reference_index`"
+description = "Each group's density, the mass over the volume its rows occupy.\n"
+[implementations]
+python = "azoth.characterization.characterize_to_reference"
+rust = "azoth_characterization::characterize_to_reference"

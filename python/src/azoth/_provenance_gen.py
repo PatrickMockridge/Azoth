@@ -26,6 +26,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'characterization.characterize_to_reference': {
+        "calc_id": 'characterization.characterize_to_reference',
+        "name": "A fluid's pseudo-components re-cut onto another fluid's slate",
+        "spec": {'path': 'specs/models/characterization/characterize_to_reference.toml', 'sha256': '9ac3c620ae30ca8fef7c4fb6e48174533543e1f51e86b71bbbd08dd04248b5d5'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/characterize_to_reference.py', 'sha256': '1f02fce1ce6febd71ef5f2730ba5167b9a59487c71d7738d838f62d31e8270be'}, {'path': 'crates/azoth-characterization/src/characterize_to_reference.rs', 'sha256': 'd3b65e3d28745c3bc44eb66d85ed4edbc4bfe077067b73ec3b0dbfd0295fd521'}],
+        "source": 'NeqSim master `PseudoComponentCombiner.characterizeToReference`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.lumping': {
         "calc_id": 'characterization.lumping',
         "name": 'A cut table grouped into equal-mass lumps',

@@ -191,6 +191,14 @@ class AssayMassFractionsResult:
     warnings: list[Warning]
 
 @final
+class CharacterizeToReferenceResult:
+    reference_index: list[float]
+    group_moles: list[Qty]
+    group_molar_mass: list[Qty]
+    group_density: list[Qty]
+    warnings: list[Warning]
+
+@final
 class LumpingResult:
     fraction_of_heavy_end: list[float]
     lump_mole_fraction: list[float]
@@ -2160,6 +2168,14 @@ def assay_mass_fractions(
     declared_fraction: list[float],
     density: list[float] | None = None,
 ) -> AssayMassFractionsResult: ...
+def characterize_to_reference(
+    source_moles: list[float],
+    source_molar_mass: list[float],
+    source_density: list[float],
+    source_boiling_point: list[float],
+    reference_molar_mass: list[float],
+    reference_boiling_point: list[float],
+) -> CharacterizeToReferenceResult: ...
 def lumping(
     molar_mass: float,
     mole_fraction: float,

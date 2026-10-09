@@ -8,6 +8,36 @@
 use azoth_core::{CalcResult, Warning};
 use uom::si::f64::{MassDensity, MolarMass, Pressure, ThermodynamicTemperature};
 
+/// Result of `characterization.characterize_to_reference`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CharacterizeToReferenceResult {
+    /// Which reference cut each non-empty group belongs to.
+    pub reference_index: Vec<f64>,
+    /// Each group's summed mole amount.
+    pub group_moles: Vec<f64>,
+    /// Each group's molar mass, its accumulated mass over its accumulated moles.
+    pub group_molar_mass: Vec<MolarMass>,
+    /// Each group's density, the mass over the volume its rows occupy.
+    pub group_density: Vec<MassDensity>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for CharacterizeToReferenceResult {
+    const CALC_ID: &'static str = "characterization.characterize_to_reference";
+    const FIELDS: &'static [&'static str] = &[
+        "reference_index",
+        "group_moles",
+        "group_molar_mass",
+        "group_density",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.assay_mass_fractions`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AssayMassFractionsResult {

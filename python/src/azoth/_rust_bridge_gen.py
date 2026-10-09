@@ -26,6 +26,7 @@ from azoth.core.result import (
     BwrsPhaseResult,
     CapillaryDewPointResult,
     ChapmanEnskogDiffusivityResult,
+    CharacterizeToReferenceResult,
     ChemicalEquilibriumResult,
     ChokedFlowAreaResult,
     ChungConductivityResult,
@@ -262,6 +263,7 @@ __all__ = [
     "bwrs_phase",
     "capillary_dew_point",
     "chapman_enskog_diffusivity",
+    "characterize_to_reference",
     "chemical_equilibrium",
     "choked_flow_area",
     "chung_conductivity",
@@ -466,6 +468,26 @@ def assay_mass_fractions(basis: str, declared_fraction: list[float], density: li
         mass_fraction=tuple(result.mass_fraction),
         total_declared_fraction=result.total_declared_fraction,
         bulk_density=None if result.bulk_density is None else from_si(result.bulk_density.magnitude_si, result.bulk_density.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def characterize_to_reference(source_moles: list[float], source_molar_mass: list[Q], source_density: list[Q], source_boiling_point: list[Q], reference_molar_mass: list[Q], reference_boiling_point: list[Q]) -> CharacterizeToReferenceResult:
+    """``characterization.characterize_to_reference``, computed in Rust."""
+    spec = _models_gen.model("characterization.characterize_to_reference")
+    result = _core.characterize_to_reference(
+        [_si(spec, "source_moles", v) for v in source_moles],
+        [input_to_si(spec, "source_molar_mass", v) for v in source_molar_mass],
+        [input_to_si(spec, "source_density", v) for v in source_density],
+        [input_to_si(spec, "source_boiling_point", v) for v in source_boiling_point],
+        [input_to_si(spec, "reference_molar_mass", v) for v in reference_molar_mass],
+        [input_to_si(spec, "reference_boiling_point", v) for v in reference_boiling_point],
+    )
+    return CharacterizeToReferenceResult(
+        reference_index=tuple(result.reference_index),
+        group_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_moles),
+        group_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_molar_mass),
+        group_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_density),
         warnings=_warnings(result.warnings),
     )
 

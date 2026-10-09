@@ -11,6 +11,9 @@ from __future__ import annotations
 # redundant alias because that is what `ruff` needs to see the import as deliberate.
 from azoth.characterization.reference import _unported as _unported
 from azoth.characterization.reference.assay_mass_fractions import assay_mass_fractions
+from azoth.characterization.reference.characterize_to_reference import (
+    characterize_to_reference,
+)
 from azoth.characterization.reference.lumping import lumping
 from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_split
 from azoth.characterization.reference.tbp_closure import tbp_closure
@@ -21,6 +24,7 @@ from azoth.characterization.reference.whitson_gamma_split import whitson_gamma_s
 
 __all__ = [
     "assay_mass_fractions",
+    "characterize_to_reference",
     "lumping",
     "pedersen_plus_split",
     "tbp_closure",

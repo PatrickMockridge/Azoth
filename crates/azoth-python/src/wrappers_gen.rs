@@ -15,6 +15,44 @@ use azoth_core::units::{
 };
 use pyo3::prelude::*;
 
+/// A fluid's pseudo-components re-cut onto another fluid's slate.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (source_moles, source_molar_mass, source_density, source_boiling_point, reference_molar_mass, reference_boiling_point))]
+#[pyo3(
+    text_signature = "(source_moles, source_molar_mass, source_density, source_boiling_point, reference_molar_mass, reference_boiling_point)"
+)]
+pub fn characterize_to_reference(
+    py: Python<'_>,
+    source_moles: Vec<f64>,
+    source_molar_mass: Vec<f64>,
+    source_density: Vec<f64>,
+    source_boiling_point: Vec<f64>,
+    reference_molar_mass: Vec<f64>,
+    reference_boiling_point: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyCharacterizeToReferenceResult> {
+    azoth_characterization::characterize_to_reference::characterize_to_reference(
+        &source_moles,
+        &source_molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &source_density
+            .iter()
+            .map(|v| kilograms_per_cubic_meter(*v))
+            .collect::<Vec<_>>(),
+        &source_boiling_point,
+        &reference_molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &reference_boiling_point,
+    )
+    .map(|r| crate::transport_gen::PyCharacterizeToReferenceResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A cut table grouped into equal-mass lumps.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

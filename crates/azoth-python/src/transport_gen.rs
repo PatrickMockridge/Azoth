@@ -67,6 +67,80 @@ impl From<&azoth_characterization::results::AssayMassFractionsResult>
         }
     }
 }
+/// Result of `characterization.characterize_to_reference`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "CharacterizeToReferenceResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyCharacterizeToReferenceResult {
+    /// Which reference cut each group belongs to. **The groups are not the reference rows**: an empty group is dropped, so this is how a caller re-aligns the answer with its own slate.
+    #[pyo3(get)]
+    pub reference_index: Vec<f64>,
+    /// Each group's summed mole amount, which over all groups is the source's own total.
+    #[pyo3(get)]
+    pub group_moles: Vec<PyQty>,
+    /// Each group's molar mass, its accumulated mass over its accumulated moles.
+    #[pyo3(get)]
+    pub group_molar_mass: Vec<PyQty>,
+    /// Each group's density, the mass over the volume its rows occupy.
+    #[pyo3(get)]
+    pub group_density: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyCharacterizeToReferenceResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "CharacterizeToReferenceResult(reference_index={:?}, group_moles={:?}, group_molar_mass={:?}, group_density={:?}, {} warning(s))",
+            self.reference_index,
+            self.group_moles,
+            self.group_molar_mass,
+            self.group_density,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::CharacterizeToReferenceResult>
+    for PyCharacterizeToReferenceResult
+{
+    fn from(r: &azoth_characterization::results::CharacterizeToReferenceResult) -> Self {
+        Self {
+            reference_index: r.reference_index.clone(),
+            group_moles: r
+                .group_moles
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            group_molar_mass: r
+                .group_molar_mass
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/mol".to_string(),
+                })
+                .collect(),
+            group_density: r
+                .group_density
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/m**3".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.lumping`, transported.
 #[pyclass(
     frozen,
