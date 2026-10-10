@@ -158,9 +158,9 @@ def characterise_plus_fraction(
 
 
 def tbp_closure(
-    closure: str,
     boiling_point: Q,
     density: Q,
+    closure: str,
     model: str | None = None,
 ) -> TbpClosureResult:
     """A cut's molar mass, from its normal boiling point and its specific gravity.
@@ -175,7 +175,7 @@ def tbp_closure(
     See :func:`azoth.characterization.reference.tbp_closure`.
     """
     return resolve(_TBP_CLOSURE)(  # type: ignore[no-any-return]
-        closure=closure, boiling_point=boiling_point, density=density, model=model
+        boiling_point=boiling_point, density=density, closure=closure, model=model
     )
 
 

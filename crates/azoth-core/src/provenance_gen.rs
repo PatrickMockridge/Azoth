@@ -93,7 +93,7 @@ pub static ALL_PROVENANCE: &[ProvenanceStatic] = &[
         calc_id: "characterization.tbp_closure",
         name: "TBP cut molar mass from its normal boiling point and specific gravity",
         spec_path: "specs/models/characterization/tbp_closure.toml",
-        spec_sha256: "6ca89e3a6d097a0ada10679c84af6ef478d6b681b64a1e16561a2d1a4558a20a",
+        spec_sha256: "d64329c2435015d8693a97604ea2fb8e8d21c8e9c8752a84e2f2724791eb1ea8",
         python_path: "python/src/azoth/characterization/reference/tbp_closure.py",
         python_sha256: "1315caffb1f40231b90c2e57abd1de5313d2fff00857af879cfd620ebeec961a",
         rust_path: "crates/azoth-characterization/src/tbp_closure.rs",

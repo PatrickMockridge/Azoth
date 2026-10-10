@@ -30,16 +30,16 @@ lower = 0.01
 upper = 0.8
 steps = 2
 [inputs]
-[inputs.closure]
-type = "enum"
-values = ["riazi_daubert_1980", "riazi_daubert_1987", "soreide", "tbp_model"]
-description = "which of the four closures inverts the pair. `riazi_daubert_1980` is the one `SystemThermo.addTBPfraction_Mw_Tb` passes.\n"
 [inputs.boiling_point]
 unit = "K"
 description = "the cut's normal boiling point. NeqSim's 1980 and Soreide correlations take it in kelvin and scale to Rankine internally; the 1987 pair takes it in kelvin directly.\n"
 [inputs.density]
 unit = "kg/m**3"
 description = "the cut's specific gravity, at 15 C and 1 atm. The same number as the 0.65-0.95 the correlations are written against, a thousand times larger in kg/m3.\n"
+[inputs.closure]
+type = "enum"
+values = ["riazi_daubert_1980", "riazi_daubert_1987", "soreide", "tbp_model"]
+description = "which of the four closures inverts the pair. `riazi_daubert_1980` is the one `SystemThermo.addTBPfraction_Mw_Tb` passes.\n"
 [inputs.model]
 type = "enum"
 values = ["pedersen_srk", "pedersen_srk_heavy_oil", "pedersen_pr", "pedersen_pr2", "pedersen_pr_heavy_oil", "riazi_daubert", "lee_kesler", "twu", "cavett", "standing"]

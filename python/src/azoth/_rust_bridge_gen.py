@@ -559,7 +559,7 @@ def pedersen_plus_split(molar_mass: Q, density: Q, mole_fraction: float, first_c
     )
 
 
-def tbp_closure(closure: str, boiling_point: Q, density: Q, model: str | None=None) -> TbpClosureResult:
+def tbp_closure(boiling_point: Q, density: Q, closure: str, model: str | None=None) -> TbpClosureResult:
     """``characterization.tbp_closure``, computed in Rust."""
     spec = _models_gen.model("characterization.tbp_closure")
     result = _core.tbp_closure(

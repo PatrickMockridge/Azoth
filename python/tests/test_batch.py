@@ -203,6 +203,10 @@ def test_the_excluded_set_is_exactly_the_unbatchable_calcs() -> None:
     assert excluded == {
         "hydraulics.crane_k_factors",
         "eos.antoine_vapor_pressure",
+        # `model` names one of NeqSim's ten cut models - the same categorical input `form` is,
+        # one level further up: the critical properties of a cut change with the model rather
+        # than scaling with anything, so a batch column would compute one model N times.
+        "characterization.tbp_cut_properties",
         # `gas` names one of the IAPWS guideline's fourteen rows, a categorical input of the
         # same kind `form` is: the constants change with it, so there is no float-array
         # column to vary it down and a batch would compute one gas N times.

@@ -2208,9 +2208,9 @@ def pedersen_plus_split(
     last_carbon_number: float,
 ) -> PedersenPlusSplitResult: ...
 def tbp_closure(
-    closure: str,
     boiling_point: float,
     density: float,
+    closure: str,
     model: str | None = None,
 ) -> TbpClosureResult: ...
 def tbp_cut_properties(

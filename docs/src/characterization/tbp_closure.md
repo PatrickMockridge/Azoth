@@ -31,9 +31,9 @@ not an equation, and both implementations read it from here.
 
 | Name | Unit | Description |
 |---|---|---|
-| `closure` | riazi_daubert_1980 / riazi_daubert_1987 / soreide / tbp_model | which of the four closures inverts the pair. `riazi_daubert_1980` is the one `SystemThermo.addTBPfraction_Mw_Tb` passes. |
 | `boiling_point` | K | the cut's normal boiling point. NeqSim's 1980 and Soreide correlations take it in kelvin and scale to Rankine internally; the 1987 pair takes it in kelvin directly. |
 | `density` | kg/m**3 | the cut's specific gravity, at 15 C and 1 atm. The same number as the 0.65-0.95 the correlations are written against, a thousand times larger in kg/m3. |
+| `closure` | riazi_daubert_1980 / riazi_daubert_1987 / soreide / tbp_model | which of the four closures inverts the pair. `riazi_daubert_1980` is the one `SystemThermo.addTBPfraction_Mw_Tb` passes. |
 | `model` | pedersen_srk / pedersen_srk_heavy_oil / pedersen_pr / pedersen_pr2 / pedersen_pr_heavy_oil / riazi_daubert / lee_kesler / twu / cavett / standing | *Optional.* the TBP model `tbp_model` bisects, from `characterization.tbp_cut_properties`'s own vocabulary. Ignored by the other three closures; `tbp_model` refuses its absence. |
 
 
