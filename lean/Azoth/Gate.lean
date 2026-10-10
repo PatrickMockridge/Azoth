@@ -16,6 +16,7 @@ import Azoth.Vocabulary
 #print axioms Azoth.Inputs.every_input_dimension_is_its_units
 
 #print axioms Azoth.Vocabulary.u_dimensionless_dimension
+#print axioms Azoth.Vocabulary.u_neqsim_internal_dimension
 #print axioms Azoth.Vocabulary.u_m_dimension
 #print axioms Azoth.Vocabulary.u_mm_dimension
 #print axioms Azoth.Vocabulary.u_m_pow_2_dimension

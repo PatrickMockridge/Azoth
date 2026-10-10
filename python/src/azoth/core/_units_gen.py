@@ -23,6 +23,7 @@ SLOTS: Final[tuple[str, ...]] = ("L", "M", "T", "I", "Th", "N", "J")
 #: only places the two representations meet.
 CANONICAL_UNITS: Final[dict[str, str]] = {
     "dimensionless": "dimensionless",
+    "neqsim-internal": "dimensionless",
     "m": "meter",
     "mm": "millimeter",
     "m**2": "meter**2",

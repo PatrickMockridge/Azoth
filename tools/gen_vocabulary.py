@@ -151,6 +151,13 @@ UOM_TYPES: dict[tuple[int, ...], str | None] = {
 #: by division.
 LEAN_DIMENSIONS: dict[str, str] = {
     "dimensionless": "0",
+    # The same zero as `dimensionless`, and declared separately because the two say
+    # different things. `dimensionless` is a ratio; this is **NeqSim's own scale**, the
+    # one its tables are written in where it states no unit at all - a heat-capacity
+    # coefficient stored a thousand times its SI value and divided back at evaluation,
+    # a parachor in `(mN/m)**(1/4)*cm**3/mol`. Both are dimensionless and neither
+    # converts, but a reader who sees `neqsim-internal` knows not to reach for SI.
+    "neqsim-internal": "0",
     "m": "Dimension.Length",
     "mm": "Dimension.Length",
     "m**2": "Dimension.Area",
