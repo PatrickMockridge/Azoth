@@ -66,6 +66,261 @@
       "x-azoth-unbounded": "a fitted polynomial's quartic coefficient: the shipped table carries zeros for absent terms and both signs",
       "description": "Ideal-gas heat-capacity quartic coefficient."
     },
+    "molar_mass": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "kg/mol",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A molar mass; every mass-bearing correlation divides by it or scales with it.",
+      "description": "The substance's molar mass. **A card that adds a substance must state this** - a cubic reads only `Tc`, `Pc` and `omega`, so the omission is invisible until a density, an enthalpy or a mass flow reaches the fluid."
+    },
+    "normal_liquid_density": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "kg/m**3",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A density; the liquid-diffusivity ladder takes `M/rho` from it.",
+      "description": "The normal liquid density at 15 C. **Not the same column as `liquid_density_coefs_*`**: this one number feeds the liquid diffusivity, where the polynomial feeds the solid flash's volume difference."
+    },
+    "critical_volume": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "m**3/mol",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A molar volume; Tyn-Calus raises it to the 1.048 power.",
+      "description": "The critical molar volume."
+    },
+    "triple_point_temperature": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "K",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "An absolute temperature.",
+      "description": "The triple-point temperature, which the solid and wax routes read together with `heat_of_fusion`."
+    },
+    "heat_of_fusion": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "J/mol",
+      "x-azoth-unbounded": "A fusion enthalpy. **Zero is this table's spelling of absence**, so a positive bound would refuse the shipped rows - and it is the solid route, not this schema, that refuses a zero rather than melting at it.",
+      "description": "The enthalpy of fusion."
+    },
+    "rackett_z": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-unbounded": "The shipped table carries zeros as its spelling of absence, so a bound would refuse the table.",
+      "description": "The Rackett compressibility. **The card states this and `volume_shift` follows** - the Peneloux shift is a function of it, of `omega`, `Tc` and `Pc`, and a card able to state both could state an inconsistent pair."
+    },
+    "parachor": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted coefficient on NeqSim's own scale, carried verbatim by both readers",
+      "description": "The parachor, whose unit NeqSim states nowhere."
+    },
+    "alpha_param_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-unbounded": "A fitted coefficient, both signs.",
+      "description": "The cubic alpha function's parameter 1. **A card states a contiguous prefix from `_1`**: `alpha_param_1` alone is what a petroleum cut has, and five is the longest set any correlation this build reads takes."
+    },
+    "alpha_param_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-unbounded": "A fitted coefficient, both signs.",
+      "description": "The cubic alpha function's parameter 2."
+    },
+    "alpha_param_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-unbounded": "A fitted coefficient, both signs.",
+      "description": "The cubic alpha function's parameter 3."
+    },
+    "alpha_param_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-unbounded": "A fitted coefficient, both signs.",
+      "description": "The cubic alpha function's parameter 4."
+    },
+    "alpha_param_5": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "dimensionless",
+      "x-azoth-unbounded": "A fitted coefficient, both signs.",
+      "description": "The cubic alpha function's parameter 5."
+    },
+    "lennard_jones_diameter": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "angstrom",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A molecular diameter.",
+      "description": "The Lennard-Jones segment diameter."
+    },
+    "lennard_jones_energy": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "K",
+      "x-azoth-min": 0,
+      "x-azoth-min-inclusive": false,
+      "x-azoth-rationale": "A well depth in kelvin; a negative epsilon/k is not a state.",
+      "description": "The Lennard-Jones well depth, as epsilon/k."
+    },
+    "liquid_conductivity_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Thermal-conductivity polynomial coefficient 1."
+    },
+    "liquid_conductivity_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Thermal-conductivity polynomial coefficient 2."
+    },
+    "liquid_conductivity_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Thermal-conductivity polynomial coefficient 3."
+    },
+    "liqvisc_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-viscosity polynomial coefficient 1."
+    },
+    "liqvisc_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-viscosity polynomial coefficient 2."
+    },
+    "liqvisc_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-viscosity polynomial coefficient 3."
+    },
+    "liqvisc_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-viscosity polynomial coefficient 4."
+    },
+    "liqvisc_model": {
+      "type": "integer",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "description": "Which of the liquid-viscosity expressions `liqvisc_1..4` belongs to, or 0 for none. **A class rather than a number in a unit**, like `ion`, and a closed vocabulary: an index this build does not run is refused at load rather than stored."
+    },
+    "cp_solid_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid heat-capacity polynomial coefficient 1."
+    },
+    "cp_solid_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid heat-capacity polynomial coefficient 2."
+    },
+    "cp_solid_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid heat-capacity polynomial coefficient 3."
+    },
+    "cp_solid_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid heat-capacity polynomial coefficient 4."
+    },
+    "cp_liquid_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid heat-capacity polynomial coefficient 1."
+    },
+    "cp_liquid_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid heat-capacity polynomial coefficient 2."
+    },
+    "cp_liquid_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid heat-capacity polynomial coefficient 3."
+    },
+    "cp_liquid_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid heat-capacity polynomial coefficient 4."
+    },
+    "cp_liquid_5": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid heat-capacity polynomial coefficient 5."
+    },
+    "solid_density_coefs_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid-density polynomial coefficient 1."
+    },
+    "liquid_density_coefs_1": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-density polynomial coefficient 1."
+    },
+    "solid_density_coefs_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid-density polynomial coefficient 2."
+    },
+    "liquid_density_coefs_2": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-density polynomial coefficient 2."
+    },
+    "solid_density_coefs_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid-density polynomial coefficient 3."
+    },
+    "liquid_density_coefs_3": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-density polynomial coefficient 3."
+    },
+    "solid_density_coefs_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Solid-density polynomial coefficient 4."
+    },
+    "liquid_density_coefs_4": {
+      "$ref": "#/$defs/parameter",
+      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+      "description": "Liquid-density polynomial coefficient 4."
+    },
+    "wax_former": {
+      "type": "boolean",
+      "description": "Whether the substance forms wax. A class rather than a number in a unit, stated the way `ion` is."
+    },
     "ion": {
       "type": "boolean",
       "x-azoth-column": "comptype",
@@ -76,49 +331,49 @@
       "x-azoth-unit": "dimensionless",
       "x-azoth-column": "ioniccharge",
       "x-azoth-unbounded": "a charge is a class rather than a magnitude; 289 of the 348 shipped rows are zero",
-      "description": "The ionic charge **as a charge number**, in units of the elementary charge: `1` for `Na+`, `-2` for `SO4--`. Dimensionless rather than coulombs because that is the quantity every electrolyte model consumes - Pitzer's ionic strength is `\u00bd \u03a3 m z\u00b2` - and NeqSim's own column holds the same number. Zero does not mean *not an ion*: `caco3` is a neutral salt filed with the ions."
+      "description": "The ionic charge **as a charge number**, in units of the elementary charge: `1` for `Na+`, `-2` for `SO4--`. Dimensionless rather than coulombs because that is the quantity every electrolyte model consumes - Pitzer's ionic strength is `½ Σ m z²` - and NeqSim's own column holds the same number. Zero does not mean *not an ion*: `caco3` is a neutral salt filed with the ions."
     },
     "deshmukh_mather_diameter": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "angstrom",
       "x-azoth-column": "deshmationicdiameter",
       "x-azoth-unbounded": "28 of the 348 shipped rows are zero - a placeholder rather than a state - so a positivity bound would refuse the table this derives from",
-      "description": "The Deshmukh-Mather ion diameter. NeqSim carries it in \u00e5ngstr\u00f6m and multiplies by `1e-10` at the point of use (`ComponentDesmukhMather`), so this is the same quantity one conversion earlier. The table's absence marker is `0`, which is the infinite-dilution limit of the term it belongs to rather than a diameter."
+      "description": "The Deshmukh-Mather ion diameter. NeqSim carries it in ångström and multiplies by `1e-10` at the point of use (`ComponentDesmukhMather`), so this is the same quantity one conversion earlier. The table's absence marker is `0`, which is the infinite-dilution limit of the term it belongs to rather than a diameter."
     },
     "dielectric_1": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "dimensionless",
       "x-azoth-column": "dielectricparameter1",
       "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
-      "description": "The `d0` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+      "description": "The `d0` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the Fürst and electrolyte-CPA mixing rules."
     },
     "dielectric_2": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "K",
       "x-azoth-column": "dielectricparameter2",
       "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
-      "description": "The `d1` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+      "description": "The `d1` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the Fürst and electrolyte-CPA mixing rules."
     },
     "dielectric_3": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "1/K",
       "x-azoth-column": "dielectricparameter3",
       "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
-      "description": "The `d2` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+      "description": "The `d2` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the Fürst and electrolyte-CPA mixing rules."
     },
     "dielectric_4": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "1/K**2",
       "x-azoth-column": "dielectricparameter4",
       "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
-      "description": "The `d3` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+      "description": "The `d3` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the Fürst and electrolyte-CPA mixing rules."
     },
     "dielectric_5": {
       "$ref": "#/$defs/parameter",
       "x-azoth-unit": "1/K**3",
       "x-azoth-column": "dielectricparameter5",
       "x-azoth-unbounded": "a fitted coefficient with zeros for absent terms and both signs",
-      "description": "The `d4` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the F\u00fcrst and electrolyte-CPA mixing rules."
+      "description": "The `d4` coefficient of the dielectric constant's temperature polynomial, `epsilon(T) = d0 + d1/T + d2 T + d3 T^2 + d4 T^3` (NeqSim's `Component.getDielectricConstant`), which is why the five coefficients carry five different units. Read by the Fürst and electrolyte-CPA mixing rules."
     }
   },
   "$defs": {

@@ -38,6 +38,66 @@ pub const PARAMETER_BOUNDS: &[(&str, ParameterBound)] = &[
             rationale: "A critical pressure is an absolute pressure; zero and below are not states.",
         },
     ),
+    (
+        "molar_mass",
+        ParameterBound {
+            min: Some(0.0),
+            max: None,
+            min_inclusive: false,
+            max_inclusive: false,
+            rationale: "A molar mass; every mass-bearing correlation divides by it or scales with it.",
+        },
+    ),
+    (
+        "normal_liquid_density",
+        ParameterBound {
+            min: Some(0.0),
+            max: None,
+            min_inclusive: false,
+            max_inclusive: false,
+            rationale: "A density; the liquid-diffusivity ladder takes `M/rho` from it.",
+        },
+    ),
+    (
+        "critical_volume",
+        ParameterBound {
+            min: Some(0.0),
+            max: None,
+            min_inclusive: false,
+            max_inclusive: false,
+            rationale: "A molar volume; Tyn-Calus raises it to the 1.048 power.",
+        },
+    ),
+    (
+        "triple_point_temperature",
+        ParameterBound {
+            min: Some(0.0),
+            max: None,
+            min_inclusive: false,
+            max_inclusive: false,
+            rationale: "An absolute temperature.",
+        },
+    ),
+    (
+        "lennard_jones_diameter",
+        ParameterBound {
+            min: Some(0.0),
+            max: None,
+            min_inclusive: false,
+            max_inclusive: false,
+            rationale: "A molecular diameter.",
+        },
+    ),
+    (
+        "lennard_jones_energy",
+        ParameterBound {
+            min: Some(0.0),
+            max: None,
+            min_inclusive: false,
+            max_inclusive: false,
+            rationale: "A well depth in kelvin; a negative epsilon/k is not a state.",
+        },
+    ),
 ];
 
 /// Every parameter with no stated domain, and why - a decision, not an omission.
@@ -65,6 +125,119 @@ pub const UNBOUNDED: &[(&str, &str)] = &[
     (
         "cp_e",
         "a fitted polynomial's quartic coefficient: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "heat_of_fusion",
+        "A fusion enthalpy. **Zero is this table's spelling of absence**, so a positive bound would refuse the shipped rows - and it is the solid route, not this schema, that refuses a zero rather than melting at it.",
+    ),
+    (
+        "rackett_z",
+        "The shipped table carries zeros as its spelling of absence, so a bound would refuse the table.",
+    ),
+    (
+        "parachor",
+        "a fitted coefficient on NeqSim's own scale, carried verbatim by both readers",
+    ),
+    ("alpha_param_1", "A fitted coefficient, both signs."),
+    ("alpha_param_2", "A fitted coefficient, both signs."),
+    ("alpha_param_3", "A fitted coefficient, both signs."),
+    ("alpha_param_4", "A fitted coefficient, both signs."),
+    ("alpha_param_5", "A fitted coefficient, both signs."),
+    (
+        "liquid_conductivity_1",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liquid_conductivity_2",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liquid_conductivity_3",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liqvisc_1",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liqvisc_2",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liqvisc_3",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liqvisc_4",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_solid_1",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_solid_2",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_solid_3",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_solid_4",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_liquid_1",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_liquid_2",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_liquid_3",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_liquid_4",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "cp_liquid_5",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "solid_density_coefs_1",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liquid_density_coefs_1",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "solid_density_coefs_2",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liquid_density_coefs_2",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "solid_density_coefs_3",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liquid_density_coefs_3",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "solid_density_coefs_4",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
+    ),
+    (
+        "liquid_density_coefs_4",
+        "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
     ),
     (
         "ionic_charge",
