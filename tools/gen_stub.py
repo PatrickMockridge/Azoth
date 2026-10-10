@@ -172,6 +172,28 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             ("cp_c", "float | None"),
             ("cp_d", "float | None"),
             ("cp_e", "float | None"),
+            # The rest of what a component carries, so a card's values can be read back and
+            # compared. `None` where the table can state nothing rather than a zero, for the
+            # reason the polynomial is optional: a comparison that could not tell an absent
+            # value from a stated zero would pass while the two fluids differed.
+            ("molar_mass", "float | None"),
+            ("normal_liquid_density_kg_per_m3", "float"),
+            ("critical_volume_m3_per_mol", "float | None"),
+            ("triple_point_temperature_k", "float"),
+            ("heat_of_fusion_j_per_mol", "float"),
+            ("rackett_z", "float"),
+            ("parachor", "float"),
+            ("lennard_jones_diameter_angstrom", "float"),
+            ("lennard_jones_energy_k", "float"),
+            ("alpha_params", "list[float]"),
+            ("liquid_conductivity", "list[float]"),
+            ("liqvisc", "list[float]"),
+            ("liqvisc_model", "int"),
+            ("wax_former", "bool"),
+            ("cp_solid", "list[float]"),
+            ("cp_liquid", "list[float]"),
+            ("solid_density_coefs", "list[float]"),
+            ("liquid_density_coefs", "list[float]"),
             # The association, zero for a component the table gives no scheme. A field the
             # Rust struct carries with `#[pyo3(get)]` has to be declared here:
             # `test_the_stub_matches_the_rust_transport_types` compares both directions.

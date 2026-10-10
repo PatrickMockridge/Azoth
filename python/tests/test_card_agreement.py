@@ -74,6 +74,56 @@ def test_the_two_readers_resolve_the_same_components() -> None:
         assert theirs.tc_k == pytest.approx(mine.Tc.to("K").magnitude), name
         assert theirs.pc_pa == pytest.approx(mine.Pc.to("Pa").magnitude), name
         assert theirs.acentric_factor == pytest.approx(mine.omega), name
+        # **The whole of what a component carries, and not a sample of it.** The card
+        # states more than three parameters, and a field one reader carried and the other
+        # dropped would agree on every line above while the two fluids differed - so each
+        # is named rather than counted, and a parameter the card cannot state has to be
+        # added here as well as to the schema.
+        for field, mine_value, theirs_value in (
+            ("molar_mass", mine.molar_mass, theirs.molar_mass),
+            (
+                "normal_liquid_density",
+                mine.liquid_density,
+                theirs.normal_liquid_density_kg_per_m3,
+            ),
+            ("critical_volume", mine.critical_volume, theirs.critical_volume_m3_per_mol),
+            (
+                "triple_point_temperature",
+                mine.triple_point_temperature,
+                theirs.triple_point_temperature_k,
+            ),
+            ("heat_of_fusion", mine.heat_of_fusion, theirs.heat_of_fusion_j_per_mol),
+            ("rackett_z", mine.rackett_z, theirs.rackett_z),
+            ("parachor", mine.parachor, theirs.parachor),
+            (
+                "lennard_jones_diameter",
+                mine.lennard_jones_diameter,
+                theirs.lennard_jones_diameter_angstrom,
+            ),
+            ("lennard_jones_energy", mine.lennard_jones_energy, theirs.lennard_jones_energy_k),
+            ("liqvisc_model", mine.liqvisc_model, theirs.liqvisc_model),
+            ("wax_former", mine.wax_former, theirs.wax_former),
+        ):
+            if mine_value is None:
+                # A shipped row the card does not name, or a value the table does not
+                # carry: the point is that the two agree about the absence too.
+                assert theirs_value is None, f"{name}.{field}"
+                continue
+            quantity = mine_value.to_base_units().magnitude if hasattr(mine_value, "to") else mine_value
+            assert theirs_value == pytest.approx(quantity), f"{name}.{field}"
+
+        for field, mine_value, theirs_value in (
+            ("liquid_conductivity", mine.liquid_conductivity, theirs.liquid_conductivity),
+            ("liqvisc", mine.liqvisc, theirs.liqvisc),
+            ("cp_solid", mine.cp_solid, theirs.cp_solid),
+            ("cp_liquid", mine.cp_liquid, theirs.cp_liquid),
+            ("solid_density_coefs", mine.solid_density_coefs, theirs.solid_density_coefs),
+            ("liquid_density_coefs", mine.liquid_density_coefs, theirs.liquid_density_coefs),
+        ):
+            assert list(mine_value) == pytest.approx(list(theirs_value)), f"{name}.{field}"
+        assert list(mine.alpha_params.get("srk_fitted", ())) == pytest.approx(
+            list(theirs.alpha_params)
+        ), f"{name}.alpha_params"
         compared += 1
 
     assert compared, "the card names no components, so nothing was compared"

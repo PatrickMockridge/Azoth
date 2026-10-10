@@ -145,6 +145,60 @@ pub struct PyComponentRow {
     pub cp_d: Option<f64>,
     #[pyo3(get)]
     pub cp_e: Option<f64>,
+    /// The molar mass, kg/mol, or `None` for a row that has none.
+    #[pyo3(get)]
+    pub molar_mass: Option<f64>,
+    /// The normal liquid density at 15 C, kg/m3. Zero is the table's spelling of absence.
+    #[pyo3(get)]
+    pub normal_liquid_density_kg_per_m3: f64,
+    /// The critical molar volume, m3/mol.
+    #[pyo3(get)]
+    pub critical_volume_m3_per_mol: Option<f64>,
+    /// The triple-point temperature, K.
+    #[pyo3(get)]
+    pub triple_point_temperature_k: f64,
+    /// The enthalpy of fusion, J/mol.
+    #[pyo3(get)]
+    pub heat_of_fusion_j_per_mol: f64,
+    /// The Rackett compressibility, dimensionless.
+    #[pyo3(get)]
+    pub rackett_z: f64,
+    /// The parachor, on NeqSim's own scale.
+    #[pyo3(get)]
+    pub parachor: f64,
+    /// The Lennard-Jones segment diameter, ångström.
+    #[pyo3(get)]
+    pub lennard_jones_diameter_angstrom: f64,
+    /// The Lennard-Jones well depth as `epsilon/k`, K.
+    #[pyo3(get)]
+    pub lennard_jones_energy_k: f64,
+    /// The cubic alpha function's parameters, as a card states them. Empty for a table row.
+    #[pyo3(get)]
+    pub alpha_params: Vec<f64>,
+    /// The thermal-conductivity polynomial's three coefficients.
+    #[pyo3(get)]
+    pub liquid_conductivity: [f64; 3],
+    /// The liquid-viscosity polynomial's four coefficients.
+    #[pyo3(get)]
+    pub liqvisc: [f64; 4],
+    /// Which liquid-viscosity expression those belong to.
+    #[pyo3(get)]
+    pub liqvisc_model: u32,
+    /// Whether the substance forms wax.
+    #[pyo3(get)]
+    pub wax_former: bool,
+    /// The solid heat-capacity polynomial's four coefficients.
+    #[pyo3(get)]
+    pub cp_solid: [f64; 4],
+    /// The liquid heat-capacity polynomial's five coefficients.
+    #[pyo3(get)]
+    pub cp_liquid: [f64; 5],
+    /// The solid-density polynomial's four coefficients.
+    #[pyo3(get)]
+    pub solid_density_coefs: [f64; 4],
+    /// The liquid-density polynomial's four coefficients.
+    #[pyo3(get)]
+    pub liquid_density_coefs: [f64; 4],
     /// NeqSim's `COMPTYPE` for the row: the substance class.
     ///
     /// A string rather than a flag because the table carries ten of them, and `ion` is
@@ -329,6 +383,24 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
         cp_c: entry.cp.map(|cp| cp[2]),
         cp_d: entry.cp.map(|cp| cp[3]),
         cp_e: entry.cp.map(|cp| cp[4]),
+        molar_mass: entry.molar_mass,
+        normal_liquid_density_kg_per_m3: entry.liquid_density_kg_per_m3,
+        critical_volume_m3_per_mol: entry.critical_volume,
+        triple_point_temperature_k: entry.triple_point_temperature,
+        heat_of_fusion_j_per_mol: entry.heat_of_fusion,
+        rackett_z: entry.rackett_z,
+        parachor: entry.parachor,
+        lennard_jones_diameter_angstrom: entry.lennard_jones_diameter,
+        lennard_jones_energy_k: entry.lennard_jones_energy,
+        alpha_params: entry.alpha_params.clone(),
+        liquid_conductivity: entry.liquid_conductivity,
+        liqvisc: entry.liqvisc,
+        liqvisc_model: entry.liqvisc_model,
+        wax_former: entry.wax_former,
+        cp_solid: entry.cp_solid,
+        cp_liquid: entry.cp_liquid,
+        solid_density_coefs: entry.solid_density_coefs,
+        liquid_density_coefs: entry.liquid_density_coefs,
         component_type: entry.class.clone(),
         ionic_charge: entry.ionic_charge,
         deshmukh_mather_diameter: entry.deshmukh_mather_diameter,

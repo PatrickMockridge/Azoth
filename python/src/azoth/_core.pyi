@@ -76,6 +76,24 @@ class ComponentRow:
     cp_c: float | None
     cp_d: float | None
     cp_e: float | None
+    molar_mass: float | None
+    normal_liquid_density_kg_per_m3: float
+    critical_volume_m3_per_mol: float | None
+    triple_point_temperature_k: float
+    heat_of_fusion_j_per_mol: float
+    rackett_z: float
+    parachor: float
+    lennard_jones_diameter_angstrom: float
+    lennard_jones_energy_k: float
+    alpha_params: list[float]
+    liquid_conductivity: list[float]
+    liqvisc: list[float]
+    liqvisc_model: int
+    wax_former: bool
+    cp_solid: list[float]
+    cp_liquid: list[float]
+    solid_density_coefs: list[float]
+    liquid_density_coefs: list[float]
     association_scheme: str
     association_sites: int
     association_energy: float
