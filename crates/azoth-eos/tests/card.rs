@@ -611,6 +611,7 @@ fn a_card_added_substance_can_carry_an_association() {
         "[components.lab_solvent.Tc]\nvalue = 500.0\nunit = \"K\"\n\
          [components.lab_solvent.Pc]\nvalue = 4.0e6\nunit = \"Pa\"\n\
          [components.lab_solvent.omega]\nvalue = 0.5\nunit = \"dimensionless\"\n\
+         [components.lab_solvent.molar_mass]\nvalue = 0.086\nunit = \"kg/mol\"\n\
          [associations.lab_solvent]\nscheme = \"2B\"\n\
          [associations.lab_solvent.energy]\nvalue = 20000.0\nunit = \"J/mol\"\n",
     ))
@@ -867,6 +868,7 @@ fn the_baseline_cards_pairs_are_the_tables() {
 fn a_card_can_add_an_ion() {
     let card = Card::from_toml(&a_card(
         "[components.na-plus]\nion = true\n\
+         [components.na-plus.molar_mass]\nvalue = 0.02299\nunit = \"kg/mol\"\n\
          [components.na-plus.ionic_charge]\nvalue = 1.0\nunit = \"dimensionless\"\n\
          [components.na-plus.deshmukh_mather_diameter]\nvalue = 3.0\nunit = \"angstrom\"\n",
     ))

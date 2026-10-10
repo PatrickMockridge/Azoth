@@ -308,6 +308,10 @@ fn a_card_added_substance_has_no_polynomial() {
             tc: Some(500.0),
             pc: Some(2.0e6),
             omega: Some(0.3),
+            // A card that *adds* a substance has to state this: a cubic reads only `Tc`,
+            // `Pc` and `omega`, so without it the omission is invisible until a density or
+            // an enthalpy refuses far from here.
+            molar_mass: Some(0.12),
             ..Default::default()
         },
     );
@@ -416,6 +420,7 @@ fn a_card_component_with_a_polynomial_has_an_enthalpy() {
             pc: Some(2.0e6),
             omega: Some(0.3),
             cp: Some([20.0, 0.1, 0.0, 0.0, 0.0]),
+            molar_mass: Some(0.12),
             association: None,
             ..Default::default()
         },

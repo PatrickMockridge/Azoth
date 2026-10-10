@@ -52,6 +52,61 @@ pub struct ComponentArguments {
     /// The five dielectric-constant coefficients, `d0`..`d4`.
     #[pyo3(item)]
     pub dielectric: Option<Vec<f64>>,
+    /// The molar mass, in kg/mol.
+    #[pyo3(item)]
+    pub molar_mass: Option<f64>,
+    /// The normal liquid density at 15 C, in kg/m3.
+    #[pyo3(item)]
+    pub normal_liquid_density: Option<f64>,
+    /// The critical molar volume, in m3/mol.
+    #[pyo3(item)]
+    pub critical_volume: Option<f64>,
+    /// The triple-point temperature, in K.
+    #[pyo3(item)]
+    pub triple_point_temperature: Option<f64>,
+    /// The enthalpy of fusion, in J/mol.
+    #[pyo3(item)]
+    pub heat_of_fusion: Option<f64>,
+    /// The Rackett compressibility, dimensionless.
+    #[pyo3(item)]
+    pub rackett_z: Option<f64>,
+    /// The parachor, in NeqSim's own scale, which is dimensionless here.
+    #[pyo3(item)]
+    pub parachor: Option<f64>,
+    /// The Lennard-Jones segment diameter, in **ångström** - the unit the Rust component
+    /// field is in, and **not** the metre a base-unit crossing would make of it.
+    #[pyo3(item)]
+    pub lennard_jones_diameter: Option<f64>,
+    /// The Lennard-Jones well depth as `epsilon/k`, in K.
+    #[pyo3(item)]
+    pub lennard_jones_energy: Option<f64>,
+    /// The cubic alpha function's parameters: a contiguous prefix of the five.
+    #[pyo3(item)]
+    pub alpha_params: Option<Vec<f64>>,
+    /// The thermal-conductivity polynomial's three coefficients.
+    #[pyo3(item)]
+    pub liquid_conductivity: Option<Vec<f64>>,
+    /// The liquid-viscosity polynomial's four coefficients.
+    #[pyo3(item)]
+    pub liqvisc: Option<Vec<f64>>,
+    /// Which liquid-viscosity expression those belong to.
+    #[pyo3(item)]
+    pub liqvisc_model: Option<u32>,
+    /// Whether the substance forms wax.
+    #[pyo3(item)]
+    pub wax_former: Option<bool>,
+    /// The solid heat-capacity polynomial's four coefficients.
+    #[pyo3(item)]
+    pub cp_solid: Option<Vec<f64>>,
+    /// The liquid heat-capacity polynomial's five coefficients.
+    #[pyo3(item)]
+    pub cp_liquid: Option<Vec<f64>>,
+    /// The solid-density polynomial's four coefficients.
+    #[pyo3(item)]
+    pub solid_density_coefs: Option<Vec<f64>>,
+    /// The liquid-density polynomial's four coefficients.
+    #[pyo3(item)]
+    pub liquid_density_coefs: Option<Vec<f64>>,
 }
 
 /// A keycard's sections, as this crate can read them. Opaque: a card crosses as a value,
@@ -115,6 +170,24 @@ pub fn overlay(
                 ionic_charge: arguments.ionic_charge,
                 deshmukh_mather_diameter: arguments.deshmukh_mather_diameter,
                 dielectric,
+                molar_mass: arguments.molar_mass,
+                normal_liquid_density: arguments.normal_liquid_density,
+                critical_volume: arguments.critical_volume,
+                triple_point_temperature: arguments.triple_point_temperature,
+                heat_of_fusion: arguments.heat_of_fusion,
+                rackett_z: arguments.rackett_z,
+                parachor: arguments.parachor,
+                lennard_jones_diameter: arguments.lennard_jones_diameter,
+                lennard_jones_energy: arguments.lennard_jones_energy,
+                alpha_params: arguments.alpha_params,
+                liquid_conductivity: vector_of::<3>(&arguments.liquid_conductivity, &arguments.name, "liquid_conductivity")?,
+                liqvisc: vector_of::<4>(&arguments.liqvisc, &arguments.name, "liqvisc")?,
+                liqvisc_model: arguments.liqvisc_model,
+                wax_former: arguments.wax_former,
+                cp_solid: vector_of::<4>(&arguments.cp_solid, &arguments.name, "cp_solid")?,
+                cp_liquid: vector_of::<5>(&arguments.cp_liquid, &arguments.name, "cp_liquid")?,
+                solid_density_coefs: vector_of::<4>(&arguments.solid_density_coefs, &arguments.name, "solid_density_coefs")?,
+                liquid_density_coefs: vector_of::<4>(&arguments.liquid_density_coefs, &arguments.name, "liquid_density_coefs")?,
                 ..Default::default()
             },
         );
@@ -364,4 +437,28 @@ pub fn card_model_components(py: Python<'_>, text: &str, name: &str) -> PyResult
     // A `Component` carries critical constants and no name, so the names are read from the
     // mixture's own list - which is the same list Python's `from_names` builds its fluid from.
     Ok(mixture.names().map(<[String]>::to_vec).unwrap_or_default())
+}
+
+/// A coefficient vector of an exact width, or `None` when the card states none.
+///
+/// A partial polynomial is refused on the Python side, which is where the card is read, so
+/// reaching here with another length is a bridge defect rather than a user's - and refused
+/// rather than truncated, the rule the dielectric set already follows.
+fn vector_of<const N: usize>(
+    values: &Option<Vec<f64>>,
+    name: &str,
+    parameter: &str,
+) -> PyResult<Option<[f64; N]>> {
+    let Some(stated) = values else {
+        return Ok(None);
+    };
+    if stated.len() != N {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "components.{name}.{parameter} carries {} coefficients and needs {N}",
+            stated.len()
+        )));
+    }
+    let mut out = [0.0; N];
+    out.copy_from_slice(stated);
+    Ok(Some(out))
 }

@@ -152,6 +152,44 @@ def test_the_component_parameters_are_what_the_implementation_reads() -> None:
         "dielectric_4",
         "dielectric_5",
     }
+    # **The rest of what a `Component` carries.** Every one reaches
+    # `DatabankEntry.component()`, which is the field list the mixture takes - so this is
+    # the set whose names the schema adds when the component model widens.
+    carried = {
+        "molar_mass",
+        "normal_liquid_density",
+        "critical_volume",
+        "triple_point_temperature",
+        "heat_of_fusion",
+        "rackett_z",
+        "parachor",
+        "lennard_jones_diameter",
+        "lennard_jones_energy",
+        "liquid_conductivity_1",
+        "liquid_conductivity_2",
+        "liquid_conductivity_3",
+        "liqvisc_1",
+        "liqvisc_2",
+        "liqvisc_3",
+        "liqvisc_4",
+        "cp_solid_1",
+        "cp_solid_2",
+        "cp_solid_3",
+        "cp_solid_4",
+        "cp_liquid_1",
+        "cp_liquid_2",
+        "cp_liquid_3",
+        "cp_liquid_4",
+        "cp_liquid_5",
+        "solid_density_coefs_1",
+        "solid_density_coefs_2",
+        "solid_density_coefs_3",
+        "solid_density_coefs_4",
+        "liquid_density_coefs_1",
+        "liquid_density_coefs_2",
+        "liquid_density_coefs_3",
+        "liquid_density_coefs_4",
+    } | {f"alpha_param_{i}" for i in range(1, 6)}
     assert (
         set(keycard.COMPONENT_PARAMETERS) - keycard.CUBIC_PARAMETERS
         == {
@@ -162,6 +200,7 @@ def test_the_component_parameters_are_what_the_implementation_reads() -> None:
             "cp_e",
         }
         | electrolyte
+        | carried
     )
     # The five `dielectric_*` share one field, which is why this is a containment rather
     # than an equality: they are one polynomial, and a card states all five or none.
@@ -179,20 +218,27 @@ def test_component_parameters_mirror_the_single_declaration() -> None:
     """
     document = json.loads(COMPONENT_SCHEMA.read_text(encoding="utf-8"))
     # **A parameter is the entries that reference `$defs.parameter`**, which is what makes
-    # them a value and a unit. `ion` is the one entry that is not - it is a class, and it
-    # is asserted separately below so that adding a second class-shaped entry fails here
-    # rather than being quietly skipped.
+    # them a value and a unit. The classes are the rest, and each is asserted by type below
+    # so that adding one fails here rather than being quietly skipped.
     declared = {
         name: props["x-azoth-unit"]
         for name, props in document["properties"].items()
         if props.get("$ref") == "#/$defs/parameter"
     }
     classes = sorted(set(document["properties"]) - set(declared))
-    assert classes == ["ion"], (
+    assert classes == ["ion", "liqvisc_model", "wax_former"], (
         f"the schema declares {classes} as something other than a parameter. This test "
-        f"reads only the parameters, so a second class-shaped entry would go unchecked."
+        f"reads only the parameters, so a class-shaped entry is unchecked here and has to "
+        f"be named."
     )
     assert document["properties"]["ion"]["type"] == "boolean"
+    # `liqvisc_model` is a model index and a **closed** vocabulary: the parser refuses an
+    # index this build does not run rather than storing one, the rule `ASSOCIATION_SCHEMES`
+    # and `MODEL_KINDS` already follow - so the enum is part of the declaration and not a
+    # convenience.
+    assert document["properties"]["liqvisc_model"]["type"] == "integer"
+    assert document["properties"]["liqvisc_model"]["enum"] == [0, 1, 2, 3, 4]
+    assert document["properties"]["wax_former"]["type"] == "boolean"
     assert dict(keycard.COMPONENT_PARAMETERS) == declared
 
 
@@ -256,13 +302,16 @@ def test_a_component_the_databank_lacks_is_added() -> None:
                 "Tc": {"value": 500.0, "unit": "K"},
                 "Pc": {"value": 2.0e6, "unit": "Pa"},
                 "omega": {"value": 0.3, "unit": "dimensionless"},
+                "molar_mass": {"value": 0.12, "unit": "kg/mol"},
             }
         }
     )
     assert "unobtainium" in eos.components.available(card=card)
     added = eos.components.entry("unobtainium", card=card)
     assert added.cas is None
-    assert added.molar_mass is None
+    # The card had to state it: a substance the databank does not carry and a card leaves
+    # without a molar mass is one whose density, enthalpy and mass flow all refuse later.
+    assert added.molar_mass.to("kg/mol").magnitude == pytest.approx(0.12)
     assert added.source == "keycard"
 
 
@@ -749,6 +798,7 @@ def test_a_card_component_with_a_polynomial_has_an_enthalpy() -> None:
                 "Tc": {"value": 500.0, "unit": "K"},
                 "Pc": {"value": 2_000_000.0, "unit": "Pa"},
                 "omega": {"value": 0.3, "unit": "dimensionless"},
+                "molar_mass": {"value": 0.12, "unit": "kg/mol"},
                 "cp_a": {"value": 20.0, "unit": "J/(mol*K)"},
                 "cp_b": {"value": 0.1, "unit": "J/(mol*K**2)"},
                 "cp_c": {"value": 0.0, "unit": "J/(mol*K**3)"},
@@ -881,6 +931,11 @@ def test_a_card_can_add_an_ion() -> None:
         components={
             "na-plus": {
                 "ion": True,
+                # **An ion is exempt from the cubic's parameters and not from this one.**
+                # A cubic reads only `Tc`, `Pc` and `omega`; the electrolyte spans read the
+                # molar mass, so an ion without one is a substance whose activity and whose
+                # Pitzer term refuse far from where the omission was made.
+                "molar_mass": {"value": 0.02299, "unit": "kg/mol"},
                 "ionic_charge": {"value": 1.0, "unit": "dimensionless"},
                 "deshmukh_mather_diameter": {"value": 3.0, "unit": "angstrom"},
             }

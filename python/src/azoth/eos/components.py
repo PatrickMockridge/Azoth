@@ -1542,6 +1542,10 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     # `None` is "the card says nothing", which is not `False`: a card silent on the
     # question leaves the databank's class in force.
     ion = card.is_ion(key) if card is not None else None
+    # The other two classes, read beside `ion` and for the same reason: neither is a number
+    # in a unit, and `None` leaves the databank's in force rather than stating a zero.
+    liqvisc_model = card.liqvisc_model(key) if card is not None else None
+    wax_former = card.wax_former(key) if card is not None else None
 
     if override is None and stated is None:
         if base is None:
@@ -1566,16 +1570,26 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             )
         # **An ion is exempt from the cubic's parameters**, and that is the flag's whole
         # point: an ion has no meaningful constants, so requiring them would make a user
-        # invent the filler `mixture_of` refuses for exactly that reason.
+        # invent the filler `mixture_of` refuses for exactly that reason. **It is not
+        # exempt from the molar mass**, which the electrolyte spans read from the same
+        # table - and which a cubic never reads, so its absence is invisible until a
+        # density or an enthalpy refuses far from here.
         missing = [] if ion else sorted(keycard.CUBIC_PARAMETERS - set(override))
+        if "molar_mass" not in override:
+            missing.append("molar_mass")
         if missing:
+            needed = (
+                "molar mass"
+                if missing == ["molar_mass"]
+                else "critical constants"
+            )
             raise PropertyUnavailableError(
                 name,
-                "critical constants",
-                f"the keycard supplies {sorted(override)} but a cubic needs "
-                f"{sorted(keycard.CUBIC_PARAMETERS)}; {missing} is missing. A "
-                f"partial component is refused rather than completed from a similar "
-                f"substance, which would be inventing data.",
+                needed,
+                f"the keycard supplies {sorted(override)} but a component needs "
+                f"{sorted(keycard.CUBIC_PARAMETERS | {'molar_mass'})}; {missing} is "
+                f"missing. A partial component is refused rather than completed from a "
+                f"similar substance, which would be inventing data.",
             )
         return DatabankEntry(
             name=name.strip(),
@@ -1587,22 +1601,30 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             Tc=override["Tc"] if not ion else ureg.Quantity(0.0, "K"),
             Pc=override["Pc"] if not ion else ureg.Quantity(0.0, "Pa"),
             omega=0.0 if ion else _as_float(override["omega"], key),
-            rackett_z=0.0,
-            # A card carries no liquid-viscosity set either, and a model of zero is how the
-            # table states that - NeqSim's own default branch, `0.7` cP rather than a number
-            # read from four zeros.
-            lennard_jones_diameter=0.0,
-            lennard_jones_energy=0.0,
-            liquid_conductivity=(0.0, 0.0, 0.0),
-            liqvisc=(0.0, 0.0, 0.0, 0.0),
-            liqvisc_model=0,
-            molar_mass=None,
-            critical_volume=None,
-            liquid_density=None,
+            rackett_z=_card_number(override, "rackett_z", 0.0),
+            # A model of zero is how the table spells an absent set: NeqSim's own default
+            # branch, `0.7` cP rather than a number read from four zeros.
+            lennard_jones_diameter=_card_number(override, "lennard_jones_diameter", 0.0),
+            lennard_jones_energy=_card_number(override, "lennard_jones_energy", 0.0),
+            liquid_conductivity=_card_coefficients(
+                override, "liquid_conductivity_", 3, (0.0, 0.0, 0.0)
+            ),
+            liqvisc=_card_coefficients(override, "liqvisc_", 4, (0.0, 0.0, 0.0, 0.0)),
+            liqvisc_model=liqvisc_model if liqvisc_model is not None else 0,
+            # Guaranteed present by the refusal above.
+            molar_mass=override["molar_mass"],
+            critical_volume=(
+                None if "critical_volume" not in override else override["critical_volume"]
+            ),
+            liquid_density=(
+                None
+                if "normal_liquid_density" not in override
+                else override["normal_liquid_density"]
+            ),
             # The card may also supply the polynomial, in which case the substance has
             # an enthalpy path; without it, it is a cubic only.
             cp=_cp(override),
-            alpha_params={},
+            alpha_params=_card_alpha_params(override),
             antoine=(0.0, 0.0, 0.0, 0.0, 0.0),
             antoine_type="",
             dipole_moment_debye=0.0,
@@ -1622,14 +1644,18 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             hydrate_former=False,
             # A card states what a cubic reads, and a melt is not something a cubic reads:
             # a substance a card supplies has no table row to inherit either from.
-            wax_former=False,
-            heat_of_fusion=0.0,
-            parachor=0.0,
-            triple_point_temperature=0.0,
-            cp_solid=(0.0, 0.0, 0.0, 0.0),
-            cp_liquid=(0.0, 0.0, 0.0, 0.0, 0.0),
-            solid_density_coefs=(0.0, 0.0, 0.0, 0.0),
-            liquid_density_coefs=(0.0, 0.0, 0.0, 0.0),
+            wax_former=wax_former if wax_former is not None else False,
+            heat_of_fusion=_card_number(override, "heat_of_fusion", 0.0),
+            parachor=_card_number(override, "parachor", 0.0),
+            triple_point_temperature=_card_number(override, "triple_point_temperature", 0.0),
+            cp_solid=_card_coefficients(override, "cp_solid_", 4, (0.0, 0.0, 0.0, 0.0)),
+            cp_liquid=_card_coefficients(override, "cp_liquid_", 5, (0.0, 0.0, 0.0, 0.0, 0.0)),
+            solid_density_coefs=_card_coefficients(
+                override, "solid_density_coefs_", 4, (0.0, 0.0, 0.0, 0.0)
+            ),
+            liquid_density_coefs=_card_coefficients(
+                override, "liquid_density_coefs_", 4, (0.0, 0.0, 0.0, 0.0)
+            ),
             ionic_charge=_card_charge(override),
             # The card states metres and the databank holds ångström; this is the crossing.
             deshmukh_mather_diameter=_card_diameter(override),
@@ -1652,6 +1678,17 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             source="keycard",
         )
 
+    # An override of `{}` is a card that names the substance and states nothing, which is
+    # the same as `None` for every parameter below.
+    card_values: Mapping[str, Q] = override or {}
+
+    def scalar(name: str, shipped: float) -> float:
+        return _card_number(card_values, name, shipped)
+
+    def coefficients(prefix: str, width: int, shipped: tuple[float, ...]) -> tuple[float, ...]:
+        return _card_coefficients(card_values, prefix, width, shipped)
+
+    stated_alpha = _card_alpha_params(card_values)
     return replace(
         base,
         Tc=base.Tc if override is None else override.get("Tc", base.Tc),
@@ -1662,6 +1699,47 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             else _as_float(override["omega"], key)
         ),
         cp=base.cp if override is None else (_cp(override) or base.cp),
+        # Parameter by parameter: what the card names, else what ships. A card overriding
+        # one value does not restate, and does not lose, the others.
+        molar_mass=base.molar_mass if "molar_mass" not in card_values else card_values["molar_mass"],
+        critical_volume=(
+            base.critical_volume
+            if "critical_volume" not in card_values
+            else card_values["critical_volume"]
+        ),
+        liquid_density=(
+            base.liquid_density
+            if "normal_liquid_density" not in card_values
+            else card_values["normal_liquid_density"]
+        ),
+        rackett_z=scalar("rackett_z", base.rackett_z),
+        parachor=scalar("parachor", base.parachor),
+        heat_of_fusion=scalar("heat_of_fusion", base.heat_of_fusion),
+        triple_point_temperature=scalar(
+            "triple_point_temperature", base.triple_point_temperature
+        ),
+        lennard_jones_diameter=scalar("lennard_jones_diameter", base.lennard_jones_diameter),
+        lennard_jones_energy=scalar("lennard_jones_energy", base.lennard_jones_energy),
+        liquid_conductivity=coefficients(
+            "liquid_conductivity_", 3, base.liquid_conductivity
+        ),
+        liqvisc=coefficients("liqvisc_", 4, base.liqvisc),
+        # The class entries, which a card states or leaves alone.
+        liqvisc_model=(
+            base.liqvisc_model if liqvisc_model is None else liqvisc_model
+        ),
+        wax_former=base.wax_former if wax_former is None else wax_former,
+        cp_solid=coefficients("cp_solid_", 4, base.cp_solid),
+        cp_liquid=coefficients("cp_liquid_", 5, base.cp_liquid),
+        solid_density_coefs=coefficients(
+            "solid_density_coefs_", 4, base.solid_density_coefs
+        ),
+        liquid_density_coefs=coefficients(
+            "liquid_density_coefs_", 4, base.liquid_density_coefs
+        ),
+        # A card's set replaces the table's for the correlation it names, and leaves the
+        # others - so a card stating the cubic exponent does not lose a UMR-CPA set.
+        alpha_params={**base.alpha_params, **stated_alpha},
         association=(
             base.association if stated is None else _card_association(base.association, stated)
         ),
@@ -1698,6 +1776,56 @@ def _as_float(value: Q, name: str) -> float:
             f"the acentric factor is a pure number, but got {value}",
         )
     return float(value.to("dimensionless").magnitude)
+
+
+#: The width of each coefficient set the schema declares as one key per position, and the
+#: card key prefix. A set is all-of-it or none; the width is what "all" means.
+CARD_COEFFICIENT_SETS: tuple[tuple[str, int], ...] = (
+    ("liquid_conductivity_", 3),
+    ("liqvisc_", 4),
+    ("cp_solid_", 4),
+    ("cp_liquid_", 5),
+    ("solid_density_coefs_", 4),
+    ("liquid_density_coefs_", 4),
+)
+
+#: The five `alpha_param_*` keys, in the order the correlation reads them.
+CARD_ALPHA_PARAMETERS: tuple[str, ...] = tuple(f"alpha_param_{i}" for i in range(1, 6))
+
+
+def _card_number(override: Mapping[str, Q], name: str, shipped: float) -> float:
+    """One scalar parameter the card states, or the databank's.
+
+    ``_quantity`` has already converted the card's value to the canonical unit, so the
+    magnitude is what a model takes and no factor is applied here.
+    """
+    if name not in override:
+        return shipped
+    return float(override[name].to("dimensionless").magnitude)
+
+
+def _card_coefficients(
+    override: Mapping[str, Q], prefix: str, width: int, shipped: tuple[float, ...]
+) -> tuple[float, ...]:
+    """One coefficient set, all-of-it or none, or the databank's."""
+    stated = [override[f"{prefix}{i}"] for i in range(1, width + 1) if f"{prefix}{i}" in override]
+    if not stated:
+        return shipped
+    return tuple(float(value.to("dimensionless").magnitude) for value in stated)
+
+
+def _card_alpha_params(override: Mapping[str, Q]) -> dict[str, tuple[float, ...]]:
+    """The cubic's exponent set as a card states it, keyed by the correlation that reads it.
+
+    ``srk_fitted`` is the one correlation whose whole parameter set is the flat vector, so
+    a card's contiguous prefix is keyed by it and a blank dict means the card stated none.
+    """
+    stated = [
+        float(override[name].to("dimensionless").magnitude)
+        for name in CARD_ALPHA_PARAMETERS
+        if name in override
+    ]
+    return {} if not stated else {"srk_fitted": tuple(stated)}
 
 
 def _card_charge(override: Mapping[str, Q], shipped: float = 0.0) -> float:

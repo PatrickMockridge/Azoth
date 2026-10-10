@@ -102,10 +102,6 @@ id = "dimensionless"
 dimension = "dimensionless"
 pint = "dimensionless"
 [[units]]
-id = "neqsim-internal"
-dimension = "dimensionless"
-pint = "dimensionless"
-[[units]]
 id = "m"
 dimension = "length"
 pint = "meter"

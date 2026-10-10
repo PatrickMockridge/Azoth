@@ -549,6 +549,7 @@ def test_an_added_substance_has_no_polynomial_on_either_side() -> None:
                 "Tc": {"value": 500.0, "unit": "K"},
                 "Pc": {"value": 2.0e6, "unit": "Pa"},
                 "omega": {"value": 0.3, "unit": "dimensionless"},
+                "molar_mass": {"value": 0.12, "unit": "kg/mol"},
             }
         }
     )
@@ -629,6 +630,9 @@ def test_a_card_added_ion_agrees_and_both_refuse_it() -> None:
         components={
             "na-plus": {
                 "ion": True,
+                # An ion is exempt from the cubic's parameters and not from the molar mass:
+                # the electrolyte spans read it, so it crosses both readers.
+                "molar_mass": {"value": 0.02299, "unit": "kg/mol"},
                 "ionic_charge": {"value": 1.0, "unit": "dimensionless"},
                 "deshmukh_mather_diameter": {"value": 3.0, "unit": "angstrom"},
             }

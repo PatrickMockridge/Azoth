@@ -51,6 +51,48 @@ COMPONENT_PARAMETERS: Mapping[str, str] = {
     "cp_c": "J/(mol*K**3)",
     "cp_d": "J/(mol*K**4)",
     "cp_e": "J/(mol*K**5)",
+    # The rest of what a `Component` carries. `liqvisc_model` and `wax_former` are
+    # absent for the reason `ion` is - classes rather than numbers with a unit - and
+    # every coefficient set is in NeqSim's own scale, which states no unit at all.
+    "molar_mass": "kg/mol",
+    "normal_liquid_density": "kg/m**3",
+    "critical_volume": "m**3/mol",
+    "triple_point_temperature": "K",
+    "heat_of_fusion": "J/mol",
+    "rackett_z": "dimensionless",
+    "parachor": "dimensionless",
+    "alpha_param_1": "dimensionless",
+    "alpha_param_2": "dimensionless",
+    "alpha_param_3": "dimensionless",
+    "alpha_param_4": "dimensionless",
+    "alpha_param_5": "dimensionless",
+    "lennard_jones_diameter": "angstrom",
+    "lennard_jones_energy": "K",
+    "liquid_conductivity_1": "dimensionless",
+    "liquid_conductivity_2": "dimensionless",
+    "liquid_conductivity_3": "dimensionless",
+    "liqvisc_1": "dimensionless",
+    "liqvisc_2": "dimensionless",
+    "liqvisc_3": "dimensionless",
+    "liqvisc_4": "dimensionless",
+    "cp_solid_1": "dimensionless",
+    "cp_solid_2": "dimensionless",
+    "cp_solid_3": "dimensionless",
+    "cp_solid_4": "dimensionless",
+    "cp_liquid_1": "dimensionless",
+    "cp_liquid_2": "dimensionless",
+    "cp_liquid_3": "dimensionless",
+    "cp_liquid_4": "dimensionless",
+    "cp_liquid_5": "dimensionless",
+    "solid_density_coefs_1": "dimensionless",
+    "liquid_density_coefs_1": "dimensionless",
+    "solid_density_coefs_2": "dimensionless",
+    "liquid_density_coefs_2": "dimensionless",
+    "solid_density_coefs_3": "dimensionless",
+    "liquid_density_coefs_3": "dimensionless",
+    "solid_density_coefs_4": "dimensionless",
+    "liquid_density_coefs_4": "dimensionless",
+
     # The electrolyte data. `ion` is deliberately absent: it is a class rather than a
     # number with a unit, and :class:`Component` carries it beside this table.
     "ionic_charge": "dimensionless",
@@ -136,10 +178,17 @@ class Component:
     values next to it.
 
     ``None`` means the card says nothing, which leaves the databank's class in force.
+
+    ``liqvisc_model`` and ``wax_former`` are here for the same reason and are the second and
+    third such entries: a model index and a flag, neither a number in a unit. The parameter
+    map grows with `specs/schema/component.schema.json` and needs no field of its own, but a
+    class-shaped entry does.
     """
 
     is_ion: bool | None
     parameters: Mapping[str, Q]
+    liqvisc_model: int | None = None
+    wax_former: bool | None = None
 
     def __repr__(self) -> str:
         kind = "ion" if self.is_ion else "not an ion"
@@ -188,6 +237,20 @@ class Keycard:
         """
         stated = self.components.get(name.strip().lower())
         return None if stated is None else stated.is_ion
+
+    def liqvisc_model(self, name: str) -> int | None:
+        """Which liquid-viscosity expression the card states for this substance, or ``None``.
+
+        ``None`` leaves the databank's in force, for the reason :meth:`is_ion` gives: a
+        card silent on the question is not a card stating zero.
+        """
+        stated = self.components.get(name.strip().lower())
+        return None if stated is None else stated.liqvisc_model
+
+    def wax_former(self, name: str) -> bool | None:
+        """Whether the card states this substance forms wax, or ``None`` if it says nothing."""
+        stated = self.components.get(name.strip().lower())
+        return None if stated is None else stated.wax_former
 
     def component(self, name: str) -> Component | None:
         """This keycard's entry for a substance: its parameters and whether it is an ion.
@@ -453,8 +516,25 @@ def _components(raw: Any, where: str) -> dict[str, Component]:
                 f"a substance that is not a value-and-unit pair: whether a substance is an "
                 f"ion decides whether a cubic may be built over it at all.",
             )
-        parameters = {k: v for k, v in body.items() if k != "ion"}
-        if not parameters:
+        # The other two classes, read out with `ion` and for the same reason: the loop's
+        # table is numbers in units, and these are not.
+        liqvisc_model = body.get("liqvisc_model")
+        if liqvisc_model is not None and liqvisc_model not in (0, 1, 2, 3, 4):
+            raise KeycardError(
+                where,
+                f"`{field_name}.liqvisc_model` is {liqvisc_model!r}, which is not a "
+                f"liquid-viscosity expression this build runs; it reads 0 to 4. Refused "
+                f"rather than stored, the rule the association schemes follow.",
+            )
+        wax_former = body.get("wax_former")
+        if wax_former is not None and not isinstance(wax_former, bool):
+            raise KeycardError(
+                where,
+                f"`{field_name}.wax_former` must be `true` or `false`, like `ion`.",
+            )
+        classes = {"ion", "liqvisc_model", "wax_former"}
+        parameters = {k: v for k, v in body.items() if k not in classes}
+        if not parameters and liqvisc_model is None and wax_former is None:
             raise KeycardError(where, f"`{field_name}` must carry at least one parameter")
         resolved: dict[str, Q] = {}
         for parameter, body in parameters.items():
@@ -492,7 +572,44 @@ def _components(raw: Any, where: str) -> dict[str, Component]:
                 f"`{field_name}` needs all five of `dielectric_1` through `dielectric_5`, "
                 f"or none of them",
             )
-        out[str(name).strip().lower()] = Component(is_ion=ion, parameters=resolved)
+        # **Every remaining coefficient set is all-of-it or none**, for the reason the heat
+        # capacity is: a partial polynomial is not a correlation and not a value anything
+        # reads.
+        for prefix, width in (
+            ("liquid_conductivity_", 3),
+            ("liqvisc_", 4),
+            ("cp_solid_", 4),
+            ("cp_liquid_", 5),
+            ("solid_density_coefs_", 4),
+            ("liquid_density_coefs_", 4),
+        ):
+            stated = [p for p in resolved if p.startswith(prefix)]
+            if stated and len(stated) != width:
+                raise KeycardError(
+                    where,
+                    f"`{field_name}` needs all {width} `{prefix}*` coefficients, or none "
+                    f"of them",
+                )
+        # **`alpha_param_*` is a contiguous prefix from `_1`.** A petroleum cut states the
+        # one exponent it has; an UMR-CPA set states five. What is refused is a gap, because
+        # the correlation reads the vector positionally.
+        alpha = sorted(
+            (int(p.rsplit("_", 1)[1]), v)
+            for p, v in resolved.items()
+            if p.startswith("alpha_param_")
+        )
+        if alpha and [i for i, _ in alpha] != list(range(1, len(alpha) + 1)):
+            raise KeycardError(
+                where,
+                f"`{field_name}` states `alpha_param_*` out of sequence: it is a contiguous "
+                f"prefix from `alpha_param_1`, and the correlation reads it positionally",
+            )
+        out[str(name).strip().lower()] = Component(
+            is_ion=ion,
+            parameters=resolved,
+            liqvisc_model=liqvisc_model,
+            wax_former=wax_former,
+        )
     return out
 
 

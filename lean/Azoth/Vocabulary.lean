@@ -23,7 +23,6 @@ entry per slot - 7 of them.
 def units : List (String × Units.Dimension) :=
   [
     ("dimensionless", Dim.ofExponents [0, 0, 0, 0, 0, 0, 0]),
-    ("neqsim-internal", Dim.ofExponents [0, 0, 0, 0, 0, 0, 0]),
     ("m", Dim.ofExponents [1, 0, 0, 0, 0, 0, 0]),
     ("mm", Dim.ofExponents [1, 0, 0, 0, 0, 0, 0]),
     ("m**2", Dim.ofExponents [2, 0, 0, 0, 0, 0, 0]),
@@ -104,7 +103,6 @@ this list, and that check has to compute.
 def exponents : List (String × List Int) :=
   [
     ("dimensionless", [0, 0, 0, 0, 0, 0, 0]),
-    ("neqsim-internal", [0, 0, 0, 0, 0, 0, 0]),
     ("m", [1, 0, 0, 0, 0, 0, 0]),
     ("mm", [1, 0, 0, 0, 0, 0, 0]),
     ("m**2", [2, 0, 0, 0, 0, 0, 0]),
@@ -192,12 +190,6 @@ def dimOf (name : String) : Option Units.Dimension :=
     `0`. -/
 theorem u_dimensionless_dimension :
     dimOf "dimensionless" = some (0) := by
-  simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
-
-/-- "neqsim-internal" carries the dimension `lean-units` calls
-    `0`. -/
-theorem u_neqsim_internal_dimension :
-    dimOf "neqsim-internal" = some (0) := by
   simp only [dimOf, units, Azoth.Dim.ofExponents, Azoth.Dim.ofExponentsOn, Azoth.slots, Units.Dimension.Acceleration, Units.Dimension.AmountOfSubstance, Units.Dimension.Area, Units.Dimension.Charge, Units.Dimension.Current, Units.Dimension.Energy, Units.Dimension.Force, Units.Dimension.Length, Units.Dimension.Mass, Units.Dimension.Power, Units.Dimension.Pressure, Units.Dimension.Speed, Units.Dimension.Temperature, Units.Dimension.Time, Units.Dimension.Volume, Units.Dimension.ofString, Units.Dimension.div_eq_sub, Units.Dimension.mul_eq_add, Units.Dimension.npow_eq_nsmul, Units.Dimension.qpow_eq_qsmul, sub_eq_add_neg, List.zip_cons_cons, List.zip_nil_right, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] <;> simp <;> module
 
 /-- "m" carries the dimension `lean-units` calls

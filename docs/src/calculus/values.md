@@ -28,10 +28,14 @@ carrying neither is refused by `tools/gen_parameter_bounds.py` rather than skipp
 reach both readers through one generated table, and each refuses at the site its unit check
 already uses — `azoth.keycard._within_bound` and `azoth_eos::card::check_bound`.*
 
-*The layer's own measurement: **2** of the **15** are bounded today: a critical temperature and a critical pressure, both of
-which are absolute and so have zero, and below it, outside any state. The other **13** state
+*The layer's own measurement: **8** of the **53** are bounded today — a critical temperature, a
+critical pressure, a molar mass, a normal liquid density, a critical molar volume, a triple-point
+temperature and both Lennard-Jones parameters, each an absolute or a magnitude that has zero, and
+below it, outside any state. The other **45** state
 why not, and each reason is measured rather than assumed — the acentric factor's band is refused
-because the shipped table spans `-0.39003` to `2.8353`, so a sign bound would reject neon.*
+because the shipped table spans `-0.39003` to `2.8353`, so a sign bound would reject neon, and
+several of the newly declared ones are unbounded because **zero is this table's spelling of
+absence**: a bound above zero would refuse the shipped rows rather than a bad card.*
 
 ## What the layer does not do
 

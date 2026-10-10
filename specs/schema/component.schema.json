@@ -112,7 +112,7 @@
     },
     "parachor": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted coefficient on NeqSim's own scale, carried verbatim by both readers",
       "description": "The parachor, whose unit NeqSim states nowhere."
     },
@@ -164,43 +164,43 @@
     },
     "liquid_conductivity_1": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Thermal-conductivity polynomial coefficient 1."
     },
     "liquid_conductivity_2": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Thermal-conductivity polynomial coefficient 2."
     },
     "liquid_conductivity_3": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Thermal-conductivity polynomial coefficient 3."
     },
     "liqvisc_1": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-viscosity polynomial coefficient 1."
     },
     "liqvisc_2": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-viscosity polynomial coefficient 2."
     },
     "liqvisc_3": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-viscosity polynomial coefficient 3."
     },
     "liqvisc_4": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-viscosity polynomial coefficient 4."
     },
@@ -217,103 +217,103 @@
     },
     "cp_solid_1": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid heat-capacity polynomial coefficient 1."
     },
     "cp_solid_2": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid heat-capacity polynomial coefficient 2."
     },
     "cp_solid_3": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid heat-capacity polynomial coefficient 3."
     },
     "cp_solid_4": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid heat-capacity polynomial coefficient 4."
     },
     "cp_liquid_1": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid heat-capacity polynomial coefficient 1."
     },
     "cp_liquid_2": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid heat-capacity polynomial coefficient 2."
     },
     "cp_liquid_3": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid heat-capacity polynomial coefficient 3."
     },
     "cp_liquid_4": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid heat-capacity polynomial coefficient 4."
     },
     "cp_liquid_5": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid heat-capacity polynomial coefficient 5."
     },
     "solid_density_coefs_1": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid-density polynomial coefficient 1."
     },
     "liquid_density_coefs_1": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-density polynomial coefficient 1."
     },
     "solid_density_coefs_2": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid-density polynomial coefficient 2."
     },
     "liquid_density_coefs_2": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-density polynomial coefficient 2."
     },
     "solid_density_coefs_3": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid-density polynomial coefficient 3."
     },
     "liquid_density_coefs_3": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-density polynomial coefficient 3."
     },
     "solid_density_coefs_4": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Solid-density polynomial coefficient 4."
     },
     "liquid_density_coefs_4": {
       "$ref": "#/$defs/parameter",
-      "x-azoth-unit": "neqsim-internal",
+      "x-azoth-unit": "dimensionless",
       "x-azoth-unbounded": "a fitted polynomial coefficient on NeqSim's own scale: the shipped table carries zeros for absent terms and both signs",
       "description": "Liquid-density polynomial coefficient 4."
     },

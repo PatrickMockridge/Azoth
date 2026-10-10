@@ -165,6 +165,32 @@ def overlay_from(card: Any) -> Any:
             # second conversion here to disagree with it.
             "deshmukh_mather_diameter": _si_of(stated.parameters.get("deshmukh_mather_diameter")),
             "dielectric": _dielectric(stated.parameters),
+            # **Each of these crosses in the unit the Rust field is in**, which is the rule
+            # the `deshmukh_mather_diameter` comment on the Rust side records being broken
+            # once. Most are SI base units and `_si_of` is right for them;
+            # `lennard_jones_diameter` is ångström on the Rust side, and crossing it as
+            # metres would be ten orders of magnitude out with no symptom until a
+            # correlation ran.
+            "molar_mass": _si_of(stated.parameters.get("molar_mass")),
+            "normal_liquid_density": _si_of(stated.parameters.get("normal_liquid_density")),
+            "critical_volume": _si_of(stated.parameters.get("critical_volume")),
+            "triple_point_temperature": _si_of(stated.parameters.get("triple_point_temperature")),
+            "heat_of_fusion": _si_of(stated.parameters.get("heat_of_fusion")),
+            "rackett_z": _plain(stated.parameters.get("rackett_z")),
+            "parachor": _plain(stated.parameters.get("parachor")),
+            "lennard_jones_diameter": _in(
+                stated.parameters.get("lennard_jones_diameter"), "angstrom"
+            ),
+            "lennard_jones_energy": _si_of(stated.parameters.get("lennard_jones_energy")),
+            "alpha_params": _alpha_params(stated.parameters),
+            "liquid_conductivity": _coefficients(stated.parameters, "liquid_conductivity_", 3),
+            "liqvisc": _coefficients(stated.parameters, "liqvisc_", 4),
+            "liqvisc_model": stated.liqvisc_model,
+            "wax_former": stated.wax_former,
+            "cp_solid": _coefficients(stated.parameters, "cp_solid_", 4),
+            "cp_liquid": _coefficients(stated.parameters, "cp_liquid_", 5),
+            "solid_density_coefs": _coefficients(stated.parameters, "solid_density_coefs_", 4),
+            "liquid_density_coefs": _coefficients(stated.parameters, "liquid_density_coefs_", 4),
         }
         for name, stated in sorted(card.components.items())
     ]
@@ -194,6 +220,41 @@ def _dielectric(parameters: Mapping[str, Q]) -> list[float] | None:
 def _plain(value: Q | None) -> float | None:
     """A dimensionless card value as a bare float, or ``None`` if the card omits it."""
     return None if value is None else float(value.to("dimensionless").magnitude)
+
+
+def _in(value: Q | None, unit: str) -> float | None:
+    """A card value in **the unit the Rust field carries**, or ``None``.
+
+    Not the SI base unit, which is what :func:`_si_of` gives: a length the Rust side holds
+    in ångström has to cross in ångström, and one crossing in metres would be ten orders of
+    magnitude out with no symptom until a correlation ran.
+    """
+    return None if value is None else float(value.to(unit).magnitude)
+
+
+def _coefficients(parameters: Mapping[str, Q], prefix: str, width: int) -> list[float] | None:
+    """One coefficient set the card states, in order, or ``None`` when it states none.
+
+    The card's own keys are one per position and the Rust side takes the set as a vector.
+    ``keycard._components`` has already refused a set that is not complete, so reaching this
+    with a partial one is a programming error rather than a caller's.
+    """
+    names = [f"{prefix}{i}" for i in range(1, width + 1)]
+    if not all(name in parameters for name in names):
+        return None
+    return [_plain(parameters[name]) for name in names]
+
+
+def _alpha_params(parameters: Mapping[str, Q]) -> list[float] | None:
+    """The card's contiguous ``alpha_param_*`` prefix, in order, or ``None``.
+
+    The prefix is contiguous - ``keycard._components`` refuses a gap - so the count of
+    names is the length, and the correlation reads the vector positionally.
+    """
+    names = [name for name in sorted(parameters) if name.startswith("alpha_param_")]
+    if not names:
+        return None
+    return [_plain(parameters[name]) for name in names]
 
 
 def resolve(calc_id: str) -> Callable[..., Any]:

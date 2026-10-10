@@ -307,6 +307,14 @@ pub struct Entry {
     /// `ComponentUMRCPA.setAttractiveTerm` installs term 22 for a component whose set
     /// has them - a hydrocarbon as readily as a glycol. 23 of the 348 rows carry one.
     pub umrcpa_mc: [f64; 5],
+    /// The cubic alpha function's parameters, as **a card** states them: a contiguous
+    /// prefix of the five `alpha_param_*` names, and empty for every shipped row.
+    ///
+    /// Distinct from [`Self::umrcpa_mc`], which is the table's own UMR-CPA set. This is
+    /// the route by which a petroleum cut gets its fitted exponent -
+    /// `characterization.tbp_cut_properties` publishes the one number as its
+    /// `attraction_exponent` - and `Alpha::SrkFitted` is the correlation that reads it.
+    pub alpha_params: Vec<f64>,
     /// `schwartzentruber1..3`, the fitted parameters of the Schwartzentruber attractive
     /// term.
     ///
@@ -497,6 +505,7 @@ impl Entry {
                     .c
                     .value,
                 )
+                .with_alpha_params(self.alpha_params.clone())
                 .with_association(self.association.clone()),
         )
     }
@@ -509,12 +518,19 @@ impl Entry {
 /// that replaced the shipped one whole would make a user correcting one value restate
 /// the others, and lose them silently if they did not.
 ///
-/// **A closed list.** It widens when the component model does, and
-/// `specs/schema/component.schema.json` declares the cubic's parameters while
-/// `specs/schema/association.schema.json` declares the association's. This is the second
-/// place after `keycard.COMPONENT_PARAMETERS` that says which parameters a *cubic* reads,
-/// and the two are held together by a test.
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+/// **A closed list, and it is bounded by `Component` itself**: a card may state anything
+/// the component it produces carries, and nothing more. `specs/schema/component.schema.json`
+/// declares the set, `specs/schema/association.schema.json` the association's, and this is
+/// the second place after `keycard.COMPONENT_PARAMETERS` that says which parameters a card
+/// reads - the two are held together by a test.
+///
+/// Two of `Component`'s fields are deliberately **not** here. `class` is a classification
+/// rather than a property: it decides whether a cubic may be built at all, so a card able
+/// to set it could hand a cubic the filler the ion refusal exists to keep out. And
+/// `volume_shift` is a *function* of `rackett_z`, `omega`, `Tc` and `Pc`, so the card
+/// states `rackett_z` and the shift follows - a card able to state both could state an
+/// inconsistent pair.
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ComponentOverride {
     /// Critical temperature, in K.
     pub tc: Option<f64>,
@@ -545,6 +561,59 @@ pub struct ComponentOverride {
     /// All five or none, for the reason [`Self::cp`] is: three of five is not a
     /// polynomial, and a partial set is not a value any model reads.
     pub dielectric: Option<[f64; 5]>,
+    /// The molar mass, in kg/mol.
+    ///
+    /// **The one parameter a card that adds a substance must state.** A cubic reads only
+    /// `Tc`, `Pc` and `omega`, so without this a mixture builds and a PT flash answers -
+    /// correctly - while every mass-bearing correlation downstream refuses, and one
+    /// reaction kernel silently skips the component instead.
+    pub molar_mass: Option<f64>,
+    /// The cubic's alpha-function parameters: a **contiguous prefix** of the five the
+    /// schema declares, from `alpha_param_1`.
+    ///
+    /// A petroleum cut has one exponent - `characterization.tbp_cut_properties` publishes
+    /// exactly this number as its `attraction_exponent` - and an UMR-CPA set has five, so
+    /// the length is the caller's and the order is the schema's.
+    pub alpha_params: Option<Vec<f64>>,
+    /// The parachor, on NeqSim's own scale, which states no unit for it.
+    pub parachor: Option<f64>,
+    /// The normal liquid density at 15 C, in kg/m3.
+    ///
+    /// **Not the same column as [`Self::liquid_density_coefs`]**: this one number feeds the
+    /// liquid diffusivity's `M/rho`, where the polynomial feeds the solid flash's
+    /// solid-liquid volume difference.
+    pub normal_liquid_density: Option<f64>,
+    /// The critical molar volume, in m3/mol.
+    pub critical_volume: Option<f64>,
+    /// The Rackett compressibility, dimensionless.
+    ///
+    /// **[`crate::mixture::Component::volume_shift`] is derived from this**, so a card
+    /// states the source rather than the result.
+    pub rackett_z: Option<f64>,
+    /// The enthalpy of fusion, in J/mol. Zero is the table's spelling of absence.
+    pub heat_of_fusion: Option<f64>,
+    /// The triple-point temperature, in K.
+    pub triple_point_temperature: Option<f64>,
+    /// Whether the substance forms wax.
+    pub wax_former: Option<bool>,
+    /// The Lennard-Jones segment diameter, in ångström.
+    pub lennard_jones_diameter: Option<f64>,
+    /// The Lennard-Jones well depth as `epsilon/k`, in K.
+    pub lennard_jones_energy: Option<f64>,
+    /// The thermal-conductivity polynomial's three coefficients, all or none.
+    pub liquid_conductivity: Option<[f64; 3]>,
+    /// The liquid-viscosity polynomial's four coefficients, all or none.
+    pub liqvisc: Option<[f64; 4]>,
+    /// Which liquid-viscosity expression those coefficients belong to.
+    pub liqvisc_model: Option<u32>,
+    /// The solid heat-capacity polynomial's four coefficients, all or none.
+    pub cp_solid: Option<[f64; 4]>,
+    /// The liquid heat-capacity polynomial's five coefficients, all or none.
+    pub cp_liquid: Option<[f64; 5]>,
+    /// The solid-density polynomial's four coefficients, all or none.
+    pub solid_density_coefs: Option<[f64; 4]>,
+    /// The liquid-density polynomial's four coefficients, all or none.
+    pub liquid_density_coefs: Option<[f64; 4]>,
     /// Whether the substance is an ion, stated only by a card that **adds** one.
     ///
     /// `None` is "the card says nothing", which leaves the table's class in force. A card
@@ -554,8 +623,25 @@ pub struct ComponentOverride {
     ///
     /// A card-added ion needs no `Tc`, `Pc` or `omega` - an ion has no meaningful critical
     /// constants, and [`mixture_of`] refuses one - so this is also what exempts it from
-    /// [`Self::is_complete`].
+    /// [`Self::is_complete`]. **It does not exempt it from the molar mass**, which the
+    /// electrolyte spans read from the same table.
     pub ion: Option<bool>,
+}
+
+/// The `alpha_param_*` names a card of this length stated.
+///
+/// The schema declares five and a card states a **contiguous prefix** from `_1`, so the
+/// disclosure is the first `length` of them - which is what lets a petroleum cut state the
+/// one exponent it has without the other four appearing in its statement.
+fn alpha_parameter_names(length: usize) -> impl Iterator<Item = &'static str> {
+    const NAMES: [&str; 5] = [
+        "alpha_param_1",
+        "alpha_param_2",
+        "alpha_param_3",
+        "alpha_param_4",
+        "alpha_param_5",
+    ];
+    NAMES.into_iter().take(length.min(NAMES.len()))
 }
 
 impl ComponentOverride {
@@ -721,6 +807,80 @@ impl ComponentOverride {
                 "dielectric_5",
             ]);
         }
+        if self.molar_mass.is_some() {
+            out.push("molar_mass");
+        }
+        if let Some(parameters) = &self.alpha_params {
+            out.extend(alpha_parameter_names(parameters.len()));
+        }
+        if self.parachor.is_some() {
+            out.push("parachor");
+        }
+        if self.normal_liquid_density.is_some() {
+            out.push("normal_liquid_density");
+        }
+        if self.critical_volume.is_some() {
+            out.push("critical_volume");
+        }
+        if self.rackett_z.is_some() {
+            out.push("rackett_z");
+        }
+        if self.heat_of_fusion.is_some() {
+            out.push("heat_of_fusion");
+        }
+        if self.triple_point_temperature.is_some() {
+            out.push("triple_point_temperature");
+        }
+        if self.wax_former.is_some() {
+            out.push("wax_former");
+        }
+        if self.lennard_jones_diameter.is_some() {
+            out.push("lennard_jones_diameter");
+        }
+        if self.lennard_jones_energy.is_some() {
+            out.push("lennard_jones_energy");
+        }
+        if self.liquid_conductivity.is_some() {
+            out.extend([
+                "liquid_conductivity_1",
+                "liquid_conductivity_2",
+                "liquid_conductivity_3",
+            ]);
+        }
+        if self.liqvisc.is_some() {
+            out.extend(["liqvisc_1", "liqvisc_2", "liqvisc_3", "liqvisc_4"]);
+        }
+        if self.liqvisc_model.is_some() {
+            out.push("liqvisc_model");
+        }
+        if self.cp_solid.is_some() {
+            out.extend(["cp_solid_1", "cp_solid_2", "cp_solid_3", "cp_solid_4"]);
+        }
+        if self.cp_liquid.is_some() {
+            out.extend([
+                "cp_liquid_1",
+                "cp_liquid_2",
+                "cp_liquid_3",
+                "cp_liquid_4",
+                "cp_liquid_5",
+            ]);
+        }
+        if self.solid_density_coefs.is_some() {
+            out.extend([
+                "solid_density_coefs_1",
+                "solid_density_coefs_2",
+                "solid_density_coefs_3",
+                "solid_density_coefs_4",
+            ]);
+        }
+        if self.liquid_density_coefs.is_some() {
+            out.extend([
+                "liquid_density_coefs_1",
+                "liquid_density_coefs_2",
+                "liquid_density_coefs_3",
+                "liquid_density_coefs_4",
+            ]);
+        }
         if self.ion.is_some() {
             out.push("ion");
         }
@@ -753,7 +913,7 @@ impl Overlay {
     /// replacing the first.
     pub fn set_association(&mut self, name: &str, association: AssociationOverride) -> &mut Self {
         let key = name.trim().to_lowercase();
-        let mut parameters = self.components.get(&key).copied().unwrap_or_default();
+        let mut parameters = self.components.get(&key).cloned().unwrap_or_default();
         parameters.association = Some(association);
         self.components.insert(key, parameters);
         self
@@ -1328,6 +1488,9 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                 tc: number(&record, index["tc_k"], "tc_k", row)?,
                 pc: number(&record, index["pc_pa"], "pc_pa", row)?,
                 omega: number(&record, index["acentric_factor"], "acentric_factor", row)?,
+                // The table carries no per-substance alpha set: `umrcpa_mc` is its own, and
+                // the card's free-form set is a different thing that only a card states.
+                alpha_params: Vec::new(),
                 // `Some` for everything the table carries: it holds the polynomial for
                 // every row it has, and `mixture_of` refuses a name without one.
                 cp: Some(cp),
@@ -1767,8 +1930,15 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             // would make a user invent the same filler NeqSim's own table carries - which
             // `mixture_of` refuses for exactly that reason.
             let ion = over.ion == Some(true);
-            if !ion && !over.is_complete() {
-                let mut missing = Vec::new();
+            // **A substance the databank does not carry needs a molar mass**, ion or not.
+            // A cubic reads only `Tc`, `Pc` and `omega`, so without one the mixture builds
+            // and a `pt_flash` answers - correctly - while every mass-bearing correlation
+            // downstream refuses, and `reactive_phase_equilibrium` skips the component
+            // silently rather than refusing at all. The ion exemption is from the *cubic's*
+            // parameters, which an ion genuinely has none of; the electrolyte spans read
+            // the molar mass from the same table.
+            let mut missing = Vec::new();
+            if !ion {
                 if over.tc.is_none() {
                     missing.push("Tc");
                 }
@@ -1778,13 +1948,24 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 if over.omega.is_none() {
                     missing.push("omega");
                 }
+            }
+            if over.molar_mass.is_none() {
+                missing.push("molar_mass");
+            }
+            if !missing.is_empty() {
+                let needed = if missing.contains(&"molar_mass") && missing.len() == 1 {
+                    "molar mass"
+                } else {
+                    "critical constants"
+                };
                 return Err(AzothError::property_unavailable(
                     key,
-                    "critical constants".to_string(),
+                    needed.to_string(),
                     format!(
                         "the keycard adds it but is missing {missing:?}. A substance the \
-                         databank does not have needs every parameter a cubic reads, because \
-                         completing it from a similar one would be inventing data"
+                         databank does not have needs every parameter of the component it \
+                         produces that a reader exists for, because completing it from a \
+                         similar one would be inventing data"
                     ),
                 ));
             }
@@ -1801,21 +1982,21 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 // The card may also supply the polynomial, in which case the substance
                 // has an enthalpy path; without it, it is a cubic only.
                 cp: over.cp,
-                // A card states the parameters a cubic reads; it carries no molar mass,
-                // critical volume, dipole or Antoine coefficients, so a card-added
-                // substance has none.
-                molar_mass: None,
-                critical_volume: None,
+                // `Entry` carries it as an `Option` like the table's rows do, and the
+                // refusal above is what makes it `Some` here rather than a type.
+                molar_mass: over.molar_mass,
+                critical_volume: over.critical_volume,
+                // A card states no Antoine coefficients and no dipole moment: neither is a
+                // parameter of the component it produces, so neither has a card key.
                 dipole: None,
-                // A card carries no Rackett compressibility either, and zero is this
-                // table's spelling of absence - so a card's substance takes the fallback
-                // correlation, which is what NeqSim does for a zero column.
-                rackett_z: 0.0,
-                // Nor a liquid-viscosity set, whose absence is a model of zero - NeqSim's
-                // own default branch, and the one that gives `0.7` cP rather than a number
-                // read from four zeros.
-                liqvisc: [0.0; 4],
-                liqvisc_model: 0,
+                // Zero is this table's spelling of absence, and the Peneloux shift falls
+                // back to its `omega` correlation on a zero - which is what NeqSim does for
+                // a zero column too.
+                rackett_z: over.rackett_z.unwrap_or_default(),
+                // An absent set is a model of zero - NeqSim's own default branch, and the
+                // one that gives `0.7` cP rather than a number read from four zeros.
+                liqvisc: over.liqvisc.unwrap_or_default(),
+                liqvisc_model: over.liqvisc_model.unwrap_or_default(),
                 antoine: None,
                 association: over.association.as_ref().map(|a| a.applied_to(None)),
                 // **A card carries no PC-SAFT set**, and zero is how this table spells
@@ -1833,14 +2014,15 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 hydrate_guo_finch_a: [[0.0; 2]; 2],
                 hydrate_guo_finch_b: [[0.0; 2]; 2],
                 hydrate_former: false,
-                wax_former: false,
-                parachor: 0.0,
-                heat_of_fusion: 0.0,
-                triple_point_temperature: 0.0,
-                cp_solid: [0.0; 4],
-                cp_liquid: [0.0; 5],
-                solid_density_coefs: [0.0; 4],
-                liquid_density_coefs: [0.0; 4],
+                wax_former: over.wax_former.unwrap_or_default(),
+                parachor: over.parachor.unwrap_or_default(),
+                heat_of_fusion: over.heat_of_fusion.unwrap_or_default(),
+                triple_point_temperature: over.triple_point_temperature.unwrap_or_default(),
+                cp_solid: over.cp_solid.unwrap_or_default(),
+                cp_liquid: over.cp_liquid.unwrap_or_default(),
+                solid_density_coefs: over.solid_density_coefs.unwrap_or_default(),
+                liquid_density_coefs: over.liquid_density_coefs.unwrap_or_default(),
+                alpha_params: over.alpha_params.clone().unwrap_or_default(),
                 lambda_r_mie: 0.0,
                 lambda_a_mie: 0.0,
                 m_mie: 0.0,
@@ -1883,9 +2065,9 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 dielectric: over.dielectric.unwrap_or([0.0; 5]),
                 // Not overridable: a card states the parameters a cubic needs, and the
                 // Lennard-Jones diameter is not one of them.
-                lennard_jones_diameter: 0.0,
-                lennard_jones_energy: 0.0,
-                liquid_density_kg_per_m3: 0.0,
+                lennard_jones_diameter: over.lennard_jones_diameter.unwrap_or_default(),
+                lennard_jones_energy: over.lennard_jones_energy.unwrap_or_default(),
+                liquid_density_kg_per_m3: over.normal_liquid_density.unwrap_or_default(),
                 // Nor the liquid-conductivity polynomial, which no card carries: zero here
                 // is the absence of a correlation and not a conductivity of zero.
                 liquid_conductivity: [0.0; 3],
@@ -1898,17 +2080,17 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             pc: over.pc.unwrap_or(base.pc),
             omega: over.omega.unwrap_or(base.omega),
             cp: over.cp.or(base.cp),
-            molar_mass: base.molar_mass,
-            critical_volume: base.critical_volume,
+            molar_mass: over.molar_mass.or(base.molar_mass),
+            critical_volume: over.critical_volume.or(base.critical_volume),
             dipole: base.dipole,
             // The table's, for the reason the PC-SAFT set below is: `ComponentOverride`
             // is a closed list, and a card correcting `Tc` does not change which Rackett
             // compressibility the volume translation reads.
-            rackett_z: base.rackett_z,
+            rackett_z: over.rackett_z.unwrap_or(base.rackett_z),
             // The table's, for the same reason: `ComponentOverride` is a closed list and
             // carries no liquid-viscosity set.
-            liqvisc: base.liqvisc,
-            liqvisc_model: base.liqvisc_model,
+            liqvisc: over.liqvisc.unwrap_or(base.liqvisc),
+            liqvisc_model: over.liqvisc_model.unwrap_or(base.liqvisc_model),
             antoine: base.antoine,
             // `ComponentOverride` is a closed list and carries no PC-SAFT set, so the
             // table's survives a card untouched - the whole point of naming one parameter
@@ -1923,14 +2105,18 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             hydrate_guo_finch_a: base.hydrate_guo_finch_a,
             hydrate_guo_finch_b: base.hydrate_guo_finch_b,
             hydrate_former: base.hydrate_former,
-            wax_former: base.wax_former,
-            parachor: base.parachor,
-            heat_of_fusion: base.heat_of_fusion,
-            triple_point_temperature: base.triple_point_temperature,
-            cp_solid: base.cp_solid,
-            cp_liquid: base.cp_liquid,
-            solid_density_coefs: base.solid_density_coefs,
-            liquid_density_coefs: base.liquid_density_coefs,
+            wax_former: over.wax_former.unwrap_or(base.wax_former),
+            parachor: over.parachor.unwrap_or(base.parachor),
+            heat_of_fusion: over.heat_of_fusion.unwrap_or(base.heat_of_fusion),
+            triple_point_temperature: over
+                .triple_point_temperature
+                .unwrap_or(base.triple_point_temperature),
+            cp_solid: over.cp_solid.unwrap_or(base.cp_solid),
+            cp_liquid: over.cp_liquid.unwrap_or(base.cp_liquid),
+            solid_density_coefs: over.solid_density_coefs.unwrap_or(base.solid_density_coefs),
+            liquid_density_coefs: over
+                .liquid_density_coefs
+                .unwrap_or(base.liquid_density_coefs),
             lambda_r_mie: base.lambda_r_mie,
             lambda_a_mie: base.lambda_a_mie,
             m_mie: base.m_mie,
@@ -1947,10 +2133,22 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 .deshmukh_mather_diameter
                 .map_or(base.deshmukh_mather_diameter, |metres| metres * 1.0e10),
             dielectric: over.dielectric.unwrap_or(base.dielectric),
-            lennard_jones_diameter: base.lennard_jones_diameter,
-            lennard_jones_energy: base.lennard_jones_energy,
-            liquid_density_kg_per_m3: base.liquid_density_kg_per_m3,
-            liquid_conductivity: base.liquid_conductivity,
+            lennard_jones_diameter: over
+                .lennard_jones_diameter
+                .unwrap_or(base.lennard_jones_diameter),
+            lennard_jones_energy: over
+                .lennard_jones_energy
+                .unwrap_or(base.lennard_jones_energy),
+            liquid_density_kg_per_m3: over
+                .normal_liquid_density
+                .unwrap_or(base.liquid_density_kg_per_m3),
+            liquid_conductivity: over
+                .liquid_conductivity
+                .unwrap_or(base.liquid_conductivity),
+            alpha_params: over
+                .alpha_params
+                .clone()
+                .unwrap_or_else(|| base.alpha_params.clone()),
             // The card's scheme wins over the table's, and every parameter the card does
             // not name is the table's: `applied_to` is the one place the two are merged.
             association: over

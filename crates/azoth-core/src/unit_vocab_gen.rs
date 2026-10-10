@@ -119,7 +119,6 @@ pub fn dimension_exponents(id: &str) -> Option<[i8; 7]> {
 /// lists to each other.
 pub const UNIT_NAMES: &[&str] = &[
     "dimensionless",
-    "neqsim-internal",
     "m",
     "mm",
     "m**2",
@@ -192,7 +191,6 @@ pub const UNIT_NAMES: &[&str] = &[
 /// Each unit's dimension, as exponents in [`SLOTS`] order.
 pub const UNIT_DIMENSIONS: &[(&str, [i8; 7])] = &[
     ("dimensionless", [0, 0, 0, 0, 0, 0, 0]),
-    ("neqsim-internal", [0, 0, 0, 0, 0, 0, 0]),
     ("m", [1, 0, 0, 0, 0, 0, 0]),
     ("mm", [1, 0, 0, 0, 0, 0, 0]),
     ("m**2", [2, 0, 0, 0, 0, 0, 0]),
@@ -284,7 +282,6 @@ pub type ConversionPath = (&'static str, fn(f64) -> f64);
 /// exists to remove.
 pub const CONVERSION_PATHS: &[ConversionPath] = &[
     ("dimensionless", |v| v),
-    ("neqsim-internal", |v| v),
     ("m", |v| crate::units::meters(v).value),
     ("mm", |v| crate::units::millimeters(v).value),
     ("m**2", |v| crate::units::square_meters(v).value),
@@ -599,10 +596,6 @@ pub const DIMENSION_ASSERTIONS: fn() = || {
 pub const PINT_ASSERTED_UNITS: &[(&str, &str)] = &[
     (
         "dimensionless",
-        "uom carries a pure ratio as `Ratio`, and this library does not use it: a dimensionless value is a bare `f64` in the conversion table, so there is no constructor for an ascription to go through.",
-    ),
-    (
-        "neqsim-internal",
         "uom carries a pure ratio as `Ratio`, and this library does not use it: a dimensionless value is a bare `f64` in the conversion table, so there is no constructor for an ascription to go through.",
     ),
     (

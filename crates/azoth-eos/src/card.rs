@@ -53,6 +53,48 @@ pub const COMPONENT_PARAMETERS: &[(&str, &str)] = &[
     ("cp_c", "J/(mol*K**3)"),
     ("cp_d", "J/(mol*K**4)"),
     ("cp_e", "J/(mol*K**5)"),
+    // The rest of what a `Component` carries. `liqvisc_model` and `wax_former` are not
+    // here for the reason `ion` is - classes rather than numbers with a unit - and
+    // every coefficient set is in NeqSim's own scale, which states no unit at all.
+    ("molar_mass", "kg/mol"),
+    ("normal_liquid_density", "kg/m**3"),
+    ("critical_volume", "m**3/mol"),
+    ("triple_point_temperature", "K"),
+    ("heat_of_fusion", "J/mol"),
+    ("rackett_z", "dimensionless"),
+    ("parachor", "dimensionless"),
+    ("alpha_param_1", "dimensionless"),
+    ("alpha_param_2", "dimensionless"),
+    ("alpha_param_3", "dimensionless"),
+    ("alpha_param_4", "dimensionless"),
+    ("alpha_param_5", "dimensionless"),
+    ("lennard_jones_diameter", "angstrom"),
+    ("lennard_jones_energy", "K"),
+    ("liquid_conductivity_1", "dimensionless"),
+    ("liquid_conductivity_2", "dimensionless"),
+    ("liquid_conductivity_3", "dimensionless"),
+    ("liqvisc_1", "dimensionless"),
+    ("liqvisc_2", "dimensionless"),
+    ("liqvisc_3", "dimensionless"),
+    ("liqvisc_4", "dimensionless"),
+    ("cp_solid_1", "dimensionless"),
+    ("cp_solid_2", "dimensionless"),
+    ("cp_solid_3", "dimensionless"),
+    ("cp_solid_4", "dimensionless"),
+    ("cp_liquid_1", "dimensionless"),
+    ("cp_liquid_2", "dimensionless"),
+    ("cp_liquid_3", "dimensionless"),
+    ("cp_liquid_4", "dimensionless"),
+    ("cp_liquid_5", "dimensionless"),
+    ("solid_density_coefs_1", "dimensionless"),
+    ("liquid_density_coefs_1", "dimensionless"),
+    ("solid_density_coefs_2", "dimensionless"),
+    ("liquid_density_coefs_2", "dimensionless"),
+    ("solid_density_coefs_3", "dimensionless"),
+    ("liquid_density_coefs_3", "dimensionless"),
+    ("solid_density_coefs_4", "dimensionless"),
+    ("liquid_density_coefs_4", "dimensionless"),
+
     // The electrolyte data. `ion` is not here: it is a class rather than a number with a
     // unit, and `ComponentBody` carries it beside this table rather than in it.
     ("ionic_charge", "dimensionless"),
@@ -135,6 +177,15 @@ pub struct ComponentBody {
     /// the databank's class in force.
     #[serde(default)]
     pub ion: Option<bool>,
+    /// Which liquid-viscosity expression `liqvisc_*` belongs to, or absent for none.
+    ///
+    /// **A class rather than a number in a unit**, for the reason `ion` is, and a closed
+    /// vocabulary: an index this build does not run is refused below rather than stored.
+    #[serde(default)]
+    pub liqvisc_model: Option<u32>,
+    /// Whether the substance forms wax. A class rather than a number in a unit.
+    #[serde(default)]
+    pub wax_former: Option<bool>,
     /// The parameters, keyed by the names `specs/schema/component.schema.json` declares.
     #[serde(flatten)]
     pub parameters: BTreeMap<String, Parameter>,
@@ -532,6 +583,17 @@ fn resolve_components(
         let mut override_ = ComponentOverride::default();
         let mut cp = [None::<f64>; 5];
         let mut dielectric = [None::<f64>; 5];
+        // The coefficient sets a card states as one key per position, gathered here and
+        // applied below as `all or none`.
+        let mut liquid_conductivity = [None::<f64>; 3];
+        let mut liqvisc = [None::<f64>; 4];
+        let mut cp_solid = [None::<f64>; 4];
+        let mut cp_liquid = [None::<f64>; 5];
+        let mut solid_density_coefs = [None::<f64>; 4];
+        let mut liquid_density_coefs = [None::<f64>; 4];
+        // `alpha_params` is the one set whose *length* is the caller's: a petroleum cut
+        // states the single exponent it has, an UMR-CPA set states five.
+        let mut alpha_params = [None::<f64>; 5];
         for (parameter, body) in parameters {
             let field = format!("components.{name}.{parameter}");
             let Some((_, canonical)) = COMPONENT_PARAMETERS
@@ -572,7 +634,45 @@ fn resolve_components(
                 "dielectric_3" => dielectric[2] = Some(value),
                 "dielectric_4" => dielectric[3] = Some(value),
                 "dielectric_5" => dielectric[4] = Some(value),
-                // Unreachable: the lookup above admits these eight and no others.
+                "molar_mass" => override_.molar_mass = Some(value),
+                "normal_liquid_density" => override_.normal_liquid_density = Some(value),
+                "critical_volume" => override_.critical_volume = Some(value),
+                "triple_point_temperature" => override_.triple_point_temperature = Some(value),
+                "heat_of_fusion" => override_.heat_of_fusion = Some(value),
+                "rackett_z" => override_.rackett_z = Some(value),
+                "parachor" => override_.parachor = Some(value),
+                "lennard_jones_diameter" => override_.lennard_jones_diameter = Some(value),
+                "lennard_jones_energy" => override_.lennard_jones_energy = Some(value),
+                "alpha_param_1" => alpha_params[0] = Some(value),
+                "alpha_param_2" => alpha_params[1] = Some(value),
+                "alpha_param_3" => alpha_params[2] = Some(value),
+                "alpha_param_4" => alpha_params[3] = Some(value),
+                "alpha_param_5" => alpha_params[4] = Some(value),
+                "liquid_conductivity_1" => liquid_conductivity[0] = Some(value),
+                "liquid_conductivity_2" => liquid_conductivity[1] = Some(value),
+                "liquid_conductivity_3" => liquid_conductivity[2] = Some(value),
+                "liqvisc_1" => liqvisc[0] = Some(value),
+                "liqvisc_2" => liqvisc[1] = Some(value),
+                "liqvisc_3" => liqvisc[2] = Some(value),
+                "liqvisc_4" => liqvisc[3] = Some(value),
+                "cp_solid_1" => cp_solid[0] = Some(value),
+                "cp_solid_2" => cp_solid[1] = Some(value),
+                "cp_solid_3" => cp_solid[2] = Some(value),
+                "cp_solid_4" => cp_solid[3] = Some(value),
+                "cp_liquid_1" => cp_liquid[0] = Some(value),
+                "cp_liquid_2" => cp_liquid[1] = Some(value),
+                "cp_liquid_3" => cp_liquid[2] = Some(value),
+                "cp_liquid_4" => cp_liquid[3] = Some(value),
+                "cp_liquid_5" => cp_liquid[4] = Some(value),
+                "solid_density_coefs_1" => solid_density_coefs[0] = Some(value),
+                "solid_density_coefs_2" => solid_density_coefs[1] = Some(value),
+                "solid_density_coefs_3" => solid_density_coefs[2] = Some(value),
+                "solid_density_coefs_4" => solid_density_coefs[3] = Some(value),
+                "liquid_density_coefs_1" => liquid_density_coefs[0] = Some(value),
+                "liquid_density_coefs_2" => liquid_density_coefs[1] = Some(value),
+                "liquid_density_coefs_3" => liquid_density_coefs[2] = Some(value),
+                "liquid_density_coefs_4" => liquid_density_coefs[3] = Some(value),
+                // Unreachable: the lookup above admits these and no others.
                 other => {
                     return Err(AzothError::invalid_input(
                         field,
@@ -607,8 +707,84 @@ fn resolve_components(
         override_.dielectric =
             all_dielectric.then(|| dielectric.map(|value| value.expect("checked present")));
 
+        // **Every remaining coefficient set is all-of-it or none**, for the reason the heat
+        // capacity is: three coefficients of a `T^3` polynomial is not a correlation, and a
+        // partial set is not a value anything reads.
+        let complete = |set: &[Option<f64>], label: &str| -> Result<()> {
+            if set.iter().any(Option::is_some) && !set.iter().all(Option::is_some) {
+                return Err(AzothError::invalid_input(
+                    format!("components.{name}"),
+                    format!("{label} needs all of its coefficients, or none of them"),
+                ));
+            }
+            Ok(())
+        };
+        complete(&liquid_conductivity, "the thermal-conductivity polynomial")?;
+        complete(&liqvisc, "the liquid-viscosity polynomial")?;
+        complete(&cp_solid, "the solid heat-capacity polynomial")?;
+        complete(&cp_liquid, "the liquid heat-capacity polynomial")?;
+        complete(&solid_density_coefs, "the solid-density polynomial")?;
+        complete(&liquid_density_coefs, "the liquid-density polynomial")?;
+        override_.liquid_conductivity = liquid_conductivity
+            .iter()
+            .all(Option::is_some)
+            .then(|| liquid_conductivity.map(|value| value.expect("checked present")));
+        override_.liqvisc =
+            liqvisc.iter().all(Option::is_some).then(|| liqvisc.map(|value| value.expect("checked present")));
+        override_.cp_solid = cp_solid
+            .iter()
+            .all(Option::is_some)
+            .then(|| cp_solid.map(|value| value.expect("checked present")));
+        override_.cp_liquid = cp_liquid
+            .iter()
+            .all(Option::is_some)
+            .then(|| cp_liquid.map(|value| value.expect("checked present")));
+        override_.solid_density_coefs = solid_density_coefs
+            .iter()
+            .all(Option::is_some)
+            .then(|| solid_density_coefs.map(|value| value.expect("checked present")));
+        override_.liquid_density_coefs = liquid_density_coefs
+            .iter()
+            .all(Option::is_some)
+            .then(|| liquid_density_coefs.map(|value| value.expect("checked present")));
+
+        // **`alpha_params` is a contiguous prefix from `_1`, not an all-or-none set.** A
+        // petroleum cut states the one exponent it has - `characterization.tbp_cut_properties`
+        // publishes exactly that number - and an UMR-CPA set states five, so the length is
+        // the card's. What is refused is a gap: a set that states `_3` without `_2` is not a
+        // prefix, and the correlation reads the vector positionally.
+        let stated = alpha_params.iter().take_while(|value| value.is_some()).count();
+        if alpha_params[stated..].iter().any(Option::is_some) {
+            return Err(AzothError::invalid_input(
+                format!("components.{name}"),
+                "`alpha_param_*` is a contiguous prefix from `alpha_param_1`: a set that \
+                 states a later position without the ones before it is not a vector the \
+                 correlation can read",
+            ));
+        }
+        override_.alpha_params = (stated > 0).then(|| {
+            alpha_params[..stated]
+                .iter()
+                .map(|value| value.expect("the prefix is present"))
+                .collect()
+        });
+
+        // **`liqvisc_model` is a closed vocabulary**, so an index this build does not run is
+        // refused rather than stored - the rule `ASSOCIATION_SCHEMES` and `MODEL_KINDS`
+        // already follow. A set with no model is NeqSim's own default branch and not a gap.
+        if let Some(model) = body.liqvisc_model
+            && model > 4
+        {
+            return Err(AzothError::invalid_input(
+                format!("components.{name}.liqvisc_model"),
+                format!("{model} is not a liquid-viscosity expression this build runs; it reads 0 to 4"),
+            ));
+        }
+        override_.liqvisc_model = body.liqvisc_model;
+
         // The card's statement, if it makes one; `None` leaves the databank's class.
         override_.ion = body.ion;
+        override_.wax_former = body.wax_former;
         overlay.set_component(name, override_);
     }
     Ok(())
@@ -996,6 +1172,48 @@ mod tests {
         ("cp_c", "J/(mol*K**3)"),
         ("cp_d", "J/(mol*K**4)"),
         ("cp_e", "J/(mol*K**5)"),
+        // The rest of what a `Component` carries, written here for the reason
+        // `COMPONENT_PARAMETERS` carries them: the Rust does not read the schema, and
+        // this is the list the Python-side test holds both to.
+        ("molar_mass", "kg/mol"),
+        ("normal_liquid_density", "kg/m**3"),
+        ("critical_volume", "m**3/mol"),
+        ("triple_point_temperature", "K"),
+        ("heat_of_fusion", "J/mol"),
+        ("rackett_z", "dimensionless"),
+        ("parachor", "dimensionless"),
+        ("alpha_param_1", "dimensionless"),
+        ("alpha_param_2", "dimensionless"),
+        ("alpha_param_3", "dimensionless"),
+        ("alpha_param_4", "dimensionless"),
+        ("alpha_param_5", "dimensionless"),
+        ("lennard_jones_diameter", "angstrom"),
+        ("lennard_jones_energy", "K"),
+        ("liquid_conductivity_1", "dimensionless"),
+        ("liquid_conductivity_2", "dimensionless"),
+        ("liquid_conductivity_3", "dimensionless"),
+        ("liqvisc_1", "dimensionless"),
+        ("liqvisc_2", "dimensionless"),
+        ("liqvisc_3", "dimensionless"),
+        ("liqvisc_4", "dimensionless"),
+        ("cp_solid_1", "dimensionless"),
+        ("cp_solid_2", "dimensionless"),
+        ("cp_solid_3", "dimensionless"),
+        ("cp_solid_4", "dimensionless"),
+        ("cp_liquid_1", "dimensionless"),
+        ("cp_liquid_2", "dimensionless"),
+        ("cp_liquid_3", "dimensionless"),
+        ("cp_liquid_4", "dimensionless"),
+        ("cp_liquid_5", "dimensionless"),
+        ("solid_density_coefs_1", "dimensionless"),
+        ("liquid_density_coefs_1", "dimensionless"),
+        ("solid_density_coefs_2", "dimensionless"),
+        ("liquid_density_coefs_2", "dimensionless"),
+        ("solid_density_coefs_3", "dimensionless"),
+        ("liquid_density_coefs_3", "dimensionless"),
+        ("solid_density_coefs_4", "dimensionless"),
+        ("liquid_density_coefs_4", "dimensionless"),
+
         // The electrolyte data. `ion` is absent here as it is from `COMPONENT_PARAMETERS`:
         // it is a class rather than a number with a unit, and the schema states it as a
         // boolean beside these.
