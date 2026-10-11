@@ -163,6 +163,7 @@ from azoth.core.result import (
     ScaleSaturationRatioResult,
     SchwartzentruberAlphaResult,
     SeparatorResult,
+    SetHeavyTbpToPlusResult,
     ShortcutDistillationColumnResult,
     SiddiqiLucasDiffusivityResult,
     SolidFugacityResult,
@@ -401,6 +402,7 @@ __all__ = [
     "scale_saturation_ratio",
     "schwartzentruber_alpha",
     "separator",
+    "set_heavy_tbp_to_plus",
     "shortcut_distillation_column",
     "siddiqi_lucas_diffusivity",
     "solid_fugacity",
@@ -551,6 +553,27 @@ def pedersen_plus_split(molar_mass: Q, density: Q, mole_fraction: float, first_c
         z_slope=result.z_slope,
         density_intercept=result.density_intercept,
         density_slope=result.density_slope,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def set_heavy_tbp_to_plus(names: Sequence[str], molar_mass: Sequence[Q], mole_fraction: Sequence[float], normal_liquid_density: Sequence[Q]) -> SetHeavyTbpToPlusResult:
+    """``characterization.set_heavy_tbp_to_plus``, computed in Rust."""
+    spec = _models_gen.model("characterization.set_heavy_tbp_to_plus")
+    result = _core.set_heavy_tbp_to_plus(
+        list(names),
+        [input_to_si(spec, "molar_mass", v) for v in molar_mass],
+        list(mole_fraction),
+        [input_to_si(spec, "normal_liquid_density", v) for v in normal_liquid_density],
+    )
+    return SetHeavyTbpToPlusResult(
+        plus_index=result.plus_index,
+        plus_name=result.plus_name,
+        plus_molar_mass=from_si(result.plus_molar_mass.magnitude_si, result.plus_molar_mass.unit),
+        plus_mole_fraction=result.plus_mole_fraction,
+        plus_density=from_si(result.plus_density.magnitude_si, result.plus_density.unit),
+        last_tbp_density=from_si(result.last_tbp_density.magnitude_si, result.last_tbp_density.unit),
+        density_intercept=from_si(result.density_intercept.magnitude_si, result.density_intercept.unit),
         warnings=_warnings(result.warnings),
     )
 

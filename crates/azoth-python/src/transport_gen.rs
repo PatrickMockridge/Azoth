@@ -353,6 +353,84 @@ impl From<&azoth_characterization::results::PedersenPlusSplitResult> for PyPeder
         }
     }
 }
+/// Result of `characterization.set_heavy_tbp_to_plus`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SetHeavyTbpToPlusResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySetHeavyTbpToPlusResult {
+    /// Which row the plus end begins at, as a position in `names`.
+    #[pyo3(get)]
+    pub plus_index: f64,
+    /// That row's name, which is the string the carbon number was read out of.
+    #[pyo3(get)]
+    pub plus_name: String,
+    /// That row's molar mass, which the class publishes as `MPlus`.
+    #[pyo3(get)]
+    pub plus_molar_mass: PyQty,
+    /// That row's mole fraction, which the class publishes as `zPlus`.
+    #[pyo3(get)]
+    pub plus_mole_fraction: f64,
+    /// That row's normal liquid density, which the class publishes as `densPlus`.
+    #[pyo3(get)]
+    pub plus_density: PyQty,
+    /// The normal liquid density of the row **below** the winner in index order, which the class publishes as `densLastTBP`.
+    #[pyo3(get)]
+    pub last_tbp_density: PyQty,
+    /// `last_tbp_density + 0.03`, the value the class stores at `coefs[2]`.
+    #[pyo3(get)]
+    pub density_intercept: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PySetHeavyTbpToPlusResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "SetHeavyTbpToPlusResult(plus_index={:?}, plus_name={:?}, plus_molar_mass={:?}, plus_mole_fraction={:?}, plus_density={:?}, last_tbp_density={:?}, density_intercept={:?}, {} warning(s))",
+            self.plus_index,
+            self.plus_name,
+            self.plus_molar_mass,
+            self.plus_mole_fraction,
+            self.plus_density,
+            self.last_tbp_density,
+            self.density_intercept,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::SetHeavyTbpToPlusResult> for PySetHeavyTbpToPlusResult {
+    fn from(r: &azoth_characterization::results::SetHeavyTbpToPlusResult) -> Self {
+        Self {
+            plus_index: r.plus_index,
+            plus_name: r.plus_name.clone(),
+            plus_molar_mass: PyQty {
+                magnitude_si: r.plus_molar_mass.value,
+                unit: "kg/mol".to_string(),
+            },
+            plus_mole_fraction: r.plus_mole_fraction,
+            plus_density: PyQty {
+                magnitude_si: r.plus_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            last_tbp_density: PyQty {
+                magnitude_si: r.last_tbp_density.value,
+                unit: "kg/m**3".to_string(),
+            },
+            density_intercept: PyQty {
+                magnitude_si: r.density_intercept.value,
+                unit: "kg/m**3".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.tbp_closure`, transported.
 #[pyclass(
     frozen,

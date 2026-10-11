@@ -18,6 +18,7 @@ pub mod lumping;
 pub mod model_gen;
 pub mod pedersen_plus_split;
 pub mod results;
+pub mod set_heavy_tbp_to_plus;
 pub mod spec_gen;
 pub mod tbp_closure;
 pub mod tbp_cut_properties;
@@ -36,9 +37,10 @@ pub use lumping::lumping;
 pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{
     AssayMassFractionsResult, CharacterisePlusFractionResult, CharacterizeToReferenceResult,
-    LumpingResult, PedersenPlusSplitResult, TbpClosureResult, TbpCutPropertiesResult,
-    TbpDensityResult, TbpGroupingResult, WhitsonGammaSplitResult,
+    LumpingResult, PedersenPlusSplitResult, SetHeavyTbpToPlusResult, TbpClosureResult,
+    TbpCutPropertiesResult, TbpDensityResult, TbpGroupingResult, WhitsonGammaSplitResult,
 };
+pub use set_heavy_tbp_to_plus::set_heavy_tbp_to_plus;
 pub use tbp_closure::{TbpClosureKind, tbp_closure};
 pub use tbp_cut_properties::{TbpModel, tbp_cut_properties};
 pub use tbp_density::tbp_density;

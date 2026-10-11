@@ -154,6 +154,37 @@ class PedersenPlusSplitResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class SetHeavyTbpToPlusResult(_HasWarnings):
+    """Result of ``characterization.set_heavy_tbp_to_plus``."""
+
+    CALC_ID: ClassVar[str] = "characterization.set_heavy_tbp_to_plus"
+
+    #: Which row the plus end begins at, as a position in `names`.
+    plus_index: float
+
+    #: That row's name, which is the string the carbon number was read out of.
+    plus_name: str
+
+    #: That row's molar mass, which the class publishes as `MPlus`.
+    plus_molar_mass: Q
+
+    #: That row's mole fraction, which the class publishes as `zPlus`.
+    plus_mole_fraction: float
+
+    #: That row's normal liquid density, which the class publishes as `densPlus`.
+    plus_density: Q
+
+    #: The normal liquid density of the row **below** the winner in index order, which the class publishes as `densLastTBP`.
+    last_tbp_density: Q
+
+    #: `last_tbp_density + 0.03`, the value the class stores at `coefs[2]`.
+    density_intercept: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpClosureResult(_HasWarnings):
     """Result of ``characterization.tbp_closure``."""
 

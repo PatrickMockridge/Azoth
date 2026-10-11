@@ -37,6 +37,7 @@ from azoth.core.result import (
     CharacterizeToReferenceResult,
     LumpingResult,
     PedersenPlusSplitResult,
+    SetHeavyTbpToPlusResult,
     TbpClosureResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
@@ -51,6 +52,7 @@ __all__ = [
     "characterize_to_reference",
     "lumping",
     "pedersen_plus_split",
+    "set_heavy_tbp_to_plus",
     "tbp_closure",
     "tbp_cut_properties",
     "tbp_density",
@@ -68,6 +70,38 @@ _CHARACTERISE_PLUS_FRACTION = "characterization.characterise_plus_fraction"
 _CHARACTERIZE_TO_REFERENCE = "characterization.characterize_to_reference"
 _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
+_SET_HEAVY_TBP_TO_PLUS = "characterization.set_heavy_tbp_to_plus"
+
+
+def set_heavy_tbp_to_plus(
+    names: Sequence[str],
+    molar_mass: Sequence[Q],
+    mole_fraction: Sequence[float],
+    normal_liquid_density: Sequence[Q],
+) -> SetHeavyTbpToPlusResult:
+    """The TBP row a fluid's plus end begins at, chosen by the carbon number in its name.
+
+    ``names`` are the fluid's TBP rows in the order it carries them - a NeqSim fluid names them
+    ``C7_PC``, ``C10_PC`` and so on - and the three vectors beside them are those rows' data, each
+    aligned with ``names`` entry for entry.
+
+    **The carbon number is read out of the name** with the class's own positional slice, so
+    ``C10_PC`` reads ten and a name whose fourth character is not the underscore reads one
+    character. ``last_tbp_density`` is the density of the row **below** the winner in index order.
+
+    Raises:
+        InvalidInputError: if the columns are not all the same length, if the slate is empty, if a
+            name carries no carbon number, or if the winner is the first row - the class reads the
+            row below it, and there is none.
+
+    See :func:`azoth.characterization.reference.set_heavy_tbp_to_plus`.
+    """
+    return resolve(_SET_HEAVY_TBP_TO_PLUS)(  # type: ignore[no-any-return]
+        names=names,
+        molar_mass=molar_mass,
+        mole_fraction=mole_fraction,
+        normal_liquid_density=normal_liquid_density,
+    )
 
 
 def assay_mass_fractions(

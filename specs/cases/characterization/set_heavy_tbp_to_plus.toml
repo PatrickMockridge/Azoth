@@ -1,0 +1,73 @@
+model = "characterization.set_heavy_tbp_to_plus"
+
+[[cases]]
+id = "the_plus_end_is_not_the_last_row"
+tolerance = 1.0e-12
+source = "NeqSim master, `PlusCharacterize.setHeavyTBPtoPlus` on four TBP rows from `validation/neqsim/captures/set_heavy_tbp_probe.tsv`. **The winner is the second row**, because the carbon number is read out of the name: `C20_PC` is the largest there even though `C9_PC` is last. `densLastTBP` is the density of the row **below** it in index order, which is `C7_PC`'s.\n"
+[cases.inputs]
+names = ["C7_PC", "C20_PC", "C12_PC", "C9_PC"]
+molar_mass = [
+    0.1, 0.35, 0.2, 0.14,
+]
+mole_fraction = [
+    0.25, 0.25, 0.25, 0.25,
+]
+normal_liquid_density = [
+    720.0, 900.0, 800.0, 750.0,
+]
+[cases.expected]
+plus_index = 1.0
+plus_name = "C20_PC"
+plus_molar_mass = 0.35
+plus_mole_fraction = 0.25
+plus_density = 900.0
+last_tbp_density = 720.0
+density_intercept = 750.0
+
+[[cases]]
+id = "one_and_two_digit_names"
+tolerance = 1.0e-12
+source = "One-digit and two-digit names in one fluid, which is what the class's substring test selects between. A parse that read one character of the number would take `C10_PC` for 1 and `C11_PC` for 1, leaving `C9_PC` the winner; the capture's answer is `C11_PC`.\n"
+[cases.inputs]
+names = ["C6_PC", "C9_PC", "C10_PC", "C11_PC"]
+molar_mass = [
+    0.086, 0.13, 0.15, 0.17,
+]
+mole_fraction = [
+    0.25, 0.25, 0.25, 0.25,
+]
+normal_liquid_density = [
+    680.0, 750.0, 780.0, 800.0,
+]
+[cases.expected]
+plus_index = 3.0
+plus_name = "C11_PC"
+plus_molar_mass = 0.17
+plus_mole_fraction = 0.25
+plus_density = 800.0
+last_tbp_density = 780.0
+density_intercept = 810.0
+
+[[cases]]
+id = "the_same_rows_in_another_order"
+tolerance = 1.0e-12
+source = "**The first case's four rows in another order.** The plus end is the same row by name and a different position, and `densLastTBP` is a different row's density - so a walk that sorted the rows, or took the row after the winner rather than the one below it, answers differently here.\n"
+[cases.inputs]
+names = ["C7_PC", "C9_PC", "C20_PC", "C12_PC"]
+molar_mass = [
+    0.1, 0.14, 0.35, 0.2,
+]
+mole_fraction = [
+    0.25, 0.25, 0.25, 0.25,
+]
+normal_liquid_density = [
+    720.0, 750.0, 900.0, 800.0,
+]
+[cases.expected]
+plus_index = 2.0
+plus_name = "C20_PC"
+plus_molar_mass = 0.35
+plus_mole_fraction = 0.25
+plus_density = 900.0
+last_tbp_density = 750.0
+density_intercept = 780.0

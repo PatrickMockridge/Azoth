@@ -1,0 +1,65 @@
+id = "characterization.set_heavy_tbp_to_plus"
+name = "The TBP row a fluid's plus end begins at, chosen by the carbon number in its name"
+kind = "direct"
+assumptions = [
+    "**the plus end is the row whose NAME carries the largest carbon number.** The class reads it out of the string and nowhere else - not out of a property, and not out of a position: `C7_PC` reads 7 and `C10_PC` reads 10.",
+    "**the names are the fluid's TBP rows.** `PlusCharacterize` walks the components flagged as TBP fractions; here they are the rows the caller passes, since a row the fluid does not carry is not one this id can be handed.",
+    "**a name the class cannot parse is caught, logged and skipped, and this refuses it instead**, naming the row. A plus end chosen from whatever happened to parse is a plausible answer and the wrong one.",
+    "**`last_tbp_density` is the row below the winner in INDEX order**, not the row with the next carbon number: the class indexes `compNumber - 1` after picking `compNumber`. A fluid whose names are not in ascending carbon-number order takes its neighbour by position.",
+    "**the density intercept is seeded from that row**: `last_tbp_density + 0.03`, which the class stores at `coefs[2]` and its own plus fit starts from. It is published here because the class sets it here.",
+    "**the densities cross as kg/m3**, which is what this declares. The class carries a normal liquid density as a specific gravity in g/cm3, which is also what `addTBPfraction` takes.",
+    "**a single-row fluid is refused.** The class reads the row below the winner, and the winner of one row is index zero, so the read is index -1.",
+    "**the answer is a position, so the order is part of the input.** The same rows in a different order give the same plus end by name and a different `last_tbp_density`.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PlusCharacterize.java`'s `setHeavyTBPtoPlus` is the port source.",
+    "`validation/neqsim/captures/set_heavy_tbp_probe.tsv` - four fluids from `validation/neqsim/SetHeavyTbpProbe.java`, three resolved and one refused by the class's own index.",
+]
+[source]
+standard = "NeqSim master `PlusCharacterize.setHeavyTBPtoPlus`"
+edition = "Its name-to-carbon-number parse, its choice of the largest by that number, the row it then reads for `densLastTBP`, and the `coefs[2]` seed it sets from it. The flag it sets on the component - `isPlusFraction` - is the walk's own state, and this id reports the position and the numbers instead."
+[inputs]
+[inputs.names]
+type = "vector_string"
+length = "one per TBP row, in the order the fluid carries them"
+description = "Each row's component name, as `addTBPfraction` formed it: a `C` prefix, the carbon number, and the class's `_PC` suffix. **The carbon number comes out of this string**, so the spelling is what the answer depends on.\n"
+[inputs.molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per row, aligned with `names`"
+description = "Each row's molar mass, which is what the answer reports for the row it picks.\n"
+[inputs.mole_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per row, aligned with `names`"
+description = "Each row's mole fraction in the phase the class would be called on.\n"
+[inputs.normal_liquid_density]
+type = "vector"
+unit = "kg/m**3"
+length = "one per row, aligned with `names`"
+description = "Each row's normal liquid density. Two entries are read: the winner's, and the one below it in index order.\n"
+[outputs]
+[outputs.plus_index]
+unit = "dimensionless"
+description = "Which row the plus end begins at, as a position in `names`.\n"
+[outputs.plus_name]
+type = "string"
+description = "That row's name, which is the string the carbon number was read out of.\n"
+[outputs.plus_molar_mass]
+unit = "kg/mol"
+description = "That row's molar mass, which the class publishes as `MPlus`.\n"
+[outputs.plus_mole_fraction]
+unit = "dimensionless"
+description = "That row's mole fraction, which the class publishes as `zPlus`.\n"
+[outputs.plus_density]
+unit = "kg/m**3"
+description = "That row's normal liquid density, which the class publishes as `densPlus`.\n"
+[outputs.last_tbp_density]
+unit = "kg/m**3"
+description = "The normal liquid density of the row **below** the winner in index order, which the class publishes as `densLastTBP`.\n"
+[outputs.density_intercept]
+unit = "kg/m**3"
+description = "`last_tbp_density + 0.03`, the value the class stores at `coefs[2]`.\n"
+[implementations]
+python = "azoth.characterization.set_heavy_tbp_to_plus"
+rust = "azoth_characterization::set_heavy_tbp_to_plus"

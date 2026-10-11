@@ -70,6 +70,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 3,
         "tests_skipped": 0,
     },
+    'characterization.set_heavy_tbp_to_plus': {
+        "calc_id": 'characterization.set_heavy_tbp_to_plus',
+        "name": "The TBP row a fluid's plus end begins at, chosen by the carbon number in its name",
+        "spec": {'path': 'specs/models/characterization/set_heavy_tbp_to_plus.toml', 'sha256': 'cf0f835c51f4e7c9f54da81a5507972f543cb22d3221e73854e94d2f91df2d58'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/set_heavy_tbp_to_plus.py', 'sha256': '7b5c19448ff23f4db4c822b503fb0eec2e2c0d0a18fd557ee25feff227158738'}, {'path': 'crates/azoth-characterization/src/set_heavy_tbp_to_plus.rs', 'sha256': 'e5c57a03bd05ba5173716dac4e9a345f9a82600c3d21b4e259f76f2d64ff7b2b'}],
+        "source": 'NeqSim master `PlusCharacterize.setHeavyTBPtoPlus`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.tbp_closure': {
         "calc_id": 'characterization.tbp_closure',
         "name": 'TBP cut molar mass from its normal boiling point and specific gravity',
@@ -106,7 +117,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'characterization.tbp_grouping': {
         "calc_id": 'characterization.tbp_grouping',
         "name": "A fluid's components grouped into boiling-point bins",
-        "spec": {'path': 'specs/models/characterization/tbp_grouping.toml', 'sha256': 'c34ba87dedd457cb4be1b7a46bcb5d6eed310487b41ce83a5ecb9d15fbed7c5f'},
+        "spec": {'path': 'specs/models/characterization/tbp_grouping.toml', 'sha256': 'e83644e98ee85d60ca5efaacaaf745f7b20492813d6660463d6370d443ebdcb5'},
         "code": [{'path': 'python/src/azoth/characterization/reference/tbp_grouping.py', 'sha256': '02405bcc55ae1ace208f93efc09242062f907ec9a2309482730052173b876f69'}, {'path': 'crates/azoth-characterization/src/tbp_grouping.rs', 'sha256': '6abf90c5853750fd78df6f3ebc7de833c57c45db2693bb3e58f6de7b2224b70c'}],
         "source": 'NeqSim master `Phase.groupTBPfractions`',
         "verification": 'partially_verified',

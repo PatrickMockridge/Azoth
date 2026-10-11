@@ -77,6 +77,36 @@ pub fn pedersen_plus_split(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The TBP row a fluid's plus end begins at, chosen by the carbon number in its name.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (names, molar_mass, mole_fraction, normal_liquid_density))]
+#[pyo3(text_signature = "(names, molar_mass, mole_fraction, normal_liquid_density)")]
+pub fn set_heavy_tbp_to_plus(
+    py: Python<'_>,
+    names: Vec<String>,
+    molar_mass: Vec<f64>,
+    mole_fraction: Vec<f64>,
+    normal_liquid_density: Vec<f64>,
+) -> PyResult<crate::transport_gen::PySetHeavyTbpToPlusResult> {
+    let names_refs: Vec<&str> = names.iter().map(String::as_str).collect();
+    azoth_characterization::set_heavy_tbp_to_plus::set_heavy_tbp_to_plus(
+        &names_refs,
+        &molar_mass
+            .iter()
+            .map(|v| kilograms_per_mole(*v))
+            .collect::<Vec<_>>(),
+        &mole_fraction,
+        &normal_liquid_density
+            .iter()
+            .map(|v| kilograms_per_cubic_meter(*v))
+            .collect::<Vec<_>>(),
+    )
+    .map(|r| crate::transport_gen::PySetHeavyTbpToPlusResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A fluid's components grouped into boiling-point bins.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

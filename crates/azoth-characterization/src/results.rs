@@ -293,3 +293,43 @@ impl CalcResult for TbpDensityResult {
         &self.warnings
     }
 }
+
+/// Result of `characterization.set_heavy_tbp_to_plus`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SetHeavyTbpToPlusResult {
+    /// Which row the plus end begins at, as a position in the fluid's TBP slate.
+    pub plus_index: f64,
+    /// That row's name, which is the string its carbon number was read out of.
+    pub plus_name: String,
+    /// That row's molar mass, which the class publishes as `MPlus`.
+    pub plus_molar_mass: MolarMass,
+    /// That row's mole fraction, which the class publishes as `zPlus`.
+    pub plus_mole_fraction: f64,
+    /// That row's normal liquid density, which the class publishes as `densPlus`.
+    pub plus_density: MassDensity,
+    /// The density of the row **below** that one in index order, which the class publishes as
+    /// `densLastTBP`.
+    pub last_tbp_density: MassDensity,
+    /// `last_tbp_density` plus the class's own step, which it stores at `coefs[2]`.
+    pub density_intercept: MassDensity,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for SetHeavyTbpToPlusResult {
+    const CALC_ID: &'static str = "characterization.set_heavy_tbp_to_plus";
+    const FIELDS: &'static [&'static str] = &[
+        "plus_index",
+        "plus_name",
+        "plus_molar_mass",
+        "plus_mole_fraction",
+        "plus_density",
+        "last_tbp_density",
+        "density_intercept",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

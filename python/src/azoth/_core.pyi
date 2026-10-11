@@ -284,6 +284,17 @@ class PedersenPlusSplitResult:
     warnings: list[Warning]
 
 @final
+class SetHeavyTbpToPlusResult:
+    plus_index: float
+    plus_name: str
+    plus_molar_mass: Qty
+    plus_mole_fraction: float
+    plus_density: Qty
+    last_tbp_density: Qty
+    density_intercept: Qty
+    warnings: list[Warning]
+
+@final
 class TbpClosureResult:
     molar_mass: Qty
     warnings: list[Warning]
@@ -2257,6 +2268,12 @@ def pedersen_plus_split(
     first_carbon_number: float,
     last_carbon_number: float,
 ) -> PedersenPlusSplitResult: ...
+def set_heavy_tbp_to_plus(
+    names: list[str],
+    molar_mass: list[float],
+    mole_fraction: list[float],
+    normal_liquid_density: list[float],
+) -> SetHeavyTbpToPlusResult: ...
 def tbp_closure(
     boiling_point: float,
     density: float,

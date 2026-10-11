@@ -24,6 +24,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyCharacterizeToReferenceResult>()?;
     m.add_class::<crate::transport_gen::PyLumpingResult>()?;
     m.add_class::<crate::transport_gen::PyPedersenPlusSplitResult>()?;
+    m.add_class::<crate::transport_gen::PySetHeavyTbpToPlusResult>()?;
     m.add_class::<crate::transport_gen::PyTbpClosureResult>()?;
     m.add_class::<crate::transport_gen::PyTbpCutPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpDensityResult>()?;
@@ -240,6 +241,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::lumping, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::pedersen_plus_split,
+        m
+    )?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::set_heavy_tbp_to_plus,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::characterization::tbp_closure, m)?)?;

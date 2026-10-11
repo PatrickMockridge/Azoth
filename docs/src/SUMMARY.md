@@ -29,6 +29,7 @@
   - [A fluid's pseudo-components re-cut onto another fluid's slate](./characterization/characterize_to_reference.md)
   - [A cut table grouped into equal-mass lumps](./characterization/lumping.md)
   - [A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves](./characterization/pedersen_plus_split.md)
+  - [The TBP row a fluid's plus end begins at, chosen by the carbon number in its name](./characterization/set_heavy_tbp_to_plus.md)
   - [TBP cut molar mass from its normal boiling point and specific gravity](./characterization/tbp_closure.md)
   - [TBP cut specific gravity from its boiling point and molar mass](./characterization/tbp_density.md)
   - [A fluid's components grouped into boiling-point bins](./characterization/tbp_grouping.md)

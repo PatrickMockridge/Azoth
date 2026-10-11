@@ -19,6 +19,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`characterization.characterize_to_reference`](./characterize_to_reference.md) | `direct composition` | NeqSim master `PseudoComponentCombiner.characterizeToReference` |
 | [`characterization.lumping`](./lumping.md) | `direct composition` | NeqSim master `LumpingModel.StandardLumpingModel` |
 | [`characterization.pedersen_plus_split`](./pedersen_plus_split.md) | `plus_fraction_split_newton` | NeqSim master `PlusFractionModel.PedersenPlusModel` with `PedersenPlusModelSolver` |
+| [`characterization.set_heavy_tbp_to_plus`](./set_heavy_tbp_to_plus.md) | `direct composition` | NeqSim master `PlusCharacterize.setHeavyTBPtoPlus` |
 | [`characterization.tbp_closure`](./tbp_closure.md) | `molar_mass_bisection` | NeqSim master `TbpClosure` |
 | [`characterization.tbp_density`](./tbp_density.md) | `direct composition` | NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity` |
 | [`characterization.tbp_grouping`](./tbp_grouping.md) | `direct composition` | NeqSim master `Phase.groupTBPfractions` |

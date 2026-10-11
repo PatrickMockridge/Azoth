@@ -6,6 +6,7 @@
 //!   - specs/models/characterization/characterize_to_reference.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
+//!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
@@ -3570,6 +3571,107 @@ pub static PEDERSEN_PLUS_SPLIT_SPEC: ModelSpec = ModelSpec {
     cases: PEDERSEN_PLUS_SPLIT_CASES,
 };
 
+static SET_HEAVY_TBP_TO_PLUS_CHECKS: &[SpecCheck] = &[];
+
+static SET_HEAVY_TBP_TO_PLUS_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_plus_end_is_not_the_last_row",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[("names", &["C7_PC", "C20_PC", "C12_PC", "C9_PC"])],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.1, 0.35, 0.2, 0.14]),
+            ("mole_fraction", &[0.25, 0.25, 0.25, 0.25]),
+            ("normal_liquid_density", &[720.0, 900.0, 800.0, 750.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("plus_index", 1.0),
+            ("plus_molar_mass", 0.35),
+            ("plus_mole_fraction", 0.25),
+            ("plus_density", 900.0),
+            ("last_tbp_density", 720.0),
+            ("density_intercept", 750.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("plus_name", "C20_PC")],
+        records: &[],
+    },
+    TestCase {
+        id: "one_and_two_digit_names",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[("names", &["C6_PC", "C9_PC", "C10_PC", "C11_PC"])],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.086, 0.13, 0.15, 0.17]),
+            ("mole_fraction", &[0.25, 0.25, 0.25, 0.25]),
+            ("normal_liquid_density", &[680.0, 750.0, 780.0, 800.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("plus_index", 3.0),
+            ("plus_molar_mass", 0.17),
+            ("plus_mole_fraction", 0.25),
+            ("plus_density", 800.0),
+            ("last_tbp_density", 780.0),
+            ("density_intercept", 810.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("plus_name", "C11_PC")],
+        records: &[],
+    },
+    TestCase {
+        id: "the_same_rows_in_another_order",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[("names", &["C7_PC", "C9_PC", "C20_PC", "C12_PC"])],
+        strings: &[],
+        vectors: &[
+            ("molar_mass", &[0.1, 0.14, 0.35, 0.2]),
+            ("mole_fraction", &[0.25, 0.25, 0.25, 0.25]),
+            ("normal_liquid_density", &[720.0, 750.0, 900.0, 800.0]),
+        ],
+        matrices: &[],
+        expected: &[
+            ("plus_index", 2.0),
+            ("plus_molar_mass", 0.35),
+            ("plus_mole_fraction", 0.25),
+            ("plus_density", 900.0),
+            ("last_tbp_density", 750.0),
+            ("density_intercept", 780.0),
+        ],
+        expected_vectors: &[],
+        expected_strings: &[("plus_name", "C20_PC")],
+        records: &[],
+    },
+];
+
+/// Registry entry for `characterization.set_heavy_tbp_to_plus`.
+pub static SET_HEAVY_TBP_TO_PLUS_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.set_heavy_tbp_to_plus",
+    kind: "direct",
+    algorithm: None,
+    checks: SET_HEAVY_TBP_TO_PLUS_CHECKS,
+    cases: SET_HEAVY_TBP_TO_PLUS_CASES,
+};
+
 static TBP_CLOSURE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -5875,6 +5977,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CHARACTERIZE_TO_REFERENCE_SPEC,
     &LUMPING_SPEC,
     &PEDERSEN_PLUS_SPLIT_SPEC,
+    &SET_HEAVY_TBP_TO_PLUS_SPEC,
     &TBP_CLOSURE_SPEC,
     &TBP_DENSITY_SPEC,
     &TBP_GROUPING_SPEC,

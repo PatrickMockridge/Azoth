@@ -6,6 +6,7 @@
 //!   - specs/models/characterization/characterize_to_reference.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
+//!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/calcs/characterization/tbp_cut_properties.toml
 //!   - specs/models/characterization/tbp_density.toml
@@ -277,6 +278,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "characterization.pedersen_plus_split",
         "last_carbon_number",
         "dimensionless",
+    ),
+    (
+        "characterization.set_heavy_tbp_to_plus",
+        "molar_mass",
+        "molar_mass",
+    ),
+    (
+        "characterization.set_heavy_tbp_to_plus",
+        "mole_fraction",
+        "dimensionless",
+    ),
+    (
+        "characterization.set_heavy_tbp_to_plus",
+        "normal_liquid_density",
+        "mass_density",
     ),
     (
         "characterization.tbp_closure",

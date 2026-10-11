@@ -25,6 +25,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "characterization.characterize_to_reference" => azoth_characterization::results::CharacterizeToReferenceResult::FIELDS.to_vec(),
         "characterization.lumping" => azoth_characterization::results::LumpingResult::FIELDS.to_vec(),
         "characterization.pedersen_plus_split" => azoth_characterization::results::PedersenPlusSplitResult::FIELDS.to_vec(),
+        "characterization.set_heavy_tbp_to_plus" => azoth_characterization::results::SetHeavyTbpToPlusResult::FIELDS.to_vec(),
         "characterization.tbp_closure" => azoth_characterization::results::TbpClosureResult::FIELDS.to_vec(),
         "characterization.tbp_cut_properties" => azoth_characterization::results::TbpCutPropertiesResult::FIELDS.to_vec(),
         "characterization.tbp_density" => azoth_characterization::results::TbpDensityResult::FIELDS.to_vec(),

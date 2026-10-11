@@ -19,6 +19,7 @@ from azoth.characterization.reference.characterize_to_reference import (
 )
 from azoth.characterization.reference.lumping import lumping
 from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_split
+from azoth.characterization.reference.set_heavy_tbp_to_plus import set_heavy_tbp_to_plus
 from azoth.characterization.reference.tbp_closure import tbp_closure
 from azoth.characterization.reference.tbp_cut_properties import tbp_cut_properties
 from azoth.characterization.reference.tbp_density import tbp_density
@@ -31,6 +32,7 @@ __all__ = [
     "characterize_to_reference",
     "lumping",
     "pedersen_plus_split",
+    "set_heavy_tbp_to_plus",
     "tbp_closure",
     "tbp_cut_properties",
     "tbp_density",

@@ -6,6 +6,7 @@
 //!   - specs/models/characterization/characterize_to_reference.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
+//!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
