@@ -74,3 +74,63 @@ group_molar_mass = [
 group_density = [
     775.675675675676,
 ]
+
+[[cases]]
+id = "the_reference_properties_are_inherited"
+tolerance = 1.0e-12
+source = "The same five-cut source onto the same three-cut reference as the first case, with `inherit_reference_properties` set. **The walk is identical and two numbers are not**: the group moles are unchanged, and each group's molar mass and density are now the reference row's own - 0.12, 0.2 and 0.3 kg/mol, and 740, 820 and 870 kg/m3 - where the first case averages its own rows.\n"
+[cases.inputs]
+inherit_reference_properties = true
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { molar_mass = 0.12, boiling_point = 412.832, density = 740.0 },
+    { molar_mass = 0.2, boiling_point = 527.8, density = 820.0 },
+    { molar_mass = 0.3, boiling_point = 630.83, density = 870.0 },
+]
+[cases.expected]
+reference_index = [
+    0.0, 1.0, 2.0,
+]
+group_moles = [
+    2.5, 3.0, 0.5,
+]
+group_molar_mass = [
+    0.12, 0.2, 0.3,
+]
+group_density = [
+    740.0, 820.0, 870.0,
+]
+
+[[cases]]
+id = "one_group_inherits_the_first_reference_row"
+tolerance = 1.0e-12
+source = "A source entirely below the reference's first cut, with the flag set: **one group, and it takes the first reference row's properties** rather than the second's or the ones its own two rows average to.\n"
+[cases.inputs]
+inherit_reference_properties = true
+source = [
+    { moles = 3.0, molar_mass = 0.09, density = 680.0, boiling_point = 360.875 },
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+]
+reference = [
+    { molar_mass = 0.2, boiling_point = 527.8, density = 820.0 },
+    { molar_mass = 0.3, boiling_point = 630.83, density = 870.0 },
+]
+[cases.expected]
+reference_index = [
+    0.0,
+]
+group_moles = [
+    4.0,
+]
+group_molar_mass = [
+    0.2,
+]
+group_density = [
+    820.0,
+]

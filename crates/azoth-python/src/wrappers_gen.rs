@@ -46,12 +46,13 @@ pub fn assay_mass_fractions(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (source, reference))]
-#[pyo3(text_signature = "(source, reference)")]
+#[pyo3(signature = (source, reference, inherit_reference_properties))]
+#[pyo3(text_signature = "(source, reference, inherit_reference_properties)")]
 pub fn characterize_to_reference(
     py: Python<'_>,
     source: Vec<crate::records_gen::SourceRow>,
     reference: Vec<crate::records_gen::ReferenceRow>,
+    inherit_reference_properties: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyCharacterizeToReferenceResult> {
     let source_records: Vec<azoth_characterization::characterize_to_reference::SourceRow> = source
         .into_iter()
@@ -71,12 +72,14 @@ pub fn characterize_to_reference(
                 |row| azoth_characterization::characterize_to_reference::ReferenceRow {
                     molar_mass: kilograms_per_mole(row.molar_mass),
                     boiling_point: row.boiling_point,
+                    density: row.density.map(kilograms_per_cubic_meter),
                 },
             )
             .collect();
     azoth_characterization::characterize_to_reference::characterize_to_reference(
         &source_records,
         &reference_records,
+        inherit_reference_properties,
     )
     .map(|r| crate::transport_gen::PyCharacterizeToReferenceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

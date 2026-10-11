@@ -503,12 +503,13 @@ def characterise_plus_fraction(molar_mass: Q, density: Q, mole_fraction: float, 
     )
 
 
-def characterize_to_reference(source: Sequence[Mapping[str, Any]], reference: Sequence[Mapping[str, Any]]) -> CharacterizeToReferenceResult:
+def characterize_to_reference(source: Sequence[Mapping[str, Any]], reference: Sequence[Mapping[str, Any]], inherit_reference_properties: bool | None=None) -> CharacterizeToReferenceResult:
     """``characterization.characterize_to_reference``, computed in Rust."""
     spec = _models_gen.model("characterization.characterize_to_reference")
     result = _core.characterize_to_reference(
         input_records_to_si(spec, "source", source),
         input_records_to_si(spec, "reference", reference),
+        inherit_reference_properties,
     )
     return CharacterizeToReferenceResult(
         reference_index=tuple(result.reference_index),

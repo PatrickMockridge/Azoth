@@ -39,6 +39,7 @@ from itertools import pairwise
 from typing import Any
 
 from azoth import _models_gen
+from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import CharacterizeToReferenceResult
 from azoth.core.units import from_si, input_records_to_si
@@ -89,12 +90,17 @@ def _rows(source: Sequence[Mapping[str, Any]]) -> list[tuple[float, float, float
 def characterize_to_reference(
     source: Sequence[Mapping[str, Any]],
     reference: Sequence[Mapping[str, Any]],
+    inherit_reference_properties: bool | None = None,
 ) -> CharacterizeToReferenceResult:
     """A fluid's pseudo-components re-cut onto another fluid's slate.
 
     ``source`` and ``reference`` are lists of records, one per pseudo-component, keyed by the field
-    names the spec declares - each in the unit that field's declaration fixes. ``reference``
-    decides where the cuts are and nothing else: its densities and amounts are not read.
+    names the spec declares - each in the unit that field's declaration fixes.
+
+    ``inherit_reference_properties`` is the class's own variant of the same walk: set, each group
+    keeps its own moles and takes the **reference row's** molar mass and density rather than the
+    ones its own rows average to. Absent or false is the class's default entry point, where the
+    reference decides only where the cuts are.
 
     **The groups are not the reference rows**: a group that comes out empty is dropped, so
     ``reference_index`` is what re-aligns the answer with the caller's own slate.
@@ -110,10 +116,14 @@ def characterize_to_reference(
 
     apply_checks(checks.on_input, lambda _name: None, warnings)
 
+    inherit = bool(inherit_reference_properties)
     rows = _rows(source_rows)
-    keys = sorted(
-        sorting_key(row["boiling_point"], float(row["molar_mass"])) for row in reference_rows
+    # **The rows are sorted, and not only their keys.** The walk reads the keys; the inheriting
+    # variant also reads the row that sits at a group's own index.
+    ordered = sorted(
+        reference_rows, key=lambda row: sorting_key(row["boiling_point"], float(row["molar_mass"]))
     )
+    keys = [sorting_key(row["boiling_point"], float(row["molar_mass"])) for row in ordered]
 
     # The midpoint of each adjacent pair, or the larger of the two when either is not finite.
     boundaries = [
@@ -145,12 +155,23 @@ def characterize_to_reference(
             continue
         reference_index.append(float(position))
         group_moles.append(group["moles"])
-        group_molar_mass.append(group["mass"] / group["moles"])
-        group_density.append(
-            group["mass"] / group["volume"]
-            if group["volume"] > MASS_TOLERANCE
-            else group["density_mass"] / group["mass"]
-        )
+        if inherit:
+            density = ordered[position]["density"]
+            if density is None:
+                raise InvalidInputError(
+                    f"reference[{position}].density",
+                    "the inheriting variant takes each group's density from the reference row, and "
+                    "this one states none",
+                )
+            group_molar_mass.append(float(ordered[position]["molar_mass"]))
+            group_density.append(float(density))
+        else:
+            group_molar_mass.append(group["mass"] / group["moles"])
+            group_density.append(
+                group["mass"] / group["volume"]
+                if group["volume"] > MASS_TOLERANCE
+                else group["density_mass"] / group["mass"]
+            )
 
     apply_checks(checks.derived, lambda _name: None, warnings)
 

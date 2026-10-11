@@ -21,6 +21,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 |---|---|---|
 | `source` | - | The source fluid's pseudo-components, one record each. **Only rows with a positive mole amount are read**: `extractComponents` skips the rest, so a zero amount is a row that is not on the grid. |
 | `reference` | - | The reference fluid's cut slate, one record each. The reference's densities and mole amounts are not read: it decides where the cuts are and nothing else. |
+| `inherit_reference_properties` | - | *Optional.* whether each group takes the **reference row's own** molar mass and density instead of the ones its own rows average to. Absent, or false, is the class's own default entry point and the answer this id has always given. |
 
 
 ## Outputs
@@ -46,7 +47,7 @@ checked against one.
 - **the outputs are therefore shorter than the reference**, and `reference_index` is what re-aligns them with it.
 - **a group's molar mass is its accumulated mass over its accumulated moles**, and its density the mass over the volume its rows occupy: `sum(m) / sum(m/rho)`, the mass-weighted harmonic mean of the gravities and not their mass-weighted mean.
 - **the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row that states no density, or one at zero, contributes to neither sum.
-- **`inheritReferenceProperties` is not this id.** With it set, the groups take the *reference's* molar mass and density instead of their own, which is Pedersen's common-EoS slate - a variant of the same walk whose outputs are the reference rows, and it is owed rather than implied.
+- **`inheritReferenceProperties` is a variant of this walk and not a second one.** With it set, each group keeps its own moles and takes the *reference row's* molar mass and density - Pedersen's common-EoS slate. The boundaries and the binning are the same either way.
 - **what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool before cutting; and `delumpContributions` and `determineReferenceEqualMassBoundaries`, which rebuild a fine composition and cut it equally by mass.
 - **and three more**: `transferBinaryInteractionParameters`, which moves a two-dimensional interaction table between slates; `normalizeComposition`; and `generateValidationReport`.
 - **all of those are blocked on the same two things this chunk named.** Every public method of the class takes or returns a `SystemInterface`, and its rows carry some twenty optional fields.
@@ -60,11 +61,13 @@ checked against one.
 | `five_cuts_onto_three` | source = [{'moles': 1.0, 'molar_mass': 0.1, 'density': 700.0, 'boiling_point': 378.77}, {'moles': 1.5, 'molar_mass': 0.14, 'density': 760.0, 'boiling_point': 444.67}, {'moles': 2.0, 'molar_mass': 0.18, 'density': 800.0, 'boiling_point': 502.058}, {'moles': 1.0, 'molar_mass': 0.24, 'density': 840.0, 'boiling_point': 573.86}, {'moles': 0.5, 'molar_mass': 0.32, 'density': 880.0, 'boiling_point': 646.972}], reference = [{'molar_mass': 0.12, 'boiling_point': 412.832}, {'molar_mass': 0.2, 'boiling_point': 527.8}, {'molar_mass': 0.3, 'boiling_point': 630.83}] | group_moles = [2.5, 3.0, 0.5], group_molar_mass = [0.124, 0.2, 0.32], group_density = [739.551569506727, 815.533980582524, 880.0] |
 | `a_source_below_the_first_cut` | source = [{'moles': 3.0, 'molar_mass': 0.09, 'density': 680.0, 'boiling_point': 360.875}, {'moles': 1.0, 'molar_mass': 0.1, 'density': 700.0, 'boiling_point': 378.77}], reference = [{'molar_mass': 0.2, 'boiling_point': 527.8}, {'molar_mass': 0.3, 'boiling_point': 630.83}] | group_moles = [4.0], group_molar_mass = [0.0925], group_density = [685.291828793774] |
 | `one_reference_cut` | source = [{'moles': 1.0, 'molar_mass': 0.1, 'density': 700.0, 'boiling_point': 378.77}, {'moles': 1.0, 'molar_mass': 0.2, 'density': 820.0, 'boiling_point': 527.8}], reference = [{'molar_mass': 0.25, 'boiling_point': 584.315}] | group_moles = [2.0], group_molar_mass = [0.15], group_density = [775.675675675676] |
+| `the_reference_properties_are_inherited` | inherit_reference_properties = True, source = [{'moles': 1.0, 'molar_mass': 0.1, 'density': 700.0, 'boiling_point': 378.77}, {'moles': 1.5, 'molar_mass': 0.14, 'density': 760.0, 'boiling_point': 444.67}, {'moles': 2.0, 'molar_mass': 0.18, 'density': 800.0, 'boiling_point': 502.058}, {'moles': 1.0, 'molar_mass': 0.24, 'density': 840.0, 'boiling_point': 573.86}, {'moles': 0.5, 'molar_mass': 0.32, 'density': 880.0, 'boiling_point': 646.972}], reference = [{'molar_mass': 0.12, 'boiling_point': 412.832, 'density': 740.0}, {'molar_mass': 0.2, 'boiling_point': 527.8, 'density': 820.0}, {'molar_mass': 0.3, 'boiling_point': 630.83, 'density': 870.0}] | reference_index = [0.0, 1.0, 2.0], group_moles = [2.5, 3.0, 0.5], group_molar_mass = [0.12, 0.2, 0.3], group_density = [740.0, 820.0, 870.0] |
+| `one_group_inherits_the_first_reference_row` | inherit_reference_properties = True, source = [{'moles': 3.0, 'molar_mass': 0.09, 'density': 680.0, 'boiling_point': 360.875}, {'moles': 1.0, 'molar_mass': 0.1, 'density': 700.0, 'boiling_point': 378.77}], reference = [{'molar_mass': 0.2, 'boiling_point': 527.8, 'density': 820.0}, {'molar_mass': 0.3, 'boiling_point': 630.83, 'density': 870.0}] | reference_index = [0.0], group_moles = [4.0], group_molar_mass = [0.2], group_density = [820.0] |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.
 
-- Tests: 3 declared, every one run
+- Tests: 5 declared, every one run
 - External check: no external validation case names it
 
 The same account travels with every result this returns: `result.provenance`

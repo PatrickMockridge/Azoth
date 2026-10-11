@@ -7,7 +7,7 @@ use azoth_characterization::{
     CharacterizeToReferenceResult, ReferenceRow, SourceRow, characterize_to_reference, model_gen,
 };
 use azoth_core::units::{kilograms_per_cubic_meter, kilograms_per_mole};
-use azoth_core::spec::TestCase;
+use azoth_core::{AzothError, spec::TestCase};
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "characterization.characterize_to_reference";
@@ -39,13 +39,18 @@ fn reference_of(case: &TestCase) -> Vec<ReferenceRow> {
                     .expect("every reference row states a mass"),
             ),
             boiling_point: common::record_number(row, "boiling_point"),
+            density: common::record_number(row, "density").map(kilograms_per_cubic_meter),
         })
         .collect()
 }
 
 fn call(case: &TestCase) -> CharacterizeToReferenceResult {
-    characterize_to_reference(&source_of(case), &reference_of(case))
-        .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
+    characterize_to_reference(
+        &source_of(case),
+        &reference_of(case),
+        case.flag("inherit_reference_properties"),
+    )
+    .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
 
 #[test]
@@ -106,6 +111,7 @@ fn ref_row(molar_mass: f64, boiling_point: Option<f64>) -> ReferenceRow {
     ReferenceRow {
         molar_mass: kilograms_per_mole(molar_mass),
         boiling_point,
+        density: None,
     }
 }
 
@@ -122,6 +128,7 @@ fn a_key_exactly_on_a_boundary_stays_in_the_lower_group() {
                 row(1.0, 0.2, Some(820.0), Some(key)),
             ],
             &[ref_row(0.15, Some(400.0)), ref_row(0.25, Some(700.0))],
+            None,
         )
         .expect("computes")
     };
@@ -143,6 +150,7 @@ fn a_row_without_a_boiling_point_sorts_by_its_molar_mass() {
             row(1.0, 0.2, None, None),
         ],
         &[ref_row(0.15, Some(400.0)), ref_row(0.25, Some(700.0))],
+        None,
     )
     .expect("computes");
     assert_eq!(result.reference_index, vec![0.0], "0.2 kg/mol sorts below 400 K's own key");
@@ -166,10 +174,7 @@ fn the_rows_are_sorted_rather_than_taken_as_given() {
             row(1.0, 0.3, Some(880.0), Some(700.0)),
         ];
         let source: Vec<SourceRow> = order.iter().map(|i| table[*i]).collect();
-        characterize_to_reference(
-            &source,
-            &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))],
-        )
+        characterize_to_reference(&source, &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))], None)
         .expect("computes")
     };
     assert_eq!(sorted([0, 1, 2]), sorted([2, 1, 0]));
@@ -187,7 +192,77 @@ fn a_zero_amount_row_is_not_on_the_grid() {
             row(1.0, 0.3, Some(880.0), Some(700.0)),
         ],
         &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))],
+        None,
     )
     .expect("computes");
     assert_eq!(result.group_moles.iter().sum::<f64>(), 2.0);
+}
+
+#[test]
+fn the_inheriting_variant_changes_two_numbers_and_not_the_walk() {
+    // The capture's first two blocks: the same fluid twice, once with the flag. The groups and
+    // their moles are identical, and each molar mass and density is the reference row's own.
+    let source = [
+        row(1.0, 0.10, Some(700.0), Some(378.77)),
+        row(1.5, 0.14, Some(760.0), Some(444.67)),
+        row(2.0, 0.18, Some(800.0), Some(502.058)),
+        row(1.0, 0.24, Some(840.0), Some(573.86)),
+        row(0.5, 0.32, Some(880.0), Some(646.972)),
+    ];
+    let reference = vec![
+        ReferenceRow {
+            molar_mass: kilograms_per_mole(0.12),
+            boiling_point: Some(412.832),
+            density: Some(kilograms_per_cubic_meter(740.0)),
+        },
+        ReferenceRow {
+            molar_mass: kilograms_per_mole(0.20),
+            boiling_point: Some(527.8),
+            density: Some(kilograms_per_cubic_meter(820.0)),
+        },
+        ReferenceRow {
+            molar_mass: kilograms_per_mole(0.30),
+            boiling_point: Some(630.83),
+            density: Some(kilograms_per_cubic_meter(870.0)),
+        },
+    ];
+
+    let own = characterize_to_reference(&source, &reference, None).expect("computes");
+    let inherited = characterize_to_reference(&source, &reference, Some(true)).expect("computes");
+
+    // The walk is the same walk: the groups and their moles are untouched.
+    assert_eq!(own.reference_index, inherited.reference_index);
+    assert_eq!(own.group_moles, inherited.group_moles);
+    // And the two numbers the flag governs are the reference rows' own.
+    let masses: Vec<f64> = inherited.group_molar_mass.iter().map(|q| q.value).collect();
+    assert_eq!(masses, vec![0.12, 0.20, 0.30]);
+    let got: Vec<f64> = inherited.group_density.iter().map(|q| q.value).collect();
+    assert_eq!(got, vec![740.0, 820.0, 870.0]);
+    // The un-flagged answer is the first capture block, so the two are not the same answer.
+    let own_masses: Vec<f64> = own.group_molar_mass.iter().map(|q| q.value).collect();
+    assert_ne!(own_masses, masses);
+}
+
+#[test]
+fn the_inheriting_variant_refuses_a_reference_row_with_no_density() {
+    // The reference's densities are read by that path and not by the other, so a slate that states
+    // none is answerable one way and not the other - which is a refusal rather than a silent zero.
+    let source = [row(1.0, 0.10, Some(700.0), Some(378.77))];
+    let bare = vec![
+        ReferenceRow {
+            molar_mass: kilograms_per_mole(0.12),
+            boiling_point: Some(412.832),
+            density: None,
+        },
+        ReferenceRow {
+            molar_mass: kilograms_per_mole(0.20),
+            boiling_point: Some(527.8),
+            density: None,
+        },
+    ];
+    assert!(characterize_to_reference(&source, &bare, None).is_ok());
+    assert!(matches!(
+        characterize_to_reference(&source, &bare, Some(true)),
+        Err(AzothError::InvalidInput { .. })
+    ));
 }

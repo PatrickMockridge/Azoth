@@ -236,6 +236,7 @@ class ReferenceRow(TypedDict):
 
     molar_mass: float
     boiling_point: float | None
+    density: float | None
 
 class AssayCutDerivation(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
@@ -2284,6 +2285,7 @@ def characterise_plus_fraction(
 def characterize_to_reference(
     source: list[SourceRow],
     reference: list[ReferenceRow],
+    inherit_reference_properties: bool | None = None,
 ) -> CharacterizeToReferenceResult: ...
 def lumping(
     molar_mass: float,

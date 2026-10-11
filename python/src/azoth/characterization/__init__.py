@@ -210,16 +210,21 @@ def assay_mass_fractions(
 def characterize_to_reference(
     source: Sequence[Mapping[str, Any]],
     reference: Sequence[Mapping[str, Any]],
+    inherit_reference_properties: bool | None = None,
 ) -> CharacterizeToReferenceResult:
     """A fluid's pseudo-components re-cut onto another fluid's cut slate.
 
     ``source`` and ``reference`` are lists of records, one per pseudo-component, keyed by the field
     names the spec declares. A source row states ``moles`` and ``molar_mass``, and optionally
     ``density`` in kg/m3 and ``boiling_point`` in K; a reference row states ``molar_mass`` and
-    optionally ``boiling_point``.
+    optionally ``boiling_point`` and ``density``.
 
-    ``reference`` decides where the cuts are and nothing else; its densities and amounts are not
-    read. The groups are **not** the reference rows - a group that comes out empty is dropped - so
+    ``reference`` decides where the cuts are. Set ``inherit_reference_properties`` and each group
+    keeps its own moles and takes the **reference row's** molar mass and density instead of the ones
+    its own rows average to - Pedersen's common-EoS slate, and the class's own variant of the same
+    walk. Absent is the class's default entry point, where the reference's densities are not read.
+
+    The groups are **not** the reference rows - a group that comes out empty is dropped - so
     ``reference_index`` is what re-aligns the answer with the caller's own slate.
 
     See :func:`azoth.characterization.reference.characterize_to_reference`.
@@ -227,6 +232,7 @@ def characterize_to_reference(
     return resolve(_CHARACTERIZE_TO_REFERENCE)(  # type: ignore[no-any-return]
         source=source,
         reference=reference,
+        inherit_reference_properties=inherit_reference_properties,
     )
 
 

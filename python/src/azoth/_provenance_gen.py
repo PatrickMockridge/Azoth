@@ -40,12 +40,12 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'characterization.characterize_to_reference': {
         "calc_id": 'characterization.characterize_to_reference',
         "name": "A fluid's pseudo-components re-cut onto another fluid's slate",
-        "spec": {'path': 'specs/models/characterization/characterize_to_reference.toml', 'sha256': '5274d575a39f9c1c5c065f589fbdf7970422a7fce8da1fcfb7ce76fe73d0d8a0'},
-        "code": [{'path': 'python/src/azoth/characterization/reference/characterize_to_reference.py', 'sha256': '9d0cff8b274d86811f2c33ead39d59994726e87f5655f86761c720888a96d699'}, {'path': 'crates/azoth-characterization/src/characterize_to_reference.rs', 'sha256': 'e57db8f722e08919201788acdcf8aefaca64d17d76232736bdf5bacae9d9681d'}],
+        "spec": {'path': 'specs/models/characterization/characterize_to_reference.toml', 'sha256': 'b8b4b41a9ac62240521385a24234d3a4aadc9921dc97ed3e98cc406b34a3b53c'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/characterize_to_reference.py', 'sha256': '48f241b1893aaaa90b48b9093f7839de743fa3fe81c62c3ff9b4998bb9da4324'}, {'path': 'crates/azoth-characterization/src/characterize_to_reference.rs', 'sha256': '42233e491ed4cb8f278175909978bcef839fbed8c69d912759f03f3253b77bd3'}],
         "source": 'NeqSim master `PseudoComponentCombiner.characterizeToReference`',
         "verification": 'partially_verified',
         "validation_cases": 0,
-        "tests_active": 3,
+        "tests_active": 5,
         "tests_skipped": 0,
     },
     'characterization.lumping': {

@@ -33,13 +33,13 @@
 //!
 //! # What is not here
 //!
-//! `combineReservoirFluids`, `characterizeToCommonSlate`, the delumping, `inheritReferenceProperties`,
+//! `combineReservoirFluids`, `characterizeToCommonSlate`, the delumping,
 //! `transferBinaryInteractionParameters`, `normalizeComposition` and `generateValidationReport`.
 //! They are blocked on the card width - a pseudo-component still cannot enter a `Mixture` - and on
 //! the row's other seventeen fields.
 
 use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
-use azoth_core::{Result, apply_checks};
+use azoth_core::{AzothError, Result, apply_checks};
 
 use crate::model_gen;
 use crate::results::CharacterizeToReferenceResult;
@@ -62,14 +62,20 @@ pub struct SourceRow {
     pub boiling_point: Option<f64>,
 }
 
-/// One cut of the reference fluid's slate. The reference decides where the cuts are and nothing
-/// else, so these are the only two fields it carries.
+/// One cut of the reference fluid's slate.
+///
+/// The reference decides where the cuts are, and `density` is the one field a group reads out of
+/// it - only where `inherit_reference_properties` is set, where each group takes this row's own
+/// density rather than the one its own rows average to.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ReferenceRow {
-    /// Its molar mass, the fallback sorting key.
+    /// Its molar mass, the fallback sorting key - and the group's own molar mass where the
+    /// inheriting variant is asked for.
     pub molar_mass: MolarMass,
     /// Its normal boiling point, and with it the boundaries the source is cut at.
     pub boiling_point: Option<f64>,
+    /// Its normal liquid density, read only by the inheriting variant.
+    pub density: Option<MassDensity>,
 }
 
 /// One row of a fluid's pseudo-component table, as `extractComponents` lifts it.
@@ -160,12 +166,15 @@ fn rows(source: &[SourceRow]) -> Vec<Row> {
 ///         ReferenceRow {
 ///             molar_mass: kilograms_per_mole(0.15),
 ///             boiling_point: Some(400.0),
+///             density: None,
 ///         },
 ///         ReferenceRow {
 ///             molar_mass: kilograms_per_mole(0.25),
 ///             boiling_point: Some(700.0),
+///             density: None,
 ///         },
 ///     ],
+///     None,
 /// )?;
 /// assert_eq!(grouped.reference_index, vec![0.0, 1.0]);
 /// assert_eq!(grouped.group_moles, vec![1.0, 1.0]);
@@ -175,17 +184,27 @@ fn rows(source: &[SourceRow]) -> Vec<Row> {
 pub fn characterize_to_reference(
     source: &[SourceRow],
     reference: &[ReferenceRow],
+    inherit_reference_properties: Option<bool>,
 ) -> Result<CharacterizeToReferenceResult> {
     let spec = &model_gen::CHARACTERIZE_TO_REFERENCE_SPEC;
     let mut warnings = Vec::new();
     apply_checks(spec.input_checks(), |_quantity| None, &mut warnings)?;
+    // The class's own default entry point passes the flag false, so an absent one is false.
+    let inherit = inherit_reference_properties.unwrap_or(false);
 
     let source = rows(source);
-    let mut reference: Vec<f64> = reference
+    // **The rows are sorted, and not only their keys.** The walk reads the keys; the inheriting
+    // variant also reads the row that sits at a group's own index, so the order has to be the
+    // rows' and not a parallel vector's.
+    let mut ordered: Vec<&ReferenceRow> = reference.iter().collect();
+    ordered.sort_by(|left, right| {
+        sorting_key(left.boiling_point, left.molar_mass.value)
+            .total_cmp(&sorting_key(right.boiling_point, right.molar_mass.value))
+    });
+    let reference: Vec<f64> = ordered
         .iter()
         .map(|row| sorting_key(row.boiling_point, row.molar_mass.value))
         .collect();
-    reference.sort_by(f64::total_cmp);
 
     // `determineReferenceBoundaries`: the midpoint of each adjacent pair, or the larger of the two
     // when either is not finite.
@@ -231,12 +250,31 @@ pub fn characterize_to_reference(
         }
         reference_index.push(index as f64);
         group_moles.push(group.moles);
-        group_molar_mass.push(kilograms_per_mole(group.mass / group.moles));
-        group_density.push(kilograms_per_cubic_meter(if group.volume > MASS_TOLERANCE {
-            group.mass / group.volume
+        // **The check happens even where the flag is off**, because the class reads the reference's
+        // density only on that path - a reference slate that states none is a slate the inheriting
+        // variant cannot answer for, and the refusal is what says so.
+        let (molar_mass, density) = if inherit {
+            let row = ordered[index];
+            let Some(density) = row.density else {
+                return Err(AzothError::invalid_input(
+                    format!("reference[{index}].density"),
+                    "the inheriting variant takes each group's density from the reference row, and \
+                     this one states none",
+                ));
+            };
+            (row.molar_mass, density)
         } else {
-            group.density_mass / group.mass
-        }));
+            (
+                kilograms_per_mole(group.mass / group.moles),
+                kilograms_per_cubic_meter(if group.volume > MASS_TOLERANCE {
+                    group.mass / group.volume
+                } else {
+                    group.density_mass / group.mass
+                }),
+            )
+        };
+        group_molar_mass.push(molar_mass);
+        group_density.push(density);
     }
 
     Ok(CharacterizeToReferenceResult {

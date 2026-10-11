@@ -11,7 +11,7 @@ assumptions = [
     "**the outputs are therefore shorter than the reference**, and `reference_index` is what re-aligns them with it.",
     "**a group's molar mass is its accumulated mass over its accumulated moles**, and its density the mass over the volume its rows occupy: `sum(m) / sum(m/rho)`, the mass-weighted harmonic mean of the gravities and not their mass-weighted mean.",
     "**the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row that states no density, or one at zero, contributes to neither sum.",
-    "**`inheritReferenceProperties` is not this id.** With it set, the groups take the *reference's* molar mass and density instead of their own, which is Pedersen's common-EoS slate - a variant of the same walk whose outputs are the reference rows, and it is owed rather than implied.",
+    "**`inheritReferenceProperties` is a variant of this walk and not a second one.** With it set, each group keeps its own moles and takes the *reference row's* molar mass and density - Pedersen's common-EoS slate. The boundaries and the binning are the same either way.",
     "**what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool before cutting; and `delumpContributions` and `determineReferenceEqualMassBoundaries`, which rebuild a fine composition and cut it equally by mass.",
     "**and three more**: `transferBinaryInteractionParameters`, which moves a two-dimensional interaction table between slates; `normalizeComposition`; and `generateValidationReport`.",
     "**all of those are blocked on the same two things this chunk named.** Every public method of the class takes or returns a `SystemInterface`, and its rows carry some twenty optional fields.",
@@ -56,6 +56,14 @@ description = "The row's molar mass, the fallback sorting key.\n"
 unit = "K"
 optional = true
 description = "The row's normal boiling point, and with it the boundaries the source is cut at. A row that leaves it out is sorted by its molar mass.\n"
+[inputs.reference.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The row's normal liquid density, read only where `inherit_reference_properties` is set - a group takes it as its own density. Where the flag is absent the reference's densities are not read at all.\n"
+[inputs.inherit_reference_properties]
+type = "boolean"
+optional = true
+description = "whether each group takes the **reference row's own** molar mass and density instead of the ones its own rows average to. Absent, or false, is the class's own default entry point and the answer this id has always given.\n"
 [outputs]
 [outputs.reference_index]
 type = "vector"

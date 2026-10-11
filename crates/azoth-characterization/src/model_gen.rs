@@ -984,6 +984,270 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
             ),
         ],
     },
+    TestCase {
+        id: "the_reference_properties_are_inherited",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[("inherit_reference_properties", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("reference_index", &[0.0, 1.0, 2.0]),
+            ("group_moles", &[2.5, 3.0, 0.5]),
+            ("group_molar_mass", &[0.12, 0.2, 0.3]),
+            ("group_density", &[740.0, 820.0, 870.0]),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "source",
+                &[
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.1),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(700.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(378.77),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(1.5),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.14),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(760.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(444.67),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(2.0),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.18),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(800.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(502.058),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.24),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(840.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(573.86),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(0.5),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.32),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(880.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(646.972),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "reference",
+                &[
+                    &[
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.12),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(412.832),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(740.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.2),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(527.8),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(820.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.3),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(630.83),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(870.0),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
+    TestCase {
+        id: "one_group_inherits_the_first_reference_row",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[("inherit_reference_properties", true)],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("reference_index", &[0.0]),
+            ("group_moles", &[4.0]),
+            ("group_molar_mass", &[0.2]),
+            ("group_density", &[820.0]),
+        ],
+        expected_strings: &[],
+        records: &[
+            (
+                "source",
+                &[
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(3.0),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.09),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(680.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(360.875),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "moles",
+                            value: FieldValue::Number(1.0),
+                        },
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.1),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(700.0),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(378.77),
+                        },
+                    ],
+                ],
+            ),
+            (
+                "reference",
+                &[
+                    &[
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.2),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(527.8),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(820.0),
+                        },
+                    ],
+                    &[
+                        RecordField {
+                            name: "molar_mass",
+                            value: FieldValue::Number(0.3),
+                        },
+                        RecordField {
+                            name: "boiling_point",
+                            value: FieldValue::Number(630.83),
+                        },
+                        RecordField {
+                            name: "density",
+                            value: FieldValue::Number(870.0),
+                        },
+                    ],
+                ],
+            ),
+        ],
+    },
 ];
 
 /// Registry entry for `characterization.characterize_to_reference`.
