@@ -18,7 +18,7 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'characterization.assay_mass_fractions': {
         "calc_id": 'characterization.assay_mass_fractions',
         "name": "An oil assay's declared fractions resolved to a mass basis",
-        "spec": {'path': 'specs/models/characterization/assay_mass_fractions.toml', 'sha256': '8f7f64fda3c4da16b8c9fc7641890ada1cf5a9c8b46f37761bc2fb7a0d3cb11c'},
+        "spec": {'path': 'specs/models/characterization/assay_mass_fractions.toml', 'sha256': '700b9b4e207d6e71b46d692f8fe3eff45ddaa39f8551259e498e174903016fe1'},
         "code": [{'path': 'python/src/azoth/characterization/reference/assay_mass_fractions.py', 'sha256': '380f930065c5b4259c34b46f6eae422494f1854bdab117c28687e6648030303f'}, {'path': 'crates/azoth-characterization/src/assay_mass_fractions.rs', 'sha256': '8b18bcc974c2f50aa2b20f2ac7a1b8f4abe4b1bdd3edb31a154a153d427197d3'}],
         "source": 'NeqSim master `OilAssayCharacterisation.resolveMassFractions`',
         "verification": 'partially_verified',
@@ -40,8 +40,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'characterization.characterize_to_reference': {
         "calc_id": 'characterization.characterize_to_reference',
         "name": "A fluid's pseudo-components re-cut onto another fluid's slate",
-        "spec": {'path': 'specs/models/characterization/characterize_to_reference.toml', 'sha256': '9ac3c620ae30ca8fef7c4fb6e48174533543e1f51e86b71bbbd08dd04248b5d5'},
-        "code": [{'path': 'python/src/azoth/characterization/reference/characterize_to_reference.py', 'sha256': 'ea040e3276c30d00ee3ff78c8eb2a9109b56b73dcc51c5124dc0d25dbcb39730'}, {'path': 'crates/azoth-characterization/src/characterize_to_reference.rs', 'sha256': '28e639c9ac39d87519d5f4743ef8100d7daaacfd7892bb0d3ea6248a90d3e4dd'}],
+        "spec": {'path': 'specs/models/characterization/characterize_to_reference.toml', 'sha256': '5274d575a39f9c1c5c065f589fbdf7970422a7fce8da1fcfb7ce76fe73d0d8a0'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/characterize_to_reference.py', 'sha256': '9d0cff8b274d86811f2c33ead39d59994726e87f5655f86761c720888a96d699'}, {'path': 'crates/azoth-characterization/src/characterize_to_reference.rs', 'sha256': 'e57db8f722e08919201788acdcf8aefaca64d17d76232736bdf5bacae9d9681d'}],
         "source": 'NeqSim master `PseudoComponentCombiner.characterizeToReference`',
         "verification": 'partially_verified',
         "validation_cases": 0,

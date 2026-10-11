@@ -4,38 +4,48 @@
 //! `validation/neqsim/captures/pseudo_component_combiner_probe.tsv`.
 
 use azoth_characterization::{
-    CharacterizeToReferenceResult, characterize_to_reference, model_gen,
+    CharacterizeToReferenceResult, ReferenceRow, SourceRow, characterize_to_reference, model_gen,
 };
-use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
-use azoth_core::{AzothError, spec::TestCase};
+use azoth_core::units::{kilograms_per_cubic_meter, kilograms_per_mole};
+use azoth_core::spec::TestCase;
 use azoth_test_support as common;
 
 const MODEL_ID: &str = "characterization.characterize_to_reference";
 
-fn call(case: &TestCase) -> CharacterizeToReferenceResult {
-    let molar_masses = |name: &str| -> Vec<_> {
-        case.vector(name)
-            .expect("the case states a table")
-            .iter()
-            .map(|v| kilograms_per_mole(*v))
-            .collect()
-    };
-    let densities: Vec<_> = case
-        .vector("source_density")
-        .expect("the case states a table")
+/// The source table, as the kernel takes it.
+///
+/// A field the case omits is a row that states none, which is what the record exists for:
+/// `record_number` returns `None` rather than failing and the `Option` carries it through.
+fn source_of(case: &TestCase) -> Vec<SourceRow> {
+    common::record_input(case, "source")
         .iter()
-        .map(|v| kilograms_per_cubic_meter(*v))
-        .collect();
-    characterize_to_reference(
-        case.vector("source_moles").expect("a table"),
-        &molar_masses("source_molar_mass"),
-        &densities,
-        case.vector("source_boiling_point").expect("a table"),
-        &molar_masses("reference_molar_mass"),
-        case.vector("reference_boiling_point")
-            .expect("a table"),
-    )
-    .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
+        .map(|row| SourceRow {
+            moles: common::record_number(row, "moles").expect("every source row states its moles"),
+            molar_mass: kilograms_per_mole(
+                common::record_number(row, "molar_mass").expect("every source row states a mass"),
+            ),
+            density: common::record_number(row, "density").map(kilograms_per_cubic_meter),
+            boiling_point: common::record_number(row, "boiling_point"),
+        })
+        .collect()
+}
+
+fn reference_of(case: &TestCase) -> Vec<ReferenceRow> {
+    common::record_input(case, "reference")
+        .iter()
+        .map(|row| ReferenceRow {
+            molar_mass: kilograms_per_mole(
+                common::record_number(row, "molar_mass")
+                    .expect("every reference row states a mass"),
+            ),
+            boiling_point: common::record_number(row, "boiling_point"),
+        })
+        .collect()
+}
+
+fn call(case: &TestCase) -> CharacterizeToReferenceResult {
+    characterize_to_reference(&source_of(case), &reference_of(case))
+        .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
 
 #[test]
@@ -78,22 +88,25 @@ fn every_case_in_the_spec() {
     }
 }
 
-/// One fluid's table, for the tests that build their own.
-fn fluid(
-    moles: &[f64],
-    molar_mass: &[f64],
-    density: &[f64],
-    boiling_point: &[f64],
-) -> (Vec<f64>, Vec<MolarMass>, Vec<MassDensity>, Vec<f64>) {
-    (
-        moles.to_vec(),
-        molar_mass.iter().map(|v| kilograms_per_mole(*v)).collect(),
-        density
-            .iter()
-            .map(|v| kilograms_per_cubic_meter(*v))
-            .collect(),
-        boiling_point.to_vec(),
-    )
+/// A source row from four numbers, the last two absent when `None`.
+///
+/// The kernel takes rows, so a test states one - and a test that wants a row without a density or
+/// without a boiling point states `None`, which is the absence a parallel vector had no form for.
+fn row(moles: f64, molar_mass: f64, density: Option<f64>, boiling_point: Option<f64>) -> SourceRow {
+    SourceRow {
+        moles,
+        molar_mass: kilograms_per_mole(molar_mass),
+        density: density.map(kilograms_per_cubic_meter),
+        boiling_point,
+    }
+}
+
+/// A reference row from two numbers, the boiling point absent when `None`.
+fn ref_row(molar_mass: f64, boiling_point: Option<f64>) -> ReferenceRow {
+    ReferenceRow {
+        molar_mass: kilograms_per_mole(molar_mass),
+        boiling_point,
+    }
 }
 
 #[test]
@@ -103,11 +116,12 @@ fn a_key_exactly_on_a_boundary_stays_in_the_lower_group() {
     // left, is then dropped rather than reported empty. A port that used `>=` would return two
     // groups here instead of one.
     let run = |key: f64| {
-        let (moles, masses, densities, keys) = fluid(&[1.0, 1.0], &[0.1, 0.2], &[700.0, 820.0], &[380.0, key]);
         characterize_to_reference(
-            &moles, &masses, &densities, &keys,
-            &[kilograms_per_mole(0.15), kilograms_per_mole(0.25)],
-            &[400.0, 700.0],
+            &[
+                row(1.0, 0.1, Some(700.0), Some(380.0)),
+                row(1.0, 0.2, Some(820.0), Some(key)),
+            ],
+            &[ref_row(0.15, Some(400.0)), ref_row(0.25, Some(700.0))],
         )
         .expect("computes")
     };
@@ -117,26 +131,44 @@ fn a_key_exactly_on_a_boundary_stays_in_the_lower_group() {
 }
 
 #[test]
+fn a_row_without_a_boiling_point_sorts_by_its_molar_mass() {
+    // **The absence a vector could only spell as a sentinel.** `sortingKey` falls back to the molar
+    // mass when the boiling point is not finite and positive, and a caller expressing that in a
+    // vector had to write `0.0` or `NaN` into it. Here the field is simply left out, and the answer
+    // has to be the one the sentinel gave: this row sorts between the two reference keys, 400 and
+    // 700 K, so it lands in the lower group.
+    let result = characterize_to_reference(
+        &[
+            row(1.0, 0.1, Some(700.0), Some(380.0)),
+            row(1.0, 0.2, None, None),
+        ],
+        &[ref_row(0.15, Some(400.0)), ref_row(0.25, Some(700.0))],
+    )
+    .expect("computes");
+    assert_eq!(result.reference_index, vec![0.0], "0.2 kg/mol sorts below 400 K's own key");
+    assert_eq!(result.group_moles, vec![2.0]);
+
+    // And the other half of the same field: a row that states no density adds its mass to the
+    // group's numerator and no volume to its denominator, which is the class's own arithmetic and
+    // not a correction of it - so the group's density is *higher* than the row that did state one.
+    assert!((result.group_density[0].value - 0.3 / (0.1 / 700.0)).abs() < 1e-9);
+}
+
+#[test]
 fn the_rows_are_sorted_rather_than_taken_as_given() {
     // `extractComponents` sorts both tables by key, so a source stated in any order gives the same
     // answer - which is what makes the groups contiguous runs rather than whatever order the
     // caller happened to use.
     let sorted = |order: [usize; 3]| {
-        let (moles, masses, densities, keys) = fluid(&[1.0, 1.0, 1.0], &[0.1, 0.2, 0.3], &[700.0, 820.0, 880.0], &[380.0, 500.0, 700.0]);
-        let pick = |values: &[f64]| order.iter().map(|i| values[*i]).collect::<Vec<_>>();
+        let table = [
+            row(1.0, 0.1, Some(700.0), Some(380.0)),
+            row(1.0, 0.2, Some(820.0), Some(500.0)),
+            row(1.0, 0.3, Some(880.0), Some(700.0)),
+        ];
+        let source: Vec<SourceRow> = order.iter().map(|i| table[*i]).collect();
         characterize_to_reference(
-            &pick(&moles),
-            &order
-                .iter()
-                .map(|i| kilograms_per_mole(masses[*i].value))
-                .collect::<Vec<_>>(),
-            &order
-                .iter()
-                .map(|i| kilograms_per_cubic_meter(densities[*i].value))
-                .collect::<Vec<_>>(),
-            &pick(&keys),
-            &[kilograms_per_mole(0.15), kilograms_per_mole(0.28)],
-            &[450.0, 620.0],
+            &source,
+            &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))],
         )
         .expect("computes")
     };
@@ -148,28 +180,14 @@ fn the_rows_are_sorted_rather_than_taken_as_given() {
 fn a_zero_amount_row_is_not_on_the_grid() {
     // `extractComponents` skips a component with no moles, so a zero here is not a row that lands
     // in a group and adds nothing - it is a row the walk never sees.
-    let (moles, masses, densities, keys) = fluid(&[1.0, 0.0, 1.0], &[0.1, 0.2, 0.3], &[700.0, 820.0, 880.0], &[380.0, 500.0, 700.0]);
     let result = characterize_to_reference(
-        &moles,
-        &masses,
-        &densities,
-        &keys,
-        &[kilograms_per_mole(0.15), kilograms_per_mole(0.28)],
-        &[450.0, 620.0],
+        &[
+            row(1.0, 0.1, Some(700.0), Some(380.0)),
+            row(0.0, 0.2, Some(820.0), Some(500.0)),
+            row(1.0, 0.3, Some(880.0), Some(700.0)),
+        ],
+        &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))],
     )
     .expect("computes");
     assert_eq!(result.group_moles.iter().sum::<f64>(), 2.0);
-}
-
-#[test]
-fn a_table_has_to_be_internally_aligned() {
-    let (moles, masses, densities, keys) = fluid(&[1.0, 1.0], &[0.1], &[700.0, 820.0], &[380.0, 500.0]);
-    assert!(matches!(
-        characterize_to_reference(
-            &moles, &masses, &densities, &keys,
-            &[kilograms_per_mole(0.15)],
-            &[450.0, 620.0],
-        ),
-        Err(AzothError::InvalidInput { .. })
-    ));
 }

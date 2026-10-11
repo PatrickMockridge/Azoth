@@ -4,18 +4,18 @@ kind = "direct"
 assumptions = [
     "**this is how two fluids are made comparable.** A report and a model fluid rarely share a cut slate, and a cubic cannot mix two fluids cut at different boiling points. `characterizeToReference` re-cuts one onto the other's boundaries, leaving the two differing only in mole fraction.",
     "**the reference decides where the cuts are and nothing else.** Its densities, its mole amounts and its own properties are not read by this path - only its sorting keys, and only adjacent pairs of them.",
-    "**the sorting key is the normal boiling point, and the molar mass without one.** A cut with no boiling point still gets a place on the grid, at a scale a hundred times smaller than the kelvins it would otherwise be sorted among.",
+    "**the sorting key is the normal boiling point, and the molar mass without one.** **The absence is a field the row leaves out**, and a row that states one which is not finite and positive falls back the same way.",
     "**the boundaries are the midpoints of adjacent reference keys**, `0.5*(k_i + k_i+1)`, or the larger of the two when either is not finite. They belong to the reference alone: the source's own keys decide only which group each of its rows joins.",
     "**a row joins a group by a strict comparison.** The walk advances while the row's key is **greater than** the boundary, so a key exactly on a boundary stays in the lower group. Both tables are sorted by key first, so the groups are contiguous runs of the source in ascending boiling point.",
     "**an empty group is dropped rather than reported empty.** A group whose accumulated mass or moles is at or below `1e-12` produces no profile, so a source entirely below the reference's first cut resolves to one component against a reference of many.",
     "**the outputs are therefore shorter than the reference**, and `reference_index` is what re-aligns them with it.",
     "**a group's molar mass is its accumulated mass over its accumulated moles**, and its density the mass over the volume its rows occupy: `sum(m) / sum(m/rho)`, the mass-weighted harmonic mean of the gravities and not their mass-weighted mean.",
-    "**the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row at zero density contributes to neither sum.",
+    "**the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row that states no density, or one at zero, contributes to neither sum.",
     "**`inheritReferenceProperties` is not this id.** With it set, the groups take the *reference's* molar mass and density instead of their own, which is Pedersen's common-EoS slate - a variant of the same walk whose outputs are the reference rows, and it is owed rather than implied.",
     "**what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool before cutting; and `delumpContributions` and `determineReferenceEqualMassBoundaries`, which rebuild a fine composition and cut it equally by mass.",
     "**and three more**: `transferBinaryInteractionParameters`, which moves a two-dimensional interaction table between slates; `normalizeComposition`; and `generateValidationReport`.",
     "**all of those are blocked on the same two things this chunk named.** Every public method of the class takes or returns a `SystemInterface`, and its rows carry some twenty optional fields.",
-    "**so they need the card width before a pseudo-component can enter a `Mixture`**, and the `record_list` input kind before a row can be stated at all. This id is the part that is a function of two tables and nothing else.",
+    "**so they need the card width before a pseudo-component can enter a `Mixture`**, and a row of their own before one can be stated at all. The rows this id takes are the four fields it reads, not the twenty the class carries; the rest are owed with the methods above.",
     "the result is a bookkeeping choice and not a measurement: the same source re-cut onto two different references gives two fluids with the same mass and different components.",
 ]
 references = [
@@ -27,36 +27,35 @@ references = [
 standard = "NeqSim master `PseudoComponentCombiner.characterizeToReference`"
 edition = "Its `characterizeToReferenceCore` through `determineReferenceBoundaries` and `distributeToProfiles`, for the default options: no delumping, the boiling-point boundaries, and each group's own properties rather than the reference's."
 [inputs]
-[inputs.source_moles]
-type = "vector"
+[inputs.source]
+type = "record_list"
+row_type = "SourceRow"
+description = "The source fluid's pseudo-components, one record each. **Only rows with a positive mole amount are read**: `extractComponents` skips the rest, so a zero amount is a row that is not on the grid.\n"
+[inputs.source.fields.moles]
 unit = "mol"
-length = "one per pseudo-component of the source fluid"
-description = "Each source pseudo-component's mole amount. **Only rows with a positive amount are read**: `extractComponents` skips the rest, so a zero here is a row that is not on the grid.\n"
-[inputs.source_molar_mass]
-type = "vector"
+description = "The row's mole amount.\n"
+[inputs.source.fields.molar_mass]
 unit = "kg/mol"
-length = "one per source row, aligned with `source_moles`"
-description = "Each source row's molar mass, which is its sorting key when it has no boiling point.\n"
-[inputs.source_density]
-type = "vector"
+description = "The row's molar mass, which is its sorting key when it states no boiling point.\n"
+[inputs.source.fields.density]
 unit = "kg/m**3"
-length = "one per source row, aligned with `source_moles`"
-description = "Each source row's normal liquid density, which the group's volume is the mass over.\n"
-[inputs.source_boiling_point]
-type = "vector"
+optional = true
+description = "The row's normal liquid density, which the group's volume is the mass over. A row that leaves it out contributes to neither the volume nor the density-mass sum.\n"
+[inputs.source.fields.boiling_point]
 unit = "K"
-length = "one per source row, aligned with `source_moles`"
-description = "Each source row's normal boiling point, its sorting key where it has one.\n"
-[inputs.reference_molar_mass]
-type = "vector"
+optional = true
+description = "The row's normal boiling point, its sorting key where it states one. A row that leaves it out is sorted by its molar mass.\n"
+[inputs.reference]
+type = "record_list"
+row_type = "ReferenceRow"
+description = "The reference fluid's cut slate, one record each. The reference's densities and mole amounts are not read: it decides where the cuts are and nothing else.\n"
+[inputs.reference.fields.molar_mass]
 unit = "kg/mol"
-length = "one per pseudo-component of the reference fluid"
-description = "Each reference row's molar mass, the fallback sorting key. The reference's densities, moles and amounts are not read: it decides where the cuts are and nothing else.\n"
-[inputs.reference_boiling_point]
-type = "vector"
+description = "The row's molar mass, the fallback sorting key.\n"
+[inputs.reference.fields.boiling_point]
 unit = "K"
-length = "one per reference row, aligned with `reference_molar_mass`"
-description = "Each reference row's normal boiling point, and with it the boundaries the source is cut at.\n"
+optional = true
+description = "The row's normal boiling point, and with it the boundaries the source is cut at. A row that leaves it out is sorted by its molar mass.\n"
 [outputs]
 [outputs.reference_index]
 type = "vector"

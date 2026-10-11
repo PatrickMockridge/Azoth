@@ -497,16 +497,12 @@ def characterise_plus_fraction(molar_mass: Q, density: Q, mole_fraction: float, 
     )
 
 
-def characterize_to_reference(source_moles: list[float], source_molar_mass: list[Q], source_density: list[Q], source_boiling_point: list[Q], reference_molar_mass: list[Q], reference_boiling_point: list[Q]) -> CharacterizeToReferenceResult:
+def characterize_to_reference(source: Sequence[Mapping[str, Any]], reference: Sequence[Mapping[str, Any]]) -> CharacterizeToReferenceResult:
     """``characterization.characterize_to_reference``, computed in Rust."""
     spec = _models_gen.model("characterization.characterize_to_reference")
     result = _core.characterize_to_reference(
-        [_si(spec, "source_moles", v) for v in source_moles],
-        [input_to_si(spec, "source_molar_mass", v) for v in source_molar_mass],
-        [input_to_si(spec, "source_density", v) for v in source_density],
-        [input_to_si(spec, "source_boiling_point", v) for v in source_boiling_point],
-        [input_to_si(spec, "reference_molar_mass", v) for v in reference_molar_mass],
-        [input_to_si(spec, "reference_boiling_point", v) for v in reference_boiling_point],
+        input_records_to_si(spec, "source", source),
+        input_records_to_si(spec, "reference", reference),
     )
     return CharacterizeToReferenceResult(
         reference_index=tuple(result.reference_index),

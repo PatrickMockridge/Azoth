@@ -17,6 +17,13 @@ its key falls in.
 A group's molar mass is its accumulated mass over its accumulated moles; its density is that mass
 over the volume the rows would occupy, ``sum(m) / sum(m/rho)``.
 
+# The rows are records
+
+``PseudoComponentContribution`` carries twenty-one fields and this id reads four of them. Two are
+optional *per row* - a boiling point, without which the row sorts by its molar mass, and a
+density, without which it contributes to no volume - and a parallel vector can say "absent" per
+vector and not per entry.
+
 # The empty groups are dropped
 
 A group whose accumulated mass or moles is at or below ``1e-12`` produces no profile and the
@@ -26,13 +33,15 @@ against a reference of many. ``reference_index`` is what says which cut that one
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
+from typing import Any
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import CharacterizeToReferenceResult
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import from_si, input_records_to_si
 from azoth.core.warnings import Warning
 
 MODEL_ID = "characterization.characterize_to_reference"
@@ -41,92 +50,83 @@ MODEL_ID = "characterization.characterize_to_reference"
 MASS_TOLERANCE = 1.0e-12
 
 
-def sorting_key(boiling_point: float, molar_mass: float) -> float:
-    """``PseudoComponentContribution.sortingKey``: the boiling point, or the molar mass."""
-    return boiling_point if boiling_point > 0.0 and boiling_point != float("inf") else molar_mass
+def sorting_key(boiling_point: float | None, molar_mass: float) -> float:
+    """``PseudoComponentContribution.sortingKey``: the boiling point, or the molar mass.
+
+    **The absence has two spellings and they are the same thing.** A row that states no boiling
+    point, and a row that states one which is not finite and positive, both fall back - the first
+    because the record has no field for it and the second because the class's own test is on the
+    value. A sentinel a caller wrote into a vector is now a field the caller leaves out.
+    """
+    if boiling_point is None or not (math.isfinite(boiling_point) and boiling_point > 0.0):
+        return molar_mass
+    return boiling_point
 
 
-def _rows(
-    moles: list[float],
-    molar_mass: list[float],
-    density: list[float],
-    boiling_point: list[float],
-    field: str,
-) -> list[tuple[float, float, float, float, float]]:
-    """A fluid's rows, ascending by sorting key: `(key, moles, M, rho, mass)`."""
-    count = len(moles)
-    if len(molar_mass) != count or len(density) != count or len(boiling_point) != count:
-        raise InvalidInputError(
-            field,
-            f"a fluid's table is four aligned vectors: {count} mole amounts against "
-            f"{len(molar_mass)} molar masses, {len(density)} densities and "
-            f"{len(boiling_point)} boiling points",
-        )
+def _rows(source: Sequence[Mapping[str, Any]]) -> list[tuple[float, float, float, float, float]]:
+    """The source's rows, ascending by sorting key: `(key, moles, M, rho, mass)`.
+
+    A row with a non-positive mole amount is skipped rather than carried: ``extractComponents``
+    drops it, so a zero here is a row that is not on the grid at all. A row that states no density
+    is carried at zero, which is what makes it contribute to the group's mass and to neither of
+    its volume sums.
+    """
     rows = [
-        (sorting_key(tb, mass), amount, mass, rho, amount * mass)
-        for amount, mass, rho, tb in zip(moles, molar_mass, density, boiling_point, strict=True)
-        if amount > 0.0
+        (
+            sorting_key(row["boiling_point"], float(row["molar_mass"])),
+            float(row["moles"]),
+            float(row["molar_mass"]),
+            0.0 if row["density"] is None else float(row["density"]),
+            float(row["moles"]) * float(row["molar_mass"]),
+        )
+        for row in source
+        if float(row["moles"]) > 0.0
     ]
     rows.sort(key=lambda row: row[0])
     return rows
 
 
 def characterize_to_reference(
-    source_moles: list[float],
-    source_molar_mass: list[Q],
-    source_density: list[Q],
-    source_boiling_point: list[float],
-    reference_molar_mass: list[Q],
-    reference_boiling_point: list[float],
+    source: Sequence[Mapping[str, Any]],
+    reference: Sequence[Mapping[str, Any]],
 ) -> CharacterizeToReferenceResult:
     """A fluid's pseudo-components re-cut onto another fluid's slate.
 
-    ``reference_*`` decides where the cuts are and nothing else - its densities and amounts are
-    not read. **The groups are not the reference rows**: a group that comes out empty is dropped,
-    so ``reference_index`` is what re-aligns the answer with the caller's own slate.
+    ``source`` and ``reference`` are lists of records, one per pseudo-component, keyed by the field
+    names the spec declares - each in the unit that field's declaration fixes. ``reference``
+    decides where the cuts are and nothing else: its densities and amounts are not read.
 
-    Raises:
-        InvalidInputError: if any table is not internally aligned.
+    **The groups are not the reference rows**: a group that comes out empty is dropped, so
+    ``reference_index`` is what re-aligns the answer with the caller's own slate.
     """
     spec = _models_gen.model(MODEL_ID)
     checks = checks_for(spec)
     warnings: list[Warning] = []
+
+    # The one conversion site, shared with the Rust bridge - a record field's unit is in the spec's
+    # `fields` block, so the reader is `input_records_to_si` rather than `input_to_si`.
+    source_rows: list[dict[str, Any]] = input_records_to_si(spec, "source", source)
+    reference_rows: list[dict[str, Any]] = input_records_to_si(spec, "reference", reference)
+
     apply_checks(checks.on_input, lambda _name: None, warnings)
 
-    source = _rows(
-        [input_to_si(spec, "source_moles", value) for value in source_moles],
-        [input_to_si(spec, "source_molar_mass", value) for value in source_molar_mass],
-        [input_to_si(spec, "source_density", value) for value in source_density],
-        [input_to_si(spec, "source_boiling_point", value) for value in source_boiling_point],
-        "source_moles",
-    )
-    if len(reference_molar_mass) != len(reference_boiling_point):
-        raise InvalidInputError(
-            "reference_molar_mass",
-            f"the reference is two aligned vectors: {len(reference_molar_mass)} molar masses "
-            f"against {len(reference_boiling_point)} boiling points",
-        )
-    reference = sorted(
-        sorting_key(input_to_si(spec, "reference_boiling_point", tb), mass)
-        for mass, tb in zip(
-            [input_to_si(spec, "reference_molar_mass", value) for value in reference_molar_mass],
-            reference_boiling_point,
-            strict=True,
-        )
+    rows = _rows(source_rows)
+    keys = sorted(
+        sorting_key(row["boiling_point"], float(row["molar_mass"])) for row in reference_rows
     )
 
     # The midpoint of each adjacent pair, or the larger of the two when either is not finite.
     boundaries = [
         0.5 * (low + high) if low != float("inf") and high != float("inf") else max(low, high)
-        for low, high in pairwise(reference)
+        for low, high in pairwise(keys)
     ]
 
     # A forward walk, advancing while the row's key is **greater than** the boundary.
-    groups = [{"mass": 0.0, "moles": 0.0, "volume": 0.0, "density_mass": 0.0} for _ in reference]
+    groups = [{"mass": 0.0, "moles": 0.0, "volume": 0.0, "density_mass": 0.0} for _ in keys]
     index = 0
     boundary = boundaries[0] if boundaries else float("inf")
-    for key, moles, _mass, rho, row_mass in source:
-        while index + 1 < len(reference) and key > boundary:
+    for key, moles, _mass, rho, row_mass in rows:
+        while index + 1 < len(keys) and key > boundary:
             index += 1
             boundary = boundaries[index] if index < len(boundaries) else float("inf")
         group = groups[index]

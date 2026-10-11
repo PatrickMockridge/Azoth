@@ -223,6 +223,20 @@ class AssayCut(TypedDict):
     declared_fraction: float
     density: float | None
 
+class SourceRow(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    moles: float
+    molar_mass: float
+    density: float | None
+    boiling_point: float | None
+
+class ReferenceRow(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    molar_mass: float
+    boiling_point: float | None
+
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
 # cannot disagree about a field.
@@ -2225,12 +2239,8 @@ def characterise_plus_fraction(
     number_of_lumps: float | None = None,
 ) -> CharacterisePlusFractionResult: ...
 def characterize_to_reference(
-    source_moles: list[float],
-    source_molar_mass: list[float],
-    source_density: list[float],
-    source_boiling_point: list[float],
-    reference_molar_mass: list[float],
-    reference_boiling_point: list[float],
+    source: list[SourceRow],
+    reference: list[ReferenceRow],
 ) -> CharacterizeToReferenceResult: ...
 def lumping(
     molar_mass: float,

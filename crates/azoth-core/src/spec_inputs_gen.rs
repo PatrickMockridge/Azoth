@@ -243,36 +243,6 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "number_of_lumps",
         "dimensionless",
     ),
-    (
-        "characterization.characterize_to_reference",
-        "source_moles",
-        "amount",
-    ),
-    (
-        "characterization.characterize_to_reference",
-        "source_molar_mass",
-        "molar_mass",
-    ),
-    (
-        "characterization.characterize_to_reference",
-        "source_density",
-        "mass_density",
-    ),
-    (
-        "characterization.characterize_to_reference",
-        "source_boiling_point",
-        "thermodynamic_temperature",
-    ),
-    (
-        "characterization.characterize_to_reference",
-        "reference_molar_mass",
-        "molar_mass",
-    ),
-    (
-        "characterization.characterize_to_reference",
-        "reference_boiling_point",
-        "thermodynamic_temperature",
-    ),
     ("characterization.lumping", "molar_mass", "molar_mass"),
     ("characterization.lumping", "mole_fraction", "dimensionless"),
     ("characterization.lumping", "cut_z", "dimensionless"),

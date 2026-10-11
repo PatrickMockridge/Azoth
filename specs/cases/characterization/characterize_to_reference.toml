@@ -5,23 +5,17 @@ id = "five_cuts_onto_three"
 tolerance = 1.0e-12
 source = "NeqSim master, `PseudoComponentCombiner.characterizeToReference` on a five-cut source and a three-cut reference, from `validation/neqsim/captures/pseudo_component_combiner_probe.tsv`. The keys are the probe's own sorting keys - each cut's normal boiling point, which `addTBPfraction` derives from its molar mass and gravity - and the densities cross as kg/m3 where the class carries g/cm3.\n"
 [cases.inputs]
-source_moles = [
-    1.0, 1.5, 2.0, 1.0, 0.5,
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
 ]
-source_molar_mass = [
-    0.1, 0.14, 0.18, 0.24, 0.32,
-]
-source_density = [
-    700.0, 760.0, 800.0, 840.0, 880.0,
-]
-source_boiling_point = [
-    378.77, 444.67, 502.058, 573.86, 646.972,
-]
-reference_molar_mass = [
-    0.12, 0.2, 0.3,
-]
-reference_boiling_point = [
-    412.832, 527.8, 630.83,
+reference = [
+    { molar_mass = 0.12, boiling_point = 412.832 },
+    { molar_mass = 0.2, boiling_point = 527.8 },
+    { molar_mass = 0.3, boiling_point = 630.83 },
 ]
 [cases.expected]
 group_moles = [
@@ -39,23 +33,13 @@ id = "a_source_below_the_first_cut"
 tolerance = 1.0e-12
 source = "A source entirely below the reference's first cut, so **every row lands in one group and the second is dropped rather than reported empty**: three components in, one component out, against a reference of two. `reference_index` is what says which of the two it is.\n"
 [cases.inputs]
-source_moles = [
-    3.0, 1.0,
+source = [
+    { moles = 3.0, molar_mass = 0.09, density = 680.0, boiling_point = 360.875 },
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
 ]
-source_molar_mass = [
-    0.09, 0.1,
-]
-source_density = [
-    680.0, 700.0,
-]
-source_boiling_point = [
-    360.875, 378.77,
-]
-reference_molar_mass = [
-    0.2, 0.3,
-]
-reference_boiling_point = [
-    527.8, 630.83,
+reference = [
+    { molar_mass = 0.2, boiling_point = 527.8 },
+    { molar_mass = 0.3, boiling_point = 630.83 },
 ]
 [cases.expected]
 group_moles = [
@@ -73,23 +57,12 @@ id = "one_reference_cut"
 tolerance = 1.0e-12
 source = "A reference of one cut, which leaves no adjacent pair and therefore no boundary. Every row falls in the single group, and the answer is the whole source re-averaged - mass over moles, mass over volume - rather than the reference's own properties.\n"
 [cases.inputs]
-source_moles = [
-    1.0, 1.0,
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.0, molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
 ]
-source_molar_mass = [
-    0.1, 0.2,
-]
-source_density = [
-    700.0, 820.0,
-]
-source_boiling_point = [
-    378.77, 527.8,
-]
-reference_molar_mass = [
-    0.25,
-]
-reference_boiling_point = [
-    584.315,
+reference = [
+    { molar_mass = 0.25, boiling_point = 584.315 },
 ]
 [cases.expected]
 group_moles = [

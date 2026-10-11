@@ -29,7 +29,9 @@ pub mod whitson_gamma_split;
 
 pub use assay_mass_fractions::{AssayBasis, AssayCut, assay_mass_fractions};
 pub use characterise_plus_fraction::{PlusModel, characterise_plus_fraction};
-pub use characterize_to_reference::characterize_to_reference;
+pub use characterize_to_reference::{
+    ReferenceRow, SourceRow, characterize_to_reference,
+};
 pub use lumping::lumping;
 pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{

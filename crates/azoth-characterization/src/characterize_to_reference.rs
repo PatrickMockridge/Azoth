@@ -23,21 +23,54 @@
 //! against a reference of many. [`CharacterizeToReferenceResult::reference_index`] is what says
 //! which cut that one is.
 //!
+//! # The rows are records
+//!
+//! `PseudoComponentContribution` carries twenty-one fields and this id reads four of them. Two are
+//! optional *per row* - a boiling point, without which the row sorts by its molar mass, and a
+//! density, without which it contributes to no volume - and a parallel vector can say "absent" per
+//! vector and not per entry. The row this id takes is the fields it reads; the other seventeen are
+//! owed with the methods below.
+//!
 //! # What is not here
 //!
 //! `combineReservoirFluids`, `characterizeToCommonSlate`, the delumping, `inheritReferenceProperties`,
 //! `transferBinaryInteractionParameters`, `normalizeComposition` and `generateValidationReport`.
 //! They are blocked on the card width - a pseudo-component still cannot enter a `Mixture` - and on
-//! the `record_list` input kind their twenty-field rows would need.
+//! the row's other seventeen fields.
 
 use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
-use azoth_core::{AzothError, Result, apply_checks};
+use azoth_core::{Result, apply_checks};
 
 use crate::model_gen;
 use crate::results::CharacterizeToReferenceResult;
 
 /// `PseudoComponentCombiner.MASS_TOLERANCE`, on the accumulated mass and on a group's validity.
 const MASS_TOLERANCE: f64 = 1.0e-12;
+
+/// One pseudo-component of the source fluid, as this id takes it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SourceRow {
+    /// Its mole amount. Only a positive one is read: `extractComponents` skips the rest, so a zero
+    /// is a row that is not on the grid at all.
+    pub moles: f64,
+    /// Its molar mass, which is its sorting key when it states no boiling point.
+    pub molar_mass: MolarMass,
+    /// Its normal liquid density, which the group's volume is the mass over. A row that states
+    /// none contributes to neither the volume nor the density-mass sum.
+    pub density: Option<MassDensity>,
+    /// Its normal boiling point. A row that states none is sorted by its molar mass.
+    pub boiling_point: Option<f64>,
+}
+
+/// One cut of the reference fluid's slate. The reference decides where the cuts are and nothing
+/// else, so these are the only two fields it carries.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ReferenceRow {
+    /// Its molar mass, the fallback sorting key.
+    pub molar_mass: MolarMass,
+    /// Its normal boiling point, and with it the boundaries the source is cut at.
+    pub boiling_point: Option<f64>,
+}
 
 /// One row of a fluid's pseudo-component table, as `extractComponents` lifts it.
 struct Row {
@@ -66,116 +99,91 @@ struct Group {
 }
 
 /// `PseudoComponentContribution.sortingKey`: the boiling point, or the molar mass without one.
-fn sorting_key(boiling_point: f64, molar_mass: f64) -> f64 {
-    if boiling_point.is_finite() && boiling_point > 0.0 {
-        boiling_point
-    } else {
-        molar_mass
+///
+/// **The absence has two spellings and they are the same thing.** A row that states no boiling
+/// point, and a row that states one which is not finite and positive, both fall back - the first
+/// because the record has no field for it and the second because the class's own test is on the
+/// value. A sentinel a caller wrote into a vector is now a field the caller leaves out.
+fn sorting_key(boiling_point: Option<f64>, molar_mass: f64) -> f64 {
+    match boiling_point {
+        Some(tb) if tb.is_finite() && tb > 0.0 => tb,
+        _ => molar_mass,
     }
 }
 
-/// A fluid's rows, in ascending sorting key, as `extractComponents` returns them.
-///
-/// A row with a non-positive mole amount is skipped rather than carried: `extractComponents` drops
-/// it, so a zero here is a row that is not on the grid at all.
-fn rows(
-    moles: &[f64],
-    molar_mass: &[MolarMass],
-    density: &[MassDensity],
-    boiling_point: &[f64],
-    field: &str,
-) -> Result<Vec<Row>> {
-    let count = moles.len();
-    if molar_mass.len() != count || density.len() != count || boiling_point.len() != count {
-        return Err(AzothError::invalid_input(
-            field,
-            format!(
-                "a fluid's table is four aligned vectors: {count} mole amounts against {} molar \
-                 masses, {} densities and {} boiling points",
-                molar_mass.len(),
-                density.len(),
-                boiling_point.len()
-            ),
-        ));
-    }
-    let mut rows: Vec<Row> = moles
+/// The source's rows, in ascending sorting key, as `extractComponents` returns them.
+fn rows(source: &[SourceRow]) -> Vec<Row> {
+    let mut rows: Vec<Row> = source
         .iter()
-        .zip(molar_mass)
-        .zip(density)
-        .zip(boiling_point)
-        .filter(|(((amount, _), _), _)| **amount > 0.0)
-        .map(|(((amount, mass), rho), tb)| Row {
-            key: sorting_key(*tb, mass.value),
-            moles: *amount,
-            density: rho.value,
-            mass: amount * mass.value,
+        .filter(|row| row.moles > 0.0)
+        .map(|row| Row {
+            key: sorting_key(row.boiling_point, row.molar_mass.value),
+            moles: row.moles,
+            density: row.density.map_or(0.0, |rho| rho.value),
+            mass: row.moles * row.molar_mass.value,
         })
         .collect();
     rows.sort_by(|left, right| left.key.total_cmp(&right.key));
-    Ok(rows)
+    rows
 }
 
 /// A fluid's pseudo-components re-cut onto another fluid's slate.
 ///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if any of the seven vectors is not aligned with its own table.
+/// * [`azoth_core::AzothError::OutOfRange`] if a declared input falls outside its range. There is
+///   no alignment to refuse: the rows are records, and a row is complete by being one.
 ///
 /// # Example
 /// ```
 /// use azoth_core::units::{kilograms_per_cubic_meter, kilograms_per_mole};
-/// use azoth_characterization::characterize_to_reference;
+/// use azoth_characterization::{
+///     ReferenceRow, SourceRow, characterize_to_reference,
+/// };
 ///
 /// // Two reference cuts, so one boundary at 550 K, and one source cut either side of it.
 /// let grouped = characterize_to_reference(
-///     &[1.0, 1.0],
-///     &[kilograms_per_mole(0.1), kilograms_per_mole(0.2)],
 ///     &[
-///         kilograms_per_cubic_meter(700.0),
-///         kilograms_per_cubic_meter(820.0),
+///         SourceRow {
+///             moles: 1.0,
+///             molar_mass: kilograms_per_mole(0.1),
+///             density: Some(kilograms_per_cubic_meter(700.0)),
+///             boiling_point: Some(380.0),
+///         },
+///         SourceRow {
+///             moles: 1.0,
+///             molar_mass: kilograms_per_mole(0.2),
+///             density: Some(kilograms_per_cubic_meter(820.0)),
+///             boiling_point: Some(628.0),
+///         },
 ///     ],
-///     &[380.0, 628.0],
-///     &[kilograms_per_mole(0.15), kilograms_per_mole(0.25)],
-///     &[400.0, 700.0],
+///     &[
+///         ReferenceRow {
+///             molar_mass: kilograms_per_mole(0.15),
+///             boiling_point: Some(400.0),
+///         },
+///         ReferenceRow {
+///             molar_mass: kilograms_per_mole(0.25),
+///             boiling_point: Some(700.0),
+///         },
+///     ],
 /// )?;
 /// assert_eq!(grouped.reference_index, vec![0.0, 1.0]);
 /// assert_eq!(grouped.group_moles, vec![1.0, 1.0]);
 /// assert!((grouped.group_molar_mass[0].value - 0.1).abs() < 1e-15);
 /// # Ok::<(), azoth_core::AzothError>(())
 /// ```
-#[allow(clippy::too_many_arguments)]
 pub fn characterize_to_reference(
-    source_moles: &[f64],
-    source_molar_mass: &[MolarMass],
-    source_density: &[MassDensity],
-    source_boiling_point: &[f64],
-    reference_molar_mass: &[MolarMass],
-    reference_boiling_point: &[f64],
+    source: &[SourceRow],
+    reference: &[ReferenceRow],
 ) -> Result<CharacterizeToReferenceResult> {
     let spec = &model_gen::CHARACTERIZE_TO_REFERENCE_SPEC;
     let mut warnings = Vec::new();
     apply_checks(spec.input_checks(), |_quantity| None, &mut warnings)?;
 
-    let source = rows(
-        source_moles,
-        source_molar_mass,
-        source_density,
-        source_boiling_point,
-        "source_moles",
-    )?;
-    if reference_molar_mass.len() != reference_boiling_point.len() {
-        return Err(AzothError::invalid_input(
-            "reference_molar_mass",
-            format!(
-                "the reference is two aligned vectors: {} molar masses against {} boiling points",
-                reference_molar_mass.len(),
-                reference_boiling_point.len()
-            ),
-        ));
-    }
-    let mut reference: Vec<f64> = reference_molar_mass
+    let source = rows(source);
+    let mut reference: Vec<f64> = reference
         .iter()
-        .zip(reference_boiling_point)
-        .map(|(mass, tb)| sorting_key(*tb, mass.value))
+        .map(|row| sorting_key(row.boiling_point, row.molar_mass.value))
         .collect();
     reference.sort_by(f64::total_cmp);
 

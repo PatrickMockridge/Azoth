@@ -102,31 +102,25 @@ def assay_mass_fractions(
 
 
 def characterize_to_reference(
-    source_moles: list[float],
-    source_molar_mass: list[Q],
-    source_density: list[Q],
-    source_boiling_point: list[Q],
-    reference_molar_mass: list[Q],
-    reference_boiling_point: list[Q],
+    source: Sequence[Mapping[str, Any]],
+    reference: Sequence[Mapping[str, Any]],
 ) -> CharacterizeToReferenceResult:
     """A fluid's pseudo-components re-cut onto another fluid's cut slate.
 
-    ``reference_*`` decides where the cuts are and nothing else; its densities and amounts are not
-    read. The groups are **not** the reference rows - a group that comes out empty is dropped -
-    so ``reference_index`` is what re-aligns the answer with the caller's own slate.
+    ``source`` and ``reference`` are lists of records, one per pseudo-component, keyed by the field
+    names the spec declares. A source row states ``moles`` and ``molar_mass``, and optionally
+    ``density`` in kg/m3 and ``boiling_point`` in K; a reference row states ``molar_mass`` and
+    optionally ``boiling_point``.
 
-    Raises:
-        InvalidInputError: if any table is not internally aligned.
+    ``reference`` decides where the cuts are and nothing else; its densities and amounts are not
+    read. The groups are **not** the reference rows - a group that comes out empty is dropped - so
+    ``reference_index`` is what re-aligns the answer with the caller's own slate.
 
     See :func:`azoth.characterization.reference.characterize_to_reference`.
     """
     return resolve(_CHARACTERIZE_TO_REFERENCE)(  # type: ignore[no-any-return]
-        source_moles=source_moles,
-        source_molar_mass=source_molar_mass,
-        source_density=source_density,
-        source_boiling_point=source_boiling_point,
-        reference_molar_mass=reference_molar_mass,
-        reference_boiling_point=reference_boiling_point,
+        source=source,
+        reference=reference,
     )
 
 

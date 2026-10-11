@@ -5,11 +5,11 @@
 the plan's own "the signature *is* the declared input list". `docs-drift` regenerates and diffs
 it; the `--check` below runs the same gate in the suite.
 
-The cap is the other half. What this file cannot derive is the mixture-expanded models - 45 `eos`
+The cap is the other half. What this file cannot derive is the mixture-expanded models - the `eos`
 ids whose kernels take a `Mixture` the spec does not declare - plus the handful whose kernel
-signature carries a conversion this file has no rule for. Those stay hand-written in the
-namespace modules, and this file holds their number, so a new one is a decision someone made
-rather than a line that drifted in.
+signature carries a conversion this file has no rule for, a slice of records being the newest.
+Those stay hand-written in the namespace modules, and this file holds their number, so a new one
+is a decision someone made rather than a line that drifted in.
 """
 
 from __future__ import annotations
@@ -36,7 +36,14 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: bridge passed eight arguments where the `#[pyfunction]` takes eleven. Generating the bridge made
 #: the call the extension's own, the arity matched, and the emitted wrapper was byte-identical to
 #: the one in `eos.rs` - bar the `build_mixture_with_mass` every other mixture id already uses.
-KNOWN_HAND_WRITTEN = 45
+#:
+#: 45 -> 52 when `characterization` joined the scanned modules, and the change is to the guard
+#: rather than to the tree: the tuple below listed six of the seven binding modules, so every
+#: wrapper in `characterization.rs` was outside the cap. Seven were there, all of them registered
+#: ids, and `characterize_to_reference` had just become the eighth thing a hand-written wrapper
+#: would have been added to a module nothing counted - which is exactly what this number exists to
+#: notice. No wrapper was written or deleted by the change.
+KNOWN_HAND_WRITTEN = 52
 
 
 def _tools_module(name: str) -> ModuleType:
@@ -48,13 +55,22 @@ def _tools_module(name: str) -> ModuleType:
 
 
 def _hand_written() -> list[str]:
-    """Every registered id whose wrapper is still written out in a namespace module."""
+    """Every registered id whose wrapper is still written out in a namespace module.
+
+    **Every binding module is read**, which is the point: a module left out of this tuple is a
+    module whose hand-written wrappers the cap cannot see, and the cap is the only thing standing
+    between "the generator cannot derive this" and "somebody wrote one and moved on".
+    """
     rust_index = _tools_module("rust_index")
     registered = {function for _, _, function in rust_index.implementations()}
     out = []
-    for module in ("hydraulics", "eos", "thermal", "reactions", "standards", "process"):
-        source = (BINDING / f"{module}.rs").read_text(encoding="utf-8")
-        text = rust_index._blank_comments(source)
+    for source in sorted(BINDING.glob("*.rs")):
+        # The generated modules emit the same shape, so they are the one thing that has to be
+        # named: a `wrappers_gen.rs` counted here would put every derived wrapper inside a cap on
+        # the underived ones.
+        if source.name.endswith("_gen.rs"):
+            continue
+        text = rust_index._blank_comments(source.read_text(encoding="utf-8"))
         out.extend(re.findall(r"^pub fn (\w+)\(\s*py: Python<'_>", text, re.M))
     return [name for name in out if name in registered]
 

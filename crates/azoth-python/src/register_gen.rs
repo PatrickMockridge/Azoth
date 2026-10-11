@@ -234,7 +234,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(
-        crate::wrappers_gen::characterize_to_reference,
+        crate::characterization::characterize_to_reference,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::lumping, m)?)?;
