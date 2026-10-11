@@ -59,6 +59,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'characterization.oil_assay_derivation': {
+        "calc_id": 'characterization.oil_assay_derivation',
+        "name": "An assay's cuts derived to molar masses and moles, one component each",
+        "spec": {'path': 'specs/models/characterization/oil_assay_derivation.toml', 'sha256': '4b48f18c3592cba66d2c07ec79db90a9d181ab37d800146b461bfa06139e9fe6'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/oil_assay_derivation.py', 'sha256': 'b4533a6b5edde491b320e6ef9e089558d9bad035e3523c2c516e0f75b44e9e93'}, {'path': 'crates/azoth-characterization/src/oil_assay_derivation.rs', 'sha256': 'd832d689dd92c512f4806467824dd2d2b4e3cfca26379f8886ce4021b828b4cd'}],
+        "source": 'NeqSim master `OilAssayCharacterisation.apply`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.pedersen_plus_split': {
         "calc_id": 'characterization.pedersen_plus_split',
         "name": "A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves",

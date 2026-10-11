@@ -237,6 +237,18 @@ class ReferenceRow(TypedDict):
     molar_mass: float
     boiling_point: float | None
 
+class AssayCutDerivation(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    name: str
+    declared_fraction: float
+    density: float | None
+    api_gravity: float | None
+    molar_mass: float | None
+    average_boiling_point: float | None
+    watson_characterization_factor: float | None
+    standard_component_name: str | None
+
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
 # cannot disagree about a field.
@@ -270,6 +282,16 @@ class LumpingResult:
     lump_mole_fraction: list[float]
     lump_molar_mass: list[Qty]
     lump_density: list[Qty]
+    warnings: list[Warning]
+
+@final
+class OilAssayDerivationResult:
+    component_name: list[str]
+    mass_fraction: list[float]
+    molar_mass: list[Qty]
+    moles: list[Qty]
+    total_moles: Qty
+    mass_balance_error: float
     warnings: list[Warning]
 
 @final
@@ -2261,6 +2283,11 @@ def lumping(
     cut_density: list[float],
     number_of_lumps: float | None = None,
 ) -> LumpingResult: ...
+def oil_assay_derivation(
+    basis: str,
+    cuts: list[AssayCutDerivation],
+    total_assay_mass: float,
+) -> OilAssayDerivationResult: ...
 def pedersen_plus_split(
     molar_mass: float,
     density: float,

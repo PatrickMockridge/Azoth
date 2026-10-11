@@ -20,6 +20,27 @@ pub struct AssayCut {
 
 /// One row of a `record_list` input, extracted from the mapping a caller passes.
 #[derive(Debug, Clone, Default, FromPyObject)]
+pub struct AssayCutDerivation {
+    #[pyo3(item)]
+    pub name: String,
+    #[pyo3(item)]
+    pub declared_fraction: f64,
+    #[pyo3(item)]
+    pub density: Option<f64>,
+    #[pyo3(item)]
+    pub api_gravity: Option<f64>,
+    #[pyo3(item)]
+    pub molar_mass: Option<f64>,
+    #[pyo3(item)]
+    pub average_boiling_point: Option<f64>,
+    #[pyo3(item)]
+    pub watson_characterization_factor: Option<f64>,
+    #[pyo3(item)]
+    pub standard_component_name: Option<String>,
+}
+
+/// One row of a `record_list` input, extracted from the mapping a caller passes.
+#[derive(Debug, Clone, Default, FromPyObject)]
 pub struct ReferenceRow {
     #[pyo3(item)]
     pub molar_mass: f64,

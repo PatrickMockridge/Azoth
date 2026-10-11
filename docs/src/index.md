@@ -90,6 +90,7 @@ Five sections, and the difference between them is the point:
 - [`characterization.characterise_plus_fraction`](./characterization/characterise_plus_fraction.md) — A C7+ end characterised end to end: model, split and lumps
 - [`characterization.characterize_to_reference`](./characterization/characterize_to_reference.md) — A fluid's pseudo-components re-cut onto another fluid's slate
 - [`characterization.lumping`](./characterization/lumping.md) — A cut table grouped into equal-mass lumps
+- [`characterization.oil_assay_derivation`](./characterization/oil_assay_derivation.md) — An assay's cuts derived to molar masses and moles, one component each
 - [`characterization.pedersen_plus_split`](./characterization/pedersen_plus_split.md) — A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves
 - [`characterization.set_heavy_tbp_to_plus`](./characterization/set_heavy_tbp_to_plus.md) — The TBP row a fluid's plus end begins at, chosen by the carbon number in its name
 - [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity

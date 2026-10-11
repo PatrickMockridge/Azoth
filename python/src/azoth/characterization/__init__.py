@@ -36,6 +36,7 @@ from azoth.core.result import (
     CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
     LumpingResult,
+    OilAssayDerivationResult,
     PedersenPlusSplitResult,
     SetHeavyTbpToPlusResult,
     TbpClosureResult,
@@ -51,6 +52,7 @@ __all__ = [
     "characterise_plus_fraction",
     "characterize_to_reference",
     "lumping",
+    "oil_assay_derivation",
     "pedersen_plus_split",
     "set_heavy_tbp_to_plus",
     "tbp_closure",
@@ -71,6 +73,42 @@ _CHARACTERIZE_TO_REFERENCE = "characterization.characterize_to_reference"
 _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 _SET_HEAVY_TBP_TO_PLUS = "characterization.set_heavy_tbp_to_plus"
+_OIL_ASSAY_DERIVATION = "characterization.oil_assay_derivation"
+
+
+def oil_assay_derivation(
+    basis: str,
+    cuts: Sequence[Mapping[str, Any]],
+    total_assay_mass: Q,
+) -> OilAssayDerivationResult:
+    """An assay's cuts derived to one component each, with a molar mass and a mole amount.
+
+    ``basis`` and the first two fields of every cut are ``assay_mass_fractions``' own; the rest are
+    the routes to a molar mass, tried in this order:
+
+    * ``standard_component_name`` - the name of a substance in the databank, whose molar mass is
+      read out of it;
+    * ``molar_mass`` - stated outright;
+    * otherwise the closed form, on ``average_boiling_point`` or one resolved from
+      ``watson_characterization_factor``, and on ``density`` or one resolved from ``api_gravity``.
+
+    **A cut that states a molar mass still needs a gravity**, because the class reads the density
+    for every cut it derives. A cut with no positive ``declared_fraction`` produces no component, so
+    ``component_name`` is what re-aligns the answer with the caller's slate.
+
+    Raises:
+        InvalidInputError: if two cuts share a name, if two standard components name one substance,
+            if a standard component is on a volume basis or also states pseudo-component
+            properties, if a cut reaches the correlation with neither a boiling point nor a gravity,
+            or if a standard component is not in the databank.
+
+    See :func:`azoth.characterization.reference.oil_assay_derivation`.
+    """
+    return resolve(_OIL_ASSAY_DERIVATION)(  # type: ignore[no-any-return]
+        basis=basis,
+        cuts=cuts,
+        total_assay_mass=total_assay_mass,
+    )
 
 
 def set_heavy_tbp_to_plus(

@@ -108,6 +108,7 @@ from azoth.core.result import (
     MollerupAlphaResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
+    OilAssayDerivationResult,
     OrificeFlowResult,
     PackedColumnResult,
     PackingHydraulicsResult,
@@ -348,6 +349,7 @@ __all__ = [
     "mollerup_alpha",
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
+    "oil_assay_derivation",
     "orifice_flow",
     "packed_column",
     "packing_hydraulics",
@@ -531,6 +533,25 @@ def lumping(molar_mass: Q, mole_fraction: float, cut_z: list[float], cut_molar_m
         lump_mole_fraction=tuple(result.lump_mole_fraction),
         lump_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_molar_mass),
         lump_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.lump_density),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def oil_assay_derivation(basis: str, cuts: Sequence[Mapping[str, Any]], total_assay_mass: Q) -> OilAssayDerivationResult:
+    """``characterization.oil_assay_derivation``, computed in Rust."""
+    spec = _models_gen.model("characterization.oil_assay_derivation")
+    result = _core.oil_assay_derivation(
+        basis,
+        input_records_to_si(spec, "cuts", cuts),
+        input_to_si(spec, "total_assay_mass", total_assay_mass),
+    )
+    return OilAssayDerivationResult(
+        component_name=tuple(result.component_name),
+        mass_fraction=tuple(result.mass_fraction),
+        molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.molar_mass),
+        moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.moles),
+        total_moles=from_si(result.total_moles.magnitude_si, result.total_moles.unit),
+        mass_balance_error=result.mass_balance_error,
         warnings=_warnings(result.warnings),
     )
 

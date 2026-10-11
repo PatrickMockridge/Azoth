@@ -9,6 +9,10 @@ description = "Petroleum-fraction characterisation: a cut's properties, the plus
 
 [dependencies]
 azoth-core.workspace = true
+# **The component database, and one id is why.** `OilAssayCharacterisation.apply` reaches NeqSim's
+# component tables by name for a cut that *is* a standard substance rather than a pseudo-component;
+# `azoth_eos::databank` is where those tables live, and nothing else in this crate reads them.
+azoth-eos.workspace = true
 csv.workspace = true
 uom.workspace = true
 

@@ -117,6 +117,44 @@ pub fn lumping(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// An assay's cuts derived to molar masses and moles, one component each.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (basis, cuts, total_assay_mass))]
+#[pyo3(text_signature = "(basis, cuts, total_assay_mass)")]
+pub fn oil_assay_derivation(
+    py: Python<'_>,
+    basis: &str,
+    cuts: Vec<crate::records_gen::AssayCutDerivation>,
+    total_assay_mass: f64,
+) -> PyResult<crate::transport_gen::PyOilAssayDerivationResult> {
+    let basis_parsed: azoth_characterization::assay_mass_fractions::AssayBasis =
+        basis.parse().unwrap_or_default();
+    let cuts_records: Vec<azoth_characterization::oil_assay_derivation::AssayCutDerivation> = cuts
+        .into_iter()
+        .map(
+            |row| azoth_characterization::oil_assay_derivation::AssayCutDerivation {
+                name: row.name,
+                declared_fraction: row.declared_fraction,
+                density: row.density.map(kilograms_per_cubic_meter),
+                api_gravity: row.api_gravity,
+                molar_mass: row.molar_mass.map(kilograms_per_mole),
+                average_boiling_point: row.average_boiling_point,
+                watson_characterization_factor: row.watson_characterization_factor,
+                standard_component_name: row.standard_component_name,
+            },
+        )
+        .collect();
+    azoth_characterization::oil_assay_derivation::oil_assay_derivation(
+        basis_parsed,
+        &cuts_records,
+        total_assay_mass,
+    )
+    .map(|r| crate::transport_gen::PyOilAssayDerivationResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

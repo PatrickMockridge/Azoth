@@ -5,6 +5,7 @@
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
 //!   - specs/models/characterization/lumping.toml
+//!   - specs/models/characterization/oil_assay_derivation.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
@@ -253,6 +254,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "characterization.lumping",
         "number_of_lumps",
         "dimensionless",
+    ),
+    (
+        "characterization.oil_assay_derivation",
+        "total_assay_mass",
+        "mass",
     ),
     (
         "characterization.pedersen_plus_split",

@@ -119,6 +119,18 @@ pub fn record_number(row: &[RecordField], name: &str) -> Option<f64> {
     })
 }
 
+/// One field of one record, as a name.
+///
+/// `None` when the record omits the field, which is the same absence `record_number` reports - a
+/// cut that names no standard component is not a cut whose name is empty.
+#[must_use]
+pub fn record_name(row: &[RecordField], name: &str) -> Option<&'static str> {
+    row.iter().find(|field| field.name == name).and_then(|field| match field.value {
+        FieldValue::Name(value) => Some(value),
+        FieldValue::Number(_) | FieldValue::Flag(_) => None,
+    })
+}
+
 /// Assert that a skipped test says why it is skipped.
 ///
 /// A skip with no reason is indistinguishable from an oversight, and the whole

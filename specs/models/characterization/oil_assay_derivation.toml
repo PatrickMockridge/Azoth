@@ -1,0 +1,92 @@
+id = "characterization.oil_assay_derivation"
+name = "An assay's cuts derived to molar masses and moles, one component each"
+kind = "direct"
+assumptions = [
+    "**this is `apply`'s arithmetic and not its mutation.** The class adds each derived component to a `SystemInterface`; here the answer is the table - each component's name, molar mass and moles - and building the fluid from it is the caller's step.",
+    "**three routes reach one cut's molar mass, tried in this order.** A standard component's comes out of the component database by name; a stated molar mass is used as it is; otherwise the closed form is evaluated on a boiling point and a gravity.",
+    "**the closed form is `5.805e-5 * Tb^2.3776 / SG^0.9371`**, in g/mol before it is divided by a thousand. It is `characterization.tbp_cut_properties`' `TBPBaseModel.calcTB` rearranged, in closed form where that id bisects it.",
+    "**a cut's boiling point falls back to its Watson factor and its gravity to its API gravity**: `(W * SG)^3 / 1.8` and `141.5 / (API + 131.5)`, each read only where the field it resolves is absent.",
+    "**the moles are `total_assay_mass * mass_fraction / molar_mass`.** The mass fractions are `characterization.assay_mass_fractions`' own resolution of the same declared fractions on the same basis, and that id is where the basis rule and the closure live.",
+    "**a cut with no positive mass fraction produces no component**, so the answer is shorter than the slate and `component_name` is what re-aligns it: a pseudo-component is named `<cut name>_PC` and a standard component keeps the name it was looked up by.",
+    "**the class's own gate is `1e-10` relative on the mass it rebuilt**, and it is published as `mass_balance_error` rather than only tested. The derivation closes by construction, so the number says what the arithmetic did rather than whether it converged.",
+    "**a cut is named, and the names are unique.** Two cuts with one name, or two standard components naming one substance, are refused - the class's own two validations, and the reason a row carries a name at all.",
+    "**the total is a scale and not a measurement.** The moles are proportional to `total_assay_mass` and the molar masses are not, so the same assay at twice the mass is the same fluid twice as large.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/OilAssayCharacterisation.java`'s `apply` is the port source, with its `AssayCut.resolveDensity`, `resolveMolarMass` and `resolveAverageBoilingPoint`.",
+    "`validation/neqsim/captures/oil_assay_derivation_probe.tsv` - three assays from `validation/neqsim/OilAssayDerivationProbe.java`, each resolved to a fluid's components.",
+]
+[source]
+standard = "NeqSim master `OilAssayCharacterisation.apply`"
+edition = "Its per-cut derivation and its mass-balance gate, for the three routes it tries. The standard-component route reads the molar mass out of the component database by name, which is `azoth_eos::databank` here; the critical constants `addTBPfraction` sets are that id's work."
+[inputs]
+[inputs.basis]
+type = "enum"
+values = ["mass", "volume"]
+description = "whether the declared fractions are fractions of the assay's mass or of its liquid volume. A volume basis needs each cut's density or API gravity to reach a mass fraction.\n"
+[inputs.cuts]
+type = "record_list"
+row_type = "AssayCutDerivation"
+description = "The assay's cuts, in the order the derivation reads them. Each carries the yield it states and, where it states one, its own route to a molar mass.\n"
+[inputs.cuts.fields.name]
+type = "string"
+description = "The cut's name, which is what the derived component is named after: `<name>_PC` for a pseudo-component.\n"
+[inputs.cuts.fields.declared_fraction]
+unit = "dimensionless"
+description = "The cut's declared yield, on `basis`. Only a positive one produces a component.\n"
+[inputs.cuts.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The cut's normal liquid density, which a volume basis needs and which the molar-mass correlation is evaluated on. A cut that states none resolves one from its API gravity.\n"
+[inputs.cuts.fields.api_gravity]
+unit = "dimensionless"
+optional = true
+description = "The cut's API gravity, resolved to a specific gravity as `141.5 / (API + 131.5)`. Read only where no density is stated.\n"
+[inputs.cuts.fields.molar_mass]
+unit = "kg/mol"
+optional = true
+description = "The cut's molar mass where it is known rather than correlated. A cut that states one takes that route and never reaches the closed form.\n"
+[inputs.cuts.fields.average_boiling_point]
+unit = "K"
+optional = true
+description = "The cut's average normal boiling point, which the closed form is evaluated on. A cut that states none resolves one from its Watson factor.\n"
+[inputs.cuts.fields.watson_characterization_factor]
+unit = "dimensionless"
+optional = true
+description = "The cut's Watson characterization factor, resolved to a boiling point as `(W * SG)^3 / 1.8`. Read only where no boiling point is stated.\n"
+[inputs.cuts.fields.standard_component_name]
+type = "string"
+optional = true
+description = "The name of a substance in the component database that this cut *is*, when it is one rather than a pseudo-component. A cut that names one takes its molar mass from the database and needs neither a density nor a boiling point.\n"
+[inputs.total_assay_mass]
+unit = "kg"
+description = "The mass of fluid the assay describes, which every cut's mole amount is proportional to. The class defaults it to one unit.\n"
+[outputs]
+[outputs.component_name]
+type = "vector_string"
+length = "one per cut with a positive mass fraction, in the slate's order"
+description = "Each derived component's name: `<cut name>_PC` for a pseudo-component, and the name it was looked up by for a standard component.\n"
+[outputs.mass_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per derived component, aligned with `component_name`"
+description = "Each component's resolved mass fraction, which is the resolution the mole amounts were taken on.\n"
+[outputs.molar_mass]
+type = "vector"
+unit = "kg/mol"
+length = "one per derived component, aligned with `component_name`"
+description = "Each component's molar mass, by whichever of the three routes its cut reached.\n"
+[outputs.moles]
+type = "vector"
+unit = "mol"
+length = "one per derived component, aligned with `component_name`"
+description = "Each component's mole amount, `total_assay_mass * mass_fraction / molar_mass`.\n"
+[outputs.total_moles]
+unit = "mol"
+description = "The fluid's total mole amount, which is the sum of `moles`.\n"
+[outputs.mass_balance_error]
+unit = "dimensionless"
+description = "The class's own relative mass balance: `|sum(moles * molar_mass) - total_assay_mass| / total_assay_mass`, which its `1e-10` gate is taken on.\n"
+[implementations]
+python = "azoth.characterization.oil_assay_derivation"
+rust = "azoth_characterization::oil_assay_derivation"

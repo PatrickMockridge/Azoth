@@ -5,6 +5,7 @@
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
 //!   - specs/models/characterization/lumping.toml
+//!   - specs/models/characterization/oil_assay_derivation.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
@@ -2452,6 +2453,220 @@ pub static LUMPING_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: LUMPING_CHECKS,
     cases: LUMPING_CASES,
+};
+
+static OIL_ASSAY_DERIVATION_CHECKS: &[SpecCheck] = &[];
+
+static OIL_ASSAY_DERIVATION_CASES: &[TestCase] = &[
+    TestCase {
+        id: "a_mass_basis_slate",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("total_assay_mass", 1000.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[("basis", "mass")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 7745.93477611609)],
+        expected_vectors: &[
+            ("mass_fraction", &[0.4, 0.3, 0.3]),
+            ("molar_mass", &[0.112610323807509, 0.100205, 0.25]),
+            ("moles", &[3552.07219440859, 2993.8625817075, 1200.0]),
+        ],
+        expected_strings: &[],
+        records: &[(
+            "cuts",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("cut_a"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(780.0),
+                    },
+                    RecordField {
+                        name: "average_boiling_point",
+                        value: FieldValue::Number(400.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("cut_b"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "standard_component_name",
+                        value: FieldValue::Name("n-heptane"),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("cut_c"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(850.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.25),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_volume_basis_slate",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("total_assay_mass", 500.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[("basis", "volume")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 4561.81338981931)],
+        expected_vectors: &[
+            ("mass_fraction", &[0.549244712990937, 0.450755287009064]),
+            ("molar_mass", &[0.0785282238669953, 0.211682470546275]),
+            ("moles", &[3497.11661581193, 1064.69677400738]),
+        ],
+        expected_strings: &[],
+        records: &[(
+            "cuts",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("light"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.6),
+                    },
+                    RecordField {
+                        name: "api_gravity",
+                        value: FieldValue::Number(55.0),
+                    },
+                    RecordField {
+                        name: "average_boiling_point",
+                        value: FieldValue::Number(340.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("heavy"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "api_gravity",
+                        value: FieldValue::Number(20.0),
+                    },
+                    RecordField {
+                        name: "average_boiling_point",
+                        value: FieldValue::Number(560.0),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_watson_factor_cut",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("total_assay_mass", 250.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[("basis", "mass")],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("total_moles", 1360.12670346037)],
+        expected_vectors: &[
+            ("mass_fraction", &[0.5, 0.5]),
+            ("molar_mass", &[0.132491038438475, 0.3]),
+            ("moles", &[943.460036793707, 416.666666666667]),
+        ],
+        expected_strings: &[],
+        records: &[(
+            "cuts",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("w1"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "watson_characterization_factor",
+                        value: FieldValue::Number(11.5),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("w2"),
+                    },
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(880.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.3),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `characterization.oil_assay_derivation`.
+pub static OIL_ASSAY_DERIVATION_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.oil_assay_derivation",
+    kind: "direct",
+    algorithm: None,
+    checks: OIL_ASSAY_DERIVATION_CHECKS,
+    cases: OIL_ASSAY_DERIVATION_CASES,
 };
 
 static PEDERSEN_PLUS_SPLIT_CHECKS: &[SpecCheck] = &[
@@ -5976,6 +6191,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &CHARACTERISE_PLUS_FRACTION_SPEC,
     &CHARACTERIZE_TO_REFERENCE_SPEC,
     &LUMPING_SPEC,
+    &OIL_ASSAY_DERIVATION_SPEC,
     &PEDERSEN_PLUS_SPLIT_SPEC,
     &SET_HEAVY_TBP_TO_PLUS_SPEC,
     &TBP_CLOSURE_SPEC,

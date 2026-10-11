@@ -333,3 +333,39 @@ impl CalcResult for SetHeavyTbpToPlusResult {
         &self.warnings
     }
 }
+
+/// Result of `characterization.oil_assay_derivation`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct OilAssayDerivationResult {
+    /// Each derived component's name, in the slate's order.
+    pub component_name: Vec<String>,
+    /// Each component's resolved mass fraction, aligned with `component_name`.
+    pub mass_fraction: Vec<f64>,
+    /// Each component's molar mass, aligned with `component_name`.
+    pub molar_mass: Vec<MolarMass>,
+    /// Each component's mole amount, aligned with `component_name`.
+    pub moles: Vec<f64>,
+    /// The fluid's total mole amount.
+    pub total_moles: f64,
+    /// The class's own relative mass balance, which its `1e-10` gate is taken on.
+    pub mass_balance_error: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for OilAssayDerivationResult {
+    const CALC_ID: &'static str = "characterization.oil_assay_derivation";
+    const FIELDS: &'static [&'static str] = &[
+        "component_name",
+        "mass_fraction",
+        "molar_mass",
+        "moles",
+        "total_moles",
+        "mass_balance_error",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

@@ -273,6 +273,86 @@ impl From<&azoth_characterization::results::LumpingResult> for PyLumpingResult {
         }
     }
 }
+/// Result of `characterization.oil_assay_derivation`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "OilAssayDerivationResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyOilAssayDerivationResult {
+    /// Each derived component's name: `<cut name>_PC` for a pseudo-component, and the name it was looked up by for a standard component.
+    #[pyo3(get)]
+    pub component_name: Vec<String>,
+    /// Each component's resolved mass fraction, which is the resolution the mole amounts were taken on.
+    #[pyo3(get)]
+    pub mass_fraction: Vec<f64>,
+    /// Each component's molar mass, by whichever of the three routes its cut reached.
+    #[pyo3(get)]
+    pub molar_mass: Vec<PyQty>,
+    /// Each component's mole amount, `total_assay_mass * mass_fraction / molar_mass`.
+    #[pyo3(get)]
+    pub moles: Vec<PyQty>,
+    /// The fluid's total mole amount, which is the sum of `moles`.
+    #[pyo3(get)]
+    pub total_moles: PyQty,
+    /// The class's own relative mass balance: `|sum(moles * molar_mass) - total_assay_mass| / total_assay_mass`, which its `1e-10` gate is taken on.
+    #[pyo3(get)]
+    pub mass_balance_error: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyOilAssayDerivationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "OilAssayDerivationResult(component_name={:?}, mass_fraction={:?}, molar_mass={:?}, moles={:?}, total_moles={:?}, mass_balance_error={:?}, {} warning(s))",
+            self.component_name,
+            self.mass_fraction,
+            self.molar_mass,
+            self.moles,
+            self.total_moles,
+            self.mass_balance_error,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::OilAssayDerivationResult>
+    for PyOilAssayDerivationResult
+{
+    fn from(r: &azoth_characterization::results::OilAssayDerivationResult) -> Self {
+        Self {
+            component_name: r.component_name.clone(),
+            mass_fraction: r.mass_fraction.clone(),
+            molar_mass: r
+                .molar_mass
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "kg/mol".to_string(),
+                })
+                .collect(),
+            moles: r
+                .moles
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "mol".to_string(),
+                })
+                .collect(),
+            total_moles: PyQty {
+                magnitude_si: r.total_moles,
+                unit: "mol".to_string(),
+            },
+            mass_balance_error: r.mass_balance_error,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.pedersen_plus_split`, transported.
 #[pyclass(
     frozen,

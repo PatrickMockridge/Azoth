@@ -16,6 +16,7 @@ pub mod characterise_plus_fraction;
 pub mod characterize_to_reference;
 pub mod lumping;
 pub mod model_gen;
+pub mod oil_assay_derivation;
 pub mod pedersen_plus_split;
 pub mod results;
 pub mod set_heavy_tbp_to_plus;
@@ -34,11 +35,13 @@ pub use characterize_to_reference::{
     ReferenceRow, SourceRow, characterize_to_reference,
 };
 pub use lumping::lumping;
+pub use oil_assay_derivation::{AssayCutDerivation, oil_assay_derivation};
 pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{
     AssayMassFractionsResult, CharacterisePlusFractionResult, CharacterizeToReferenceResult,
-    LumpingResult, PedersenPlusSplitResult, SetHeavyTbpToPlusResult, TbpClosureResult,
-    TbpCutPropertiesResult, TbpDensityResult, TbpGroupingResult, WhitsonGammaSplitResult,
+    LumpingResult, OilAssayDerivationResult, PedersenPlusSplitResult, SetHeavyTbpToPlusResult,
+    TbpClosureResult, TbpCutPropertiesResult, TbpDensityResult, TbpGroupingResult,
+    WhitsonGammaSplitResult,
 };
 pub use set_heavy_tbp_to_plus::set_heavy_tbp_to_plus;
 pub use tbp_closure::{TbpClosureKind, tbp_closure};

@@ -63,6 +63,7 @@ name = "azoth-characterization"
 version = "0.1.1"
 dependencies = [
  "azoth-core",
+ "azoth-eos",
  "azoth-test-support",
  "csv",
  "uom",

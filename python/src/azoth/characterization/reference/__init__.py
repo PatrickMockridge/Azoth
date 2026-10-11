@@ -18,6 +18,7 @@ from azoth.characterization.reference.characterize_to_reference import (
     characterize_to_reference,
 )
 from azoth.characterization.reference.lumping import lumping
+from azoth.characterization.reference.oil_assay_derivation import oil_assay_derivation
 from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_split
 from azoth.characterization.reference.set_heavy_tbp_to_plus import set_heavy_tbp_to_plus
 from azoth.characterization.reference.tbp_closure import tbp_closure
@@ -31,6 +32,7 @@ __all__ = [
     "characterise_plus_fraction",
     "characterize_to_reference",
     "lumping",
+    "oil_assay_derivation",
     "pedersen_plus_split",
     "set_heavy_tbp_to_plus",
     "tbp_closure",

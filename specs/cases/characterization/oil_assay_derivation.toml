@@ -1,0 +1,71 @@
+model = "characterization.oil_assay_derivation"
+
+[[cases]]
+id = "a_mass_basis_slate"
+tolerance = 1.0e-12
+source = "NeqSim master, `OilAssayCharacterisation.apply` on a three-cut mass-basis assay from `validation/neqsim/captures/oil_assay_derivation_probe.tsv`. **All three routes to a molar mass are in this one slate**: a gravity and a boiling point the cut states, a standard component read out of the database by name - `n-heptane`, whose 0.100205 kg/mol is NeqSim's own - and a molar mass the cut states. **`component_name` and `mass_balance_error` are asserted in the model's own test**: this generator carries no string-vector expectation, and the balance's contract is an inequality rather than a value.\n"
+[cases.inputs]
+basis = "mass"
+total_assay_mass = 1000.0
+cuts = [
+    { name = "cut_a", declared_fraction = 0.4, density = 780.0, average_boiling_point = 400.0 },
+    { name = "cut_b", declared_fraction = 0.3, standard_component_name = "n-heptane" },
+    { name = "cut_c", declared_fraction = 0.3, density = 850.0, molar_mass = 0.25 },
+]
+[cases.expected]
+mass_fraction = [
+    0.4, 0.3, 0.3,
+]
+molar_mass = [
+    0.112610323807509, 0.100205, 0.25,
+]
+moles = [
+    3552.07219440859, 2993.86258170750, 1200.0,
+]
+total_moles = 7745.93477611609
+
+[[cases]]
+id = "a_volume_basis_slate"
+tolerance = 1.0e-12
+source = "A volume basis, so the fractions are converted before anything is derived and **each cut's gravity comes from its own API gravity** rather than from a stated density: `141.5 / (API + 131.5)`.\n"
+[cases.inputs]
+basis = "volume"
+total_assay_mass = 500.0
+cuts = [
+    { name = "light", declared_fraction = 0.6, api_gravity = 55.0, average_boiling_point = 340.0 },
+    { name = "heavy", declared_fraction = 0.4, api_gravity = 20.0, average_boiling_point = 560.0 },
+]
+[cases.expected]
+mass_fraction = [
+    0.549244712990937, 0.450755287009064,
+]
+molar_mass = [
+    0.0785282238669953, 0.211682470546275,
+]
+moles = [
+    3497.11661581193, 1064.69677400738,
+]
+total_moles = 4561.81338981931
+
+[[cases]]
+id = "a_watson_factor_cut"
+tolerance = 1.0e-12
+source = "One cut states a Watson factor and no boiling point, so its boiling point is resolved as `(W * SG)^3 / 1.8` and the closed form is evaluated on that; the other states a molar mass and takes neither route.\n"
+[cases.inputs]
+basis = "mass"
+total_assay_mass = 250.0
+cuts = [
+    { name = "w1", declared_fraction = 0.5, density = 800.0, watson_characterization_factor = 11.5 },
+    { name = "w2", declared_fraction = 0.5, density = 880.0, molar_mass = 0.30 },
+]
+[cases.expected]
+mass_fraction = [
+    0.5, 0.5,
+]
+molar_mass = [
+    0.132491038438475, 0.3,
+]
+moles = [
+    943.460036793707, 416.666666666667,
+]
+total_moles = 1360.12670346037

@@ -123,6 +123,34 @@ class LumpingResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class OilAssayDerivationResult(_HasWarnings):
+    """Result of ``characterization.oil_assay_derivation``."""
+
+    CALC_ID: ClassVar[str] = "characterization.oil_assay_derivation"
+
+    #: Each derived component's name: `<cut name>_PC` for a pseudo-component, and the name it was looked up by for a standard component.
+    component_name: tuple[str, ...]
+
+    #: Each component's resolved mass fraction, which is the resolution the mole amounts were taken on.
+    mass_fraction: tuple[float, ...]
+
+    #: Each component's molar mass, by whichever of the three routes its cut reached.
+    molar_mass: tuple[Q, ...]
+
+    #: Each component's mole amount, `total_assay_mass * mass_fraction / molar_mass`.
+    moles: tuple[Q, ...]
+
+    #: The fluid's total mole amount, which is the sum of `moles`.
+    total_moles: Q
+
+    #: The class's own relative mass balance: `|sum(moles * molar_mass) - total_assay_mass| / total_assay_mass`, which its `1e-10` gate is taken on.
+    mass_balance_error: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class PedersenPlusSplitResult(_HasWarnings):
     """Result of ``characterization.pedersen_plus_split``."""
 
