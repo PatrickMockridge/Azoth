@@ -80,7 +80,9 @@ def lumping(
         "molar_mass": input_to_si(spec, "molar_mass", molar_mass),
         "mole_fraction": _dimensionless(spec, "mole_fraction", mole_fraction),
         "number_of_lumps": (
-            None if number_of_lumps is None else _dimensionless(spec, "number_of_lumps", number_of_lumps)
+            None
+            if number_of_lumps is None
+            else _dimensionless(spec, "number_of_lumps", number_of_lumps)
         ),
     }
     apply_checks(checks.on_input, values.get, warnings)
@@ -108,9 +110,13 @@ def lumping(
             f"asking for more groups than there are cuts leaves a count the loop cannot reach",
         )
 
-    weight_total = values["mole_fraction"] * values["molar_mass"]
-    mole_fraction_total = values["mole_fraction"]
-    target = weight_total / (lumps + COUNT_FLOOR)
+    # **The two required numbers, in SI magnitudes rather than quantities.** The map holds
+    # the quadrupole `apply_checks` reads, one of whose entries is optional; the arithmetic
+    # is in plain floats, which is what the Rust side works in and what keeps this readable.
+    mole_fraction_total = _dimensionless(spec, "mole_fraction", mole_fraction)
+    molar_mass_value = input_to_si(spec, "molar_mass", molar_mass)
+    weight_total = mole_fraction_total * molar_mass_value
+    target: float = weight_total / (lumps + COUNT_FLOOR)
 
     fraction_of_heavy_end: list[float] = []
     lump_mole_fraction: list[float] = []

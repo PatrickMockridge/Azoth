@@ -311,6 +311,7 @@ def test_a_component_the_databank_lacks_is_added() -> None:
     assert added.cas is None
     # The card had to state it: a substance the databank does not carry and a card leaves
     # without a molar mass is one whose density, enthalpy and mass flow all refuse later.
+    assert added.molar_mass is not None, "the card stated a molar mass and the entry lost it"
     assert added.molar_mass.to("kg/mol").magnitude == pytest.approx(0.12)
     assert added.source == "keycard"
 

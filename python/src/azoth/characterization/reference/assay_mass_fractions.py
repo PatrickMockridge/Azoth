@@ -100,7 +100,7 @@ def assay_mass_fractions(
         mass_fraction = normalised
     else:
         # The densities are present: the guard above refused their absence.
-        assert densities is not None  # noqa: S101 - a narrowing the guard above has established
+        assert densities is not None
         relative = [fraction * rho for fraction, rho in zip(normalised, densities, strict=True)]
         total_relative = sum(relative)
         if total_relative != total_relative or total_relative <= 0.0:
@@ -114,9 +114,7 @@ def assay_mass_fractions(
     # cut carries a density - which a mass-basis assay need not state.
     bulk = None
     if densities is not None:
-        reciprocal = sum(
-            mass / rho for mass, rho in zip(mass_fraction, densities, strict=True)
-        )
+        reciprocal = sum(mass / rho for mass, rho in zip(mass_fraction, densities, strict=True))
         bulk = 1.0 / reciprocal
         if bulk != bulk or bulk in (float("inf"), float("-inf")) or bulk <= 0.0:
             raise InvalidInputError(

@@ -47,7 +47,7 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from functools import cache
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from azoth import keycard
 from azoth._data import find
@@ -1578,11 +1578,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         if "molar_mass" not in override:
             missing.append("molar_mass")
         if missing:
-            needed = (
-                "molar mass"
-                if missing == ["molar_mass"]
-                else "critical constants"
-            )
+            needed = "molar mass" if missing == ["molar_mass"] else "critical constants"
             raise PropertyUnavailableError(
                 name,
                 needed,
@@ -1613,14 +1609,10 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             liqvisc_model=liqvisc_model if liqvisc_model is not None else 0,
             # Guaranteed present by the refusal above.
             molar_mass=override["molar_mass"],
-            critical_volume=(
-                None if "critical_volume" not in override else override["critical_volume"]
-            ),
-            liquid_density=(
-                None
-                if "normal_liquid_density" not in override
-                else override["normal_liquid_density"]
-            ),
+            # A card that states none leaves the entry's absent, which is what `None`
+            # already means for both.
+            critical_volume=override.get("critical_volume"),
+            liquid_density=override.get("normal_liquid_density"),
             # The card may also supply the polynomial, in which case the substance has
             # an enthalpy path; without it, it is a cubic only.
             cp=_cp(override),
@@ -1685,7 +1677,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
     def scalar(name: str, shipped: float) -> float:
         return _card_number(card_values, name, shipped)
 
-    def coefficients(prefix: str, width: int, shipped: tuple[float, ...]) -> tuple[float, ...]:
+    def coefficients[Set: tuple[float, ...]](prefix: str, width: int, shipped: Set) -> Set:
         return _card_coefficients(card_values, prefix, width, shipped)
 
     stated_alpha = _card_alpha_params(card_values)
@@ -1701,42 +1693,24 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         cp=base.cp if override is None else (_cp(override) or base.cp),
         # Parameter by parameter: what the card names, else what ships. A card overriding
         # one value does not restate, and does not lose, the others.
-        molar_mass=base.molar_mass if "molar_mass" not in card_values else card_values["molar_mass"],
-        critical_volume=(
-            base.critical_volume
-            if "critical_volume" not in card_values
-            else card_values["critical_volume"]
-        ),
-        liquid_density=(
-            base.liquid_density
-            if "normal_liquid_density" not in card_values
-            else card_values["normal_liquid_density"]
-        ),
+        molar_mass=card_values.get("molar_mass", base.molar_mass),
+        critical_volume=card_values.get("critical_volume", base.critical_volume),
+        liquid_density=card_values.get("normal_liquid_density", base.liquid_density),
         rackett_z=scalar("rackett_z", base.rackett_z),
         parachor=scalar("parachor", base.parachor),
         heat_of_fusion=scalar("heat_of_fusion", base.heat_of_fusion),
-        triple_point_temperature=scalar(
-            "triple_point_temperature", base.triple_point_temperature
-        ),
+        triple_point_temperature=scalar("triple_point_temperature", base.triple_point_temperature),
         lennard_jones_diameter=scalar("lennard_jones_diameter", base.lennard_jones_diameter),
         lennard_jones_energy=scalar("lennard_jones_energy", base.lennard_jones_energy),
-        liquid_conductivity=coefficients(
-            "liquid_conductivity_", 3, base.liquid_conductivity
-        ),
+        liquid_conductivity=coefficients("liquid_conductivity_", 3, base.liquid_conductivity),
         liqvisc=coefficients("liqvisc_", 4, base.liqvisc),
         # The class entries, which a card states or leaves alone.
-        liqvisc_model=(
-            base.liqvisc_model if liqvisc_model is None else liqvisc_model
-        ),
+        liqvisc_model=(base.liqvisc_model if liqvisc_model is None else liqvisc_model),
         wax_former=base.wax_former if wax_former is None else wax_former,
         cp_solid=coefficients("cp_solid_", 4, base.cp_solid),
         cp_liquid=coefficients("cp_liquid_", 5, base.cp_liquid),
-        solid_density_coefs=coefficients(
-            "solid_density_coefs_", 4, base.solid_density_coefs
-        ),
-        liquid_density_coefs=coefficients(
-            "liquid_density_coefs_", 4, base.liquid_density_coefs
-        ),
+        solid_density_coefs=coefficients("solid_density_coefs_", 4, base.solid_density_coefs),
+        liquid_density_coefs=coefficients("liquid_density_coefs_", 4, base.liquid_density_coefs),
         # A card's set replaces the table's for the correlation it names, and leaves the
         # others - so a card stating the cubic exponent does not lose a UMR-CPA set.
         alpha_params={**base.alpha_params, **stated_alpha},
@@ -1804,14 +1778,24 @@ def _card_number(override: Mapping[str, Q], name: str, shipped: float) -> float:
     return float(override[name].to("dimensionless").magnitude)
 
 
-def _card_coefficients(
-    override: Mapping[str, Q], prefix: str, width: int, shipped: tuple[float, ...]
-) -> tuple[float, ...]:
-    """One coefficient set, all-of-it or none, or the databank's."""
+def _card_coefficients[CoefficientSet: tuple[float, ...]](
+    override: Mapping[str, Q],
+    prefix: str,
+    width: int,
+    shipped: CoefficientSet,
+) -> CoefficientSet:
+    """One coefficient set, all-of-it or none, or the databank's.
+
+    The width is fixed per set by `component.schema.json` and enforced at load, which is
+    what lets the cast below be a statement of fact rather than a hope. The set's shape is
+    a type parameter rather than a cast per call site, so the width is checked against the
+    field it is assigned to rather than asserted at every one.
+    """
     stated = [override[f"{prefix}{i}"] for i in range(1, width + 1) if f"{prefix}{i}" in override]
     if not stated:
         return shipped
-    return tuple(float(value.to("dimensionless").magnitude) for value in stated)
+    values = tuple(float(value.to("dimensionless").magnitude) for value in stated)
+    return cast(CoefficientSet, values)
 
 
 def _card_alpha_params(override: Mapping[str, Q]) -> dict[str, tuple[float, ...]]:

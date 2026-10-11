@@ -89,13 +89,9 @@ def _tables() -> tuple[tuple[float, ...], tuple[float, ...]]:
     with find(PLUS_FRACTION_CSV).open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             carbon_number = int(row["carbon_number"])
-            expected = (
-                TABLE_FIRST_CARBON_NUMBER if previous is None else previous + 1
-            )
+            expected = TABLE_FIRST_CARBON_NUMBER if previous is None else previous + 1
             if carbon_number != expected:
-                raise ValueError(
-                    f"the plus-fraction table has C{carbon_number} after C{expected}"
-                )
+                raise ValueError(f"the plus-fraction table has C{carbon_number} after C{expected}")
             previous = carbon_number
             molar_mass.append(float(row["molar_mass_g_per_mol"]))
             # Past C80 the density cell is empty, which is how the shorter table is carried.
@@ -154,8 +150,9 @@ def _gravity_line(c: float, d: float, carbon_number: int) -> float:
     return c + d * math.log(carbon_number)
 
 
-def _abundance_residuals(a: float, b: float, first: int, last: int, z_plus: float,
-                         m_plus: float) -> list[float]:
+def _abundance_residuals(
+    a: float, b: float, first: int, last: int, z_plus: float, m_plus: float
+) -> list[float]:
     """``setfvecAB``: the abundance residuals, on the **kg/mol** scale."""
     z_sum = 0.0
     m_sum = 0.0
@@ -195,8 +192,9 @@ def _abundance_jacobian(a: float, b: float, first: int, last: int) -> list[list[
     ]
 
 
-def _density_slope_fixed_point(a: float, b: float, c: float, d: float, first: int, last: int,
-                               dens_plus: float) -> float:
+def _density_slope_fixed_point(
+    a: float, b: float, c: float, d: float, first: int, last: int, dens_plus: float
+) -> float:
     """``setCoefs(double[])``'s inner ``do``-``while``: the gravity slope alone."""
     iterations = 0
     while True:
@@ -217,8 +215,9 @@ def _density_slope_fixed_point(a: float, b: float, c: float, d: float, first: in
             return d
 
 
-def _gravity_residuals(a: float, b: float, c: float, d: float, first: int, last: int,
-                       anchor: float, dens_plus: float) -> list[float]:
+def _gravity_residuals(
+    a: float, b: float, c: float, d: float, first: int, last: int, anchor: float, dens_plus: float
+) -> list[float]:
     """``setfvecCD``: the gravity residuals, on the **g/mol** scale the class uses here."""
     temp = 0.0
     temp2 = 0.0
@@ -230,8 +229,9 @@ def _gravity_residuals(a: float, b: float, c: float, d: float, first: int, last:
     return [_gravity_line(c, d, first - 1) - anchor, temp / temp2 - dens_plus]
 
 
-def _gravity_jacobian(a: float, b: float, c: float, d: float, first: int, last: int
-                      ) -> list[list[float]]:
+def _gravity_jacobian(
+    a: float, b: float, c: float, d: float, first: int, last: int
+) -> list[list[float]]:
     """``setJacCD``, with its ``(1,1)`` left at zero and its ``(1,0)`` at the negative."""
     temp = 0.0
     temp2 = 0.0
@@ -247,7 +247,7 @@ def _gravity_jacobian(a: float, b: float, c: float, d: float, first: int, last: 
 
 
 def _solve_2x2(matrix: list[list[float]], rhs: list[float]) -> list[float] | None:
-    """``Jama.Matrix.LUDecomposition``'s solve, transcribed for a 2x2 system. ``None`` if singular."""
+    """``Jama.Matrix.LUDecomposition``'s solve, for a 2x2 system. ``None`` if singular."""
     lu = [list(row) for row in matrix]
     pivot = [0, 1]
     for j in range(2):
@@ -318,9 +318,7 @@ def pedersen_plus_split(
         "molar_mass": input_to_si(spec, "molar_mass", molar_mass),
         "density": input_to_si(spec, "density", density),
         "mole_fraction": _dimensionless(spec, "mole_fraction", mole_fraction),
-        "first_carbon_number": _dimensionless(
-            spec, "first_carbon_number", first_carbon_number
-        ),
+        "first_carbon_number": _dimensionless(spec, "first_carbon_number", first_carbon_number),
         "last_carbon_number": _dimensionless(spec, "last_carbon_number", last_carbon_number),
     }
     apply_checks(checks.on_input, values.get, warnings)
@@ -371,8 +369,10 @@ def pedersen_plus_split(
         a, b = seed_a, seed_b
         d = _density_slope_fixed_point(a, b, c, d, first, last, dens_plus)
         norm = math.sqrt(f[0] * f[0] + f[1] * f[1])
-        if not ((norm > RESIDUAL_TOLERANCE or iterations < MIN_ITERATIONS)
-                and iterations < MAX_ITERATIONS):
+        if not (
+            (norm > RESIDUAL_TOLERANCE or iterations < MIN_ITERATIONS)
+            and iterations < MAX_ITERATIONS
+        ):
             break
 
     # The gravity solve, from the solver's own seed rather than from what the walk above left.
@@ -390,8 +390,10 @@ def pedersen_plus_split(
         seed_d -= dx[1] * scale
         c, d = seed_c, seed_d
         norm = math.sqrt(f[0] * f[0] + f[1] * f[1])
-        if not ((norm > RESIDUAL_TOLERANCE or iterations < MIN_ITERATIONS)
-                and iterations < MAX_ITERATIONS):
+        if not (
+            (norm > RESIDUAL_TOLERANCE or iterations < MIN_ITERATIONS)
+            and iterations < MAX_ITERATIONS
+        ):
             break
 
     cut_z = []

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PatrickMockridge/Azoth/main/specs/schema/component.schema.json",
   "title": "Component parameters",
-  "description": "The parameters a keycard may state for one component, and the canonical unit each is converted to. This is the single declaration the two implementations and the keycard schema hold themselves to, so a parameter one carries and another does not is a test failure rather than a drift. **`ion` is the one entry here that is not a parameter**: it is a class, and it is stated the way the databank states it because whether a substance is an ion is what decides whether a cubic may be built over it at all.",
+  "description": "The parameters a keycard may state for one component, and the canonical unit each is converted to. This is the single declaration the two implementations and the keycard schema hold themselves to, so a parameter one carries and another does not is a test failure rather than a drift. **The set is bounded by the `Component` the parameters produce**: a card may state anything that struct carries, and nothing more, which is why `class` is absent - a card able to set it could clear the ion refusal - and why `volume_shift` is, being a function of `rackett_z` and the cubic's own constants. **`ion`, `liqvisc_model` and `wax_former` are the three entries that are not parameters**: they are classes, and they are stated the way the databank states them.",
   "type": "object",
   "additionalProperties": false,
   "properties": {

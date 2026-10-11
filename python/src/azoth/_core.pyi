@@ -12,6 +12,8 @@ see `azoth._rust_bridge`.
 
 from typing import TypedDict, final
 
+from azoth.core.result_base import PlusModel
+
 # --- transport types ------------------------------------------------------
 # The values that cross the boundary and are not results. Hand-written here
 # because a `cdylib` has nothing to introspect; held to the Rust structs by
@@ -28,6 +30,24 @@ class ComponentArguments(TypedDict):
     ionic_charge: float | None
     deshmukh_mather_diameter: float | None
     dielectric: list[float] | None
+    molar_mass: float | None
+    normal_liquid_density: float | None
+    critical_volume: float | None
+    triple_point_temperature: float | None
+    heat_of_fusion: float | None
+    rackett_z: float | None
+    parachor: float | None
+    lennard_jones_diameter: float | None
+    lennard_jones_energy: float | None
+    alpha_params: list[float] | None
+    liquid_conductivity: list[float] | None
+    liqvisc: list[float] | None
+    liqvisc_model: int | None
+    wax_former: bool | None
+    cp_solid: list[float] | None
+    cp_liquid: list[float] | None
+    solid_density_coefs: list[float] | None
+    liquid_density_coefs: list[float] | None
 
 @final
 class AssociationSpec:

@@ -45,8 +45,10 @@ azoth.eos.component("methane", card=card)  # the card's omega, the databank's Tc
 ```
 
 A name already in the databank is overridden parameter by parameter; a new name must
-be complete. A parameter or unit the card's vocabulary does not know is refused when
-the card is loaded, not when it is finally used.
+state the parameters its component carries a reader for - `Tc`, `Pc` and `omega` for the
+cubic, and **a molar mass**, which the cubic does not read and every mass-bearing
+correlation does. A parameter or unit the card's vocabulary does not know is refused
+when the card is loaded, not when it is finally used.
 
 ## The keycard
 

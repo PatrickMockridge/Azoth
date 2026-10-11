@@ -14,6 +14,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import pint
 import pytest
 
 from azoth import _core, keycard
@@ -39,6 +40,20 @@ def rust_card(text: str) -> Any:
 def python_card(text: str, path: Path | None = None) -> keycard.Keycard:
     """The card as Python reads it, from the same text."""
     return keycard.use(tomllib.loads(text), path=path)
+
+
+def _bare(value: Any) -> float:
+    """A card value as a plain number.
+
+    The rows compared below carry a quantity and a bare number in one column - a molar mass
+    is a `pint` quantity in kg/mol, `liqvisc_model` is an index - and the two readers write
+    the same physical value as different Python types. So the conversion goes per value
+    rather than per row, and `Any` is the honest annotation for a column whose element type
+    varies down its length.
+    """
+    if isinstance(value, pint.Quantity):
+        return float(value.to_base_units().magnitude)
+    return float(value)
 
 
 def test_both_readers_take_the_shipped_template() -> None:
@@ -109,10 +124,9 @@ def test_the_two_readers_resolve_the_same_components() -> None:
                 # carry: the point is that the two agree about the absence too.
                 assert theirs_value is None, f"{name}.{field}"
                 continue
-            quantity = mine_value.to_base_units().magnitude if hasattr(mine_value, "to") else mine_value
-            assert theirs_value == pytest.approx(quantity), f"{name}.{field}"
+            assert theirs_value == pytest.approx(_bare(mine_value)), f"{name}.{field}"
 
-        for field, mine_value, theirs_value in (
+        for field, mine_coefs, theirs_coefs in (
             ("liquid_conductivity", mine.liquid_conductivity, theirs.liquid_conductivity),
             ("liqvisc", mine.liqvisc, theirs.liqvisc),
             ("cp_solid", mine.cp_solid, theirs.cp_solid),
@@ -120,7 +134,7 @@ def test_the_two_readers_resolve_the_same_components() -> None:
             ("solid_density_coefs", mine.solid_density_coefs, theirs.solid_density_coefs),
             ("liquid_density_coefs", mine.liquid_density_coefs, theirs.liquid_density_coefs),
         ):
-            assert list(mine_value) == pytest.approx(list(theirs_value)), f"{name}.{field}"
+            assert list(mine_coefs) == pytest.approx(list(theirs_coefs)), f"{name}.{field}"
         assert list(mine.alpha_params.get("srk_fitted", ())) == pytest.approx(
             list(theirs.alpha_params)
         ), f"{name}.alpha_params"

@@ -31,13 +31,14 @@ is propagated. A stated divergence.
 from __future__ import annotations
 
 from azoth import _models_gen
-from azoth.core.range import apply_checks, checks_for
-from azoth.core.result import CharacterisePlusFractionResult
-from azoth.core.units import Q, input_to_si
-from azoth.core.warnings import Warning
 from azoth.characterization.reference.lumping import lumping
 from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_split
 from azoth.characterization.reference.whitson_gamma_split import whitson_gamma_split
+from azoth.core.range import apply_checks, checks_for
+from azoth.core.result import CharacterisePlusFractionResult
+from azoth.core.result_base import PlusModel
+from azoth.core.units import Q, input_to_si
+from azoth.core.warnings import Warning
 
 MODEL_ID = "characterization.characterise_plus_fraction"
 
@@ -86,38 +87,47 @@ def characterise_plus_fraction(
     mass = input_to_si(spec, "molar_mass", molar_mass)
     # The class replaces the model before using it, so the request is discarded rather than
     # reported as an error.
-    selected = (
-        "pedersen_heavy_oil" if mass > MAXIMUM_MOLAR_MASS[requested] else requested
-    )
+    selected = "pedersen_heavy_oil" if mass > MAXIMUM_MOLAR_MASS[requested] else requested
     last = LAST_CARBON_NUMBER[selected]
 
+    # **The three vectors and the warnings, not the result object.** The two splits answer
+    # with different types carrying the same three fields, so binding the fields in each
+    # branch is what gives the lumping one shape to take - the same move the Rust side
+    # makes, and the reason the two cannot disagree about which split ran.
     if selected == "whitson_gamma":
         # **The first carbon number is ignored here.** The gamma model's override never reads it,
         # so its cuts always begin at the outer object's own value of one.
-        split = whitson_gamma_split(
+        gamma = whitson_gamma_split(
             molar_mass=molar_mass,
             density=density,
             mole_fraction=mole_fraction,
             first_carbon_number=GAMMA_FIRST_CARBON_NUMBER,
             last_carbon_number=last,
         )
+        cut_z = list(gamma.cut_z)
+        cut_molar_mass = list(gamma.cut_molar_mass)
+        cut_density = list(gamma.cut_density)
+        warnings.extend(gamma.warnings)
     else:
-        split = pedersen_plus_split(
+        pedersen = pedersen_plus_split(
             molar_mass=molar_mass,
             density=density,
             mole_fraction=mole_fraction,
             first_carbon_number=first_carbon_number,
             last_carbon_number=last,
         )
-    warnings.extend(split.warnings)
+        cut_z = list(pedersen.cut_z)
+        cut_molar_mass = list(pedersen.cut_molar_mass)
+        cut_density = list(pedersen.cut_density)
+        warnings.extend(pedersen.warnings)
 
     # **The lumping is handed the plus fraction's own two numbers**, not the cut table's sums.
     grouped = lumping(
         molar_mass=molar_mass,
         mole_fraction=mole_fraction,
-        cut_z=list(split.cut_z),
-        cut_molar_mass=list(split.cut_molar_mass),
-        cut_density=list(split.cut_density),
+        cut_z=cut_z,
+        cut_molar_mass=cut_molar_mass,
+        cut_density=cut_density,
         number_of_lumps=number_of_lumps,
     )
     warnings.extend(grouped.warnings)
@@ -125,7 +135,7 @@ def characterise_plus_fraction(
     apply_checks(checks.derived, lambda _name: None, warnings)
 
     return CharacterisePlusFractionResult(
-        selected_model=selected,
+        selected_model=PlusModel(selected),
         fraction_of_heavy_end=grouped.fraction_of_heavy_end,
         lump_molar_mass=grouped.lump_molar_mass,
         lump_density=grouped.lump_density,

@@ -232,6 +232,16 @@ def _in(value: Q | None, unit: str) -> float | None:
     return None if value is None else float(value.to(unit).magnitude)
 
 
+def _present(value: Q) -> float:
+    """A card value the caller has checked is present, as a bare float.
+
+    Distinct from :func:`_plain`, which takes ``None`` because a caller may omit the key:
+    these two comprehensions run only over keys the guard above has already found, so the
+    optional shape is a lie about what reaches them and a type checker is right to say so.
+    """
+    return float(value.to("dimensionless").magnitude)
+
+
 def _coefficients(parameters: Mapping[str, Q], prefix: str, width: int) -> list[float] | None:
     """One coefficient set the card states, in order, or ``None`` when it states none.
 
@@ -242,7 +252,7 @@ def _coefficients(parameters: Mapping[str, Q], prefix: str, width: int) -> list[
     names = [f"{prefix}{i}" for i in range(1, width + 1)]
     if not all(name in parameters for name in names):
         return None
-    return [_plain(parameters[name]) for name in names]
+    return [_present(parameters[name]) for name in names]
 
 
 def _alpha_params(parameters: Mapping[str, Q]) -> list[float] | None:
@@ -254,7 +264,7 @@ def _alpha_params(parameters: Mapping[str, Q]) -> list[float] | None:
     names = [name for name in sorted(parameters) if name.startswith("alpha_param_")]
     if not names:
         return None
-    return [_plain(parameters[name]) for name in names]
+    return [_present(parameters[name]) for name in names]
 
 
 def resolve(calc_id: str) -> Callable[..., Any]:

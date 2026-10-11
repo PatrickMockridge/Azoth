@@ -116,7 +116,7 @@ def p0_p1(molar_mass: float, eta: float, shape: float, scale: float) -> list[flo
 
 def watson_factor(m_plus: float, dens_plus: float) -> float:
     """``getWatsonKFactor``. ``dens_plus`` is a specific gravity in g/cm3."""
-    return 4.5579 * (m_plus * 1000.0) ** 0.15178 * dens_plus**-1.18241
+    return float(4.5579 * (m_plus * 1000.0) ** 0.15178 * dens_plus**-1.18241)
 
 
 def estimate_shape(m_plus: float, dens_plus: float) -> float:
@@ -133,9 +133,7 @@ def estimate_shape(m_plus: float, dens_plus: float) -> float:
 
 def _density_uop(molar_masses: list[float], kw: float) -> list[float]:
     """``densityUOP``: every cut's gravity from the plus fraction's Watson factor, in g/cm3."""
-    return [
-        6.0108 * (m * 1000.0) ** 0.17947 * kw**-1.18241 if m > 0 else 0.0 for m in molar_masses
-    ]
+    return [6.0108 * (m * 1000.0) ** 0.17947 * kw**-1.18241 if m > 0 else 0.0 for m in molar_masses]
 
 
 def _density_soreide(
@@ -195,17 +193,27 @@ def whitson_gamma_split(
         "molar_mass": input_to_si(spec, "molar_mass", molar_mass),
         "density": input_to_si(spec, "density", density),
         "mole_fraction": _dimensionless(spec, "mole_fraction", mole_fraction),
-        "first_carbon_number": _dimensionless(
-            spec, "first_carbon_number", first_carbon_number
-        ),
+        "first_carbon_number": _dimensionless(spec, "first_carbon_number", first_carbon_number),
         "last_carbon_number": _dimensionless(spec, "last_carbon_number", last_carbon_number),
         "alpha": None if alpha is None else _dimensionless(spec, "alpha", alpha),
         "eta": None if eta is None else input_to_si(spec, "eta", eta),
     }
     apply_checks(checks.on_input, values.get, warnings)
 
-    first = int(values["first_carbon_number"])
-    last = int(values["last_carbon_number"])
+    # **Bound as locals rather than read out of the map.** The map holds two optional
+    # entries, so every read of it is `float | None`; these are required, and saying so
+    # once here keeps the arithmetic below readable as arithmetic.
+    first_carbon = values["first_carbon_number"]
+    last_carbon = values["last_carbon_number"]
+    molar_mass_value = values["molar_mass"]
+    density_value = values["density"]
+    assert first_carbon is not None
+    assert last_carbon is not None
+    assert molar_mass_value is not None
+    assert density_value is not None
+
+    first = int(first_carbon)
+    last = int(last_carbon)
     if last <= first:
         raise InvalidInputError(
             "last_carbon_number",
@@ -214,13 +222,13 @@ def whitson_gamma_split(
         )
 
     # The class works in g/mol and g/cm3 from here on, the conversion made once.
-    m_plus = values["molar_mass"] * 1000.0
-    dens_plus = values["density"] / 1000.0
+    m_plus = molar_mass_value * 1000.0
+    dens_plus = density_value / 1000.0
     given_eta = values["eta"]
     eta_gmol = DEFAULT_ETA_GMOL if given_eta is None else given_eta * 1000.0
     # The estimate runs before the scale is derived, so it moves both parameters.
     shape = (
-        estimate_shape(values["molar_mass"], dens_plus)
+        estimate_shape(molar_mass_value, dens_plus)
         if auto_estimate_shape
         else (DEFAULT_SHAPE if values["alpha"] is None else values["alpha"])
     )
@@ -260,9 +268,9 @@ def whitson_gamma_split(
     if total > 0.0:
         cut_z = [value * mole_fraction / total for value in cut_z]
 
-    kw = watson_factor(values["molar_mass"], dens_plus)
+    kw = watson_factor(molar_mass_value, dens_plus)
     if (density_model or "uop") == "soreide":
-        densities = _density_soreide(cut_molar_mass, values["molar_mass"], dens_plus, kw)
+        densities = _density_soreide(cut_molar_mass, molar_mass_value, dens_plus, kw)
     else:
         densities = _density_uop(cut_molar_mass, kw)
 

@@ -48,6 +48,8 @@ def the_cut() -> dict[str, tuple[float, str]]:
     cut = azoth.characterization.tbp_cut_properties(
         CUT_MOLAR_MASS * q("kg/mol"), CUT_DENSITY * q("kg/m**3")
     )
+    exponent = cut.attraction_exponent
+    assert exponent is not None, "the cut states an attraction exponent"
     return {
         "Tc": (cut.tc.to("K").magnitude, "K"),
         "Pc": (cut.pc.to("Pa").magnitude, "Pa"),
@@ -55,14 +57,12 @@ def the_cut() -> dict[str, tuple[float, str]]:
         "molar_mass": (CUT_MOLAR_MASS, "kg/mol"),
         # **The one this whole change exists for.** A cut's attraction exponent is fitted,
         # and before the card could state it a fluid built from a cut ran Soave's `m`.
-        "alpha_param_1": (cut.attraction_exponent, "dimensionless"),
+        "alpha_param_1": (exponent, "dimensionless"),
     }
 
 
 def a_card(entry: dict[str, tuple[float, str]]) -> keycard.Keycard:
-    stated = {
-        name: {"value": value, "unit": unit} for name, (value, unit) in entry.items()
-    }
+    stated = {name: {"value": value, "unit": unit} for name, (value, unit) in entry.items()}
     return keycard.use({"schema_version": 2, "components": {"c19": stated}})
 
 
@@ -190,10 +190,10 @@ def test_both_readers_carry_every_new_parameter() -> None:
     card = a_card(entry)
     python_side = eos.components.entry("c19", card=card)
 
-    import azoth._core as core
-
     rust_side = core.overlay_entry_row("c19", azoth._rust_bridge.overlay_from(card))
 
+    assert python_side.molar_mass is not None
+    assert python_side.liquid_density is not None
     assert python_side.molar_mass.to("kg/mol").magnitude == pytest.approx(CUT_MOLAR_MASS)
     assert rust_side.molar_mass == pytest.approx(CUT_MOLAR_MASS)
     assert python_side.liquid_density.to("kg/m**3").magnitude == pytest.approx(CUT_DENSITY)

@@ -40,7 +40,7 @@ def _riazi_daubert_1980(boiling_point: float, molar_mass: float) -> float:
     """
     molar_mass_gmol = molar_mass * 1000.0
     rankine = boiling_point * 1.8
-    return (4.5673e-5 * rankine**2.1962 / molar_mass_gmol) ** (1.0 / 1.0164)
+    return float((4.5673e-5 * rankine**2.1962 / molar_mass_gmol) ** (1.0 / 1.0164))
 
 
 def tbp_density(

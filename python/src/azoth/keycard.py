@@ -92,7 +92,6 @@ COMPONENT_PARAMETERS: Mapping[str, str] = {
     "liquid_density_coefs_3": "dimensionless",
     "solid_density_coefs_4": "dimensionless",
     "liquid_density_coefs_4": "dimensionless",
-
     # The electrolyte data. `ion` is deliberately absent: it is a class rather than a
     # number with a unit, and :class:`Component` carries it beside this table.
     "ionic_charge": "dimensionless",
@@ -587,8 +586,7 @@ def _components(raw: Any, where: str) -> dict[str, Component]:
             if stated and len(stated) != width:
                 raise KeycardError(
                     where,
-                    f"`{field_name}` needs all {width} `{prefix}*` coefficients, or none "
-                    f"of them",
+                    f"`{field_name}` needs all {width} `{prefix}*` coefficients, or none of them",
                 )
         # **`alpha_param_*` is a contiguous prefix from `_1`.** A petroleum cut states the
         # one exponent it has; an UMR-CPA set states five. What is refused is a gap, because

@@ -73,7 +73,9 @@ _PEDERSEN = (
 )
 
 
-def _pedersen_coefs(model: str, molar_mass: float):
+def _pedersen_coefs(
+    model: str, molar_mass: float
+) -> tuple[tuple[float, float, float, float, float], ...]:
     """The coefficient set a model uses at this molar mass, in g/mol."""
     heavy = molar_mass >= PEDERSEN_HEAVY_SWITCH
     if model in ("pedersen_srk", "pedersen_srk_heavy_oil"):
@@ -89,12 +91,14 @@ def _srk_tb(molar_mass: float, density: float) -> float:
     """The boiling point the SRK family correlates, in K."""
     if molar_mass < BOILING_POINT_SWITCH:
         return 2.0e-6 * molar_mass**3 - 0.0035 * molar_mass**2 + 2.4003 * molar_mass + 171.74
-    return 97.58 * molar_mass**0.3323 * density**0.04609
+    # `float ** float` is `Any` in typeshed - CPython's `float.__pow__` can return a
+    # complex for a negative base - so the one cast says what the arithmetic already is.
+    return float(97.58 * molar_mass**0.3323 * density**0.04609)
 
 
 def _base_tb(molar_mass: float, density: float) -> float:
     """``TBPBaseModel.calcTB``'s fallback, in K."""
-    return (molar_mass / 5.805e-5 * density**0.9371) ** (1.0 / 2.3776)
+    return float((molar_mass / 5.805e-5 * density**0.9371) ** (1.0 / 2.3776))
 
 
 def _acentric_edmister(tc: float, tb: float, pc_bar: float) -> float:
@@ -109,7 +113,9 @@ def _acentric_kesler_lee(tc: float, tb: float, pc_bar: float, density: float) ->
             math.log(pbr) - 5.92714 + 6.09649 / tbr + 1.28862 * math.log(tbr) - 0.169347 * tbr**6
         ) / (15.2518 - 15.6875 / tbr - 13.4721 * math.log(tbr) + 0.43577 * tbr**6)
     kw = tb ** (1.0 / 3.0) / density
-    return -7.904 + 0.1352 * kw - 0.007465 * kw * kw + 8.359 * tbr + (1.408 - 0.01063 * kw) / tbr
+    return float(
+        -7.904 + 0.1352 * kw - 0.007465 * kw * kw + 8.359 * tbr + (1.408 - 0.01063 * kw) / tbr
+    )
 
 
 def _twu_tfunc(mw: float, tb: float) -> float:
@@ -216,7 +222,21 @@ def _riazi_daubert_tc_pc(molar_mass: float, density: float) -> tuple[float, floa
     return tc, pc
 
 
-def _evaluate(model: str, molar_mass: float, density: float, supplied_tb: float | None) -> dict:
+def _required(cut: dict[str, float | None], name: str) -> float:
+    """One of `_evaluate`'s outputs that **every** model produces.
+
+    The map carries one optional key - `attraction_exponent`, absent for five of the ten
+    models - so a reader that treated them alike would either lose the distinction the
+    result field carries or narrow four values that are always present.
+    """
+    value = cut[name]
+    assert value is not None
+    return value
+
+
+def _evaluate(
+    model: str, molar_mass: float, density: float, supplied_tb: float | None
+) -> dict[str, float | None]:
     """One model over one cut, in g/mol and g/cm3."""
     tb_override = supplied_tb if (supplied_tb is not None and supplied_tb > 0.0) else None
 
@@ -405,8 +425,14 @@ def tbp_cut_properties(
     apply_checks(checks.on_input, values.get, warnings)
 
     # The boundary: g/mol and g/cm3, which is what every correlation above is written in.
-    molar_mass_g = values["molar_mass"] * 1.0e3
-    specific_gravity = values["density"] / 1.0e3
+    # **Bound as locals rather than read out of the map**, which holds an optional entry
+    # and so would make every read of it `float | None`.
+    molar_mass_value = values["molar_mass"]
+    density_value = values["density"]
+    assert molar_mass_value is not None
+    assert density_value is not None
+    molar_mass_g = molar_mass_value * 1.0e3
+    specific_gravity = density_value / 1.0e3
 
     cut = _evaluate(
         model if model is not None else DEFAULT_MODEL,
@@ -415,7 +441,13 @@ def tbp_cut_properties(
         values["boiling_point"],
     )
 
-    watson_k = (1.8 * cut["tb"]) ** (1.0 / 3.0) / specific_gravity
+    # **`_evaluate` returns one optional key and four required ones.** The optional one is
+    # `attraction_exponent`, which five of the ten models have no value for; reading the
+    # rest through a narrowing helper says which is which instead of treating all five
+    # alike and losing the distinction the result field carries.
+    tb = _required(cut, "tb")
+    pc_bar = _required(cut, "pc_bar")
+    watson_k = float((1.8 * tb) ** (1.0 / 3.0)) / specific_gravity
 
     apply_checks(
         checks.derived,
@@ -430,10 +462,10 @@ def tbp_cut_properties(
     )
 
     return TbpCutPropertiesResult(
-        tc=from_si(cut["tc"], "K"),
-        pc=from_si(cut["pc_bar"] * 1.0e5, "Pa"),
-        boiling_temperature=from_si(cut["tb"], "K"),
-        acentric_factor=cut["acentric_factor"],
+        tc=from_si(_required(cut, "tc"), "K"),
+        pc=from_si(pc_bar * 1.0e5, "Pa"),
+        boiling_temperature=from_si(tb, "K"),
+        acentric_factor=_required(cut, "acentric_factor"),
         attraction_exponent=cut["attraction_exponent"],
         watson_k=watson_k,
         warnings=tuple(warnings),

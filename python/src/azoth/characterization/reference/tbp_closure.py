@@ -35,10 +35,14 @@ CLOSURES = ("riazi_daubert_1980", "riazi_daubert_1987", "soreide", "tbp_model")
 def soreide_boiling_point(molar_mass: float, density: float) -> float:
     """``TbpClosure.calcBoilingPointSoreide``, in K. ``molar_mass`` is kg/mol."""
     molar_mass_gmol = molar_mass * 1000.0
-    rankine = 1928.3 - 1.695e5 * molar_mass_gmol**-0.03522 * density**3.266 * math.exp(
+    # `float ** float` is `Any` in typeshed - CPython's `float.__pow__` can return a
+    # complex for a negative base - so the casts say what the arithmetic already is.
+    rankine = 1928.3 - 1.695e5 * float(molar_mass_gmol**-0.03522) * float(
+        density**3.266
+    ) * math.exp(
         -4.922e-3 * molar_mass_gmol - 4.7685 * density + 3.462e-3 * molar_mass_gmol * density
     )
-    return rankine / 1.8
+    return float(rankine / 1.8)
 
 
 def _forward_boiling_point(
@@ -56,7 +60,11 @@ def _forward_boiling_point(
         # the two ids cannot disagree about the switch at 540 g/mol.
         from azoth.characterization.reference.tbp_cut_properties import _evaluate
 
-        return float(_evaluate(model, molar_mass * 1000.0, density, None)["tb"])
+        # `_evaluate`'s map carries one optional key - the attraction exponent - and a
+        # boiling point is not it; the narrowing says which is which.
+        tb = _evaluate(model, molar_mass * 1000.0, density, None)["tb"]
+        assert tb is not None
+        return float(tb)
     return soreide_boiling_point(molar_mass, density)
 
 
@@ -94,7 +102,7 @@ def _solve_molar_mass(
 
 def _riazi_daubert_1980(boiling_point: float, density: float) -> float:
     """The 1980 pair, in kg/mol. Specific gravity in g/cm3."""
-    return 4.5673e-5 * (boiling_point * 1.8) ** 2.1962 * density**-1.0164 / 1000.0
+    return float(4.5673e-5 * (boiling_point * 1.8) ** 2.1962 * density**-1.0164 / 1000.0)
 
 
 def _riazi_daubert_1987(boiling_point: float, density: float) -> float:
@@ -104,10 +112,10 @@ def _riazi_daubert_1987(boiling_point: float, density: float) -> float:
         * math.exp(
             2.097e-4 * boiling_point - 7.78712 * density + 2.08476e-3 * boiling_point * density
         )
-        * boiling_point**1.26007
-        * density**4.98308
+        * float(boiling_point**1.26007)
+        * float(density**4.98308)
     )
-    return molar_mass_gmol / 1000.0
+    return float(molar_mass_gmol / 1000.0)
 
 
 def tbp_closure(

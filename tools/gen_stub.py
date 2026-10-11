@@ -122,6 +122,29 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             # databank's angstrom happens once, on the Rust side.
             ("deshmukh_mather_diameter", "float | None"),
             ("dielectric", "list[float] | None"),
+            # The rest of what a card may state for a substance. Each is optional for the
+            # reason the first three are, and `_si_of`/`_plain`/`_in` on the Python side
+            # decide the unit each crosses in - which is why the two sequence-valued and
+            # the two class-valued ones are the shapes that needed a helper rather than a
+            # cast.
+            ("molar_mass", "float | None"),
+            ("normal_liquid_density", "float | None"),
+            ("critical_volume", "float | None"),
+            ("triple_point_temperature", "float | None"),
+            ("heat_of_fusion", "float | None"),
+            ("rackett_z", "float | None"),
+            ("parachor", "float | None"),
+            ("lennard_jones_diameter", "float | None"),
+            ("lennard_jones_energy", "float | None"),
+            ("alpha_params", "list[float] | None"),
+            ("liquid_conductivity", "list[float] | None"),
+            ("liqvisc", "list[float] | None"),
+            ("liqvisc_model", "int | None"),
+            ("wax_former", "bool | None"),
+            ("cp_solid", "list[float] | None"),
+            ("cp_liquid", "list[float] | None"),
+            ("solid_density_coefs", "list[float] | None"),
+            ("liquid_density_coefs", "list[float] | None"),
         ),
     ),
     (
@@ -728,6 +751,12 @@ def render() -> str:
     return (
         f'"""{DOCSTRING}"""\n\n'
         "from typing import TypedDict, final\n\n"
+        # **A result field can name an enum the stub does not define.** The transport
+        # carries `selected_model` as a string, and the stub renders the *dataclass's*
+        # annotation - which is `PlusModel`, declared in `azoth.core.result_base` beside
+        # the phase and the stability verdict. Without the import the name is unresolved
+        # and `mypy` refuses the whole file rather than the one field.
+        "from azoth.core.result_base import PlusModel\n\n"
         "# --- transport types ------------------------------------------------------\n"
         "# The values that cross the boundary and are not results. Hand-written here\n"
         "# because a `cdylib` has nothing to introspect; held to the Rust structs by\n"

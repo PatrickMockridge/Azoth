@@ -26,6 +26,8 @@ against a reference of many. ``reference_index`` is what says which cut that one
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
@@ -116,7 +118,7 @@ def characterize_to_reference(
     # The midpoint of each adjacent pair, or the larger of the two when either is not finite.
     boundaries = [
         0.5 * (low + high) if low != float("inf") and high != float("inf") else max(low, high)
-        for low, high in zip(reference, reference[1:], strict=False)
+        for low, high in pairwise(reference)
     ]
 
     # A forward walk, advancing while the row's key is **greater than** the boundary.
