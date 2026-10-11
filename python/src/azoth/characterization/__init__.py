@@ -28,9 +28,10 @@ to :mod:`azoth.characterization.reference` otherwise. Both are always reachable 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from azoth._dispatch import resolve
+from azoth.core.errors import InvalidInputError
 from azoth.core.result import (
     AssayMassFractionsResult,
     CharacterisePlusFractionResult,
@@ -48,8 +49,73 @@ from azoth.core.result import (
 )
 from azoth.core.units import Q
 
+if TYPE_CHECKING:
+    from azoth import keycard
+
+
+def card_from_cuts(
+    names: Sequence[str],
+    molar_mass: Sequence[Q],
+    density: Sequence[Q],
+    *,
+    model: str | None = None,
+) -> keycard.Keycard:
+    """A keycard whose components are these cuts, each described by its own correlation.
+
+    **This is not a calculation.** It is the step between the two things this namespace already
+    answers and the one thing a cubic needs: a crude's cuts are a molar mass and a normal liquid
+    density each, `tbp_cut_properties` turns one into the constants a cubic reads, and a card is
+    how a substance the databank does not carry reaches a `Mixture`. So this composes ids that
+    exist rather than adding arithmetic of its own, and every number it writes is one of theirs.
+
+    Each cut's entry carries `Tc`, `Pc` and `omega` - what a cubic reads - beside the two numbers
+    the cut *is*, and `alpha_param_1` wherever the model offers an attraction exponent. A cut whose
+    model offers none is a component with Soave's `m`, which is what `alpha="srk"` reads.
+
+    ``model`` is `tbp_cut_properties`' own vocabulary; ``None`` takes NeqSim's default.
+
+    **The card is a value and this returns one.** It stores nothing and is in force nowhere: a
+    caller holds it, passes it, and can write it out with :func:`azoth.keycard.to_toml`.
+
+    Raises:
+        InvalidInputError: if the three sequences are not the same length, or if a value is not a
+            quantity in the unit its field declares.
+
+    See :func:`azoth.eos.from_names` for the call that consumes it.
+    """
+    from azoth import keycard
+
+    if not len(names) == len(molar_mass) == len(density):
+        raise InvalidInputError(
+            "names",
+            f"a cut table is one name, one molar mass and one density per cut: {len(names)} names, "
+            f"{len(molar_mass)} molar masses and {len(density)} densities",
+        )
+    components: dict[str, dict[str, dict[str, object]]] = {}
+    for name, mass, rho in zip(names, molar_mass, density, strict=True):
+        cut = tbp_cut_properties(mass, rho, model)
+        stated: dict[str, dict[str, object]] = {
+            "Tc": {"value": cut.tc.to("K").magnitude, "unit": "K"},
+            "Pc": {"value": cut.pc.to("Pa").magnitude, "unit": "Pa"},
+            "omega": {"value": cut.acentric_factor, "unit": "dimensionless"},
+            "molar_mass": {"value": mass.to("kg/mol").magnitude, "unit": "kg/mol"},
+            "normal_liquid_density": {
+                "value": rho.to("kg/m**3").magnitude,
+                "unit": "kg/m**3",
+            },
+        }
+        if cut.attraction_exponent is not None:
+            stated["alpha_param_1"] = {
+                "value": cut.attraction_exponent,
+                "unit": "dimensionless",
+            }
+        components[name] = stated
+    return keycard.use({"schema_version": 2, "components": components})
+
+
 __all__ = [
     "assay_mass_fractions",
+    "card_from_cuts",
     "characterise_plus_fraction",
     "characterize_to_reference",
     "lumping",

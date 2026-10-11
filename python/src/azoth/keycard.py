@@ -20,7 +20,9 @@ other.
 
 from __future__ import annotations
 
+import json
 import math
+import re
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -1063,6 +1065,167 @@ def _in_spec_unit(value: Any, unit: str) -> Any:
     if isinstance(value, list):
         return [_in_spec_unit(entry, unit) for entry in value]
     return value.to(unit_for(unit))
+
+
+# --- writing a card back out -------------------------------------------------
+
+
+def _string(value: str) -> str:
+    """A TOML basic string. `json`'s escaping is TOML's for every string this writes."""
+    return json.dumps(value)
+
+
+def _key(name: str) -> str:
+    """A table key: bare where TOML allows one, quoted otherwise."""
+    if re.fullmatch(r"[A-Za-z0-9_-]+", name):
+        return name
+    return json.dumps(name)
+
+
+def _number(value: Q) -> str:
+    """A quantity's magnitude, as TOML.
+
+    The value is already in the unit its declaration fixes - the loader converted it - so nothing
+    is converted here. `repr` of a float round-trips exactly, which is what the fixed-point test
+    is taken on.
+    """
+    return repr(float(value.magnitude))
+
+
+def _raw(value: Any) -> str:
+    """One value of a compiled section, as TOML.
+
+    `fittings` and `fluids` are carried as the mappings they were read from, so a row is written
+    back with the shapes a value can have there: a number, a string, a flag, or an array of those.
+    """
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float):
+        return repr(float(value))
+    if isinstance(value, str):
+        return _string(value)
+    if isinstance(value, list | tuple):
+        return "[" + ", ".join(_raw(item) for item in value) + "]"
+    raise KeycardError("to_toml", f"cannot write {value!r} as TOML")
+
+
+def _parameter_block(header: str, value: Q, unit: str) -> list[str]:
+    """One `{value, unit}` parameter, which is the shape every scalar key of a card takes."""
+    return ["", f"[{header}]", f"value = {_number(value)}", f"unit = {_string(unit)}"]
+
+
+def to_toml(card: Keycard) -> str:
+    """A card as TOML, in the schema's own order and vocabulary.
+
+    **It writes the resolved card, and that is a loss.** :class:`Keycard` keeps the parameters, the
+    two compiled sections and the three class entries, and it drops citations, comments, the
+    author's section order and a model's `alpha_parameters` - so what comes back is what the card
+    *resolves to* rather than what its author typed. The text is not byte-identical to the file it
+    was read from, and it is not meant to be: this is a writer for a card a caller has, not a
+    round-tripper for a file.
+
+    The parameters are written in `specs/schema/component.schema.json`'s own order, so one card's
+    text is a function of the card and not of the order the reader happened to walk - and writing
+    twice gives the same bytes, which is what `test_keycard_writer` asserts.
+
+    Raises:
+        KeycardError: if a value is of a shape TOML cannot carry. Every shape the *loader* accepts
+            is one this writes, so reaching that is a card built by hand rather than read.
+    """
+    lines: list[str] = [f"schema_version = {SCHEMA_VERSION}"]
+    if card.keyholder is not None:
+        lines += ["", "[keyholder]", f"name = {_string(card.keyholder)}"]
+        if card.licence is not None:
+            lines.append(f"licence = {_string(card.licence)}")
+    for row in card.fittings:
+        lines += ["", "[[fittings]]", *(f"{_key(k)} = {_raw(v)}" for k, v in row.items())]
+    for name, rows in sorted(card.fluids.items()):
+        for row in rows:
+            lines += [
+                "",
+                f"[[fluids.{_key(name)}]]",
+                *(f"{_key(k)} = {_raw(v)}" for k, v in row.items()),
+            ]
+    for name, component in sorted(card.components.items()):
+        # **The class entries go in the component's own table**, which TOML requires to precede any
+        # sub-table of it - and only where the card states one, since a bare `[components.x]` with
+        # nothing under it is a component that says nothing.
+        classes: list[str] = []
+        if component.is_ion is not None:
+            classes.append(f"ion = {'true' if component.is_ion else 'false'}")
+        if component.liqvisc_model is not None:
+            classes.append(f"liqvisc_model = {component.liqvisc_model}")
+        if component.wax_former is not None:
+            classes.append(f"wax_former = {'true' if component.wax_former else 'false'}")
+        if classes:
+            lines += ["", f"[components.{_key(name)}]", *classes]
+        order = list(COMPONENT_PARAMETERS)
+        for parameter in sorted(component.parameters, key=order.index):
+            unit = COMPONENT_PARAMETERS[parameter]
+            lines += _parameter_block(
+                f"components.{_key(name)}.{_key(parameter)}",
+                component.parameters[parameter],
+                unit,
+            )
+    for (component_a, component_b), value in sorted(card.kij.items()):
+        lines += [
+            "",
+            "[[kij]]",
+            f"component_a = {_string(component_a)}",
+            f"component_b = {_string(component_b)}",
+            f"value = {float(value)!r}",
+        ]
+        for family, key in (("srk", "cpa_value_srk"), ("pr", "cpa_value_pr")):
+            stated = card.cpa_kij.get((component_a, component_b, family))
+            if stated is not None:
+                lines.append(f"{key} = {float(stated)!r}")
+    for name, association in sorted(card.associations.items()):
+        lines += ["", f"[associations.{_key(name)}]", f"scheme = {_string(association.scheme)}"]
+        order = list(ASSOCIATION_PARAMETERS)
+        for parameter in sorted(association.parameters, key=order.index):
+            lines += _parameter_block(
+                f"associations.{_key(name)}.{_key(parameter)}",
+                association.parameters[parameter],
+                ASSOCIATION_PARAMETERS[parameter],
+            )
+    for calc_id, arguments in sorted(card.coefficients.items()):
+        for name in sorted(arguments):
+            unit = _declaration(calc_id, name)["unit"]
+            header = f"coefficients.{_key(calc_id)}.{_key(name)}"
+            blocks = ["", f"[{header}]", f"value = {_raw(_magnitude(arguments[name]))}"]
+            blocks.append(f"unit = {_string(unit)}")
+            convention = card.conventions.get(calc_id, {}).get(name)
+            if convention is not None:
+                blocks.append(f"convention = {_string(convention)}")
+            lines += blocks
+    for name, model in sorted(card.models.items()):
+        lines += [
+            "",
+            f"[models.{_key(name)}]",
+            f"kind = {_string(model.kind)}",
+            f"shape = {_string(model.shape)}",
+            f"alpha = {_string(model.alpha)}",
+            f"mixing_rule = {_string(model.mixing_rule)}",
+            "components = [" + ", ".join(_string(one) for one in model.components) + "]",
+        ]
+    return "\n".join(lines) + "\n"
+
+
+def _magnitude(value: Any) -> Any:
+    """A coefficient's magnitude, flattened out of its quantities.
+
+    A coefficient is a scalar, a vector or a matrix - what the calculation it belongs to takes -
+    and the card's `value` is a number or an array of them. The unit is the *declaration's*, so
+    the magnitudes are the ones the loader already converted to.
+    """
+    if isinstance(value, list | tuple):
+        return [_magnitude(entry) for entry in value]
+    return float(value.magnitude)
+
+
+def dump(card: Keycard, path: Path | str) -> None:
+    """Write a card to a file, in the format :func:`load` reads."""
+    Path(path).write_text(to_toml(card), encoding="utf-8")
 
 
 __all__ = [

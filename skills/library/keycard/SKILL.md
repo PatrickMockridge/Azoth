@@ -44,6 +44,15 @@ card = azoth.keycard.use(
 azoth.eos.component("methane", card=card)  # the card's omega, the databank's Tc and Pc
 ```
 
+A card can be written back out — `azoth.keycard.dump(card, "c19.toml")`, or `to_toml(card)`
+for the text — and what comes back is the card *resolved*: the parameters, the compiled
+sections and the class entries, without the citations, the comments or the author's
+section order, which the value does not keep. So the written file is read by both readers
+and describes the same card, rather than being a copy of the file it came from.
+
+A cut table becomes one without leaving the library: `azoth.characterization.card_from_cuts`
+runs `tbp_cut_properties` over each cut and hands back a card the cubic can be built from.
+
 A name already in the databank is overridden parameter by parameter; a new name must
 state the parameters its component carries a reader for - `Tc`, `Pc` and `omega` for the
 cubic, and **a molar mass**, which the cubic does not read and every mass-bearing
