@@ -9,7 +9,8 @@ derive, whose boundary is a container the extension does not name.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from azoth import _core, _models_gen
 from azoth._registry_gen import spec as _spec_for
@@ -237,7 +238,7 @@ from azoth.core.result import (
 from azoth.core.result import (
     TpMultiflashSeed as _TpMultiflashSeed,
 )
-from azoth.core.units import Q, from_si, input_to_si
+from azoth.core.units import Q, from_si, input_records_to_si, input_to_si
 from azoth.eos.components import (
     BwrsCoefficients,
     GeNrtlPhaseParameters,
@@ -461,13 +462,12 @@ __all__ = [
 ]
 
 
-def assay_mass_fractions(basis: str, declared_fraction: list[float], density: list[Q] | None=None) -> AssayMassFractionsResult:
+def assay_mass_fractions(basis: str, cuts: Sequence[Mapping[str, Any]]) -> AssayMassFractionsResult:
     """``characterization.assay_mass_fractions``, computed in Rust."""
     spec = _models_gen.model("characterization.assay_mass_fractions")
     result = _core.assay_mass_fractions(
         basis,
-        list(declared_fraction),
-        None if density is None else [input_to_si(spec, "density", v) for v in density],
+        input_records_to_si(spec, "cuts", cuts),
     )
     return AssayMassFractionsResult(
         mass_fraction=tuple(result.mass_fraction),

@@ -217,6 +217,12 @@ class Stream:
     @staticmethod
     def from_ph(components: list[str], z: list[float], n: float, p: float, h: float) -> Stream: ...
 
+class AssayCut(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    declared_fraction: float
+    density: float | None
+
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
 # cannot disagree about a field.
@@ -2209,11 +2215,7 @@ class ConductionPlaneWallResult:
 # All arguments and returns are SI magnitudes; unit handling happens once, in
 # Python, before the call crosses this boundary. See crates/azoth-python.
 
-def assay_mass_fractions(
-    basis: str,
-    declared_fraction: list[float],
-    density: list[float] | None = None,
-) -> AssayMassFractionsResult: ...
+def assay_mass_fractions(basis: str, cuts: list[AssayCut]) -> AssayMassFractionsResult: ...
 def characterise_plus_fraction(
     molar_mass: float,
     density: float,

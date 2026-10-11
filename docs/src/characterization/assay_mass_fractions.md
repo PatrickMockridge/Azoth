@@ -20,8 +20,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | Name | Unit | Description |
 |---|---|---|
 | `basis` | mass / volume | whether the declared fractions are fractions of the assay's mass or of its liquid volume. A cut cannot be on one basis and its neighbour on the other. |
-| `declared_fraction` | dimensionless | Each cut's declared yield, on `basis`. The row is normalised whether or not it already sums to one, so only the ratios between the entries mean anything. |
-| `density` | kg/m**3 | *Optional.* Each cut's density, needed to convert a volume basis and to report the bulk gravity. Absent on a mass basis, where the fractions resolve without it - and then `bulk_density` is absent too. |
+| `cuts` | - | The assay's cuts, in the order they are to be resolved. Each is a record: its declared yield on `basis`, and optionally its own density. |
 
 
 ## Outputs
@@ -45,10 +44,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 - **a volume basis is a mass-weighted conversion and a second normalisation.** Each normalised volume fraction times its cut's gravity, renormalised: `v_i * SG_i / sum(v_j * SG_j)`, which is what makes an assay's light end lose share to its heavy end.
 - **the bulk density is the mass-weighted harmonic mean**, `1 / sum(w_i / rho_i)`, on the resolved mass fractions. The class calls it a bulk specific gravity because it carries the cuts' gravities in g/cm3; a density in kg/m3 is the same number a thousand larger, and SI is what this declares.
 - **it is a screening property.** The class states it as ideal additive liquid volumes with no temperature correction, no excess volume and no blend contraction.
-- **`declared_fraction` and `basis` are what a cut table carries; a cut's own density, boiling point, molar mass and Watson factor are not.** `AssayCut` holds six optional fields each, and a parallel vector cannot say "absent" per entry - only per vector.
-- **so the assay's per-cut properties cannot be stated at this boundary at all**, which is what puts them out of this id rather than merely unwritten.
-- **that is the `record_list` input the plan costed and deferred, and it costs more than ergonomics.** The plan's own note says making a `record_list` input real "buys ergonomics only"; for this id it is the difference between the assay being expressible and not.
-- **what is owed, named rather than implied.** `apply`'s per-cut molar mass and the databank lookups for its standard components; and on `AssayCut` itself, an API gravity resolved to a density and a Watson factor resolved to a boiling point.
+- **a cut is a record, and its density is optional per cut.** NeqSim's `AssayCut` holds twelve nullable Doubles - a density or an API gravity, a boiling point or a Watson factor or a range, a molar mass, a sulfur and a nitrogen - and a parallel vector can say "absent" per *vector* and not per entry. The row this id takes is the two fields it reads, `declared_fraction` and `density`, and the density is the one that had no vector form: a mass-basis assay may state it for some cuts and not others.
+- **a volume basis needs every cut's density, and a mass basis needs none.** Without one there is no mass to weight by, so a cut that states none is refused by position. With a mass basis the densities are read for the bulk density alone, so any cut may leave its own out.
+- **what is owed, named rather than implied.** `apply`'s per-cut molar mass and the databank lookups for its standard components; and on `AssayCut` itself, an API gravity resolved to a density and a Watson factor resolved to a boiling point. Those are fields the row does not carry yet, and `apply` is the id that will read them.
 - **`AssayCut.resolveMolarMass` is not new arithmetic**: `5.805e-5 * Tb^2.3776 / SG^0.9371` is `characterization.tbp_cut_properties`' `TBPBaseModel.calcTB` fallback rearranged, in closed form where that id bisects it.
 - **and `addTBPCutBoundariesKelvin`'s cumulative-yield binning is the step above all of this** - it turns a cumulative volume curve into the cuts this id is then handed.
 - the assay is a laboratory report and not a measurement of a fluid at a state, and no databank is involved. **The result is a bookkeeping choice**: the same crude reported on a volume basis and on a mass basis gives one fluid, and only the second of those numbers is the one a cubic is handed.
@@ -57,9 +55,9 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `tbp_volume_basis` | basis = volume, declared_fraction = [0.25, 0.3, 0.25, 0.2], density = [680.0, 780.0, 850.0, 920.0] | mass_fraction = [0.212367270455965, 0.292317301686446, 0.265459088069956, 0.229856339787633], total_declared_fraction = 1.0, bulk_density = 800.5 |
-| `mass_basis` | basis = mass, declared_fraction = [0.4, 0.35, 0.25], density = [700.0, 820.0, 900.0] | mass_fraction = [0.4, 0.35, 0.25], total_declared_fraction = 1.0, bulk_density = 783.677184466019 |
-| `inside_the_closure_tolerance` | basis = mass, declared_fraction = [0.5, 0.5005], density = [750.0, 850.0] | mass_fraction = [0.499750124937531, 0.500249875062469], total_declared_fraction = 1.0005, bulk_density = 796.899890676245 |
+| `tbp_volume_basis` | basis = volume, cuts = [{'declared_fraction': 0.25, 'density': 680.0}, {'declared_fraction': 0.3, 'density': 780.0}, {'declared_fraction': 0.25, 'density': 850.0}, {'declared_fraction': 0.2, 'density': 920.0}] | mass_fraction = [0.212367270455965, 0.292317301686446, 0.265459088069956, 0.229856339787633], total_declared_fraction = 1.0, bulk_density = 800.5 |
+| `mass_basis` | basis = mass, cuts = [{'declared_fraction': 0.4, 'density': 700.0}, {'declared_fraction': 0.35, 'density': 820.0}, {'declared_fraction': 0.25, 'density': 900.0}] | mass_fraction = [0.4, 0.35, 0.25], total_declared_fraction = 1.0, bulk_density = 783.677184466019 |
+| `inside_the_closure_tolerance` | basis = mass, cuts = [{'declared_fraction': 0.5, 'density': 750.0}, {'declared_fraction': 0.5005, 'density': 850.0}] | mass_fraction = [0.499750124937531, 0.500249875062469], total_declared_fraction = 1.0005, bulk_density = 796.899890676245 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

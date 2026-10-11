@@ -20,8 +20,8 @@
 #![allow(clippy::approx_constant)]
 
 use azoth_core::{
-    Band, ModelAlgorithm, ModelBracket, ModelSpec, RangeCheck, Severity, SpecCheck, TestCase,
-    WarningCode,
+    Band, FieldValue, ModelAlgorithm, ModelBracket, ModelSpec, RangeCheck, RecordField, Severity,
+    SpecCheck, TestCase, WarningCode,
 };
 
 static ASSAY_MASS_FRACTIONS_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -52,10 +52,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         flags: &[],
         lists: &[],
         strings: &[("basis", "volume")],
-        vectors: &[
-            ("declared_fraction", &[0.25, 0.3, 0.25, 0.2]),
-            ("density", &[680.0, 780.0, 850.0, 920.0]),
-        ],
+        vectors: &[],
         matrices: &[],
         expected: &[("total_declared_fraction", 1.0), ("bulk_density", 800.5)],
         expected_vectors: &[(
@@ -68,7 +65,51 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
-        records: &[],
+        records: &[(
+            "cuts",
+            &[
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.25),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(680.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.3),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(780.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.25),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(850.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(920.0),
+                    },
+                ],
+            ],
+        )],
     },
     TestCase {
         id: "mass_basis",
@@ -81,10 +122,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         flags: &[],
         lists: &[],
         strings: &[("basis", "mass")],
-        vectors: &[
-            ("declared_fraction", &[0.4, 0.35, 0.25]),
-            ("density", &[700.0, 820.0, 900.0]),
-        ],
+        vectors: &[],
         matrices: &[],
         expected: &[
             ("total_declared_fraction", 1.0),
@@ -92,7 +130,41 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[("mass_fraction", &[0.4, 0.35, 0.25])],
         expected_strings: &[],
-        records: &[],
+        records: &[(
+            "cuts",
+            &[
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.4),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(700.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.35),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.25),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(900.0),
+                    },
+                ],
+            ],
+        )],
     },
     TestCase {
         id: "inside_the_closure_tolerance",
@@ -105,10 +177,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         flags: &[],
         lists: &[],
         strings: &[("basis", "mass")],
-        vectors: &[
-            ("declared_fraction", &[0.5, 0.5005]),
-            ("density", &[750.0, 850.0]),
-        ],
+        vectors: &[],
         matrices: &[],
         expected: &[
             ("total_declared_fraction", 1.0005),
@@ -116,7 +185,31 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[("mass_fraction", &[0.499750124937531, 0.500249875062469])],
         expected_strings: &[],
-        records: &[],
+        records: &[(
+            "cuts",
+            &[
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "declared_fraction",
+                        value: FieldValue::Number(0.5005),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(850.0),
+                    },
+                ],
+            ],
+        )],
     },
 ];
 

@@ -14,14 +14,20 @@
 //! fraction by its cut's specific gravity and renormalises, which is what makes a light end lose
 //! share to a heavy one.
 //!
+//! # The cut is a record
+//!
+//! NeqSim's `AssayCut` holds twelve nullable Doubles, and the one that matters here is the
+//! density: it is optional *per cut*, which a parallel vector cannot say - a vector can be absent
+//! per vector and not per entry. A volume basis needs every cut's, so the first that states none
+//! is refused by position; a mass basis reads them for the bulk density alone, so a row may state
+//! some and not others.
+//!
 //! # What is not here
 //!
 //! `OilAssayCharacterisation.apply` resolves a molar mass per cut, pulls standard components out
-//! of the databank and adds a pseudo-component for each. `AssayCut` holds six optional fields per
-//! cut, and a parallel vector cannot say "absent" per entry - only per vector - so the assay's
-//! per-cut properties cannot be stated at this boundary at all. That is the `record_list` input
-//! kind the plan costed as "ergonomics only" and deferred; for this id it is the difference
-//! between the assay being expressible and not.
+//! of the databank and adds a pseudo-component for each. The row this id takes is the two fields
+//! it reads; the API gravity, the boiling point or Watson factor, the molar mass, the sulfur and
+//! the nitrogen are still owed, and `apply` is the id that will want them.
 
 use azoth_core::units::{MassDensity, kilograms_per_cubic_meter};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -31,6 +37,19 @@ use crate::results::AssayMassFractionsResult;
 
 /// `OilAssayCharacterisation.ASSAY_CLOSURE_TOLERANCE`, on the declared fractions' sum.
 const ASSAY_CLOSURE_TOLERANCE: f64 = 1.0e-3;
+
+/// One cut of an assay, as this id takes it.
+///
+/// **A record rather than a vector entry**, and the density is why: `Option` per *cut* has no
+/// aligned-vector form. NeqSim's `AssayCut` holds ten more nullable fields beside these two; the
+/// row grows as the ids that read them are ported.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AssayCut {
+    /// The cut's declared yield, on the assay's basis.
+    pub declared_fraction: f64,
+    /// The cut's own normal liquid density, absent when the assay does not state one.
+    pub density: Option<MassDensity>,
+}
 
 /// Whether a cut's declared yield is a fraction of the assay's mass or of its liquid volume.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -57,23 +76,28 @@ impl std::str::FromStr for AssayBasis {
 /// An oil assay's declared yields, resolved to a mass basis.
 ///
 /// # Errors
-/// * [`AzothError::InvalidInput`] if `density` is supplied and is not one entry per cut, if it is
-///   needed and absent, if the declared fractions do not sum to one within `1e-3`, or if the row
+/// * [`AzothError::InvalidInput`] if the assay has no cuts, if a volume basis reaches a cut that
+///   states no density, if the declared fractions do not sum to one within `1e-3`, or if the row
 ///   normalises to nothing.
 /// * [`AzothError::OutOfRange`] if `total_declared_fraction` falls outside its declared range.
 ///
 /// # Example
 /// ```
 /// use azoth_core::units::kilograms_per_cubic_meter;
-/// use azoth_characterization::{AssayBasis, assay_mass_fractions};
+/// use azoth_characterization::{AssayBasis, AssayCut, assay_mass_fractions};
 ///
 /// let resolved = assay_mass_fractions(
 ///     AssayBasis::Volume,
-///     &[0.5, 0.5],
-///     Some(&[
-///         kilograms_per_cubic_meter(700.0),
-///         kilograms_per_cubic_meter(900.0),
-///     ]),
+///     &[
+///         AssayCut {
+///             declared_fraction: 0.5,
+///             density: Some(kilograms_per_cubic_meter(700.0)),
+///         },
+///         AssayCut {
+///             declared_fraction: 0.5,
+///             density: Some(kilograms_per_cubic_meter(900.0)),
+///         },
+///     ],
 /// )?;
 /// assert!((resolved.mass_fraction[0] - 0.4375).abs() < 1e-15);
 /// // `1 / (0.4375/700 + 0.5625/900)`, the mass-weighted harmonic mean in kg/m3.
@@ -84,39 +108,19 @@ impl std::str::FromStr for AssayBasis {
 /// ```
 pub fn assay_mass_fractions(
     basis: AssayBasis,
-    declared_fraction: &[f64],
-    density: Option<&[MassDensity]>,
+    cuts: &[AssayCut],
 ) -> Result<AssayMassFractionsResult> {
     let spec = &model_gen::ASSAY_MASS_FRACTIONS_SPEC;
     let mut warnings = Vec::new();
 
-    if declared_fraction.is_empty() {
+    if cuts.is_empty() {
         return Err(AzothError::invalid_input(
-            "declared_fraction",
+            "cuts",
             "an assay of no cuts has no fractions to resolve",
         ));
     }
-    if let Some(densities) = density
-        && densities.len() != declared_fraction.len()
-    {
-        return Err(AzothError::invalid_input(
-            "density",
-            format!(
-                "one density per cut is what the volume conversion needs: {} cuts against {} \
-                 densities",
-                declared_fraction.len(),
-                densities.len()
-            ),
-        ));
-    }
-    if basis == AssayBasis::Volume && density.is_none() {
-        return Err(AzothError::invalid_input(
-            "density",
-            "a volume-basis assay needs each cut's density to reach a mass fraction",
-        ));
-    }
 
-    let total: f64 = declared_fraction.iter().sum();
+    let total: f64 = cuts.iter().map(|cut| cut.declared_fraction).sum();
     // The spec's one bound is on this sum, which is not an input - so it is a derived check and
     // the closure resolves it from what was computed rather than from what was handed over.
     apply_checks(
@@ -129,13 +133,13 @@ pub fn assay_mass_fractions(
     )?;
     if !total.is_finite() {
         return Err(AzothError::invalid_input(
-            "declared_fraction",
+            "cuts",
             format!("the declared fractions sum to {total}, which is no assay"),
         ));
     }
     if (total - 1.0).abs() > ASSAY_CLOSURE_TOLERANCE {
         return Err(AzothError::invalid_input(
-            "declared_fraction",
+            "cuts",
             format!(
                 "assay fractions must sum to 1.0 within {ASSAY_CLOSURE_TOLERANCE}; supplied \
                  sum={total}"
@@ -143,34 +147,46 @@ pub fn assay_mass_fractions(
         ));
     }
 
-    let normalised: Vec<f64> = declared_fraction.iter().map(|f| f / total).collect();
+    let normalised: Vec<f64> = cuts.iter().map(|cut| cut.declared_fraction / total).collect();
     let mass_fraction = if basis == AssayBasis::Mass {
         normalised
     } else {
-        // The densities are present: the guard above refused their absence.
-        let densities = density.unwrap_or_default();
-        let relative: Vec<f64> = normalised
-            .iter()
-            .zip(densities)
-            .map(|(fraction, rho)| fraction * rho.value)
-            .collect();
+        // **Every cut needs a density, and the refusal names which one does not.** A volume
+        // fraction has no mass to weight by without one, so a cut that states none is a hole in
+        // the conversion rather than a cut without a bulk-density contribution.
+        let mut relative = Vec::with_capacity(cuts.len());
+        for (index, (fraction, cut)) in normalised.iter().zip(cuts).enumerate() {
+            let Some(rho) = cut.density else {
+                return Err(AzothError::invalid_input(
+                    format!("cuts[{index}].density"),
+                    "a volume-basis assay needs every cut's density to reach a mass fraction",
+                ));
+            };
+            relative.push(fraction * rho.value);
+        }
         let total_relative: f64 = relative.iter().sum();
         if !total_relative.is_finite() || total_relative <= 0.0 {
             return Err(AzothError::invalid_input(
-                "density",
+                "cuts",
                 "the volume-basis row has no mass to normalise: every cut's density is zero",
             ));
         }
         relative.iter().map(|mass| mass / total_relative).collect()
     };
 
-    // The bulk density is the mass-weighted harmonic mean, and it is only answerable when every
-    // cut carries a density - which a mass-basis assay need not state.
-    let bulk_density = density.map(|densities| {
+    // The bulk density is the mass-weighted harmonic mean, and it is answerable only when **every**
+    // cut carries a density. Collecting the options is that test: the `Option` is `Some` exactly
+    // when nothing was absent, so a mass-basis assay that states a density for some cuts and not
+    // others loses the bulk density rather than averaging over the ones it has.
+    let densities: Option<Vec<f64>> = cuts
+        .iter()
+        .map(|cut| cut.density.map(|rho| rho.value))
+        .collect();
+    let bulk_density = densities.map(|values| {
         let reciprocal: f64 = mass_fraction
             .iter()
-            .zip(densities)
-            .map(|(mass, rho)| mass / rho.value)
+            .zip(&values)
+            .map(|(mass, rho)| mass / rho)
             .sum();
         kilograms_per_cubic_meter(1.0 / reciprocal)
     });

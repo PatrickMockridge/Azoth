@@ -219,16 +219,6 @@
 /// calculation it names may belong to any namespace.
 pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     (
-        "characterization.assay_mass_fractions",
-        "declared_fraction",
-        "dimensionless",
-    ),
-    (
-        "characterization.assay_mass_fractions",
-        "density",
-        "mass_density",
-    ),
-    (
         "characterization.characterise_plus_fraction",
         "molar_mass",
         "molar_mass",

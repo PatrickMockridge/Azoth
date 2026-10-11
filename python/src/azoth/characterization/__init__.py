@@ -27,6 +27,9 @@ to :mod:`azoth.characterization.reference` otherwise. Both are always reachable 
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+from typing import Any
+
 from azoth._dispatch import resolve
 from azoth.core.result import (
     AssayMassFractionsResult,
@@ -69,8 +72,7 @@ _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 
 def assay_mass_fractions(
     basis: str,
-    declared_fraction: list[float],
-    density: list[Q] | None = None,
+    cuts: Sequence[Mapping[str, Any]],
 ) -> AssayMassFractionsResult:
     """An oil assay's declared yields, resolved to a mass basis.
 
@@ -78,19 +80,24 @@ def assay_mass_fractions(
     and never neither, and the whole row shares one basis. The row must close on one within
     ``1e-3`` - a tenth of a percent is a **hard error** here, not a warning.
 
-    ``density`` is one entry per cut. A volume basis needs it to convert; a mass basis needs it
-    only for ``bulk_density``, which is absent without it.
+    ``cuts`` is one mapping per cut, keyed by the field names the spec declares:
+
+    * ``declared_fraction`` - the cut's yield on ``basis``, dimensionless, on every cut;
+    * ``density`` - the cut's own normal liquid density, *optional per cut*, in kg/m3.
+
+    A volume basis needs every cut's density and refuses the first that states none, naming it; a
+    mass basis reads the densities for ``bulk_density`` alone, which is absent unless every cut
+    states one.
 
     Raises:
-        InvalidInputError: if the densities do not match the cuts, if a volume basis has none, or
-            if the declared fractions do not close on one.
+        InvalidInputError: if the assay has no cuts, if a volume basis reaches a cut without a
+            density, or if the declared fractions do not close on one.
 
     See :func:`azoth.characterization.reference.assay_mass_fractions`.
     """
     return resolve(_ASSAY_MASS_FRACTIONS)(  # type: ignore[no-any-return]
         basis=basis,
-        declared_fraction=declared_fraction,
-        density=density,
+        cuts=cuts,
     )
 
 

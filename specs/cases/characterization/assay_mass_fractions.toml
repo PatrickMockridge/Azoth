@@ -6,11 +6,11 @@ tolerance = 1.0e-12
 source = "NeqSim master, `OilAssayCharacterisation.getResolvedMassFractions` on a four-cut TBP assay built by `addTBPCutBoundariesCelsius` from cumulative volumes and gravities, from `validation/neqsim/captures/oil_assay_probe.tsv`. The declared fractions are the interval yields the binning produces, and the gravities arrive as specific gravities and cross here as kg/m3.\n"
 [cases.inputs]
 basis = "volume"
-declared_fraction = [
-    0.25, 0.3, 0.25, 0.2,
-]
-density = [
-    680.0, 780.0, 850.0, 920.0,
+cuts = [
+    { declared_fraction = 0.25, density = 680.0 },
+    { declared_fraction = 0.3, density = 780.0 },
+    { declared_fraction = 0.25, density = 850.0 },
+    { declared_fraction = 0.2, density = 920.0 },
 ]
 [cases.expected]
 mass_fraction = [
@@ -25,11 +25,10 @@ tolerance = 1.0e-12
 source = "Three cuts stated on a mass basis. **The answer is the input**: `[0.4, 0.35, 0.25]` normalises to itself, so what this row measures is that the volume conversion is skipped entirely rather than merely inert at these numbers.\n"
 [cases.inputs]
 basis = "mass"
-declared_fraction = [
-    0.4, 0.35, 0.25,
-]
-density = [
-    700.0, 820.0, 900.0,
+cuts = [
+    { declared_fraction = 0.4, density = 700.0 },
+    { declared_fraction = 0.35, density = 820.0 },
+    { declared_fraction = 0.25, density = 900.0 },
 ]
 [cases.expected]
 mass_fraction = [
@@ -44,11 +43,9 @@ tolerance = 1.0e-12
 source = "Fractions summing to `1.0005`, inside the class's `1e-3`. The row is normalised - `[0.5, 0.5005]` becomes `[0.499750124937531, 0.500249875062469]` - and a sum of `1.003` is refused instead, which is the boundary the Rust test holds.\n"
 [cases.inputs]
 basis = "mass"
-declared_fraction = [
-    0.5, 0.5005,
-]
-density = [
-    750.0, 850.0,
+cuts = [
+    { declared_fraction = 0.5, density = 750.0 },
+    { declared_fraction = 0.5005, density = 850.0 },
 ]
 [cases.expected]
 mass_fraction = [

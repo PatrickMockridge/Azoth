@@ -57,6 +57,7 @@ from typing import Any
 
 import pytest
 
+from azoth import _models_gen
 from azoth._dispatch import result_types
 from azoth._registry_gen import CALCS
 
@@ -315,6 +316,25 @@ def test_the_bridge_accepts_the_arguments_the_public_api_passes() -> None:
 # --- the type stub ------------------------------------------------------
 
 
+def _struct_body(text: str, opening: re.Match[str]) -> str:
+    """A struct's body, found by **counting braces** rather than by a regex.
+
+    The first version of this used `[^}]*` and silently truncated any struct whose doc
+    comments contained a `}` - and one does: `|x_k - x_{k-1}|`, in `PrZFactorResult`'s own
+    comment. The fields after it were reported as missing from a struct that has them,
+    which is a test that fails for a reason the reader cannot see.
+    """
+    depth = 0
+    for index in range(opening.end() - 1, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[opening.end() : index]
+    return text[opening.end() :]  # pragma: no cover - an unterminated struct does not compile
+
+
 def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
     """Every `#[pyclass]` struct in the binding, by its Python-visible name.
 
@@ -323,12 +343,6 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
     therefore cannot be introspected - `dir()` on the class shows methods, not
     attributes. The source is the only place the fields are visible, and it is also the
     thing the stub is supposed to describe.
-
-    The struct body is found by **counting braces** rather than by a regex. The first
-    version of this used `[^}]*` and silently truncated any struct whose doc comments
-    contained a `}` - and one does: `|x_k - x_{k-1}|`, in `PrZFactorResult`'s own
-    comment. The fields after it were reported as missing from a struct that has them,
-    which is a test that fails for a reason the reader cannot see.
     """
     source_dir = REPO_ROOT / "crates" / "azoth-python" / "src"
     # The whole attribute rather than the part up to the name: `get_all` is written after
@@ -347,17 +361,7 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
             opening = struct.search(text, match.end())
             if opening is None:  # pragma: no cover - a pyclass with no struct
                 continue
-            depth = 0
-            end = opening.end() - 1
-            for index in range(end, len(text)):
-                if text[index] == "{":
-                    depth += 1
-                elif text[index] == "}":
-                    depth -= 1
-                    if depth == 0:
-                        end = index
-                        break
-            body = text[opening.end() : end]
+            body = _struct_body(text, opening)
             if re.search(r"\bget_all\b", match.group("attributes")):
                 # `get_all` gives every field a getter, so every field is one - private
                 # fields included, which is the one place this reads further than the
@@ -367,6 +371,74 @@ def _rust_pyclasses() -> dict[str, tuple[str, ...]]:
                 fields = re.findall(r"#\[pyo3\(get\)\]\s*pub (\w+):", body)
             found[declared.group("name")] = tuple(fields)
     return found
+
+
+def _rust_record_rows() -> dict[str, tuple[str, ...]]:
+    """Every `#[derive(FromPyObject)]` struct in the binding, by its own name.
+
+    The row a `record_list` input crosses in. Read from the source for the same reason
+    `_rust_pyclasses` is: pyo3 extracts an item struct field by field out of a mapping and
+    exports no constructor, so the struct is not introspectable and its field *names* - the
+    keys a caller's mapping must have - are visible only in the declaration.
+    """
+    source_dir = REPO_ROOT / "crates" / "azoth-python" / "src"
+    derive = re.compile(r"#\[derive\([^)]*\bFromPyObject\b[^)]*\)\]")
+    struct = re.compile(r"pub struct (?P<name>\w+) \{")
+
+    found: dict[str, tuple[str, ...]] = {}
+    for path in sorted(source_dir.glob("*.rs")):
+        text = path.read_text(encoding="utf-8")
+        for match in derive.finditer(text):
+            opening = struct.search(text, match.end())
+            if opening is None:  # pragma: no cover - a derive with no struct
+                continue
+            body = _struct_body(text, opening)
+            fields = re.findall(r"#\[pyo3\(item\)\]\s*pub (\w+):", body)
+            found[opening.group("name")] = tuple(fields)
+    return found
+
+
+def test_the_record_row_is_one_shape_in_three_declarations() -> None:
+    """**A record row is declared three times, and the three have to agree.**
+
+    The spec's `fields` block says what the row is, `gen_stub` renders it into the stub's
+    `TypedDict` from that block, and the Rust `FromPyObject` struct is hand-written because
+    pyo3 extracts one field per key and exports no constructor. Only the first two are
+    generated from one another, so the third is the one that drifts - and it drifts
+    silently, because a struct naming a field the spec dropped simply never receives it and
+    a struct *missing* one hands the kernel a default.
+
+    The name is the spec's own `row_type`, which is what makes the three findable at all:
+    without it the row's shape is a convention and this test has nothing to look up.
+    """
+    rows: dict[str, tuple[str, ...]] = {}
+    for model in _models_gen.MODELS:
+        for declared in model["inputs"].values():
+            if declared.get("type") == "record_list":
+                rows[declared["row_type"]] = tuple(declared["fields"])
+    assert rows, "no model declares a record_list input, so there is no row to hold"
+
+    stub = ast.parse((REPO_ROOT / "python" / "src" / "azoth" / "_core.pyi").read_text())
+    typed: dict[str, tuple[str, ...]] = {}
+    for node in stub.body:
+        if isinstance(node, ast.ClassDef):
+            typed[node.name] = tuple(
+                statement.target.id
+                for statement in node.body
+                if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+            )
+
+    rust = _rust_record_rows()
+    for row, fields in rows.items():
+        assert typed.get(row) == fields, (
+            f"the stub's `{row}` is {typed.get(row)} and the spec declares {fields}; "
+            f"`tools/gen_stub.py` renders the one from the other, so the stub is stale"
+        )
+        assert rust.get(row) == fields, (
+            f"the Rust `{row}` is {rust.get(row)} and the spec declares {fields}. The struct is "
+            f"hand-written and pyo3 extracts it by key, so a name that differs is a field the "
+            f"kernel never receives."
+        )
 
 
 def test_the_stub_matches_the_rust_transport_types() -> None:

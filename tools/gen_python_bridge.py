@@ -966,8 +966,15 @@ def emit() -> str:
     units = ["Q", "from_si", "input_to_si"]
     if "input_records_to_si(" in bodies:
         units.insert(2, "input_records_to_si")
-    imports = [
-        "from collections.abc import Sequence",
+    # **`Sequence` is on every adapter; `Mapping` is not.** A record `cuts` argument is annotated
+    # with the *public wrapper's* own type, so the header has to bring whatever that names, and a
+    # name the header carries must not also be emitted at the foot of the file - which is what
+    # `namespace_imports` would do with it, and what `isort` refuses.
+    abc = "Mapping, Sequence" if "Mapping" in external else "Sequence"
+    imports = [f"from collections.abc import {abc}"]
+    if "Any" in external:
+        imports.append("from typing import Any")
+    imports += [
         "",
         "from azoth import _core, _models_gen",
         "from azoth._registry_gen import spec as _spec_for",
@@ -984,14 +991,14 @@ def emit() -> str:
     imports.append(f"from azoth.core.units import {', '.join(units)}")
     # **The annotation names are a separate accumulator, and they have to be.** `azoth.eos`
     # imports the result dataclasses as well, so a name cannot be told from an annotation by
-    # looking it up in that module - `TpFlashSaftResult` is in both. `Sequence` and `Q` are the
-    # two the header already brings.
+    # looking it up in that module - `TpFlashSaftResult` is in both. `Sequence`, `Mapping`, `Any`
+    # and `Q` are the four the header already brings, from the block above.
     # **Grouped by module, because isort groups.** Two annotation names from one module are one
     # parenthesised block and two from different modules are two lines. `Mixture` and
     # `IdealGasModel` come from two modules, which is why one-line-per-name survived until eight
     # record dataclasses arrived from a third.
     by_module: dict[str, list[str]] = {}
-    for name in external - {"Sequence", "Q"}:
+    for name in external - {"Sequence", "Mapping", "Any", "Q"}:
         module, _, imported = namespace_imports()[name].partition(" import ")
         by_module.setdefault(module.removeprefix("from "), []).append(imported)
     for module in sorted(by_module, key=str.lower):

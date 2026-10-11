@@ -324,11 +324,13 @@ def emit_rust(models: list[dict[str, Any]], namespace: str) -> str:
     # reports.
     imports = [
         "Band",
+        "FieldValue",
         "ModelAlgorithm",
         "ModelBracket",
         "ModelFallback",
         "ModelSpec",
         "RangeCheck",
+        "RecordField",
         "Severity",
         "SpecCheck",
         "TestCase",
