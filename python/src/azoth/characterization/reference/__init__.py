@@ -22,6 +22,7 @@ from azoth.characterization.reference.oil_assay_derivation import oil_assay_deri
 from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_split
 from azoth.characterization.reference.set_heavy_tbp_to_plus import set_heavy_tbp_to_plus
 from azoth.characterization.reference.tbp_closure import tbp_closure
+from azoth.characterization.reference.tbp_cut_boundaries import tbp_cut_boundaries
 from azoth.characterization.reference.tbp_cut_properties import tbp_cut_properties
 from azoth.characterization.reference.tbp_density import tbp_density
 from azoth.characterization.reference.tbp_grouping import tbp_grouping
@@ -36,6 +37,7 @@ __all__ = [
     "pedersen_plus_split",
     "set_heavy_tbp_to_plus",
     "tbp_closure",
+    "tbp_cut_boundaries",
     "tbp_cut_properties",
     "tbp_density",
     "tbp_grouping",

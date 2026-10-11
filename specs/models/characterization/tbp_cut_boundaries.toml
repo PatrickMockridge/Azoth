@@ -1,0 +1,71 @@
+id = "characterization.tbp_cut_boundaries"
+name = "A cumulative TBP curve cut into an assay, one row per interval"
+kind = "direct"
+assumptions = [
+    "**the curve is stated as boundary yields, not interval yields.** N cumulative percentages and N boiling points give N-1 intervals, and the gravity vector is one shorter than either - `N cumulative yields, N temperatures, and N-1 densities` is the class's own way of putting it.",
+    "**each interval's volume fraction is `(cumulative[i+1] - cumulative[i]) / 100`**, and its gravity is the one stated beside it. The yields sum to one because the curve ends at 100, which is what the class's own span check is for.",
+    "**a cut keeps its range as well as its average.** `withBoilingRangeKelvin(lower, upper)` sets both boundaries and the midpoint between them, so all three are published and the average is not the only surviving record of the interval.",
+    "**a cut is named `prefix` and its position from one**, so `TBP` and a four-interval curve give `TBP1` to `TBP4`. The prefix is a name and not a chemical statement - nothing in the class reads it again.",
+    "**the class validates the curve before it cuts it.** The prefix is non-empty, the lengths are N, N and N-1, the yields span 0 to 100 within `1e-8`, and both the yields and the temperatures strictly increase. Each is a refusal here.",
+    "**the Celsius entry point is the same arithmetic.** `addTBPCutBoundariesCelsius` adds 273.15 to its temperatures and calls this one, which is the crossing `to_si` makes at the boundary rather than a second id.",
+    "the result is a bookkeeping choice: the same curve cut at more boundaries gives more, narrower cuts and one fluid, and the yields are the interval widths either way.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/OilAssayCharacterisation.java`'s `addTBPCutBoundariesKelvin` and `validateTBPCutBoundaries` are the port source.",
+    "`validation/neqsim/captures/tbp_cut_boundaries_probe.tsv` - three curves and five refusals from `validation/neqsim/TbpCutBoundariesProbe.java`.",
+]
+[source]
+standard = "NeqSim master `OilAssayCharacterisation.addTBPCutBoundariesKelvin`"
+edition = "Its interval arithmetic, its cut naming and the range each cut keeps. What it answers is the cut table itself, and `characterization.oil_assay_derivation` is the id that reads one."
+[inputs]
+[inputs.name_prefix]
+type = "string"
+description = "The prefix each cut's name is built from, with its position from one appended.\n"
+[inputs.cumulative_volume_percent]
+type = "vector"
+unit = "dimensionless"
+length = "one per boundary, so one more than there are cuts"
+description = "The curve's cumulative volume yield at each boundary, which must span zero to a hundred and strictly increase. The class allows `1e-8` of slack on both ends.\n"
+[inputs.boiling_point]
+type = "vector"
+unit = "K"
+length = "one per boundary, aligned with `cumulative_volume_percent`"
+description = "Each boundary's normal boiling point, which must be finite, positive and strictly increasing. A pair of them bounds one cut.\n"
+[inputs.specific_gravity]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, so one fewer than the boundaries"
+description = "Each cut's specific gravity, which must be finite and positive. It is stated per interval and not per boundary, which is what makes this vector the short one.\n"
+[outputs]
+[outputs.cut_name]
+type = "vector_string"
+length = "one per cut, in the curve's order"
+description = "Each cut's name, its prefix with its position from one appended.\n"
+[outputs.volume_fraction]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, aligned with `cut_name`"
+description = "Each cut's share of the curve, the width of its interval over a hundred.\n"
+[outputs.specific_gravity]
+type = "vector"
+unit = "dimensionless"
+length = "one per cut, aligned with `cut_name`"
+description = "Each cut's specific gravity, which is the one stated for its interval.\n"
+[outputs.lower_boiling_point]
+type = "vector"
+unit = "K"
+length = "one per cut, aligned with `cut_name`"
+description = "Each cut's lower boiling-point boundary.\n"
+[outputs.upper_boiling_point]
+type = "vector"
+unit = "K"
+length = "one per cut, aligned with `cut_name`"
+description = "Each cut's upper boiling-point boundary.\n"
+[outputs.average_boiling_point]
+type = "vector"
+unit = "K"
+length = "one per cut, aligned with `cut_name`"
+description = "Each cut's average normal boiling point, the midpoint of its two boundaries.\n"
+[implementations]
+python = "azoth.characterization.tbp_cut_boundaries"
+rust = "azoth_characterization::tbp_cut_boundaries"

@@ -40,6 +40,7 @@ from azoth.core.result import (
     PedersenPlusSplitResult,
     SetHeavyTbpToPlusResult,
     TbpClosureResult,
+    TbpCutBoundariesResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
     TbpGroupingResult,
@@ -56,6 +57,7 @@ __all__ = [
     "pedersen_plus_split",
     "set_heavy_tbp_to_plus",
     "tbp_closure",
+    "tbp_cut_boundaries",
     "tbp_cut_properties",
     "tbp_density",
     "tbp_grouping",
@@ -74,6 +76,38 @@ _LUMPING = "characterization.lumping"
 _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 _SET_HEAVY_TBP_TO_PLUS = "characterization.set_heavy_tbp_to_plus"
 _OIL_ASSAY_DERIVATION = "characterization.oil_assay_derivation"
+_TBP_CUT_BOUNDARIES = "characterization.tbp_cut_boundaries"
+
+
+def tbp_cut_boundaries(
+    name_prefix: str,
+    cumulative_volume_percent: Sequence[float],
+    boiling_point: Sequence[Q],
+    specific_gravity: Sequence[float],
+) -> TbpCutBoundariesResult:
+    """A cumulative TBP curve cut into an assay, one row per interval.
+
+    ``cumulative_volume_percent`` and ``boiling_point`` are the curve's boundaries - N of each -
+    and ``specific_gravity`` is one per interval, so one shorter than either. Each cut's share is
+    the width of its interval, and its average boiling point is the midpoint of the pair that
+    bounds it, which is kept beside the two boundaries themselves.
+
+    The class's Celsius entry point is the same arithmetic with its temperatures offset, so a
+    caller states them in whichever unit it holds them in.
+
+    Raises:
+        InvalidInputError: if the prefix is empty, if the vectors are not N, N and N-1 long, if the
+            yields do not span zero to a hundred, if either the yields or the temperatures fail to
+            increase strictly, or if a gravity is not finite and positive.
+
+    See :func:`azoth.characterization.reference.tbp_cut_boundaries`.
+    """
+    return resolve(_TBP_CUT_BOUNDARIES)(  # type: ignore[no-any-return]
+        name_prefix=name_prefix,
+        cumulative_volume_percent=cumulative_volume_percent,
+        boiling_point=boiling_point,
+        specific_gravity=specific_gravity,
+    )
 
 
 def oil_assay_derivation(

@@ -550,6 +550,88 @@ impl From<&azoth_characterization::results::TbpClosureResult> for PyTbpClosureRe
         }
     }
 }
+/// Result of `characterization.tbp_cut_boundaries`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "TbpCutBoundariesResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyTbpCutBoundariesResult {
+    /// Each cut's name, its prefix with its position from one appended.
+    #[pyo3(get)]
+    pub cut_name: Vec<String>,
+    /// Each cut's share of the curve, the width of its interval over a hundred.
+    #[pyo3(get)]
+    pub volume_fraction: Vec<f64>,
+    /// Each cut's specific gravity, which is the one stated for its interval.
+    #[pyo3(get)]
+    pub specific_gravity: Vec<f64>,
+    /// Each cut's lower boiling-point boundary.
+    #[pyo3(get)]
+    pub lower_boiling_point: Vec<PyQty>,
+    /// Each cut's upper boiling-point boundary.
+    #[pyo3(get)]
+    pub upper_boiling_point: Vec<PyQty>,
+    /// Each cut's average normal boiling point, the midpoint of its two boundaries.
+    #[pyo3(get)]
+    pub average_boiling_point: Vec<PyQty>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyTbpCutBoundariesResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TbpCutBoundariesResult(cut_name={:?}, volume_fraction={:?}, specific_gravity={:?}, lower_boiling_point={:?}, upper_boiling_point={:?}, average_boiling_point={:?}, {} warning(s))",
+            self.cut_name,
+            self.volume_fraction,
+            self.specific_gravity,
+            self.lower_boiling_point,
+            self.upper_boiling_point,
+            self.average_boiling_point,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::TbpCutBoundariesResult> for PyTbpCutBoundariesResult {
+    fn from(r: &azoth_characterization::results::TbpCutBoundariesResult) -> Self {
+        Self {
+            cut_name: r.cut_name.clone(),
+            volume_fraction: r.volume_fraction.clone(),
+            specific_gravity: r.specific_gravity.clone(),
+            lower_boiling_point: r
+                .lower_boiling_point
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            upper_boiling_point: r
+                .upper_boiling_point
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            average_boiling_point: r
+                .average_boiling_point
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: v.value,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `characterization.tbp_cut_properties`, transported.
 #[pyclass(
     frozen,

@@ -27,6 +27,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyPedersenPlusSplitResult>()?;
     m.add_class::<crate::transport_gen::PySetHeavyTbpToPlusResult>()?;
     m.add_class::<crate::transport_gen::PyTbpClosureResult>()?;
+    m.add_class::<crate::transport_gen::PyTbpCutBoundariesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpCutPropertiesResult>()?;
     m.add_class::<crate::transport_gen::PyTbpDensityResult>()?;
     m.add_class::<crate::transport_gen::PyTbpGroupingResult>()?;
@@ -253,6 +254,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::characterization::tbp_closure, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::tbp_cut_boundaries,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::characterization::tbp_cut_properties,
         m

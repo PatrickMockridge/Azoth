@@ -212,6 +212,31 @@ pub fn set_heavy_tbp_to_plus(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A cumulative TBP curve cut into an assay, one row per interval.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (name_prefix, cumulative_volume_percent, boiling_point, specific_gravity))]
+#[pyo3(
+    text_signature = "(name_prefix, cumulative_volume_percent, boiling_point, specific_gravity)"
+)]
+pub fn tbp_cut_boundaries(
+    py: Python<'_>,
+    name_prefix: &str,
+    cumulative_volume_percent: Vec<f64>,
+    boiling_point: Vec<f64>,
+    specific_gravity: Vec<f64>,
+) -> PyResult<crate::transport_gen::PyTbpCutBoundariesResult> {
+    azoth_characterization::tbp_cut_boundaries::tbp_cut_boundaries(
+        name_prefix,
+        &cumulative_volume_percent,
+        &boiling_point,
+        &specific_gravity,
+    )
+    .map(|r| crate::transport_gen::PyTbpCutBoundariesResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A fluid's components grouped into boiling-point bins.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

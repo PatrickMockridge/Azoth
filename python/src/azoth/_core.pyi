@@ -322,6 +322,16 @@ class TbpClosureResult:
     warnings: list[Warning]
 
 @final
+class TbpCutBoundariesResult:
+    cut_name: list[str]
+    volume_fraction: list[float]
+    specific_gravity: list[float]
+    lower_boiling_point: list[Qty]
+    upper_boiling_point: list[Qty]
+    average_boiling_point: list[Qty]
+    warnings: list[Warning]
+
+@final
 class TbpCutPropertiesResult:
     tc: Qty
     pc: Qty
@@ -2307,6 +2317,12 @@ def tbp_closure(
     closure: str,
     model: str | None = None,
 ) -> TbpClosureResult: ...
+def tbp_cut_boundaries(
+    name_prefix: str,
+    cumulative_volume_percent: list[float],
+    boiling_point: list[float],
+    specific_gravity: list[float],
+) -> TbpCutBoundariesResult: ...
 def tbp_cut_properties(
     molar_mass: float,
     density: float,

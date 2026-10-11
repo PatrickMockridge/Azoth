@@ -22,6 +22,7 @@ pub mod results;
 pub mod set_heavy_tbp_to_plus;
 pub mod spec_gen;
 pub mod tbp_closure;
+pub mod tbp_cut_boundaries;
 pub mod tbp_cut_properties;
 pub mod tbp_density;
 pub mod tbp_grouping;
@@ -40,11 +41,13 @@ pub use pedersen_plus_split::pedersen_plus_split;
 pub use results::{
     AssayMassFractionsResult, CharacterisePlusFractionResult, CharacterizeToReferenceResult,
     LumpingResult, OilAssayDerivationResult, PedersenPlusSplitResult, SetHeavyTbpToPlusResult,
-    TbpClosureResult, TbpCutPropertiesResult, TbpDensityResult, TbpGroupingResult,
+    TbpClosureResult, TbpCutBoundariesResult, TbpCutPropertiesResult, TbpDensityResult,
+    TbpGroupingResult,
     WhitsonGammaSplitResult,
 };
 pub use set_heavy_tbp_to_plus::set_heavy_tbp_to_plus;
 pub use tbp_closure::{TbpClosureKind, tbp_closure};
+pub use tbp_cut_boundaries::tbp_cut_boundaries;
 pub use tbp_cut_properties::{TbpModel, tbp_cut_properties};
 pub use tbp_density::tbp_density;
 pub use tbp_grouping::tbp_grouping;

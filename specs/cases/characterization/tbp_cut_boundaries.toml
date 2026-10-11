@@ -1,0 +1,97 @@
+model = "characterization.tbp_cut_boundaries"
+
+[[cases]]
+id = "four_cuts"
+tolerance = 1.0e-12
+source = "NeqSim master, `OilAssayCharacterisation.addTBPCutBoundariesKelvin` on a five-boundary curve from `validation/neqsim/captures/tbp_cut_boundaries_probe.tsv`. Four intervals from five yields, and each cut's average boiling point is the **midpoint of the pair that bounds it** rather than a boundary itself. **`cut_name` is asserted in the model's own test**: this generator carries no string-vector expectation.\n"
+[cases.inputs]
+name_prefix = "TBP"
+cumulative_volume_percent = [
+    0.0, 20.0, 45.0, 75.0, 100.0,
+]
+boiling_point = [
+    320.0, 380.0, 440.0, 520.0, 620.0,
+]
+specific_gravity = [
+    0.68, 0.76, 0.82, 0.88,
+]
+[cases.expected]
+volume_fraction = [
+    0.2, 0.25, 0.3, 0.25,
+]
+specific_gravity = [
+    0.68, 0.76, 0.82, 0.88,
+]
+lower_boiling_point = [
+    320.0, 380.0, 440.0, 520.0,
+]
+upper_boiling_point = [
+    380.0, 440.0, 520.0, 620.0,
+]
+average_boiling_point = [
+    350.0, 410.0, 480.0, 570.0,
+]
+
+[[cases]]
+id = "one_cut"
+tolerance = 1.0e-12
+source = "The fewest boundaries the class accepts: two yields, two temperatures and one gravity, so one cut carrying the whole curve.\n"
+[cases.inputs]
+name_prefix = "C"
+cumulative_volume_percent = [
+    0.0, 100.0,
+]
+boiling_point = [
+    350.0, 600.0,
+]
+specific_gravity = [
+    0.8,
+]
+[cases.expected]
+volume_fraction = [
+    1.0,
+]
+specific_gravity = [
+    0.8,
+]
+lower_boiling_point = [
+    350.0,
+]
+upper_boiling_point = [
+    600.0,
+]
+average_boiling_point = [
+    475.0,
+]
+
+[[cases]]
+id = "an_uneven_curve"
+tolerance = 1.0e-12
+source = "A prefix that is not a bare word and yields that are not whole numbers, so the naming and the interval arithmetic are both visible rather than rounded away.\n"
+[cases.inputs]
+name_prefix = "NAPHTHA_"
+cumulative_volume_percent = [
+    0.0, 12.5, 37.5, 100.0,
+]
+boiling_point = [
+    300.0, 350.0, 410.0, 480.0,
+]
+specific_gravity = [
+    0.66, 0.74, 0.83,
+]
+[cases.expected]
+volume_fraction = [
+    0.125, 0.25, 0.625,
+]
+specific_gravity = [
+    0.66, 0.74, 0.83,
+]
+lower_boiling_point = [
+    300.0, 350.0, 410.0,
+]
+upper_boiling_point = [
+    350.0, 410.0, 480.0,
+]
+average_boiling_point = [
+    325.0, 380.0, 445.0,
+]

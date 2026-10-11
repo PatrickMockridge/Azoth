@@ -9,6 +9,7 @@
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
+//!   - specs/models/characterization/tbp_cut_boundaries.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml

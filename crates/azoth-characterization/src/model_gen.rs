@@ -9,6 +9,7 @@
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
+//!   - specs/models/characterization/tbp_cut_boundaries.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
 //!   - specs/models/characterization/whitson_gamma_split.toml
@@ -4147,6 +4148,104 @@ pub static TBP_CLOSURE_SPEC: ModelSpec = ModelSpec {
     cases: TBP_CLOSURE_CASES,
 };
 
+static TBP_CUT_BOUNDARIES_CHECKS: &[SpecCheck] = &[];
+
+static TBP_CUT_BOUNDARIES_CASES: &[TestCase] = &[
+    TestCase {
+        id: "four_cuts",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("name_prefix", "TBP")],
+        vectors: &[
+            ("cumulative_volume_percent", &[0.0, 20.0, 45.0, 75.0, 100.0]),
+            ("boiling_point", &[320.0, 380.0, 440.0, 520.0, 620.0]),
+            ("specific_gravity", &[0.68, 0.76, 0.82, 0.88]),
+        ],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("volume_fraction", &[0.2, 0.25, 0.3, 0.25]),
+            ("specific_gravity", &[0.68, 0.76, 0.82, 0.88]),
+            ("lower_boiling_point", &[320.0, 380.0, 440.0, 520.0]),
+            ("upper_boiling_point", &[380.0, 440.0, 520.0, 620.0]),
+            ("average_boiling_point", &[350.0, 410.0, 480.0, 570.0]),
+        ],
+        expected_strings: &[],
+        records: &[],
+    },
+    TestCase {
+        id: "one_cut",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("name_prefix", "C")],
+        vectors: &[
+            ("cumulative_volume_percent", &[0.0, 100.0]),
+            ("boiling_point", &[350.0, 600.0]),
+            ("specific_gravity", &[0.8]),
+        ],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("volume_fraction", &[1.0]),
+            ("specific_gravity", &[0.8]),
+            ("lower_boiling_point", &[350.0]),
+            ("upper_boiling_point", &[600.0]),
+            ("average_boiling_point", &[475.0]),
+        ],
+        expected_strings: &[],
+        records: &[],
+    },
+    TestCase {
+        id: "an_uneven_curve",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[("name_prefix", "NAPHTHA_")],
+        vectors: &[
+            ("cumulative_volume_percent", &[0.0, 12.5, 37.5, 100.0]),
+            ("boiling_point", &[300.0, 350.0, 410.0, 480.0]),
+            ("specific_gravity", &[0.66, 0.74, 0.83]),
+        ],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[
+            ("volume_fraction", &[0.125, 0.25, 0.625]),
+            ("specific_gravity", &[0.66, 0.74, 0.83]),
+            ("lower_boiling_point", &[300.0, 350.0, 410.0]),
+            ("upper_boiling_point", &[350.0, 410.0, 480.0]),
+            ("average_boiling_point", &[325.0, 380.0, 445.0]),
+        ],
+        expected_strings: &[],
+        records: &[],
+    },
+];
+
+/// Registry entry for `characterization.tbp_cut_boundaries`.
+pub static TBP_CUT_BOUNDARIES_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.tbp_cut_boundaries",
+    kind: "direct",
+    algorithm: None,
+    checks: TBP_CUT_BOUNDARIES_CHECKS,
+    cases: TBP_CUT_BOUNDARIES_CASES,
+};
+
 static TBP_DENSITY_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -6195,6 +6294,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &PEDERSEN_PLUS_SPLIT_SPEC,
     &SET_HEAVY_TBP_TO_PLUS_SPEC,
     &TBP_CLOSURE_SPEC,
+    &TBP_CUT_BOUNDARIES_SPEC,
     &TBP_DENSITY_SPEC,
     &TBP_GROUPING_SPEC,
     &WHITSON_GAMMA_SPLIT_SPEC,

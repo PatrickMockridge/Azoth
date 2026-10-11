@@ -226,6 +226,34 @@ class TbpClosureResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class TbpCutBoundariesResult(_HasWarnings):
+    """Result of ``characterization.tbp_cut_boundaries``."""
+
+    CALC_ID: ClassVar[str] = "characterization.tbp_cut_boundaries"
+
+    #: Each cut's name, its prefix with its position from one appended.
+    cut_name: tuple[str, ...]
+
+    #: Each cut's share of the curve, the width of its interval over a hundred.
+    volume_fraction: tuple[float, ...]
+
+    #: Each cut's specific gravity, which is the one stated for its interval.
+    specific_gravity: tuple[float, ...]
+
+    #: Each cut's lower boiling-point boundary.
+    lower_boiling_point: tuple[Q, ...]
+
+    #: Each cut's upper boiling-point boundary.
+    upper_boiling_point: tuple[Q, ...]
+
+    #: Each cut's average normal boiling point, the midpoint of its two boundaries.
+    average_boiling_point: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class TbpCutPropertiesResult(_HasWarnings):
     """Result of ``characterization.tbp_cut_properties``."""
 

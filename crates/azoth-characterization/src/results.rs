@@ -334,6 +334,42 @@ impl CalcResult for SetHeavyTbpToPlusResult {
     }
 }
 
+/// Result of `characterization.tbp_cut_boundaries`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TbpCutBoundariesResult {
+    /// Each cut's name, its prefix with its position from one appended.
+    pub cut_name: Vec<String>,
+    /// Each cut's share of the curve, aligned with `cut_name`.
+    pub volume_fraction: Vec<f64>,
+    /// Each cut's specific gravity, aligned with `cut_name`.
+    pub specific_gravity: Vec<f64>,
+    /// Each cut's lower boiling-point boundary, aligned with `cut_name`.
+    pub lower_boiling_point: Vec<ThermodynamicTemperature>,
+    /// Each cut's upper boiling-point boundary, aligned with `cut_name`.
+    pub upper_boiling_point: Vec<ThermodynamicTemperature>,
+    /// Each cut's average normal boiling point, the midpoint of its two boundaries.
+    pub average_boiling_point: Vec<ThermodynamicTemperature>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for TbpCutBoundariesResult {
+    const CALC_ID: &'static str = "characterization.tbp_cut_boundaries";
+    const FIELDS: &'static [&'static str] = &[
+        "cut_name",
+        "volume_fraction",
+        "specific_gravity",
+        "lower_boiling_point",
+        "upper_boiling_point",
+        "average_boiling_point",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `characterization.oil_assay_derivation`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct OilAssayDerivationResult {

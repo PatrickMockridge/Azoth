@@ -28,6 +28,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "characterization.pedersen_plus_split" => azoth_characterization::results::PedersenPlusSplitResult::FIELDS.to_vec(),
         "characterization.set_heavy_tbp_to_plus" => azoth_characterization::results::SetHeavyTbpToPlusResult::FIELDS.to_vec(),
         "characterization.tbp_closure" => azoth_characterization::results::TbpClosureResult::FIELDS.to_vec(),
+        "characterization.tbp_cut_boundaries" => azoth_characterization::results::TbpCutBoundariesResult::FIELDS.to_vec(),
         "characterization.tbp_cut_properties" => azoth_characterization::results::TbpCutPropertiesResult::FIELDS.to_vec(),
         "characterization.tbp_density" => azoth_characterization::results::TbpDensityResult::FIELDS.to_vec(),
         "characterization.tbp_grouping" => azoth_characterization::results::TbpGroupingResult::FIELDS.to_vec(),

@@ -103,6 +103,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 11,
         "tests_skipped": 0,
     },
+    'characterization.tbp_cut_boundaries': {
+        "calc_id": 'characterization.tbp_cut_boundaries',
+        "name": 'A cumulative TBP curve cut into an assay, one row per interval',
+        "spec": {'path': 'specs/models/characterization/tbp_cut_boundaries.toml', 'sha256': 'dc906cbe1afebb6bfe72bae29bd9da824acf111e80e23c7151073a4a71cce014'},
+        "code": [{'path': 'python/src/azoth/characterization/reference/tbp_cut_boundaries.py', 'sha256': 'cc9b4d0e5757bf3d5bcb21f685669513f4410462fd44bb42d04cb2338f8acd55'}, {'path': 'crates/azoth-characterization/src/tbp_cut_boundaries.rs', 'sha256': 'ceb279dd8dc44f1eb10b0d2edca3e6b8263bcd32b6f7ceab02dbb8e8c9b0795f'}],
+        "source": 'NeqSim master `OilAssayCharacterisation.addTBPCutBoundariesKelvin`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'characterization.tbp_cut_properties': {
         "calc_id": 'characterization.tbp_cut_properties',
         "name": "TBP cut properties by any of NeqSim's ten models",

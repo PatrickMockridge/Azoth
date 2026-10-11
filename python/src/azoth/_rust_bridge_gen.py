@@ -183,6 +183,7 @@ from azoth.core.result import (
     SwameeJainResult,
     TankResult,
     TbpClosureResult,
+    TbpCutBoundariesResult,
     TbpCutPropertiesResult,
     TbpDensityResult,
     TbpFractionPropertiesResult,
@@ -422,6 +423,7 @@ __all__ = [
     "stripping_column",
     "tank",
     "tbp_closure",
+    "tbp_cut_boundaries",
     "tbp_cut_properties",
     "tbp_density",
     "tbp_fraction_properties",
@@ -610,6 +612,26 @@ def tbp_closure(boiling_point: Q, density: Q, closure: str, model: str | None=No
     )
     return TbpClosureResult(
         molar_mass=from_si(result.molar_mass.magnitude_si, result.molar_mass.unit),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def tbp_cut_boundaries(name_prefix: str, cumulative_volume_percent: Sequence[float], boiling_point: Sequence[Q], specific_gravity: Sequence[float]) -> TbpCutBoundariesResult:
+    """``characterization.tbp_cut_boundaries``, computed in Rust."""
+    spec = _models_gen.model("characterization.tbp_cut_boundaries")
+    result = _core.tbp_cut_boundaries(
+        name_prefix,
+        list(cumulative_volume_percent),
+        [input_to_si(spec, "boiling_point", v) for v in boiling_point],
+        list(specific_gravity),
+    )
+    return TbpCutBoundariesResult(
+        cut_name=tuple(result.cut_name),
+        volume_fraction=tuple(result.volume_fraction),
+        specific_gravity=tuple(result.specific_gravity),
+        lower_boiling_point=tuple(from_si(q.magnitude_si, q.unit) for q in result.lower_boiling_point),
+        upper_boiling_point=tuple(from_si(q.magnitude_si, q.unit) for q in result.upper_boiling_point),
+        average_boiling_point=tuple(from_si(q.magnitude_si, q.unit) for q in result.average_boiling_point),
         warnings=_warnings(result.warnings),
     )
 

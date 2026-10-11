@@ -94,6 +94,7 @@ Five sections, and the difference between them is the point:
 - [`characterization.pedersen_plus_split`](./characterization/pedersen_plus_split.md) — A plus fraction split into carbon-number cuts, by Pedersen's two Newton solves
 - [`characterization.set_heavy_tbp_to_plus`](./characterization/set_heavy_tbp_to_plus.md) — The TBP row a fluid's plus end begins at, chosen by the carbon number in its name
 - [`characterization.tbp_closure`](./characterization/tbp_closure.md) — TBP cut molar mass from its normal boiling point and specific gravity
+- [`characterization.tbp_cut_boundaries`](./characterization/tbp_cut_boundaries.md) — A cumulative TBP curve cut into an assay, one row per interval
 - [`characterization.tbp_density`](./characterization/tbp_density.md) — TBP cut specific gravity from its boiling point and molar mass
 - [`characterization.tbp_grouping`](./characterization/tbp_grouping.md) — A fluid's components grouped into boiling-point bins
 - [`characterization.whitson_gamma_split`](./characterization/whitson_gamma_split.md) — A plus fraction split into carbon-number cuts by Whitson's three-parameter gamma

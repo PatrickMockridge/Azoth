@@ -9,6 +9,7 @@
 //!   - specs/models/characterization/pedersen_plus_split.toml
 //!   - specs/models/characterization/set_heavy_tbp_to_plus.toml
 //!   - specs/models/characterization/tbp_closure.toml
+//!   - specs/models/characterization/tbp_cut_boundaries.toml
 //!   - specs/calcs/characterization/tbp_cut_properties.toml
 //!   - specs/models/characterization/tbp_density.toml
 //!   - specs/models/characterization/tbp_grouping.toml
@@ -306,6 +307,21 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "thermodynamic_temperature",
     ),
     ("characterization.tbp_closure", "density", "mass_density"),
+    (
+        "characterization.tbp_cut_boundaries",
+        "cumulative_volume_percent",
+        "dimensionless",
+    ),
+    (
+        "characterization.tbp_cut_boundaries",
+        "boiling_point",
+        "thermodynamic_temperature",
+    ),
+    (
+        "characterization.tbp_cut_boundaries",
+        "specific_gravity",
+        "dimensionless",
+    ),
     (
         "characterization.tbp_cut_properties",
         "molar_mass",

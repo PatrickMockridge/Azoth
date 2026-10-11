@@ -1,0 +1,46 @@
+# curve = four_cuts
+prefix = TBP
+cumulative_volume_percent = [0.00000000000000, 20.0000000000000, 45.0000000000000, 75.0000000000000, 100.000000000000]
+boiling_point = [320.000000000000, 380.000000000000, 440.000000000000, 520.000000000000, 620.000000000000]
+specific_gravity = [0.680000000000000, 0.760000000000000, 0.820000000000000, 0.880000000000000]
+cut_count = 4
+cut_names = [TBP1, TBP2, TBP3, TBP4]
+volume_fraction = [0.200000000000000, 0.250000000000000, 0.300000000000000, 0.250000000000000]
+specific_gravity = [0.680000000000000, 0.760000000000000, 0.820000000000000, 0.880000000000000]
+lower_boiling_point = [320.000000000000, 380.000000000000, 440.000000000000, 520.000000000000]
+upper_boiling_point = [380.000000000000, 440.000000000000, 520.000000000000, 620.000000000000]
+average_boiling_point = [350.000000000000, 410.000000000000, 480.000000000000, 570.000000000000]
+# curve = one_cut
+prefix = C
+cumulative_volume_percent = [0.00000000000000, 100.000000000000]
+boiling_point = [350.000000000000, 600.000000000000]
+specific_gravity = [0.800000000000000]
+cut_count = 1
+cut_names = [C1]
+volume_fraction = [1.00000000000000]
+specific_gravity = [0.800000000000000]
+lower_boiling_point = [350.000000000000]
+upper_boiling_point = [600.000000000000]
+average_boiling_point = [475.000000000000]
+# curve = an_uneven_curve
+prefix = NAPHTHA_
+cumulative_volume_percent = [0.00000000000000, 12.5000000000000, 37.5000000000000, 100.000000000000]
+boiling_point = [300.000000000000, 350.000000000000, 410.000000000000, 480.000000000000]
+specific_gravity = [0.660000000000000, 0.740000000000000, 0.830000000000000]
+cut_count = 3
+cut_names = [NAPHTHA_1, NAPHTHA_2, NAPHTHA_3]
+volume_fraction = [0.125000000000000, 0.250000000000000, 0.625000000000000]
+specific_gravity = [0.660000000000000, 0.740000000000000, 0.830000000000000]
+lower_boiling_point = [300.000000000000, 350.000000000000, 410.000000000000]
+upper_boiling_point = [350.000000000000, 410.000000000000, 480.000000000000]
+average_boiling_point = [325.000000000000, 380.000000000000, 445.000000000000]
+# curve = too_many_gravities
+# refused: TBP boundaries require N cumulative yields, N temperatures, and N-1 densities
+# curve = a_curve_that_does_not_start_at_zero
+# refused: TBP cumulative volume yield must span 0 to 100 percent
+# curve = yields_that_do_not_increase
+# refused: TBP cumulative volume yields must be strictly increasing
+# curve = a_temperature_that_does_not_increase
+# refused: TBP boiling-point boundaries must be strictly increasing
+# curve = a_gravity_that_is_not_positive
+# refused: Specific gravity must be finite and positive

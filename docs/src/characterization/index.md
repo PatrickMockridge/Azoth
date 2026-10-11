@@ -22,6 +22,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`characterization.pedersen_plus_split`](./pedersen_plus_split.md) | `plus_fraction_split_newton` | NeqSim master `PlusFractionModel.PedersenPlusModel` with `PedersenPlusModelSolver` |
 | [`characterization.set_heavy_tbp_to_plus`](./set_heavy_tbp_to_plus.md) | `direct composition` | NeqSim master `PlusCharacterize.setHeavyTBPtoPlus` |
 | [`characterization.tbp_closure`](./tbp_closure.md) | `molar_mass_bisection` | NeqSim master `TbpClosure` |
+| [`characterization.tbp_cut_boundaries`](./tbp_cut_boundaries.md) | `direct composition` | NeqSim master `OilAssayCharacterisation.addTBPCutBoundariesKelvin` |
 | [`characterization.tbp_density`](./tbp_density.md) | `direct composition` | NeqSim master `TbpClosure.RIAZI_DAUBERT_1980.calcDensity` |
 | [`characterization.tbp_grouping`](./tbp_grouping.md) | `direct composition` | NeqSim master `Phase.groupTBPfractions` |
 | [`characterization.whitson_gamma_split`](./whitson_gamma_split.md) | `direct composition` | NeqSim master `PlusFractionModel.WhitsonGammaModel` |
