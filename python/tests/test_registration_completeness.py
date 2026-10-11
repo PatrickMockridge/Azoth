@@ -441,6 +441,72 @@ def test_the_record_row_is_one_shape_in_three_declarations() -> None:
         )
 
 
+def _rust_struct_fields(name: str, crate: str, file: str) -> tuple[str, ...]:
+    """A plain `pub struct`'s fields, in declaration order."""
+    text = (REPO_ROOT / "crates" / crate / "src" / file).read_text(encoding="utf-8")
+    opening = re.search(rf"^pub struct {re.escape(name)} \{{", text, re.M)
+    assert opening is not None, f"no `pub struct {name}` in {crate}/{file}"
+    return tuple(re.findall(r"^\s*pub (\w+):", _struct_body(text, opening), re.M))
+
+
+def _class_fields(path: Path, name: str) -> tuple[str, ...]:
+    """A hand-written class's annotated fields, in declaration order."""
+    for node in ast.parse(path.read_text(encoding="utf-8")).body:
+        if isinstance(node, ast.ClassDef) and node.name == name:
+            return tuple(
+                statement.target.id
+                for statement in node.body
+                if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+            )
+    raise AssertionError(f"no class `{name}` in {path}")
+
+
+def test_the_output_record_row_is_one_shape_in_its_declarations() -> None:
+    """**The one `record_list` *output* is declared five times, and the five have to agree.**
+
+    An input row has a `row_type` to be found by and a generator that emits two of its three
+    declarations. An output row has neither: its `fields` block is read by nothing, and the shape
+    is hardcoded in the Rust kernel struct, the pyclass, the Python dataclass and the stub's
+    hand-kept table. This is what makes the spec's block more than documentation - the one
+    declaration of the five that nothing generates is the one the other four are held to.
+
+    The element's *name* is read out of `rust_index`'s `Vec<KComponent>` rather than named here,
+    because `gen_python_transport.element_kind` decides the transport by matching on it: a renamed
+    struct would fall through to the scalar rule and be carried as a number.
+    """
+    spec = next(calc for calc in CALCS if calc["id"] == "hydraulics.crane_k_factors")
+    fields = tuple(spec["outputs"]["components"]["fields"])
+    assert fields, "the spec declares no fields for its one record_list output"
+
+    rust_index = _tools_module("rust_index")
+    result = next(r for r in rust_index.result_types() if r.calc_id == "hydraulics.crane_k_factors")
+    element = next(
+        found[len("Vec<") : -1] for found in result.rust_field_types if found.startswith("Vec<")
+    )
+
+    stub = _tools_module("gen_stub")
+    declarations = {
+        "the Rust kernel struct": _rust_struct_fields(element, "azoth-hydraulics", "results.rs"),
+        "the pyclass": _rust_pyclasses().get(element, ()),
+        "the Python dataclass": _class_fields(
+            REPO_ROOT / "python" / "src" / "azoth" / "core" / "result_base.py", element
+        ),
+        "the stub's transport table": next(
+            (
+                tuple(field for field, _ in entry[2])
+                for entry in stub.VOCABULARY
+                if entry[0] == element
+            ),
+            (),
+        ),
+    }
+    for label, found in declarations.items():
+        assert found == fields, (
+            f"{label} is {found} and the spec declares {fields}; the four are hand-written and the "
+            f"spec is what they are held to"
+        )
+
+
 def test_the_stub_matches_the_rust_transport_types() -> None:
     """Every field the stub declares for a transport type exists in the Rust struct.
 
