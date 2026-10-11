@@ -135,6 +135,7 @@ static CHEMICAL_EQUILIBRIUM_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "co2_h2s_water_does_not_converge",
@@ -212,6 +213,7 @@ static CHEMICAL_EQUILIBRIUM_CASES: &[TestCase] = &[
         expected: &[("iterations", 12.0), ("error", 117.07787931775188)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "pitzer_solute_molality_basis",
@@ -277,6 +279,7 @@ static CHEMICAL_EQUILIBRIUM_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -371,6 +374,7 @@ static KINETIC_RATE_LAW_CASES: &[TestCase] = &[
         expected: &[("rate_factor", 0.004327147905576517)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_legacy_law_at_373_15",
@@ -393,6 +397,7 @@ static KINETIC_RATE_LAW_CASES: &[TestCase] = &[
         expected: &[("rate_factor", 0.2511026144636955)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_reference_arrhenius_law_at_its_own_reference_temperature",
@@ -415,6 +420,7 @@ static KINETIC_RATE_LAW_CASES: &[TestCase] = &[
         expected: &[("rate_factor", 0.001)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_reference_arrhenius_law_at_373_15",
@@ -437,6 +443,7 @@ static KINETIC_RATE_LAW_CASES: &[TestCase] = &[
         expected: &[("rate_factor", 0.057624873947522956)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -603,6 +610,7 @@ static KINETICS_CASES: &[TestCase] = &[TestCase {
         ("irreversible", &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     ],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registry entry for `reactions.kinetics`.
@@ -698,6 +706,7 @@ static REACTIVE_HYBRID_EOS_GE_FLASH_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "carbonate_brine_three_phases",
@@ -769,6 +778,7 @@ static REACTIVE_HYBRID_EOS_GE_FLASH_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -863,6 +873,7 @@ static REACTIVE_PH_FLASH_CASES: &[TestCase] = &[
         expected: &[("temperature", 600.0000397583285)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "wgs_600k_the_round_trip_on_pr",
@@ -885,6 +896,7 @@ static REACTIVE_PH_FLASH_CASES: &[TestCase] = &[
         expected: &[("temperature", 600.0)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1054,6 +1066,7 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "bicarbonate_brine_carries_its_spectator_charge",
@@ -1140,6 +1153,7 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_single_gas_phase_is_skipped",
@@ -1226,6 +1240,7 @@ static REACTIVE_PHASE_EQUILIBRIUM_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1319,6 +1334,7 @@ static REACTIVE_TP_FLASH_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "methane_water_has_no_reaction_to_run",
@@ -1336,6 +1352,7 @@ static REACTIVE_TP_FLASH_CASES: &[TestCase] = &[
         expected: &[("phase_count", 2.0), ("total_iterations", 0.0)],
         expected_vectors: &[("phase_fraction", &[0.5003348951610832, 0.4996651048389168])],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "wgs_600k_on_the_process_layers_cubic",
@@ -1353,6 +1370,7 @@ static REACTIVE_TP_FLASH_CASES: &[TestCase] = &[
         expected: &[("phase_count", 2.0), ("gibbs_energy", -2.2598215861208506)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1429,6 +1447,7 @@ static REFERENCE_POTENTIALS_CASES: &[TestCase] = &[
             ("survivors", &[0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "co2_water_standard_at_298_15",
@@ -1463,6 +1482,7 @@ static REFERENCE_POTENTIALS_CASES: &[TestCase] = &[
             ("survivors", &[1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "co2_h2s_water_standard_at_298_15",
@@ -1505,6 +1525,7 @@ static REFERENCE_POTENTIALS_CASES: &[TestCase] = &[
             ("survivors", &[1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "mdea_water_co2_takes_the_product_fallback",
@@ -1539,6 +1560,7 @@ static REFERENCE_POTENTIALS_CASES: &[TestCase] = &[
             ("survivors", &[1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 

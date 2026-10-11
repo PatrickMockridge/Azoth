@@ -19,7 +19,7 @@
 //! is a parameter: each test binary passes its own `spec_gen::specs()`, which is the
 //! one line of a spec-driven test that is namespace-specific.
 
-use azoth_core::spec::{CalcSpec, TestCase};
+use azoth_core::spec::{CalcSpec, FieldValue, RecordField, TestCase};
 use azoth_core::{CalcResult, Warning, WarningCode};
 
 /// Fetch a spec from a namespace's generated tables, failing loudly if the id is
@@ -97,6 +97,26 @@ pub fn expected(case: &TestCase, name: &str) -> f64 {
 pub fn list_input(case: &TestCase, name: &str) -> &'static [&'static str] {
     case.list(name)
         .unwrap_or_else(|| panic!("test `{}` does not supply list `{name}`", case.id))
+}
+
+/// A record-list input from a test case: one slice of fields per record.
+#[track_caller]
+pub fn record_input(case: &TestCase, name: &str) -> &'static [&'static [RecordField]] {
+    case.record(name)
+        .unwrap_or_else(|| panic!("test `{}` does not supply record list `{name}`", case.id))
+}
+
+/// One field of one record, as a number.
+///
+/// `None` when the record omits the field, which is not an omission to report: a field a
+/// record leaves out is absent per entry, and that is the whole reason a model taking
+/// per-row properties takes records rather than aligned vectors.
+#[must_use]
+pub fn record_number(row: &[RecordField], name: &str) -> Option<f64> {
+    row.iter().find(|field| field.name == name).and_then(|field| match field.value {
+        FieldValue::Number(value) => Some(value),
+        FieldValue::Name(_) | FieldValue::Flag(_) => None,
+    })
 }
 
 /// Assert that a skipped test says why it is skipped.

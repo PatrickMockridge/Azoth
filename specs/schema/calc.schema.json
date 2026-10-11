@@ -279,6 +279,11 @@
           "additionalProperties": { "$ref": "#/$defs/quantity" },
           "description": "The named sub-quantities of one record, for `record_list`. Required when type is `record_list`; a result returning structured rows - one per fitting, per component, per phase - needs its row shape declared."
         },
+        "row_type": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$",
+          "description": "The name of one record, for a `record_list` **input**. An output row is read by a generator that special-cases it, so its `fields` are descriptive; an input row has to be built by a caller and its fields are what the caller's mapping and the Rust type it crosses into are generated from, so the row needs a name both can carry. `tools/gen_stub.py` emits the mapping type of this name from `fields`, and `tools/spec_lint.py` refuses an input without one. Absent on an output."
+        },
         "description": { "type": "string", "minLength": 1 },
         "optional": {
           "type": "boolean",

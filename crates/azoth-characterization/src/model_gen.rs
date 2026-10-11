@@ -68,6 +68,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "mass_basis",
@@ -91,6 +92,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[("mass_fraction", &[0.4, 0.35, 0.25])],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "inside_the_closure_tolerance",
@@ -114,6 +116,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[("mass_fraction", &[0.499750124937531, 0.500249875062469])],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -187,6 +190,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "pedersen")],
+        records: &[],
     },
     TestCase {
         id: "row1_pedersen_m04",
@@ -246,6 +250,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
+        records: &[],
     },
     TestCase {
         id: "row2_whitson_m04",
@@ -305,6 +310,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "whitson_gamma")],
+        records: &[],
     },
     TestCase {
         id: "row5_whitson_m02",
@@ -364,6 +370,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "whitson_gamma")],
+        records: &[],
     },
     TestCase {
         id: "row6_pedersen_m065",
@@ -423,6 +430,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
+        records: &[],
     },
     TestCase {
         id: "row7_pedersen_m065",
@@ -482,6 +490,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
+        records: &[],
     },
     TestCase {
         id: "row8_whitson_m065",
@@ -541,6 +550,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
+        records: &[],
     },
 ];
 
@@ -589,6 +599,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_source_below_the_first_cut",
@@ -617,6 +628,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
             ("group_density", &[685.291828793774]),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "one_reference_cut",
@@ -645,6 +657,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
             ("group_density", &[775.675675675676]),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -901,6 +914,7 @@ static LUMPING_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_heavy_range_lumps_too",
@@ -1348,6 +1362,7 @@ static LUMPING_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_gamma_split_lumps_the_same_way",
@@ -1655,6 +1670,7 @@ static LUMPING_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_swapped_model_lumps_on_its_own_table",
@@ -2102,6 +2118,7 @@ static LUMPING_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2362,6 +2379,7 @@ static PEDERSEN_PLUS_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_heavy_range_is_the_same_solve",
@@ -2783,6 +2801,7 @@ static PEDERSEN_PLUS_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_heavier_feed_moves_both_lines",
@@ -3204,6 +3223,7 @@ static PEDERSEN_PLUS_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3278,6 +3298,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.070908382462752)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_mid",
@@ -3295,6 +3316,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.165769849054666)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_heavy",
@@ -3312,6 +3334,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.611237665466643)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_1987_light",
@@ -3329,6 +3352,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.0672714199532221)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_1987_heavy",
@@ -3346,6 +3370,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.506257785428009)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "soreide_light",
@@ -3363,6 +3388,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.0581047898856923)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "soreide_mid",
@@ -3380,6 +3406,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.17163365369197)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "soreide_heavy",
@@ -3397,6 +3424,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.423035819674842)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "tbp_model_light",
@@ -3414,6 +3442,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.0582117252470926)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "tbp_model_mid",
@@ -3431,6 +3460,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.178462372985669)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "tbp_model_heavy",
@@ -3448,6 +3478,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected: &[("molar_mass", 0.596568801482208)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3527,6 +3558,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected: &[("density", 234.340430850704)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_mid",
@@ -3544,6 +3576,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected: &[("density", 706.659009094508)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_heavy",
@@ -3561,6 +3594,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected: &[("density", 1951.03429727196)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_default_closure_is_the_supported_one",
@@ -3578,6 +3612,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected: &[("density", 706.659009094508)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3661,6 +3696,7 @@ static TBP_GROUPING_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "two_inside_one_bin",
@@ -3687,6 +3723,7 @@ static TBP_GROUPING_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_fluid_below_the_lowest_threshold",
@@ -3713,6 +3750,7 @@ static TBP_GROUPING_CASES: &[TestCase] = &[
             ],
         )],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4109,6 +4147,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_shape_moves_both_parameters",
@@ -4386,6 +4425,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "eta_is_the_first_windows_lower_edge",
@@ -4663,6 +4703,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_soreide_gravity_is_a_second_correlation",
@@ -4939,6 +4980,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_shape_is_estimated_from_the_watson_factor",
@@ -5215,6 +5257,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_lighter_plus_fraction_than_the_other_model_takes",
@@ -5491,6 +5534,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
             ),
         ],
         expected_strings: &[],
+        records: &[],
     },
 ];
 

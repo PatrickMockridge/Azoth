@@ -556,6 +556,15 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
         body = _matrix(name, dimensioned, annotation)
     elif kind == "vector":
         body = _vector(name, dimensioned, annotation)
+    elif kind == "record_list":
+        # **A record crosses as the list of mappings it is**, and the conversion is one call
+        # rather than a comprehension, because each *field* has its own declared unit and the
+        # rule for reading one is not this function's. It lives beside `input_to_si` so that a
+        # record field and a scalar input are converted by the same rule, which is the one
+        # conversion site the whole boundary is arranged around. Without this branch a
+        # `record_list` input falls through to the scalar path below and crosses as a bare
+        # number - the kind's silent failure.
+        body = f'input_records_to_si(spec, "{name}", {name})'
     elif kind in ("components", "fitting_list"):
         # The extension takes an owned `Vec<String>`; everything else that is not a number is
         # already the thing the signature declares, an enum and a boolean included. A fitting list
@@ -951,6 +960,12 @@ def emit() -> str:
     support = sorted(
         name for name in used if name in ("_association_spec", "_molar_masses", "_si", "_warnings")
     )
+    # The unit converters, from `azoth.core.units`. Three are on every adapter; the record
+    # reader is not, and importing it unconditionally would be an unused name until the first
+    # `record_list` input exists - which `ruff` refuses and `-D warnings` would not forgive.
+    units = ["Q", "from_si", "input_to_si"]
+    if "input_records_to_si(" in bodies:
+        units.insert(2, "input_records_to_si")
     imports = [
         "from collections.abc import Sequence",
         "",
@@ -966,7 +981,7 @@ def emit() -> str:
     # One block each, which is what isort settles on for a name imported under another name.
     for alias, rust in sorted(plain.items(), key=lambda item: item[1].lower()):
         imports += ["from azoth.core.result import (", f"    {rust} as {alias},", ")"]
-    imports.append("from azoth.core.units import Q, from_si, input_to_si")
+    imports.append(f"from azoth.core.units import {', '.join(units)}")
     # **The annotation names are a separate accumulator, and they have to be.** `azoth.eos`
     # imports the result dataclasses as well, so a name cannot be told from an annotation by
     # looking it up in that module - `TpFlashSaftResult` is in both. `Sequence` and `Q` are the

@@ -50,8 +50,8 @@ pub use solver::{
     require_converged, require_cubic_converged,
 };
 pub use spec::{
-    CalcSpec, ModelAlgorithm, ModelBracket, ModelFallback, ModelSpec, SolverSpec, SpecCheck,
-    TestCase,
+    CalcSpec, FieldValue, ModelAlgorithm, ModelBracket, ModelFallback, ModelSpec, RecordField,
+    SolverSpec, SpecCheck, TestCase,
 };
 pub use warning::{Warning, WarningCode};
 

@@ -65,8 +65,8 @@ throughout the package, which confines the problem to this module.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any, Final
+from collections.abc import Iterable, Mapping
+from typing import Any, Final, cast
 
 import pint
 
@@ -256,6 +256,63 @@ def input_to_si(spec: Mapping[str, Any], field: str, value: Any) -> float:
         field,
         interval=bool(declaration.get("interval", False)),
     )
+
+
+def input_records_to_si[Row: Mapping[str, object]](
+    spec: Mapping[str, Any], field: str, records: Iterable[Mapping[str, Any]]
+) -> list[Row]:
+    """Convert one declared `record_list` input, reading each **field's** unit from the spec.
+
+    A record is a mapping keyed by field name, and every field is converted by the rule its
+    own declaration calls for - the same three-way split the bridge makes for a scalar
+    input, one level down. A name crosses as itself; a dimensionless field crosses as the
+    bare number it is, or through `to_si` if the caller handed over a quantity for it; a
+    dimensioned one always goes through `to_si`, which reads the unit and the `interval`
+    flag from the field's declaration rather than restating them.
+
+    **A field the record omits crosses as `None`, and so does one stated as `None`.** The
+    Rust transport reads each field by key, so the two spellings of "this record has no
+    value here" have to mean one thing, and `None` is what the kernel then matches - a key
+    left out would be the same absence spelled a second way.
+
+    Raises:
+        UnitMismatchError: as :func:`to_si`, naming the field as `record.field`.
+        KeyError: if the spec does not declare `field`. A programming error in the
+            implementation, as in :func:`input_to_si`.
+    """
+    declared_fields = spec["inputs"][field]["fields"]
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        row: dict[str, Any] = {}
+        for name, declared in declared_fields.items():
+            value = record.get(name)
+            if value is None:
+                row[name] = None
+                continue
+            kind = declared.get("type", "quantity")
+            if kind in ("string", "enum", "boolean"):
+                row[name] = value
+                continue
+            unit = declared.get("unit")
+            if unit is None or unit == "dimensionless":
+                row[name] = (
+                    float(value)
+                    if isinstance(value, int | float)
+                    else to_si(value, "dimensionless", f"{field}.{name}")
+                )
+                continue
+            row[name] = to_si(
+                value,
+                unit,
+                f"{field}.{name}",
+                interval=bool(declared.get("interval", False)),
+            )
+        rows.append(row)
+    # **The row's shape is the spec's, not this function's.** `Row` is the `record_list`
+    # input's generated row type - the mapping the extension takes - and the conversion
+    # here is generic over it, so the one thing that knows the field names stays the one
+    # thing that declares them.
+    return cast("list[Row]", rows)
 
 
 def from_si(si_magnitude: float, spec_unit: str) -> Q:

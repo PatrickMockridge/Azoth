@@ -56,6 +56,33 @@ pub struct SolverSpec {
     pub convergence: &'static str,
 }
 
+/// What one field of one input record carries.
+///
+/// A tagged value, where a scalar input gets a table per leaf type. Those tables can
+/// split because a scalar has no identity to lose; a record's fields *are* one thing, so
+/// splitting them into `record_numbers` and `record_names` would leave the reader pairing
+/// them by index - the positional coupling the flat split exists to avoid. The tag does
+/// what the tables do: a reader tells a flag from a quantity without asking whether
+/// `isinstance(True, int)` holds in the generator's language.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum FieldValue {
+    /// A number, in the field's declared unit.
+    Number(f64),
+    /// A name: an enum's member, or a string.
+    Name(&'static str),
+    /// A flag.
+    Flag(bool),
+}
+
+/// One named field of one input record.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RecordField {
+    /// The field's name, as the spec's `fields` block spells it.
+    pub name: &'static str,
+    /// The scalar it carries.
+    pub value: FieldValue,
+}
+
 /// One test case from a spec's `tests` list, plus the worked example.
 #[derive(Debug, Clone, Copy)]
 pub struct TestCase {
@@ -111,6 +138,13 @@ pub struct TestCase {
     /// says. A string expectation this generator cannot carry is refused rather than
     /// dropped, so a case cannot declare one that nothing checks.
     pub expected_strings: &'static [(&'static str, &'static str)],
+    /// Record-valued inputs, by name: one entry per record, each a slice of named fields.
+    ///
+    /// **A field a record omits is absent, and that is the point of the kind.** The
+    /// per-entry optionality has no vector form - a parallel vector can say absent per
+    /// vector and not per entry - which is why a model taking per-row properties takes
+    /// this and not a set of aligned slices.
+    pub records: &'static [(&'static str, &'static [&'static [RecordField]])],
 }
 
 impl TestCase {
@@ -160,6 +194,15 @@ impl TestCase {
             .iter()
             .find(|(k, _)| *k == name)
             .map(|(_, v)| *v)
+    }
+
+    /// Fetch a record-list input: one slice of fields per record.
+    ///
+    /// `Some(&[])` for a record list the case states as empty, and `None` for one it does
+    /// not state at all - the distinction the other accessors make.
+    #[must_use]
+    pub fn record(&self, name: &str) -> Option<&'static [&'static [RecordField]]> {
+        self.records.iter().find(|(k, _)| *k == name).map(|(_, v)| *v)
     }
 
     /// Fetch an expected scalar output. `None` if the test does not assert it.

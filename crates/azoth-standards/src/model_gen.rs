@@ -74,6 +74,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "methane_butane_15_25",
@@ -102,6 +103,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "sales_gas_15_25",
@@ -133,6 +135,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "sour_gas_15_25",
@@ -161,6 +164,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "methane_butane_0_15_55",
@@ -189,6 +193,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "sales_gas_0_15_55",
@@ -220,6 +225,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "pure_methane_0_15_55",
@@ -248,6 +254,7 @@ static ISO6976_CASES: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 

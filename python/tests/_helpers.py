@@ -715,6 +715,19 @@ def _declared(declaration: Mapping[str, Any], value: Any) -> Any:
     """One declared input, at the shape and unit the spec gives it."""
     unit = declaration.get("unit", "dimensionless")
     kind = declaration.get("type", "quantity")
+    if kind == "record_list":
+        # **Per *field*, not per record.** A record is a mapping keyed by field name and
+        # each field carries its own declared unit, so the conversion is the one below,
+        # asked once per field. A field the case omits crosses as `None`, which is what a
+        # record's per-entry optionality means on both sides.
+        fields = declaration["fields"]
+        return [
+            {
+                name: None if record.get(name) is None else _declared(field, record[name])
+                for name, field in fields.items()
+            }
+            for record in value
+        ]
     if kind == "vector":
         return [_scalar(unit, item) for item in value]
     if kind == "matrix":

@@ -156,6 +156,7 @@ static ANTOINE_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         expected: &[("p_sat", 6420836.723287002)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "nc12_exp",
@@ -182,6 +183,7 @@ static ANTOINE_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         expected: &[("p_sat", 42.2459629836369)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "223_tm_c4_wagner",
@@ -208,6 +210,7 @@ static ANTOINE_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         expected: &[("p_sat", 10274.724598532119)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -225,6 +228,7 @@ static ANTOINE_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -263,6 +267,7 @@ pub static ANTOINE_VAPOR_PRESSURE_SPEC: CalcSpec = CalcSpec {
         expected: &[("p_sat", 56252981.19539252)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: ANTOINE_VAPOR_PRESSURE_TESTS,
 };
@@ -355,6 +360,7 @@ static CHAPMAN_ENSKOG_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 2.1853611628506023e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "methane_co2_at_the_absorber_state",
@@ -379,6 +385,7 @@ static CHAPMAN_ENSKOG_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 9.457085848059925e-07)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_dense_gas_phase_falls_with_pressure",
@@ -403,6 +410,7 @@ static CHAPMAN_ENSKOG_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 1.6228425436789486e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -439,6 +447,7 @@ pub static CHAPMAN_ENSKOG_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 3.555070057344887e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: CHAPMAN_ENSKOG_DIFFUSIVITY_TESTS,
 };
@@ -518,6 +527,7 @@ static CHUNG_CONDUCTIVITY_TESTS: &[TestCase] = &[
         expected: &[("k", 0.01746969711123719)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "methanol_exercises_dipole_and_correction",
@@ -544,6 +554,7 @@ static CHUNG_CONDUCTIVITY_TESTS: &[TestCase] = &[
         expected: &[("k", 0.022615665154001992)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -561,6 +572,7 @@ static CHUNG_CONDUCTIVITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -599,6 +611,7 @@ pub static CHUNG_CONDUCTIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("k", 0.03384023073765177)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: CHUNG_CONDUCTIVITY_TESTS,
 };
@@ -693,6 +706,7 @@ static CHUNG_VISCOSITY_TESTS: &[TestCase] = &[
         expected: &[("mu", 0.00016036002506436133)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "propane_matches_neqsim",
@@ -719,6 +733,7 @@ static CHUNG_VISCOSITY_TESTS: &[TestCase] = &[
         expected: &[("mu", 8.491510723076993e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -736,6 +751,7 @@ static CHUNG_VISCOSITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -774,6 +790,7 @@ pub static CHUNG_VISCOSITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("mu", 1.124009415430133e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: CHUNG_VISCOSITY_TESTS,
 };
@@ -812,6 +829,7 @@ static CO2_WATER_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 3.5891345129268157e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -829,6 +847,7 @@ static CO2_WATER_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -858,6 +877,7 @@ pub static CO2_WATER_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 2.0208212539579613e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: CO2_WATER_DIFFUSIVITY_TESTS,
 };
@@ -935,6 +955,7 @@ static COSTALD_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[("v", 0.00019615343276749308)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -952,6 +973,7 @@ static COSTALD_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -988,6 +1010,7 @@ pub static COSTALD_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         expected: &[("v", 0.0001315006475383877)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: COSTALD_MOLAR_VOLUME_TESTS,
 };
@@ -1050,6 +1073,7 @@ static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 2.155058583907974e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "co2_nitrogen_second_measured_pair",
@@ -1074,6 +1098,7 @@ static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 1.6244535413221675e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_pressure_scale_is_bar",
@@ -1098,6 +1123,7 @@ static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 4.367226220289509e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "four_hundred_kelvin_scales_as_t_to_the_one_point_seven_five",
@@ -1122,6 +1148,7 @@ static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 3.604152357783764e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_name_outside_the_special_table_takes_the_critical_volume_rung",
@@ -1146,6 +1173,7 @@ static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 2.0851238582061954e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_rate_based_column_s_own_state",
@@ -1170,6 +1198,7 @@ static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 3.922539294026516e-07)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1206,6 +1235,7 @@ pub static FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 2.155058583907974e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY_TESTS,
 };
@@ -1248,6 +1278,7 @@ static HAYDUK_MINHAS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 1.6252933415200594e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1265,6 +1296,7 @@ static HAYDUK_MINHAS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1298,6 +1330,7 @@ pub static HAYDUK_MINHAS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 4.391778089044218e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: HAYDUK_MINHAS_DIFFUSIVITY_TESTS,
 };
@@ -1360,6 +1393,7 @@ static HEAT_OF_VAPORIZATION_TESTS: &[TestCase] = &[
         expected: &[("hov", 8.17)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1377,6 +1411,7 @@ static HEAT_OF_VAPORIZATION_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1413,6 +1448,7 @@ pub static HEAT_OF_VAPORIZATION_SPEC: CalcSpec = CalcSpec {
         expected: &[("hov", 36147.57779141032)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: HEAT_OF_VAPORIZATION_TESTS,
 };
@@ -1451,6 +1487,7 @@ static IAPWS_HENRY_LAW_TESTS: &[TestCase] = &[
         expected: &[("henry", 5832032495.36875)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "nitrogen_at_298_15_k",
@@ -1468,6 +1505,7 @@ static IAPWS_HENRY_LAW_TESTS: &[TestCase] = &[
         expected: &[("henry", 8559982180.23249)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "co2_at_298_15_k",
@@ -1485,6 +1523,7 @@ static IAPWS_HENRY_LAW_TESTS: &[TestCase] = &[
         expected: &[("henry", 165644589.17920527)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "h2s_at_298_15_k",
@@ -1502,6 +1541,7 @@ static IAPWS_HENRY_LAW_TESTS: &[TestCase] = &[
         expected: &[("henry", 53992798.61457985)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1519,6 +1559,7 @@ static IAPWS_HENRY_LAW_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1548,6 +1589,7 @@ pub static IAPWS_HENRY_LAW_SPEC: CalcSpec = CalcSpec {
         expected: &[("henry", 3947965646.000571)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: IAPWS_HENRY_LAW_TESTS,
 };
@@ -1610,6 +1652,7 @@ static IDEAL_GAS_CP_TESTS: &[TestCase] = &[
         expected: &[("cp", 93.577545936)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "co2_at_300_k",
@@ -1634,6 +1677,7 @@ static IDEAL_GAS_CP_TESTS: &[TestCase] = &[
         expected: &[("cp", 37.22197483344483)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_polynomial_turns_over",
@@ -1653,6 +1697,7 @@ static IDEAL_GAS_CP_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1670,6 +1715,7 @@ static IDEAL_GAS_CP_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1706,6 +1752,7 @@ pub static IDEAL_GAS_CP_SPEC: CalcSpec = CalcSpec {
         expected: &[("cp", 35.855913494)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: IDEAL_GAS_CP_TESTS,
 };
@@ -1751,6 +1798,7 @@ static LIQUID_HEAT_CAPACITY_TESTS: &[TestCase] = &[
         expected: &[("cp", 0.0)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1768,6 +1816,7 @@ static LIQUID_HEAT_CAPACITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1804,6 +1853,7 @@ pub static LIQUID_HEAT_CAPACITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("cp", 75.355)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: LIQUID_HEAT_CAPACITY_TESTS,
 };
@@ -1885,6 +1935,7 @@ static LIQUID_VISCOSITY_PURE_TESTS: &[TestCase] = &[
         expected: &[("mu", 0.014504116387418152)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_common_phase_ladder_leaves_model_two_at_zero",
@@ -1913,6 +1964,7 @@ static LIQUID_VISCOSITY_PURE_TESTS: &[TestCase] = &[
         expected: &[("mu", 0.0)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "above_the_critical_temperature_the_sentinel_answers",
@@ -1941,6 +1993,7 @@ static LIQUID_VISCOSITY_PURE_TESTS: &[TestCase] = &[
         expected: &[("mu", 0.0005)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -1981,6 +2034,7 @@ pub static LIQUID_VISCOSITY_PURE_SPEC: CalcSpec = CalcSpec {
         expected: &[("mu", 0.0006528922494381046)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: LIQUID_VISCOSITY_PURE_TESTS,
 };
@@ -2027,6 +2081,7 @@ static MATCOP5_PRUMR_ALPHA_TESTS: &[TestCase] = &[
         expected: &[("alpha", 1.1792745256672486)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2044,6 +2099,7 @@ static MATCOP5_PRUMR_ALPHA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2081,6 +2137,7 @@ pub static MATCOP5_PRUMR_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.1807146411895904)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: MATCOP5_PRUMR_ALPHA_TESTS,
 };
@@ -2118,6 +2175,7 @@ static MATCOP_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.matcop_alpha`.
@@ -2146,6 +2204,7 @@ pub static MATCOP_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.0358255509077803)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: MATCOP_ALPHA_TESTS,
 };
@@ -2190,6 +2249,7 @@ static MATCOP_PR_ALPHA_TESTS: &[TestCase] = &[
         expected: &[("alpha", 0.777477260954653)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2207,6 +2267,7 @@ static MATCOP_PR_ALPHA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2242,6 +2303,7 @@ pub static MATCOP_PR_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.180634768967036)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: MATCOP_PR_ALPHA_TESTS,
 };
@@ -2286,6 +2348,7 @@ static MATCOP_PRUMR_ALPHA_TESTS: &[TestCase] = &[
         expected: &[("alpha", 1.1822586823466172)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2303,6 +2366,7 @@ static MATCOP_PRUMR_ALPHA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2338,6 +2402,7 @@ pub static MATCOP_PRUMR_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.180634768967036)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: MATCOP_PRUMR_ALPHA_TESTS,
 };
@@ -2384,6 +2449,7 @@ static MATCOP_PRUMR_NEW_ALPHA_TESTS: &[TestCase] = &[
         expected: &[("alpha", 1.1822586823466172)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2401,6 +2467,7 @@ static MATCOP_PRUMR_NEW_ALPHA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2438,6 +2505,7 @@ pub static MATCOP_PRUMR_NEW_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.1807146411895904)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: MATCOP_PRUMR_NEW_ALPHA_TESTS,
 };
@@ -2475,6 +2543,7 @@ static MOLLERUP_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.mollerup_alpha`.
@@ -2503,6 +2572,7 @@ pub static MOLLERUP_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.0243735198192874)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: MOLLERUP_ALPHA_TESTS,
 };
@@ -2562,6 +2632,7 @@ static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "at_298_k",
@@ -2583,6 +2654,7 @@ static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "above_the_stated_range_at_340_k",
@@ -2604,6 +2676,7 @@ static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2637,6 +2710,7 @@ pub static NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: NITRIC_SULFURIC_ACID_VAPOR_PRESSURE_TESTS,
 };
@@ -2706,6 +2780,7 @@ static PARACHOR_SURFACE_TENSION_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.parachor_surface_tension`.
@@ -2739,6 +2814,7 @@ pub static PARACHOR_SURFACE_TENSION_SPEC: CalcSpec = CalcSpec {
         expected: &[("sigma", 0.016800304320340388)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PARACHOR_SURFACE_TENSION_TESTS,
 };
@@ -2777,6 +2853,7 @@ static PR78_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", 0.60282728832)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2796,6 +2873,7 @@ static PR78_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2825,6 +2903,7 @@ pub static PR78_KAPPA_SPEC: CalcSpec = CalcSpec {
         expected: &[("kappa", 1.2150662799999998)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR78_KAPPA_TESTS,
 };
@@ -2884,6 +2963,7 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "supercritical_and_a_different_kappa",
@@ -2905,6 +2985,7 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -2922,6 +3003,7 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2941,6 +3023,7 @@ static PR_ALPHA_AB_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -2974,6 +3057,7 @@ pub static PR_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_ALPHA_AB_TESTS,
 };
@@ -3012,6 +3096,7 @@ static PR_DANESH_ALPHA_TESTS: &[TestCase] = &[
         expected: &[("alpha", 0.6990069699021141)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3029,6 +3114,7 @@ static PR_DANESH_ALPHA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3058,6 +3144,7 @@ pub static PR_DANESH_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.2066270990034567)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_DANESH_ALPHA_TESTS,
 };
@@ -3096,6 +3183,7 @@ static PR_DELFT1998_ALPHA_TESTS: &[TestCase] = &[
         expected: &[("alpha", 1.436327689728678)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3113,6 +3201,7 @@ static PR_DELFT1998_ALPHA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3142,6 +3231,7 @@ pub static PR_DELFT1998_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.1792745256672486)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_DELFT1998_ALPHA_TESTS,
 };
@@ -3208,6 +3298,7 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "supercritical_state_with_a_different_coefficient",
@@ -3236,6 +3327,7 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_gibbs_identity_holds",
@@ -3253,6 +3345,7 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "low_pressure_limit_is_the_ideal_gas",
@@ -3270,6 +3363,7 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3289,6 +3383,7 @@ static PR_DEPARTURE_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3329,6 +3424,7 @@ pub static PR_DEPARTURE_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_DEPARTURE_TESTS,
 };
@@ -3366,6 +3462,7 @@ static PR_GASSEM2001_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.pr_gassem2001_alpha`.
@@ -3394,6 +3491,7 @@ pub static PR_GASSEM2001_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.2052404595821262)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_GASSEM2001_ALPHA_TESTS,
 };
@@ -3432,6 +3530,7 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", 0.392217407205312)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_negative_acentric_factor_warns",
@@ -3449,6 +3548,7 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", -0.259138992)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -3466,6 +3566,7 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3485,6 +3586,7 @@ static PR_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3514,6 +3616,7 @@ pub static PR_KAPPA_SPEC: CalcSpec = CalcSpec {
         expected: &[("kappa", 0.60282728832)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_KAPPA_TESTS,
 };
@@ -3551,6 +3654,7 @@ static PR_LEE_KESLER_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.pr_lee_kesler_alpha`.
@@ -3579,6 +3683,7 @@ pub static PR_LEE_KESLER_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.2184305594583278)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_LEE_KESLER_ALPHA_TESTS,
 };
@@ -3634,6 +3739,7 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
         expected: &[("rho", 517.7899080323988)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "doubling_the_molar_mass_doubles_the_density",
@@ -3651,6 +3757,7 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3668,6 +3775,7 @@ static PR_MASS_DENSITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3697,6 +3805,7 @@ pub static PR_MASS_DENSITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("rho", 24.073451125981286)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_MASS_DENSITY_TESTS,
 };
@@ -3771,6 +3880,7 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[("v", 8.516118084951335e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_ideal_gas_limit_is_z_of_one",
@@ -3788,6 +3898,7 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[("v", 0.024617209824287906)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -3805,6 +3916,7 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3822,6 +3934,7 @@ static PR_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3851,6 +3964,7 @@ pub static PR_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         expected: &[("v", 0.0018317107825229842)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_MOLAR_VOLUME_TESTS,
 };
@@ -3906,6 +4020,7 @@ static PR_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
         expected: &[("c", -5.148298028001139e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "water_reads_its_databank_rackett_z_and_not_the_correlation",
@@ -3928,6 +4043,7 @@ static PR_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
         expected: &[("c", 2.929079399385604e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -3945,6 +4061,7 @@ static PR_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -3974,6 +4091,7 @@ pub static PR_PENELOUX_SHIFT_SPEC: CalcSpec = CalcSpec {
         expected: &[("c", -6.349504285100194e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_PENELOUX_SHIFT_TESTS,
 };
@@ -4032,6 +4150,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_single_root_above_the_critical_temperature",
@@ -4052,6 +4171,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[("z_min", 0.943312987185517), ("z_max", 0.943312987185517)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_critical_point_is_where_the_answer_stops_being_determined",
@@ -4075,6 +4195,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "selected_roots_satisfy_the_cubic",
@@ -4092,6 +4213,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_middle_root_is_not_returned",
@@ -4109,6 +4231,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_admissible_count_is_never_two",
@@ -4126,6 +4249,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -4143,6 +4267,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4162,6 +4287,7 @@ static PR_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4203,6 +4329,7 @@ pub static PR_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PR_Z_FACTOR_TESTS,
 };
@@ -4241,6 +4368,7 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", 0.6014406094290431)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "with_kappa1_zero_the_coefficient_is_temperature_independent",
@@ -4258,6 +4386,7 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", 0.6014406094290431)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_prsv_coefficient_feeds_the_pr_alpha_function",
@@ -4275,6 +4404,7 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -4292,6 +4422,7 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4311,6 +4442,7 @@ static PRSV_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4340,6 +4472,7 @@ pub static PRSV_KAPPA_SPEC: CalcSpec = CalcSpec {
         expected: &[("kappa", 0.5919684734740435)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: PRSV_KAPPA_TESTS,
 };
@@ -4455,6 +4588,7 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         expected: &[("vapour_fraction", -1.5)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "a_second_two_phase_case",
@@ -4472,6 +4606,7 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         expected: &[("vapour_fraction", 0.19999999999999998)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_returned_beta_solves_the_equation",
@@ -4489,6 +4624,7 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4508,6 +4644,7 @@ static RACHFORD_RICE_BINARY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4537,6 +4674,7 @@ pub static RACHFORD_RICE_BINARY_SPEC: CalcSpec = CalcSpec {
         expected: &[("vapour_fraction", 0.6666666666666665)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: RACHFORD_RICE_BINARY_TESTS,
 };
@@ -4612,6 +4750,7 @@ static RACKETT_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[("v", 0.00013105219903246124)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4629,6 +4768,7 @@ static RACKETT_MOLAR_VOLUME_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4663,6 +4803,7 @@ pub static RACKETT_MOLAR_VOLUME_SPEC: CalcSpec = CalcSpec {
         expected: &[("v", 8.991467403942754e-05)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: RACKETT_MOLAR_VOLUME_TESTS,
 };
@@ -4722,6 +4863,7 @@ static RK_ALPHA_AB_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4741,6 +4883,7 @@ static RK_ALPHA_AB_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4774,6 +4917,7 @@ pub static RK_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: RK_ALPHA_AB_TESTS,
 };
@@ -4838,6 +4982,7 @@ static RK_DEPARTURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4857,6 +5002,7 @@ static RK_DEPARTURE_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -4895,6 +5041,7 @@ pub static RK_DEPARTURE_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: RK_DEPARTURE_TESTS,
 };
@@ -4959,6 +5106,7 @@ static SCALE_SATURATION_RATIO_TESTS: &[TestCase] = &[
         expected: &[("saturation_ratio", 257932.607723642)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -4976,6 +5124,7 @@ static SCALE_SATURATION_RATIO_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5014,6 +5163,7 @@ pub static SCALE_SATURATION_RATIO_SPEC: CalcSpec = CalcSpec {
         expected: &[("saturation_ratio", 1.282928947262809e-07)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SCALE_SATURATION_RATIO_TESTS,
 };
@@ -5051,6 +5201,7 @@ static SCHWARTZENTRUBER_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.schwartzentruber_alpha`.
@@ -5085,6 +5236,7 @@ pub static SCHWARTZENTRUBER_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 0.9946408503265206)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SCHWARTZENTRUBER_ALPHA_TESTS,
 };
@@ -5128,6 +5280,7 @@ static SIDDIQI_LUCAS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 1.3237073569782807e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -5145,6 +5298,7 @@ static SIDDIQI_LUCAS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5179,6 +5333,7 @@ pub static SIDDIQI_LUCAS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 1.984475615508378e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SIDDIQI_LUCAS_DIFFUSIVITY_TESTS,
 };
@@ -5263,6 +5418,7 @@ static SOLID_FUGACITY_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.solid_fugacity`.
@@ -5301,6 +5457,7 @@ pub static SOLID_FUGACITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("fugacity_coefficient", 0.0004079887721484625)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SOLID_FUGACITY_TESTS,
 };
@@ -5355,6 +5512,7 @@ static SOREIDE_WHITSON_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.soreide_whitson_alpha`.
@@ -5383,6 +5541,7 @@ pub static SOREIDE_WHITSON_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.3125796067429514)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SOREIDE_WHITSON_ALPHA_TESTS,
 };
@@ -5442,6 +5601,7 @@ static SRK_ALPHA_AB_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -5461,6 +5621,7 @@ static SRK_ALPHA_AB_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5494,6 +5655,7 @@ pub static SRK_ALPHA_AB_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SRK_ALPHA_AB_TESTS,
 };
@@ -5560,6 +5722,7 @@ static SRK_DEPARTURE_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -5579,6 +5742,7 @@ static SRK_DEPARTURE_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5619,6 +5783,7 @@ pub static SRK_DEPARTURE_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SRK_DEPARTURE_TESTS,
 };
@@ -5657,6 +5822,7 @@ static SRK_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", 0.49795212671359995)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -5676,6 +5842,7 @@ static SRK_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5705,6 +5872,7 @@ pub static SRK_KAPPA_SPEC: CalcSpec = CalcSpec {
         expected: &[("kappa", 0.715181696)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SRK_KAPPA_TESTS,
 };
@@ -5760,6 +5928,7 @@ static SRK_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
         expected: &[("c", 6.814784334802521e-07)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -5777,6 +5946,7 @@ static SRK_PENELOUX_SHIFT_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5806,6 +5976,7 @@ pub static SRK_PENELOUX_SHIFT_SPEC: CalcSpec = CalcSpec {
         expected: &[("c", 5.072202290436595e-06)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SRK_PENELOUX_SHIFT_TESTS,
 };
@@ -5864,6 +6035,7 @@ static SRK_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[("z_min", 0.9550349515000371), ("z_max", 0.9550349515000371)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -5883,6 +6055,7 @@ static SRK_Z_FACTOR_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -5924,6 +6097,7 @@ pub static SRK_Z_FACTOR_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: SRK_Z_FACTOR_TESTS,
 };
@@ -6000,6 +6174,7 @@ static TBP_FRACTION_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_coefficient_set_switch_at_mw_1120",
@@ -6023,6 +6198,7 @@ static TBP_FRACTION_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -6040,6 +6216,7 @@ static TBP_FRACTION_PROPERTIES_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -6075,6 +6252,7 @@ pub static TBP_FRACTION_PROPERTIES_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TBP_FRACTION_PROPERTIES_TESTS,
 };
@@ -6113,6 +6291,7 @@ static TWU_KAPPA_TESTS: &[TestCase] = &[
         expected: &[("kappa", 0.49795225712999996)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -6132,6 +6311,7 @@ static TWU_KAPPA_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -6161,6 +6341,7 @@ pub static TWU_KAPPA_SPEC: CalcSpec = CalcSpec {
         expected: &[("kappa", 0.7152048)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TWU_KAPPA_TESTS,
 };
@@ -6198,6 +6379,7 @@ static TWUCOON_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.twucoon_alpha`.
@@ -6226,6 +6408,7 @@ pub static TWUCOON_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.2469731129671788)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TWUCOON_ALPHA_TESTS,
 };
@@ -6263,6 +6446,7 @@ static TWUCOON_PARAM_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.twucoon_param_alpha`.
@@ -6291,6 +6475,7 @@ pub static TWUCOON_PARAM_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.4720779056478814)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TWUCOON_PARAM_ALPHA_TESTS,
 };
@@ -6328,6 +6513,7 @@ static TWUCOON_STATOIL_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.twucoon_statoil_alpha`.
@@ -6356,6 +6542,7 @@ pub static TWUCOON_STATOIL_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 2.568050833375483)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TWUCOON_STATOIL_ALPHA_TESTS,
 };
@@ -6399,6 +6586,7 @@ static TYN_CALUS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 1.9408598476710993e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "methanol_in_water_clamps_the_solvent_volume",
@@ -6421,6 +6609,7 @@ static TYN_CALUS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 1.3423722774680064e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -6438,6 +6627,7 @@ static TYN_CALUS_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -6472,6 +6662,7 @@ pub static TYN_CALUS_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 1.4502274002446276e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TYN_CALUS_DIFFUSIVITY_TESTS,
 };
@@ -6509,6 +6700,7 @@ static UMRPR_ALPHA_TESTS: &[TestCase] = &[TestCase {
     expected: &[],
     expected_vectors: &[],
     expected_strings: &[],
+    records: &[],
 }];
 
 /// Registered spec for `eos.umrpr_alpha`.
@@ -6537,6 +6729,7 @@ pub static UMRPR_ALPHA_SPEC: CalcSpec = CalcSpec {
         expected: &[("alpha", 1.1822586823466172)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: UMRPR_ALPHA_TESTS,
 };
@@ -6602,6 +6795,7 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "ethane_and_a_large_k12",
@@ -6626,6 +6820,7 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
         expected: &[("a_mix", 0.22404521707412323), ("b_mix", 0.03525)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -6643,6 +6838,7 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -6662,6 +6858,7 @@ static VDW1F_MIX_BINARY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -6701,6 +6898,7 @@ pub static VDW1F_MIX_BINARY_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: VDW1F_MIX_BINARY_TESTS,
 };
@@ -6840,6 +7038,7 @@ static WAX_SOLID_FUGACITY_TESTS: &[TestCase] = &[
         expected: &[("fugacity_coefficient", 2.05200253441823e-30)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -6857,6 +7056,7 @@ static WAX_SOLID_FUGACITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -6895,6 +7095,7 @@ pub static WAX_SOLID_FUGACITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("fugacity_coefficient", 9.6403717586365e-07)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: WAX_SOLID_FUGACITY_TESTS,
 };
@@ -6939,6 +7140,7 @@ static WILKE_CHANG_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 2.31970859841983e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "water_in_methanol_clamps_the_solute_volume",
@@ -6962,6 +7164,7 @@ static WILKE_CHANG_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[("d", 5.631553559227048e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -6979,6 +7182,7 @@ static WILKE_CHANG_DIFFUSIVITY_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -7014,6 +7218,7 @@ pub static WILKE_CHANG_DIFFUSIVITY_SPEC: CalcSpec = CalcSpec {
         expected: &[("d", 1.7212261801805907e-09)],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: WILKE_CHANG_DIFFUSIVITY_TESTS,
 };

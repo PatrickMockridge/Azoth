@@ -512,6 +512,7 @@ def check_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     against the declared outputs here.
     """
     check_identity_model(report, rel, spec)
+    check_record_inputs(report, rel, spec)
     check_range_checks(report, rel, spec)
     check_model_cases(report, rel, spec)
     check_prose_length(report, rel, spec)
@@ -609,6 +610,44 @@ def check_identity_model(report: Report, rel: Path, spec: dict[str, Any]) -> Non
 #: a rule, because each one is a decision about the boundary.
 BOUNDARY_KEYS = frozenset({"associating", "eos"})
 
+#: The scalar shapes a record field may carry. A field that is a vector, a matrix, a nested
+#: record or a name-no-unit is not carriable: the case table that pins a row is a table of
+#: scalars, so a spec declaring one is refused here rather than at generation.
+RECORD_FIELD_KINDS = frozenset({"quantity", "string", "enum", "boolean"})
+
+
+def _shape_problem(declared: dict[str, Any], value: object) -> str | None:
+    """Why a case value is not the shape its declared input takes, or ``None``.
+
+    A case is the one statement of an input the schema validates only structurally: the
+    value arm admits a number, a list of numbers, rows of numbers and rows of records, and
+    says nothing about which input each belongs to. The pairing is the declaration's, so
+    the check is here.
+    """
+    kind = declared.get("type", "quantity")
+    if kind == "record_list":
+        if not isinstance(value, list) or not all(isinstance(row, dict) for row in value):
+            return "which is not a list of records"
+        allowed = set(declared.get("fields", {}))
+        unknown = sorted({key for row in value for key in row} - allowed)
+        if unknown:
+            return f"whose record(s) carry {unknown}, which `fields` does not declare"
+        return None
+    if kind in ("string", "enum"):
+        return None if isinstance(value, str) else "which is not a name"
+    if kind == "boolean":
+        return None if isinstance(value, bool) else "which is not a flag"
+    if kind == "quantity":
+        ok = isinstance(value, int | float) and not isinstance(value, bool)
+        return None if ok else "which is not a quantity"
+    if kind == "matrix":
+        ok = isinstance(value, list) and value and all(isinstance(row, list) for row in value)
+        return None if ok else "which is not a matrix stated as rows"
+    # `vector`, `components`, `fitting_list` and `vector_string` are all one flat list; what
+    # an entry *is* differs, and a name where a number belongs is caught by the reader.
+    ok = isinstance(value, list) and value
+    return None if ok else "which is not a list"
+
 
 def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     """Every case's inputs and expected outputs name declared quantities.
@@ -650,6 +689,22 @@ def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 f"not declare as outputs. Declared: {sorted(outputs)}",
             )
 
+        # **A case value is checked against the input it names, not only against the
+        # schema.** The value arm admits a number, a list, rows of numbers and rows of
+        # records; nothing in it pairs one with the right input, so a scalar stated for a
+        # vector input - or six parallel vectors stated for a `record_list` - validated.
+        for name, value in case["inputs"].items():
+            declared = spec["inputs"].get(name)
+            if declared is None:
+                continue  # a boundary key, or one the check above has already named
+            problem = _shape_problem(declared, value)
+            if problem:
+                report.error(
+                    str(rel),
+                    f"case '{case_id}' states {name}, a '{declared.get('type', 'quantity')}' "
+                    f"input, {problem}",
+                )
+
         # The *declared* inputs the case provides: a boundary key is not an input, and
         # `eos` is a boundary key for one model and a declared input for another
         # (`ge_nrtl_flash` declares it, because its vapour is half of what it is).
@@ -671,6 +726,36 @@ def check_model_cases(report: Report, rel: Path, spec: dict[str, Any]) -> None:
                 f"required inputs (missing {missing}); a case that leaves one out is "
                 f"not reproducing the model's whole signature.",
             )
+
+
+def check_record_inputs(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """A `record_list` input names its row and carries scalars in it.
+
+    The two rules are the ones that make the row buildable. `row_type` is the name the
+    mapping a caller writes and the Rust type it crosses into are generated under, so an
+    input without one has a `fields` block no reader can reach; and a field has to be a
+    scalar, because the case table that pins a row is a table of scalars and the whole
+    record kind is a *list* of rows rather than a tree.
+    """
+    for name, declared in spec["inputs"].items():
+        if declared.get("type") != "record_list":
+            continue
+        if not declared.get("row_type"):
+            report.error(
+                str(rel),
+                f"input '{name}' is a record_list and declares no `row_type`. An output row "
+                f"is read by a generator that already knows its shape; an input row is built "
+                f"by a caller, so the type generated from its `fields` needs the name.",
+            )
+        for field_name, field_declared in declared.get("fields", {}).items():
+            kind = field_declared.get("type", "quantity")
+            if kind not in RECORD_FIELD_KINDS:
+                report.error(
+                    str(rel),
+                    f"input '{name}'.{field_name} is a '{kind}' field; a record carries "
+                    f"{sorted(RECORD_FIELD_KINDS)}. A field that is itself a list is a second "
+                    f"row shape, and the record kind is the list of rows.",
+                )
 
 
 def check_range_checks(report: Report, rel: Path, spec: dict[str, Any]) -> None:

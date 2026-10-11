@@ -453,7 +453,61 @@ def parameter_type(declaration: dict[str, Any]) -> str:
         return "bool"
     if kind in ("enum", "string"):
         return "str"
+    if kind == "record_list":
+        # **The row's own name, which `render_vocabulary` declares from the same `fields`
+        # block.** An input row is built by a caller, so the mapping's shape and the spec's
+        # declaration of it have to be one statement; naming the shape here and generating
+        # it there is that statement, and a stub that spelled `list[dict[str, float]]`
+        # instead would type-check a row with the wrong fields in it.
+        row = declaration.get("row_type")
+        if row is None:
+            raise SystemExit(
+                "gen_stub: a `record_list` input declares no `row_type`, so the mapping "
+                "type its callers build has no name to be declared under"
+            )
+        return f"list[{row}]"
     return "float"
+
+
+def record_field_type(declared: dict[str, Any]) -> str:
+    """How one field of an input row is spelled in the stub.
+
+    **The stub describes what reaches the extension, which is a mapping of SI magnitudes.**
+    `input_records_to_si` has already converted every dimensioned field, so a quantity field
+    is a `float` here whether the caller handed over a quantity or a bare number - the same
+    reason `ComponentArguments` is all floats.
+    """
+    base = {"boolean": "bool", "enum": "str", "string": "str"}.get(
+        declared.get("type", "quantity"), "float"
+    )
+    return f"{base} | None" if declared.get("optional", False) else base
+
+
+def record_rows() -> dict[str, dict[str, Any]]:
+    """Every `record_list` input's row, keyed by the name its `row_type` gives it.
+
+    Generated from the specs rather than listed, because a row's fields *are* the spec's
+    `fields` block: the mapping is what the bridge hands the extension, so a hand-kept copy
+    of the declaration would be a second place the row can change.
+    """
+    rows: dict[str, dict[str, Any]] = {}
+    for model in MODELS:
+        for input_name, declaration in model["inputs"].items():
+            if declaration.get("type") != "record_list":
+                continue
+            row = declaration.get("row_type")
+            if not row:
+                raise SystemExit(
+                    f"gen_stub: {model['id']}.{input_name} is a record_list and declares "
+                    f"no `row_type`, so its mapping type has no name to be declared under"
+                )
+            if row in rows and rows[row] != declaration["fields"]:
+                raise SystemExit(
+                    f"gen_stub: `{row}` is declared by two `fields` blocks that differ; one "
+                    f"row type is one shape"
+                )
+            rows[row] = declaration["fields"]
+    return rows
 
 
 def render_parameter(name: str, declaration: dict[str, Any]) -> str:
@@ -735,6 +789,20 @@ def render_vocabulary() -> str:
                 "    def from_ph(components: list[str], z: list[float], n: float, p: float,"
                 " h: float) -> Stream: ..."
             )
+        blocks.append("\n".join(out))
+    # The rows a `record_list` input takes, one mapping type per `row_type`, generated from
+    # the spec's `fields` rather than listed in `VOCABULARY` - see `record_rows`.
+    for row, fields in record_rows().items():
+        out = [
+            f"class {row}(TypedDict):",
+            '    """One row of a `record_list` input, as the extension takes it: the named '
+            'fields the spec declares, each as the SI magnitude it crosses as."""',
+            "",
+        ]
+        out.extend(
+            f"    {field_name}: {record_field_type(declared)}"
+            for field_name, declared in fields.items()
+        )
         blocks.append("\n".join(out))
     return "\n\n".join(blocks)
 

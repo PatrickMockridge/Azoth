@@ -110,6 +110,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "pedersen_srk_heavy_oil_is_a_no_op",
@@ -134,6 +135,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "riazi_daubert_switches_to_its_parent_above_mw_300",
@@ -157,6 +159,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "cavett_applies_its_api_correction_below_30",
@@ -180,6 +183,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "standing_is_riazi_daubert_without_the_switch",
@@ -203,6 +207,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "twu_solves_its_n_alkane_molar_mass",
@@ -226,6 +231,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "the_pr_family_differs_from_the_srk_family",
@@ -250,6 +256,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -267,6 +274,7 @@ static TBP_CUT_PROPERTIES_TESTS: &[TestCase] = &[
         expected: &[],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
 ];
 
@@ -302,6 +310,7 @@ pub static TBP_CUT_PROPERTIES_SPEC: CalcSpec = CalcSpec {
         ],
         expected_vectors: &[],
         expected_strings: &[],
+        records: &[],
     },
     tests: TBP_CUT_PROPERTIES_TESTS,
 };

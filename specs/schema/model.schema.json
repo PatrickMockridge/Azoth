@@ -95,7 +95,7 @@
     },
 
     "value": {
-      "description": "A case value: a number, a composition vector, or a matrix stated as rows. Extends the calc `$defs.value` with numeric vectors and matrices.",
+      "description": "A case value: a number, a composition vector, a matrix stated as rows, or a list of records. Extends the calc `$defs.value` with the numeric vectors and matrices a mixture needs and with the rows a `record_list` input takes.",
       "oneOf": [
         { "$ref": "calc.schema.json#/$defs/value" },
         { "type": "array", "minItems": 1, "items": { "type": "number" } },
@@ -103,6 +103,16 @@
           "type": "array",
           "minItems": 1,
           "items": { "type": "array", "minItems": 1, "items": { "type": "number" } }
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "description": "One object per record, each field a scalar. A field a record omits is absent rather than defaulted, which is what the input kind exists for; a field that is a name carries the name.",
+          "items": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "type": ["number", "string", "boolean"] }
+          }
         }
       ]
     },

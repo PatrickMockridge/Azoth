@@ -284,6 +284,21 @@ def collect_matrices(mapping: dict[str, Any]) -> list[tuple[str, list[float]]]:
     return out
 
 
+def collect_records(mapping: dict[str, Any]) -> list[tuple[str, list[dict[str, Any]]]]:
+    """Lists of mappings: a `record_list` input, each record a set of named fields.
+
+    Structural, like every collector here, because the emitter is handed the case's
+    mapping and not the spec's declarations. It collides with nothing: `collect_lists`
+    needs every entry to be a string, `collect_vectors` every entry a number, and
+    `collect_matrices` every entry a list.
+    """
+    return [
+        (k, v)
+        for k, v in mapping.items()
+        if isinstance(v, list) and v and all(isinstance(row, dict) for row in v)
+    ]
+
+
 def emit_range_check(check: dict[str, Any], spec_id: str) -> str:
     severity = "Severity::Error" if check["severity"] == "error" else "Severity::Warning"
     band = "Band::Inside" if check.get("when", "outside") == "inside" else "Band::Outside"
@@ -342,6 +357,7 @@ def emit_test_case(
     flags = collect_flags(inputs)
     vectors = collect_vectors(inputs)
     matrices = collect_matrices(inputs)
+    records = collect_records(inputs)
     expected_numbers = collect_numbers(expected)
     expected_vectors = collect_vectors(expected)
     expected_strings = collect_strings(expected)
@@ -358,6 +374,26 @@ def emit_test_case(
             f"carry. Declare it as a number, a vector or a string, add it to "
             f"SELF_ASSERTED_EXPECTATIONS with the test that reads it, or assert it in "
             f"the model's own test"
+        )
+    # **The same rule in the other direction, and it was missing.** An input no collector
+    # matched is dropped, so a case could state one and nothing would run it: the value
+    # would be absent from the generated table and the test would pass on a case it was
+    # not given. There is no `SELF_ASSERTED` counterpart here - an input the runner never
+    # reads is not an assertion, it is a case that is not the case it says it is.
+    given = (
+        {k for k, _ in numbers}
+        | {k for k, _ in lists}
+        | {k for k, _ in strings}
+        | {k for k, _ in flags}
+        | {k for k, _ in vectors}
+        | {k for k, _ in matrices}
+        | {k for k, _ in records}
+    )
+    if dropped := sorted(set(inputs) - given):
+        raise ValueError(
+            f"case '{test_id}' states {dropped}, which no collector here carries, so the "
+            f"generated table would not hold it and the case would run on less than it "
+            f"declares"
         )
 
     def pairs(items: list[tuple[str, float]]) -> str:
@@ -392,6 +428,31 @@ def emit_test_case(
         )
         return f"&[{inner}]"
 
+    def field_expr(name: str, value: Any) -> str:
+        # A flag is tested before a number, for the reason `collect_numbers` gives:
+        # `isinstance(True, int)` holds, and a flag emitted as `Number(1.0)` is a value a
+        # reader cannot tell from a quantity.
+        head = f"RecordField {{ name: {rust_str(name)}, value: "
+        if isinstance(value, bool):
+            return f"{head}FieldValue::Flag({str(value).lower()}) }}"
+        if isinstance(value, str):
+            return f"{head}FieldValue::Name({rust_str(value)}) }}"
+        return f"{head}FieldValue::Number({rust_f64(value)}) }}"
+
+    def record_pairs(items: list[tuple[str, list[dict[str, Any]]]]) -> str:
+        if not items:
+            return "&[]"
+        # Field order within a record is the case's own, which TOML preserves - the fields
+        # are a set, and emitting them in a second order would make the diff of an
+        # unchanged case say something moved.
+        outer = []
+        for key, rows in items:
+            rendered = ", ".join(
+                "&[" + ", ".join(field_expr(f, v) for f, v in row.items()) + "]" for row in rows
+            )
+            outer.append(f"({rust_str(key)}, &[{rendered}])")
+        return "&[" + ", ".join(outer) + "]"
+
     prop = f"Some({rust_str(property_name)})" if property_name else "None"
     skip = f"Some({rust_str(skip_reason)})" if skip_reason else "None"
 
@@ -412,6 +473,7 @@ def emit_test_case(
         f"{indent}    expected: {pairs(expected_numbers)},\n"
         f"{indent}    expected_vectors: {number_slice_pairs(expected_vectors)},\n"
         f"{indent}    expected_strings: {string_pairs(expected_strings)},\n"
+        f"{indent}    records: {record_pairs(records)},\n"
         f"{indent}}},\n"
     )
 
@@ -573,7 +635,9 @@ pub fn spec(id: &str) -> Option<&'static CalcSpec> {{
     candidates = [
         "Band",
         "CalcSpec",
+        "FieldValue",
         "RangeCheck",
+        "RecordField",
         "Severity",
         "SpecCheck",
         "SolverSpec",
