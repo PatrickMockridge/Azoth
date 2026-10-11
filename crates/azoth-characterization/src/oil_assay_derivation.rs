@@ -197,7 +197,9 @@ pub fn oil_assay_derivation(
     let mut reconstructed = 0.0;
     for (index, cut) in cuts.iter().enumerate() {
         let mass_fraction = mass_fractions[index];
-        if !(mass_fraction > 0.0) {
+        // The class's own `!(massFraction > 0.0)`, written the way these crates write a positive
+        // test: a NaN and a non-positive both skip, and an infinity does not.
+        if mass_fraction.is_nan() || mass_fraction <= 0.0 {
             continue;
         }
         let (name, cut_molar_mass) = match &cut.standard_component_name {

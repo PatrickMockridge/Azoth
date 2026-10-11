@@ -108,7 +108,7 @@ fn the_average_is_the_midpoint_of_the_boundaries_that_bracket_it() {
 fn the_class_s_curve_validation_is_a_refusal_for_each_rule() {
     // Each of these is one of the capture's five refused curves. The message names the field, so
     // the check is that the refusal is about the right thing and not a later one.
-    let cases: [(&str, Vec<f64>, Vec<f64>, Vec<f64>); 5] = [
+    let cases = [
         (
             "N-1 gravities",
             vec![0.0, 50.0, 100.0],

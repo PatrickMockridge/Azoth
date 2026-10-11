@@ -129,14 +129,20 @@ def test_the_document_key_is_exported_rather_than_repeated() -> None:
 
 
 def test_the_block_exists_for_every_registered_id() -> None:
-    """Every calc and every model, with no id left able to produce a bare number."""
+    """Every calc and every model, with no id left able to produce a bare number.
+
+    **The count is a ratchet and not a restatement**, which is why it is a number here rather than
+    read from the registry: the equality above already says the two sets agree, and this says the
+    set is the size it was when someone last looked. An id that leaves the registry without leaving
+    a trace is otherwise a quiet subtraction.
+    """
     from azoth._models_gen import MODELS
     from azoth._registry_gen import CALCS
 
     registered = {entry["id"] for entry in [*CALCS, *MODELS]}
 
     assert set(PROVENANCE) == registered
-    assert len(registered) == 204
+    assert len(registered) == 207
 
 
 def test_the_rust_table_carries_exactly_the_same_ids() -> None:

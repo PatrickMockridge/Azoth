@@ -241,11 +241,18 @@ The specialist physics.
   and `TBPfractionModel`'s eight cut models, `PlusCharacterize`, `PedersenPlusModelSolver`,
   `LumpingModel`, `Recombine`, and the assay and refinery-blend machinery around them. A wax
   or asphaltene fluid is built from TBP and plus fractions, so this is what those models
-  stand on. **azoth has the seam and not the subsystem**: `eos.tbp_fraction_properties` is
-  Pedersen's `PedersenSRK` cut correlations, so a pseudo-component can be *described* by a
-  molar mass and a normal liquid density — but a plus fraction cannot be split into cuts,
-  lumped, or recombined into one, and `racketZ` (the Peneloux shift `addTBPfraction` sets from
-  a flashed reference system) is carried with it.
+  stand on. **The subsystem is ported, as thirteen ids over the tables it works on**:
+  `characterization.pedersen_plus_split` and `whitson_gamma_split` divide a plus fraction into
+  carbon-number cuts, `lumping` groups a cut table into equal-mass lumps,
+  `characterize_to_reference` re-cuts one fluid onto another's slate,
+  `tbp_cut_properties` describes a cut by any of the ten models, `tbp_closure` and `tbp_density`
+  convert between a cut's boiling point, its molar mass and its gravity, `tbp_cut_boundaries`
+  cuts a cumulative TBP curve into an assay, `assay_mass_fractions` resolves one to a mass basis,
+  `oil_assay_derivation` derives each cut's molar mass and mole amount, `tbp_grouping` groups a
+  phase by boiling point, `set_heavy_tbp_to_plus` picks the row a plus end begins at, and
+  `characterise_plus_fraction` is the chain from a C7+ end to lumps. **What is owed is the part
+  that rebuilds a fluid rather than a table**: `apply`'s `addTBPfraction` loop, `Recombine`, and
+  `combineReservoirFluids` with the delumping — each needs a `Mixture` that can be added to.
 - **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
   `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
@@ -617,6 +624,21 @@ a claim nothing holds.
   `reactions.reactive_tp_flash`'s ionic refusal. `Separator`'s `oilInGas` and `waterInGas` go
   with them: no oil or aqueous phase exists here, and they are the only fields that re-run the
   *vapour*.
+
+- **The characterisation methods that rebuild a fluid rather than a table.**
+  `OilAssayCharacterisation.apply`'s arithmetic is `characterization.oil_assay_derivation`, and
+  what its class does with the answer is `system.addTBPfraction` and `system.addComponent` — so
+  the owed part is a `Mixture` a component can be added to, which is the same one
+  `PseudoComponentCombiner` needs: `combineReservoirFluids` and `characterizeToCommonSlate`
+  (several fluids weighted into one imaginary pool before cutting), `delumpContributions` and
+  `determineReferenceEqualMassBoundaries` (a fine composition rebuilt and cut equally by mass),
+  `transferBinaryInteractionParameters`, `normalizeComposition` and `generateValidationReport`.
+  `characterization.characterize_to_reference` ports the walk they all sit on and carries
+  `inheritReferenceProperties` as the class's own variant of it. **`Recombine` is the same
+  shape again**: it turns a plus fraction back into one component. **And the rows are twenty
+  fields wide where the port reads four**: `AssayCut`'s sulfur, nitrogen, API gravity and
+  Watson factor, and `PseudoComponentContribution`'s critical constants, parachor, racketZ and
+  heat of fusion, join the rows when a ported method reads one.
 
 ## Beyond the port
 

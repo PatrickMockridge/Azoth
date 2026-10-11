@@ -104,7 +104,11 @@ pub fn tbp_cut_boundaries(
                 format!("a cumulative yield is finite and between 0 and 100, and this is {yield_percent}"),
             ));
         }
-        if index > 0 && !(*yield_percent > cumulative_volume_percent[index - 1]) {
+        // The class's own `!(yield > previous)`, written out: a NaN and a non-increasing pair are
+        // both refused, which is what "must strictly increase" means.
+        if index > 0
+            && (yield_percent.is_nan() || *yield_percent <= cumulative_volume_percent[index - 1])
+        {
             return Err(AzothError::invalid_input(
                 format!("cumulative_volume_percent[{index}]"),
                 format!("the cumulative yields must strictly increase, and {yield_percent} follows {}", cumulative_volume_percent[index - 1]),
@@ -112,13 +116,13 @@ pub fn tbp_cut_boundaries(
         }
     }
     for (index, temperature) in boiling_point.iter().enumerate() {
-        if !temperature.is_finite() || !(*temperature > 0.0) {
+        if !temperature.is_finite() || *temperature <= 0.0 {
             return Err(AzothError::invalid_input(
                 format!("boiling_point[{index}]"),
                 format!("a boiling-point boundary is finite and positive, and this is {temperature}"),
             ));
         }
-        if index > 0 && !(*temperature > boiling_point[index - 1]) {
+        if index > 0 && *temperature <= boiling_point[index - 1] {
             return Err(AzothError::invalid_input(
                 format!("boiling_point[{index}]"),
                 format!("the boiling-point boundaries must strictly increase, and {temperature} follows {}", boiling_point[index - 1]),
@@ -126,7 +130,7 @@ pub fn tbp_cut_boundaries(
         }
     }
     for (index, gravity) in specific_gravity.iter().enumerate() {
-        if !gravity.is_finite() || !(*gravity > 0.0) {
+        if !gravity.is_finite() || *gravity <= 0.0 {
             return Err(AzothError::invalid_input(
                 format!("specific_gravity[{index}]"),
                 format!("a specific gravity is finite and positive, and this is {gravity}"),
