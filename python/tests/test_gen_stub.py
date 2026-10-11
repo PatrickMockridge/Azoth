@@ -44,6 +44,7 @@ def gen_stub() -> ModuleType:
         ({"type": "vector", "length": "one per component"}, "list[float]"),
         ({"type": "matrix", "shape": "N x N"}, "list[list[float]]"),
         ({"type": "fitting_list"}, "list[str]"),
+        ({"type": "vector_string", "length": "one per component"}, "list[str]"),
     ],
 )
 def test_a_declared_input_renders_as_the_python_type_it_arrives_as(

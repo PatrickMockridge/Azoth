@@ -445,6 +445,11 @@ def parameter_type(declaration: dict[str, Any]) -> str:
     kind = declaration.get("type", "quantity")
     if kind == "fitting_list":
         return "list[str]"
+    if kind == "vector_string":
+        # A name vector, which `model.schema.json` has admitted as an input all along: the case
+        # table carries it as `TestCase::lists` and the extension takes a `Vec<String>`, so the
+        # stub is the same shape a fitting list is.
+        return "list[str]"
     if kind == "vector":
         return "list[float]"
     if kind == "matrix":

@@ -565,11 +565,13 @@ def argument_expr(name: str, declaration: dict[str, Any], annotation: str) -> st
         # `record_list` input falls through to the scalar path below and crosses as a bare
         # number - the kind's silent failure.
         body = f'input_records_to_si(spec, "{name}", {name})'
-    elif kind in ("components", "fitting_list"):
+    elif kind in ("components", "fitting_list", "vector_string"):
         # The extension takes an owned `Vec<String>`; everything else that is not a number is
         # already the thing the signature declares, an enum and a boolean included. A fitting list
         # is a `Vec<String>` too - `crane_k_factors` is the one - and its wrapper declares a
-        # `Sequence`, which is the same shape the components case rebuilds.
+        # `Sequence`, which is the same shape the components case rebuilds. **A name vector is the
+        # same shape again**, and the schema has admitted it as an input since it was written; this
+        # branch is what makes the reader agree with the declaration.
         body = f"list({name})"
     elif kind in ("string", "enum", "boolean"):
         body = name

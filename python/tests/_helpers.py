@@ -659,8 +659,11 @@ def kwargs_for(calc: Mapping[str, Any], inputs: Mapping[str, Any]) -> dict[str, 
     for name, value in inputs.items():
         declaration = declared[name]
         kind = declaration.get("type", "quantity")
-        if kind == "fitting_list":
-            kwargs[name] = list(value)
+        if kind in ("fitting_list", "vector_string"):
+            # A list of names either way: fitting ids resolved against a data file, or the names a
+            # method reads a carbon number out of. Both arrive as the list the spec declares, and
+            # `list(value)` is what makes a `Sequence` the extension's own `Vec<String>`.
+            kwargs[name] = [str(item) for item in value]
         elif kind in ("enum", "string"):
             kwargs[name] = value
         elif kind == "boolean":
@@ -730,6 +733,10 @@ def _declared(declaration: Mapping[str, Any], value: Any) -> Any:
         ]
     if kind == "vector":
         return [_scalar(unit, item) for item in value]
+    if kind == "vector_string":
+        # A name vector: the names themselves, not numbers in any unit. Reaching the fall-through
+        # below would call `float()` on a list.
+        return [str(item) for item in value]
     if kind == "matrix":
         return [[_scalar(unit, item) for item in row] for row in value]
     if kind in ("enum", "string"):
