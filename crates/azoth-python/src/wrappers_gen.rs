@@ -15,6 +15,73 @@ use azoth_core::units::{
 };
 use pyo3::prelude::*;
 
+/// An oil assay's declared fractions resolved to a mass basis.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (basis, cuts))]
+#[pyo3(text_signature = "(basis, cuts)")]
+pub fn assay_mass_fractions(
+    py: Python<'_>,
+    basis: &str,
+    cuts: Vec<crate::records_gen::AssayCut>,
+) -> PyResult<crate::transport_gen::PyAssayMassFractionsResult> {
+    let basis_parsed: azoth_characterization::assay_mass_fractions::AssayBasis =
+        basis.parse().unwrap_or_default();
+    let cuts_records: Vec<azoth_characterization::assay_mass_fractions::AssayCut> = cuts
+        .into_iter()
+        .map(
+            |row| azoth_characterization::assay_mass_fractions::AssayCut {
+                declared_fraction: row.declared_fraction,
+                density: row.density.map(kilograms_per_cubic_meter),
+            },
+        )
+        .collect();
+    azoth_characterization::assay_mass_fractions::assay_mass_fractions(basis_parsed, &cuts_records)
+        .map(|r| crate::transport_gen::PyAssayMassFractionsResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
+/// A fluid's pseudo-components re-cut onto another fluid's slate.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (source, reference))]
+#[pyo3(text_signature = "(source, reference)")]
+pub fn characterize_to_reference(
+    py: Python<'_>,
+    source: Vec<crate::records_gen::SourceRow>,
+    reference: Vec<crate::records_gen::ReferenceRow>,
+) -> PyResult<crate::transport_gen::PyCharacterizeToReferenceResult> {
+    let source_records: Vec<azoth_characterization::characterize_to_reference::SourceRow> = source
+        .into_iter()
+        .map(
+            |row| azoth_characterization::characterize_to_reference::SourceRow {
+                moles: row.moles,
+                molar_mass: kilograms_per_mole(row.molar_mass),
+                density: row.density.map(kilograms_per_cubic_meter),
+                boiling_point: row.boiling_point,
+            },
+        )
+        .collect();
+    let reference_records: Vec<azoth_characterization::characterize_to_reference::ReferenceRow> =
+        reference
+            .into_iter()
+            .map(
+                |row| azoth_characterization::characterize_to_reference::ReferenceRow {
+                    molar_mass: kilograms_per_mole(row.molar_mass),
+                    boiling_point: row.boiling_point,
+                },
+            )
+            .collect();
+    azoth_characterization::characterize_to_reference::characterize_to_reference(
+        &source_records,
+        &reference_records,
+    )
+    .map(|r| crate::transport_gen::PyCharacterizeToReferenceResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A cut table grouped into equal-mass lumps.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -227,7 +227,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // The calculations and models themselves.
     m.add_function(wrap_pyfunction!(
-        crate::characterization::assay_mass_fractions,
+        crate::wrappers_gen::assay_mass_fractions,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(
@@ -235,7 +235,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(
-        crate::characterization::characterize_to_reference,
+        crate::wrappers_gen::characterize_to_reference,
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::lumping, m)?)?;

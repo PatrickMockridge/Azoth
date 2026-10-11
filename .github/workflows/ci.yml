@@ -334,6 +334,7 @@ jobs:
           .venv/bin/python tools/gen_python_register.py
           .venv/bin/python tools/gen_guard_theorems.py
           .venv/bin/python tools/gen_dispatch.py
+          .venv/bin/python tools/gen_python_records.py
           .venv/bin/python tools/gen_python_wrappers.py
           .venv/bin/python tools/gen_python_bridge.py
           .venv/bin/python tools/gen_python_result.py
@@ -351,6 +352,7 @@ jobs:
             echo "::error::  python tools/gen_python_register.py"
             echo "::error::  python tools/gen_guard_theorems.py"
             echo "::error::  python tools/gen_dispatch.py"
+            echo "::error::  python tools/gen_python_records.py"
             echo "::error::  python tools/gen_python_wrappers.py"
             echo "::error::  python tools/gen_python_bridge.py"
             echo "::error::  python tools/gen_python_result.py"

@@ -43,7 +43,12 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: ids, and `characterize_to_reference` had just become the eighth thing a hand-written wrapper
 #: would have been added to a module nothing counted - which is exactly what this number exists to
 #: notice. No wrapper was written or deleted by the change.
-KNOWN_HAND_WRITTEN = 52
+#:
+#: 52 -> 50 when the two record wrappers moved, and this time the count came *down*: `convert`
+#: learned the slice-of-records rule (`&[Row]`, where the row is a spec `row_type`), and
+#: `tools/gen_python_records.py` emits the `FromPyObject` structs the rule builds each row into.
+#: `assay_mass_fractions` and `characterize_to_reference` are the two ids whose kernels take one.
+KNOWN_HAND_WRITTEN = 50
 
 
 def _tools_module(name: str) -> ModuleType:

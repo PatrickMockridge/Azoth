@@ -31,7 +31,9 @@ import re
 import subprocess
 import sys
 import tomllib
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rust_index
@@ -232,11 +234,13 @@ def type_path(name: str, source: str, crate: str, file: Path) -> str:
 
 
 def from_str_error(name: str) -> str:
-    """How a `FromStr` failure becomes a `PyErr`: `to_pyerr` for `AzothError`, else `PyValueError`.
+    """How a `FromStr` failure becomes a `PyErr`, read from the enum's own `impl FromStr`.
 
-    Read from the enum's own `impl FromStr`, because the two are not interchangeable - a
-    `Result<_, AzothError>` does not convert to a Python object, and a `&'static str` is not an
-    `AzothError`. Which one an enum carries is a fact about that enum.
+    Three answers, and which one an enum carries is a fact about that enum rather than a choice
+    here: `to_pyerr` for `AzothError`, `value` for anything else that can fail, and `infallible`
+    for a `FromStr` whose error type is `Infallible` - an enum that answers every name, so a name
+    it does not know is its default rather than a refusal. `AssayBasis` is the one, and the
+    vocabulary check in the spec is what refuses there.
     """
     last = name.rsplit("::", 1)[-1]
     for path in sorted(CRATES.glob("*/src/**/*.rs")):
@@ -251,6 +255,8 @@ def from_str_error(name: str) -> str:
         if found is None:
             continue
         error = found.group(1).rsplit("::", 1)[-1]
+        if error == "Infallible":
+            return "infallible"
         return "to_pyerr" if error == "AzothError" else "value"
     return "value"
 
@@ -454,6 +460,64 @@ def record_fields(type_name: str) -> list[tuple[str, str]] | None:
     return None
 
 
+def record_slice(kind: str, aliases: set[str]) -> str | None:
+    """The row type of a `&[Row]` kernel parameter, or `None` if it is not one.
+
+    **A slice of records is the one container whose contents the spec declares field by field.** A
+    `&[MolarMass]` is a vector of one thing and crosses as magnitudes; a `&[AssayCut]` is a vector
+    of records, and the kernel's own row type is what has to be built - pyo3 extracts a mapping,
+    not that struct. `None` for a `uom` slice and for anything that is not a slice at all.
+    """
+    if not (kind.startswith("&[") and kind.endswith("]")):
+        return None
+    inner = kind[2:-1]
+    if inner in aliases or record_fields(inner) is None:
+        return None
+    return inner
+
+
+def record_rows_argument(
+    row: str,
+    fields: list[tuple[str, str]],
+    declaration: Mapping[str, Any],
+    name: str,
+    source: str,
+    crate: str,
+    file: Path,
+) -> list[str]:
+    """The local a record-slice parameter is built into, as one `let` statement.
+
+    **Each field's unit comes from the spec's `fields` block** - the same declaration `gen_stub`
+    renders the extracted type from - so a column the transport carries as a bare `f64` becomes
+    the quantity the kernel wants through the vocabulary's own constructor. Both row types carry
+    the same field names, which is what `test_the_record_row_is_one_shape_in_three_declarations`
+    holds, so the mapping is name for name.
+    """
+    kernel = type_path(row, source, crate, file)
+    declared = declaration.get("fields") or {}
+    arms: list[str] = []
+    for field, kernel_type in fields:
+        optional = kernel_type.startswith("Option<")
+        inner = kernel_type[len("Option<") : -1] if optional else kernel_type
+        if inner in ("f64", "String"):
+            arms.append(f"{field}: row.{field}")
+            continue
+        ctor = base_ctor((declared.get(field) or {}).get("unit"))
+        if ctor is None:
+            raise Refusal(
+                f"{row}'s field {field}: {kernel_type} has no constructor for its declared unit"
+            )
+        if kernel_type.startswith("Option<"):
+            arms.append(f"{field}: row.{field}.map({ctor})")
+        else:
+            arms.append(f"{field}: {ctor}(row.{field})")
+    call = ", ".join(arms)
+    return [
+        f"    let {name}_records: Vec<{kernel}> = "
+        f"{name}.into_iter().map(|row| {kernel} {{ {call} }}).collect();"
+    ]
+
+
 def bridge_arguments(function: str) -> list[str]:
     """The bridge's call to `_core.<function>`, as its top-level argument expressions."""
     source = bridge_source()
@@ -623,6 +687,22 @@ def _parse_err(error: str) -> str:
 
 def enum_local(kind: str, name: str, resolved: str, error: str) -> tuple[list[str], str]:
     """An enum parameter, parsed into a local. `(statements, argument)`."""
+    if error == "infallible":
+        # **The enum's `FromStr` cannot fail and says so in its error type**, so the parse is a
+        # default rather than a `Result`: an unrecognised name takes `Default::default()`, which is
+        # what `AssayBasis` declares and what the spec's vocabulary check refuses on its behalf.
+        if kind.startswith("Option<"):
+            return (
+                [
+                    f"    let {name}_parsed: Option<{resolved}> = {name}",
+                    "        .map(|value| value.parse().unwrap_or_default());",
+                ],
+                f"{name}_parsed",
+            )
+        return (
+            [f"    let {name}_parsed: {resolved} = {name}.parse().unwrap_or_default();"],
+            f"{name}_parsed",
+        )
     if kind.startswith("Option<"):
         return (
             [
@@ -667,6 +747,8 @@ def body(
     mixture = next((name for name, kind in kernel if "Mixture" in kind), None)
     #: A struct-typed parameter's own fields, in the order the record declares them.
     record: list[str] = []
+    #: A record-slice parameter's row type and its fields, keyed by the declared input's name.
+    record_slices: dict[str, tuple[str, list[tuple[str, str]]]] = {}
     plan: list[tuple[str, str, str, bool]] = []  # (parameter, kind, argument, is_enum)
     for name, kind in kernel:
         if "Mixture" in kind:
@@ -705,6 +787,14 @@ def body(
         public = pairs.get(name)
         if public is None:
             raise Refusal(f"kernel parameter {name!r} names no declared input")
+        row = record_slice(kind, aliases)
+        if row is not None:
+            # A slice of records: the kernel takes its own row type, so a converted `Vec` is bound
+            # beside the call and a borrow of it crosses. The `let` is emitted with the other
+            # locals, from `record_slices`.
+            record_slices[public] = (row, record_fields(row) or [])
+            plan.append((public, kind, f"&{public}_records", False))
+            continue
         try:
             # The *declared* name is what the emitted function binds, so the argument expression
             # reads that; the kernel's own name only decided the kind and the conversion.
@@ -719,6 +809,11 @@ def body(
         call = ", ".join(expression for _, _, expression in builder_parameters(builder))
         statements.append(f"    let mixture = {builder}(py, {call})?;")
     for name, kind, argument, is_enum in plan:
+        if name in record_slices:
+            row, row_fields = record_slices[name]
+            statements.extend(
+                record_rows_argument(row, row_fields, inputs[name], name, source, crate, file)
+            )
         statements.extend(locals_for(kind, name))
         if is_enum:
             inner = kind[len("Option<") : -1] if kind.startswith("Option<") else kind
@@ -767,7 +862,12 @@ def body(
             # The mixture's own input is carried by the builder's bundle, not by a parameter of
             # the calc's name - the spec declares a component *list* and the boundary takes arrays.
             continue
-        declared, _ = convert(kind, decl.get("unit"), name, aliases)
+        if name in record_slices:
+            # The extracted row is the generated one; the kernel's row is a different type, which
+            # the call builds field by field.
+            declared = f"Vec<crate::records_gen::{record_slices[name][0]}>"
+        else:
+            declared, _ = convert(kind, decl.get("unit"), name, aliases)
         if (
             decl.get("optional")
             and not declared.startswith("Option<")

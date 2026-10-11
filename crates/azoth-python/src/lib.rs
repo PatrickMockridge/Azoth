@@ -41,6 +41,7 @@ mod overlay;
 mod process;
 mod provenance;
 mod reactions;
+mod records_gen;
 mod register_gen;
 mod registry_tables_gen;
 mod results;
