@@ -241,6 +241,12 @@ public class WaterDewPointProbe {
           row("wax_phase_beta", system.getBeta(wax));
           row("fluid_molar_mass", system.getMolarMass());
           row("fluid_total_moles", system.getTotalNumberOfMoles());
+          // The same accessor on the other two phases, and the wax phase's own mass: a
+          // negative reading for the wax alone is the accessor's mass branch, not the flash.
+          row("gas_mass_fraction", system.getPhaseFraction("gas", "mass"));
+          row("oil_mass_fraction", system.getPhaseFraction("oil", "mass"));
+          row("gas_mole_fraction", system.getPhaseFraction("gas", "mole"));
+          row("oil_mole_fraction", system.getPhaseFraction("oil", "mole"));
         }
       } catch (Exception failure) {
         System.out.printf("error = %s%n", failure.toString());
