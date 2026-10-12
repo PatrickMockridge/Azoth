@@ -1,0 +1,191 @@
+# prescribed route (WaterDewPointTemperatureFlash), SRK, 35 ppm at 70 bara
+water_mole_fraction = 3.50000000000000e-05
+pressure_bara = 70.0000000000000
+temperature_K = 261.054685901555
+temperature_C = -12.0953140984454
+
+# prescribed route, SRK, 22 ppm at 70 bara
+water_mole_fraction = 2.20000000000000e-05
+pressure_bara = 70.0000000000000
+temperature_K = 256.570279131976
+temperature_C = -16.5797208680243
+
+# prescribed route, SRK, 35 ppm at 20 bara
+water_mole_fraction = 3.50000000000000e-05
+pressure_bara = 20.0000000000000
+temperature_K = 251.353985734944
+temperature_C = -21.7960142650559
+
+# multiphase route (WaterDewPointTemperatureMultiphaseFlash), SRK, 22 ppm at 70 bara
+water_mole_fraction = 2.20000000000000e-05
+pressure_bara = 70.0000000000000
+temperature_K = 254.889564514160
+temperature_C = -18.2604354858398
+has_aqueous_at_answer = 1.00000000000000
+number_of_phases_at_answer = 2.00000000000000
+
+# multiphase route, SRK, 35 ppm at 70 bara
+water_mole_fraction = 3.50000000000000e-05
+pressure_bara = 70.0000000000000
+temperature_K = 260.545463562012
+temperature_C = -12.6045364379883
+has_aqueous_at_answer = 1.00000000000000
+number_of_phases_at_answer = 2.00000000000000
+
+# multiphase route, SRK, 200 ppm at 70 bara
+water_mole_fraction = 0.000200000000000000
+pressure_bara = 70.0000000000000
+temperature_K = 284.302406311035
+temperature_C = 11.1524063110352
+has_aqueous_at_answer = 1.00000000000000
+number_of_phases_at_answer = 2.00000000000000
+
+# water dew point line, 1.00000 to 200.000 bara
+water_mole_fraction = 3.50000000000000e-05
+minimum_pressure_bara = 1.00000000000000
+maximum_pressure_bara = 200.000000000000
+point_0_temperature_K = 224.281806945801
+point_0_pressure_bara = 1.00000000000000
+point_1_temperature_K = 252.246055603027
+point_1_pressure_bara = 23.1111111111111
+point_2_temperature_K = 257.799644470215
+point_2_pressure_bara = 45.2222222222222
+point_3_temperature_K = 260.348777770996
+point_3_pressure_bara = 67.3333333333333
+point_4_temperature_K = 261.495552062988
+point_4_pressure_bara = 89.4444444444444
+point_5_temperature_K = 261.876487731934
+point_5_pressure_bara = 111.555555555556
+point_6_temperature_K = 261.916236877441
+point_6_pressure_bara = 133.666666666667
+point_7_temperature_K = 261.864204406738
+point_7_pressure_bara = 155.777777777778
+point_8_temperature_K = 261.814994812012
+point_8_pressure_bara = 177.888888888889
+point_9_temperature_K = 261.791038513184
+point_9_pressure_bara = 200.000000000000
+
+# plain TP flash sweep of the named wax feed at 5.00000 bara
+pressure_bara = 5.00000000000000
+temperature_K = 300.000000000000
+phases = 2.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.694304837511500
+phase_1_type = OIL
+phase_1_beta = 0.305695162488500
+has_wax_phase = 0.00000000000000
+temperature_K = 290.000000000000
+phases = 2.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.692281226945417
+phase_1_type = OIL
+phase_1_beta = 0.307718773054583
+has_wax_phase = 0.00000000000000
+temperature_K = 280.000000000000
+phases = 2.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.690586311126701
+phase_1_type = OIL
+phase_1_beta = 0.309413688873299
+has_wax_phase = 0.00000000000000
+temperature_K = 275.000000000000
+phases = 2.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.689807577452219
+phase_1_type = OIL
+phase_1_beta = 0.310192422547781
+has_wax_phase = 0.00000000000000
+temperature_K = 270.000000000000
+phases = 2.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.689047322029359
+phase_1_type = OIL
+phase_1_beta = 0.310952677970642
+has_wax_phase = 0.00000000000000
+temperature_K = 265.000000000000
+phases = 3.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.691424728665901
+phase_1_type = OIL
+phase_1_beta = 0.237901878847604
+phase_2_type = WAX
+phase_2_beta = 0.0706733924864949
+has_wax_phase = 1.00000000000000
+wax_mass_fraction = -1.61149826222114e-52
+wax_mole_fraction = 0.0706733924864949
+wax_phase_molar_mass = 0.226488403010028
+wax_phase_number_of_moles = 7.06733924864949
+wax_phase_beta = 0.0706733924864949
+fluid_molar_mass = 0.0693446000000000
+fluid_total_moles = 100.000000000000
+temperature_K = 260.000000000000
+phases = 3.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.692628503612847
+phase_1_type = OIL
+phase_1_beta = 0.197022348900306
+phase_2_type = WAX
+phase_2_beta = 0.110349147486846
+has_wax_phase = 1.00000000000000
+wax_mass_fraction = -2.58104407587566e-52
+wax_mole_fraction = 0.110349147486846
+wax_phase_molar_mass = 0.226334022263785
+wax_phase_number_of_moles = 11.0349147486846
+wax_phase_beta = 0.110349147486846
+fluid_molar_mass = 0.0693446000000000
+fluid_total_moles = 100.000000000000
+temperature_K = 255.000000000000
+phases = 3.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.693101287230755
+phase_1_type = OIL
+phase_1_beta = 0.174891156458912
+phase_2_type = WAX
+phase_2_beta = 0.132007556310333
+has_wax_phase = 1.00000000000000
+wax_mass_fraction = -3.17469321080639e-52
+wax_mole_fraction = 0.132007556310333
+wax_phase_molar_mass = 0.225915775677527
+wax_phase_number_of_moles = 13.2007556310333
+wax_phase_beta = 0.132007556310333
+fluid_molar_mass = 0.0693446000000000
+fluid_total_moles = 100.000000000000
+temperature_K = 245.000000000000
+phases = 3.00000000000000
+phase_0_type = GAS
+phase_0_beta = 0.693165696008336
+phase_1_type = OIL
+phase_1_beta = 0.152641228570561
+phase_2_type = WAX
+phase_2_beta = 0.154193075421103
+has_wax_phase = 1.00000000000000
+wax_mass_fraction = -3.94330890735639e-52
+wax_mole_fraction = 0.154193075421103
+wax_phase_molar_mass = 0.224351526502556
+wax_phase_number_of_moles = 15.4193075421103
+wax_phase_beta = 0.154193075421103
+fluid_molar_mass = 0.0693446000000000
+fluid_total_moles = 100.000000000000
+temperature_K = 235.000000000000
+phases = 1.00000000000000
+phase_0_type = OIL
+phase_0_beta = 1.00000000000000
+has_wax_phase = 0.00000000000000
+
+# wax appearance temperature, the named feed methane/n-heptane/nc14/nc20 at 5 bara
+pressure_bara = 5.00000000000000
+error = java.lang.IllegalStateException: calcWAT: Invalid wax mass fraction; pressure=5.0 bara; bracket=[NaN, 270.0] K; TP evaluations=7
+
+# wax appearance temperature, a heavier named feed at 1 bara
+pressure_bara = 1.00000000000000
+error = java.lang.IllegalStateException: calcWAT: Invalid wax mass fraction; pressure=1.0 bara; bracket=[NaN, 280.0] K; TP evaluations=6
+
+# wax appearance temperature, a lean gas with one former
+pressure_bara = 50.0000000000000
+error = java.lang.IllegalStateException: calcWAT: Invalid wax mass fraction; pressure=50.0 bara; bracket=[NaN, 133.0] K; TP evaluations=19
+
+# wax appearance temperature, WaxFlashTest's own fixture (plus fraction + addTBPWax)
+pressure_bara = 50.0000000000000
+temperature_K = 299.347045898438
+temperature_C = 26.1970458984375
+
