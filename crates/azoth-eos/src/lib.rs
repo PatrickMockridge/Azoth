@@ -228,6 +228,7 @@ pub mod vs_flash;
 pub mod vu_flash;
 pub mod vu_flash_single_comp;
 pub mod water_phase;
+pub mod water_dew_point_temperature;
 pub mod wax_solid_fugacity;
 pub mod wilke_chang_diffusivity;
 pub mod wilke_viscosity;

@@ -177,6 +177,7 @@
   - [Volume-entropy flash](./eos/vs_flash.md)
   - [Volume-internal-energy flash](./eos/vu_flash.md)
   - [Volume-internal-energy flash of a pure component](./eos/vu_flash_single_comp.md)
+  - [Water dew-point temperature](./eos/water_dew_point_temperature.md)
   - [Water reference phase state](./eos/water_phase.md)
   - [Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities](./eos/wilke_viscosity.md)
   - [Activity coefficients from the paraffin-wax Wilson model](./eos/wilson_activity_coefficients.md)

@@ -475,10 +475,10 @@ unit = "K"
 reason = "read by `eos.wax_solid_fugacity`, and by `Component`'s constructor for every component as HEATOFFUSION is - methane's own 90.69 K is in the capture. A wax cut's is overwritten by `addTBPWax`'s Pedersen fit."
 [[upstreams.files.columns]]
 name = "MELTINGPOINTTEMPERATURE"
-disposition = "vendored"
+disposition = "used"
 as = "meltingpointtemperature"
 unit = "K"
-reason = "not-ported: read as a starting temperature by `WaterDewPointTemperatureFlash`, which is the live reader, and by nothing else. The legacy `FreezingPointTemperatureFlashOld` names it too and is unreachable upstream - no `new` for it in `src/main` and no reference outside its own file."
+reason = "read by `eos.water_dew_point_temperature`, whose fixed point starts here, and by `Component`'s constructor for every component as TRIPLEPOINTTEMPERATURE is - water's own 273.15 K, against a triple point of 273.16, is what the capture's three states are walked from. NeqSim's legacy `FreezingPointTemperatureFlashOld` names it too and is unreachable upstream - no `new` for it in `src/main` and no reference outside its own file."
 [[upstreams.files.columns]]
 name = "ENTHALPYOFFORMATION"
 disposition = "used"

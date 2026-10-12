@@ -384,6 +384,9 @@ pub struct Entry {
     /// Triple-point temperature, in K: NeqSim's `TRIPLEPOINTTEMPERATURE`, read beside it.
     /// Methane's is `90.69` K.
     pub triple_point_temperature: f64,
+    /// Melting-point temperature, in K: NeqSim's `MELTINGPOINTTEMPERATURE`, which the table
+    /// states beside the triple point and not as the same number. Methane's is `90.65` K.
+    pub melting_point_temperature: f64,
     /// SAFT-VR-Mie's repulsive exponent `lambda_r`, dimensionless.
     ///
     /// **This one is an absence marker too, on exactly the rows `m_mie` is.** The table
@@ -469,6 +472,7 @@ impl Entry {
                     self.heat_of_fusion,
                     self.triple_point_temperature,
                 )
+                .with_melting_point(self.melting_point_temperature)
                 .with_solid_tables(
                     self.cp_solid,
                     self.cp_liquid,
@@ -1419,6 +1423,7 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
         "parachor",
         "heatoffusion",
         "triplepointtemperature",
+        "meltingpointtemperature",
         "cpsolid1",
         "cpsolid2",
         "cpsolid3",
@@ -1661,6 +1666,12 @@ fn parse_components() -> Result<HashMap<String, Entry>> {
                     &record,
                     index["triplepointtemperature"],
                     "triplepointtemperature",
+                    row,
+                )?,
+                melting_point_temperature: number(
+                    &record,
+                    index["meltingpointtemperature"],
+                    "meltingpointtemperature",
                     row,
                 )?,
                 m_saft: number(&record, index["msaft"], "msaft", row)?,
@@ -2018,6 +2029,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
                 parachor: over.parachor.unwrap_or_default(),
                 heat_of_fusion: over.heat_of_fusion.unwrap_or_default(),
                 triple_point_temperature: over.triple_point_temperature.unwrap_or_default(),
+                // A card states no melting point, so a substance that exists only as a
+                // card's carries the zero - and `eos.water_dew_point_temperature` refuses
+                // a zero rather than seeding its fixed point at absolute zero.
+                melting_point_temperature: 0.0,
                 cp_solid: over.cp_solid.unwrap_or_default(),
                 cp_liquid: over.cp_liquid.unwrap_or_default(),
                 solid_density_coefs: over.solid_density_coefs.unwrap_or_default(),
@@ -2111,6 +2126,10 @@ pub fn entry(name: &str, overlay: Option<&Overlay>) -> Result<Entry> {
             triple_point_temperature: over
                 .triple_point_temperature
                 .unwrap_or(base.triple_point_temperature),
+            // Not in `ComponentOverride`, and deliberately: a keycard exists to state the
+            // parameters a caller wants *changed*, and no caller has a melting point to
+            // state that the table does not. The table's survives a card untouched.
+            melting_point_temperature: base.melting_point_temperature,
             cp_solid: over.cp_solid.unwrap_or(base.cp_solid),
             cp_liquid: over.cp_liquid.unwrap_or(base.cp_liquid),
             solid_density_coefs: over.solid_density_coefs.unwrap_or(base.solid_density_coefs),

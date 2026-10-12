@@ -8703,6 +8703,62 @@ impl From<&azoth_eos::results::VuFlashSingleCompResult> for PyVuFlashSingleCompR
         }
     }
 }
+/// Result of `eos.water_dew_point_temperature`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WaterDewPointTemperatureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWaterDewPointTemperatureResult {
+    /// the water dew-point temperature: the largest of the per-target fixed points, and the temperature at which the incipient aqueous phase's water fugacity equals the vapour's.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the fixed point's residual `z_w - beta_0 phi_aq / phi_vap` at the reported temperature, in mole fraction. NeqSim publishes no such number; this is the port's own diagnostic.
+    #[pyo3(get)]
+    pub residual: f64,
+    /// fixed-point steps taken. NeqSim's own counter is a local, so this is the port's own.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// whether the residual met `1e-7` inside the `10000`-step cap. The gain is fixed at `100` K per unit residual, so a walk that runs out of steps is a real outcome rather than an error.
+    #[pyo3(get)]
+    pub converged: bool,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWaterDewPointTemperatureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WaterDewPointTemperatureResult(temperature={:?}, residual={:?}, iterations={:?}, converged={:?}, {} warning(s))",
+            self.temperature,
+            self.residual,
+            self.iterations,
+            self.converged,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::WaterDewPointTemperatureResult>
+    for PyWaterDewPointTemperatureResult
+{
+    fn from(r: &azoth_eos::results::WaterDewPointTemperatureResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            residual: r.residual,
+            iterations: r.iterations,
+            converged: r.converged,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.water_phase`, transported.
 #[pyclass(
     frozen,

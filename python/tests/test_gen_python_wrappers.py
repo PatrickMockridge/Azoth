@@ -48,7 +48,15 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: learned the slice-of-records rule (`&[Row]`, where the row is a spec `row_type`), and
 #: `tools/gen_python_records.py` emits the `FromPyObject` structs the rule builds each row into.
 #: `assay_mass_fractions` and `characterize_to_reference` are the two ids whose kernels take one.
-KNOWN_HAND_WRITTEN = 50
+#:
+#: 50 -> 51 when `eos.water_dew_point_temperature` landed, and this one is genuinely underivable
+#: rather than a guard being widened again. Its kernel takes `(components, z, p, cubic)`, and the
+#: generator emits a wrapper whose parameters are the spec's declared *inputs* - `P` and `eos`
+#: here - so the two names disagree and the id has no generated wrapper. `tp_multiflash_wax` and
+#: `hydrate_fraction` are the same shape for the same reason: the fluid crosses as names and this
+#: side resolves them, because the fixed point starts from each `water`-or-`MEG` component's own
+#: `melting_point_temperature` and that is a databank column rather than a caller's argument.
+KNOWN_HAND_WRITTEN = 51
 
 
 def _tools_module(name: str) -> ModuleType:

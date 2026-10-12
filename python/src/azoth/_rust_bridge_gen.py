@@ -221,6 +221,7 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterDewPointTemperatureResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
     WhitsonGammaSplitResult,
@@ -462,6 +463,7 @@ __all__ = [
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
+    "water_dew_point_temperature",
     "water_phase",
     "wax_solid_fugacity",
     "whitson_gamma_split",
@@ -3521,6 +3523,24 @@ def vu_flash_single_comp(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q,
         vapour_fraction=result.vapour_fraction,
         V=from_si(result.V.magnitude_si, result.V.unit),
         phase=_Phase(result.phase),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def water_dew_point_temperature(components: list[str], z: list[float], P: Q, eos: str='srk') -> WaterDewPointTemperatureResult:
+    """``eos.water_dew_point_temperature``, computed in Rust."""
+    spec = _models_gen.model("eos.water_dew_point_temperature")
+    result = _core.water_dew_point_temperature(
+        list(components),
+        list(z),
+        input_to_si(spec, "P", P),
+        eos,
+    )
+    return WaterDewPointTemperatureResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        residual=result.residual,
+        iterations=result.iterations,
+        converged=result.converged,
         warnings=_warnings(result.warnings),
     )
 

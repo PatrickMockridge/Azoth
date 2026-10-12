@@ -82,6 +82,7 @@
 //!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
+//!   - specs/models/eos/water_dew_point_temperature.toml
 //!   - specs/models/eos/water_phase.toml
 //!   - specs/models/eos/wilke_viscosity.toml
 //!   - specs/models/eos/wilson_activity_coefficients.toml
@@ -10184,6 +10185,127 @@ pub static VU_FLASH_SINGLE_COMP_SPEC: ModelSpec = ModelSpec {
     cases: VU_FLASH_SINGLE_COMP_CASES,
 };
 
+static WATER_DEW_POINT_TEMPERATURE_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute pressure; zero and below are not states",
+    },
+}];
+
+static WATER_DEW_POINT_TEMPERATURE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "neqsims_own_test_gas_at_35_ppm_and_70_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 3.5e-05],
+        )],
+        matrices: &[],
+        expected: &[("temperature", 261.054685901555)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_same_gas_at_22_ppm_and_70_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899978, 0.05, 0.01, 0.005, 0.005, 2.2e-05],
+        )],
+        matrices: &[],
+        expected: &[("temperature", 256.570279131976)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_same_gas_at_35_ppm_and_20_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("P", 2000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 3.5e-05],
+        )],
+        matrices: &[],
+        expected: &[("temperature", 251.353985734944)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static WATER_DEW_POINT_TEMPERATURE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "water_dew_point_fixed_point",
+    convergence: "absolute",
+    tolerance: 1e-07,
+    max_iterations: 10000,
+    bracket: None,
+    initialisation: Some("the_target_components_melting_point"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.water_dew_point_temperature`.
+pub static WATER_DEW_POINT_TEMPERATURE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.water_dew_point_temperature",
+    kind: "procedure",
+    algorithm: Some(&WATER_DEW_POINT_TEMPERATURE_ALGORITHM),
+    checks: WATER_DEW_POINT_TEMPERATURE_CHECKS,
+    cases: WATER_DEW_POINT_TEMPERATURE_CASES,
+};
+
 static WATER_PHASE_CHECKS: &[SpecCheck] = &[
     SpecCheck {
         on_input: true,
@@ -10593,6 +10715,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &VS_FLASH_SPEC,
     &VU_FLASH_SPEC,
     &VU_FLASH_SINGLE_COMP_SPEC,
+    &WATER_DEW_POINT_TEMPERATURE_SPEC,
     &WATER_PHASE_SPEC,
     &WILKE_VISCOSITY_SPEC,
     &WILSON_ACTIVITY_COEFFICIENTS_SPEC,

@@ -195,6 +195,18 @@ pub struct Component {
     pub heat_of_fusion: f64,
     /// The triple-point temperature, in K.
     pub triple_point_temperature: f64,
+    /// The melting-point temperature, in K: NeqSim's `MELTINGPOINTTEMPERATURE`, which its
+    /// table states **beside** the triple point and not as the same number - water's is
+    /// `273.15` against a triple point of `273.16`.
+    ///
+    /// Read by [`crate::water_dew_point_temperature`], whose fixed point starts here. The
+    /// two are not interchangeable as a seed even though the root they walk to is the
+    /// same one, because the update is a fixed gain per unit residual and the seed decides
+    /// the path.
+    ///
+    /// **Zero means the table carries no value**, which is a card's substance and every
+    /// component a caller builds from critical constants alone.
+    pub melting_point_temperature: f64,
     /// The solid's heat-capacity coefficients, in the table's own units.
     pub cp_solid: [f64; 4],
     /// The liquid's heat-capacity coefficients.
@@ -255,6 +267,7 @@ impl Component {
             class: String::new(),
             heat_of_fusion: 0.0,
             triple_point_temperature: 0.0,
+            melting_point_temperature: 0.0,
             cp_solid: [0.0; 4],
             cp_liquid: [0.0; 5],
             solid_density_coefs: [0.0; 4],
@@ -309,6 +322,17 @@ impl Component {
         self.wax_former = wax_former;
         self.heat_of_fusion = heat_of_fusion;
         self.triple_point_temperature = triple_point_temperature;
+        self
+    }
+
+    /// This component, with its melting-point temperature attached.
+    ///
+    /// The databank populates it and a card does not, so a caller-built component carries
+    /// the zero. [`crate::water_dew_point_temperature`] refuses a zero rather than seeding
+    /// a fixed point at absolute zero.
+    #[must_use]
+    pub fn with_melting_point(mut self, melting_point_temperature: f64) -> Self {
+        self.melting_point_temperature = melting_point_temperature;
         self
     }
 

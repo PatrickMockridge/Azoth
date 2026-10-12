@@ -97,6 +97,11 @@ class Component:
     #: zero rather than computing with it.
     heat_of_fusion: float = 0.0
     triple_point_temperature: float = 0.0
+    #: The melting-point temperature in K, from the databank's own column and stated *beside*
+    #: the triple point rather than as it - water's is `273.15` against a triple point of
+    #: `273.16`. Read by :func:`azoth.eos.water_dew_point_temperature`, whose fixed point
+    #: starts here; a card's substance carries `0.0` and that model refuses a zero.
+    melting_point_temperature: float = 0.0
     #: The parachor, from the databank's own column. Read by the two surface-tension ids and
     #: by the rate-based packed column's segment model.
     parachor: float = 0.0

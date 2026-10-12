@@ -244,6 +244,7 @@ Five sections, and the difference between them is the point:
 - [`eos.vs_flash`](./eos/vs_flash.md) — Volume-entropy flash
 - [`eos.vu_flash`](./eos/vu_flash.md) — Volume-internal-energy flash
 - [`eos.vu_flash_single_comp`](./eos/vu_flash_single_comp.md) — Volume-internal-energy flash of a pure component
+- [`eos.water_dew_point_temperature`](./eos/water_dew_point_temperature.md) — Water dew-point temperature
 - [`eos.water_phase`](./eos/water_phase.md) — Water reference phase state
 - [`eos.wilke_viscosity`](./eos/wilke_viscosity.md) — Gas mixture viscosity by Wilke's rule over Chung pure-component viscosities
 - [`eos.wilson_activity_coefficients`](./eos/wilson_activity_coefficients.md) — Activity coefficients from the paraffin-wax Wilson model

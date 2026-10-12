@@ -107,6 +107,11 @@ def test_the_two_readers_resolve_the_same_components() -> None:
                 mine.triple_point_temperature,
                 theirs.triple_point_temperature_k,
             ),
+            (
+                "melting_point_temperature",
+                mine.melting_point_temperature,
+                theirs.melting_point_temperature_k,
+            ),
             ("heat_of_fusion", mine.heat_of_fusion, theirs.heat_of_fusion_j_per_mol),
             ("rackett_z", mine.rackett_z, theirs.rackett_z),
             ("parachor", mine.parachor, theirs.parachor),

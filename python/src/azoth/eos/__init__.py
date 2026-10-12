@@ -207,6 +207,7 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterDewPointTemperatureResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
     WilkeChangDiffusivityResult,
@@ -360,6 +361,7 @@ __all__ = [
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
+    "water_dew_point_temperature",
     "water_phase",
     "wax_solid_fugacity",
     "wilke_chang_diffusivity",
@@ -402,6 +404,7 @@ _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusiv
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _IAPWS_HENRY_LAW = "eos.iapws_henry_law"
 _HYBRID_EOS_GE_FLASH = "eos.hybrid_eos_ge_flash"
+_WATER_DEW_POINT_TEMPERATURE = "eos.water_dew_point_temperature"
 _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
 _PARAHYDROGEN_SOLID_PHASE = "eos.parahydrogen_solid_phase"
@@ -3804,4 +3807,35 @@ def ge_flash(
         T=T,
         P=P,
         z=z,
+    )
+
+
+def water_dew_point_temperature(
+    components: list[str],
+    z: list[float],
+    P: Q,
+    eos: str = "srk",
+) -> WaterDewPointTemperatureResult:
+    """The temperature at which a gas condenses water.
+
+    The second phase is **prescribed**, not found: NeqSim seeds a phase that is ``1e-30`` on
+    every component but one ``water``-or-``MEG`` at ``1.0``, and walks the temperature by
+    ``100`` K per unit of residual to the point where that phase's water fugacity equals the
+    vapour's. So this is the one water-family operation that does not depend on a flash
+    finding an aqueous phase.
+
+    Every ``water`` and ``MEG`` component is walked whatever its mole fraction and the
+    **largest** temperature reached is the answer. A fluid naming neither is refused: NeqSim
+    writes a zero temperature there, which is not a state this library represents.
+
+    Raises:
+        InvalidInputError: if ``z`` does not match ``components``, if no component is named
+            ``water`` or ``MEG``, if one of them carries a zero mole fraction, or if it carries
+            no melting-point temperature for the fixed point to start from.
+        OutOfRangeError: from a trial state.
+
+    See :func:`azoth.eos.reference.water_dew_point_temperature`.
+    """
+    return resolve(_WATER_DEW_POINT_TEMPERATURE)(  # type: ignore[no-any-return]
+        components=components, z=z, P=P, eos=eos
     )

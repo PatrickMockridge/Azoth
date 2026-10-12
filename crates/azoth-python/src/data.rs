@@ -157,6 +157,9 @@ pub struct PyComponentRow {
     /// The triple-point temperature, K.
     #[pyo3(get)]
     pub triple_point_temperature_k: f64,
+    /// The melting-point temperature, K.
+    #[pyo3(get)]
+    pub melting_point_temperature_k: f64,
     /// The enthalpy of fusion, J/mol.
     #[pyo3(get)]
     pub heat_of_fusion_j_per_mol: f64,
@@ -387,6 +390,7 @@ pub(crate) fn row_of(entry: &databank::Entry) -> PyComponentRow {
         normal_liquid_density_kg_per_m3: entry.liquid_density_kg_per_m3,
         critical_volume_m3_per_mol: entry.critical_volume,
         triple_point_temperature_k: entry.triple_point_temperature,
+        melting_point_temperature_k: entry.melting_point_temperature,
         heat_of_fusion_j_per_mol: entry.heat_of_fusion,
         rackett_z: entry.rackett_z,
         parachor: entry.parachor,

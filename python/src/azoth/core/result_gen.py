@@ -3477,6 +3477,28 @@ class VuFlashSingleCompResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class WaterDewPointTemperatureResult(_HasWarnings):
+    """Result of ``eos.water_dew_point_temperature``."""
+
+    CALC_ID: ClassVar[str] = "eos.water_dew_point_temperature"
+
+    #: the water dew-point temperature: the largest of the per-target fixed points, and the temperature at which the incipient aqueous phase's water fugacity equals the vapour's.
+    temperature: Q
+
+    #: the fixed point's residual `z_w - beta_0 phi_aq / phi_vap` at the reported temperature, in mole fraction. NeqSim publishes no such number; this is the port's own diagnostic.
+    residual: float
+
+    #: fixed-point steps taken. NeqSim's own counter is a local, so this is the port's own.
+    iterations: int
+
+    #: whether the residual met `1e-7` inside the `10000`-step cap. The gain is fixed at `100` K per unit residual, so a walk that runs out of steps is a real outcome rather than an error.
+    converged: bool
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WaterPhaseResult(_HasWarnings):
     """Result of ``eos.water_phase``."""
 

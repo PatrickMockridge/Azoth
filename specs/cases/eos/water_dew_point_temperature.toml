@@ -1,0 +1,46 @@
+model = "eos.water_dew_point_temperature"
+[[cases]]
+id = "neqsims_own_test_gas_at_35_ppm_and_70_bara"
+tolerance = 1e-06
+source = """NeqSim master, from `validation/neqsim/captures/water_dew_point_probe.tsv`: the
+gas its own `WaterDewPointTest` builds - CO2 0.02, nitrogen 0.01, methane 0.9 - x, ethane
+0.05, propane 0.01, i-butane 0.005, n-butane 0.005, water x, with x = 35e-6 - on a plain
+`SystemSrkEos` at 70 bara. The class answers `261.054685901555 K`, and that test's own
+assertion is `-12.0953140 C`, which this reproduces to `-12.0953140984454`.
+
+The tolerance is NeqSim's own published precision rather than the port's: the class stops
+when its residual falls below `1e-7` mole fraction, and the step it then takes is
+`100 * 1e-7 = 1e-5` K. What this case pins is that the port lands on the same root."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 0.000035]
+P = 7000000.0
+[cases.expected]
+temperature = 261.054685901555
+[[cases]]
+id = "the_same_gas_at_22_ppm_and_70_bara"
+tolerance = 1e-06
+source = """The same gas at 22 ppm water and 70 bara, from the same capture: NeqSim answers
+`256.570279131976 K`. It is the state NeqSim's own multiphase test uses, so prescribing
+the phase rather than flashing for it is directly comparable to the sibling id."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.899978, 0.05, 0.01, 0.005, 0.005, 0.000022]
+P = 7000000.0
+[cases.expected]
+temperature = 256.570279131976
+[[cases]]
+id = "the_same_gas_at_35_ppm_and_20_bara"
+tolerance = 1e-06
+source = """The same gas at 35 ppm and 20 bara, from the same capture: NeqSim answers
+`251.353985734944 K`. A second pressure, because the dew point is a function of it and a
+port that ignored the pressure would pass the first two cases."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 0.000035]
+P = 2000000.0
+[cases.expected]
+temperature = 251.353985734944

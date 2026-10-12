@@ -204,6 +204,7 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
             ("normal_liquid_density_kg_per_m3", "float"),
             ("critical_volume_m3_per_mol", "float | None"),
             ("triple_point_temperature_k", "float"),
+            ("melting_point_temperature_k", "float"),
             ("heat_of_fusion_j_per_mol", "float"),
             ("rackett_z", "float"),
             ("parachor", "float"),

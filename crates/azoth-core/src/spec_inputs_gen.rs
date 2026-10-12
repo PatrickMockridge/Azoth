@@ -152,6 +152,7 @@
 //!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
+//!   - specs/models/eos/water_dew_point_temperature.toml
 //!   - specs/models/eos/water_phase.toml
 //!   - specs/calcs/eos/wax_solid_fugacity.toml
 //!   - specs/calcs/eos/wilke_chang_diffusivity.toml
@@ -1097,6 +1098,8 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.vu_flash_single_comp", "P", "pressure"),
     ("eos.vu_flash_single_comp", "V", "molar_volume"),
     ("eos.vu_flash_single_comp", "U", "molar_energy"),
+    ("eos.water_dew_point_temperature", "z", "dimensionless"),
+    ("eos.water_dew_point_temperature", "P", "pressure"),
     ("eos.water_phase", "T", "thermodynamic_temperature"),
     ("eos.water_phase", "P", "pressure"),
     ("eos.wax_solid_fugacity", "molar_mass", "molar_mass"),

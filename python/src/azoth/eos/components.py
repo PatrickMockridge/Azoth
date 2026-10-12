@@ -592,6 +592,12 @@ class DatabankEntry:
     #: unconditionally, and methane's own `941.0` J/mol at `90.69` K is what that gives.
     heat_of_fusion: float
     triple_point_temperature: float
+    #: The melting-point temperature in K: NeqSim's ``MELTINGPOINTTEMPERATURE``, which the
+    #: table states *beside* the triple point and not as the same number - water's is
+    #: `273.15` against a triple point of `273.16`. Read by
+    #: :func:`azoth.eos.water_dew_point_temperature`, whose fixed point starts here; a card's
+    #: substance carries `0.0`, and that model refuses a zero rather than seeding at 0 K.
+    melting_point_temperature: float
     #: The parachor, in NeqSim's mixed unit `(mN/m)**(1/4) * cm**3/mol`: ``PARACHOR``.
     #: Read by the two surface-tension ids and by the rate-based packed column's segment
     #: model, which asks for the interface tension the packing's wetted area is built from.
@@ -669,6 +675,7 @@ class DatabankEntry:
             heat_of_fusion=self.heat_of_fusion,
             parachor=self.parachor,
             triple_point_temperature=self.triple_point_temperature,
+            melting_point_temperature=self.melting_point_temperature,
             cp_solid=self.cp_solid,
             cp_liquid=self.cp_liquid,
             solid_density_coefs=self.solid_density_coefs,
@@ -814,6 +821,7 @@ def _table() -> dict[str, DatabankEntry]:
             heat_of_fusion=float(row["heatoffusion"]),
             parachor=float(row["parachor"]),
             triple_point_temperature=float(row["triplepointtemperature"]),
+            melting_point_temperature=float(row["meltingpointtemperature"]),
             cp_solid=tuple(float(row[f"cpsolid{k}"]) for k in range(1, 5)),  # type: ignore[arg-type]
             cp_liquid=tuple(float(row[f"cpliquid{k}"]) for k in range(1, 6)),  # type: ignore[arg-type]
             solid_density_coefs=tuple(  # type: ignore[arg-type]
@@ -1640,6 +1648,9 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
             heat_of_fusion=_card_number(override, "heat_of_fusion", 0.0),
             parachor=_card_number(override, "parachor", 0.0),
             triple_point_temperature=_card_number(override, "triple_point_temperature", 0.0),
+            # A card states no melting point either, for the same reason: a keycard names
+            # the parameters a caller wants *changed*, and no caller has one to state.
+            melting_point_temperature=0.0,
             cp_solid=_card_coefficients(override, "cp_solid_", 4, (0.0, 0.0, 0.0, 0.0)),
             cp_liquid=_card_coefficients(override, "cp_liquid_", 5, (0.0, 0.0, 0.0, 0.0, 0.0)),
             solid_density_coefs=_card_coefficients(
@@ -1700,6 +1711,7 @@ def entry(name: str, *, card: keycard.Keycard | None = None) -> DatabankEntry:
         parachor=scalar("parachor", base.parachor),
         heat_of_fusion=scalar("heat_of_fusion", base.heat_of_fusion),
         triple_point_temperature=scalar("triple_point_temperature", base.triple_point_temperature),
+        melting_point_temperature=base.melting_point_temperature,
         lennard_jones_diameter=scalar("lennard_jones_diameter", base.lennard_jones_diameter),
         lennard_jones_energy=scalar("lennard_jones_energy", base.lennard_jones_energy),
         liquid_conductivity=coefficients("liquid_conductivity_", 3, base.liquid_conductivity),

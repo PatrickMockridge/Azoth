@@ -1,0 +1,70 @@
+id = "eos.water_dew_point_temperature"
+name = "Water dew-point temperature"
+kind = "procedure"
+assumptions = [
+    "**the second phase is prescribed, not found.** `setNumberOfPhases(2)`, phase 1 set to `1e-30` on every component but one `water`-or-`MEG` at `1.0`, then the temperature walks to the fugacity equality. No flash is called.",
+    "**the update is a fixed point at a fixed gain**: `T += 100.0 * (z_w - beta_0 phi_aq / phi_vap)` kelvin per step. A Newton solve of the same condition reaches the same temperature and not the same path, so the gain and the seed are both carried.",
+    "**`beta_0` is one.** The incipient phase carries no moles, so phase 0 is the whole of the fluid - which is why the equality reads `z_w = phi_aq / phi_vap`, the incipient-dew condition at unit water mole fraction in the aqueous phase.",
+    "**the seed is the component's `melting_point_temperature`**, which the table states *beside* the triple point and not as the same number: water's is `273.15` K against a triple point of `273.16`.",
+    "**every `water` and `MEG` component is walked whatever its mole fraction, and the largest temperature reached is the answer** - the class keeps the maximum over the loop it runs. A zero-mole target is refused here rather than walked.",
+    "**the two components are matched case-insensitively.** NeqSim tests `equals(\"water\") || equals(\"MEG\")` against its own table's spellings; this library's table spells the second one `meg`, and the *substances* are the same two.",
+    "**a fluid naming neither `water` nor `MEG` is refused.** NeqSim's `maxTemperature` stays at its initialised `0.0` there and the class writes a zero temperature, which is not a state this library represents.",
+    "**a component carrying no melting-point temperature is refused**, because that is the seed: a card's substance has none, and seeding the fixed point at zero kelvin is not a state either.",
+    "**the feed is phase 0 at the vapour root and the incipient phase at the liquid root**, chosen by which root of the cubic each claims by ordering and not by an initial guess.",
+    "**the answer is a plain cubic's.** The class runs whatever fluid it is handed, and NeqSim's own test asserts the prescribed route on `SystemSrkEos` and the multiphase sibling on `SystemSrkCPAstatoil`, an associating water this library cannot flash.",
+    "**the residual and the step count are this port's own.** NeqSim's iteration counter and residual are locals of `run()`, and its `ThermodynamicOperations` wrapper publishes only the temperature.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `WaterDewPointTemperatureFlash` and `ThermodynamicOperations.waterDewPointTemperatureFlash()` are the port source.",
+    "NeqSim's own `WaterDewPointTest` asserts the prescribed route at `-12.0953140` C for 35 ppm water in its gas on a plain SRK at 70 bara; this port reproduces it to `-12.0953140984454`.",
+    "`validation/neqsim/captures/water_dew_point_probe.tsv` - the class's own answers at three states, from `WaterDewPointProbe`.",
+]
+[source]
+standard = "NeqSim master `WaterDewPointTemperatureFlash`"
+edition = "The prescribed-incipient-phase route, which is the one `WaterDewPointAnalyser` selects by the method name `GERG-water-EOS`."
+[algorithm]
+scheme = "water_dew_point_fixed_point"
+initialisation = "the_target_components_melting_point"
+convergence = "absolute"
+tolerance = 1e-07
+max_iterations = 10000
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the fluid's substances, by name, resolved against the component databank with the keycard's overrides applied. At least one must be `water` or `MEG`, named exactly."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions, checked rather than renormalised. The water's own fraction is what the residual is stated against, and a zero on a `water` or `MEG` component is refused."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the dew point is wanted; the temperature is what is solved for."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+optional = true
+description = "the cubic the fluid runs. NeqSim's own test uses SRK, which is the default, and a different cubic is a different fluid rather than the same one relabelled."
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "the water dew-point temperature: the largest of the per-target fixed points, and the temperature at which the incipient aqueous phase's water fugacity equals the vapour's."
+[outputs.residual]
+unit = "dimensionless"
+description = "the fixed point's residual `z_w - beta_0 phi_aq / phi_vap` at the reported temperature, in mole fraction. NeqSim publishes no such number; this is the port's own diagnostic."
+[outputs.iterations]
+unit = "dimensionless"
+description = "fixed-point steps taken. NeqSim's own counter is a local, so this is the port's own."
+[outputs.converged]
+unit = "dimensionless"
+description = "whether the residual met `1e-7` inside the `10000`-step cap. The gain is fixed at `100` K per unit residual, so a walk that runs out of steps is a real outcome rather than an error."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.water_dew_point_temperature"
+rust = "azoth_eos::water_dew_point_temperature"

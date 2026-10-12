@@ -171,6 +171,7 @@ pub fn result_fields(calc_id: &str) -> Vec<String> {
         "eos.vs_flash" => azoth_eos::results::VsFlashResult::FIELDS.to_vec(),
         "eos.vu_flash" => azoth_eos::results::VuFlashResult::FIELDS.to_vec(),
         "eos.vu_flash_single_comp" => azoth_eos::results::VuFlashSingleCompResult::FIELDS.to_vec(),
+        "eos.water_dew_point_temperature" => azoth_eos::results::WaterDewPointTemperatureResult::FIELDS.to_vec(),
         "eos.water_phase" => azoth_eos::results::WaterPhaseResult::FIELDS.to_vec(),
         "eos.wax_solid_fugacity" => azoth_eos::results::WaxSolidFugacityResult::FIELDS.to_vec(),
         "eos.wilke_chang_diffusivity" => azoth_eos::results::WilkeChangDiffusivityResult::FIELDS.to_vec(),

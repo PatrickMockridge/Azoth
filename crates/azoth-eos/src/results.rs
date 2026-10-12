@@ -715,6 +715,41 @@ impl CalcResult for TpSolidFlashResult {
     }
 }
 
+/// Result of `eos.water_dew_point_temperature`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WaterDewPointTemperatureResult {
+    /// The incipient dew-point temperature: the largest the model's per-target fixed
+    /// points reached, which is the class's own rule when a fluid carries both a `water`
+    /// and a `MEG` component.
+    pub temperature: ThermodynamicTemperature,
+    /// The residual `z - beta * phi_1 / phi_0` at the reported temperature, in mole
+    /// fraction. **NeqSim publishes no such number** - its own iteration counter and
+    /// residual are locals - so this is the port's own diagnostic and not a compared one.
+    pub residual: f64,
+    /// Fixed-point steps taken. NeqSim's is a local too, so this is the port's own.
+    pub iterations: u32,
+    /// Whether the residual met `1e-7` before the `10000`-step cap. The gain is fixed at
+    /// `100 K` per unit residual, so a walk that runs out of steps is a real outcome.
+    pub converged: bool,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WaterDewPointTemperatureResult {
+    const CALC_ID: &'static str = "eos.water_dew_point_temperature";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "residual",
+        "iterations",
+        "converged",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.tp_multiflash_wax`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TpMultiflashWaxResult {

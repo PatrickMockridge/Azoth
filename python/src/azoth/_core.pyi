@@ -100,6 +100,7 @@ class ComponentRow:
     normal_liquid_density_kg_per_m3: float
     critical_volume_m3_per_mol: float | None
     triple_point_temperature_k: float
+    melting_point_temperature_k: float
     heat_of_fusion_j_per_mol: float
     rackett_z: float
     parachor: float
@@ -1518,6 +1519,14 @@ class VuFlashSingleCompResult:
     vapour_fraction: float
     V: Qty
     phase: str
+    warnings: list[Warning]
+
+@final
+class WaterDewPointTemperatureResult:
+    temperature: Qty
+    residual: float
+    iterations: int
+    converged: bool
     warnings: list[Warning]
 
 @final
@@ -3438,6 +3447,12 @@ def vu_flash_single_comp(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> VuFlashSingleCompResult: ...
+def water_dew_point_temperature(
+    components: list[str],
+    z: list[float],
+    P: float,
+    eos: str | None = None,
+) -> WaterDewPointTemperatureResult: ...
 def water_phase(T: float, P: float) -> WaterPhaseResult: ...
 def wax_solid_fugacity(
     molar_mass: float,
