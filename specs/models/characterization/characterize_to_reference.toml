@@ -3,16 +3,21 @@ name = "A fluid's pseudo-components re-cut onto another fluid's slate"
 kind = "direct"
 assumptions = [
     "**this is how two fluids are made comparable.** A report and a model fluid rarely share a cut slate, and a cubic cannot mix two fluids cut at different boiling points. `characterizeToReference` re-cuts one onto the other's boundaries, leaving the two differing only in mole fraction.",
-    "**the reference decides where the cuts are and nothing else.** Its densities, its mole amounts and its own properties are not read by this path - only its sorting keys, and only adjacent pairs of them.",
+    "**the reference decides where the cuts are and nothing else.** Its own properties are never a group's; its sorting keys are what the cuts are placed between. Its densities and its mole amounts are read by one flag each - the two variants below - and by neither otherwise.",
     "**the sorting key is the normal boiling point, and the molar mass without one.** **The absence is a field the row leaves out**, and a row that states one which is not finite and positive falls back the same way.",
     "**the boundaries are the midpoints of adjacent reference keys**, `0.5*(k_i + k_i+1)`, or the larger of the two when either is not finite. They belong to the reference alone: the source's own keys decide only which group each of its rows joins.",
+    "**`shared_imaginary_boundaries` places them equally by mass instead.** The reference is delumped into its fine composition and the cuts go on its mass quantiles, each clamped strictly inside the gap between the two rows it separates - so a cut cannot cross a row and mis-bin the source.",
+    "**`delump_before_recharacterization` splits each source row first.** The rows a caller states are lumps, and a fine grid is what lets them meet a slate whose cuts are closer together; the arithmetic is `characterization.delumping`'s, and its sub-fractions are what the walk then bins.",
+    "**`delump_resolution`'s absence takes the class's own twelve, and one or less is its identity.** So the flag can be left on with nothing split, which is what one of the capture's option cases records.",
+    "**the two flags compose, and the class warns about one pair of them.** Delumping and inheriting together is computed rather than refused: the group **moles** still move, because the split decides which group each sub-fraction falls in, and only the two inherited numbers are overridden.",
     "**a row joins a group by a strict comparison.** The walk advances while the row's key is **greater than** the boundary, so a key exactly on a boundary stays in the lower group. Both tables are sorted by key first, so the groups are contiguous runs of the source in ascending boiling point.",
     "**an empty group is dropped rather than reported empty.** A group whose accumulated mass or moles is at or below `1e-12` produces no profile, so a source entirely below the reference's first cut resolves to one component against a reference of many.",
     "**the outputs are therefore shorter than the reference**, and `reference_index` is what re-aligns them with it.",
     "**a group's molar mass is its accumulated mass over its accumulated moles**, and its density the mass over the volume its rows occupy: `sum(m) / sum(m/rho)`, the mass-weighted harmonic mean of the gravities and not their mass-weighted mean.",
     "**the density falls back to `sum(m*rho)/sum(m)`** when no row in the group carries a positive density, which is a mass-weighted arithmetic mean instead. A row that states no density, or one at zero, contributes to neither sum.",
     "**`inheritReferenceProperties` is a variant of this walk and not a second one.** With it set, each group keeps its own moles and takes the *reference row's* molar mass and density - Pedersen's common-EoS slate. The boundaries and the binning are the same either way.",
-    "**what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool before cutting; and `delumpContributions` and `determineReferenceEqualMassBoundaries`, which rebuild a fine composition and cut it equally by mass.",
+    "**what else is owed, named.** `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one imaginary pool *before* cutting, and so need the multi-fluid weighting and a `SystemInterface`. The delumping is not among them: it is a function of a table, and it is here.",
+    "**the source rows carry no name, so a split's sub-fractions are not named.** `characterization.delumping` names each after its parent and this walk reads no name at all; a caller that wants them asks that id rather than this one. The split is otherwise the same arithmetic.",
     "**and three more**: `transferBinaryInteractionParameters`, which moves a two-dimensional interaction table between slates; `normalizeComposition`; and `generateValidationReport`.",
     "**all of those rebuild a fluid and not a table.** Every public method of the class takes or returns a `SystemInterface`, and the cards a pseudo-component needs to enter a `Mixture` are not the whole of it - the fluid has to be one a component can be added to.",
     "**and the rows are twenty fields wide where this id reads four.** The rest join the row when a ported method reads one, which is the rule the row was built under.",
@@ -20,12 +25,12 @@ assumptions = [
 ]
 references = [
     "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. Chapter 5.6, the common equation of state and the cut grid.",
-    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `extractComponents`, `determineReferenceBoundaries` and `distributeToProfiles` are the port source.",
-    "`validation/neqsim/captures/pseudo_component_combiner_probe.tsv` - three source-and-reference pairs from `validation/neqsim/PseudoComponentCombinerProbe.java`.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `extractComponents`, `determineReferenceBoundaries`, `determineReferenceEqualMassBoundaries` and `distributeToProfiles` are the port source.",
+    "`validation/neqsim/captures/pseudo_component_combiner_probe.tsv` - ten source-and-reference pairs from `validation/neqsim/PseudoComponentCombinerProbe.java`: the default walks, the two flags each alone and together, and a source cut the two boundary rules disagree over.",
 ]
 [source]
 standard = "NeqSim master `PseudoComponentCombiner.characterizeToReference`"
-edition = "Its `characterizeToReferenceCore` through `determineReferenceBoundaries` and `distributeToProfiles`, for the default options: no delumping, the boiling-point boundaries, and each group's own properties rather than the reference's."
+edition = "Its `characterizeToReferenceCore` through `determineReferenceBoundaries`, `determineReferenceEqualMassBoundaries` and `distributeToProfiles`, with the class's own delumping and shared-boundary options as inputs. `combineReservoirFluids` and `characterizeToCommonSlate` still need a `SystemInterface`."
 [inputs]
 [inputs.source]
 type = "record_list"
@@ -56,6 +61,10 @@ description = "The row's molar mass, the fallback sorting key.\n"
 unit = "K"
 optional = true
 description = "The row's normal boiling point, and with it the boundaries the source is cut at. A row that leaves it out is sorted by its molar mass.\n"
+[inputs.reference.fields.moles]
+unit = "mol"
+optional = true
+description = "The row's mole amount, read only where `shared_imaginary_boundaries` is set - the equal-mass cuts are placed on the masses the slate carries, so a slate that states none is refused then. Where the flag is absent the reference's mole amounts are not read at all.\n"
 [inputs.reference.fields.density]
 unit = "kg/m**3"
 optional = true
@@ -64,6 +73,18 @@ description = "The row's normal liquid density, read only where `inherit_referen
 type = "boolean"
 optional = true
 description = "whether each group takes the **reference row's own** molar mass and density instead of the ones its own rows average to. Absent, or false, is the class's own default entry point and the answer this id has always given.\n"
+[inputs.delump_before_recharacterization]
+type = "boolean"
+optional = true
+description = "whether each source row is split into a fine grid before the walk bins it, by `characterization.delumping`'s arithmetic. The rows a caller states may be lumps; this is what makes the source's own cuts comparable with the reference's.\n"
+[inputs.delump_resolution]
+unit = "dimensionless"
+optional = true
+description = "how many sub-fractions each source row becomes under `delump_before_recharacterization`. Absent takes the class's own twelve, and one or less is its identity - the rows are not split at all.\n"
+[inputs.shared_imaginary_boundaries]
+type = "boolean"
+optional = true
+description = "whether the cuts are placed equally **by mass** on the reference's own fine composition instead of at the boiling-point midpoints. Each is clamped inside the gap between the two reference rows it separates, so the reference row keeps its own cut either way.\n"
 [outputs]
 [outputs.reference_index]
 type = "vector"

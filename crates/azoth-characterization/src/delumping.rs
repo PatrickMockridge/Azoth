@@ -145,6 +145,91 @@ pub(crate) fn split(lumps: &[Lump], resolution: i64) -> Vec<SubFraction> {
     expanded
 }
 
+/// The midpoint of two keys, or the larger of them where either is not finite.
+fn midpoint(low: f64, high: f64) -> f64 {
+    if low.is_finite() && high.is_finite() {
+        0.5 * (low + high)
+    } else {
+        low.max(high)
+    }
+}
+
+/// `determineQuantileBoundaries`: the sorting key of the row each mass target falls in.
+///
+/// The targets are equal **masses**, `total * (i + 1) / count`, and the boundary is the key of the
+/// sub-fraction whose running mass first reaches one - not an interpolation, so a boundary is
+/// always a key some row carries. A target nothing reaches is padded with an infinity, which the
+/// clamp below then discards because it is not finite.
+fn quantile_boundaries(rows: &[SubFraction], count: usize) -> Vec<f64> {
+    if count <= 1 || rows.is_empty() {
+        return Vec::new();
+    }
+    let total: f64 = rows.iter().map(|row| row.moles * row.molar_mass.value).sum();
+    // The class's own `!(totalMass > MASS_TOLERANCE)`, NaN included: a mass it cannot order is a
+    // mass it will not place a cut on.
+    if total.is_nan() || total <= MASS_TOLERANCE {
+        return Vec::new();
+    }
+    let targets: Vec<f64> = (0..count - 1)
+        .map(|i| total * (i + 1) as f64 / count as f64)
+        .collect();
+
+    let mut boundaries = Vec::with_capacity(targets.len());
+    let mut cumulative = 0.0;
+    let mut index = 0;
+    for row in rows {
+        let next = cumulative + row.moles * row.molar_mass.value;
+        while index < targets.len() && next >= targets[index] - MASS_TOLERANCE {
+            boundaries.push(sorting_key(row.boiling_point, row.molar_mass.value));
+            index += 1;
+        }
+        cumulative = next;
+    }
+    while boundaries.len() < targets.len() {
+        boundaries.push(f64::INFINITY);
+    }
+    boundaries
+}
+
+/// `determineReferenceEqualMassBoundaries`: the cuts placed equally by mass.
+///
+/// The reference is delumped into its imaginary fine composition, equal-mass quantiles are placed
+/// on it, and each cut is then **clamped strictly inside the gap between the two rows it
+/// separates** - falling back to the midpoint where no quantile falls in the gap. The clamp is
+/// what keeps every reference row inside its own cut, which the property inheritance needs, so the
+/// two rules can only ever differ for a cut that lands between them.
+///
+/// A `resolution` of one or less has nothing to delump and gives back the midpoints, which is the
+/// class's own fall-through.
+pub(crate) fn equal_mass_boundaries(reference: &[Lump], resolution: i64) -> Vec<f64> {
+    let keys: Vec<f64> = reference
+        .iter()
+        .map(|lump| sorting_key(lump.boiling_point, lump.molar_mass.value))
+        .collect();
+    let midpoints: Vec<f64> = keys.windows(2).map(|pair| midpoint(pair[0], pair[1])).collect();
+    if resolution <= 1 {
+        return midpoints;
+    }
+    let equal_mass = quantile_boundaries(&split(reference, resolution), reference.len());
+
+    midpoints
+        .iter()
+        .enumerate()
+        .map(|(index, midpoint)| {
+            let (lower, upper) = (keys[index], keys[index + 1]);
+            if !(lower.is_finite() && upper.is_finite() && upper > lower) {
+                return *midpoint;
+            }
+            let candidate = equal_mass.get(index).copied().unwrap_or(f64::NAN);
+            if candidate.is_finite() && candidate > lower && candidate < upper {
+                candidate
+            } else {
+                *midpoint
+            }
+        })
+        .collect()
+}
+
 /// A lumped pseudo-component table split into a finer grid.
 ///
 /// # Errors

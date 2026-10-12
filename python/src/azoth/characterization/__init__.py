@@ -307,18 +307,28 @@ def characterize_to_reference(
     source: Sequence[Mapping[str, Any]],
     reference: Sequence[Mapping[str, Any]],
     inherit_reference_properties: bool | None = None,
+    delump_before_recharacterization: bool | None = None,
+    delump_resolution: int | None = None,
+    shared_imaginary_boundaries: bool | None = None,
 ) -> CharacterizeToReferenceResult:
     """A fluid's pseudo-components re-cut onto another fluid's cut slate.
 
     ``source`` and ``reference`` are lists of records, one per pseudo-component, keyed by the field
     names the spec declares. A source row states ``moles`` and ``molar_mass``, and optionally
     ``density`` in kg/m3 and ``boiling_point`` in K; a reference row states ``molar_mass`` and
-    optionally ``boiling_point`` and ``density``.
+    optionally ``boiling_point``, ``density`` and ``moles``.
 
     ``reference`` decides where the cuts are. Set ``inherit_reference_properties`` and each group
     keeps its own moles and takes the **reference row's** molar mass and density instead of the ones
     its own rows average to - Pedersen's common-EoS slate, and the class's own variant of the same
     walk. Absent is the class's default entry point, where the reference's densities are not read.
+
+    Set ``delump_before_recharacterization`` and each source row is split into a fine grid first, by
+    :func:`delumping`'s arithmetic, with ``delump_resolution`` sub-fractions each (absent is the
+    class's own twelve, and one or less is its identity). Set ``shared_imaginary_boundaries`` and
+    the cuts are placed equally **by mass** on the reference's own fine composition rather than at
+    the boiling-point midpoints - which needs the reference rows' ``moles``, and refuses a slate
+    that states none.
 
     The groups are **not** the reference rows - a group that comes out empty is dropped - so
     ``reference_index`` is what re-aligns the answer with the caller's own slate.
@@ -329,6 +339,9 @@ def characterize_to_reference(
         source=source,
         reference=reference,
         inherit_reference_properties=inherit_reference_properties,
+        delump_before_recharacterization=delump_before_recharacterization,
+        delump_resolution=delump_resolution,
+        shared_imaginary_boundaries=shared_imaginary_boundaries,
     )
 
 

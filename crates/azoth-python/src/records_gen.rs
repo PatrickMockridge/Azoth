@@ -62,6 +62,8 @@ pub struct ReferenceRow {
     #[pyo3(item)]
     pub boiling_point: Option<f64>,
     #[pyo3(item)]
+    pub moles: Option<f64>,
+    #[pyo3(item)]
     pub density: Option<f64>,
 }
 

@@ -46,13 +46,18 @@ pub fn assay_mass_fractions(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (source, reference, inherit_reference_properties))]
-#[pyo3(text_signature = "(source, reference, inherit_reference_properties)")]
+#[pyo3(signature = (source, reference, inherit_reference_properties, delump_before_recharacterization, delump_resolution, shared_imaginary_boundaries))]
+#[pyo3(
+    text_signature = "(source, reference, inherit_reference_properties, delump_before_recharacterization, delump_resolution, shared_imaginary_boundaries)"
+)]
 pub fn characterize_to_reference(
     py: Python<'_>,
     source: Vec<crate::records_gen::SourceRow>,
     reference: Vec<crate::records_gen::ReferenceRow>,
     inherit_reference_properties: Option<bool>,
+    delump_before_recharacterization: Option<bool>,
+    delump_resolution: Option<i64>,
+    shared_imaginary_boundaries: Option<bool>,
 ) -> PyResult<crate::transport_gen::PyCharacterizeToReferenceResult> {
     let source_records: Vec<azoth_characterization::characterize_to_reference::SourceRow> = source
         .into_iter()
@@ -73,6 +78,7 @@ pub fn characterize_to_reference(
                     molar_mass: kilograms_per_mole(row.molar_mass),
                     boiling_point: row.boiling_point,
                     density: row.density.map(kilograms_per_cubic_meter),
+                    moles: row.moles,
                 },
             )
             .collect();
@@ -80,6 +86,9 @@ pub fn characterize_to_reference(
         &source_records,
         &reference_records,
         inherit_reference_properties,
+        delump_before_recharacterization,
+        delump_resolution,
+        shared_imaginary_boundaries,
     )
     .map(|r| crate::transport_gen::PyCharacterizeToReferenceResult::from(&r))
     .map_err(|e| to_pyerr(py, e))

@@ -14,6 +14,7 @@
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import neqsim.thermo.characterization.CharacterizationOptions;
 import neqsim.thermo.characterization.PseudoComponentCombiner;
 import neqsim.thermo.system.SystemInterface;
 import neqsim.thermo.system.SystemSrkEos;
@@ -84,11 +85,22 @@ public class PseudoComponentCombinerProbe {
   }
 
   private static void sweep(String label, SystemInterface source, SystemInterface reference) {
+    sweep(label, source, reference, null);
+  }
+
+  /**
+   * The same sweep through the option-taking entry point, which is where `delump` and the shared
+   * imaginary boundaries live. `null` is the class's own default entry point.
+   */
+  private static void sweep(String label, SystemInterface source, SystemInterface reference,
+      CharacterizationOptions options) {
     System.out.printf("# case = %s%n", label);
     rows("source", table(source));
     rows("reference", table(reference));
     try {
-      SystemInterface out = PseudoComponentCombiner.characterizeToReference(source, reference);
+      SystemInterface out = options == null
+          ? PseudoComponentCombiner.characterizeToReference(source, reference)
+          : PseudoComponentCombiner.characterizeToReference(source, reference, options);
       System.out.printf("result_count = %d%n", table(out).size());
       List<Row> result = table(out);
       StringBuilder moles = new StringBuilder();
@@ -130,5 +142,59 @@ public class PseudoComponentCombinerProbe {
     sweep("one_reference_cut",
         fluid(new double[][] {{1.0, 0.10, 0.70}, {1.0, 0.20, 0.82}}),
         fluid(new double[][] {{1.0, 0.25, 0.85}}));
+
+    // **The options, one at a time and then together.** `inheritReferenceProperties` is set
+    // false in each, because the builder's own default is *true* while the two-argument entry
+    // point the three cases above use resolves to false - so leaving it unset here would compare
+    // against a different walk rather than against the same one.
+    double[][] sourceCuts = {{1.0, 0.10, 0.70}, {1.5, 0.14, 0.76}, {2.0, 0.18, 0.80},
+        {1.0, 0.24, 0.84}, {0.5, 0.32, 0.88}};
+    double[][] referenceCuts = {{2.0, 0.12, 0.74}, {2.0, 0.20, 0.82}, {1.0, 0.30, 0.87}};
+
+    sweep("delumped_source_before_recharacterization",
+        fluid(sourceCuts), fluid(referenceCuts),
+        CharacterizationOptions.builder().inheritReferenceProperties(false)
+            .delumpBeforeRecharacterization(true).delumpResolution(4).build());
+
+    sweep("shared_imaginary_boundaries",
+        fluid(sourceCuts), fluid(referenceCuts),
+        CharacterizationOptions.builder().inheritReferenceProperties(false)
+            .sharedImaginaryBoundaries(true).delumpResolution(4).build());
+
+    sweep("delumped_and_shared_imaginary_boundaries",
+        fluid(sourceCuts), fluid(referenceCuts),
+        CharacterizationOptions.builder().inheritReferenceProperties(false)
+            .delumpBeforeRecharacterization(true).sharedImaginaryBoundaries(true)
+            .delumpResolution(4).build());
+
+    // **A source cut inside the band the two boundary rules disagree over, and the same source
+    // without the flag.** The first cut is where they part: the default rule puts it at the
+    // boiling-point midpoint, 470.316 K, and the equal-mass rule - clamped into the same gap -
+    // at 448.397 K. A source row at 460 K is above one and below the other, so one rule bins it
+    // with the light cut and the other alone. The second cut has no such band here: its candidate
+    // falls outside the gap and the clamp hands it back as the midpoint.
+    SystemInterface straddling = fluid(new double[][] {{1.0, 0.10, 0.70}, {1.0, 0.185, 0.80},
+        {1.0, 0.32, 0.88}});
+    straddling.getComponent("C8_PC").setNormalBoilingPoint(460.0);
+    sweep("a_source_cut_the_two_rules_disagree_over", straddling, fluid(referenceCuts));
+    sweep("shared_imaginary_boundaries_move_that_cut", straddling, fluid(referenceCuts),
+        CharacterizationOptions.builder().inheritReferenceProperties(false)
+            .sharedImaginaryBoundaries(true).delumpResolution(4).build());
+
+    // A resolution of one under the flag, which is the class's own identity on both halves: the
+    // source comes back unsplit and the boundaries fall to the boiling-point midpoints.
+    sweep("delumping_at_resolution_one_is_the_identity",
+        fluid(sourceCuts), fluid(referenceCuts),
+        CharacterizationOptions.builder().inheritReferenceProperties(false)
+            .delumpBeforeRecharacterization(true).delumpResolution(1).build());
+
+    // **The combination the class itself warns about**: delumping the source and then inheriting
+    // the reference's own properties. It is computed rather than refused, so the capture records
+    // what it actually does - the group *moles* still move, because the split decides which group
+    // each sub-fraction falls in, and only the two inherited numbers are overridden.
+    sweep("delumped_then_inherited",
+        fluid(sourceCuts), fluid(referenceCuts),
+        CharacterizationOptions.builder().inheritReferenceProperties(true)
+            .delumpBeforeRecharacterization(true).delumpResolution(4).build());
   }
 }

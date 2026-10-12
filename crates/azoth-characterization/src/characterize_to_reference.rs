@@ -41,12 +41,15 @@
 use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
 use azoth_core::{AzothError, Result, apply_checks};
 
-use crate::delumping::sorting_key;
+use crate::delumping::{Lump, equal_mass_boundaries, sorting_key, split};
 use crate::model_gen;
 use crate::results::CharacterizeToReferenceResult;
 
 /// `PseudoComponentCombiner.MASS_TOLERANCE`, on the accumulated mass and on a group's validity.
 const MASS_TOLERANCE: f64 = 1.0e-12;
+
+/// `CharacterizationOptions.Builder`'s own `delumpResolution`, which an absent input takes.
+const DELUMP_RESOLUTION: i64 = 12;
 
 /// One pseudo-component of the source fluid, as this id takes it.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -77,6 +80,9 @@ pub struct ReferenceRow {
     pub boiling_point: Option<f64>,
     /// Its normal liquid density, read only by the inheriting variant.
     pub density: Option<MassDensity>,
+    /// Its mole amount, read only by the shared-boundaries variant - the equal-mass cuts are
+    /// placed on the masses the slate carries, so a row that states none is refused there.
+    pub moles: Option<f64>,
 }
 
 /// One row of a fluid's pseudo-component table, as `extractComponents` lifts it.
@@ -103,6 +109,33 @@ struct Group {
     moles: f64,
     volume: f64,
     density_mass: f64,
+}
+
+/// The source table split by `characterization.delumping`'s arithmetic, its names dropped.
+///
+/// **`delumpContributions` names each sub-fraction after its parent, and this walk reads no name.**
+/// The row it takes has none, so the names are the one thing the split cannot carry across - which
+/// the spec states, and which `characterization.delumping` answers for a caller that wants them.
+fn expand(source: &[SourceRow], resolution: i64) -> Vec<SourceRow> {
+    let lumps: Vec<Lump> = source
+        .iter()
+        .map(|row| Lump {
+            name: String::new(),
+            moles: row.moles,
+            molar_mass: row.molar_mass,
+            density: row.density,
+            boiling_point: row.boiling_point,
+        })
+        .collect();
+    split(&lumps, resolution)
+        .into_iter()
+        .map(|fraction| SourceRow {
+            moles: fraction.moles,
+            molar_mass: fraction.molar_mass,
+            density: fraction.density,
+            boiling_point: fraction.boiling_point,
+        })
+        .collect()
 }
 
 /// The source's rows, in ascending sorting key, as `extractComponents` returns them.
@@ -155,13 +188,18 @@ fn rows(source: &[SourceRow]) -> Vec<Row> {
 ///             molar_mass: kilograms_per_mole(0.15),
 ///             boiling_point: Some(400.0),
 ///             density: None,
+///             moles: None,
 ///         },
 ///         ReferenceRow {
 ///             molar_mass: kilograms_per_mole(0.25),
 ///             boiling_point: Some(700.0),
 ///             density: None,
+///             moles: None,
 ///         },
 ///     ],
+///     None,
+///     None,
+///     None,
 ///     None,
 /// )?;
 /// assert_eq!(grouped.reference_index, vec![0.0, 1.0]);
@@ -173,17 +211,32 @@ pub fn characterize_to_reference(
     source: &[SourceRow],
     reference: &[ReferenceRow],
     inherit_reference_properties: Option<bool>,
+    delump_before_recharacterization: Option<bool>,
+    delump_resolution: Option<i64>,
+    shared_imaginary_boundaries: Option<bool>,
 ) -> Result<CharacterizeToReferenceResult> {
     let spec = &model_gen::CHARACTERIZE_TO_REFERENCE_SPEC;
     let mut warnings = Vec::new();
     apply_checks(spec.input_checks(), |_quantity| None, &mut warnings)?;
     // The class's own default entry point passes the flag false, so an absent one is false.
     let inherit = inherit_reference_properties.unwrap_or(false);
+    let delump = delump_before_recharacterization.unwrap_or(false);
+    let shared = shared_imaginary_boundaries.unwrap_or(false);
+    let resolution = delump_resolution.unwrap_or(DELUMP_RESOLUTION);
 
+    // **The class's own delumping stage**: the source table expanded before the walk bins it.
+    let expanded;
+    let source: &[SourceRow] = if delump {
+        expanded = expand(source, resolution);
+        &expanded
+    } else {
+        source
+    };
     let source = rows(source);
     // **The rows are sorted, and not only their keys.** The walk reads the keys; the inheriting
     // variant also reads the row that sits at a group's own index, so the order has to be the
-    // rows' and not a parallel vector's.
+    // rows' and not a parallel vector's - and the shared-boundaries variant reads the same rows
+    // for their mole amounts.
     let mut ordered: Vec<&ReferenceRow> = reference.iter().collect();
     ordered.sort_by(|left, right| {
         sorting_key(left.boiling_point, left.molar_mass.value)
@@ -194,19 +247,43 @@ pub fn characterize_to_reference(
         .map(|row| sorting_key(row.boiling_point, row.molar_mass.value))
         .collect();
 
-    // `determineReferenceBoundaries`: the midpoint of each adjacent pair, or the larger of the two
-    // when either is not finite.
-    let boundaries: Vec<f64> = reference
-        .windows(2)
-        .map(|pair| {
-            let (low, high) = (pair[0], pair[1]);
-            if low.is_finite() && high.is_finite() {
-                0.5 * (low + high)
-            } else {
-                low.max(high)
-            }
-        })
-        .collect();
+    let boundaries: Vec<f64> = if shared {
+        // The equal-mass cuts are placed on the masses the reference carries, so this is the one
+        // variant that reads its mole amounts - and it refuses a slate that states none rather
+        // than placing the cuts on nothing.
+        let mut slate = Vec::with_capacity(ordered.len());
+        for (index, row) in ordered.iter().enumerate() {
+            let Some(moles) = row.moles else {
+                return Err(AzothError::invalid_input(
+                    format!("reference[{index}].moles"),
+                    "the shared-boundaries variant places the cuts on the reference's own masses, \
+                     and this row states no mole amount",
+                ));
+            };
+            slate.push(Lump {
+                name: String::new(),
+                moles,
+                molar_mass: row.molar_mass,
+                density: row.density,
+                boiling_point: row.boiling_point,
+            });
+        }
+        equal_mass_boundaries(&slate, resolution)
+    } else {
+        // `determineReferenceBoundaries`: the midpoint of each adjacent pair, or the larger of the
+        // two when either is not finite.
+        reference
+            .windows(2)
+            .map(|pair| {
+                let (low, high) = (pair[0], pair[1]);
+                if low.is_finite() && high.is_finite() {
+                    0.5 * (low + high)
+                } else {
+                    low.max(high)
+                }
+            })
+            .collect()
+    };
 
     // `distributeToProfiles`: a forward walk, advancing while the row's key is **greater than** the
     // boundary, so a key exactly on one stays in the lower group.

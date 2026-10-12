@@ -40,6 +40,7 @@ fn reference_of(case: &TestCase) -> Vec<ReferenceRow> {
             ),
             boiling_point: common::record_number(row, "boiling_point"),
             density: common::record_number(row, "density").map(kilograms_per_cubic_meter),
+            moles: common::record_number(row, "moles"),
         })
         .collect()
 }
@@ -49,6 +50,9 @@ fn call(case: &TestCase) -> CharacterizeToReferenceResult {
         &source_of(case),
         &reference_of(case),
         case.flag("inherit_reference_properties"),
+        case.flag("delump_before_recharacterization"),
+        case.input("delump_resolution").map(|value| value as i64),
+        case.flag("shared_imaginary_boundaries"),
     )
     .unwrap_or_else(|e| panic!("case `{}` should compute but failed: {e}", case.id))
 }
@@ -107,11 +111,15 @@ fn row(moles: f64, molar_mass: f64, density: Option<f64>, boiling_point: Option<
 }
 
 /// A reference row from two numbers, the boiling point absent when `None`.
+///
+/// Neither a density nor a mole amount is stated: each is read by one variant of the walk and by
+/// no other, so a test that wants one states it where it is the point.
 fn ref_row(molar_mass: f64, boiling_point: Option<f64>) -> ReferenceRow {
     ReferenceRow {
         molar_mass: kilograms_per_mole(molar_mass),
         boiling_point,
         density: None,
+        moles: None,
     }
 }
 
@@ -128,6 +136,9 @@ fn a_key_exactly_on_a_boundary_stays_in_the_lower_group() {
                 row(1.0, 0.2, Some(820.0), Some(key)),
             ],
             &[ref_row(0.15, Some(400.0)), ref_row(0.25, Some(700.0))],
+            None,
+            None,
+            None,
             None,
         )
         .expect("computes")
@@ -150,6 +161,9 @@ fn a_row_without_a_boiling_point_sorts_by_its_molar_mass() {
             row(1.0, 0.2, None, None),
         ],
         &[ref_row(0.15, Some(400.0)), ref_row(0.25, Some(700.0))],
+        None,
+        None,
+        None,
         None,
     )
     .expect("computes");
@@ -174,7 +188,14 @@ fn the_rows_are_sorted_rather_than_taken_as_given() {
             row(1.0, 0.3, Some(880.0), Some(700.0)),
         ];
         let source: Vec<SourceRow> = order.iter().map(|i| table[*i]).collect();
-        characterize_to_reference(&source, &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))], None)
+        characterize_to_reference(
+            &source,
+            &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))],
+            None,
+            None,
+            None,
+            None,
+        )
         .expect("computes")
     };
     assert_eq!(sorted([0, 1, 2]), sorted([2, 1, 0]));
@@ -192,6 +213,9 @@ fn a_zero_amount_row_is_not_on_the_grid() {
             row(1.0, 0.3, Some(880.0), Some(700.0)),
         ],
         &[ref_row(0.15, Some(450.0)), ref_row(0.28, Some(620.0))],
+        None,
+        None,
+        None,
         None,
     )
     .expect("computes");
@@ -214,21 +238,27 @@ fn the_inheriting_variant_changes_two_numbers_and_not_the_walk() {
             molar_mass: kilograms_per_mole(0.12),
             boiling_point: Some(412.832),
             density: Some(kilograms_per_cubic_meter(740.0)),
+            moles: None,
         },
         ReferenceRow {
             molar_mass: kilograms_per_mole(0.20),
             boiling_point: Some(527.8),
             density: Some(kilograms_per_cubic_meter(820.0)),
+            moles: None,
         },
         ReferenceRow {
             molar_mass: kilograms_per_mole(0.30),
             boiling_point: Some(630.83),
             density: Some(kilograms_per_cubic_meter(870.0)),
+            moles: None,
         },
     ];
 
-    let own = characterize_to_reference(&source, &reference, None).expect("computes");
-    let inherited = characterize_to_reference(&source, &reference, Some(true)).expect("computes");
+    let own = characterize_to_reference(&source, &reference, None, None, None, None)
+        .expect("computes");
+    let inherited =
+        characterize_to_reference(&source, &reference, Some(true), None, None, None)
+            .expect("computes");
 
     // The walk is the same walk: the groups and their moles are untouched.
     assert_eq!(own.reference_index, inherited.reference_index);
@@ -253,16 +283,70 @@ fn the_inheriting_variant_refuses_a_reference_row_with_no_density() {
             molar_mass: kilograms_per_mole(0.12),
             boiling_point: Some(412.832),
             density: None,
+            moles: None,
         },
         ReferenceRow {
             molar_mass: kilograms_per_mole(0.20),
             boiling_point: Some(527.8),
             density: None,
+            moles: None,
         },
     ];
-    assert!(characterize_to_reference(&source, &bare, None).is_ok());
+    assert!(characterize_to_reference(&source, &bare, None, None, None, None).is_ok());
     assert!(matches!(
-        characterize_to_reference(&source, &bare, Some(true)),
+        characterize_to_reference(&source, &bare, Some(true), None, None, None),
         Err(AzothError::InvalidInput { .. })
     ));
+}
+
+#[test]
+fn the_shared_boundaries_refuse_a_slate_with_no_mole_amounts() {
+    // The reference's mole amounts are read by that variant and not by the other - the equal-mass
+    // cuts are placed on the masses the slate carries - so a slate that states none is answerable
+    // one way and not the other, which is a refusal rather than a silent zero.
+    let source = [row(1.0, 0.10, Some(700.0), Some(378.77))];
+    let bare = vec![ref_row(0.12, Some(412.832)), ref_row(0.20, Some(527.8))];
+    assert!(characterize_to_reference(&source, &bare, None, None, Some(4), None).is_ok());
+    assert!(matches!(
+        characterize_to_reference(&source, &bare, None, None, Some(4), Some(true)),
+        Err(AzothError::InvalidInput { .. })
+    ));
+}
+
+#[test]
+fn the_delumping_flag_rebins_the_source_without_moving_its_total() {
+    // **The flag is inert in behaviour only when it is unset.** Set, the group *moles* move,
+    // because the split decides which group each sub-fraction falls in - and the source's total
+    // moles are what they were, because the weights conserve them. A port that dropped the
+    // weights would move one and not the other.
+    let source = [
+        row(1.0, 0.10, Some(700.0), Some(378.77)),
+        row(1.5, 0.14, Some(760.0), Some(444.67)),
+        row(2.0, 0.18, Some(800.0), Some(502.058)),
+        row(1.0, 0.24, Some(840.0), Some(573.86)),
+        row(0.5, 0.32, Some(880.0), Some(646.972)),
+    ];
+    let reference = vec![
+        ref_row(0.12, Some(412.832)),
+        ref_row(0.2, Some(527.8)),
+        ref_row(0.3, Some(630.83)),
+    ];
+    let plain = characterize_to_reference(&source, &reference, None, None, None, None)
+        .expect("computes");
+    let delumped = characterize_to_reference(&source, &reference, None, Some(true), Some(4), None)
+        .expect("computes");
+
+    assert_ne!(
+        plain.group_moles, delumped.group_moles,
+        "the split decides which group each sub-fraction falls in"
+    );
+    let total: f64 = source.iter().map(|stated| stated.moles).sum();
+    for (label, result) in [("plain", &plain), ("delumped", &delumped)] {
+        common::assert_close(
+            result.group_moles.iter().sum::<f64>(),
+            total,
+            1e-12,
+            &format!("{label}: the source's own total moles"),
+        );
+    }
 }

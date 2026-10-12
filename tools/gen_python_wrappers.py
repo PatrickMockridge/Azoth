@@ -54,6 +54,10 @@ PASSTHROUGH = {
     "Option<f64>": "Option<f64>",
     "Option<bool>": "Option<bool>",
     "Option<usize>": "Option<usize>",
+    # A count that may be absent and may be below one: the class's own `delumpResolution` is an
+    # `int` and its identity is a value of one or less, so a negative one has to cross rather
+    # than be refused at the boundary as a `usize` would.
+    "Option<i64>": "Option<i64>",
     "Option<u32>": "Option<u32>",
     "Option<&str>": "Option<&str>",
     "&[f64]": "Vec<f64>",

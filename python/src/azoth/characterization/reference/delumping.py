@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
+from itertools import pairwise
 from typing import Any
 
 from azoth import _models_gen
@@ -61,6 +62,73 @@ def sorting_key(boiling_point: float | None, molar_mass: float) -> float:
     return boiling_point
 
 
+def _midpoint(low: float, high: float) -> float:
+    """The midpoint of two keys, or the larger of them where either is not finite."""
+    if math.isfinite(low) and math.isfinite(high):
+        return 0.5 * (low + high)
+    return max(low, high)
+
+
+def _quantile_boundaries(rows: Sequence[Mapping[str, Any]], count: int) -> list[float]:
+    """``determineQuantileBoundaries``: the sorting key of the row each mass target falls in.
+
+    The targets are equal **masses**, ``total * (i + 1) / count``, and the boundary is the key of
+    the sub-fraction whose running mass first reaches one - not an interpolation, so a boundary is
+    always a key some row carries. A target nothing reaches is padded with an infinity, which the
+    clamp below then discards because it is not finite.
+    """
+    if count <= 1 or not rows:
+        return []
+    total = sum(float(row["moles"]) * float(row["molar_mass"]) for row in rows)
+    if not (total > MASS_TOLERANCE):
+        return []
+    targets = [total * (i + 1) / count for i in range(count - 1)]
+
+    boundaries: list[float] = []
+    cumulative = 0.0
+    index = 0
+    for row in rows:
+        following = cumulative + float(row["moles"]) * float(row["molar_mass"])
+        while index < len(targets) and following >= targets[index] - MASS_TOLERANCE:
+            boundaries.append(sorting_key(row["boiling_point"], float(row["molar_mass"])))
+            index += 1
+        cumulative = following
+    while len(boundaries) < len(targets):
+        boundaries.append(float("inf"))
+    return boundaries
+
+
+def equal_mass_boundaries(reference: Sequence[Mapping[str, Any]], resolution: int) -> list[float]:
+    """``determineReferenceEqualMassBoundaries``: the cuts placed equally by mass.
+
+    The slate is delumped into its imaginary fine composition, equal-mass quantiles are placed on
+    it, and each cut is then **clamped strictly inside the gap between the two rows it separates** -
+    falling back to the midpoint where no quantile falls in the gap. The clamp is what keeps every
+    reference row inside its own cut, which the property inheritance needs, so the two rules can
+    only ever differ for a cut that lands between them.
+
+    A ``resolution`` of one or less has nothing to delump and gives back the midpoints, which is the
+    class's own fall-through.
+    """
+    keys = [sorting_key(row["boiling_point"], float(row["molar_mass"])) for row in reference]
+    midpoints = [_midpoint(low, high) for low, high in pairwise(keys)]
+    if resolution <= 1:
+        return midpoints
+    equal_mass = _quantile_boundaries(split(reference, resolution), len(reference))
+
+    out: list[float] = []
+    for index, midpoint in enumerate(midpoints):
+        lower, upper = keys[index], keys[index + 1]
+        if not (math.isfinite(lower) and math.isfinite(upper) and upper > lower):
+            out.append(midpoint)
+            continue
+        candidate = equal_mass[index] if index < len(equal_mass) else float("nan")
+        out.append(
+            candidate if math.isfinite(candidate) and lower < candidate < upper else midpoint
+        )
+    return out
+
+
 def _spread(boiling_point: float | None, ratio: float) -> float | None:
     """``parentHasTb ? Tb * ratio : Tb``: the sub-fraction's boiling point, spread with its mass.
 
@@ -74,9 +142,13 @@ def _spread(boiling_point: float | None, ratio: float) -> float | None:
 
 
 def _unsplit(lump: Mapping[str, Any]) -> dict[str, Any]:
-    """One lump, as the sub-fraction that is the lump itself - what an unsplit one becomes."""
+    """One lump, as the sub-fraction that is the lump itself - what an unsplit one becomes.
+
+    **A row may carry no name**, which is what the walk's own source table is: it takes the split's
+    arithmetic and drops the names, so a row without one is a sub-fraction that is not named.
+    """
     return {
-        "name": str(lump["name"]),
+        "name": str(lump.get("name", "")),
         "moles": float(lump["moles"]),
         "molar_mass": float(lump["molar_mass"]),
         "density": None if lump["density"] is None else float(lump["density"]),
@@ -120,7 +192,7 @@ def split(lumps: Sequence[Mapping[str, Any]], resolution: int) -> list[dict[str,
             ratio = sub_mass / molar_mass
             expanded.append(
                 {
-                    "name": f"{lump['name']}_d{k}",
+                    "name": f"{lump.get('name', '')}_d{k}",
                     "moles": sub_moles,
                     "molar_mass": sub_mass,
                     "density": None if lump["density"] is None else float(lump["density"]),

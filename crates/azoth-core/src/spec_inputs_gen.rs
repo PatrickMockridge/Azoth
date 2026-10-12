@@ -247,6 +247,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "number_of_lumps",
         "dimensionless",
     ),
+    (
+        "characterization.characterize_to_reference",
+        "delump_resolution",
+        "dimensionless",
+    ),
     ("characterization.delumping", "resolution", "dimensionless"),
     ("characterization.lumping", "molar_mass", "molar_mass"),
     ("characterization.lumping", "mole_fraction", "dimensionless"),

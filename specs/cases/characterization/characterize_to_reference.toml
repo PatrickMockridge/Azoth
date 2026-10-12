@@ -134,3 +134,210 @@ group_molar_mass = [
 group_density = [
     820.0,
 ]
+
+[[cases]]
+id = "delumped_source_before_recharacterization"
+tolerance = 1.0e-12
+source = "The first three-case fluid with `delump_before_recharacterization` set: **each source row becomes four sub-fractions before the walk bins them**, so the groups are not the rows a caller stated. The moles still sum to the source's own."
+[cases.inputs]
+delump_before_recharacterization = true
+delump_resolution = 4
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    3.42033626530695, 0.719413786691631, 1.86024994800142,
+]
+group_molar_mass = [
+    0.126871819697231, 0.173047477528467, 0.274996902167632,
+]
+group_density = [
+    787.3450907747141, 779.885259851057, 817.288476091106,
+]
+
+[[cases]]
+id = "shared_imaginary_boundaries"
+tolerance = 1.0e-12
+source = "The same fluid with `shared_imaginary_boundaries` set. **The cuts moved and the answer did not**, which is the clamp doing its job: both rules put their cut in the same gap, and no source row lies between the two candidates."
+[cases.inputs]
+shared_imaginary_boundaries = true
+delump_resolution = 4
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { moles = 2.0, molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { moles = 2.0, molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { moles = 1.0, molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    2.5, 3.0, 0.5,
+]
+group_molar_mass = [
+    0.124, 0.2, 0.32,
+]
+group_density = [
+    739.551569506727, 815.533980582524, 880.0,
+]
+
+[[cases]]
+id = "delumped_and_shared_imaginary_boundaries"
+tolerance = 1.0e-12
+source = "Both flags at once: the source split first, then binned against the reference's equal-mass cuts."
+[cases.inputs]
+delump_before_recharacterization = true
+delump_resolution = 4
+shared_imaginary_boundaries = true
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { moles = 2.0, molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { moles = 2.0, molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { moles = 1.0, molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    2.77880263128536, 1.36094742071323, 1.86024994800142,
+]
+group_molar_mass = [
+    0.116122650303254, 0.173228662062528, 0.274996902167632,
+]
+group_density = [
+    779.355803802129, 794.479407660991, 817.288476091106,
+]
+
+[[cases]]
+id = "a_source_cut_the_two_rules_disagree_over"
+tolerance = 1.0e-12
+source = "A source cut at 460 K, which is **inside the band the two boundary rules disagree over** - above the equal-mass cut at 448.397 K and below the midpoint at 470.316 K. This is the default rule, and it bins that cut with the light one."
+[cases.inputs]
+
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.0, molar_mass = 0.185, density = 800.0, boiling_point = 460.0 },
+    { moles = 1.0, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    2.0, 1.0,
+]
+group_molar_mass = [
+    0.1425, 0.32,
+]
+group_density = [
+    761.8138424821001, 880.0,
+]
+
+[[cases]]
+id = "shared_imaginary_boundaries_move_that_cut"
+tolerance = 1.0e-12
+source = "The same source under `shared_imaginary_boundaries`, which cuts at 448.397 K instead - **so the one row lands in a group of its own** and the answer has three groups where the default rule's has two."
+[cases.inputs]
+shared_imaginary_boundaries = true
+delump_resolution = 4
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.0, molar_mass = 0.185, density = 800.0, boiling_point = 460.0 },
+    { moles = 1.0, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { moles = 2.0, molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { moles = 2.0, molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { moles = 1.0, molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    1.0, 1.0, 1.0,
+]
+group_molar_mass = [
+    0.1, 0.185, 0.32,
+]
+group_density = [
+    700.0, 800.0, 880.0,
+]
+
+[[cases]]
+id = "delumping_at_resolution_one_is_the_identity"
+tolerance = 1.0e-12
+source = "A resolution of one under the flag, which is the class's identity on that half: the source comes back unsplit, and the answer is the default one."
+[cases.inputs]
+delump_before_recharacterization = true
+delump_resolution = 1
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    2.5, 3.0, 0.5,
+]
+group_molar_mass = [
+    0.124, 0.2, 0.32,
+]
+group_density = [
+    739.551569506727, 815.533980582524, 880.0,
+]
+
+[[cases]]
+id = "delumped_then_inherited"
+tolerance = 1.0e-12
+source = "**The pair the class itself warns about**: delumping the source and then inheriting the reference's own properties. Computed rather than refused. The group moles are the split's and not the unsplit case's, so the delumping is not in fact defeated; only the two inherited numbers are overridden."
+[cases.inputs]
+delump_before_recharacterization = true
+delump_resolution = 4
+inherit_reference_properties = true
+source = [
+    { moles = 1.0, molar_mass = 0.1, density = 700.0, boiling_point = 378.77 },
+    { moles = 1.5, molar_mass = 0.14, density = 760.0, boiling_point = 444.67 },
+    { moles = 2.0, molar_mass = 0.18, density = 800.0, boiling_point = 502.058 },
+    { moles = 1.0, molar_mass = 0.24, density = 840.0, boiling_point = 573.86 },
+    { moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+reference = [
+    { molar_mass = 0.12, density = 740.0, boiling_point = 412.832 },
+    { molar_mass = 0.2, density = 820.0, boiling_point = 527.8 },
+    { molar_mass = 0.3, density = 870.0, boiling_point = 630.83 },
+]
+[cases.expected]
+group_moles = [
+    3.42033626530695, 0.719413786691631, 1.86024994800142,
+]
+group_molar_mass = [
+    0.12, 0.2, 0.3,
+]
+group_density = [
+    740.0, 820.0, 870.0,
+]

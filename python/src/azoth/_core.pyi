@@ -228,6 +228,7 @@ class ReferenceRow(TypedDict):
 
     molar_mass: float
     boiling_point: float | None
+    moles: float | None
     density: float | None
 
 class Lump(TypedDict):
@@ -2310,6 +2311,9 @@ def characterize_to_reference(
     source: list[SourceRow],
     reference: list[ReferenceRow],
     inherit_reference_properties: bool | None = None,
+    delump_before_recharacterization: bool | None = None,
+    delump_resolution: float | None = None,
+    shared_imaginary_boundaries: bool | None = None,
 ) -> CharacterizeToReferenceResult: ...
 def delumping(lumps: list[Lump], resolution: float) -> DelumpingResult: ...
 def lumping(
