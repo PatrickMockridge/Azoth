@@ -461,50 +461,71 @@ def _class_fields(path: Path, name: str) -> tuple[str, ...]:
     raise AssertionError(f"no class `{name}` in {path}")
 
 
-def test_the_output_record_row_is_one_shape_in_its_declarations() -> None:
-    """**The one `record_list` *output* is declared five times, and the five have to agree.**
+def _record_output_from_fields() -> dict[str, tuple[str, ...]]:
+    """Each generated `From` impl's `Self { .. }` keys, by element name.
 
-    An input row has a `row_type` to be found by and a generator that emits two of its three
-    declarations. An output row has neither: its `fields` block is read by nothing, and the shape
-    is hardcoded in the Rust kernel struct, the pyclass, the Python dataclass and the stub's
-    hand-kept table. This is what makes the spec's block more than documentation - the one
-    declaration of the five that nothing generates is the one the other four are held to.
-
-    The element's *name* is read out of `rust_index`'s `Vec<KComponent>` rather than named here,
-    because `gen_python_transport.element_kind` decides the transport by matching on it: a renamed
-    struct would fall through to the scalar rule and be carried as a number.
+    The initialiser is the fourth spelling of a row's shape, and the one nothing else compares:
+    a field the spec drops leaves an initialiser that no longer names it, which compiles.
     """
-    spec = next(calc for calc in CALCS if calc["id"] == "hydraulics.crane_k_factors")
-    fields = tuple(spec["outputs"]["components"]["fields"])
-    assert fields, "the spec declares no fields for its one record_list output"
-
-    rust_index = _tools_module("rust_index")
-    result = next(r for r in rust_index.result_types() if r.calc_id == "hydraulics.crane_k_factors")
-    element = next(
-        found[len("Vec<") : -1] for found in result.rust_field_types if found.startswith("Vec<")
-    )
-
-    stub = _tools_module("gen_stub")
-    declarations = {
-        "the Rust kernel struct": _rust_struct_fields(element, "azoth-hydraulics", "results.rs"),
-        "the pyclass": _rust_pyclasses().get(element, ()),
-        "the Python dataclass": _class_fields(
-            REPO_ROOT / "python" / "src" / "azoth" / "core" / "result_base.py", element
-        ),
-        "the stub's transport table": next(
-            (
-                tuple(field for field, _ in entry[2])
-                for entry in stub.VOCABULARY
-                if entry[0] == element
-            ),
-            (),
-        ),
-    }
-    for label, found in declarations.items():
-        assert found == fields, (
-            f"{label} is {found} and the spec declares {fields}; the four are hand-written and the "
-            f"spec is what they are held to"
+    text = RECORD_OUTPUTS_GEN.read_text(encoding="utf-8")
+    out: dict[str, tuple[str, ...]] = {}
+    for match in re.finditer(r"impl From<&[\w:]+> for Py(\w+) \{", text):
+        body = _struct_body(text, match)
+        initialiser = re.search(r"Self \{", body)
+        assert initialiser is not None, f"the `From` impl for `{match.group(1)}` builds no `Self`"
+        out[match.group(1)] = tuple(
+            re.findall(r"^\s*(\w+):", _struct_body(body, initialiser), re.M)
         )
+    return out
+
+
+def _stub_class_fields(name: str) -> tuple[str, ...]:
+    """A class the stub declares, by name, from its annotated statements."""
+    for node in _stub_tree().body:
+        if isinstance(node, ast.ClassDef) and node.name == name:
+            return tuple(
+                statement.target.id
+                for statement in node.body
+                if isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name)
+            )
+    return ()
+
+
+def test_the_output_record_row_is_one_shape_in_its_declarations() -> None:
+    """**A `record_list` *output*'s row is declared six times, and the six have to agree.**
+
+    The spec's `fields` block says what the row is. Three declarations are generated from it -
+    the pyclass's fields, the `From` impl's initialiser, and the Python dataclass - and three are
+    not: the kernel struct the output is carried as, the stub's own class, and the element the
+    transport names. This is what holds all six to the one declaration none of them owns.
+
+    **The element's name is read out of the result's `Vec<X>` rather than named here**, because
+    `gen_stub.record_output_rows` decides the row by it: a renamed struct would fall through to
+    the scalar rule and be carried as a number, or vanish from the transport's import list.
+    """
+    rows = _tools_module("gen_stub").record_output_rows()
+    assert rows, "the tree declares no record_list output, so there is no row to hold"
+
+    wrappers = _tools_module("gen_python_wrappers")
+    pyclasses = _rust_pyclasses()
+    froms = _record_output_from_fields()
+    for element, declaration in sorted(rows.items()):
+        fields = tuple(declaration["fields"])
+        kernel = wrappers.record_fields(element)
+        assertions = {
+            "the Rust kernel struct": tuple(name for name, _ in kernel or []),
+            "the pyclass": pyclasses.get(element, ()),
+            "the generated `From` impl": froms.get(element, ()),
+            "the generated Python dataclass": _class_fields(
+                REPO_ROOT / "python" / "src" / "azoth" / "core" / "record_outputs_gen.py", element
+            ),
+            "the stub's class": _stub_class_fields(element),
+        }
+        for label, found in assertions.items():
+            assert found == fields, (
+                f"{label} for `{element}` is {found} and the spec declares {fields}; the spec's "
+                f"`fields` block is what all six declarations are held to"
+            )
 
 
 def test_the_stub_matches_the_rust_transport_types() -> None:
@@ -579,6 +600,7 @@ _QUANTITY_STUB_TYPES = {
 }
 
 TRANSPORT_GEN = REPO_ROOT / "crates" / "azoth-python" / "src" / "transport_gen.rs"
+RECORD_OUTPUTS_GEN = REPO_ROOT / "crates" / "azoth-python" / "src" / "record_outputs_gen.rs"
 
 
 def _tools_module(name: str) -> ModuleType:
@@ -595,17 +617,22 @@ def _transport_field_types() -> dict[str, dict[str, str]]:
 
     Read from `transport_gen.rs` rather than from `gen_stub.py`'s own rule, because the
     transport is what an attribute access actually reaches: `_core.<calc>(...).field` is a
-    `PyQty` or a number according to this file, and the stub is a description of it.
+    `PyQty` or a number according to this file, and the stub is a description of it. **The
+    generated record-output pyclasses are read too**, because they carry quantities the same
+    way and live in a file of their own - one that is in no other comparison's glob.
     """
     rust_index = _tools_module("rust_index")
-    text = rust_index._blank_comments(TRANSPORT_GEN.read_text(encoding="utf-8"))
     out: dict[str, dict[str, str]] = {}
-    for block in re.finditer(r"^pub struct (Py\w+) \{(.*?)^\}", text, re.M | re.S):
-        raw, body = block.group(1), block.group(2)
-        out[raw.removeprefix("Py")] = {
-            field.group(1): field.group(2)
-            for field in re.finditer(r"^\s*pub (\w+): (.+),$", body, re.M)
-        }
+    for path in (TRANSPORT_GEN, RECORD_OUTPUTS_GEN):
+        if not path.exists():  # pragma: no cover - it is generated and committed
+            continue
+        text = rust_index._blank_comments(path.read_text(encoding="utf-8"))
+        for block in re.finditer(r"^pub struct (Py\w+) \{(.*?)^\}", text, re.M | re.S):
+            raw, body = block.group(1), block.group(2)
+            out[raw.removeprefix("Py")] = {
+                field.group(1): field.group(2)
+                for field in re.finditer(r"^\s*pub (\w+): (.+),$", body, re.M)
+            }
     return out
 
 

@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rust_index
 from gen_python_bridge import core_signatures
 from gen_python_transport import dimensioned, element_kind, parse_type, specs
+from gen_stub import record_output_rows
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "python" / "src" / "azoth" / "core" / "result_gen.py"
@@ -46,7 +47,9 @@ OUT = ROOT / "python" / "src" / "azoth" / "core" / "result_gen.py"
 INTEGERS = ("u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize")
 
 #: The element type each non-numeric kind is, named rather than derived because it is a name.
-PY_ELEMENT = {"bool": "bool", "string": "str", "warning": "Warning", "kcomponent": "KComponent"}
+#: A record is not here: its Python class is the kernel struct's own name, which
+#: `field_annotation` takes from the element.
+PY_ELEMENT = {"bool": "bool", "string": "str", "warning": "Warning"}
 
 #: The one enum that crosses as a string rather than as its own class, and the reason.
 #:
@@ -73,6 +76,8 @@ def field_annotation(kind: str, depth: int, optional: bool, unit: object, elemen
         leaf = "int"
     elif kind == "enum":
         leaf = PY_ELEMENT["string"] if element in ENUMS_THAT_STAY_STRINGS else element
+    elif kind == "record":
+        leaf = element
     else:
         leaf = PY_ELEMENT[kind]
     annotation = leaf
@@ -154,15 +159,23 @@ def emit() -> str:
     for _, _, names in out:
         used |= names
 
-    from_base = sorted(used - {"Q", "Warning"})
+    # A `record_list` output's element class is generated into its own module, so the names
+    # that reach a record field come from there and the rest from `result_base`.
+    rows = set(record_output_rows())
+    from_base = sorted(used - {"Q", "Warning"} - rows)
+    from_rows = sorted(used & rows)
     imports = [
         "from __future__ import annotations",
         "",
         "from dataclasses import dataclass",
         "from typing import ClassVar",
         "",
-        "from azoth.core.result_base import (",
     ]
+    if from_rows:
+        imports += ["from azoth.core.record_outputs_gen import ("]
+        imports += [f"    {name}," for name in from_rows]
+        imports += [")"]
+    imports += ["from azoth.core.result_base import ("]
     imports += [f"    {name}," for name in from_base]
     # isort puts a leading underscore after the capitals, so the mixin is named last.
     imports += ["    _HasWarnings,", ")"]

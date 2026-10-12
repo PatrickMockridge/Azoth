@@ -98,36 +98,6 @@ pub(crate) fn transport(warnings: &[Warning]) -> Vec<PyWarning> {
     warnings.iter().map(PyWarning::from).collect()
 }
 
-/// One fitting's contribution, transported.
-#[pyclass(
-    frozen,
-    skip_from_py_object,
-    module = "azoth._core",
-    name = "KComponent"
-)]
-#[derive(Debug, Clone, PartialEq)]
-pub struct PyKComponent {
-    /// Fitting id as it appears in the registry.
-    #[pyo3(get)]
-    pub fitting_id: String,
-    /// Equivalent length ratio (L_eq / D).
-    #[pyo3(get)]
-    pub n_ld: f64,
-    /// This fitting's resistance coefficient.
-    #[pyo3(get)]
-    pub k: f64,
-}
-
-#[pymethods]
-impl PyKComponent {
-    fn __repr__(&self) -> String {
-        format!(
-            "KComponent({}, n_ld={}, k={})",
-            self.fitting_id, self.n_ld, self.k
-        )
-    }
-}
-
 /// Every warning code the Rust side can emit.
 ///
 /// Exists so the Python suite can assert the two code sets are identical

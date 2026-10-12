@@ -226,6 +226,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyReferencePotentialsResult>()?;
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
+    m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
 
     // The calculations and models themselves.
     m.add_function(wrap_pyfunction!(

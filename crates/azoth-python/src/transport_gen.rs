@@ -13,7 +13,8 @@
 //! Regenerate with `python tools/gen_python_transport.py`; CI runs `--check` and fails
 //! on any difference.
 
-use crate::results::{PyKComponent, PyQty, PyWarning, transport};
+use crate::record_outputs_gen::PyKComponent;
+use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
 /// Result of `characterization.assay_mass_fractions`, transported.
@@ -9026,15 +9027,7 @@ impl From<&azoth_hydraulics::results::KFactorsResult> for PyKFactorsResult {
         Self {
             k_total: r.k_total,
             f_t: r.f_t,
-            components: r
-                .components
-                .iter()
-                .map(|c| PyKComponent {
-                    fitting_id: c.fitting_id.clone(),
-                    n_ld: c.n_ld,
-                    k: c.k,
-                })
-                .collect(),
+            components: r.components.iter().map(PyKComponent::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

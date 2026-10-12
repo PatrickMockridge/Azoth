@@ -33,6 +33,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gen_python_wrappers
 import rust_index
+from gen_stub import record_output_rows
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "crates" / "azoth-python" / "src" / "register_gen.rs"
@@ -50,6 +51,12 @@ def emit() -> str:
 
     classes = "".join(
         f"    m.add_class::<crate::transport_gen::Py{result.rust_name}>()?;\n" for result in results
+    )
+    # A `record_list` output's element is a class of its own, generated from the same
+    # declaration the transport is - see `gen_stub.record_output_rows`.
+    classes += "".join(
+        f"    m.add_class::<crate::record_outputs_gen::Py{row}>()?;\n"
+        for row in sorted(record_output_rows())
     )
     generated = gen_python_wrappers.covered_ids()
     registrations = "".join(

@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import functools
 import sys
 from collections.abc import Mapping
 from pathlib import Path
@@ -277,11 +278,6 @@ VOCABULARY: tuple[tuple[str, str | None, tuple[tuple[str, str], ...]], ...] = (
     ),
     ("BatchResult", None, (("columns", "list[BatchColumn]"), ("warnings", "list[list[Warning]]"))),
     (
-        "KComponent",
-        "One fitting's contribution to the total resistance coefficient.",
-        (("fitting_id", "str"), ("n_ld", "float"), ("k", "float")),
-    ),
-    (
         "Session",
         "A live flowsheet: the middleware's session, which holds the document so an edit "
         "re-checks it and a run's values belong to the document that produced them. Every "
@@ -512,6 +508,65 @@ def record_rows() -> dict[str, dict[str, Any]]:
                     f"row type is one shape"
                 )
             rows[row] = declaration["fields"]
+    return rows
+
+
+@functools.lru_cache(maxsize=1)
+def record_output_rows() -> dict[str, dict[str, Any]]:
+    """Every `record_list` *output*'s row, keyed by the kernel struct it is carried as.
+
+    The mirror of `record_rows`, and the same claim: a row's fields *are* the spec's `fields`
+    block, so a hand-kept copy of the declaration is a second place the row can change. What
+    differs is the direction. An input row is built in Python and read in Rust, so its stub
+    type is a `TypedDict` and its Rust type derives `FromPyObject`; an output row is built in
+    Rust and read in Python, so its stub type is a class and its Rust type is a `#[pyclass]`.
+
+    **Keyed by the kernel struct's own name**, which is the name both sides already carry: the
+    element is read out of the result's `Vec<X>`, the same reading `rust_index.result_types`
+    makes. A `row_type` on an output would be a second registration of what the Rust struct
+    declares, which is the rule `rust_index` states for a result type.
+
+    `[*CALCS, *MODELS]` rather than the models alone, because a calc can carry one too. **The
+    value is the spec's own output declaration**, not its `fields` block alone, so the row's
+    description travels with its shape.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        import rust_index
+    finally:
+        sys.path.pop(0)
+
+    by_id = {result.calc_id: result for result in rust_index.result_types()}
+    rows: dict[str, dict[str, Any]] = {}
+    for spec in [*CALCS, *MODELS]:
+        result = by_id.get(spec["id"])
+        if result is None:
+            continue
+        carried = dict(zip(result.public_fields, result.rust_field_types, strict=True))
+        for output, declaration in (spec.get("outputs") or {}).items():
+            if declaration.get("type") != "record_list":
+                continue
+            ty = carried.get(output)
+            if ty is None or not (ty.startswith("Vec<") and ty.endswith(">")):
+                raise SystemExit(
+                    f"gen_stub: {spec['id']}.{output} is a record_list and the result's "
+                    f"`{output}` is {ty!r}, not a `Vec<Row>`; an output row's element is the "
+                    "kernel struct it is carried as"
+                )
+            element = ty[len("Vec<") : -1]
+            if element in rows and rows[element]["fields"] != declaration["fields"]:
+                raise SystemExit(
+                    f"gen_stub: `{element}` is declared by two `fields` blocks that differ; one "
+                    f"row type is one shape"
+                )
+            rows[element] = declaration
+
+    clash = sorted(set(rows) & set(record_rows()))
+    if clash:
+        raise SystemExit(
+            f"gen_stub: {clash} name both a `record_list` input row and a `record_list` output "
+            "row; a `TypedDict` and a class cannot be declared under one name"
+        )
     return rows
 
 
@@ -807,6 +862,24 @@ def render_vocabulary() -> str:
         out.extend(
             f"    {field_name}: {record_field_type(declared)}"
             for field_name, declared in fields.items()
+        )
+        blocks.append("\n".join(out))
+    # The rows a `record_list` output returns, one class per kernel struct. **Rendered from
+    # the generated dataclass rather than from the spec**, because a quantity crosses back as
+    # a `Qty` and `stub_type` is the one place that spelling lives; a second rule here would be
+    # a second answer to the same question - see `record_output_rows`.
+    import azoth.core.record_outputs_gen as record_outputs
+
+    for row in record_output_rows():
+        resolved = getattr(record_outputs, row)
+        hints = get_type_hints(resolved)
+        out = ["@final", f"class {row}:"]
+        if resolved.__doc__:
+            out.append(f'    """{resolved.__doc__}"""')
+            out.append("")
+        out.extend(
+            f"    {field.name}: {stub_type(hints[field.name])}"
+            for field in dataclasses.fields(resolved)
         )
         blocks.append("\n".join(out))
     return "\n\n".join(blocks)

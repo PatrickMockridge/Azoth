@@ -25,7 +25,11 @@ LIB = REPO_ROOT / "crates" / "azoth-python" / "src" / "lib.rs"
 
 #: The hand-written `add_class`/`add_function` calls `lib.rs` may carry. Measured when the
 #: generator landed; lowering it is the point, and raising it needs a reason in the diff.
-KNOWN_HAND_WRITTEN = {"add_class": 14, "add_function": 39}
+#:
+#: `add_class` came down from 14 when `PyKComponent` moved into the generated
+#: `record_outputs_gen.rs`: a `record_list` output's element is a class of its own and
+#: `gen_python_register` now emits it, so `lib.rs` no longer names it.
+KNOWN_HAND_WRITTEN = {"add_class": 13, "add_function": 39}
 
 
 def _tools_module(name: str) -> ModuleType:

@@ -1,20 +1,19 @@
 """What the result dataclasses are built from, written by hand.
 
 :mod:`azoth.core.result_gen` carries the 194 dataclasses, one per registered id, and it is
-generated - but three of the things they need are decisions rather than derivations, and they live
+generated - but two of the things they need are decisions rather than derivations, and they live
 here so that the generated module does not have to import the module that re-exports it.
 
 * the **enums** a result field may be: which values each has, and which of them is a root selector.
 * the **``_HasWarnings`` mixin** every result inherits, which is what makes a result self-describing
   - ``provenance``, ``to_dict``, ``to_json``, ``is_clean`` and ``has_warning``.
-* the **one record that is not a result**: `KComponent`, a fitting's contribution to a resistance
-  coefficient. It is a frozen dataclass with the same decorator and no ``CALC_ID``, so it is not in
-  the registry and the generator has nothing to read for it.
+
+The records that are not results - the rows a ``record_list`` output returns - are generated too,
+by :mod:`azoth.core.record_outputs_gen`.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, ClassVar, cast
 
@@ -205,18 +204,6 @@ class HydrateStructure(StrEnum):
     STRUCTURE_I = "structure_i"
     #: Sixteen small ``5^12`` and eight large ``5^12 6^4`` per a hundred and thirty-six.
     STRUCTURE_II = "structure_ii"
-
-
-@dataclass(frozen=True, slots=True, eq=False)
-class KComponent:
-    """One fitting's contribution to the total resistance coefficient."""
-
-    #: Fitting id as it appears in the registry.
-    fitting_id: str
-    #: Equivalent length ratio (L_eq / D) for this fitting.
-    n_ld: float
-    #: This fitting's resistance coefficient, ``f_t * n_ld``.
-    k: float
 
 
 class PlusModel(StrEnum):

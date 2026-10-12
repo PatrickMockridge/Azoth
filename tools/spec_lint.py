@@ -513,6 +513,7 @@ def check_model(report: Report, rel: Path, spec: dict[str, Any]) -> None:
     """
     check_identity_model(report, rel, spec)
     check_record_inputs(report, rel, spec)
+    check_record_outputs(report, rel, spec)
     check_range_checks(report, rel, spec)
     check_model_cases(report, rel, spec)
     check_prose_length(report, rel, spec)
@@ -744,7 +745,7 @@ def check_record_inputs(report: Report, rel: Path, spec: dict[str, Any]) -> None
             report.error(
                 str(rel),
                 f"input '{name}' is a record_list and declares no `row_type`. An output row "
-                f"is read by a generator that already knows its shape; an input row is built "
+                f"is named by the kernel struct the result carries it as; an input row is built "
                 f"by a caller, so the type generated from its `fields` needs the name.",
             )
         for field_name, field_declared in declared.get("fields", {}).items():
@@ -753,6 +754,34 @@ def check_record_inputs(report: Report, rel: Path, spec: dict[str, Any]) -> None
                 report.error(
                     str(rel),
                     f"input '{name}'.{field_name} is a '{kind}' field; a record carries "
+                    f"{sorted(RECORD_FIELD_KINDS)}. A field that is itself a list is a second "
+                    f"row shape, and the record kind is the list of rows.",
+                )
+
+
+def check_record_outputs(report: Report, rel: Path, spec: dict[str, Any]) -> None:
+    """A `record_list` output carries scalars in it, and names no `row_type`.
+
+    The mirror of `check_record_inputs`, with one rule that is not the inverse of the other:
+    an output row's *name* is the kernel struct the result carries it as, read out of the
+    result's `Vec<Row>` by `gen_stub.record_output_rows`, so a `row_type` here would be a
+    second name for one row - the duplication `rust_index` refuses for a result type.
+    """
+    for name, declared in spec["outputs"].items():
+        if declared.get("type") != "record_list":
+            continue
+        if declared.get("row_type"):
+            report.error(
+                str(rel),
+                f"output '{name}' declares a `row_type`; an output row is named by the kernel "
+                f"struct the result carries it as, so this is a second name for one row.",
+            )
+        for field_name, field_declared in declared.get("fields", {}).items():
+            kind = field_declared.get("type", "quantity")
+            if kind not in RECORD_FIELD_KINDS:
+                report.error(
+                    str(rel),
+                    f"output '{name}'.{field_name} is a '{kind}' field; a record carries "
                     f"{sorted(RECORD_FIELD_KINDS)}. A field that is itself a list is a second "
                     f"row shape, and the record kind is the list of rows.",
                 )

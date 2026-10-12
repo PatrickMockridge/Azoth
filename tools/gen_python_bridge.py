@@ -52,6 +52,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rust_index
+from gen_stub import record_output_rows
 
 ROOT = Path(__file__).resolve().parent.parent
 PY_SRC = ROOT / "python" / "src" / "azoth"
@@ -508,8 +509,13 @@ def return_expr(field: str, transport: str, rust: str | None, declared: str | No
         return f"tuple(tuple(from_si(v.magnitude_si, v.unit) for v in row) for row in {src})"
     if transport == "Vec<PyWarning>":
         return f"_warnings({src})"
-    if transport == "Vec<PyKComponent>":
-        return f"tuple(KComponent(fitting_id=c.fitting_id, n_ld=c.n_ld, k=c.k) for c in {src})"
+    if transport.startswith("Vec<Py") and transport[len("Vec<Py") : -1] in record_output_rows():
+        row = transport[len("Vec<Py") : -1]
+        fields = record_output_rows()[row]["fields"]
+        parts = ", ".join(
+            f"{name}={record_field_expr(declared, name, 'c')}" for name, declared in fields.items()
+        )
+        return f"tuple({row}({parts}) for c in {src})"
     if transport in ("Vec<f64>", "Vec<String>", "Vec<u32>"):
         return f"tuple({src})"
     if transport == "Vec<Vec<f64>>":
@@ -525,6 +531,24 @@ def return_expr(field: str, transport: str, rust: str | None, declared: str | No
             return f"None if {src} is None else {_enum_class(rust)}({src})"
         return src
     raise Refusal(f"{field}: the transport type {transport} has no rule")
+
+
+def record_field_expr(declared: dict[str, Any], field: str, src: str) -> str:
+    """One record element's field, rebuilt from the transported pyclass attribute.
+
+    The same rule `return_expr` applies to a result field, asked once per element field: a
+    dimensioned quantity arrives as a `PyQty` and is rebuilt through `from_si`, and everything
+    else - a plain number, a string, an enum that crosses as its own spelling, a flag - is the
+    attribute itself. An optional field keeps its absence.
+    """
+    member = f"{src}.{field}"
+    if declared.get("type") in ("boolean", "string", "enum"):
+        return member
+    if declared.get("unit") not in (None, "dimensionless"):
+        if declared.get("optional", False):
+            return f"None if {member} is None else from_si({member}.magnitude_si, {member}.unit)"
+        return f"from_si({member}.magnitude_si, {member}.unit)"
+    return member
 
 
 # --- the arguments: one expression per declared input ----------------------
@@ -898,8 +922,11 @@ def emit_function(calc_id: str, used: set[str], external: set[str]) -> str:
             continue
         if rust.get(field) not in ENUMS_THAT_STAY_STRINGS:
             used.add(_enum_class(rust.get(field)))
-    if any("KComponent(" in expression for _, expression in returned):
-        used.add("KComponent")
+    rows = record_output_rows()
+    for transport in fields.values():
+        row = transport[len("Vec<Py") : -1] if transport.startswith("Vec<Py") else None
+        if row in rows:
+            used.add(row)
     if any("_si(" in expression for expression, _ in arguments):
         used.add("_si")
     if "mixture" in params:

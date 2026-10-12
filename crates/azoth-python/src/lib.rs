@@ -41,6 +41,7 @@ mod overlay;
 mod process;
 mod provenance;
 mod reactions;
+mod record_outputs_gen;
 mod records_gen;
 mod register_gen;
 mod registry_tables_gen;
@@ -50,7 +51,7 @@ mod thermal;
 mod transport_gen;
 mod wrappers_gen;
 
-use results::{PyKComponent, PyQty, PyWarning};
+use results::{PyQty, PyWarning};
 
 #[pymodule]
 fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -64,7 +65,6 @@ fn _core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Transport and result types.
     m.add_class::<PyQty>()?;
     m.add_class::<PyWarning>()?;
-    m.add_class::<PyKComponent>()?;
     // An associating mixture's parameters, which every model whose Python side takes a
     // `Mixture` requires. A record rather than a defaulted argument: a caller that forgets
     // must get a `TypeError`, not a plausible answer for a different fluid.

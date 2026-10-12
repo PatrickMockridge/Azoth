@@ -53,7 +53,6 @@ PY_TYPE = {
     "string": "String",
     "enum": "String",
     "warning": "PyWarning",
-    "kcomponent": "PyKComponent",
 }
 
 
@@ -90,6 +89,9 @@ def element_kind(element: str, declared: str) -> str:
     A capitalised name that is not one of the framework's is either a `uom` alias or an enum,
     and the two are spelled the same way in Rust. The spec already claims one or the other -
     `type = "enum"` with its values - so the spec is asked rather than a name list kept here.
+    **A record is that same question a third time**: `type = "record_list"` says the element is
+    a struct carried whole, and the element's own name comes from the result's `Vec<X>` rather
+    than from a match on it.
     """
     if element == "f64":
         return "number"
@@ -101,8 +103,8 @@ def element_kind(element: str, declared: str) -> str:
         return "string"
     if element == "Warning":
         return "warning"
-    if element == "KComponent":
-        return "kcomponent"
+    if declared == "record_list":
+        return "record"
     return "enum" if declared == "enum" else "quantity"
 
 
@@ -110,15 +112,19 @@ def dimensioned(unit: object) -> bool:
     return unit not in DIMENSIONLESS
 
 
-def py_element(kind: str, unit: object) -> str:
+def py_element(kind: str, unit: object, element: str = "") -> str:
     """The Python-visible type of one element.
 
     A `uom` alias is a quantity only when its unit is dimensioned: `Ratio` is `uom`'s
     dimensionless type, and `azoth-core`'s own convention is that an unadorned ratio is a plain
-    `f64` in the Python API. The declared unit decides for both spellings.
+    `f64` in the Python API. The declared unit decides for both spellings. A record is the
+    kernel struct's own name with this module's `Py` prefix, which is what `records_gen`'s
+    generated pyclass is called.
     """
     if kind in ("number", "quantity"):
         return "PyQty" if dimensioned(unit) else "f64"
+    if kind == "record":
+        return f"Py{element}"
     return PY_TYPE.get(kind, kind)
 
 
@@ -149,17 +155,24 @@ def identity(kind: str, unit: object) -> bool:
 
 
 def field_expr(
-    field: str, kind: str, depth: int, optional: bool, unit: object, element: str
+    field: str, kind: str, depth: int, optional: bool, unit: object, element: str, source: str = "r"
 ) -> str:
-    """The right-hand side of one transport field's initialiser."""
-    base = f"r.{field}"
+    """The right-hand side of one transport field's initialiser, read from `{source}.{field}`.
+
+    `source` is `r` for a result's own transport struct and `row` for the `From` impl a
+    `record_list` output's element carries - the same conversion asked of a different binding.
+    """
+    base = f"{source}.{field}"
     if kind == "warning":
         return f"transport(&{base})"
-    if kind == "kcomponent":
-        return (
-            f"{base}.iter().map(|c| PyKComponent {{ "
-            f"fitting_id: c.fitting_id.clone(), n_ld: c.n_ld, k: c.k }}).collect()"
-        )
+    if kind == "record":
+        # **The field-by-field conversion lives in the generated `From` impl, not here.** A row's
+        # shape is the spec's `fields` block, and this file reads no spec - it is handed the
+        # declaration's `type` and nothing else, which is what keeps it a function of the Rust
+        # types. A path rather than a closure, because `clippy -D warnings` refuses the closure.
+        if optional:
+            return f"{base}.as_ref().map(|rows| rows.iter().map(Py{element}::from).collect())"
+        return f"{base}.iter().map(Py{element}::from).collect()"
     if optional:
         if identity(kind, unit):
             return base
@@ -179,13 +192,33 @@ def field_expr(
     )
 
 
+def record_elements(known: dict[str, dict]) -> list[str]:
+    """The kernel structs this file carries as a `record_list`, in name order.
+
+    Read the way `element_kind` decides: from the spec's `type` and the result field's own
+    `Vec<X>`. Nothing else is needed, because the element's pyclass is generated from the same
+    declaration elsewhere - this is only the import list.
+    """
+    found: set[str] = set()
+    for result in rust_index.result_types():
+        spec = known.get(result.calc_id)
+        if spec is None:
+            continue
+        carried = dict(zip(result.public_fields, result.rust_field_types, strict=True))
+        for output, declaration in (spec.get("outputs") or {}).items():
+            ty = carried.get(output, "")
+            if declaration.get("type") == "record_list" and ty.startswith("Vec<"):
+                found.add(ty[len("Vec<") : -1])
+    return sorted(found)
+
+
 def doc(text: str) -> str:
     """One `///` line from arbitrary prose, so a description's newlines cannot break the doc."""
     return " ".join(text.split())
 
 
-def field_type(kind: str, depth: int, optional: bool, unit: object) -> str:
-    inner = py_element(kind, unit)
+def field_type(kind: str, depth: int, optional: bool, unit: object, element: str = "") -> str:
+    inner = py_element(kind, unit, element)
     rendered = "Vec<" * depth + inner + ">" * depth
     return f"Option<{rendered}>" if optional else rendered
 
@@ -213,7 +246,7 @@ def struct_for(result: rust_index.ResultType, spec: dict) -> str:
         fields.append(
             (
                 public,
-                field_type(kind, depth, optional, unit),
+                field_type(kind, depth, optional, unit, element),
                 text,
                 field_expr(rust, kind, depth, optional, unit, element),
             )
@@ -292,6 +325,7 @@ def emit() -> str:
         if spec is None:
             sys.exit(f"gen_python_transport: {result.calc_id} has no spec")
         blocks.append(struct_for(result, spec))
+    elements = record_elements(known)
     header = (
         "//! GENERATED FILE - DO NOT EDIT BY HAND.\n"
         "//!\n"
@@ -308,11 +342,13 @@ def emit() -> str:
         "//! Regenerate with `python tools/gen_python_transport.py`; CI runs `--check` and fails\n"
         "//! on any difference.\n"
         "\n"
-        "use crate::results::{PyKComponent, PyQty, PyWarning, transport};\n"
-        "use pyo3::prelude::*;\n"
-        "\n"
     )
-    return header + "\n".join(blocks) + "\n"
+    imports = ["use crate::results::{PyQty, PyWarning, transport};"]
+    if elements:
+        names = ", ".join(f"Py{name}" for name in elements)
+        imports.append(f"use crate::record_outputs_gen::{{{names}}};")
+    imports.append("use pyo3::prelude::*;")
+    return header + "\n".join(imports) + "\n\n" + "\n".join(blocks) + "\n"
 
 
 def format_rust(text: str) -> str:

@@ -21,11 +21,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
+from azoth.core.record_outputs_gen import (
+    KComponent,
+)
 from azoth.core.result_base import (
     FlowRegime,
     HenryStatus,
     HydrateStructure,
-    KComponent,
     Phase,
     PlusModel,
     RootStructure,

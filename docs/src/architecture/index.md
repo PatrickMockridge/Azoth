@@ -38,6 +38,8 @@ the registry, the Rust sources and the specs
         │
         ├─► tools/gen_python_registry.py  ─► crates/azoth-python/src/registry_tables_gen.rs
         ├─► tools/gen_python_transport.py ─► crates/azoth-python/src/transport_gen.rs
+        ├─► tools/gen_python_record_outputs.py ─► crates/azoth-python/src/record_outputs_gen.rs
+        │                                     └► python/src/azoth/core/record_outputs_gen.py
         ├─► tools/gen_python_register.py  ─► crates/azoth-python/src/register_gen.rs
         ├─► tools/gen_python_wrappers.py  ─► crates/azoth-python/src/wrappers_gen.rs
         ├─► tools/gen_python_bridge.py    ─► python/src/azoth/_rust_bridge_gen.py

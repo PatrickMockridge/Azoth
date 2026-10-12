@@ -175,14 +175,6 @@ class BatchResult:
     warnings: list[list[Warning]]
 
 @final
-class KComponent:
-    """One fitting's contribution to the total resistance coefficient."""
-
-    fitting_id: str
-    n_ld: float
-    k: float
-
-@final
 class Session:
     """A live flowsheet: the middleware's session, which holds the document so an edit re-checks it and a run's values belong to the document that produced them. Every mutating call returns the whole envelope as the wire's JSON."""
 
@@ -249,6 +241,14 @@ class AssayCutDerivation(TypedDict):
     average_boiling_point: float | None
     watson_characterization_factor: float | None
     standard_component_name: str | None
+
+@final
+class KComponent:
+    """one row per fitting supplied, in the order they were listed"""
+
+    fitting_id: str
+    n_ld: float
+    k: float
 
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`

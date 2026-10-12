@@ -327,6 +327,7 @@ jobs:
           .venv/bin/python tools/gen_docs.py
           .venv/bin/python tools/gen_registry.py
           .venv/bin/python tools/gen_models.py
+          .venv/bin/python tools/gen_python_record_outputs.py
           .venv/bin/python tools/gen_stub.py
           .venv/bin/python tools/gen_model_inputs.py
           .venv/bin/python tools/gen_python_registry.py

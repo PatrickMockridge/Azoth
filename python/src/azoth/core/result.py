@@ -3,9 +3,10 @@
 The 194 result classes are in :mod:`azoth.core.result_gen`, emitted by
 ``tools/gen_python_result.py`` from three declarations - ``CalcResult::FIELDS`` for the fields and
 their order, the transport's Rust type beside the spec's declared unit for each annotation, and the
-spec's own ``description`` for each doc. The enums those classes annotate, the ``_HasWarnings``
-mixin they inherit, and the fitting record that is not a result are in
-:mod:`azoth.core.result_base`, where they are written by hand.
+spec's own ``description`` for each doc. The rows a ``record_list`` output returns are in
+:mod:`azoth.core.record_outputs_gen`, emitted the same way. The enums those classes annotate and
+the ``_HasWarnings`` mixin they inherit are in :mod:`azoth.core.result_base`, where they are
+written by hand.
 
 **The split is what breaks a cycle.** A generated module cannot import the file that re-exports it,
 so the base has to live somewhere the generated file can reach without going through this one - the
@@ -17,12 +18,12 @@ This module stays the import site for both, so ``from azoth.core.result import F
 
 from __future__ import annotations
 
+from azoth.core.record_outputs_gen import *  # noqa: F403
 from azoth.core.result_base import LAMINAR_MAX as LAMINAR_MAX
 from azoth.core.result_base import TURBULENT_MIN as TURBULENT_MIN
 from azoth.core.result_base import FlowRegime as FlowRegime
 from azoth.core.result_base import HenryStatus as HenryStatus
 from azoth.core.result_base import HydrateStructure as HydrateStructure
-from azoth.core.result_base import KComponent as KComponent
 from azoth.core.result_base import Phase as Phase
 from azoth.core.result_base import PlusModel as PlusModel
 from azoth.core.result_base import RootStructure as RootStructure
