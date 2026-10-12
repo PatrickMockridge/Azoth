@@ -1,0 +1,84 @@
+model = "characterization.delumping"
+
+# Every expected value is a row of `validation/neqsim/captures/pseudo_component_delumping_probe.tsv`,
+# whose probe reaches the two private statics by reflection. Densities cross as kg/m3 where the
+# class carries g/cm3, and a lump that states no boiling point omits the field - the two spellings
+# of an absent key that `sorting_key` treats alike.
+
+[[cases]]
+id = "three_lumps_resolution_4"
+tolerance = 1.0e-12
+source = "Three lumps of unequal moles and molar mass, delumped four ways. **The names say what the sort did**: the sub-fractions come out interleaved by boiling point, not grouped by their parent."
+[cases.inputs]
+resolution = 4
+lumps = [
+    { name = "C7_PC", moles = 1.0, molar_mass = 0.1, density = 750.0, boiling_point = 378.77 },
+    { name = "C8_PC", moles = 2.0, molar_mass = 0.18, density = 820.0, boiling_point = 502.058 },
+    { name = "C9_PC", moles = 0.5, molar_mass = 0.32, density = 880.0, boiling_point = 646.972 },
+]
+[cases.expected]
+fractions = [
+    { name = "C7_PC_d0", moles = 0.455054233923411, molar_mass = 0.0710805360419745, density = 750.0, boiling_point = 269.231746366187 },
+    { name = "C8_PC_d0", moles = 0.910108467846823, molar_mass = 0.127944964875554, density = 820.0, boiling_point = 356.865517641616 },
+    { name = "C7_PC_d1", moles = 0.276004344706594, molar_mass = 0.102671885393963, density = 750.0, boiling_point = 388.890300306714 },
+    { name = "C9_PC_d0", moles = 0.227527116961706, molar_mass = 0.227457715334318, density = 880.0, boiling_point = 459.871165641483 },
+    { name = "C7_PC_d2", moles = 0.167405097278443, molar_mass = 0.134263234745952, density = 750.0, boiling_point = 508.548854247242 },
+    { name = "C8_PC_d1", moles = 0.552008689413187, molar_mass = 0.184809393709134, density = 820.0, boiling_point = 515.472414371224 },
+    { name = "C7_PC_d3", moles = 0.101536324091552, molar_mass = 0.165854584097941, density = 750.0, boiling_point = 628.207408187769 },
+    { name = "C9_PC_d1", moles = 0.138002172353297, molar_mass = 0.328550033260682, density = 880.0, boiling_point = 664.258350371032 },
+    { name = "C8_PC_d2", moles = 0.334810194556887, molar_mass = 0.241673822542713, density = 820.0, boiling_point = 674.079311100831 },
+    { name = "C8_PC_d3", moles = 0.203072648183104, molar_mass = 0.298538251376293, density = 820.0, boiling_point = 832.686207830438 },
+    { name = "C9_PC_d2", moles = 0.0837025486392217, molar_mass = 0.429642351187046, density = 880.0, boiling_point = 868.64553510058 },
+    { name = "C9_PC_d3", moles = 0.0507681620457759, molar_mass = 0.53073466911341, density = 880.0, boiling_point = 1073.03271983013 },
+]
+
+[[cases]]
+id = "a_resolution_of_one_is_the_identity"
+tolerance = 1.0e-12
+source = "A resolution of one, which is the class's own identity: the lumps come back as themselves, moles and molar masses unchanged, and the boundaries fall back to the boiling-point midpoints."
+[cases.inputs]
+resolution = 1
+lumps = [
+    { name = "C7_PC", moles = 1.0, molar_mass = 0.1, density = 750.0, boiling_point = 378.77 },
+    { name = "C8_PC", moles = 2.0, molar_mass = 0.18, density = 820.0, boiling_point = 502.058 },
+]
+[cases.expected]
+fractions = [
+    { name = "C7_PC", moles = 1.0, molar_mass = 0.1, density = 750.0, boiling_point = 378.77 },
+    { name = "C8_PC", moles = 2.0, molar_mass = 0.18, density = 820.0, boiling_point = 502.058 },
+]
+
+[[cases]]
+id = "a_lump_with_no_boiling_point"
+tolerance = 1.0e-12
+source = "A lump whose normal boiling point was never set. Its sub-fractions carry the absence through, and because their key then falls back to the molar mass they sort **before** the heavier lump's rather than after it."
+[cases.inputs]
+resolution = 3
+lumps = [
+    { name = "C7_PC", moles = 1.0, molar_mass = 0.1, density = 750.0 },
+    { name = "C8_PC", moles = 1.0, molar_mass = 0.2, density = 840.0, boiling_point = 527.8 },
+]
+[cases.expected]
+fractions = [
+    { name = "C7_PC_d0", moles = 0.589797663656813, molar_mass = 0.0734644467406718, density = 750.0 },
+    { name = "C7_PC_d1", moles = 0.278600689196273, molar_mass = 0.122440744567786, density = 750.0 },
+    { name = "C7_PC_d2", moles = 0.131601647146914, molar_mass = 0.171417042394901, density = 750.0 },
+    { name = "C8_PC_d0", moles = 0.589797663656813, molar_mass = 0.146928893481344, density = 840.0, boiling_point = 387.745349897265 },
+    { name = "C8_PC_d1", moles = 0.278600689196273, molar_mass = 0.244881489135573, density = 840.0, boiling_point = 646.242249828776 },
+    { name = "C8_PC_d2", moles = 0.131601647146914, molar_mass = 0.342834084789802, density = 840.0, boiling_point = 904.739149760286 },
+]
+
+[[cases]]
+id = "one_lump_leaves_no_boundary"
+tolerance = 1.0e-12
+source = "A single lump, which leaves no adjacent pair and therefore no boundary at all."
+[cases.inputs]
+resolution = 2
+lumps = [
+    { name = "C7_PC", moles = 1.0, molar_mass = 0.15, density = 800.0, boiling_point = 459.785 },
+]
+[cases.expected]
+fractions = [
+    { name = "C7_PC_d0", moles = 0.817574476193644, molar_mass = 0.120653067861926, density = 800.0, boiling_point = 369.829805379304 },
+    { name = "C7_PC_d1", moles = 0.182425523806356, molar_mass = 0.28152382501116, density = 800.0, boiling_point = 862.936212551709 },
+]

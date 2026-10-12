@@ -44,6 +44,7 @@ from azoth.core.result import (
     CostaldMolarVolumeResult,
     CriticalPointResult,
     DarcyWeisbachResult,
+    DelumpingResult,
     DesmukhMatherPhaseResult,
     DewPressureResult,
     DewTemperatureResult,
@@ -180,6 +181,7 @@ from azoth.core.result import (
     StabilityTestResult,
     StirredTankReactorResult,
     StrippingColumnResult,
+    SubFraction,
     SwameeJainResult,
     TankResult,
     TbpClosureResult,
@@ -288,6 +290,7 @@ __all__ = [
     "crane_k_factors",
     "critical_point",
     "darcy_weisbach",
+    "delumping",
     "desmukh_mather_phase",
     "dew_pressure",
     "dew_temperature",
@@ -516,6 +519,19 @@ def characterize_to_reference(source: Sequence[Mapping[str, Any]], reference: Se
         group_moles=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_moles),
         group_molar_mass=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_molar_mass),
         group_density=tuple(from_si(q.magnitude_si, q.unit) for q in result.group_density),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def delumping(lumps: Sequence[Mapping[str, Any]], resolution: int) -> DelumpingResult:
+    """``characterization.delumping``, computed in Rust."""
+    spec = _models_gen.model("characterization.delumping")
+    result = _core.delumping(
+        input_records_to_si(spec, "lumps", lumps),
+        int(resolution),
+    )
+    return DelumpingResult(
+        fractions=tuple(SubFraction(name=c.name, moles=from_si(c.moles.magnitude_si, c.moles.unit), molar_mass=from_si(c.molar_mass.magnitude_si, c.molar_mass.unit), density=None if c.density is None else from_si(c.density.magnitude_si, c.density.unit), boiling_point=None if c.boiling_point is None else from_si(c.boiling_point.magnitude_si, c.boiling_point.unit)) for c in result.fractions),
         warnings=_warnings(result.warnings),
     )
 

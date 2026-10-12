@@ -13,7 +13,7 @@
 //! Regenerate with `python tools/gen_python_transport.py`; CI runs `--check` and fails
 //! on any difference.
 
-use crate::record_outputs_gen::PyKComponent;
+use crate::record_outputs_gen::{PyKComponent, PySubFraction};
 use crate::results::{PyQty, PyWarning, transport};
 use pyo3::prelude::*;
 
@@ -205,6 +205,42 @@ impl From<&azoth_characterization::results::CharacterizeToReferenceResult>
                     unit: "kg/m**3".to_string(),
                 })
                 .collect(),
+            warnings: transport(&r.warnings),
+        }
+    }
+}
+/// Result of `characterization.delumping`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "DelumpingResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyDelumpingResult {
+    /// The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order.
+    #[pyo3(get)]
+    pub fractions: Vec<PySubFraction>,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyDelumpingResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "DelumpingResult(fractions={:?}, {} warning(s))",
+            self.fractions,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::DelumpingResult> for PyDelumpingResult {
+    fn from(r: &azoth_characterization::results::DelumpingResult) -> Self {
+        Self {
+            fractions: r.fractions.iter().map(PySubFraction::from).collect(),
             warnings: transport(&r.warnings),
         }
     }

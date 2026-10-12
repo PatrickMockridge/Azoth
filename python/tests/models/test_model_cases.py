@@ -45,6 +45,28 @@ MODEL_CASES = [
 ]
 
 
+def _claim(row: dict[str, Any], template: Any) -> Any:
+    """One expected record, built as the element type the result carries it in.
+
+    **An omitted field is the row's own absence**, which is what the record kind exists for -
+    a lump with no boiling point is not a lump stating zero. So a field the case leaves out is
+    ``None`` here, and a field absent on one side and present on the other fails the
+    comparison rather than being filled in.
+    """
+    element = type(template)
+    values: dict[str, Any] = {}
+    for field in dataclasses.fields(element):
+        raw = row.get(field.name)
+        got = getattr(template, field.name)
+        if raw is None:
+            values[field.name] = None
+        elif isinstance(got, pint.Quantity):
+            values[field.name] = type(got)(raw, got.units)
+        else:
+            values[field.name] = raw
+    return element(**values)
+
+
 def _expected_result(result: Any, case: dict[str, Any]) -> Any:
     """A copy of ``result`` with every field the case records replaced by its value.
 
@@ -66,6 +88,11 @@ def _expected_result(result: Any, case: dict[str, Any]) -> Any:
             updates[name] = type(current)(declared, current.units)
         elif isinstance(current, tuple) and current and isinstance(current[0], pint.Quantity):
             updates[name] = tuple(type(current[0])(value, current[0].units) for value in declared)
+        elif isinstance(current, tuple) and current and dataclasses.is_dataclass(current[0]):
+            # A `record_list` output: the case records one mapping per row, each holding the
+            # fields that row states. Rebuilt through the element's constructor rather than
+            # left as a dict, so the comparison is against the type the kernel answered with.
+            updates[name] = tuple(_claim(row, current[index]) for index, row in enumerate(declared))
         elif isinstance(declared, (tuple, list)):
             updates[name] = type(current)(declared)
         else:

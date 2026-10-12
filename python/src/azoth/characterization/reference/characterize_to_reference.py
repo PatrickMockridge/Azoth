@@ -33,12 +33,12 @@ against a reference of many. ``reference_index`` is what says which cut that one
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping, Sequence
 from itertools import pairwise
 from typing import Any
 
 from azoth import _models_gen
+from azoth.characterization.reference.delumping import sorting_key
 from azoth.core.errors import InvalidInputError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import CharacterizeToReferenceResult
@@ -49,19 +49,6 @@ MODEL_ID = "characterization.characterize_to_reference"
 
 #: ``PseudoComponentCombiner.MASS_TOLERANCE``.
 MASS_TOLERANCE = 1.0e-12
-
-
-def sorting_key(boiling_point: float | None, molar_mass: float) -> float:
-    """``PseudoComponentContribution.sortingKey``: the boiling point, or the molar mass.
-
-    **The absence has two spellings and they are the same thing.** A row that states no boiling
-    point, and a row that states one which is not finite and positive, both fall back - the first
-    because the record has no field for it and the second because the class's own test is on the
-    value. A sentinel a caller wrote into a vector is now a field the caller leaves out.
-    """
-    if boiling_point is None or not (math.isfinite(boiling_point) and boiling_point > 0.0):
-        return molar_mass
-    return boiling_point
 
 
 def _rows(source: Sequence[Mapping[str, Any]]) -> list[tuple[float, float, float, float, float]]:

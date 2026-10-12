@@ -7,6 +7,7 @@
 //! Regenerate with `python tools/gen_python_record_outputs.py`; CI runs `--check` and
 //! fails on any difference.
 
+use crate::results::PyQty;
 use pyo3::prelude::*;
 
 /// one row per fitting supplied, in the order they were listed
@@ -45,6 +46,66 @@ impl From<&azoth_hydraulics::results::KComponent> for PyKComponent {
             fitting_id: row.fitting_id.clone(),
             n_ld: row.n_ld,
             k: row.k,
+        }
+    }
+}
+
+/// The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "SubFraction"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PySubFraction {
+    /// The sub-fraction's name: its parent's, and the grid position appended to it.
+    #[pyo3(get)]
+    pub name: String,
+    /// The sub-fraction's mole amount. Its sum over one lump's sub-fractions is the lump's, so no mole is gained or lost.
+    #[pyo3(get)]
+    pub moles: PyQty,
+    /// The sub-fraction's molar mass, off the grid and after the one rescale. Its sum with the moles restores the lump's mass exactly.
+    #[pyo3(get)]
+    pub molar_mass: PyQty,
+    /// The sub-fraction's normal liquid density, which is its parent's unchanged.
+    #[pyo3(get)]
+    pub density: Option<PyQty>,
+    /// The sub-fraction's normal boiling point, spread with its molar mass. Absent where its parent states none.
+    #[pyo3(get)]
+    pub boiling_point: Option<PyQty>,
+}
+
+#[pymethods]
+impl PySubFraction {
+    fn __repr__(&self) -> String {
+        format!(
+            "SubFraction(name={}, moles={:?}, molar_mass={:?}, density={:?}, boiling_point={:?})",
+            self.name, self.moles, self.molar_mass, self.density, self.boiling_point
+        )
+    }
+}
+
+impl From<&azoth_characterization::results::SubFraction> for PySubFraction {
+    fn from(row: &azoth_characterization::results::SubFraction) -> Self {
+        Self {
+            name: row.name.clone(),
+            moles: PyQty {
+                magnitude_si: row.moles,
+                unit: "mol".to_string(),
+            },
+            molar_mass: PyQty {
+                magnitude_si: row.molar_mass.value,
+                unit: "kg/mol".to_string(),
+            },
+            density: row.density.map(|v| PyQty {
+                magnitude_si: v.value,
+                unit: "kg/m**3".to_string(),
+            }),
+            boiling_point: row.boiling_point.map(|v| PyQty {
+                magnitude_si: v,
+                unit: "K".to_string(),
+            }),
         }
     }
 }

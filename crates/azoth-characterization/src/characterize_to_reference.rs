@@ -41,6 +41,7 @@
 use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
 use azoth_core::{AzothError, Result, apply_checks};
 
+use crate::delumping::sorting_key;
 use crate::model_gen;
 use crate::results::CharacterizeToReferenceResult;
 
@@ -102,19 +103,6 @@ struct Group {
     moles: f64,
     volume: f64,
     density_mass: f64,
-}
-
-/// `PseudoComponentContribution.sortingKey`: the boiling point, or the molar mass without one.
-///
-/// **The absence has two spellings and they are the same thing.** A row that states no boiling
-/// point, and a row that states one which is not finite and positive, both fall back - the first
-/// because the record has no field for it and the second because the class's own test is on the
-/// value. A sentinel a caller wrote into a vector is now a field the caller leaves out.
-fn sorting_key(boiling_point: Option<f64>, molar_mass: f64) -> f64 {
-    match boiling_point {
-        Some(tb) if tb.is_finite() && tb > 0.0 => tb,
-        _ => molar_mass,
-    }
 }
 
 /// The source's rows, in ascending sorting key, as `extractComponents` returns them.

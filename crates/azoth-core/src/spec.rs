@@ -145,6 +145,14 @@ pub struct TestCase {
     /// vector and not per entry - which is why a model taking per-row properties takes
     /// this and not a set of aligned slices.
     pub records: &'static [(&'static str, &'static [&'static [RecordField]])],
+    /// Record-valued expected outputs, by name: one entry per record, each a slice of named
+    /// fields.
+    ///
+    /// The mirror of [`Self::records`], and it exists for the same reason: a `record_list`
+    /// output's row is a shape a vector cannot state - an entry may omit a field - so a case
+    /// pinning one has nowhere else to put it. The field names are the spec's own
+    /// `[outputs.<name>.fields]` block.
+    pub expected_records: &'static [(&'static str, &'static [&'static [RecordField]])],
 }
 
 impl TestCase {
@@ -227,6 +235,15 @@ impl TestCase {
     #[must_use]
     pub fn expected_vector(&self, name: &str) -> Option<&'static [f64]> {
         self.expected_vectors
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| *v)
+    }
+
+    /// Fetch an expected record-valued output. `None` if the case does not assert it.
+    #[must_use]
+    pub fn expected_record(&self, name: &str) -> Option<&'static [&'static [RecordField]]> {
+        self.expected_records
             .iter()
             .find(|(k, _)| *k == name)
             .map(|(_, v)| *v)

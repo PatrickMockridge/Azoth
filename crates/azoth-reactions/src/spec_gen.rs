@@ -61,6 +61,7 @@ static EQUILIBRIUM_CONSTANT_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_pitzer_source_is_a_different_standard_state",
@@ -83,6 +84,7 @@ static EQUILIBRIUM_CONSTANT_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -101,6 +103,7 @@ static EQUILIBRIUM_CONSTANT_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -135,6 +138,7 @@ pub static EQUILIBRIUM_CONSTANT_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: EQUILIBRIUM_CONSTANT_TESTS,
 };

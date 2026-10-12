@@ -106,6 +106,16 @@ pub fn record_input(case: &TestCase, name: &str) -> &'static [&'static [RecordFi
         .unwrap_or_else(|| panic!("test `{}` does not supply record list `{name}`", case.id))
 }
 
+/// A record-list *output* a test case asserts: one slice of fields per record.
+///
+/// The mirror of [`record_input`], and the reason a case can pin a `record_list` output at all -
+/// a row's shape is not a vector's, so an entry may omit a field.
+#[track_caller]
+pub fn expected_record(case: &TestCase, name: &str) -> &'static [&'static [RecordField]] {
+    case.expected_record(name)
+        .unwrap_or_else(|| panic!("test `{}` does not assert record list `{name}`", case.id))
+}
+
 /// One field of one record, as a number.
 ///
 /// `None` when the record omits the field, which is not an omission to report: a field a

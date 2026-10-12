@@ -85,6 +85,32 @@ pub fn characterize_to_reference(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// A lumped pseudo-component table split into a finer grid.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (lumps, resolution))]
+#[pyo3(text_signature = "(lumps, resolution)")]
+pub fn delumping(
+    py: Python<'_>,
+    lumps: Vec<crate::records_gen::Lump>,
+    resolution: i64,
+) -> PyResult<crate::transport_gen::PyDelumpingResult> {
+    let lumps_records: Vec<azoth_characterization::delumping::Lump> = lumps
+        .into_iter()
+        .map(|row| azoth_characterization::delumping::Lump {
+            name: row.name,
+            moles: row.moles,
+            molar_mass: kilograms_per_mole(row.molar_mass),
+            density: row.density.map(kilograms_per_cubic_meter),
+            boiling_point: row.boiling_point,
+        })
+        .collect();
+    azoth_characterization::delumping::delumping(&lumps_records, resolution)
+        .map(|r| crate::transport_gen::PyDelumpingResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// A cut table grouped into equal-mass lumps.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

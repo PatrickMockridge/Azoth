@@ -230,6 +230,15 @@ class ReferenceRow(TypedDict):
     boiling_point: float | None
     density: float | None
 
+class Lump(TypedDict):
+    """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
+
+    name: str
+    moles: float
+    molar_mass: float
+    density: float | None
+    boiling_point: float | None
+
 class AssayCutDerivation(TypedDict):
     """One row of a `record_list` input, as the extension takes it: the named fields the spec declares, each as the SI magnitude it crosses as."""
 
@@ -249,6 +258,16 @@ class KComponent:
     fitting_id: str
     n_ld: float
     k: float
+
+@final
+class SubFraction:
+    """The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order."""
+
+    name: str
+    moles: Qty
+    molar_mass: Qty
+    density: Qty | None
+    boiling_point: Qty | None
 
 # --- results --------------------------------------------------------------
 # Generated from the result dataclasses, so the stub and `azoth.core.result`
@@ -275,6 +294,11 @@ class CharacterizeToReferenceResult:
     group_moles: list[Qty]
     group_molar_mass: list[Qty]
     group_density: list[Qty]
+    warnings: list[Warning]
+
+@final
+class DelumpingResult:
+    fractions: list[SubFraction]
     warnings: list[Warning]
 
 @final
@@ -2287,6 +2311,7 @@ def characterize_to_reference(
     reference: list[ReferenceRow],
     inherit_reference_properties: bool | None = None,
 ) -> CharacterizeToReferenceResult: ...
+def delumping(lumps: list[Lump], resolution: float) -> DelumpingResult: ...
 def lumping(
     molar_mass: float,
     mole_fraction: float,

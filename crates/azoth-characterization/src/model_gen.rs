@@ -4,6 +4,7 @@
 //!   - specs/models/characterization/assay_mass_fractions.toml
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
+//!   - specs/models/characterization/delumping.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/oil_assay_derivation.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
@@ -113,6 +114,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
                 ],
             ],
         )],
+        expected_records: &[],
     },
     TestCase {
         id: "mass_basis",
@@ -168,6 +170,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
                 ],
             ],
         )],
+        expected_records: &[],
     },
     TestCase {
         id: "inside_the_closure_tolerance",
@@ -213,6 +216,7 @@ static ASSAY_MASS_FRACTIONS_CASES: &[TestCase] = &[
                 ],
             ],
         )],
+        expected_records: &[],
     },
 ];
 
@@ -287,6 +291,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "pedersen")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "row1_pedersen_m04",
@@ -347,6 +352,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "row2_whitson_m04",
@@ -407,6 +413,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "whitson_gamma")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "row5_whitson_m02",
@@ -467,6 +474,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "whitson_gamma")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "row6_pedersen_m065",
@@ -527,6 +535,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "row7_pedersen_m065",
@@ -587,6 +596,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "row8_whitson_m065",
@@ -647,6 +657,7 @@ static CHARACTERISE_PLUS_FRACTION_CASES: &[TestCase] = &[
         ],
         expected_strings: &[("selected_model", "pedersen_heavy_oil")],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -817,6 +828,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
                 ],
             ),
         ],
+        expected_records: &[],
     },
     TestCase {
         id: "a_source_below_the_first_cut",
@@ -906,6 +918,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
                 ],
             ),
         ],
+        expected_records: &[],
     },
     TestCase {
         id: "one_reference_cut",
@@ -983,6 +996,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
                 ]],
             ),
         ],
+        expected_records: &[],
     },
     TestCase {
         id: "the_reference_properties_are_inherited",
@@ -1149,6 +1163,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
                 ],
             ),
         ],
+        expected_records: &[],
     },
     TestCase {
         id: "one_group_inherits_the_first_reference_row",
@@ -1247,6 +1262,7 @@ static CHARACTERIZE_TO_REFERENCE_CASES: &[TestCase] = &[
                 ],
             ),
         ],
+        expected_records: &[],
     },
 ];
 
@@ -1257,6 +1273,770 @@ pub static CHARACTERIZE_TO_REFERENCE_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: CHARACTERIZE_TO_REFERENCE_CHECKS,
     cases: CHARACTERIZE_TO_REFERENCE_CASES,
+};
+
+static DELUMPING_CHECKS: &[SpecCheck] = &[];
+
+static DELUMPING_CASES: &[TestCase] = &[
+    TestCase {
+        id: "three_lumps_resolution_4",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("resolution", 4.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "lumps",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(378.77),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.18),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(502.058),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.5),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.32),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(880.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(646.972),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "fractions",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d0"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.455054233923411),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.0710805360419745),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(269.231746366187),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d0"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.910108467846823),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.127944964875554),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(356.865517641616),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d1"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.276004344706594),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.102671885393963),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(388.890300306714),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC_d0"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.227527116961706),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.227457715334318),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(880.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(459.871165641483),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d2"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.167405097278443),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.134263234745952),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(508.548854247242),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d1"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.552008689413187),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.184809393709134),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(515.472414371224),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d3"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.101536324091552),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.165854584097941),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(628.207408187769),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC_d1"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.138002172353297),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.328550033260682),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(880.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(664.258350371032),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d2"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.334810194556887),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.241673822542713),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(674.079311100831),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d3"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.203072648183104),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.298538251376293),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(832.686207830438),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC_d2"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.0837025486392217),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.429642351187046),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(880.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(868.64553510058),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C9_PC_d3"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.0507681620457759),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.53073466911341),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(880.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(1073.03271983013),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_resolution_of_one_is_the_identity",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("resolution", 1.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "lumps",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(378.77),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.18),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(502.058),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "fractions",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(378.77),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(2.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.18),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(820.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(502.058),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "a_lump_with_no_boiling_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("resolution", 3.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "lumps",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.1),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(1.0),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.2),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(527.8),
+                    },
+                ],
+            ],
+        )],
+        expected_records: &[(
+            "fractions",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d0"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.589797663656813),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.0734644467406718),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d1"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.278600689196273),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.122440744567786),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d2"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.131601647146914),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.171417042394901),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(750.0),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d0"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.589797663656813),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.146928893481344),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(387.745349897265),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d1"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.278600689196273),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.244881489135573),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(646.242249828776),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C8_PC_d2"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.131601647146914),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.342834084789802),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(840.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(904.739149760286),
+                    },
+                ],
+            ],
+        )],
+    },
+    TestCase {
+        id: "one_lump_leaves_no_boundary",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("resolution", 2.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[(
+            "lumps",
+            &[&[
+                RecordField {
+                    name: "name",
+                    value: FieldValue::Name("C7_PC"),
+                },
+                RecordField {
+                    name: "moles",
+                    value: FieldValue::Number(1.0),
+                },
+                RecordField {
+                    name: "molar_mass",
+                    value: FieldValue::Number(0.15),
+                },
+                RecordField {
+                    name: "density",
+                    value: FieldValue::Number(800.0),
+                },
+                RecordField {
+                    name: "boiling_point",
+                    value: FieldValue::Number(459.785),
+                },
+            ]],
+        )],
+        expected_records: &[(
+            "fractions",
+            &[
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d0"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.817574476193644),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.120653067861926),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(369.829805379304),
+                    },
+                ],
+                &[
+                    RecordField {
+                        name: "name",
+                        value: FieldValue::Name("C7_PC_d1"),
+                    },
+                    RecordField {
+                        name: "moles",
+                        value: FieldValue::Number(0.182425523806356),
+                    },
+                    RecordField {
+                        name: "molar_mass",
+                        value: FieldValue::Number(0.28152382501116),
+                    },
+                    RecordField {
+                        name: "density",
+                        value: FieldValue::Number(800.0),
+                    },
+                    RecordField {
+                        name: "boiling_point",
+                        value: FieldValue::Number(862.936212551709),
+                    },
+                ],
+            ],
+        )],
+    },
+];
+
+/// Registry entry for `characterization.delumping`.
+pub static DELUMPING_SPEC: ModelSpec = ModelSpec {
+    id: "characterization.delumping",
+    kind: "direct",
+    algorithm: None,
+    checks: DELUMPING_CHECKS,
+    cases: DELUMPING_CASES,
 };
 
 static LUMPING_CHECKS: &[SpecCheck] = &[
@@ -1504,6 +2284,7 @@ static LUMPING_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_heavy_range_lumps_too",
@@ -1952,6 +2733,7 @@ static LUMPING_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_gamma_split_lumps_the_same_way",
@@ -2260,6 +3042,7 @@ static LUMPING_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_swapped_model_lumps_on_its_own_table",
@@ -2708,6 +3491,7 @@ static LUMPING_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2798,6 +3582,7 @@ static OIL_ASSAY_DERIVATION_CASES: &[TestCase] = &[
                 ],
             ],
         )],
+        expected_records: &[],
     },
     TestCase {
         id: "a_volume_basis_slate",
@@ -2860,6 +3645,7 @@ static OIL_ASSAY_DERIVATION_CASES: &[TestCase] = &[
                 ],
             ],
         )],
+        expected_records: &[],
     },
     TestCase {
         id: "a_watson_factor_cut",
@@ -2922,6 +3708,7 @@ static OIL_ASSAY_DERIVATION_CASES: &[TestCase] = &[
                 ],
             ],
         )],
+        expected_records: &[],
     },
 ];
 
@@ -3183,6 +3970,7 @@ static PEDERSEN_PLUS_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_heavy_range_is_the_same_solve",
@@ -3605,6 +4393,7 @@ static PEDERSEN_PLUS_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_heavier_feed_moves_both_lines",
@@ -4027,6 +4816,7 @@ static PEDERSEN_PLUS_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4082,6 +4872,7 @@ static SET_HEAVY_TBP_TO_PLUS_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[("plus_name", "C20_PC")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "one_and_two_digit_names",
@@ -4111,6 +4902,7 @@ static SET_HEAVY_TBP_TO_PLUS_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[("plus_name", "C11_PC")],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_same_rows_in_another_order",
@@ -4140,6 +4932,7 @@ static SET_HEAVY_TBP_TO_PLUS_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[("plus_name", "C20_PC")],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4203,6 +4996,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_mid",
@@ -4221,6 +5015,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_heavy",
@@ -4239,6 +5034,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "riazi_daubert_1987_light",
@@ -4257,6 +5053,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "riazi_daubert_1987_heavy",
@@ -4275,6 +5072,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "soreide_light",
@@ -4293,6 +5091,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "soreide_mid",
@@ -4311,6 +5110,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "soreide_heavy",
@@ -4329,6 +5129,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "tbp_model_light",
@@ -4347,6 +5148,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "tbp_model_mid",
@@ -4365,6 +5167,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "tbp_model_heavy",
@@ -4383,6 +5186,7 @@ static TBP_CLOSURE_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4442,6 +5246,7 @@ static TBP_CUT_BOUNDARIES_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "one_cut",
@@ -4470,6 +5275,7 @@ static TBP_CUT_BOUNDARIES_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "an_uneven_curve",
@@ -4498,6 +5304,7 @@ static TBP_CUT_BOUNDARIES_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4561,6 +5368,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_mid",
@@ -4579,6 +5387,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "riazi_daubert_1980_heavy",
@@ -4597,6 +5406,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_default_closure_is_the_supported_one",
@@ -4615,6 +5425,7 @@ static TBP_DENSITY_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4699,6 +5510,7 @@ static TBP_GROUPING_CASES: &[TestCase] = &[
         )],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "two_inside_one_bin",
@@ -4726,6 +5538,7 @@ static TBP_GROUPING_CASES: &[TestCase] = &[
         )],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_fluid_below_the_lowest_threshold",
@@ -4753,6 +5566,7 @@ static TBP_GROUPING_CASES: &[TestCase] = &[
         )],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -5150,6 +5964,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_shape_moves_both_parameters",
@@ -5428,6 +6243,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "eta_is_the_first_windows_lower_edge",
@@ -5706,6 +6522,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_soreide_gravity_is_a_second_correlation",
@@ -5983,6 +6800,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_shape_is_estimated_from_the_watson_factor",
@@ -6260,6 +7078,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_lighter_plus_fraction_than_the_other_model_takes",
@@ -6537,6 +7356,7 @@ static WHITSON_GAMMA_SPLIT_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -6553,6 +7373,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &ASSAY_MASS_FRACTIONS_SPEC,
     &CHARACTERISE_PLUS_FRACTION_SPEC,
     &CHARACTERIZE_TO_REFERENCE_SPEC,
+    &DELUMPING_SPEC,
     &LUMPING_SPEC,
     &OIL_ASSAY_DERIVATION_SPEC,
     &PEDERSEN_PLUS_SPLIT_SPEC,

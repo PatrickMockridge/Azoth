@@ -4,6 +4,7 @@
 //!   - specs/models/characterization/assay_mass_fractions.toml
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
+//!   - specs/models/characterization/delumping.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/oil_assay_derivation.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml
@@ -246,6 +247,7 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
         "number_of_lumps",
         "dimensionless",
     ),
+    ("characterization.delumping", "resolution", "dimensionless"),
     ("characterization.lumping", "molar_mass", "molar_mass"),
     ("characterization.lumping", "mole_fraction", "dimensionless"),
     ("characterization.lumping", "cut_z", "dimensionless"),

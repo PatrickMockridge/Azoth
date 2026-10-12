@@ -361,12 +361,14 @@ def emit_test_case(
     expected_numbers = collect_numbers(expected)
     expected_vectors = collect_vectors(expected)
     expected_strings = collect_strings(expected)
+    expected_records = collect_records(expected)
     # A case's expectation this generator cannot carry is refused rather than dropped:
     # an assertion nothing reads is worse than no assertion, because it reads as one.
     carried = (
         {k for k, _ in expected_numbers}
         | {k for k, _ in expected_vectors}
         | {k for k, _ in expected_strings}
+        | {k for k, _ in expected_records}
     )
     if unreachable := sorted(set(expected) - carried - SELF_ASSERTED_EXPECTATIONS):
         raise ValueError(
@@ -474,6 +476,7 @@ def emit_test_case(
         f"{indent}    expected_vectors: {number_slice_pairs(expected_vectors)},\n"
         f"{indent}    expected_strings: {string_pairs(expected_strings)},\n"
         f"{indent}    records: {record_pairs(records)},\n"
+        f"{indent}    expected_records: {record_pairs(expected_records)},\n"
         f"{indent}}},\n"
     )
 

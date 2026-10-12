@@ -425,11 +425,34 @@ def assert_results_equal(
             assert _warnings_equal(a, b), (
                 f"{context}.{field}: warnings differ\n  python: {a}\n  rust:   {b}"
             )
-        elif isinstance(a, tuple) and a and hasattr(a[0], "k"):
-            for index, (ca, cb) in enumerate(zip(a, b, strict=True)):
-                assert ca.fitting_id == cb.fitting_id, f"{context}.{field}[{index}] id"
-                assert_close(ca.n_ld, cb.n_ld, tolerance, f"{context}.{field}[{index}].n_ld")
-                assert_close(ca.k, cb.k, tolerance, f"{context}.{field}[{index}].k")
+        elif isinstance(a, tuple) and a and dataclasses.is_dataclass(a[0]):
+            # A `record_list` **output**: one row per record, compared field by field. Each
+            # field is one of the kinds the branches above handle, so a row is walked with
+            # the same rule rather than with a second one - a quantity in base SI, a number
+            # to the tolerance, a name or a flag exactly, and an omitted field on both sides.
+            assert len(a) == len(b), f"{context}.{field}: {len(a)} rows against {len(b)}"
+            for index, (ra, rb) in enumerate(zip(a, b, strict=True)):
+                assert type(ra) is type(rb), (
+                    f"{context}.{field}[{index}]: {type(ra).__name__} against {type(rb).__name__}"
+                )
+                for row_field in dataclasses.fields(ra):
+                    name = row_field.name
+                    va, vb = getattr(ra, name), getattr(rb, name)
+                    at = f"{context}.{field}[{index}].{name}"
+                    if va is None or vb is None:
+                        assert va is None and vb is None, f"{at}: one side is absent"
+                    elif isinstance(va, pint.Quantity):
+                        assert isinstance(vb, pint.Quantity), f"{at}: one side is a bare number"
+                        assert_close(
+                            float(va.to_base_units().magnitude),
+                            float(vb.to_base_units().magnitude),
+                            tolerance,
+                            at,
+                        )
+                    elif isinstance(va, float):
+                        assert_close(va, float(vb), tolerance, at)
+                    else:
+                        assert va == vb, f"{at}: {va!r} against {vb!r}"
         elif isinstance(a, (tuple, list)) and a and isinstance(a[0], pint.Quantity):
             # A *vector* output whose entries carry units - a list of saturation
             # pressures, a surface tension per component. Compared entry by entry in base

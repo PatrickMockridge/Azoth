@@ -278,6 +278,7 @@ static ABSORPTION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "lean_oil_absorber_mechanical",
@@ -345,6 +346,7 @@ static ABSORPTION_COLUMN_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -433,6 +435,7 @@ static COMPONENT_SPLITTER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "an_even_routing_is_the_feed_twice",
@@ -466,6 +469,7 @@ static COMPONENT_SPLITTER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "all_of_one_component",
@@ -502,6 +506,7 @@ static COMPONENT_SPLITTER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -576,6 +581,7 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_efficiency_divides_the_step",
@@ -605,6 +611,7 @@ static COMPRESSOR_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -679,6 +686,7 @@ static COOLER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "outlet_temperature_380_with_a_2_bara_drop",
@@ -709,6 +717,7 @@ static COOLER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "duty_5000_watts",
@@ -738,6 +747,7 @@ static COOLER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "duty_minus_5000_watts",
@@ -767,6 +777,7 @@ static COOLER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "no_specification_is_isothermal",
@@ -791,6 +802,7 @@ static COOLER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "no_specification_with_a_drop_is_isothermal_and_not_isenthalpic",
@@ -820,6 +832,7 @@ static COOLER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -1056,6 +1069,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_looser_gate",
@@ -1144,6 +1158,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "spec_top_purity",
@@ -1236,6 +1251,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "spec_top_flow_rate",
@@ -1325,6 +1341,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "spec_top_duty",
@@ -1413,6 +1430,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "spec_bottom_purity",
@@ -1500,6 +1518,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_mesh_solve",
@@ -1583,6 +1602,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "reactive_section_is_the_delegations_own",
@@ -1671,6 +1691,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_tray_withdraws_a_quarter_of_its_vapour",
@@ -1768,6 +1789,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "murphree_0_6",
@@ -1857,6 +1879,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "side_draw_flow_one_tray_gas_binary",
@@ -1905,6 +1928,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "pumparound_return_recycles_until_its_flow_settles",
@@ -1997,6 +2021,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_coupled",
@@ -2063,6 +2088,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_mechanical_defaults",
@@ -2104,6 +2130,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_mechanical_override",
@@ -2141,6 +2168,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_mechanical_valve",
@@ -2176,6 +2204,7 @@ static DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2316,6 +2345,7 @@ static EJECTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.10000000000000002])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_worse_motive_nozzle_entrains_the_same_and_discharges_hotter",
@@ -2354,6 +2384,7 @@ static EJECTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.10000000000000002])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_higher_discharge_pressure_recovers_more",
@@ -2392,6 +2423,7 @@ static EJECTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.10000000000000002])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_heavier_suction_discharges_cooler",
@@ -2430,6 +2462,7 @@ static EJECTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.5, 0.5])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2504,6 +2537,7 @@ static EXPANDER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_efficiency_multiplies_the_step_and_not_divides_it",
@@ -2533,6 +2567,7 @@ static EXPANDER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2607,6 +2642,7 @@ static FILTER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "no_pressure_drop",
@@ -2636,6 +2672,7 @@ static FILTER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2721,6 +2758,7 @@ static FLARE_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "sales_gas",
@@ -2749,6 +2787,7 @@ static FLARE_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.85, 0.07, 0.03, 0.02, 0.03])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "sour_gas",
@@ -2774,6 +2813,7 @@ static FLARE_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.8, 0.15, 0.05])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "heavy",
@@ -2803,6 +2843,7 @@ static FLARE_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.6, 0.3, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2914,6 +2955,7 @@ static GAS_SCRUBBER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_pressure_drop_is_not_a_throttling",
@@ -2950,6 +2992,7 @@ static GAS_SCRUBBER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_capacity_utilization_of_a_one_metre_vessel",
@@ -2976,6 +3019,7 @@ static GAS_SCRUBBER_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_same_vessel_at_twice_the_diameter",
@@ -3002,6 +3046,7 @@ static GAS_SCRUBBER_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_vessel_that_carries_five_per_cent_of_its_vapour",
@@ -3032,6 +3077,7 @@ static GAS_SCRUBBER_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -3331,6 +3377,7 @@ static GIBBS_REACTOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "reverse_water_gas_shift_at_1200_k",
@@ -3540,6 +3587,7 @@ static GIBBS_REACTOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -3638,6 +3686,7 @@ static HEAT_EXCHANGER_CASES: &[TestCase] = &[
         expected_vectors: &[("hot_out_z", &[0.8, 0.2]), ("cold_out_z", &[0.5, 0.5])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_rating_answers_the_flow",
@@ -3676,6 +3725,7 @@ static HEAT_EXCHANGER_CASES: &[TestCase] = &[
         expected_vectors: &[("hot_out_z", &[0.8, 0.2]), ("cold_out_z", &[0.5, 0.5])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_arrangement_moves_less_heat",
@@ -3714,6 +3764,7 @@ static HEAT_EXCHANGER_CASES: &[TestCase] = &[
         expected_vectors: &[("hot_out_z", &[0.8, 0.2]), ("cold_out_z", &[0.5, 0.5])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_pinned_hot_outlet",
@@ -3752,6 +3803,7 @@ static HEAT_EXCHANGER_CASES: &[TestCase] = &[
         expected_vectors: &[("hot_out_z", &[0.8, 0.2]), ("cold_out_z", &[0.5, 0.5])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_pinned_cold_outlet",
@@ -3790,6 +3842,7 @@ static HEAT_EXCHANGER_CASES: &[TestCase] = &[
         expected_vectors: &[("hot_out_z", &[0.8, 0.2]), ("cold_out_z", &[0.5, 0.5])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -3864,6 +3917,7 @@ static HEATER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "outlet_temperature_380_with_a_2_bara_drop",
@@ -3894,6 +3948,7 @@ static HEATER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "duty_5000_watts",
@@ -3923,6 +3978,7 @@ static HEATER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "duty_minus_5000_watts",
@@ -3952,6 +4008,7 @@ static HEATER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "no_specification_is_isothermal",
@@ -3976,6 +4033,7 @@ static HEATER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "no_specification_with_a_drop_is_isothermal_and_not_isenthalpic",
@@ -4005,6 +4063,7 @@ static HEATER_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4078,6 +4137,7 @@ static MANIFOLD_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "two_feeds_three_outlets",
@@ -4112,6 +4172,7 @@ static MANIFOLD_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_zero_flow_feed_is_dropped",
@@ -4140,6 +4201,7 @@ static MANIFOLD_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4195,6 +4257,7 @@ static MIXER_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.4, 0.6])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_stated_outlet_pressure_overrides_the_lowest_feed",
@@ -4222,6 +4285,7 @@ static MIXER_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.4, 0.6])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4394,6 +4458,7 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "packed_binary_2m3_is_one_stage_more",
@@ -4492,6 +4557,7 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "packed_binary_2m_reactive_is_the_delegations_own",
@@ -4590,6 +4656,7 @@ static PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4708,6 +4775,7 @@ static PIPE_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.7, 0.3])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "liquid_n_butane_1000m",
@@ -4738,6 +4806,7 @@ static PIPE_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[1.0])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "water_1000m",
@@ -4768,6 +4837,7 @@ static PIPE_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[1.0])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -4945,6 +5015,7 @@ static PLUG_FLOW_REACTOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "euler_ten_steps",
@@ -4997,6 +5068,7 @@ static PLUG_FLOW_REACTOR_CASES: &[TestCase] = &[
         )],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "hundred_steps",
@@ -5045,6 +5117,7 @@ static PLUG_FLOW_REACTOR_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "isothermal",
@@ -5092,6 +5165,7 @@ static PLUG_FLOW_REACTOR_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "catalyst_bed",
@@ -5144,6 +5218,7 @@ static PLUG_FLOW_REACTOR_CASES: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -5218,6 +5293,7 @@ static PUMP_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[1.0])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_work_divides_by_the_efficiency",
@@ -5247,6 +5323,7 @@ static PUMP_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[1.0])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -5466,6 +5543,7 @@ static RATE_BASED_PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "heat_transfer_disabled",
@@ -5510,6 +5588,7 @@ static RATE_BASED_PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "zero_packed_height",
@@ -5549,6 +5628,7 @@ static RATE_BASED_PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "billet_schultes",
@@ -5618,6 +5698,7 @@ static RATE_BASED_PACKED_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -5711,6 +5792,7 @@ static SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_pressure_drop_holds_the_temperature",
@@ -5747,6 +5829,7 @@ static SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_heat_input_moves_the_flash",
@@ -5784,6 +5867,7 @@ static SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "entrainment_carries_vapour_into_the_liquid",
@@ -5820,6 +5904,7 @@ static SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -5956,6 +6041,7 @@ static SHORTCUT_DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "pressures_stated_move_the_product_phase",
@@ -6019,6 +6105,7 @@ static SHORTCUT_DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "wilson_fallback_superheated_gas",
@@ -6080,6 +6167,7 @@ static SHORTCUT_DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "binary_methane_nbutane",
@@ -6125,6 +6213,7 @@ static SHORTCUT_DISTILLATION_COLUMN_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -6188,6 +6277,7 @@ static SPLITTER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_factors_are_normalised",
@@ -6211,6 +6301,7 @@ static SPLITTER_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -6292,6 +6383,7 @@ static STIRRED_TANK_REACTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.025, 0.05, 0.045, 0.08, 0.8])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "isothermal_800_k",
@@ -6329,6 +6421,7 @@ static STIRRED_TANK_REACTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.025, 0.05, 0.045, 0.08, 0.8])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "isothermal_800_k_3bara",
@@ -6367,6 +6460,7 @@ static STIRRED_TANK_REACTOR_CASES: &[TestCase] = &[
         expected_vectors: &[("product_z", &[0.025, 0.05, 0.045, 0.08, 0.8])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -6598,6 +6692,7 @@ static STRIPPING_COLUMN_CASES: &[TestCase] = &[TestCase {
     ],
     expected_strings: &[],
     records: &[],
+    expected_records: &[],
 }];
 
 /// Registry entry for `process.stripping_column`.
@@ -6659,6 +6754,7 @@ static TANK_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_water_bearing_feed_stays_two_phase",
@@ -6699,6 +6795,7 @@ static TANK_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -6901,6 +6998,7 @@ static THREE_PHASE_SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_pressure_drop_is_not_a_throttling",
@@ -6968,6 +7066,7 @@ static THREE_PHASE_SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_heat_input_moves_the_multiphase_flash",
@@ -7020,6 +7119,7 @@ static THREE_PHASE_SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "an_entrainment_moves_a_share_of_the_vapour_into_the_oil",
@@ -7087,6 +7187,7 @@ static THREE_PHASE_SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "an_entrainment_out_of_the_oil_re_runs_the_vapour",
@@ -7154,6 +7255,7 @@ static THREE_PHASE_SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_dry_feed_has_no_aqueous_outlet",
@@ -7198,6 +7300,7 @@ static THREE_PHASE_SEPARATOR_CASES: &[TestCase] = &[
         ],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -7271,6 +7374,7 @@ static THROTTLING_VALVE_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_same_drop_stated_as_a_delta",
@@ -7299,6 +7403,7 @@ static THROTTLING_VALVE_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_pressure_above_the_inlet_is_honoured",
@@ -7327,6 +7432,7 @@ static THROTTLING_VALVE_CASES: &[TestCase] = &[
         expected_vectors: &[("outlet_z", &[0.9, 0.1])],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 

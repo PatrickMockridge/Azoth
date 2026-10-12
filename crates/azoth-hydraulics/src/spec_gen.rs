@@ -133,6 +133,7 @@ static CHOKED_FLOW_AREA_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "agrees_with_the_stagnation_temperature_form",
@@ -156,6 +157,7 @@ static CHOKED_FLOW_AREA_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -174,6 +176,7 @@ static CHOKED_FLOW_AREA_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -192,6 +195,7 @@ static CHOKED_FLOW_AREA_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -227,6 +231,7 @@ pub static CHOKED_FLOW_AREA_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: CHOKED_FLOW_AREA_TESTS,
 };
@@ -298,6 +303,7 @@ static CONTROL_VALVE_CV_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_coefficient_of_one_passes_one_gallon_per_minute",
@@ -316,6 +322,7 @@ static CONTROL_VALVE_CV_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "denser_liquid_passes_less",
@@ -334,6 +341,7 @@ static CONTROL_VALVE_CV_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -352,6 +360,7 @@ static CONTROL_VALVE_CV_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -370,6 +379,7 @@ static CONTROL_VALVE_CV_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -400,6 +410,7 @@ pub static CONTROL_VALVE_CV_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: CONTROL_VALVE_CV_TESTS,
 };
@@ -456,6 +467,7 @@ static CRANE_K_FACTORS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "scaling_is_linear_in_f_t",
@@ -474,6 +486,7 @@ static CRANE_K_FACTORS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -504,6 +517,7 @@ pub static CRANE_K_FACTORS_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: CRANE_K_FACTORS_TESTS,
 };
@@ -622,6 +636,7 @@ static DARCY_WEISBACH_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "perry_6_42",
@@ -640,6 +655,7 @@ static DARCY_WEISBACH_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "reynolds_reported_when_mu_supplied",
@@ -665,6 +681,7 @@ static DARCY_WEISBACH_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "public_water_steel_example",
@@ -689,6 +706,7 @@ static DARCY_WEISBACH_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -707,6 +725,7 @@ static DARCY_WEISBACH_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -743,6 +762,7 @@ pub static DARCY_WEISBACH_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: DARCY_WEISBACH_TESTS,
 };
@@ -829,6 +849,7 @@ static FRICTION_FACTOR_COLEBROOK_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "fully_rough_limit",
@@ -847,6 +868,7 @@ static FRICTION_FACTOR_COLEBROOK_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -865,6 +887,7 @@ static FRICTION_FACTOR_COLEBROOK_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -901,6 +924,7 @@ pub static FRICTION_FACTOR_COLEBROOK_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: FRICTION_FACTOR_COLEBROOK_TESTS,
 };
@@ -987,6 +1011,7 @@ static FRICTION_FACTOR_HAALAND_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "smooth_pipe_limit",
@@ -1005,6 +1030,7 @@ static FRICTION_FACTOR_HAALAND_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1023,6 +1049,7 @@ static FRICTION_FACTOR_HAALAND_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -1053,6 +1080,7 @@ pub static FRICTION_FACTOR_HAALAND_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: FRICTION_FACTOR_HAALAND_TESTS,
 };
@@ -1169,6 +1197,7 @@ static FRICTION_FACTOR_SWAMEE_JAIN_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "exact_smooth_pipe_limit",
@@ -1187,6 +1216,7 @@ static FRICTION_FACTOR_SWAMEE_JAIN_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1205,6 +1235,7 @@ static FRICTION_FACTOR_SWAMEE_JAIN_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -1235,6 +1266,7 @@ pub static FRICTION_FACTOR_SWAMEE_JAIN_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: FRICTION_FACTOR_SWAMEE_JAIN_TESTS,
 };
@@ -1336,6 +1368,7 @@ static ORIFICE_FLOW_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "an_ideal_orifice_passes_the_ideal_flow",
@@ -1354,6 +1387,7 @@ static ORIFICE_FLOW_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -1372,6 +1406,7 @@ static ORIFICE_FLOW_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -1390,6 +1425,7 @@ static ORIFICE_FLOW_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -1420,6 +1456,7 @@ pub static ORIFICE_FLOW_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: ORIFICE_FLOW_TESTS,
 };
@@ -1645,6 +1682,7 @@ static PACKING_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_structured_packing_takes_its_own_coefficients",
@@ -1684,6 +1722,7 @@ static PACKING_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "more_liquid_moves_the_wetting_not_the_gas_film",
@@ -1720,6 +1759,7 @@ static PACKING_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_taller_bed_changes_only_the_stage_count",
@@ -1756,6 +1796,7 @@ static PACKING_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -1814,6 +1855,7 @@ pub static PACKING_HYDRAULICS_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: PACKING_HYDRAULICS_TESTS,
 };
@@ -1930,6 +1972,7 @@ static PACKING_SIZING_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "more_liquid_raises_flood_and_widens_the_column",
@@ -1963,6 +2006,7 @@ static PACKING_SIZING_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "a_light_vapour_load_reaches_the_table_floor",
@@ -1996,6 +2040,7 @@ static PACKING_SIZING_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "the_flood_fraction_moves_the_size_and_not_the_report",
@@ -2029,6 +2074,7 @@ static PACKING_SIZING_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2047,6 +2093,7 @@ static PACKING_SIZING_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -2065,6 +2112,7 @@ static PACKING_SIZING_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2110,6 +2158,7 @@ pub static PACKING_SIZING_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: PACKING_SIZING_TESTS,
 };
@@ -2211,6 +2260,7 @@ static PUMP_POWER_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "an_ideal_pump_delivers_the_hydraulic_power_exactly",
@@ -2229,6 +2279,7 @@ static PUMP_POWER_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2247,6 +2298,7 @@ static PUMP_POWER_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "monotonic",
@@ -2265,6 +2317,7 @@ static PUMP_POWER_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2295,6 +2348,7 @@ pub static PUMP_POWER_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: PUMP_POWER_TESTS,
 };
@@ -2396,6 +2450,7 @@ static REYNOLDS_NUMBER_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "round_trip_units",
@@ -2414,6 +2469,7 @@ static REYNOLDS_NUMBER_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -2444,6 +2500,7 @@ pub static REYNOLDS_NUMBER_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: REYNOLDS_NUMBER_TESTS,
 };
@@ -2702,6 +2759,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "valve_tray",
@@ -2757,6 +2815,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "bubble_cap_tray",
@@ -2812,6 +2871,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "sieve_high_vapor",
@@ -2867,6 +2927,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "sieve_low_vapor",
@@ -2922,6 +2983,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "valve_low_vapor",
@@ -2977,6 +3039,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "sieve_stated_weir",
@@ -3032,6 +3095,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     TestCase {
         id: "sieve_wide",
@@ -3087,6 +3151,7 @@ static TRAY_HYDRAULICS_TESTS: &[TestCase] = &[
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
 ];
 
@@ -3154,6 +3219,7 @@ pub static TRAY_HYDRAULICS_SPEC: CalcSpec = CalcSpec {
         expected_vectors: &[],
         expected_strings: &[],
         records: &[],
+        expected_records: &[],
     },
     tests: TRAY_HYDRAULICS_TESTS,
 };

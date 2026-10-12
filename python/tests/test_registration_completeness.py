@@ -461,6 +461,24 @@ def _class_fields(path: Path, name: str) -> tuple[str, ...]:
     raise AssertionError(f"no class `{name}` in {path}")
 
 
+def _initialiser_keys(block: str) -> tuple[str, ...]:
+    """The keys at the **top level** of a struct literal, nested braces skipped.
+
+    A record field that is a quantity is built as a `PyQty { magnitude_si, unit }` inside the
+    initialiser, so a flat scan for `name:` reports the inner fields as the row's - which is a
+    shape the row does not have. Depth is tracked line by line, which is enough because rustfmt
+    keeps a brace opened on a line either closed on it or closed on a later one.
+    """
+    keys: list[str] = []
+    depth = 0
+    for line in block.splitlines():
+        stripped = line.strip()
+        if depth == 0 and (found := re.match(r"(\w+):\s", stripped)):
+            keys.append(found.group(1))
+        depth += stripped.count("{") - stripped.count("}")
+    return tuple(keys)
+
+
 def _record_output_from_fields() -> dict[str, tuple[str, ...]]:
     """Each generated `From` impl's `Self { .. }` keys, by element name.
 
@@ -471,11 +489,12 @@ def _record_output_from_fields() -> dict[str, tuple[str, ...]]:
     out: dict[str, tuple[str, ...]] = {}
     for match in re.finditer(r"impl From<&[\w:]+> for Py(\w+) \{", text):
         body = _struct_body(text, match)
-        initialiser = re.search(r"Self \{", body)
+        # **Anchored to the start of a line**, because the signature above it ends in
+        # `-> Self {` - an unanchored search takes that brace for the initialiser's and reads
+        # the whole function body, whose keys are all one level too deep.
+        initialiser = re.search(r"^\s*Self \{", body, re.MULTILINE)
         assert initialiser is not None, f"the `From` impl for `{match.group(1)}` builds no `Self`"
-        out[match.group(1)] = tuple(
-            re.findall(r"^\s*(\w+):", _struct_body(body, initialiser), re.M)
-        )
+        out[match.group(1)] = _initialiser_keys(_struct_body(body, initialiser))
     return out
 
 

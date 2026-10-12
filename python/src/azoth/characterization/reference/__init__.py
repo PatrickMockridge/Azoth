@@ -17,6 +17,7 @@ from azoth.characterization.reference.characterise_plus_fraction import (
 from azoth.characterization.reference.characterize_to_reference import (
     characterize_to_reference,
 )
+from azoth.characterization.reference.delumping import delumping
 from azoth.characterization.reference.lumping import lumping
 from azoth.characterization.reference.oil_assay_derivation import oil_assay_derivation
 from azoth.characterization.reference.pedersen_plus_split import pedersen_plus_split
@@ -32,6 +33,7 @@ __all__ = [
     "assay_mass_fractions",
     "characterise_plus_fraction",
     "characterize_to_reference",
+    "delumping",
     "lumping",
     "oil_assay_derivation",
     "pedersen_plus_split",

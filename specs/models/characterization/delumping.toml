@@ -1,0 +1,74 @@
+id = "characterization.delumping"
+name = "A lumped pseudo-component table split into a finer grid"
+kind = "direct"
+assumptions = [
+    "**this is lumping's inverse.** Pedersen's scheme cuts a fine carbon-number distribution into a handful of pseudo-components; this rebuilds a fine composition from the lumps, so a lumped fluid can be re-cut onto a slate without the identity a lump-to-lump match would give.\n",
+    "**each lump becomes a grid of molar masses around its own.** `resolution` sub-fractions at `M * (0.6 + 0.8 * t)` with `t` running zero to one, so the grid spans sixty to a hundred and forty percent of the parent's molar mass - which is the class's own `window` of 0.4.\n",
+    "**the mole weights are light-end biased, `exp(-1.5 * t)` normalised.** Their sum is one, so **the parent's moles are conserved by the weights themselves** rather than by a rescale, and the lightest sub-fraction carries the largest share however heavy the lump is.\n",
+    "**the molar masses are then rescaled by one factor so the parent's mass is conserved exactly**, `sum(n_k * M_k) = n * M`. The moles are what the bias was stated in, so it is the molar masses that move; a port that scaled the moles instead would hold the mass and break the composition.\n",
+    "**the boiling point spreads with the molar mass**, `Tb_k = Tb * M_k / M`, which is what makes a sub-fraction's sorting key monotone in its molar mass and lets the sub-fractions cross a reference's cut boundaries.\n",
+    "**a parent that states no boiling point passes its own through.** A non-finite one is the class's own spelling of an absent one, and the sort then falls back to the molar mass - the two spellings its `sortingKey` already treats alike.\n",
+    "**the density is the parent's, unchanged**, and so are the sixteen other property fields of the class's row, which `delumpContributions` copies rather than reads. This row is five fields wide where that one is twenty-two, and the width is the reading.\n",
+    "**a `resolution` of one or less returns the input unchanged.** The class's own guard, and it is an identity rather than an error: asking for one sub-fraction per lump is asking for the lumps.\n",
+    "**a lump whose moles or molar mass is not positive passes through unsplit**, the class's own `parentMoles > 0` and `parentMolarMass > 0` guards. Kept rather than refused, because the method defines what it does with one.\n",
+    "**the answer is sorted by sorting key**, so the sub-fractions of a heavy lump come out between the sub-fractions of the lumps either side of it, and a caller can hand the whole table straight to a cut.\n",
+    "**the class calls the result single-carbon-number sub-fractions and computes no carbon number.** The grid is on the molar mass; a caller wanting a carbon number has `characterization.tbp_grouping`, which bins by boiling point.\n",
+    "**this is the table form of `delumpBeforeRecharacterization`**, the option `characterizeToReferenceCore` runs before it redistributes the source. That walk carries it as an input, so the two surfaces are one kernel and not two.\n",
+]
+references = [
+    "Pedersen, K. S.; Christensen, P. L. (2007). \"Phase Behavior of Petroleum Reservoir Fluids.\", CRC Press. Chapter 5, Eqs. 5.35-5.37 - the inverse mass-weighted lumping this stage implements.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/characterization/PseudoComponentCombiner.java`'s `delumpContributions` is the port source.",
+    "`validation/neqsim/captures/pseudo_component_delumping_probe.tsv` - four lump tables from `validation/neqsim/PseudoComponentDelumpingProbe.java`, which reaches the method by reflection.",
+]
+[source]
+standard = "NeqSim master `PseudoComponentCombiner.delumpContributions`"
+edition = "Its `delumpContributions`, the delumping stage `characterizeToReferenceCore` runs under `delumpBeforeRecharacterization`. It is `private static` and no public entry point answers with the delumped rows, so the capture reads it out of the class.\n"
+[inputs]
+[inputs.lumps]
+type = "record_list"
+row_type = "Lump"
+description = "The lumps to split, in any order: the answer is sorted by sorting key. Each is a pseudo-component's name, moles, molar mass and, where it states them, its density and boiling point.\n"
+[inputs.lumps.fields.name]
+type = "string"
+description = "The lump's name. Each sub-fraction is named after it, with the grid position appended, so two lumps sharing a name give two sub-fractions one name.\n"
+[inputs.lumps.fields.moles]
+unit = "mol"
+description = "The lump's mole amount. It is conserved across the sub-fractions, and a lump whose own is not positive is passed through unsplit.\n"
+[inputs.lumps.fields.molar_mass]
+unit = "kg/mol"
+description = "The lump's molar mass, which the grid is a window around and which the one rescale factor is taken from.\n"
+[inputs.lumps.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The lump's normal liquid density. It is copied to every sub-fraction rather than read, so a lump that states none yields sub-fractions that state none.\n"
+[inputs.lumps.fields.boiling_point]
+unit = "K"
+optional = true
+description = "The lump's normal boiling point, which the sub-fractions' are spread from and which is each one's sorting key where the parent states one.\n"
+[inputs.resolution]
+unit = "dimensionless"
+description = "How many sub-fractions each lump becomes. One or less is the class's identity and returns the input unchanged.\n"
+[outputs]
+[outputs.fractions]
+type = "record_list"
+description = "The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order.\n"
+[outputs.fractions.fields.name]
+type = "string"
+description = "The sub-fraction's name: its parent's, and the grid position appended to it.\n"
+[outputs.fractions.fields.moles]
+unit = "mol"
+description = "The sub-fraction's mole amount. Its sum over one lump's sub-fractions is the lump's, so no mole is gained or lost.\n"
+[outputs.fractions.fields.molar_mass]
+unit = "kg/mol"
+description = "The sub-fraction's molar mass, off the grid and after the one rescale. Its sum with the moles restores the lump's mass exactly.\n"
+[outputs.fractions.fields.density]
+unit = "kg/m**3"
+optional = true
+description = "The sub-fraction's normal liquid density, which is its parent's unchanged.\n"
+[outputs.fractions.fields.boiling_point]
+unit = "K"
+optional = true
+description = "The sub-fraction's normal boiling point, spread with its molar mass. Absent where its parent states none.\n"
+[implementations]
+python = "azoth.characterization.delumping"
+rust = "azoth_characterization::delumping"

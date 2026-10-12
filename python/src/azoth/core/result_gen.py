@@ -23,6 +23,7 @@ from typing import ClassVar
 
 from azoth.core.record_outputs_gen import (
     KComponent,
+    SubFraction,
 )
 from azoth.core.result_base import (
     FlowRegime,
@@ -97,6 +98,19 @@ class CharacterizeToReferenceResult(_HasWarnings):
 
     #: Each group's density, the mass over the volume its rows occupy.
     group_density: tuple[Q, ...]
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class DelumpingResult(_HasWarnings):
+    """Result of ``characterization.delumping``."""
+
+    CALC_ID: ClassVar[str] = "characterization.delumping"
+
+    #: The sub-fractions, in ascending sorting key. A lump that states no boiling point sorts by its molar mass, so the order is by key and not by the lumps' order.
+    fractions: tuple[SubFraction, ...]
 
     #: Caveats.
     warnings: tuple[Warning, ...]

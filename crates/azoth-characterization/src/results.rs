@@ -405,3 +405,42 @@ impl CalcResult for OilAssayDerivationResult {
         &self.warnings
     }
 }
+
+/// One sub-fraction of a delumped lump, as `characterization.delumping` returns it.
+///
+/// **A `record_list` output's row, so its fields are the spec's own `fields` block.** The
+/// spelling here is the transport's - a `uom` alias for a dimensioned field and a bare number
+/// for a dimensionless one - and `tools/gen_python_record_outputs.py` emits the pyclass and the
+/// Python dataclass from that same declaration rather than from this struct.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SubFraction {
+    /// The sub-fraction's name: its parent's, and the grid position appended to it.
+    pub name: String,
+    /// Its mole amount.
+    pub moles: f64,
+    /// Its molar mass.
+    pub molar_mass: MolarMass,
+    /// Its normal liquid density, which is its parent's unchanged.
+    pub density: Option<MassDensity>,
+    /// Its normal boiling point, spread with the molar mass - and its parent's where the parent
+    /// states none.
+    pub boiling_point: Option<f64>,
+}
+
+/// Result of `characterization.delumping`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DelumpingResult {
+    /// The sub-fractions, in ascending sorting key.
+    pub fractions: Vec<SubFraction>,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for DelumpingResult {
+    const CALC_ID: &'static str = "characterization.delumping";
+    const FIELDS: &'static [&'static str] = &["fractions", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}

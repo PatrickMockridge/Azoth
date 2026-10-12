@@ -4,6 +4,7 @@
 //!   - specs/models/characterization/assay_mass_fractions.toml
 //!   - specs/models/characterization/characterise_plus_fraction.toml
 //!   - specs/models/characterization/characterize_to_reference.toml
+//!   - specs/models/characterization/delumping.toml
 //!   - specs/models/characterization/lumping.toml
 //!   - specs/models/characterization/oil_assay_derivation.toml
 //!   - specs/models/characterization/pedersen_plus_split.toml

@@ -68,6 +68,15 @@ PYTHON_BANNER = (
 #: The element type each non-numeric kind is, on this side. The default is a quantity.
 PY_LEAF = {"boolean": "bool", "string": "str", "enum": "str"}
 
+#: The Rust types `format!` can print with `{}`. Everything else - a `PyQty` or any `Option` -
+#: reaches for `{:?}`, because neither has a `Display`.
+DISPLAY = ("String", "f64")
+
+
+def _placeholder(ty: str) -> str:
+    """The `format!` placeholder one field's Rust type takes."""
+    return "{}" if ty in DISPLAY else "{:?}"
+
 
 def element_declaration(element: str) -> tuple[str, dict[str, Any]]:
     """The path the kernel element struct is reachable at, and its `pub` fields by name."""
@@ -122,7 +131,10 @@ def rust_block(element: str, declaration: dict[str, Any]) -> tuple[str, bool]:
     for name, ty, text, _ in fields:
         lines += [f"    /// {text}", "    #[pyo3(get)]", f"    pub {name}: {ty},"]
     lines += ["}", "", "#[pymethods]", f"impl Py{element} {{", "    fn __repr__(&self) -> String {"]
-    parts = ", ".join(f"{name}={{}}" for name, *_ in fields)
+    # A field that has a display form is printed with it and the rest with `{:?}`: a `PyQty`
+    # and an `Option` have no `Display`, and a row's repr is a diagnostic rather than a
+    # spelling anyone parses.
+    parts = ", ".join(f"{name}={_placeholder(ty)}" for name, ty, _, _ in fields)
     args = ", ".join(f"self.{name}" for name, *_ in fields)
     call = f'format!("{element}({parts})", {args})' if fields else f'"{element}()".to_string()'
     lines += [f"        {call}", "    }", "}", ""]

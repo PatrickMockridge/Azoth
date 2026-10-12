@@ -16,6 +16,7 @@ own package split: what is here is not an equation of state and is not reached f
 * :func:`pedersen_plus_split` - a plus fraction divided into carbon-number cuts
 * :func:`whitson_gamma_split` - the same, on Whitson's three-parameter gamma
 * :func:`lumping` - a cut table grouped into equal-mass lumps
+* :func:`delumping` - the same table rebuilt as a finer grid, lumping's inverse
 * :func:`tbp_grouping` - a phase's components grouped by boiling point
 
 # Which implementation answers
@@ -36,6 +37,7 @@ from azoth.core.result import (
     AssayMassFractionsResult,
     CharacterisePlusFractionResult,
     CharacterizeToReferenceResult,
+    DelumpingResult,
     LumpingResult,
     OilAssayDerivationResult,
     PedersenPlusSplitResult,
@@ -118,6 +120,7 @@ __all__ = [
     "card_from_cuts",
     "characterise_plus_fraction",
     "characterize_to_reference",
+    "delumping",
     "lumping",
     "oil_assay_derivation",
     "pedersen_plus_split",
@@ -143,6 +146,7 @@ _WHITSON_GAMMA_SPLIT = "characterization.whitson_gamma_split"
 _SET_HEAVY_TBP_TO_PLUS = "characterization.set_heavy_tbp_to_plus"
 _OIL_ASSAY_DERIVATION = "characterization.oil_assay_derivation"
 _TBP_CUT_BOUNDARIES = "characterization.tbp_cut_boundaries"
+_DELUMPING = "characterization.delumping"
 
 
 def tbp_cut_boundaries(
@@ -208,6 +212,32 @@ def oil_assay_derivation(
         basis=basis,
         cuts=cuts,
         total_assay_mass=total_assay_mass,
+    )
+
+
+def delumping(
+    lumps: Sequence[Mapping[str, Any]],
+    resolution: int,
+) -> DelumpingResult:
+    """A lumped pseudo-component table split into a finer grid.
+
+    Each lump becomes ``resolution`` sub-fractions whose mole weights are light-end biased and
+    whose molar masses span sixty to a hundred and forty percent of its own, rescaled by a single
+    factor so that the lump's mass is conserved exactly - its moles are conserved by the weights.
+
+    ``lumps`` is a list of records, one per pseudo-component, keyed by the field names the spec
+    declares and each stated as a quantity in that field's declared unit - a field a lump leaves
+    out is an absence rather than a zero, which is what the record kind exists for.
+
+    A lump whose normal boiling point is unset passes the absence to every sub-fraction, and its
+    sub-fractions then sort by their molar mass rather than by a boiling point. A ``resolution`` of
+    one or less is the class's identity: the lumps come back unchanged, in the order given.
+
+    See :func:`azoth.characterization.reference.delumping`.
+    """
+    return resolve(_DELUMPING)(  # type: ignore[no-any-return]
+        lumps=lumps,
+        resolution=resolution,
     )
 
 

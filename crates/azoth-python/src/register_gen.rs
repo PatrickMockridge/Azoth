@@ -22,6 +22,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyAssayMassFractionsResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterisePlusFractionResult>()?;
     m.add_class::<crate::transport_gen::PyCharacterizeToReferenceResult>()?;
+    m.add_class::<crate::transport_gen::PyDelumpingResult>()?;
     m.add_class::<crate::transport_gen::PyLumpingResult>()?;
     m.add_class::<crate::transport_gen::PyOilAssayDerivationResult>()?;
     m.add_class::<crate::transport_gen::PyPedersenPlusSplitResult>()?;
@@ -227,6 +228,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyIso6976Result>()?;
     m.add_class::<crate::transport_gen::PyConductionPlaneWallResult>()?;
     m.add_class::<crate::record_outputs_gen::PyKComponent>()?;
+    m.add_class::<crate::record_outputs_gen::PySubFraction>()?;
 
     // The calculations and models themselves.
     m.add_function(wrap_pyfunction!(
@@ -241,6 +243,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::characterize_to_reference,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::wrappers_gen::delumping, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::lumping, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::oil_assay_derivation,
