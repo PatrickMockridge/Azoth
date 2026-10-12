@@ -401,3 +401,74 @@ fn the_answer_never_exceeds_the_three_phase_ceiling() {
         );
     }
 }
+
+/// **The aqueous seeds this port declines, measured on NeqSim's own gas.**
+///
+/// `WaterDewPointTemperatureMultiphaseFlash` brackets on where a *multiphase flash* reports
+/// an aqueous phase, so a water dew point built on it is only as good as the seeding
+/// underneath. This is that seeding, on the gas NeqSim's own `WaterDewPointTest` builds -
+/// CO2 0.02, nitrogen 0.01, methane 0.9 - x, ethane 0.05, propane 0.01, i-butane 0.005,
+/// n-butane 0.005 and water x - on a plain SRK at 70 bara.
+///
+/// **At the temperature NeqSim calls the water dew point this flash is single-phase.** Its
+/// own capture puts the multiphase dew point at `260.545463562012` K for 35 ppm water and
+/// `284.302406311035` K for 200 ppm, each with an aqueous phase beside the gas; here the
+/// flash answers one gas phase at both. The aqueous phase does appear - at `217` K and
+/// `260` K - so the machinery works and the difference is the seeds' rather than the trial's.
+///
+/// **This is a canary and not a property to preserve.** When
+/// `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` land, these assertions
+/// fail, and that is the signal that `eos.water_dew_point_multiphase` and
+/// `eos.water_dew_point_line` have become portable. Until then they are two classes this
+/// tree does not port, and the register says so.
+#[test]
+fn the_aqueous_phase_appears_far_colder_than_neqsim_calls_the_dew_point() {
+    use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
+
+    const NAMES: [&str; 8] = [
+        "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+    ];
+
+    fn gas(ppm: f64) -> Vec<f64> {
+        let x = ppm * 1e-6;
+        vec![0.02, 0.01, 0.9 - x, 0.05, 0.01, 0.005, 0.005, x]
+    }
+
+    /// Whether the flash at `t` reports an aqueous phase, or `None` if it does not converge.
+    fn aqueous_at(mixture: &azoth_eos::Mixture, t: f64, z: &[f64]) -> Option<bool> {
+        let result = tp_multiflash(mixture, kelvins(t), pascals(7.0e6), z).ok()?;
+        let reduced = mixture
+            .reduced_parameters(kelvins(t), pascals(7.0e6))
+            .expect("the state's reduced parameters");
+        let labels = result
+            .x
+            .iter()
+            .zip(&result.z_factor)
+            .map(|(x, z_factor)| label(mixture, &reduced, x, *z_factor))
+            .collect::<azoth_core::Result<Vec<_>>>()
+            .expect("every phase carries a class");
+        Some(labels.contains(&PhaseLabel::Aqueous))
+    }
+
+    for (ppm, neqsim_dew_point) in [(35.0, 260.545463562012), (200.0, 284.302406311035)] {
+        let z = gas(ppm);
+        let (mixture, _) =
+            mixture_of(&NAMES, Cubic::Srk, None).expect("the databank resolves these names");
+
+        assert_eq!(
+            aqueous_at(&mixture, neqsim_dew_point, &z),
+            Some(false),
+            "{ppm} ppm: NeqSim's own multiphase dew point is {neqsim_dew_point} K, and this \
+             flash answers one gas phase there"
+        );
+
+        let appears = (100..=300)
+            .rev()
+            .find(|t| aqueous_at(&mixture, f64::from(*t), &z) == Some(true));
+        assert!(
+            appears.is_some(),
+            "{ppm} ppm: no aqueous phase anywhere in 100-300 K, so the trial itself is broken \
+             rather than the seeding"
+        );
+    }
+}

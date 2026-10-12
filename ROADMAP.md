@@ -127,8 +127,20 @@ reaches equilibrium through.
 
 - **The water EOS.** `ComponentWater`, `PhaseWaterIAPWS`, `SystemWaterIF97`,
   `thermo/util/steam/Iapws_if97`.
-- **Water content and dehydration.** `WATcalc`, `WaterDewPointTemperatureFlash`,
-  `WaterDewPointTemperatureMultiphaseFlash`, `WaterDewPointEquilibriumLine`.
+- **Water content and dehydration.** `WaterDewPointTemperatureFlash` is
+  `eos.water_dew_point_temperature`: it **prescribes** its incipient phase - `1e-30` on every
+  component but one `water`-or-`MEG` at `1.0` - and walks the temperature to the fugacity
+  equality, which makes it the one water operation that does not need the aqueous seeds this
+  tree declines in `eos.tp_multiflash`. **The other two are not ported and the blocker is
+  measured rather than assumed**: `WaterDewPointTemperatureMultiphaseFlash` and
+  `WaterDewPointEquilibriumLine` bracket on where a *multiphase flash* reports an aqueous
+  phase, and on NeqSim's own `WaterDewPointTest` gas at 70 bara the two libraries part by tens
+  of kelvin - 35 ppm water is a `260.545` K dew point upstream and a single gas phase here
+  down to `217` K, and 200 ppm is `284.30` K against `260` K. The class that would close both
+  is the seeding itself, `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` in
+  `TPmultiflash`, and `crates/azoth-eos/tests/tp_multiflash.rs` holds the numbers as a canary
+  rather than this bullet stating them. **`WATcalc` was filed in this bullet and is not a
+  water calculation at all** - it is Tier 3's wax bullet now, with its own blocker.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
   `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
@@ -300,6 +312,15 @@ The specialist physics.
   bare `new WaxCurveCalculator(` grep misses it. `process/chemistry/wax/` is carried with the
   process tier. **Filed upstream as NeqSim `#3914`**, under this finding's own title; the
   solid-vapour-pressure route below is `#3913`.
+  **`WATcalc` belongs here and not in Tier 2's water bullet, where it was filed.** Its own
+  javadoc says *"Wax appearance temperature from a bracket of independent multiphase TP
+  flashes"*, its threshold is a **wax** mass fraction of `1e-8` and its predicate is `hasWax`.
+  **Not ported, and the blocker is measured rather than assumed**: it answers only on a fluid
+  whose wax came from `addTBPWax()` on a *characterized plus fraction*, which is
+  `WaxCharacterise` above. On every fluid of the databank's named wax formers it throws
+  `Invalid wax mass fraction`, because `getPhaseFraction("wax", "mass")` returns
+  `-1.6e-52` for a wax phase whose mole fraction is `0.0707` - **filed upstream as NeqSim
+  `#4309`**, with the reproduction in `captures/water_dew_point_probe.tsv`.
 - **Asphaltene, carried on a defect upstream rather than for want of a port.**
   `AsphalteneCharacterization`, `PedersenAsphalteneCharacterization`,
   `AsphalteneOnsetPressureFlash`, `AsphalteneOnsetTemperatureFlash`, the

@@ -33,6 +33,16 @@
 //! divergence for water/n-hexane is. They are not ported here, so a feed carrying water comes
 //! back with the phases the tangent-plane trial finds and not the ones those two seeds would
 //! have added; the spec says so.
+//!
+//! **And that is why the multiphase water dew point is not an id.** NeqSim's
+//! `WaterDewPointTemperatureMultiphaseFlash` brackets on where *a multiphase flash* reports
+//! an aqueous phase, so its answer is the seeding's. Measured on the gas NeqSim's own
+//! `WaterDewPointTest` builds, at 70 bara: this flash is **single-phase at `260.545` K** for
+//! 35 ppm water, which is the very temperature NeqSim's dew point puts an aqueous phase at,
+//! and the phase first appears here at `217` K - forty-three kelvin colder. At 200 ppm it is
+//! `260` K against NeqSim's `284.302` K. A water dew point that reads low is a gas a caller
+//! thinks is drier than it is, so the two classes stay unported with the seeds named as what
+//! would close them, and `tests/tp_multiflash.rs` holds the numbers as a canary.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
