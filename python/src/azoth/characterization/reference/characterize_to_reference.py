@@ -29,6 +29,19 @@ vector and not per entry.
 A group whose accumulated mass or moles is at or below ``1e-12`` produces no profile and the
 caller skips it, so a source entirely below the reference's first cut resolves to one component
 against a reference of many. ``reference_index`` is what says which cut that one is.
+
+# The class's own options, less the two that need a fluid
+
+``characterize_to_reference`` carries four of ``CharacterizationOptions``' switches:
+``inheritReferenceProperties``, ``delumpBeforeRecharacterization`` with its ``delumpResolution``,
+and ``sharedImaginaryBoundaries``. The first reads the reference's densities, the last its mole
+amounts, and the middle is :mod:`azoth.characterization.reference.delumping`'s arithmetic run over
+the source first.
+
+``combineReservoirFluids`` and ``characterizeToCommonSlate`` weight several fluids into one
+imaginary pool *before* cutting, and every one of the rest takes or returns a
+``SystemInterface`` - so what is left out is what needs a fluid. The delumping was on that list
+too and is not, because it is a function of a table.
 """
 
 from __future__ import annotations

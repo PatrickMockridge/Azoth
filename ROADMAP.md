@@ -241,9 +241,10 @@ The specialist physics.
   and `TBPfractionModel`'s eight cut models, `PlusCharacterize`, `PedersenPlusModelSolver`,
   `LumpingModel`, `Recombine`, and the assay and refinery-blend machinery around them. A wax
   or asphaltene fluid is built from TBP and plus fractions, so this is what those models
-  stand on. **The subsystem is ported, as thirteen ids over the tables it works on**:
+  stand on. **The subsystem is ported, as fourteen ids over the tables it works on**:
   `characterization.pedersen_plus_split` and `whitson_gamma_split` divide a plus fraction into
-  carbon-number cuts, `lumping` groups a cut table into equal-mass lumps,
+  carbon-number cuts, `lumping` groups a cut table into equal-mass lumps and `delumping` splits
+  one back into a finer grid,
   `characterize_to_reference` re-cuts one fluid onto another's slate,
   `tbp_cut_properties` describes a cut by any of the ten models, `tbp_closure` and `tbp_density`
   convert between a cut's boiling point, its molar mass and its gravity, `tbp_cut_boundaries`
@@ -252,7 +253,8 @@ The specialist physics.
   phase by boiling point, `set_heavy_tbp_to_plus` picks the row a plus end begins at, and
   `characterise_plus_fraction` is the chain from a C7+ end to lumps. **What is owed is the part
   that rebuilds a fluid rather than a table**: `apply`'s `addTBPfraction` loop, `Recombine`, and
-  `combineReservoirFluids` with the delumping — each needs a `Mixture` that can be added to.
+  `combineReservoirFluids` — each needs a `Mixture` that can be added to. The delumping was on
+  that list and is not on it: it is a function of a table, and it is `characterization.delumping`.
 - **Hydrate.** Ported, each with the id that carries it: `PhaseHydrate` over
   `ComponentHydratePVTsim`, which is the component model `PhaseHydrate` selects by default,
   through `HydrateFormationTemperatureFlash` (`eos.hydrate_formation_temperature`) and
@@ -630,15 +632,17 @@ a claim nothing holds.
   what its class does with the answer is `system.addTBPfraction` and `system.addComponent` — so
   the owed part is a `Mixture` a component can be added to, which is the same one
   `PseudoComponentCombiner` needs: `combineReservoirFluids` and `characterizeToCommonSlate`
-  (several fluids weighted into one imaginary pool before cutting), `delumpContributions` and
-  `determineReferenceEqualMassBoundaries` (a fine composition rebuilt and cut equally by mass),
+  (several fluids weighted into one imaginary pool before cutting),
   `transferBinaryInteractionParameters`, `normalizeComposition` and `generateValidationReport`.
-  `characterization.characterize_to_reference` ports the walk they all sit on and carries
-  `inheritReferenceProperties` as the class's own variant of it. **`Recombine` is the same
-  shape again**: it turns a plus fraction back into one component. **And the rows are twenty
-  fields wide where the port reads four**: `AssayCut`'s sulfur, nitrogen, API gravity and
-  Watson factor, and `PseudoComponentContribution`'s critical constants, parachor, racketZ and
-  heat of fusion, join the rows when a ported method reads one.
+  **The delumping is not on the list, and it never needed a fluid.**
+  `characterization.delumping` is `delumpContributions` as a table→table id, and
+  `characterization.characterize_to_reference` carries all four of the class's own options -
+  `inheritReferenceProperties`, `delumpBeforeRecharacterization` with its resolution, and
+  `sharedImaginaryBoundaries`, which is `determineReferenceEqualMassBoundaries`. **`Recombine`
+  is the same shape as the owed ones**: it turns a plus fraction back into one component. **And
+  the rows are twenty fields wide where the port reads four**: `AssayCut`'s sulfur, nitrogen,
+  API gravity and Watson factor, and `PseudoComponentContribution`'s critical constants,
+  parachor, racketZ and heat of fusion, join the rows when a ported method reads one.
 
 ## Beyond the port
 

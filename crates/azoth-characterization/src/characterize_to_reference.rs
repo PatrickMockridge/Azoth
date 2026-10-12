@@ -31,12 +31,20 @@
 //! vector and not per entry. The row this id takes is the fields it reads; the other seventeen are
 //! owed with the methods below.
 //!
+//! # The class's own options, less the two that need a fluid
+//!
+//! [`characterize_to_reference`] carries four of `CharacterizationOptions`' switches:
+//! `inheritReferenceProperties`, `delumpBeforeRecharacterization` with its `delumpResolution`, and
+//! `sharedImaginaryBoundaries`. The first reads the reference's densities, the last its mole
+//! amounts, and the middle is [`crate::delumping`]'s arithmetic run over the source first.
+//!
 //! # What is not here
 //!
-//! `combineReservoirFluids`, `characterizeToCommonSlate`, the delumping,
-//! `transferBinaryInteractionParameters`, `normalizeComposition` and `generateValidationReport`.
-//! They are blocked on the card width - a pseudo-component still cannot enter a `Mixture` - and on
-//! the row's other seventeen fields.
+//! `combineReservoirFluids` and `characterizeToCommonSlate`, which weight several fluids into one
+//! imaginary pool *before* cutting; `transferBinaryInteractionParameters`; `normalizeComposition`;
+//! and `generateValidationReport`. **Every one of them takes or returns a `SystemInterface`**, and
+//! `Mixture` has no `add_component` - the delumping was on that list too and is not, because it is
+//! a function of a table.
 
 use azoth_core::units::{MassDensity, MolarMass, kilograms_per_cubic_meter, kilograms_per_mole};
 use azoth_core::{AzothError, Result, apply_checks};
@@ -68,9 +76,10 @@ pub struct SourceRow {
 
 /// One cut of the reference fluid's slate.
 ///
-/// The reference decides where the cuts are, and `density` is the one field a group reads out of
-/// it - only where `inherit_reference_properties` is set, where each group takes this row's own
-/// density rather than the one its own rows average to.
+/// The reference decides where the cuts are and nothing else: its own properties are never a
+/// group's. Two of its fields are read by one variant each - `density` where
+/// `inherit_reference_properties` is set, `moles` where `shared_imaginary_boundaries` is - and by
+/// neither otherwise.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ReferenceRow {
     /// Its molar mass, the fallback sorting key - and the group's own molar mass where the
