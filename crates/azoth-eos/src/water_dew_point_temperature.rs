@@ -181,7 +181,10 @@ pub fn water_dew_point_temperature(
             ));
         }
         let result = walk(&mixture, p, z, index, seed)?;
-        if best.as_ref().is_none_or(|held| result.temperature > held.temperature) {
+        if best
+            .as_ref()
+            .is_none_or(|held| result.temperature > held.temperature)
+        {
             best = Some(result);
         }
     }
