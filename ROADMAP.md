@@ -127,27 +127,30 @@ reaches equilibrium through.
 
 - **The water EOS.** `ComponentWater`, `PhaseWaterIAPWS`, `SystemWaterIF97`,
   `thermo/util/steam/Iapws_if97`.
-- **Water content and dehydration.** `WaterDewPointTemperatureFlash` is
-  `eos.water_dew_point_temperature`: it **prescribes** its incipient phase - `1e-30` on every
-  component but one `water`-or-`MEG` at `1.0` - and walks the temperature to the fugacity
-  equality, which makes it the one water operation that does not need the aqueous seeds this
-  tree declines in `eos.tp_multiflash`. **The other two are not ported and the blocker is
-  measured rather than assumed**: `WaterDewPointTemperatureMultiphaseFlash` and
-  `WaterDewPointEquilibriumLine` bracket on where a *multiphase flash* reports an aqueous
-  phase, and on NeqSim's own `WaterDewPointTest` gas at 70 bara the two libraries part by tens
-  of kelvin - 35 ppm water is a `260.545` K dew point upstream and a single gas phase here
-  down to `217` K, and 200 ppm is `284.30` K against `260` K. `crates/azoth-eos/tests/tp_multiflash.rs`
-  holds the numbers as a canary rather than this bullet stating them.
-  **What would close both is the flash's own seeding, and this bullet named the wrong part of
-  it** - the way the entry above it named the wrong reason for the brine operations, and the
-  wax bullet below named the wrong tier for `WATcalc`. `seedHydrocarbonLiquidFromFeed` and
-  `seedAdditionalPhaseFromFeed` seed an **OIL** and a **GAS**, and each **requires an aqueous
-  phase to exist already**, so neither can fire on a lean gas at all. The aqueous seed is
-  inline in `TPmultiflash.run()`, and what sets it going is that class's **second public
-  stability analysis**, `stabilityAnalysisEnhanced` - Wilson-K, `1/K` and an
-  acentric-perturbation LLE trial, called exactly where the basic analysis found nothing. It is
-  not ported and was named nowhere in this tree until 2026-10-13. **`WATcalc` was filed in this bullet and is not a
-  water calculation at all** - it is Tier 3's wax bullet now, with its own blocker.
+- **Water content and dehydration.** Two of the four classes in this bullet are ids now.
+  `WaterDewPointTemperatureFlash` is `eos.water_dew_point_temperature`: it **prescribes** its
+  incipient phase - `1e-30` on every component but one `water`-or-`MEG` at `1.0` - and walks the
+  temperature to the fugacity equality. `WaterDewPointTemperatureMultiphaseFlash` is
+  `eos.water_dew_point_multiphase`: it brackets on where a *multiphase flash* reports an aqueous
+  phase, and it reproduces the capture to `3e-13` K at all three of its states.
+  **The third, `WaterDewPointEquilibriumLine`, is written and not shipped, and the measurement is
+  why.** It is the multiphase route swept over ten pressures, so its only output is the curve -
+  and on the capture's own sweep from `1` to `200` bara **eight of its ten points reproduce to
+  `3e-13` K while two do not**: at `1` bara the answer is `0.149` K warm and the state it closes
+  on has **one** phase, and at `111.6` bara `eos.tp_multiflash` **does not converge at all** -
+  three hundred steps to a residual of `3.7e-5` against its own `1e-10` - where NeqSim's does.
+  Both are the flash's and neither is the sweep's, so the class is owed until the flash is
+  measured at those states; a curve is not a place to carry a wrong point.
+  **And this bullet named the wrong blocker for the route, twice over** - the way the entry above
+  it named the wrong reason for the brine operations and the wax bullet below named the wrong tier
+  for `WATcalc`. `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` seed an
+  **OIL** and a **GAS** and each **requires an aqueous phase to exist already**, so neither can
+  fire on a lean gas; and the aqueous seed inline in `TPmultiflash.run()` is not what the route
+  was missing either. What it was missing is that `TPmultiflash` **overrides** `stabilityAnalysis`
+  with a second method of the same name - the same two Wilson trials **plus a pure-component
+  fallback** - and this tree had ported the *base* method. That is `eos.multiflash_stability_test`.
+  **`WATcalc` was filed in this bullet and is not a water calculation at all** - it is Tier 3's
+  wax bullet now, with its own blocker.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
   `ComponentGEVanLaarAcid` with `PhaseGEVanLaarAcid` (`eos.ge_van_laar_acid_phase`).
