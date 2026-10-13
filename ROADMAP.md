@@ -136,10 +136,17 @@ reaches equilibrium through.
   `WaterDewPointEquilibriumLine` bracket on where a *multiphase flash* reports an aqueous
   phase, and on NeqSim's own `WaterDewPointTest` gas at 70 bara the two libraries part by tens
   of kelvin - 35 ppm water is a `260.545` K dew point upstream and a single gas phase here
-  down to `217` K, and 200 ppm is `284.30` K against `260` K. The class that would close both
-  is the seeding itself, `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` in
-  `TPmultiflash`, and `crates/azoth-eos/tests/tp_multiflash.rs` holds the numbers as a canary
-  rather than this bullet stating them. **`WATcalc` was filed in this bullet and is not a
+  down to `217` K, and 200 ppm is `284.30` K against `260` K. `crates/azoth-eos/tests/tp_multiflash.rs`
+  holds the numbers as a canary rather than this bullet stating them.
+  **What would close both is the flash's own seeding, and this bullet named the wrong part of
+  it** - the way the entry above it named the wrong reason for the brine operations, and the
+  wax bullet below named the wrong tier for `WATcalc`. `seedHydrocarbonLiquidFromFeed` and
+  `seedAdditionalPhaseFromFeed` seed an **OIL** and a **GAS**, and each **requires an aqueous
+  phase to exist already**, so neither can fire on a lean gas at all. The aqueous seed is
+  inline in `TPmultiflash.run()`, and what sets it going is that class's **second public
+  stability analysis**, `stabilityAnalysisEnhanced` - Wilson-K, `1/K` and an
+  acentric-perturbation LLE trial, called exactly where the basic analysis found nothing. It is
+  not ported and was named nowhere in this tree until 2026-10-13. **`WATcalc` was filed in this bullet and is not a
   water calculation at all** - it is Tier 3's wax bullet now, with its own blocker.
 - **Acid gas.** `ComponentSoreideWhitson` and `AttractiveTermSoreideWhitson` with
   `PhaseSoreideWhitson` (`eos.soreide_whitson_phase`) and `SystemSoreideWhitson`;
@@ -611,8 +618,10 @@ a claim nothing holds.
   NeqSim's `ThrottlingValve` and `Compressor` select and which `eos.ph_flash` and `eos.ps_flash`
   decline on a measured two-phase `(dH/dT)_P` factor of two; **`PHflashSingleComp`** and
   **`PSflashSingleComp`**; **`VHflashQfunc`**'s coupled 2×2 with a cross term, and `VHflash`,
-  which has no construction site; `eos.tp_multiflash`'s **pure-component fallback** and its two
-  aqueous seeds, `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed`; and
+  which has no construction site; `eos.tp_multiflash`'s **pure-component fallback**, upstream's
+  second stability analysis `stabilityAnalysisEnhanced`, and the three seeding constructs beside
+  it - `seedAdditionalPhaseFromFeed` (a **GAS**), `seedHydrocarbonLiquidFromFeed` (an **OIL**)
+  and the inline **aqueous** seed in `run()`; and
   `eos.soreide_whitson_phase`'s two newer parameterisations, **Chabab 2019** and
   **Burgoyne-Nielsen 2026**. The CPA rules and the hydrate coupling are P7's and P9's, each
   gated on a component family or a system type this crate does not carry.

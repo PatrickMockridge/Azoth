@@ -26,13 +26,34 @@
 //! 3. **The fraction solve**, [`crate::multiphase::solve_phase_fractions`], then the merge.
 //!
 //! **What is not here.** Upstream's 3,816 lines are mostly rescues for systems this crate
-//! does not have: the ionic rules (P8), the CPA rules (P7), the hydrate coupling (P9) and the
-//! aqueous seeds. The aqueous seeds are the one exception worth naming, because a cubic
-//! *can* hold water - `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` are
-//! gated on a water component and on nothing else, and they are what the measured 139-state
-//! divergence for water/n-hexane is. They are not ported here, so a feed carrying water comes
-//! back with the phases the tangent-plane trial finds and not the ones those two seeds would
-//! have added; the spec says so.
+//! does not have: the ionic rules (P8), the CPA rules (P7) and the hydrate coupling (P9). What
+//! it also has, and what a water-bearing cubic feed needs, is **four** further ways a phase can
+//! enter the set. This paragraph used to name two of them as "the aqueous seeds" and to say
+//! they were "gated on a water component and on nothing else"; both halves were wrong, so each
+//! is written out here:
+//!
+//! 1. **`stabilityAnalysisEnhanced()`** - upstream's **second public stability analysis**,
+//!    which `run()` calls where the basic one found nothing. It adds Wilson-K, `1/K` and an
+//!    acentric-perturbation "LLE-specific" trial, does not skip non-hydrocarbon components, and
+//!    tests against every existing phase rather than phase 0. **Not ported, and named nowhere in
+//!    this tree until now.**
+//! 2. **`seedAdditionalPhaseFromFeed()`** - seeds a **GAS** phase. It fires only where an
+//!    **AQUEOUS** phase already exists, no gas phase sits above `beta = 1e-6`, water's feed
+//!    fraction is at least `1e-4` and some hydrocarbon's is at least `1e-4`.
+//! 3. **`seedHydrocarbonLiquidFromFeed()`** - seeds an **OIL** phase, and it too requires an
+//!    existing **AQUEOUS** one, along with `waterZ >= 1e-6` and heavy hydrocarbons - molar mass
+//!    above `0.045` kg/mol - totalling at least `5e-3`.
+//! 4. The **aqueous** seed, which is inline in `run()` rather than a method: it fires where no
+//!    aqueous phase exists at all and `waterZ > 1e-6`, prescribing one from the feed - `1e-16`
+//!    by default, water at `max(waterZ, 1e-12)`, other non-hydrocarbon non-inert components at
+//!    `min(z * 1e-2, 1e-8)` - at `beta = 1e-5`.
+//!
+//! **2 and 3 cannot fire in the state that matters here** - a gas carrying ppm water, with one
+//! phase - because both require an aqueous phase to be there already. 4 can, but only once
+//! `multiPhaseTest` is true, and only 1 or the basic analysis can set that. So a feed carrying
+//! water comes back with the phases the tangent-plane trial finds, and the measured 139-of-207
+//! divergence for water/n-hexane is upstream's seeding reaching states this does not; the spec
+//! says so.
 //!
 //! **And that is why the multiphase water dew point is not an id.** NeqSim's
 //! `WaterDewPointTemperatureMultiphaseFlash` brackets on where *a multiphase flash* reports
@@ -41,8 +62,15 @@
 //! 35 ppm water, which is the very temperature NeqSim's dew point puts an aqueous phase at,
 //! and the phase first appears here at `217` K - forty-three kelvin colder. At 200 ppm it is
 //! `260` K against NeqSim's `284.302` K. A water dew point that reads low is a gas a caller
-//! thinks is drier than it is, so the two classes stay unported with the seeds named as what
+//! thinks is drier than it is, so the two classes stay unported with the seeding named as what
 //! would close them, and `tests/tp_multiflash.rs` holds the numbers as a canary.
+//!
+//! **Which of the four it is, is open, and it is being measured rather than inferred.**
+//! Calling [`crate::stability_test`] on that gas directly puts the water-rich stationary point
+//! (`w[water] = 1.0`, `tm = -52.7`) at `217` K and returns `stable` with both trials converged
+//! to the feed itself at `260.545` K, `250` K and `240` K - so the chain that produces
+//! upstream's aqueous phase begins with a stationary point this tree does not find, and 1 is
+//! the construct that exists to find it.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};

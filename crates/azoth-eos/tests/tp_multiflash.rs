@@ -414,11 +414,13 @@ fn the_answer_never_exceeds_the_three_phase_ceiling() {
 /// own capture puts the multiphase dew point at `260.545463562012` K for 35 ppm water and
 /// `284.302406311035` K for 200 ppm, each with an aqueous phase beside the gas; here the
 /// flash answers one gas phase at both. The aqueous phase does appear - at `217` K and
-/// `260` K - so the machinery works and the difference is the seeds' rather than the trial's.
+/// `260` K - so the trial is not broken; it simply does not find the water-rich stationary
+/// point at the temperatures upstream calls the dew point.
 ///
-/// **This is a canary and not a property to preserve.** When
-/// `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` land, these assertions
-/// fail, and that is the signal that `eos.water_dew_point_multiphase` and
+/// **This is a canary and not a property to preserve.** Upstream reaches the aqueous phase
+/// through a chain of four constructs, of which this tree ports one - see
+/// [`azoth_eos::tp_multiflash`]'s "What is not here". When the one that matters lands these
+/// assertions fail, and that is the signal that `eos.water_dew_point_multiphase` and
 /// `eos.water_dew_point_line` have become portable. Until then they are two classes this
 /// tree does not port, and the register says so.
 #[test]

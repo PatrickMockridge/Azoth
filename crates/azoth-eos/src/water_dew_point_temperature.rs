@@ -11,9 +11,9 @@
 //! This one does not: it calls `setNumberOfPhases(2)`, sets phase 1 to `1e-30` on every
 //! component but one `water`-or-`MEG` at `1.0`, and walks the temperature until that
 //! phase's water fugacity matches the vapour's. So it is the one water-family operation
-//! that does **not** rest on the aqueous seeds `crate::tp_multiflash` declines
-//! (`seedHydrocarbonLiquidFromFeed`, `seedAdditionalPhaseFromFeed`); the phase is
-//! prescribed, and nothing has to find it.
+//! that does **not** rest on the seeding [`crate::tp_multiflash`] declines - which is four
+//! constructs and not two, as that module's "What is not here" sets out. The phase is
+//! prescribed here, and nothing has to find it.
 //!
 //! # It is a fixed point with a fixed gain, and that is not a detail
 //!
