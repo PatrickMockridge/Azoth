@@ -847,6 +847,17 @@ class MollerupAlphaResult:
     warnings: list[Warning]
 
 @final
+class MultiflashStabilityTestResult:
+    path: str
+    tm: list[float]
+    seed_composition: list[float]
+    seed_fraction: float
+    seed_component_index: int
+    iterations: int
+    min_t_over_tc: float
+    warnings: list[Warning]
+
+@final
 class NitricSulfuricAcidVaporPressureResult:
     p_water: Qty
     p_nitric_acid: Qty
@@ -2852,6 +2863,19 @@ def molar_enthalpy_entropy(
     alpha_params: list[list[float]] | None = None,
 ) -> MolarEnthalpyEntropyResult: ...
 def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaResult: ...
+def multiflash_stability_test(
+    Tc: list[float],
+    Pc: list[float],
+    omega: list[float],
+    kij: list[float],
+    association: AssociationSpec,
+    T: float,
+    P: float,
+    z: list[float],
+    eos: str = "pr",
+    alpha: str = "pr",
+    alpha_params: list[list[float]] | None = None,
+) -> MultiflashStabilityTestResult: ...
 def nitric_sulfuric_acid_vapor_pressure(T: float) -> NitricSulfuricAcidVaporPressureResult: ...
 def nrtl_activity_coefficients(
     alpha: list[float],

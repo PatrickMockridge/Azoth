@@ -80,6 +80,7 @@ ENUM_ALIASES = {
     "PlusModel": "_PlusModel",
     "StabilityVerdict": "_StabilityVerdict",
     "TpMultiflashSeed": "_TpMultiflashSeed",
+    "MultiflashSeedPath": "_MultiflashSeedPath",
     "HenryStatus": "_HenryStatus",
 }
 

@@ -134,6 +134,7 @@
   - [Liquid thermal conductivity from the LIQCOND polynomial](./eos/liquid_conductivity_polynom.md)
   - [Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities](./eos/mason_saxena_conductivity.md)
   - [Molar enthalpy and entropy of a mixture](./eos/molar_enthalpy_entropy.md)
+  - [Multiflash seeding stability test](./eos/multiflash_stability_test.md)
   - [Activity coefficients from the NRTL local-composition model](./eos/nrtl_activity_coefficients.md)
   - [Interface surface tension from the parachor (Weinaug-Katz)](./eos/parachor_mixture_surface_tension.md)
   - [Solid para-hydrogen reference phase state](./eos/parahydrogen_solid_phase.md)

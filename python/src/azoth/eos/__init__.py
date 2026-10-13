@@ -127,6 +127,7 @@ from azoth.core.result import (
     MatcopPrumrNewAlphaResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
+    MultiflashStabilityTestResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     ParachorMixtureSurfaceTensionResult,
@@ -296,6 +297,7 @@ __all__ = [
     "mason_saxena_conductivity",
     "mixture",
     "molar_enthalpy_entropy",
+    "multiflash_stability_test",
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
     "parachor_mixture_surface_tension",
@@ -459,6 +461,7 @@ _PV_REFLUX_FLASH = "eos.pv_reflux_flash"
 _PVF_FLASH = "eos.pvf_flash"
 _PT_FLASH = "eos.pt_flash"
 _PT_PHASE_ENVELOPE = "eos.pt_phase_envelope"
+_MULTIFLASH_STABILITY_TEST = "eos.multiflash_stability_test"
 _STABILITY_TEST = "eos.stability_test"
 _TP_MULTIFLASH = "eos.tp_multiflash"
 _PURE_SATURATION = "eos.pure_saturation"
@@ -3839,3 +3842,27 @@ def water_dew_point_temperature(
     return resolve(_WATER_DEW_POINT_TEMPERATURE)(  # type: ignore[no-any-return]
         components=components, z=z, P=P, eos=eos
     )
+
+
+def multiflash_stability_test(
+    mixture: Mixture,
+    T: Q,
+    P: Q,
+    z: list[float],
+) -> MultiflashStabilityTestResult:
+    """The phase to add to make a fluid a Gibbs minimum, by NeqSim's multiflash seeding.
+
+    NeqSim has **two** methods called ``stabilityAnalysis``.
+    :func:`stability_test` ports the one on ``Flash``, a two-trial Michelsen test that
+    reports instability by setting K-values. ``TPmultiflash`` **overrides** it, and
+    ``TPmultiflash.run()`` calls the override. This is the override.
+
+    It runs the same two Wilson trials first and returns as soon as one of them lies below
+    the plane; when neither does it falls back to **one trial per component, each seeded at
+    that component alone**, which is what finds a water-rich phase in a gas carrying ppm
+    water and a CO2-rich one in a cold, CO2-rich gas. ``path`` says which of the two halves
+    found it, and ``seed_composition`` and ``seed_fraction`` are the phase a caller adds.
+
+    See :func:`azoth.eos.reference.multiflash_stability_test`.
+    """
+    return resolve(_MULTIFLASH_STABILITY_TEST)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]

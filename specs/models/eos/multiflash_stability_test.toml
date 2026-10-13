@@ -1,0 +1,89 @@
+id = "eos.multiflash_stability_test"
+name = "Multiflash seeding stability test"
+kind = "procedure"
+assumptions = [
+    "**this is the method `TPmultiflash` overrides, not the one `eos.stability_test` ports.** Both are named `stabilityAnalysis`; the base is a two-trial Michelsen test that reports instability by setting K-values, and the override runs the same two Wilson trials and then a pure-component fallback.",
+    "**the Wilson pair returns early.** When either Wilson trial lies below the plane the method answers there and the fallback is never reached, so a feed the pair finds is not also offered the fallback's answer.",
+    "**the output is the phase to add, not a verdict.** Upstream mutates a fluid: `addPhase`, seed the composition, start the fraction. A value-passing port returns the composition and the fraction and the caller adds the phase.",
+    "**the fraction is the trial's own component's feed fraction, and the two paths differ**: the Wilson pair takes the trial's *dominant* component's `z`, the fallback the trial component's own `z`.",
+    "the pure-component fallback runs one trial per eligible component, seeded at that component alone - `1.0`, every other at `1e-12` - scanned from the last component down.",
+    "**an ineligible component is skipped**: one whose feed fraction is absent, and every hydrocarbon but the heaviest and the lightest. A skipped component's distance stays at the `0.0` upstream leaves, which the selection reads as stable.",
+    "**a trial that converges to the feed is not an instability.** Upstream compares it against the feed in sum-absolute terms and marks it stable below `1e-4`, because the tangent plane passes through the feed and a trial reproducing it is zero by construction.",
+    "**a failed or trivial trial is marked `10.0`**, far above any real distance, so the selection cannot pick it. Zero would not do: a skipped component's distance is already zero and reads as stable.",
+    "**the trial's phase is evaluated on a fixed root** - the smallest for the liquid-like Wilson seed and for every pure-component seed, the largest for the vapour-like one - which is `eos.stability_test`'s own reading of the same two seeds.",
+    "**acceleration is owed, and its absence is the omission `eos.stability_test` already makes**: upstream interleaves a Wegstein step every seventh iteration, a dominant-eigenvalue step every fifth, and a Newton solve past `150`; this substitutes alone.",
+    "**a mixture carries no ion**, because `mixture_of` refuses to build a cubic over one, so upstream's ionic skip has nothing to skip here and is recorded rather than restated.",
+    "the feed's own fugacity coefficients are evaluated at the feed on its lower-Gibbs root, and `z` is checked rather than renormalised.",
+]
+references = [
+    "Michelsen, M. L. (1982). \"The isothermal flash problem. Part I. Stability.\" Fluid Phase Equilibria 9(1), 1-19. The tangent-plane criterion both methods rest on.\n",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `TPmultiflash.stabilityAnalysis`, the override this ports; `Flash.stabilityAnalysis` is the base it shadows and `eos.stability_test` is that one.\n",
+    "`validation/neqsim/WaterDewPointSeedProbe.java` and `captures/water_dew_point_seed_probe.tsv` - the states, read through NeqSim's own package because `multiPhaseTest` is package-private.\n",
+]
+[source]
+standard = "NeqSim master `TPmultiflash.stabilityAnalysis`"
+edition = "The override, which `TPmultiflash.run()` calls where a caller reaches `Flash.stabilityAnalysis` through the base class. Its succession-substitution iteration is ported; its three accelerators are named in the assumptions and are not."
+[algorithm]
+scheme = "multiflash_stability_seeding"
+initialisation = "wilson_pair_then_pure_component"
+convergence = "absolute"
+tolerance = 1e-09
+max_iterations = 200
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the substances the mixture is made of, by name, resolved against the component databank with the keycard's overrides applied"
+[inputs.T]
+unit = "K"
+description = "absolute temperature"
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure"
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "overall mole fractions, checked rather than renormalised. The fraction a trial starts its phase at is read from it."
+[outputs]
+[outputs.path]
+type = "enum"
+values = ["stable", "wilson_liquid", "wilson_vapour", "pure_component"]
+description = "Which trial found the phase, or that none did. `stable` means every trial lay at or above the tangent plane, and then `seed_composition` is empty and `seed_fraction` is zero."
+[outputs.tm]
+type = "vector"
+unit = "dimensionless"
+length = "one per trial attempted"
+description = "The tangent-plane distance of every trial run, in the order the method runs them: the liquid-like Wilson trial, the vapour-like one, then the pure-component trials in the order their components were visited. A trial that failed or converged to the feed carries `10.0`."
+[outputs.seed_composition]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "The phase to add: the trial composition that lay below the plane, or empty where `path` is `stable`."
+[outputs.seed_fraction]
+unit = "dimensionless"
+description = "The mole fraction of the feed to start that phase at - the trial's own component's feed fraction - or zero where `path` is `stable`."
+[outputs.seed_component_index]
+unit = "dimensionless"
+description = "Which component the pure-component trial started from, as its position in the feed, or `-1` where the path is not `pure_component`. **A position and not a name**: a mixture built from critical constants carries no names, and the two implementations would otherwise disagree about this field."
+[outputs.iterations]
+unit = "dimensionless"
+description = "Successive-substitution steps taken over every trial."
+[outputs.min_t_over_tc]
+unit = "dimensionless"
+description = "The smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point."
+[[valid_range]]
+quantity = "T"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute temperature; zero and below are not states"
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.multiflash_stability_test"
+rust = "azoth_eos::multiflash_stability_test"

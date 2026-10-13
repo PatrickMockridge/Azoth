@@ -29,6 +29,7 @@ from azoth.core.result_base import (
     FlowRegime,
     HenryStatus,
     HydrateStructure,
+    MultiflashSeedPath,
     Phase,
     PlusModel,
     RootStructure,
@@ -1606,6 +1607,37 @@ class MollerupAlphaResult(_HasWarnings):
 
     #: the temperature-dependent alpha function
     alpha: float
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class MultiflashStabilityTestResult(_HasWarnings):
+    """Result of ``eos.multiflash_stability_test``."""
+
+    CALC_ID: ClassVar[str] = "eos.multiflash_stability_test"
+
+    #: Which trial found the phase, or that none did. `stable` means every trial lay at or above the tangent plane, and then `seed_composition` is empty and `seed_fraction` is zero.
+    path: MultiflashSeedPath
+
+    #: The tangent-plane distance of every trial run, in the order the method runs them: the liquid-like Wilson trial, the vapour-like one, then the pure-component trials in the order their components were visited. A trial that failed or converged to the feed carries `10.0`.
+    tm: tuple[float, ...]
+
+    #: The phase to add: the trial composition that lay below the plane, or empty where `path` is `stable`.
+    seed_composition: tuple[float, ...]
+
+    #: The mole fraction of the feed to start that phase at - the trial's own component's feed fraction - or zero where `path` is `stable`.
+    seed_fraction: float
+
+    #: Which component the pure-component trial started from, as its position in the feed, or `-1` where the path is not `pure_component`. **A position and not a name**: a mixture built from critical constants carries no names, and the two implementations would otherwise disagree about this field.
+    seed_component_index: int
+
+    #: Successive-substitution steps taken over every trial.
+    iterations: int
+
+    #: The smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point.
+    min_t_over_tc: float
 
     #: Caveats.
     warnings: tuple[Warning, ...]

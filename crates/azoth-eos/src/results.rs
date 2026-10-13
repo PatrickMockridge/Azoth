@@ -715,6 +715,82 @@ impl CalcResult for TpSolidFlashResult {
     }
 }
 
+/// Which trial of `eos.multiflash_stability_test` found the phase, or that none did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MultiflashSeedPath {
+    /// No trial lay below the tangent plane.
+    Stable,
+    /// The liquid-like Wilson trial, seeded `z / K`.
+    WilsonLiquid,
+    /// The vapour-like Wilson trial, seeded `K z`.
+    WilsonVapour,
+    /// A pure-component trial, seeded one component at one and the rest at `1e-12`.
+    PureComponent,
+}
+
+impl MultiflashSeedPath {
+    /// The spec's spelling.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Stable => "stable",
+            Self::WilsonLiquid => "wilson_liquid",
+            Self::WilsonVapour => "wilson_vapour",
+            Self::PureComponent => "pure_component",
+        }
+    }
+}
+
+/// Result of `eos.multiflash_stability_test`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MultiflashStabilityTestResult {
+    /// Which trial found the phase, or `Stable` when none did.
+    pub path: MultiflashSeedPath,
+    /// The tangent-plane distance of every trial attempted, in the order the method runs
+    /// them: the liquid-like Wilson trial, the vapour-like one, then the pure-component
+    /// trials in the order their components were visited.
+    pub tm: Vec<f64>,
+    /// The phase to add: the trial composition that lay below the plane, or empty when
+    /// `path` is `Stable`.
+    pub seed_composition: Vec<f64>,
+    /// The fraction to start that phase at - the feed mole fraction of the trial's own
+    /// component upstream names, which differs between the two Wilson trials and the
+    /// pure-component ones.
+    pub seed_fraction: f64,
+    /// Which component the pure-component trial started from, as its position in the
+    /// feed, or `-1` when the path is not `PureComponent`.
+    ///
+    /// **A position and not a name**, because a `Mixture` built from critical constants
+    /// carries none - the transport crosses `Tc`, `Pc` and `omega`, not the substances'
+    /// identities - and a port whose two implementations disagreed about this field would
+    /// be reporting one fact two ways.
+    pub seed_component_index: i64,
+    /// Successive-substitution steps taken over every trial.
+    pub iterations: u32,
+    /// The smallest `T / Tc_i` over the components.
+    pub min_t_over_tc: f64,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for MultiflashStabilityTestResult {
+    const CALC_ID: &'static str = "eos.multiflash_stability_test";
+    const FIELDS: &'static [&'static str] = &[
+        "path",
+        "tm",
+        "seed_composition",
+        "seed_fraction",
+        "seed_component_index",
+        "iterations",
+        "min_t_over_tc",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.water_dew_point_temperature`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WaterDewPointTemperatureResult {

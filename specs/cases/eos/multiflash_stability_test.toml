@@ -1,0 +1,53 @@
+model = "eos.multiflash_stability_test"
+[[cases]]
+id = "the_water_dew_point_gas_at_its_own_dew_point"
+tolerance = 1e-06
+source = """NeqSim master, from `validation/neqsim/captures/water_dew_point_seed_probe.tsv`: the
+gas NeqSim's own `WaterDewPointTest` builds - CO2 0.02, nitrogen 0.01, methane 0.9 - x, ethane
+0.05, propane 0.01, i-butane 0.005, n-butane 0.005 and water x, with x = 35e-6 - on a plain
+`SystemSrkEos` at 70 bara, held at the temperature NeqSim's multiphase water dew point names.
+
+**The probe's finding is what this case pins.** At that state NeqSim's own
+`TPmultiflash.stabilityAnalysis` - the override this id ports - adds an **aqueous** phase with
+water at `x = 0.999993878160488`, and neither of its Wilson trials finds it: the pure-water
+trial does. That is the mechanism `eos.tp_multiflash` has been missing, and the composition
+this returns is NeqSim's to six figures."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+T = 260.545463562012
+P = 7000000.0
+z = [0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 0.000035]
+[cases.expected]
+path = "pure_component"
+seed_component_index = 7.0
+seed_fraction = 0.000035
+[[cases]]
+id = "the_same_gas_at_200_ppm_at_its_dew_point"
+tolerance = 1e-06
+source = """The same gas at 200 ppm water, at the temperature NeqSim's multiphase water dew
+point names for it, from the same capture. The aqueous composition upstream reports there is
+`0.999989364136382`, so the same trial fires - at a water fraction nearly six times larger,
+which is what makes this a second state rather than a repeat."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+T = 284.302406311035
+P = 7000000.0
+z = [0.02, 0.01, 0.8998, 0.05, 0.01, 0.005, 0.005, 0.0002]
+[cases.expected]
+path = "pure_component"
+seed_component_index = 7.0
+seed_fraction = 0.0002
+[[cases]]
+id = "the_same_gas_ten_kelvin_warm_of_its_dew_point"
+tolerance = 1e-06
+source = """The same gas at 35 ppm and 270 K, ten kelvin above the dew point the capture names.
+The probe reads NeqSim there as one gas phase with `multiPhaseTest` false from either stability
+analysis, so no trial of either kind finds a phase and the answer is `stable` - which is what
+makes the case above a threshold crossing rather than a model that always finds one."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+T = 270.0
+P = 7000000.0
+z = [0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 0.000035]
+[cases.expected]
+path = "stable"

@@ -417,12 +417,14 @@ fn the_answer_never_exceeds_the_three_phase_ceiling() {
 /// `260` K - so the trial is not broken; it simply does not find the water-rich stationary
 /// point at the temperatures upstream calls the dew point.
 ///
-/// **This is a canary and not a property to preserve.** Upstream reaches the aqueous phase
-/// through a chain of four constructs, of which this tree ports one - see
-/// [`azoth_eos::tp_multiflash`]'s "What is not here". When the one that matters lands these
-/// assertions fail, and that is the signal that `eos.water_dew_point_multiphase` and
-/// `eos.water_dew_point_line` have become portable. Until then they are two classes this
-/// tree does not port, and the register says so.
+/// **This test was written as a canary and it fired, on 2026-10-13.** When it was added the
+/// assertions were the other way round: this flash answered one gas phase at NeqSim's own
+/// dew-point temperature, and the test said so. `eos.multiflash_stability_test` landed -
+/// `TPmultiflash`'s **own** `stabilityAnalysis`, the method its `run()` calls and the one the
+/// base class's two-trial test shadows - and with it the pure-component trial that reaches
+/// the aqueous phase. So the assertions are inverted here rather than deleted, and the two
+/// classes downstream, `eos.water_dew_point_multiphase` and `eos.water_dew_point_line`, are
+/// portable now.
 #[test]
 fn the_aqueous_phase_appears_far_colder_than_neqsim_calls_the_dew_point() {
     use azoth_eos::hydrate_inhibitor_wt::{PhaseLabel, label};
@@ -459,18 +461,18 @@ fn the_aqueous_phase_appears_far_colder_than_neqsim_calls_the_dew_point() {
 
         assert_eq!(
             aqueous_at(&mixture, neqsim_dew_point, &z),
-            Some(false),
+            Some(true),
             "{ppm} ppm: NeqSim's own multiphase dew point is {neqsim_dew_point} K, and this \
              flash answers one gas phase there"
         );
 
-        let appears = (100..=300)
-            .rev()
-            .find(|t| aqueous_at(&mixture, f64::from(*t), &z) == Some(true));
-        assert!(
-            appears.is_some(),
-            "{ppm} ppm: no aqueous phase anywhere in 100-300 K, so the trial itself is broken \
-             rather than the seeding"
+        // And ten kelvin warmer it does not, so this is a crossing rather than a flash that
+        // reports an aqueous phase wherever it is asked.
+        assert_eq!(
+            aqueous_at(&mixture, neqsim_dew_point + 10.0, &z),
+            Some(false),
+            "{ppm} ppm: an aqueous phase ten kelvin above the dew point is one the seeding \
+             invented"
         );
     }
 }

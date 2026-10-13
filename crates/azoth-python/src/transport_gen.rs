@@ -4156,6 +4156,72 @@ impl From<&azoth_eos::results::MollerupAlphaResult> for PyMollerupAlphaResult {
         }
     }
 }
+/// Result of `eos.multiflash_stability_test`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "MultiflashStabilityTestResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyMultiflashStabilityTestResult {
+    /// Which trial found the phase, or that none did. `stable` means every trial lay at or above the tangent plane, and then `seed_composition` is empty and `seed_fraction` is zero.
+    #[pyo3(get)]
+    pub path: String,
+    /// The tangent-plane distance of every trial run, in the order the method runs them: the liquid-like Wilson trial, the vapour-like one, then the pure-component trials in the order their components were visited. A trial that failed or converged to the feed carries `10.0`.
+    #[pyo3(get)]
+    pub tm: Vec<f64>,
+    /// The phase to add: the trial composition that lay below the plane, or empty where `path` is `stable`.
+    #[pyo3(get)]
+    pub seed_composition: Vec<f64>,
+    /// The mole fraction of the feed to start that phase at - the trial's own component's feed fraction - or zero where `path` is `stable`.
+    #[pyo3(get)]
+    pub seed_fraction: f64,
+    /// Which component the pure-component trial started from, as its position in the feed, or `-1` where the path is not `pure_component`. **A position and not a name**: a mixture built from critical constants carries no names, and the two implementations would otherwise disagree about this field.
+    #[pyo3(get)]
+    pub seed_component_index: i64,
+    /// Successive-substitution steps taken over every trial.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// The smallest `T / Tc_i` over the components - how close the mixture is to the nearest component's critical point.
+    #[pyo3(get)]
+    pub min_t_over_tc: f64,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyMultiflashStabilityTestResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "MultiflashStabilityTestResult(path={:?}, tm={:?}, seed_composition={:?}, seed_fraction={:?}, seed_component_index={:?}, iterations={:?}, min_t_over_tc={:?}, {} warning(s))",
+            self.path,
+            self.tm,
+            self.seed_composition,
+            self.seed_fraction,
+            self.seed_component_index,
+            self.iterations,
+            self.min_t_over_tc,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::MultiflashStabilityTestResult> for PyMultiflashStabilityTestResult {
+    fn from(r: &azoth_eos::results::MultiflashStabilityTestResult) -> Self {
+        Self {
+            path: r.path.as_str().to_string(),
+            tm: r.tm.clone(),
+            seed_composition: r.seed_composition.clone(),
+            seed_fraction: r.seed_fraction,
+            seed_component_index: r.seed_component_index,
+            iterations: r.iterations,
+            min_t_over_tc: r.min_t_over_tc,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.nitric_sulfuric_acid_vapor_pressure`, transported.
 #[pyclass(
     frozen,

@@ -24,6 +24,7 @@ from azoth.core.result_base import TURBULENT_MIN as TURBULENT_MIN
 from azoth.core.result_base import FlowRegime as FlowRegime
 from azoth.core.result_base import HenryStatus as HenryStatus
 from azoth.core.result_base import HydrateStructure as HydrateStructure
+from azoth.core.result_base import MultiflashSeedPath as MultiflashSeedPath
 from azoth.core.result_base import Phase as Phase
 from azoth.core.result_base import PlusModel as PlusModel
 from azoth.core.result_base import RootStructure as RootStructure

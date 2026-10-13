@@ -39,6 +39,7 @@
 //!   - specs/models/eos/liquid_conductivity_polynom.toml
 //!   - specs/models/eos/mason_saxena_conductivity.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
+//!   - specs/models/eos/multiflash_stability_test.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
 //!   - specs/models/eos/parachor_mixture_surface_tension.toml
 //!   - specs/models/eos/parahydrogen_solid_phase.toml
@@ -5084,6 +5085,141 @@ pub static MOLAR_ENTHALPY_ENTROPY_SPEC: ModelSpec = ModelSpec {
     algorithm: None,
     checks: MOLAR_ENTHALPY_ENTROPY_CHECKS,
     cases: MOLAR_ENTHALPY_ENTROPY_CASES,
+};
+
+static MULTIFLASH_STABILITY_TEST_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "T",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute temperature; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "P",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static MULTIFLASH_STABILITY_TEST_CASES: &[TestCase] = &[
+    TestCase {
+        id: "the_water_dew_point_gas_at_its_own_dew_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 260.545463562012), ("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 3.5e-05],
+        )],
+        matrices: &[],
+        expected: &[("seed_component_index", 7.0), ("seed_fraction", 3.5e-05)],
+        expected_vectors: &[],
+        expected_strings: &[("path", "pure_component")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_same_gas_at_200_ppm_at_its_dew_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 284.302406311035), ("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[],
+        vectors: &[("z", &[0.02, 0.01, 0.8998, 0.05, 0.01, 0.005, 0.005, 0.0002])],
+        matrices: &[],
+        expected: &[("seed_component_index", 7.0), ("seed_fraction", 0.0002)],
+        expected_vectors: &[],
+        expected_strings: &[("path", "pure_component")],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_same_gas_ten_kelvin_warm_of_its_dew_point",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-06,
+        numbers: &[("T", 270.0), ("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 3.5e-05],
+        )],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[("path", "stable")],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static MULTIFLASH_STABILITY_TEST_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "multiflash_stability_seeding",
+    convergence: "absolute",
+    tolerance: 1e-09,
+    max_iterations: 200,
+    bracket: None,
+    initialisation: Some("wilson_pair_then_pure_component"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.multiflash_stability_test`.
+pub static MULTIFLASH_STABILITY_TEST_SPEC: ModelSpec = ModelSpec {
+    id: "eos.multiflash_stability_test",
+    kind: "procedure",
+    algorithm: Some(&MULTIFLASH_STABILITY_TEST_ALGORITHM),
+    checks: MULTIFLASH_STABILITY_TEST_CHECKS,
+    cases: MULTIFLASH_STABILITY_TEST_CASES,
 };
 
 static NRTL_ACTIVITY_COEFFICIENTS_CHECKS: &[SpecCheck] = &[SpecCheck {
@@ -10672,6 +10808,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &LIQUID_CONDUCTIVITY_POLYNOM_SPEC,
     &MASON_SAXENA_CONDUCTIVITY_SPEC,
     &MOLAR_ENTHALPY_ENTROPY_SPEC,
+    &MULTIFLASH_STABILITY_TEST_SPEC,
     &NRTL_ACTIVITY_COEFFICIENTS_SPEC,
     &PARACHOR_MIXTURE_SURFACE_TENSION_SPEC,
     &PARAHYDROGEN_SOLID_PHASE_SPEC,

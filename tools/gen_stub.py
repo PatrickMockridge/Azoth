@@ -406,6 +406,7 @@ ENUMS = {
     "RootStructure",
     "StabilityVerdict",
     "TpMultiflashSeed",
+    "MultiflashSeedPath",
     "FlowRegime",
     "HenryStatus",
     "HydrateStructure",

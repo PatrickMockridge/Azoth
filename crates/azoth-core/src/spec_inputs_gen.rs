@@ -72,6 +72,7 @@
 //!   - specs/calcs/eos/matcop_prumr_new_alpha.toml
 //!   - specs/models/eos/molar_enthalpy_entropy.toml
 //!   - specs/calcs/eos/mollerup_alpha.toml
+//!   - specs/models/eos/multiflash_stability_test.toml
 //!   - specs/calcs/eos/nitric_sulfuric_acid_vapor_pressure.toml
 //!   - specs/models/eos/nrtl_activity_coefficients.toml
 //!   - specs/models/eos/parachor_mixture_surface_tension.toml
@@ -746,6 +747,13 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.mollerup_alpha", "p2", "dimensionless"),
     ("eos.mollerup_alpha", "p3", "dimensionless"),
     ("eos.mollerup_alpha", "Tr", "dimensionless"),
+    (
+        "eos.multiflash_stability_test",
+        "T",
+        "thermodynamic_temperature",
+    ),
+    ("eos.multiflash_stability_test", "P", "pressure"),
+    ("eos.multiflash_stability_test", "z", "dimensionless"),
     (
         "eos.nitric_sulfuric_acid_vapor_pressure",
         "T",

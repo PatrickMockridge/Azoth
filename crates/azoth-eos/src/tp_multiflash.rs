@@ -80,21 +80,9 @@ use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide};
 use crate::model_gen;
 use crate::multiphase::{MultiphasePhase, MultiphaseSplit, PhaseKind, solve_phase_fractions};
 use crate::pt_flash::pt_flash;
-use crate::results::{Phase, TpMultiflashResult, TpMultiflashSeed};
-use crate::stability_test::{feed_state, stability_test};
-
-/// Below this a trial is below the tangent plane, and the phase it found is real.
-///
-/// `stability_test`'s own limit, restated here because this module reaches it through the
-/// model's `verdict` rather than through `tm` alone.
-const TM_LIMIT: f64 = -1.0e-08;
-
-/// A trial within this of an existing phase, in sum-absolute composition, *is* that phase.
-///
-/// Upstream's `xTrivialCheck`, and it is what keeps a converged two-phase flash from gaining
-/// a third phase that is a copy of one it already has: the trial that reproduces `x` or `y`
-/// has a negative tangent-plane distance by construction, because the plane passes through it.
-const TRIVIAL_TOLERANCE: f64 = 1.0e-04;
+use crate::results::{MultiflashSeedPath, Phase, TpMultiflashResult, TpMultiflashSeed};
+use crate::multiflash_stability_test::multiflash_stability_test;
+use crate::stability_test::feed_state;
 
 /// A phase below this is dropped. Upstream's `1.1 * phaseFractionMinimumLimit`.
 ///
@@ -232,48 +220,27 @@ pub fn tp_multiflash(
     warnings.extend(flash.warnings.iter().cloned());
     let mut phases = phases_of(&flash, mixture, &reduced, z)?;
 
-    // The tangent-plane trial. `stability_test` measures from the feed, which is the same
-    // reference the flash used, and reports a composition per trial whether or not it found
-    // the feed unstable - so the *distance* is what decides, not the verdict: a converged
-    // two-phase flash is unstable by definition, and its own trials reproduce `x` and `y`.
-    let stability = stability_test(mixture, T, P, z)?;
-    warnings.extend(stability.warnings.iter().cloned());
+    // The seeding. **This is `TPmultiflash`'s own `stabilityAnalysis` and not the base
+    // method `eos.stability_test` ports** - the two share a name and nothing else - and the
+    // difference is the whole of what this model was missing: the override adds a
+    // pure-component trial per eligible component, which is what finds a water-rich phase
+    // in a gas carrying ppm water and a CO2-rich one in the N2/CO2/n-octane case.
+    let seeding = multiflash_stability_test(mixture, T, P, z)?;
+    warnings.extend(seeding.warnings.iter().cloned());
 
     // The phase count the two-phase flash reached, which is what `seeded` is measured against:
     // a phase added and then merged away left the answer the flash's own, and reporting it as
     // seeded would say the model found something it did not keep.
     let base_count = phases.len();
     let mut seeded = false;
-    for (trial, &tm) in stability.w.iter().zip(&stability.tm) {
-        if tm >= TM_LIMIT {
-            continue;
-        }
-        // A trial that *is* an existing phase is the trivial solution, not a new phase.
-        let trivial = phases
-            .iter()
-            .any(|phase| distance(trial, &phase.composition) < TRIVIAL_TOLERANCE);
-        if trivial {
-            continue;
-        }
-        let (_, side) = feed_state(mixture, &reduced, trial)?;
-        // Upstream's starting fraction: the feed's mole fraction of the trial's largest
-        // component. A share of the feed rather than a guess at the answer, and the Newton
-        // below moves it.
-        let dominant = trial
-            .iter()
-            .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-            .map_or(0, |(i, _)| i);
+    if seeding.path != MultiflashSeedPath::Stable {
+        let (_, side) = feed_state(mixture, &reduced, &seeding.seed_composition)?;
         phases.push(MultiphasePhase {
-            fraction: z[dominant],
-            composition: trial.clone(),
+            fraction: seeding.seed_fraction,
+            composition: seeding.seed_composition.clone(),
             kind: PhaseKind::Cubic(side),
         });
         seeded = true;
-        // Upstream returns after the first phase it adds; the solve below is what decides
-        // whether the phase survives, and a second seeding would start from a set it has
-        // not seen.
-        break;
     }
 
     // **Nothing seeded, nothing to solve.** When the trial added no phase the answer is the
@@ -390,10 +357,10 @@ pub fn tp_multiflash(
         } else {
             TpMultiflashSeed::TwoPhaseFlash
         },
-        tm: stability.tm.clone(),
+        tm: seeding.tm.clone(),
         iterations,
         residual,
-        min_t_over_tc: flash.min_t_over_tc.min(stability.min_t_over_tc),
+        min_t_over_tc: flash.min_t_over_tc.min(seeding.min_t_over_tc),
         warnings,
     })
 }

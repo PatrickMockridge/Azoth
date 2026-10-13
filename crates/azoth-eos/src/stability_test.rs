@@ -48,7 +48,7 @@ const LOG_W_CEILING: f64 = 700.0;
 /// Spelled out rather than left to `f64::ln` because the Python reference has to be
 /// (`math.log` raises, and `log(-0.0)` differs between the two), and the two sides
 /// are meant to be readable as the same function.
-fn ln(value: f64) -> f64 {
+pub(crate) fn ln(value: f64) -> f64 {
     if value > 0.0 {
         value.ln()
     } else {

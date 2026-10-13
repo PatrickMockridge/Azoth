@@ -107,6 +107,7 @@ from azoth.core.result import (
     MixerResult,
     MolarEnthalpyEntropyResult,
     MollerupAlphaResult,
+    MultiflashStabilityTestResult,
     NitricSulfuricAcidVaporPressureResult,
     NrtlActivityCoefficientsResult,
     OilAssayDerivationResult,
@@ -233,6 +234,9 @@ from azoth.core.result import (
     HenryStatus as _HenryStatus,
 )
 from azoth.core.result import (
+    MultiflashSeedPath as _MultiflashSeedPath,
+)
+from azoth.core.result import (
     Phase as _Phase,
 )
 from azoth.core.result import (
@@ -352,6 +356,7 @@ __all__ = [
     "mixer",
     "molar_enthalpy_entropy",
     "mollerup_alpha",
+    "multiflash_stability_test",
     "nitric_sulfuric_acid_vapor_pressure",
     "nrtl_activity_coefficients",
     "oil_assay_derivation",
@@ -1882,6 +1887,34 @@ def mollerup_alpha(p1: float, p2: float, p3: float, Tr: float) -> MollerupAlphaR
     )
     return MollerupAlphaResult(
         alpha=result.alpha,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def multiflash_stability_test(mixture: Mixture, T: Q, P: Q, z: list[float]) -> MultiflashStabilityTestResult:
+    """``eos.multiflash_stability_test``, computed in Rust."""
+    spec = _models_gen.model("eos.multiflash_stability_test")
+    result = _core.multiflash_stability_test(
+        [c.Tc.to_base_units().magnitude for c in mixture.components],
+        [c.Pc.to_base_units().magnitude for c in mixture.components],
+        [c.omega for c in mixture.components],
+        mixture.flattened_kij(),
+        _association_spec(mixture),
+        input_to_si(spec, "T", T),
+        input_to_si(spec, "P", P),
+        list(z),
+        mixture.cubic.name,
+        mixture.alpha,
+        [list(c.alpha_params) for c in mixture.components],
+    )
+    return MultiflashStabilityTestResult(
+        path=_MultiflashSeedPath(result.path),
+        tm=tuple(result.tm),
+        seed_composition=tuple(result.seed_composition),
+        seed_fraction=result.seed_fraction,
+        seed_component_index=result.seed_component_index,
+        iterations=result.iterations,
+        min_t_over_tc=result.min_t_over_tc,
         warnings=_warnings(result.warnings),
     )
 

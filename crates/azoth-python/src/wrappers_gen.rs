@@ -1425,6 +1425,51 @@ pub fn mollerup_alpha(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Multiflash seeding stability test.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(
+    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+)]
+#[allow(non_snake_case)] // symbols from the published equation
+#[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
+pub fn multiflash_stability_test(
+    py: Python<'_>,
+    Tc: Vec<f64>,
+    Pc: Vec<f64>,
+    omega: Vec<f64>,
+    kij: Vec<f64>,
+    association: PyRef<'_, PyAssociationSpec>,
+    T: f64,
+    P: f64,
+    z: Vec<f64>,
+    eos: &str,
+    alpha: &str,
+    alpha_params: Option<Vec<Vec<f64>>>,
+) -> PyResult<crate::transport_gen::PyMultiflashStabilityTestResult> {
+    let mixture = build_mixture(
+        py,
+        &Tc,
+        &Pc,
+        &omega,
+        kij,
+        &association,
+        eos,
+        alpha,
+        alpha_params.as_deref(),
+    )?;
+    azoth_eos::multiflash_stability_test::multiflash_stability_test(
+        &mixture,
+        kelvins(T),
+        pascals(P),
+        &z,
+    )
+    .map(|r| crate::transport_gen::PyMultiflashStabilityTestResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// Pure-component vapour pressures of water, nitric acid and sulfuric acid.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

@@ -250,6 +250,22 @@ class TpMultiflashSeed(StrEnum):
     STABILITY_SEEDED = "stability_seeded"
 
 
+class MultiflashSeedPath(StrEnum):
+    """Which trial of the multiflash's own stability analysis found a phase.
+
+    A boolean would say a phase was found. This says *which* of the method's two halves
+    found it - the Wilson pair it runs first, or the pure-component fallback it reaches only
+    when the pair finds nothing - because that is the difference between this method and the
+    base one `eos.stability_test` ports, and a caller reading the answer against NeqSim's
+    needs to know which of them fired.
+    """
+
+    STABLE = "stable"
+    WILSON_LIQUID = "wilson_liquid"
+    WILSON_VAPOUR = "wilson_vapour"
+    PURE_COMPONENT = "pure_component"
+
+
 class HenryStatus(StrEnum):
     """Whether the guideline's Henry constant was evaluated inside the fitted range.
 

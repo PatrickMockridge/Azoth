@@ -90,6 +90,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyMatcopPrumrNewAlphaResult>()?;
     m.add_class::<crate::transport_gen::PyMolarEnthalpyEntropyResult>()?;
     m.add_class::<crate::transport_gen::PyMollerupAlphaResult>()?;
+    m.add_class::<crate::transport_gen::PyMultiflashStabilityTestResult>()?;
     m.add_class::<crate::transport_gen::PyNitricSulfuricAcidVaporPressureResult>()?;
     m.add_class::<crate::transport_gen::PyNrtlActivityCoefficientsResult>()?;
     m.add_class::<crate::transport_gen::PyParachorMixtureSurfaceTensionResult>()?;
@@ -408,6 +409,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::mollerup_alpha, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::multiflash_stability_test,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::nitric_sulfuric_acid_vapor_pressure,
         m

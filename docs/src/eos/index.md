@@ -109,6 +109,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.liquid_conductivity_polynom`](./liquid_conductivity_polynom.md) | `direct composition` | NeqSim master `liquidphysicalproperties/conductivity/Conductivity` |
 | [`eos.mason_saxena_conductivity`](./mason_saxena_conductivity.md) | `direct composition` | Mason, E. A.; Saxena, S. C. (1958); Chung et al. (1988) |
 | [`eos.molar_enthalpy_entropy`](./molar_enthalpy_entropy.md) | `direct composition` | The composition of ideal-gas and residual contributions |
+| [`eos.multiflash_stability_test`](./multiflash_stability_test.md) | `multiflash_stability_seeding` | NeqSim master `TPmultiflash.stabilityAnalysis` |
 | [`eos.nrtl_activity_coefficients`](./nrtl_activity_coefficients.md) | `direct composition` | Renon, H.; Prausnitz, J. M. (1968) |
 | [`eos.parachor_mixture_surface_tension`](./parachor_mixture_surface_tension.md) | `direct composition` | NeqSim master `ParachorSurfaceTension` |
 | [`eos.parahydrogen_solid_phase`](./parahydrogen_solid_phase.md) | `bracketed_log_volume_newton` | Sannerhaugen, A. (2026) |

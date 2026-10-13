@@ -201,6 +201,7 @@ Five sections, and the difference between them is the point:
 - [`eos.liquid_conductivity_polynom`](./eos/liquid_conductivity_polynom.md) — Liquid thermal conductivity from the LIQCOND polynomial
 - [`eos.mason_saxena_conductivity`](./eos/mason_saxena_conductivity.md) — Gas mixture conductivity by Mason-Saxena mixing over Chung pure-component conductivities
 - [`eos.molar_enthalpy_entropy`](./eos/molar_enthalpy_entropy.md) — Molar enthalpy and entropy of a mixture
+- [`eos.multiflash_stability_test`](./eos/multiflash_stability_test.md) — Multiflash seeding stability test
 - [`eos.nrtl_activity_coefficients`](./eos/nrtl_activity_coefficients.md) — Activity coefficients from the NRTL local-composition model
 - [`eos.parachor_mixture_surface_tension`](./eos/parachor_mixture_surface_tension.md) — Interface surface tension from the parachor (Weinaug-Katz)
 - [`eos.parahydrogen_solid_phase`](./eos/parahydrogen_solid_phase.md) — Solid para-hydrogen reference phase state
