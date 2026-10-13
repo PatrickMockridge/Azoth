@@ -11,8 +11,10 @@ java -cp .:neqsim-f0c7436.jar CpaSweep > captures/cpa_sweep.tsv
 ```
 
 **A probe that declares NeqSim's own package compiles with `-d .` and runs under that
-package's name**, because what it needs is package-private; `WaxReferenceProbe` and
-`PcsaftCompositionProbe` are the two, and each says in its header why.
+package's name**, because what it needs is package-private; `WaxReferenceProbe`,
+`PcsaftCompositionProbe` and `WaterDewPointSeedProbe` are the three, and each says in its
+header why - the last one for `TPmultiflash.multiPhaseTest`, which is the flag its whole
+chain of seeding hinges on and which no probe outside the package can read.
 
 ```bash
 javac -proc:none -cp neqsim-f0c7436.jar -d . PcsaftCompositionProbe.java
