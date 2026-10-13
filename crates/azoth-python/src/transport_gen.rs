@@ -8769,6 +8769,63 @@ impl From<&azoth_eos::results::VuFlashSingleCompResult> for PyVuFlashSingleCompR
         }
     }
 }
+/// Result of `eos.water_dew_point_multiphase`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WaterDewPointMultiphaseResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWaterDewPointMultiphaseResult {
+    /// the water dew-point temperature: the bracket's midpoint, which is what upstream reports rather than either endpoint.
+    #[pyo3(get)]
+    pub temperature: PyQty,
+    /// the bracket's width at the answer. Upstream bisects to `1e-4` and stops there, so this is the resolution the temperature is stated to rather than a residual.
+    #[pyo3(get)]
+    pub bracket_width: PyQty,
+    /// how many phases the fluid has at the answer: two where the dew point is a real crossing, which is the state the bracket was looking for.
+    #[pyo3(get)]
+    pub phase_count: u32,
+    /// trial flashes taken by both the coarse search and the bisection, over upstream's own counter.
+    #[pyo3(get)]
+    pub iterations: u32,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWaterDewPointMultiphaseResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WaterDewPointMultiphaseResult(temperature={:?}, bracket_width={:?}, phase_count={:?}, iterations={:?}, {} warning(s))",
+            self.temperature,
+            self.bracket_width,
+            self.phase_count,
+            self.iterations,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::WaterDewPointMultiphaseResult> for PyWaterDewPointMultiphaseResult {
+    fn from(r: &azoth_eos::results::WaterDewPointMultiphaseResult) -> Self {
+        Self {
+            temperature: PyQty {
+                magnitude_si: r.temperature.value,
+                unit: "K".to_string(),
+            },
+            bracket_width: PyQty {
+                magnitude_si: r.bracket_width,
+                unit: "K".to_string(),
+            },
+            phase_count: r.phase_count,
+            iterations: r.iterations,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.water_dew_point_temperature`, transported.
 #[pyclass(
     frozen,

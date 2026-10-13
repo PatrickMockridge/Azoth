@@ -715,6 +715,42 @@ impl CalcResult for TpSolidFlashResult {
     }
 }
 
+/// Result of `eos.water_dew_point_multiphase`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WaterDewPointMultiphaseResult {
+    /// The water dew-point temperature: the bracket's midpoint, which is what upstream
+    /// reports rather than either endpoint.
+    pub temperature: ThermodynamicTemperature,
+    /// The bracket's width at the answer, in K. Upstream bisects to `1e-4` and stops there,
+    /// so this is the resolution the temperature is stated to rather than a residual - and it
+    /// is reported because the answer is the midpoint of a bracket whose history fixed it,
+    /// which makes the last digits a fact about the search.
+    pub bracket_width: f64,
+    /// How many phases the fluid has at the answer. Two where the dew point is a real
+    /// crossing, which is the state the bracket was looking for.
+    pub phase_count: u32,
+    /// Trial flashes taken by both the coarse search and the bisection, over upstream's own
+    /// counter - which is not reset between them.
+    pub iterations: u32,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WaterDewPointMultiphaseResult {
+    const CALC_ID: &'static str = "eos.water_dew_point_multiphase";
+    const FIELDS: &'static [&'static str] = &[
+        "temperature",
+        "bracket_width",
+        "phase_count",
+        "iterations",
+        "warnings",
+    ];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Which trial of `eos.multiflash_stability_test` found the phase, or that none did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MultiflashSeedPath {

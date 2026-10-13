@@ -83,6 +83,7 @@
 //!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
+//!   - specs/models/eos/water_dew_point_multiphase.toml
 //!   - specs/models/eos/water_dew_point_temperature.toml
 //!   - specs/models/eos/water_phase.toml
 //!   - specs/models/eos/wilke_viscosity.toml
@@ -10321,6 +10322,129 @@ pub static VU_FLASH_SINGLE_COMP_SPEC: ModelSpec = ModelSpec {
     cases: VU_FLASH_SINGLE_COMP_CASES,
 };
 
+static WATER_DEW_POINT_MULTIPHASE_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "P",
+        min: Some(0.0),
+        min_inclusive: false,
+        max: None,
+        max_inclusive: true,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "an absolute pressure; zero and below are not states",
+    },
+}];
+
+static WATER_DEW_POINT_MULTIPHASE_CASES: &[TestCase] = &[
+    TestCase {
+        id: "neqsims_own_gas_at_35_ppm_and_70_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 3.5e-05],
+        )],
+        matrices: &[],
+        expected: &[("temperature", 260.545463562012), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_same_gas_at_22_ppm_and_70_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[("eos", "srk")],
+        vectors: &[(
+            "z",
+            &[0.02, 0.01, 0.899978, 0.05, 0.01, 0.005, 0.005, 2.2e-05],
+        )],
+        matrices: &[],
+        expected: &[("temperature", 254.88956451416), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "the_same_gas_at_200_ppm_and_70_bara",
+        kind: "case",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 0.001,
+        numbers: &[("P", 7000000.0)],
+        flags: &[],
+        lists: &[(
+            "components",
+            &[
+                "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+            ],
+        )],
+        strings: &[("eos", "srk")],
+        vectors: &[("z", &[0.02, 0.01, 0.8998, 0.05, 0.01, 0.005, 0.005, 0.0002])],
+        matrices: &[],
+        expected: &[("temperature", 284.302406311035), ("phase_count", 2.0)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+static WATER_DEW_POINT_MULTIPHASE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "water_dew_point_bracket_bisection",
+    convergence: "absolute",
+    tolerance: 0.0001,
+    max_iterations: 100,
+    bracket: Some(ModelBracket {
+        scheme: "step_and_expand",
+        lower: 200.0,
+        upper: 600.0,
+        steps: 50,
+    }),
+    initialisation: Some("coarse_step_down_from_500_k"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.water_dew_point_multiphase`.
+pub static WATER_DEW_POINT_MULTIPHASE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.water_dew_point_multiphase",
+    kind: "procedure",
+    algorithm: Some(&WATER_DEW_POINT_MULTIPHASE_ALGORITHM),
+    checks: WATER_DEW_POINT_MULTIPHASE_CHECKS,
+    cases: WATER_DEW_POINT_MULTIPHASE_CASES,
+};
+
 static WATER_DEW_POINT_TEMPERATURE_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -10852,6 +10976,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &VS_FLASH_SPEC,
     &VU_FLASH_SPEC,
     &VU_FLASH_SINGLE_COMP_SPEC,
+    &WATER_DEW_POINT_MULTIPHASE_SPEC,
     &WATER_DEW_POINT_TEMPERATURE_SPEC,
     &WATER_PHASE_SPEC,
     &WILKE_VISCOSITY_SPEC,

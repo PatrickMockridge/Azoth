@@ -56,7 +56,11 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: `hydrate_fraction` are the same shape for the same reason: the fluid crosses as names and this
 #: side resolves them, because the fixed point starts from each `water`-or-`MEG` component's own
 #: `melting_point_temperature` and that is a databank column rather than a caller's argument.
-KNOWN_HAND_WRITTEN = 51
+#: 51 -> 52 when `eos.water_dew_point_multiphase` landed, the same shape as the sibling above
+#: and for the same reason - a name-taking kernel with an `eos` enum the spec declares as `eos`
+#: where the kernel calls it `cubic`, so the generated wrapper's parameter list is not the
+#: kernel's and the generator refuses rather than guessing at the mapping.
+KNOWN_HAND_WRITTEN = 52
 
 
 def _tools_module(name: str) -> ModuleType:

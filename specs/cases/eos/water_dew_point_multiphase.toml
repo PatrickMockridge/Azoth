@@ -1,0 +1,49 @@
+model = "eos.water_dew_point_multiphase"
+[[cases]]
+id = "neqsims_own_gas_at_35_ppm_and_70_bara"
+tolerance = 1e-03
+source = """NeqSim master, from `validation/neqsim/captures/water_dew_point_probe.tsv`: the
+gas NeqSim's own `WaterDewPointTest` builds - CO2 0.02, nitrogen 0.01, methane 0.9 - x, ethane
+0.05, propane 0.01, i-butane 0.005, n-butane 0.005 and water x, with x = 35e-6 - on a plain
+`SystemSrkEos` at 70 bara. The class answers `260.545463562012 K` with an aqueous phase beside
+the gas.
+
+**The sibling id answers `261.0546859015546` K at the same state**, a kelvin higher, because it
+prescribes the incipient phase where this one finds it. The two are NeqSim's two entry points
+and the difference is theirs."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 0.000035]
+P = 7000000.0
+[cases.expected]
+temperature = 260.545463562012
+phase_count = 2
+[[cases]]
+id = "the_same_gas_at_22_ppm_and_70_bara"
+tolerance = 1e-03
+source = """The same gas at 22 ppm water, from the same capture: NeqSim answers
+`254.889564514160 K`. This is the state NeqSim's own CPA test uses, so the capture's SRK
+column beside it is what a plain cubic says about the same feed."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.899978, 0.05, 0.01, 0.005, 0.005, 0.000022]
+P = 7000000.0
+[cases.expected]
+temperature = 254.889564514160
+phase_count = 2
+[[cases]]
+id = "the_same_gas_at_200_ppm_and_70_bara"
+tolerance = 1e-03
+source = """The same gas at 200 ppm water, from the same capture: NeqSim answers
+`284.302406311035 K`. A water fraction six times larger moves the dew point thirty kelvin, which
+is what makes this a third state rather than a repeat of the first."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.8998, 0.05, 0.01, 0.005, 0.005, 0.0002]
+P = 7000000.0
+[cases.expected]
+temperature = 284.302406311035
+phase_count = 2

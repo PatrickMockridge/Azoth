@@ -229,6 +229,7 @@ pub mod vs_flash;
 pub mod vu_flash;
 pub mod vu_flash_single_comp;
 pub mod water_phase;
+pub mod water_dew_point_multiphase;
 pub mod water_dew_point_temperature;
 pub mod wax_solid_fugacity;
 pub mod wilke_chang_diffusivity;
@@ -405,6 +406,8 @@ pub use van_laar_acid_activity_coefficients::van_laar_acid_activity_coefficients
 pub use vdw1f_mix_binary::vdw1f_mix_binary;
 pub use viscosity::viscosity;
 pub use vu_flash::vu_flash;
+pub use water_dew_point_multiphase::water_dew_point_multiphase;
+pub use water_dew_point_temperature::water_dew_point_temperature;
 pub use water_phase::water_phase;
 pub use wax_solid_fugacity::wax_solid_fugacity;
 pub use wilke_chang_diffusivity::wilke_chang_diffusivity;

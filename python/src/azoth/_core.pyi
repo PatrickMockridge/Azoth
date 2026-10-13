@@ -1533,6 +1533,14 @@ class VuFlashSingleCompResult:
     warnings: list[Warning]
 
 @final
+class WaterDewPointMultiphaseResult:
+    temperature: Qty
+    bracket_width: Qty
+    phase_count: int
+    iterations: int
+    warnings: list[Warning]
+
+@final
 class WaterDewPointTemperatureResult:
     temperature: Qty
     residual: float
@@ -3471,6 +3479,12 @@ def vu_flash_single_comp(
     alpha: str = "pr",
     alpha_params: list[list[float]] | None = None,
 ) -> VuFlashSingleCompResult: ...
+def water_dew_point_multiphase(
+    components: list[str],
+    z: list[float],
+    P: float,
+    eos: str | None = None,
+) -> WaterDewPointMultiphaseResult: ...
 def water_dew_point_temperature(
     components: list[str],
     z: list[float],

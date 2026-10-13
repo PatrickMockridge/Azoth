@@ -1687,6 +1687,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 4,
         "tests_skipped": 0,
     },
+    'eos.water_dew_point_multiphase': {
+        "calc_id": 'eos.water_dew_point_multiphase',
+        "name": 'Water dew-point temperature, bracketed on a multiphase flash',
+        "spec": {'path': 'specs/models/eos/water_dew_point_multiphase.toml', 'sha256': 'c3218f5e15879472f2cbe7dd460760c143a6308b46ebf95590ee81347d232d62'},
+        "code": [{'path': 'python/src/azoth/eos/reference/water_dew_point_multiphase.py', 'sha256': '424d91ce125dc5f7a98fcb1d4e84ed6178d0434e2043a02b67fac5848016c749'}, {'path': 'crates/azoth-eos/src/water_dew_point_multiphase.rs', 'sha256': '1566c6ce3e49df28aaa8070c3ba8ba8adf96742e3c8927562e0ef71ac9c53e08'}],
+        "source": 'NeqSim master `WaterDewPointTemperatureMultiphaseFlash`',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 3,
+        "tests_skipped": 0,
+    },
     'eos.water_dew_point_temperature': {
         "calc_id": 'eos.water_dew_point_temperature',
         "name": 'Water dew-point temperature',

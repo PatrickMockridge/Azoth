@@ -222,6 +222,7 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterDewPointMultiphaseResult,
     WaterDewPointTemperatureResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
@@ -468,6 +469,7 @@ __all__ = [
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
+    "water_dew_point_multiphase",
     "water_dew_point_temperature",
     "water_phase",
     "wax_solid_fugacity",
@@ -3556,6 +3558,24 @@ def vu_flash_single_comp(mixture: Mixture, ideal_gas: IdealGasModel, P: Q, V: Q,
         vapour_fraction=result.vapour_fraction,
         V=from_si(result.V.magnitude_si, result.V.unit),
         phase=_Phase(result.phase),
+        warnings=_warnings(result.warnings),
+    )
+
+
+def water_dew_point_multiphase(components: list[str], z: list[float], P: Q, eos: str='srk') -> WaterDewPointMultiphaseResult:
+    """``eos.water_dew_point_multiphase``, computed in Rust."""
+    spec = _models_gen.model("eos.water_dew_point_multiphase")
+    result = _core.water_dew_point_multiphase(
+        list(components),
+        list(z),
+        input_to_si(spec, "P", P),
+        eos,
+    )
+    return WaterDewPointMultiphaseResult(
+        temperature=from_si(result.temperature.magnitude_si, result.temperature.unit),
+        bracket_width=from_si(result.bracket_width.magnitude_si, result.bracket_width.unit),
+        phase_count=result.phase_count,
+        iterations=result.iterations,
         warnings=_warnings(result.warnings),
     )
 

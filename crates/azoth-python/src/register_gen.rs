@@ -171,6 +171,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyVsFlashResult>()?;
     m.add_class::<crate::transport_gen::PyVuFlashResult>()?;
     m.add_class::<crate::transport_gen::PyVuFlashSingleCompResult>()?;
+    m.add_class::<crate::transport_gen::PyWaterDewPointMultiphaseResult>()?;
     m.add_class::<crate::transport_gen::PyWaterDewPointTemperatureResult>()?;
     m.add_class::<crate::transport_gen::PyWaterPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyWaxSolidFugacityResult>()?;
@@ -577,6 +578,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::wrappers_gen::vu_flash_single_comp,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(crate::eos::water_dew_point_multiphase, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::eos::water_dew_point_temperature,
         m

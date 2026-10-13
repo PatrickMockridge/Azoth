@@ -208,6 +208,7 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterDewPointMultiphaseResult,
     WaterDewPointTemperatureResult,
     WaterPhaseResult,
     WaxSolidFugacityResult,
@@ -363,6 +364,7 @@ __all__ = [
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
+    "water_dew_point_multiphase",
     "water_dew_point_temperature",
     "water_phase",
     "wax_solid_fugacity",
@@ -406,6 +408,7 @@ _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusiv
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _IAPWS_HENRY_LAW = "eos.iapws_henry_law"
 _HYBRID_EOS_GE_FLASH = "eos.hybrid_eos_ge_flash"
+_WATER_DEW_POINT_MULTIPHASE = "eos.water_dew_point_multiphase"
 _WATER_DEW_POINT_TEMPERATURE = "eos.water_dew_point_temperature"
 _WATER_PHASE = "eos.water_phase"
 _ARGON_SOLID_PHASE = "eos.argon_solid_phase"
@@ -3866,3 +3869,32 @@ def multiflash_stability_test(
     See :func:`azoth.eos.reference.multiflash_stability_test`.
     """
     return resolve(_MULTIFLASH_STABILITY_TEST)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def water_dew_point_multiphase(
+    components: list[str],
+    z: list[float],
+    P: Q,
+    eos: str = "srk",
+) -> WaterDewPointMultiphaseResult:
+    """The temperature a gas condenses water at, by NeqSim's bracketing route.
+
+    The sibling of :func:`water_dew_point_temperature`, and NeqSim's other entry point for the
+    same quantity. Where that one **prescribes** its incipient phase - a nearly pure water
+    phase seeded by hand and walked to the fugacity equality - this one asks a *multiphase
+    flash* where an aqueous phase appears: it starts at ``500`` K, steps down by ``20`` K until
+    one does, bisects to ``1e-4`` K, and answers the bracket's midpoint. ``WaterDewPointAnalyser``
+    selects between the two by name.
+
+    **The two disagree, and the sign is a function of the water content.** Measured on NeqSim's
+    own gas at 70 bara: the prescribed route is warmer by ``1.68`` K at 22 ppm and ``0.51`` K at
+    35, and colder by ``0.008`` K at 200. So neither is the conservative one in general.
+
+    Raises:
+        InvalidInputError: if ``z`` does not match ``components``, if the fluid names no
+            ``water``, if that water carries a zero mole fraction, or if no aqueous phase
+            appears anywhere in ``200`` to ``500`` K - which NeqSim answers with the floor.
+
+    See :func:`azoth.eos.reference.water_dew_point_multiphase`.
+    """
+    return resolve(_WATER_DEW_POINT_MULTIPHASE)(components=components, z=z, P=P, eos=eos)  # type: ignore[no-any-return]

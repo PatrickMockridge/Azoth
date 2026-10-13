@@ -3509,6 +3509,28 @@ class VuFlashSingleCompResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class WaterDewPointMultiphaseResult(_HasWarnings):
+    """Result of ``eos.water_dew_point_multiphase``."""
+
+    CALC_ID: ClassVar[str] = "eos.water_dew_point_multiphase"
+
+    #: the water dew-point temperature: the bracket's midpoint, which is what upstream reports rather than either endpoint.
+    temperature: Q
+
+    #: the bracket's width at the answer. Upstream bisects to `1e-4` and stops there, so this is the resolution the temperature is stated to rather than a residual.
+    bracket_width: Q
+
+    #: how many phases the fluid has at the answer: two where the dew point is a real crossing, which is the state the bracket was looking for.
+    phase_count: int
+
+    #: trial flashes taken by both the coarse search and the bisection, over upstream's own counter.
+    iterations: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WaterDewPointTemperatureResult(_HasWarnings):
     """Result of ``eos.water_dew_point_temperature``."""
 

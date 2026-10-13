@@ -1204,6 +1204,31 @@ pub fn water_dew_point_temperature(
     .map_err(|e| to_pyerr(py, e))
 }
 
+/// The water dew point a multiphase flash brackets, computed in Rust.
+///
+/// **The component names cross unresolved**, the shape the prescribed route beside it uses:
+/// the bracket asks a flash where an *aqueous* phase appears, and the label that decides it is
+/// `PhaseEos.init`'s, read from each component's own class.
+#[pyfunction]
+#[pyo3(signature = (components, z, P, eos = "srk"))]
+#[allow(non_snake_case)] // `P` and `z` are the symbols in the chemistry
+pub fn water_dew_point_multiphase(
+    py: Python<'_>,
+    components: Vec<String>,
+    z: Vec<f64>,
+    P: f64,
+    eos: &str,
+) -> PyResult<crate::transport_gen::PyWaterDewPointMultiphaseResult> {
+    azoth_eos::water_dew_point_multiphase::water_dew_point_multiphase(
+        &components,
+        &z,
+        pascals(P),
+        eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
+    )
+    .map(|r| crate::transport_gen::PyWaterDewPointMultiphaseResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
 /// A phase's transport properties, by NeqSim's phase-type dispatch.
 ///
 /// **The names cross verbatim and this side resolves them**, the shape the process bindings

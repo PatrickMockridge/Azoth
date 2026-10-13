@@ -1,0 +1,71 @@
+id = "eos.water_dew_point_multiphase"
+name = "Water dew-point temperature, bracketed on a multiphase flash"
+kind = "procedure"
+assumptions = [
+    "**this route asks a flash where the aqueous phase appears; `eos.water_dew_point_temperature` prescribes it.** The two are NeqSim's two entry points for the same quantity and they disagree by kelvin, which is why both are ids - `WaterDewPointAnalyser` selects between them by name.",
+    "**the answer is a bracket's midpoint.** Upstream starts at `500` K, steps down by `20` K until the phase appears (**up** if `500` K already has one), bisects to `1e-4` K, then asks for `0.5 * (Thigh + Tlow)` - so the last digits are a fact about the search, which is why `bracket_width` is reported.",
+    "**the two caps share one counter.** The coarse search runs while `i < 50` and the bisection while `i < 100`, over a counter neither resets - so steps spent in the first are steps the second does not have, and counting them apart would bisect finer and answer a different number.",
+    "**the phase is identified by NeqSim's own label, not by a count.** `hasPhaseType(\"aqueous\")` is `PhaseEos.init`'s rule - a volume ratio past `1.75`, then whether a phase's hydrocarbons outweigh its aqueous components - which `eos.hydrate_inhibitor_wt` already carries.",
+    "**a fluid whose bracket never closes is refused rather than answered.** Upstream returns the `200` K floor when no aqueous phase appears, which reads as a dew point and is not one. This refuses, because a caller cannot tell the two apart from the number alone.",
+    "**the fluid must carry water at a positive mole fraction**, since that is the phase the bracket looks for; a feed without it is refused at the door.",
+    "**the answer is a plain cubic's.** NeqSim's own test runs this class on `SystemSrkCPAstatoil`, an associating water this library cannot flash, so what is reproduced here is the SRK column of the capture.",
+    "**the flash beneath is `eos.tp_multiflash`**, which is why this id exists only now: the class brackets on a multiphase flash finding an aqueous phase, and that needed `eos.multiflash_stability_test` - `TPmultiflash`'s own `stabilityAnalysis` - before it could.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `WaterDewPointTemperatureMultiphaseFlash` and `ThermodynamicOperations.waterDewPointTemperatureMultiphaseFlash()` are the port source.\n",
+    "`validation/neqsim/captures/water_dew_point_probe.tsv` - the class's own answers at three states, from `WaterDewPointProbe`.\n",
+]
+[source]
+standard = "NeqSim master `WaterDewPointTemperatureMultiphaseFlash`"
+edition = "The bracketing route, which is the one `WaterDewPointAnalyser` selects by the method names `multiphase` and `CPA` and by its own default."
+[algorithm]
+scheme = "water_dew_point_bracket_bisection"
+initialisation = "coarse_step_down_from_500_k"
+convergence = "absolute"
+tolerance = 1e-04
+max_iterations = 100
+[algorithm.bracket]
+scheme = "step_and_expand"
+lower = 200.0
+upper = 600.0
+steps = 50
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the fluid's substances, by name, resolved against the component databank with the keycard's overrides applied. One must be `water` at a positive mole fraction."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions, checked rather than renormalised."
+[inputs.P]
+unit = "Pa"
+description = "absolute pressure at which the dew point is wanted; the temperature is what is bracketed."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+optional = true
+description = "the cubic the fluid and every trial flash run. NeqSim's own test uses SRK, which is the default."
+[outputs]
+[outputs.temperature]
+unit = "K"
+description = "the water dew-point temperature: the bracket's midpoint, which is what upstream reports rather than either endpoint."
+[outputs.bracket_width]
+unit = "K"
+description = "the bracket's width at the answer. Upstream bisects to `1e-4` and stops there, so this is the resolution the temperature is stated to rather than a residual."
+[outputs.phase_count]
+unit = "dimensionless"
+description = "how many phases the fluid has at the answer: two where the dew point is a real crossing, which is the state the bracket was looking for."
+[outputs.iterations]
+unit = "dimensionless"
+description = "trial flashes taken by both the coarse search and the bisection, over upstream's own counter."
+[[valid_range]]
+quantity = "P"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.water_dew_point_multiphase"
+rust = "azoth_eos::water_dew_point_multiphase"
