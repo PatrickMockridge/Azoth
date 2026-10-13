@@ -55,22 +55,23 @@
 //! divergence for water/n-hexane is upstream's seeding reaching states this does not; the spec
 //! says so.
 //!
-//! **And that is why the multiphase water dew point is not an id.** NeqSim's
-//! `WaterDewPointTemperatureMultiphaseFlash` brackets on where *a multiphase flash* reports
-//! an aqueous phase, so its answer is the seeding's. Measured on the gas NeqSim's own
-//! `WaterDewPointTest` builds, at 70 bara: this flash is **single-phase at `260.545` K** for
-//! 35 ppm water, which is the very temperature NeqSim's dew point puts an aqueous phase at,
-//! and the phase first appears here at `217` K - forty-three kelvin colder. At 200 ppm it is
-//! `260` K against NeqSim's `284.302` K. A water dew point that reads low is a gas a caller
-//! thinks is drier than it is, so the two classes stay unported with the seeding named as what
-//! would close them, and `tests/tp_multiflash.rs` holds the numbers as a canary.
+//! **And that is what the multiphase water dew point was waiting on - which is not one of the
+//! four above.** Measured on the gas NeqSim's own `WaterDewPointTest` builds, at 70 bara, this
+//! flash was **single-phase at `260.545` K**, the very temperature NeqSim's dew point puts an
+//! aqueous phase at, and the phase appeared here only at `217` K - forty-three kelvin colder.
+//! `validation/neqsim/WaterDewPointSeedProbe.java` attributed it: neither the enhanced
+//! analysis nor either named seed, but that **`TPmultiflash` overrides `stabilityAnalysis`**
+//! with a second method of the same name - the same Wilson pair plus a **pure-component
+//! fallback** - and this tree had ported the *base*. That override is
+//! [`crate::multiflash_stability_test`], and with it this flash answers at the same temperature
+//! NeqSim does and `eos.water_dew_point_multiphase` is an id.
 //!
-//! **Which of the four it is, is open, and it is being measured rather than inferred.**
-//! Calling [`crate::stability_test`] on that gas directly puts the water-rich stationary point
-//! (`w[water] = 1.0`, `tm = -52.7`) at `217` K and returns `stable` with both trials converged
-//! to the feed itself at `260.545` K, `250` K and `240` K - so the chain that produces
-//! upstream's aqueous phase begins with a stationary point this tree does not find, and 1 is
-//! the construct that exists to find it.
+//! **A stalled two-phase flash no longer stops the seeding either.** Upstream's flash is where
+//! this model's phase set *starts* and not what it answers, and there are states - a water
+//! dew point's incipient aqueous phase among them - where it reaches its cap and stops short:
+//! measured, `300` steps to `5.3e-5` against the `1e-10` it declares. It is now a warning and
+//! the set falls back to the feed, which is what makes `eos.water_dew_point_line`'s sweep
+//! possible at all.
 
 use azoth_core::units::{Pressure, ThermodynamicTemperature};
 use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
@@ -216,9 +217,47 @@ pub fn tp_multiflash(
     let algorithm = algorithm_of(spec)?;
     let reduced = mixture.reduced_parameters(T, P)?;
 
-    let flash = pt_flash(mixture, T, P, z)?;
-    warnings.extend(flash.warnings.iter().cloned());
-    let mut phases = phases_of(&flash, mixture, &reduced, z)?;
+    // **A stalled two-phase flash is warned about rather than propagated.** Upstream's flash is
+    // the *seed* this model's seeding starts from and not its answer, and there are states -
+    // a water dew point's incipient aqueous phase among them - where it reaches its cap and
+    // stops short: measured, `300` steps to a residual of `5.3e-5` against the `1e-10` it
+    // declares, at `261.876` K and `111.6` bara on the gas `eos.water_dew_point_line` sweeps.
+    // Refusing there loses an answer the seeding and the fraction solve would have found, and
+    // `solve_phase_fractions`' own cap is already a warning for exactly that reason. The set
+    // falls back to the feed on its lower-Gibbs root, which is the same set `phases_of` builds
+    // where the flash reports no fraction at all.
+    let (mut phases, flash_min_t_over_tc) = match pt_flash(mixture, T, P, z) {
+        Ok(flash) => {
+            warnings.extend(flash.warnings.iter().cloned());
+            let phases = phases_of(&flash, mixture, &reduced, z)?;
+            (phases, flash.min_t_over_tc)
+        }
+        Err(AzothError::SolverNotConverged {
+            iterations,
+            residual,
+            tolerance,
+        }) => {
+            warnings.push(Warning::new(
+                WarningCode::SolverNotConverged,
+                format!(
+                    "the two-phase flash reached its cap after {iterations} steps with a \
+                     residual of {residual:.3e} against the {tolerance:.3e} it declares, so the \
+                     seeding below starts from the feed instead of from the split it nearly \
+                     reached"
+                ),
+            ));
+            let (_, side) = feed_state(mixture, &reduced, z)?;
+            (
+                vec![MultiphasePhase {
+                    fraction: 1.0,
+                    composition: z.to_vec(),
+                    kind: PhaseKind::Cubic(side),
+                }],
+                f64::INFINITY,
+            )
+        }
+        Err(other) => return Err(other),
+    };
 
     // The seeding. **This is `TPmultiflash`'s own `stabilityAnalysis` and not the base
     // method `eos.stability_test` ports** - the two share a name and nothing else - and the
@@ -360,7 +399,7 @@ pub fn tp_multiflash(
         tm: seeding.tm.clone(),
         iterations,
         residual,
-        min_t_over_tc: flash.min_t_over_tc.min(seeding.min_t_over_tc),
+        min_t_over_tc: flash_min_t_over_tc.min(seeding.min_t_over_tc),
         warnings,
     })
 }

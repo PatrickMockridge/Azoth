@@ -476,3 +476,38 @@ fn the_aqueous_phase_appears_far_colder_than_neqsim_calls_the_dew_point() {
         );
     }
 }
+
+/// **A stalled two-phase flash is a seed, and the seeding runs anyway.**
+///
+/// Upstream's flash is where this model's phase set *starts*, not what it answers, and there
+/// are states where it reaches its cap and stops short. This is one: on the gas
+/// `eos.water_dew_point_line` sweeps, at `111.55555` bara and `261.876` K, `eos.pt_flash`
+/// takes its full three hundred steps to a residual of `5.3e-5` against the `1e-10` it
+/// declares. Refusing there, which is what this model did until 2026-10-13, loses the answer
+/// the seeding and the fraction solve would have found - and the two-phase flash's own id
+/// keeps its strictness, because that one *is* answering rather than seeding.
+///
+/// Pinned here because it is the state a water dew point brackets through: without the
+/// fallback the sweep at that pressure has no point at all.
+#[test]
+fn a_stalled_two_phase_flash_still_seeds() {
+    use azoth_core::CalcResult;
+    use azoth_core::warning::WarningCode;
+
+    let names = [
+        "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+    ];
+    let x = 35e-6;
+    let z = [0.02, 0.01, 0.9 - x, 0.05, 0.01, 0.005, 0.005, x];
+    let (mixture, _) =
+        mixture_of(&names, Cubic::Srk, None).expect("the databank resolves these names");
+
+    let got = tp_multiflash(&mixture, kelvins(261.876), pascals(1.1155555e7), &z)
+        .expect("a stalled seed is not a failure of this model");
+
+    assert_eq!(got.phase_count, 2, "the aqueous phase the seeding found");
+    assert!(
+        got.has_warning(WarningCode::SolverNotConverged),
+        "the stalled flash is reported rather than hidden"
+    );
+}
