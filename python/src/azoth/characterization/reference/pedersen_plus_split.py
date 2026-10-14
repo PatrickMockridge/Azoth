@@ -181,7 +181,7 @@ def _abundance_jacobian(a: float, b: float, first: int, last: int) -> list[list[
         m = _cut_molar_mass(i) / 1000.0
         m_tot1 += m * z
         m_tot2 += i * m * z
-        z_squares += z**2.0
+        z_squares += z**2
         z_sum += z
         z_times_carbon += i * z
     # `(1,0)` is the class's own `mTot1*zSum - mTot1*zSum`, identically zero; `(1,1)` divides by
@@ -241,7 +241,7 @@ def _gravity_jacobian(
         rho = _gravity_line(c, d, i)
         temp += weight
         temp2 += weight / rho
-        temp3 -= weight / rho**2.0
+        temp3 -= weight / rho**2
     derivative = temp / (temp2 * temp2) * temp3
     return [[1.0, math.log(first - 1)], [derivative, 0.0]]
 

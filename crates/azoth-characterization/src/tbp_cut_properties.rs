@@ -258,9 +258,9 @@ fn twu_tc_pc(d: f64, tb: f64) -> (f64, f64) {
     let _discarded = twu_solve_mw(tb);
     let tc_n_alkane = tb
         / (0.533272 + 0.343831e-3 * tb + 2.526167e-7 * tb.powi(2) - 1.65848e-10 * tb.powi(3)
-            + 4.60774e24 * tb.powf(-13.0));
+            + 4.60774e24 * tb.powi(-13));
     let phi = 1.0 - tb / tc_n_alkane;
-    let sg_n_alkane = 0.843593 - 0.128624 * phi - 3.36159 * phi.powi(3) - 13749.0 * phi.powf(12.0);
+    let sg_n_alkane = 0.843593 - 0.128624 * phi - 3.36159 * phi.powi(3) - 13749.0 * phi.powi(12);
     let pc_n_alkane = (0.318317
         + 0.099334 * phi.sqrt()
         + 2.89698 * phi
@@ -268,7 +268,7 @@ fn twu_tc_pc(d: f64, tb: f64) -> (f64, f64) {
         + 8.65163 * phi.powi(4))
     .powi(2);
     let vc_n_alkane =
-        (0.82055 + 0.715468 * phi + 2.21266 * phi.powi(3) + 13411.1 * phi.powf(14.0)).powf(-8.0);
+        (0.82055 + 0.715468 * phi + 2.21266 * phi.powi(3) + 13411.1 * phi.powi(14)).powi(-8);
 
     let delta_st = (5.0 * (sg_n_alkane - d)).exp() - 1.0;
     let f_t =
@@ -303,8 +303,12 @@ fn lee_kesler_tc_pc(tb: f64, d: f64) -> (f64, f64) {
 /// `RiaziDaubert`'s own pair, `(tc [K], pc [bar])`, which `StandingModel` uses at every molar
 /// mass and `RiaziDaubert` only up to 300 g/mol.
 fn riazi_daubert_tc_pc(m: f64, d: f64) -> (f64, f64) {
+    // The `1.0555` is Riazi-Daubert's published exponent and not `19/18`: NeqSim writes the
+    // decimal, so the divergence from the rational is a finding recorded rather than repaired.
+    // numerics-ok: NeqSim TBPfractionModel.java:611 writes Math.pow(density, 1.0555)
+    let density_power = d.powf(1.0555);
     let tc =
-        5.0 / 9.0 * 554.4 * (-1.3478e-4 * m - 0.61641 * d).exp() * m.powf(0.2998) * d.powf(1.0555);
+        5.0 / 9.0 * 554.4 * (-1.3478e-4 * m - 0.61641 * d).exp() * m.powf(0.2998) * density_power;
     let pc = 0.068947
         * 4.5203e4
         * (-1.8078e-3 * m + -0.3084 * d).exp()

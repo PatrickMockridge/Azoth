@@ -255,7 +255,7 @@ fn abundance_jacobian(split: &Split, table: &PlusFractionTables) -> Result<[[f64
         let m = table.cut_molar_mass(i)? / 1000.0;
         m_tot1 += m * z;
         m_tot2 += (i as f64) * m * z;
-        z_squares += z.powf(2.0);
+        z_squares += z.powi(2);
         z_sum += z;
         z_times_carbon += (i as f64) * z;
     }
@@ -329,7 +329,7 @@ fn gravity_jacobian(split: &Split, table: &PlusFractionTables) -> Result<[[f64; 
         let rho = gravity_line(split.c, split.d, i);
         temp += weight;
         temp2 += weight / rho;
-        temp3 -= weight / rho.powf(2.0);
+        temp3 -= weight / rho.powi(2);
     }
     let derivative = temp / (temp2 * temp2) * temp3;
     Ok([[1.0, ((split.first - 1) as f64).ln()], [derivative, 0.0]])

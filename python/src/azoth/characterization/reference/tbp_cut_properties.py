@@ -204,13 +204,17 @@ def _lee_kesler_tc_pc(tb: float, density: float) -> tuple[float, float]:
 
 
 def _riazi_daubert_tc_pc(molar_mass: float, density: float) -> tuple[float, float]:
+    # The `1.0555` is Riazi-Daubert's published exponent and not `19/18`: NeqSim writes the
+    # decimal, so the divergence from the rational is a finding recorded rather than repaired.
+    # numerics-ok: NeqSim TBPfractionModel.java:611 writes Math.pow(density, 1.0555)
+    density_power = density**1.0555
     tc = (
         5.0
         / 9.0
         * 554.4
         * math.exp(-1.3478e-4 * molar_mass - 0.61641 * density)
         * molar_mass**0.2998
-        * density**1.0555
+        * density_power
     )
     pc = (
         0.068947
