@@ -1,6 +1,6 @@
 """``eos.multiflash_stability_test``: the Python reference.
 
-The mirror of ``crates/azoth-eos/src/multiflash_stability.rs``. NeqSim has **two** methods
+The mirror of ``crates/azoth-eos/src/multiflash_stability_test.rs``. NeqSim has **two** methods
 named ``stabilityAnalysis``: ``Flash``'s, which is a two-trial Michelsen test that reports
 instability by setting K-values and which :mod:`azoth.eos.reference.stability_test` ports, and
 ``TPmultiflash``'s **override** of it, which ``TPmultiflash.run()`` actually calls. This is the
@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 
 from azoth import _models_gen
-from azoth.core.errors import InvalidInputError
+from azoth.core.errors import InvalidInputError, PropertyUnavailableError
 from azoth.core.range import apply_checks, checks_for
 from azoth.core.result import MultiflashSeedPath, MultiflashStabilityTestResult
 from azoth.core.units import Q, input_to_si
@@ -151,7 +151,11 @@ def _pure_trials(mixture: Mixture, z: list[float]) -> list[int]:
         if not _is_hydrocarbon(mixture, index):
             continue
         molar_mass = mixture.components[index].molar_mass
-        mass = 0.0 if molar_mass is None else float(molar_mass.to("kg/mol").magnitude)
+        if molar_mass is None:
+            raise PropertyUnavailableError(
+                "component", "molar mass", "a card-added component needs its own molar mass"
+            )
+        mass = float(molar_mass.to("kg/mol").magnitude)
         if mass > heaviest_mass:
             heaviest_mass = mass
             heaviest = index

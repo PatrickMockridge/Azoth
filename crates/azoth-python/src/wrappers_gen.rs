@@ -373,9 +373,9 @@ pub fn argon_solid_phase(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, T, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -384,6 +384,7 @@ pub fn bubble_pressure(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     T: f64,
@@ -397,6 +398,7 @@ pub fn bubble_pressure(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -412,9 +414,9 @@ pub fn bubble_pressure(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, P, x, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, P, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -423,6 +425,7 @@ pub fn bubble_temperature(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
@@ -436,6 +439,7 @@ pub fn bubble_temperature(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -451,9 +455,9 @@ pub fn bubble_temperature(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, y, pore_radius, contact_angle, surface_tension, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, P, y, pore_radius, contact_angle, surface_tension, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, y, pore_radius, contact_angle, surface_tension, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, P, y, pore_radius, contact_angle, surface_tension, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -462,6 +466,7 @@ pub fn capillary_dew_point(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
@@ -478,6 +483,7 @@ pub fn capillary_dew_point(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -655,9 +661,9 @@ pub fn costald_molar_volume(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -666,6 +672,7 @@ pub fn critical_point(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     z: Vec<f64>,
@@ -678,6 +685,7 @@ pub fn critical_point(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -713,9 +721,9 @@ pub fn desmukh_mather_phase(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, y, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, T, y, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, y, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, T, y, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -724,6 +732,7 @@ pub fn dew_pressure(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     T: f64,
@@ -737,6 +746,7 @@ pub fn dew_pressure(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -752,9 +762,9 @@ pub fn dew_pressure(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, y, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, P, y, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, y, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, P, y, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -763,6 +773,7 @@ pub fn dew_temperature(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
@@ -776,6 +787,7 @@ pub fn dew_temperature(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -1351,9 +1363,9 @@ pub fn matcop_prumr_new_alpha(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, compressibility, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, compressibility, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, compressibility, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, compressibility, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1362,6 +1374,7 @@ pub fn molar_enthalpy_entropy(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -1382,6 +1395,7 @@ pub fn molar_enthalpy_entropy(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -1429,9 +1443,9 @@ pub fn mollerup_alpha(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1440,8 +1454,10 @@ pub fn multiflash_stability_test(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
+    molar_mass: Vec<f64>,
     T: f64,
     P: f64,
     z: Vec<f64>,
@@ -1449,13 +1465,15 @@ pub fn multiflash_stability_test(
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
 ) -> PyResult<crate::transport_gen::PyMultiflashStabilityTestResult> {
-    let mixture = build_mixture(
+    let mixture = build_mixture_with_mass(
         py,
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
+        &molar_mass,
         eos,
         alpha,
         alpha_params.as_deref(),
@@ -1588,9 +1606,9 @@ pub fn pcsaft_rahmat_phase(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1599,6 +1617,7 @@ pub fn ph_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -1618,6 +1637,7 @@ pub fn ph_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -1903,9 +1923,9 @@ pub fn prsv_kappa(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1914,6 +1934,7 @@ pub fn ps_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -1933,6 +1954,7 @@ pub fn ps_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -1960,9 +1982,9 @@ pub fn ps_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -1971,6 +1993,7 @@ pub fn pt_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     T: f64,
@@ -1985,6 +2008,7 @@ pub fn pt_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2000,9 +2024,9 @@ pub fn pt_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2011,6 +2035,7 @@ pub fn pt_phase_envelope(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
@@ -2024,6 +2049,7 @@ pub fn pt_phase_envelope(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2039,9 +2065,9 @@ pub fn pt_phase_envelope(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2050,6 +2076,7 @@ pub fn pu_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -2069,6 +2096,7 @@ pub fn pu_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2096,9 +2124,9 @@ pub fn pu_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2107,6 +2135,7 @@ pub fn pv_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -2126,6 +2155,7 @@ pub fn pv_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2542,9 +2572,9 @@ pub fn srk_z_factor(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2553,6 +2583,7 @@ pub fn stability_test(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     T: f64,
@@ -2567,6 +2598,7 @@ pub fn stability_test(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2598,9 +2630,9 @@ pub fn tbp_fraction_properties(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2609,6 +2641,7 @@ pub fn th_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -2628,6 +2661,7 @@ pub fn th_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2655,9 +2689,9 @@ pub fn th_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, cp_a, cp_b, cp_c, cp_d, cp_e, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2666,6 +2700,7 @@ pub fn thermal_conductivity(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     molar_mass: Vec<f64>,
@@ -2686,6 +2721,7 @@ pub fn thermal_conductivity(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         &molar_mass,
@@ -2733,9 +2769,9 @@ pub fn tp_flash_saft(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2744,8 +2780,10 @@ pub fn tp_multiflash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
+    molar_mass: Vec<f64>,
     T: f64,
     P: f64,
     z: Vec<f64>,
@@ -2753,13 +2791,15 @@ pub fn tp_multiflash(
     alpha: &str,
     alpha_params: Option<Vec<Vec<f64>>>,
 ) -> PyResult<crate::transport_gen::PyTpMultiflashResult> {
-    let mixture = build_mixture(
+    let mixture = build_mixture_with_mass(
         py,
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
+        &molar_mass,
         eos,
         alpha,
         alpha_params.as_deref(),
@@ -2773,9 +2813,9 @@ pub fn tp_multiflash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2784,6 +2824,7 @@ pub fn ts_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -2803,6 +2844,7 @@ pub fn ts_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2830,9 +2872,9 @@ pub fn ts_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2841,6 +2883,7 @@ pub fn tu_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -2860,6 +2903,7 @@ pub fn tu_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -2887,9 +2931,9 @@ pub fn tu_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, T, V, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -2898,6 +2942,7 @@ pub fn tv_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -2917,6 +2962,7 @@ pub fn tv_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -3098,9 +3144,9 @@ pub fn vdw1f_mix_binary(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, H, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, H, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -3109,6 +3155,7 @@ pub fn vh_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -3128,6 +3175,7 @@ pub fn vh_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -3155,9 +3203,9 @@ pub fn vh_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, T, P, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, T, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -3166,6 +3214,7 @@ pub fn viscosity(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     molar_mass: Vec<f64>,
@@ -3181,6 +3230,7 @@ pub fn viscosity(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         &molar_mass,
@@ -3197,9 +3247,9 @@ pub fn viscosity(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, S, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, S, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -3208,6 +3258,7 @@ pub fn vs_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -3227,6 +3278,7 @@ pub fn vs_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -3254,9 +3306,9 @@ pub fn vs_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, V, U, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -3265,6 +3317,7 @@ pub fn vu_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -3284,6 +3337,7 @@ pub fn vu_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -3311,9 +3365,9 @@ pub fn vu_flash(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, U, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, U, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, U, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, cp_a, cp_b, cp_c, cp_d, cp_e, P, V, U, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -3322,6 +3376,7 @@ pub fn vu_flash_single_comp(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     cp_a: Vec<f64>,
@@ -3341,6 +3396,7 @@ pub fn vu_flash_single_comp(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -3436,9 +3492,9 @@ pub fn wilke_viscosity(
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, molar_mass, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, molar_mass, T, x, eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, T, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, T, x, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)] // symbols from the published equation
 #[allow(clippy::too_many_arguments)] // The signature is the spec's declared inputs.
@@ -3447,6 +3503,7 @@ pub fn wilson_activity_coefficients(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     molar_mass: Vec<f64>,
@@ -3461,6 +3518,7 @@ pub fn wilson_activity_coefficients(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         &molar_mass,

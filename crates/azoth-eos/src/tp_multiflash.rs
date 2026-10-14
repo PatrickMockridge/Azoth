@@ -79,10 +79,10 @@ use azoth_core::{AzothError, Result, Warning, WarningCode, apply_checks};
 use crate::algorithm_of;
 use crate::mixture::{Mixture, PhaseState, ReducedParameters, RootSide};
 use crate::model_gen;
+use crate::multiflash_stability_test::multiflash_stability_test;
 use crate::multiphase::{MultiphasePhase, MultiphaseSplit, PhaseKind, solve_phase_fractions};
 use crate::pt_flash::pt_flash;
 use crate::results::{MultiflashSeedPath, Phase, TpMultiflashResult, TpMultiflashSeed};
-use crate::multiflash_stability_test::multiflash_stability_test;
 use crate::stability_test::feed_state;
 
 /// A phase below this is dropped. Upstream's `1.1 * phaseFractionMinimumLimit`.

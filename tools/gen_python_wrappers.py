@@ -312,6 +312,7 @@ RECORD_FIELDS = {
 BUILDER_TYPES = {
     "&[f64]": ("Vec<f64>", "{name}"),
     "Vec<f64>": ("Vec<f64>", "{name}"),
+    "&[String]": ("Vec<String>", "{name}"),
     "&PyAssociationSpec": ("PyRef<'_, PyAssociationSpec>", "{name}"),
     "&str": ("&str", "{name}"),
     "Option<&[Vec<f64>]>": ("Option<Vec<Vec<f64>>>", "NAME.as_deref()"),
@@ -348,7 +349,7 @@ def builder_parameters(name: str = "build_mixture") -> list[tuple[str, str, str]
                 sys.exit(f"gen_python_wrappers: build_mixture's {parameter}: {kind} has no rule")
             declared, call = entry
             call = call.format(name=parameter).replace("NAME", parameter)
-            if kind in ("&[f64]", "&PyAssociationSpec"):
+            if kind in ("&[f64]", "&[String]", "&PyAssociationSpec"):
                 call = f"&{parameter}"
             out.append((parameter, declared, call))
         return out

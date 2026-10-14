@@ -217,7 +217,13 @@ fn is_hydrocarbon(mixture: &Mixture, index: usize) -> bool {
 /// **every hydrocarbon but the heaviest and the lightest** - the two a hydrocarbon mixture's
 /// ends are named by, so a mixture of twenty alkanes still gets three trials rather than
 /// twenty.
-fn pure_trials(mixture: &Mixture, z: &[f64]) -> Vec<usize> {
+///
+/// # Errors
+/// [`AzothError::PropertyUnavailable`] if a hydrocarbon carries no molar mass. The ordering
+/// this rule rests on is by molar mass, and a component with none has no place in it - so the
+/// zero it would otherwise stand in as is refused rather than used, which is what the Python
+/// reference and the boundary's `_molar_masses` guard both say too.
+fn pure_trials(mixture: &Mixture, z: &[f64]) -> Result<Vec<usize>> {
     let count = mixture.len();
     let mut heaviest = 0;
     let mut lightest = 0;
@@ -227,7 +233,13 @@ fn pure_trials(mixture: &Mixture, z: &[f64]) -> Vec<usize> {
         if !is_hydrocarbon(mixture, index) {
             continue;
         }
-        let mass = mixture.components()[index].molar_mass.unwrap_or(0.0);
+        let Some(mass) = mixture.components()[index].molar_mass else {
+            return Err(AzothError::property_unavailable(
+                "component",
+                "molar mass",
+                "a card-added component needs its own molar mass",
+            ));
+        };
         if mass > heaviest_mass {
             heaviest_mass = mass;
             heaviest = index;
@@ -252,7 +264,7 @@ fn pure_trials(mixture: &Mixture, z: &[f64]) -> Vec<usize> {
         }
         out.push(index);
     }
-    out
+    Ok(out)
 }
 
 /// The smallest `T / Tc` over the components, which is the near-critical warning's measure.
@@ -405,7 +417,7 @@ pub fn multiflash_stability_test(
     }
 
     // The pure-component fallback.
-    for index in pure_trials(mixture, z) {
+    for index in pure_trials(mixture, z)? {
         let composition: Vec<f64> = (0..count)
             .map(|other| {
                 if !valid[other] {

@@ -60,7 +60,10 @@ BINDING = REPO_ROOT / "crates" / "azoth-python" / "src"
 #: and for the same reason - a name-taking kernel with an `eos` enum the spec declares as `eos`
 #: where the kernel calls it `cubic`, so the generated wrapper's parameter list is not the
 #: kernel's and the generator refuses rather than guessing at the mapping.
-KNOWN_HAND_WRITTEN = 52
+#: 52 -> 53 when `eos.water_dew_point_line` landed, again the same shape: its kernel takes
+#: `(components, z, minimum_pressure, maximum_pressure, eos)` while the spec declares `eos` and
+#: the two pressures, so the generated wrapper's parameters are not the kernel's.
+KNOWN_HAND_WRITTEN = 53
 
 
 def _tools_module(name: str) -> ModuleType:

@@ -120,5 +120,9 @@ fn a_stable_feed_offers_no_phase() {
     assert_eq!(result.seed_component_index, -1);
     // Every trial was attempted and every one was at or above the plane.
     assert!(!result.tm.is_empty());
-    assert!(result.tm.iter().all(|distance| *distance >= -1.0e-08), "{:?}", result.tm);
+    assert!(
+        result.tm.iter().all(|distance| *distance >= -1.0e-08),
+        "{:?}",
+        result.tm
+    );
 }

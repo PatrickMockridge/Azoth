@@ -153,6 +153,7 @@
 //!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
+//!   - specs/models/eos/water_dew_point_line.toml
 //!   - specs/models/eos/water_dew_point_multiphase.toml
 //!   - specs/models/eos/water_dew_point_temperature.toml
 //!   - specs/models/eos/water_phase.toml
@@ -1107,6 +1108,9 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.vu_flash_single_comp", "P", "pressure"),
     ("eos.vu_flash_single_comp", "V", "molar_volume"),
     ("eos.vu_flash_single_comp", "U", "molar_energy"),
+    ("eos.water_dew_point_line", "z", "dimensionless"),
+    ("eos.water_dew_point_line", "minimum_pressure", "pressure"),
+    ("eos.water_dew_point_line", "maximum_pressure", "pressure"),
     ("eos.water_dew_point_multiphase", "z", "dimensionless"),
     ("eos.water_dew_point_multiphase", "P", "pressure"),
     ("eos.water_dew_point_temperature", "z", "dimensionless"),

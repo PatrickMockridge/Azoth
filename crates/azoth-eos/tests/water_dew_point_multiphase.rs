@@ -98,11 +98,20 @@ fn the_prescribed_route_and_this_one_are_different_answers() {
 /// dew point and is not one - so the refusal is the port's and the spec states it.
 #[test]
 fn a_feed_with_no_water_is_refused() {
-    let names: Vec<String> = ["methane", "ethane"].iter().map(|s| (*s).to_string()).collect();
+    let names: Vec<String> = ["methane", "ethane"]
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect();
     let refused = water_dew_point_multiphase(&names, &[0.9, 0.1], pascals(7.0e6), Cubic::Srk);
-    assert!(refused.is_err(), "a feed with no water has no aqueous phase");
+    assert!(
+        refused.is_err(),
+        "a feed with no water has no aqueous phase"
+    );
 
-    let names: Vec<String> = ["methane", "water"].iter().map(|s| (*s).to_string()).collect();
+    let names: Vec<String> = ["methane", "water"]
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect();
     let refused = water_dew_point_multiphase(&names, &[1.0, 0.0], pascals(7.0e6), Cubic::Srk);
     assert!(
         refused.is_err(),

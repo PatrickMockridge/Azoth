@@ -3509,6 +3509,25 @@ class VuFlashSingleCompResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class WaterDewPointLineResult(_HasWarnings):
+    """Result of ``eos.water_dew_point_line``."""
+
+    CALC_ID: ClassVar[str] = "eos.water_dew_point_line"
+
+    #: the water dew point at each pressure on the line, in `[minimum_pressure, maximum_pressure]` order.
+    temperature: tuple[Q, ...]
+
+    #: the pressures the line was formed at, parallel to `temperature`.
+    pressure: tuple[Q, ...]
+
+    #: how many of the ten points did not solve. **Upstream records the previous point's temperature where one fails and says nothing**, so a line with a failure in it is a line with a repeated value and no marker; this is the marker.
+    failed_points: int
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class WaterDewPointMultiphaseResult(_HasWarnings):
     """Result of ``eos.water_dew_point_multiphase``."""
 

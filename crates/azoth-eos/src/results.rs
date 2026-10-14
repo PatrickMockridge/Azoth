@@ -715,6 +715,31 @@ impl CalcResult for TpSolidFlashResult {
     }
 }
 
+/// Result of `eos.water_dew_point_line`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WaterDewPointLineResult {
+    /// The dew-point temperatures, in `[minimum_pressure, maximum_pressure]` order.
+    pub temperature: Vec<f64>,
+    /// The pressures the line was formed at, parallel to `temperature`.
+    pub pressure: Vec<f64>,
+    /// How many of the ten points did not solve. **Upstream records the previous point's
+    /// temperature where one fails and says nothing**, so a line with a failure in it is a line
+    /// with a repeated value and no marker; this is the marker.
+    pub failed_points: u32,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for WaterDewPointLineResult {
+    const CALC_ID: &'static str = "eos.water_dew_point_line";
+    const FIELDS: &'static [&'static str] =
+        &["temperature", "pressure", "failed_points", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.water_dew_point_multiphase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WaterDewPointMultiphaseResult {

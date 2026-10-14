@@ -111,6 +111,7 @@ fn antoine_records(
     Tc,
     Pc,
     omega,
+    classes,
     kij,
     association,
     alpha,
@@ -127,7 +128,7 @@ fn antoine_records(
     alpha_params = None
 ))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, alpha, dij, antoine_type, antoine_coefficients, \
+    text_signature = "(Tc, Pc, omega, classes, kij, association, alpha, dij, antoine_type, antoine_coefficients, \
                          antoine_tc, antoine_pc, T, P, z, eos = \"pr\", cubic_alpha = \"pr\")"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T`, `P` and `z` are the symbols in the chemistry
@@ -137,6 +138,7 @@ pub fn ge_nrtl_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     alpha: Vec<f64>,
@@ -157,6 +159,7 @@ pub fn ge_nrtl_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -240,6 +243,7 @@ pub fn ge_unifac_phase(
     Tc,
     Pc,
     omega,
+    classes,
     kij,
     association,
     molar_mass,
@@ -255,7 +259,7 @@ pub fn ge_unifac_phase(
     alpha_params = None
 ))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, molar_mass, antoine_type, antoine_coefficients, \
+    text_signature = "(Tc, Pc, omega, classes, kij, association, molar_mass, antoine_type, antoine_coefficients, \
                          antoine_tc, antoine_pc, T, P, x)"
 )]
 #[allow(non_snake_case)] // `Tc`, `Pc`, `T`, `P` and `x` are the symbols in the chemistry
@@ -265,6 +269,7 @@ pub fn ge_wilson_phase(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     molar_mass: Vec<f64>,
@@ -284,6 +289,7 @@ pub fn ge_wilson_phase(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         &molar_mass,
@@ -410,6 +416,7 @@ pub(crate) fn build_mixture_with_mass(
     Tc: &[f64],
     Pc: &[f64],
     omega: &[f64],
+    classes: &[String],
     kij: Vec<f64>,
     association: &PyAssociationSpec,
     molar_mass: &[f64],
@@ -418,12 +425,14 @@ pub(crate) fn build_mixture_with_mass(
     alpha_params: Option<&[Vec<f64>]>,
 ) -> PyResult<azoth_eos::Mixture> {
     let n = Tc.len();
-    if Pc.len() != n || omega.len() != n || molar_mass.len() != n {
+    if Pc.len() != n || omega.len() != n || classes.len() != n || molar_mass.len() != n {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
-            "Tc, Pc, omega and molar_mass must be the same length; got {}, {}, {} and {}",
+            "Tc, Pc, omega, classes and molar_mass must be the same length; got {}, {}, {}, {} \
+             and {}",
             Tc.len(),
             Pc.len(),
             omega.len(),
+            classes.len(),
             molar_mass.len()
         )));
     }
@@ -434,7 +443,8 @@ pub(crate) fn build_mixture_with_mass(
         .map(|i| {
             let mut component =
                 azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])?
-                    .with_molar_mass(Some(molar_mass[i]));
+                    .with_molar_mass(Some(molar_mass[i]))
+                    .with_class(classes[i].clone());
             if let Some(params) = alpha_params.and_then(|all| all.get(i)) {
                 component = component.with_alpha_params(params.clone());
             }
@@ -729,6 +739,7 @@ pub(crate) fn build_mixture(
     Tc: &[f64],
     Pc: &[f64],
     omega: &[f64],
+    classes: &[String],
     kij: Vec<f64>,
     association: &PyAssociationSpec,
     eos: &str,
@@ -736,12 +747,13 @@ pub(crate) fn build_mixture(
     alpha_params: Option<&[Vec<f64>]>,
 ) -> PyResult<azoth_eos::Mixture> {
     let n = Tc.len();
-    if Pc.len() != n || omega.len() != n {
+    if Pc.len() != n || omega.len() != n || classes.len() != n {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
-            "Tc, Pc and omega must be the same length; got {}, {} and {}",
+            "Tc, Pc, omega and classes must be the same length; got {}, {}, {} and {}",
             Tc.len(),
             Pc.len(),
-            omega.len()
+            omega.len(),
+            classes.len()
         )));
     }
     let associations: Vec<Option<azoth_eos::association::AssociationRecord>> = (0..n)
@@ -750,7 +762,8 @@ pub(crate) fn build_mixture(
     let components = (0..n)
         .map(|i| {
             let mut component =
-                azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])?;
+                azoth_eos::Component::new(kelvins(Tc[i]), pascals(Pc[i]), omega[i])?
+                    .with_class(classes[i].clone());
             if let Some(params) = alpha_params.and_then(|all| all.get(i)) {
                 component = component.with_alpha_params(params.clone());
             }
@@ -779,10 +792,10 @@ pub(crate) fn build_mixture(
 
 /// The pressure/reflux-ratio flash of a mixture (P,ratio -> T).
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, reflux, phase, temperature, z,
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, P, reflux, phase, temperature, z,
     eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, reflux, phase, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, P, reflux, phase, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)]
 #[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
@@ -791,6 +804,7 @@ pub fn pv_reflux_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
@@ -807,6 +821,7 @@ pub fn pv_reflux_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -831,10 +846,10 @@ pub fn pv_reflux_flash(
 
 /// The pressure/vapour-fraction flash of a mixture (P,vapour_fraction -> T).
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, P, vapour_fraction, temperature, z,
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, P, vapour_fraction, temperature, z,
     eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, P, vapour_fraction, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, P, vapour_fraction, temperature, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)]
 #[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
@@ -843,6 +858,7 @@ pub fn pvf_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     P: f64,
@@ -858,6 +874,7 @@ pub fn pvf_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -877,10 +894,10 @@ pub fn pvf_flash(
 
 /// The temperature and vapour-volume-fraction flash of a mixture (T,fraction -> P).
 #[pyfunction]
-#[pyo3(signature = (Tc, Pc, omega, kij, association, T, fraction, P, z,
+#[pyo3(signature = (Tc, Pc, omega, classes, kij, association, T, fraction, P, z,
     eos = "pr", alpha = "pr", alpha_params = None))]
 #[pyo3(
-    text_signature = "(Tc, Pc, omega, kij, association, T, fraction, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
+    text_signature = "(Tc, Pc, omega, classes, kij, association, T, fraction, P, z, eos = \"pr\", alpha = \"pr\", alpha_params = None)"
 )]
 #[allow(non_snake_case)]
 #[allow(clippy::too_many_arguments)] // the signature is the flash's inputs
@@ -889,6 +906,7 @@ pub fn tv_fraction_flash(
     Tc: Vec<f64>,
     Pc: Vec<f64>,
     omega: Vec<f64>,
+    classes: Vec<String>,
     kij: Vec<f64>,
     association: PyRef<'_, PyAssociationSpec>,
     T: f64,
@@ -904,6 +922,7 @@ pub fn tv_fraction_flash(
         &Tc,
         &Pc,
         &omega,
+        &classes,
         kij,
         &association,
         eos,
@@ -1201,6 +1220,32 @@ pub fn water_dew_point_temperature(
         eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
     )
     .map(|r| crate::transport_gen::PyWaterDewPointTemperatureResult::from(&r))
+    .map_err(|e| to_pyerr(py, e))
+}
+
+/// The water dew point against pressure, computed in Rust.
+///
+/// **The component names cross unresolved**, the shape the two routes beside it use: every
+/// point of the line is a multiphase water dew point, and the label that decides where the
+/// aqueous phase appears is `PhaseEos.init`'s, read from each component's own class.
+#[pyfunction]
+#[pyo3(signature = (components, z, minimum_pressure, maximum_pressure, eos = "srk"))]
+pub fn water_dew_point_line(
+    py: Python<'_>,
+    components: Vec<String>,
+    z: Vec<f64>,
+    minimum_pressure: f64,
+    maximum_pressure: f64,
+    eos: &str,
+) -> PyResult<crate::transport_gen::PyWaterDewPointLineResult> {
+    azoth_eos::water_dew_point_line::water_dew_point_line(
+        &components,
+        &z,
+        pascals(minimum_pressure),
+        pascals(maximum_pressure),
+        eos.parse().unwrap_or(azoth_eos::Cubic::Srk),
+    )
+    .map(|r| crate::transport_gen::PyWaterDewPointLineResult::from(&r))
     .map_err(|e| to_pyerr(py, e))
 }
 

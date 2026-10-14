@@ -68,6 +68,13 @@ MOLAR_MASS_MODELS = frozenset(
         "eos.wilson_activity_coefficients",
         "eos.ge_wilson_phase",
         "eos.aqueous_viscosity",
+        # The stability override and the flash that calls it: the pure-component fallback
+        # orders a mixture's hydrocarbons by molar mass to pick the heaviest and the lightest,
+        # so a boundary without the masses makes every hydrocarbon's mass zero and picks the
+        # wrong two. `eos.tp_multiflash` reads it through its own call to the override, which is
+        # why it is here as well as by its own name.
+        "eos.multiflash_stability_test",
+        "eos.tp_multiflash",
     }
 )
 
@@ -676,6 +683,11 @@ def transport_parameters(model: dict[str, Any]) -> list[str]:
                 f"{prefix}Tc: list[float]",
                 f"{prefix}Pc: list[float]",
                 f"{prefix}omega: list[float]",
+                # The component *class*, which the databank holds and `Tc`/`Pc`/`omega` do not.
+                # `eos.multiflash_stability_test`'s pure-component fallback and
+                # `eos.hydrate_inhibitor_wt`'s label read it, so a boundary that dropped it would
+                # hand the Rust kernel a mixture whose every component is classless.
+                f"{prefix}classes: list[str]",
                 f"{prefix}kij: list[float]",
             ]
             # The association, which the boundary used to drop: a mixture whose

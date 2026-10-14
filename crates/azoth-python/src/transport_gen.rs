@@ -8769,6 +8769,66 @@ impl From<&azoth_eos::results::VuFlashSingleCompResult> for PyVuFlashSingleCompR
         }
     }
 }
+/// Result of `eos.water_dew_point_line`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "WaterDewPointLineResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyWaterDewPointLineResult {
+    /// the water dew point at each pressure on the line, in `[minimum_pressure, maximum_pressure]` order.
+    #[pyo3(get)]
+    pub temperature: Vec<PyQty>,
+    /// the pressures the line was formed at, parallel to `temperature`.
+    #[pyo3(get)]
+    pub pressure: Vec<PyQty>,
+    /// how many of the ten points did not solve. **Upstream records the previous point's temperature where one fails and says nothing**, so a line with a failure in it is a line with a repeated value and no marker; this is the marker.
+    #[pyo3(get)]
+    pub failed_points: u32,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyWaterDewPointLineResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "WaterDewPointLineResult(temperature={:?}, pressure={:?}, failed_points={:?}, {} warning(s))",
+            self.temperature,
+            self.pressure,
+            self.failed_points,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::WaterDewPointLineResult> for PyWaterDewPointLineResult {
+    fn from(r: &azoth_eos::results::WaterDewPointLineResult) -> Self {
+        Self {
+            temperature: r
+                .temperature
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "K".to_string(),
+                })
+                .collect(),
+            pressure: r
+                .pressure
+                .iter()
+                .map(|v| PyQty {
+                    magnitude_si: *v,
+                    unit: "Pa".to_string(),
+                })
+                .collect(),
+            failed_points: r.failed_points,
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.water_dew_point_multiphase`, transported.
 #[pyclass(
     frozen,

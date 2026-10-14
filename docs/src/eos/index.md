@@ -153,6 +153,7 @@ The calculations above are equations; these are *procedures*. A model's spec fix
 | [`eos.vs_flash`](./vs_flash.md) | `vs_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.vu_flash`](./vu_flash.md) | `vu_flash_newton_2x2` | Standard thermodynamics, as in Michelsen & Mollerup |
 | [`eos.vu_flash_single_comp`](./vu_flash_single_comp.md) | `saturation_temperature_bisection` | Standard thermodynamics, as in Michelsen & Mollerup |
+| [`eos.water_dew_point_line`](./water_dew_point_line.md) | `water_dew_point_pressure_sweep` | NeqSim master `WaterDewPointEquilibriumLine` |
 | [`eos.water_dew_point_multiphase`](./water_dew_point_multiphase.md) | `water_dew_point_bracket_bisection` | NeqSim master `WaterDewPointTemperatureMultiphaseFlash` |
 | [`eos.water_dew_point_temperature`](./water_dew_point_temperature.md) | `water_dew_point_fixed_point` | NeqSim master `WaterDewPointTemperatureFlash` |
 | [`eos.water_phase`](./water_phase.md) | `direct composition` | Wagner, W.; Kretzschmar, H.-J. (2008); IAPWS (2007) |

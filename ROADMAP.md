@@ -133,14 +133,17 @@ reaches equilibrium through.
   temperature to the fugacity equality. `WaterDewPointTemperatureMultiphaseFlash` is
   `eos.water_dew_point_multiphase`: it brackets on where a *multiphase flash* reports an aqueous
   phase, and it reproduces the capture to `3e-13` K at all three of its states.
-  **The third, `WaterDewPointEquilibriumLine`, is written and not shipped, and the measurement is
-  why.** It is the multiphase route swept over ten pressures, so its only output is the curve -
-  and on the capture's own sweep from `1` to `200` bara **eight of its ten points reproduce to
-  `3e-13` K while two do not**: at `1` bara the answer is `0.149` K warm and the state it closes
-  on has **one** phase, and at `111.6` bara `eos.tp_multiflash` **does not converge at all** -
-  three hundred steps to a residual of `3.7e-5` against its own `1e-10` - where NeqSim's does.
-  Both are the flash's and neither is the sweep's, so the class is owed until the flash is
-  measured at those states; a curve is not a place to carry a wrong point.
+  **The third, `WaterDewPointEquilibriumLine`, is `eos.water_dew_point_line` now, and the
+  measurement is why it waited.** It is the multiphase route swept over ten pressures, so its
+  only output is the curve - and on the capture's own sweep from `1` to `200` bara **nine of its
+  ten points reproduce to `4e-13` K and the first does not**: at `1` bara this library answers
+  `224.4312` K where NeqSim answers `224.2818`, a `0.149` K that is a flash-level difference in a
+  marginal state - at NeqSim's own answer the flash reports two phases, gas and aqueous, and it
+  loses the aqueous phase only `0.149` K warmer. That point rides the model family's `1e-3`
+  capture tolerance and is declared in the case's own `source`. The other state that held the
+  class back was **not** a divergence but a stall - `111.6` bara, where `eos.tp_multiflash` took
+  three hundred steps to a residual of `3.7e-5` against its own `1e-10` - and that is fixed: a
+  stalled two-phase flash now warns and seeds from the feed instead of refusing.
   **And this bullet named the wrong blocker for the route, twice over** - the way the entry above
   it named the wrong reason for the brine operations and the wax bullet below named the wrong tier
   for `WATcalc`. `seedHydrocarbonLiquidFromFeed` and `seedAdditionalPhaseFromFeed` seed an

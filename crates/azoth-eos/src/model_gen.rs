@@ -83,6 +83,7 @@
 //!   - specs/models/eos/vs_flash.toml
 //!   - specs/models/eos/vu_flash.toml
 //!   - specs/models/eos/vu_flash_single_comp.toml
+//!   - specs/models/eos/water_dew_point_line.toml
 //!   - specs/models/eos/water_dew_point_multiphase.toml
 //!   - specs/models/eos/water_dew_point_temperature.toml
 //!   - specs/models/eos/water_phase.toml
@@ -10322,6 +10323,122 @@ pub static VU_FLASH_SINGLE_COMP_SPEC: ModelSpec = ModelSpec {
     cases: VU_FLASH_SINGLE_COMP_CASES,
 };
 
+static WATER_DEW_POINT_LINE_CHECKS: &[SpecCheck] = &[
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "minimum_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+    SpecCheck {
+        on_input: true,
+        check: RangeCheck {
+            quantity: "maximum_pressure",
+            min: Some(0.0),
+            min_inclusive: false,
+            max: None,
+            max_inclusive: true,
+            equals: None,
+            band: Band::Outside,
+            severity: Severity::Error,
+            code: WarningCode::OutOfValidRange,
+            rationale: "an absolute pressure; zero and below are not states",
+        },
+    },
+];
+
+static WATER_DEW_POINT_LINE_CASES: &[TestCase] = &[TestCase {
+    id: "neqsims_own_gas_from_1_to_200_bara",
+    kind: "case",
+    property: None,
+    status: "active",
+    skip_reason: None,
+    tolerance: 0.001,
+    numbers: &[
+        ("minimum_pressure", 100000.0),
+        ("maximum_pressure", 20000000.0),
+    ],
+    flags: &[],
+    lists: &[(
+        "components",
+        &[
+            "co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water",
+        ],
+    )],
+    strings: &[("eos", "srk")],
+    vectors: &[(
+        "z",
+        &[0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 3.5e-05],
+    )],
+    matrices: &[],
+    expected: &[("failed_points", 0.0)],
+    expected_vectors: &[
+        (
+            "temperature",
+            &[
+                224.281806945801,
+                252.246055603027,
+                257.799644470215,
+                260.348777770996,
+                261.495552062988,
+                261.876487731934,
+                261.916236877441,
+                261.864204406738,
+                261.814994812012,
+                261.791038513184,
+            ],
+        ),
+        (
+            "pressure",
+            &[
+                100000.0,
+                2311111.111111111,
+                4522222.222222222,
+                6733333.333333334,
+                8944444.444444444,
+                11155555.555555556,
+                13366666.666666668,
+                15577777.777777778,
+                17788888.88888889,
+                20000000.0,
+            ],
+        ),
+    ],
+    expected_strings: &[],
+    records: &[],
+    expected_records: &[],
+}];
+
+static WATER_DEW_POINT_LINE_ALGORITHM: ModelAlgorithm = ModelAlgorithm {
+    scheme: "water_dew_point_pressure_sweep",
+    convergence: "absolute",
+    tolerance: 0.0001,
+    max_iterations: 100,
+    bracket: None,
+    initialisation: Some("ten_equal_pressure_increments"),
+    initial_temperature: None,
+    inner: None,
+    fallback: None,
+};
+
+/// Registry entry for `eos.water_dew_point_line`.
+pub static WATER_DEW_POINT_LINE_SPEC: ModelSpec = ModelSpec {
+    id: "eos.water_dew_point_line",
+    kind: "procedure",
+    algorithm: Some(&WATER_DEW_POINT_LINE_ALGORITHM),
+    checks: WATER_DEW_POINT_LINE_CHECKS,
+    cases: WATER_DEW_POINT_LINE_CASES,
+};
+
 static WATER_DEW_POINT_MULTIPHASE_CHECKS: &[SpecCheck] = &[SpecCheck {
     on_input: true,
     check: RangeCheck {
@@ -10976,6 +11093,7 @@ static ALL_MODELS: &[&ModelSpec] = &[
     &VS_FLASH_SPEC,
     &VU_FLASH_SPEC,
     &VU_FLASH_SINGLE_COMP_SPEC,
+    &WATER_DEW_POINT_LINE_SPEC,
     &WATER_DEW_POINT_MULTIPHASE_SPEC,
     &WATER_DEW_POINT_TEMPERATURE_SPEC,
     &WATER_PHASE_SPEC,

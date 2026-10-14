@@ -158,7 +158,7 @@ def water_dew_point_multiphase(
     _, phase_count = _aqueous(mixture, answer, p_si, z)
     return WaterDewPointMultiphaseResult(
         temperature=from_si(answer, "K"),
-        bracket_width=high - low,
+        bracket_width=from_si(high - low, "K"),
         phase_count=phase_count,
         iterations=iterations,
         warnings=tuple(warnings),

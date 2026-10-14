@@ -1,0 +1,53 @@
+model = "eos.water_dew_point_line"
+[[cases]]
+id = "neqsims_own_gas_from_1_to_200_bara"
+tolerance = 1e-03
+source = """NeqSim master, from `validation/neqsim/captures/water_dew_point_probe.tsv`: the
+gas NeqSim's own `WaterDewPointTest` builds - CO2 0.02, nitrogen 0.01, methane 0.9 - x, ethane
+0.05, propane 0.01, i-butane 0.005, n-butane 0.005 and water x, with x = 35e-6 - on a plain
+`SystemSrkEos`, swept from 1 to 200 bara in the class's own ten points.
+
+**The curve rises and then falls**, which is the state that makes the ten numbers a curve rather
+than a repeat: `224.28` K at 1 bara, a maximum of `261.916` K near 134 bara, and `261.791` K at
+200. A port that solved one point and multiplied it would fail on the first and the last alike.
+
+**Nine of the ten are reproduced to `4e-13` K; the first, at 1 bara, is `0.149` K warm.** This
+library gives `224.4312` K where NeqSim gives `224.2818`, a relative `6.7e-4` that sits inside
+this model family's `1e-3` capture tolerance. It is a flash-level difference in a marginal state:
+at NeqSim's own answer this library's `eos.tp_multiflash` reports **two** phases, gas and
+aqueous, so it agrees the phase is there, and it loses it only `0.149` K warmer, at `224.4312`.
+The aqueous appearance is a phase boundary this library places `0.149` K early at the sweep's own
+floor, where the fluid is a gas carrying 35 ppm water, and the point is owed rather than
+matched."""
+[cases.inputs]
+components = ["co2", "nitrogen", "methane", "ethane", "propane", "i-butane", "n-butane", "water"]
+eos = "srk"
+z = [0.02, 0.01, 0.899965, 0.05, 0.01, 0.005, 0.005, 0.000035]
+minimum_pressure = 100000.0
+maximum_pressure = 20000000.0
+[cases.expected]
+temperature = [
+    224.281806945801,
+    252.246055603027,
+    257.799644470215,
+    260.348777770996,
+    261.495552062988,
+    261.876487731934,
+    261.916236877441,
+    261.864204406738,
+    261.814994812012,
+    261.791038513184,
+]
+pressure = [
+    100000.0,
+    2311111.111111111,
+    4522222.222222222,
+    6733333.333333334,
+    8944444.444444444,
+    11155555.555555556,
+    13366666.666666668,
+    15577777.777777778,
+    17788888.88888889,
+    20000000.0,
+]
+failed_points = 0

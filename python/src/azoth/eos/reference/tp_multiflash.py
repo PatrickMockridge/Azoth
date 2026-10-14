@@ -6,17 +6,15 @@ Spec: ``specs/models/eos/tp_multiflash.toml``. NeqSim's ``TPmultiflash``, reache
 out, and the two agree everywhere the seeding has nothing to add.
 
 Three steps, in the order upstream runs them: the two-phase flash; the tangent-plane trial
-from :func:`azoth.eos.reference.stability_test.stability_test`, whose stationary point at a
-composition that is not already a phase is a phase the flash has not found; and the fraction
-solve below, which is ``multiphase.rs``'s ``solve_phase_fractions`` in Python.
+from :func:`azoth.eos.reference.multiflash_stability_test.multiflash_stability_test`, **which
+is ``TPmultiflash``'s own override of ``stabilityAnalysis`` and not the base method
+:func:`azoth.eos.reference.stability_test.stability_test` ports** - it runs the same Wilson
+pair and then a pure-component trial per eligible component, which is what finds a water-rich
+phase in a gas carrying ppm water; and the fraction solve below, which is ``multiphase.rs``'s
+``solve_phase_fractions`` in Python.
 
 The Rust kernel carries the reasoning; this is the same arithmetic. The two are compared case
 by case, and the case files record NeqSim's own numbers beside them.
-
-**One known divergence.** NeqSim also runs a pure-component fallback - one trial per
-component, started from that component - which this does not, so a phase only such a start
-reaches is not found. Measured at N2/CO2/n-octane at 180 K and 10 bar, where NeqSim reaches
-three phases and this stops at two.
 """
 
 from __future__ import annotations
@@ -27,7 +25,12 @@ from typing import Any, NamedTuple
 from azoth import _models_gen
 from azoth.core.errors import InvalidInputError, SolverNotConvergedError
 from azoth.core.range import apply_checks, checks_for
-from azoth.core.result import Phase, TpMultiflashResult, TpMultiflashSeed
+from azoth.core.result import (
+    MultiflashSeedPath,
+    Phase,
+    TpMultiflashResult,
+    TpMultiflashSeed,
+)
 from azoth.core.units import Q, from_si, input_to_si
 from azoth.core.warnings import Warning, WarningCode
 from azoth.eos.mixture import Mixture
@@ -38,17 +41,12 @@ from azoth.eos.reference._mixture_state import (
     phase_state,
     reduced_parameters,
 )
+from azoth.eos.reference.multiflash_stability_test import multiflash_stability_test
 from azoth.eos.reference.pr_z_factor import pr_z_factor
 from azoth.eos.reference.pt_flash import pt_flash
 from azoth.eos.reference.srk_z_factor import srk_z_factor
-from azoth.eos.reference.stability_test import TM_LIMIT, stability_test
 
 MODEL_ID = "eos.tp_multiflash"
-
-#: A trial within this of an existing phase, in sum-absolute composition, *is* that phase.
-#: A trial that reproduces an existing phase has a negative tangent-plane distance by
-#: construction, because the plane passes through it.
-TRIVIAL_TOLERANCE = 1.0e-4
 
 #: The floor under a phase fraction, upstream's ``phaseFractionMinimumLimit``.
 FRACTION_FLOOR = 1.0e-12
@@ -340,35 +338,52 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
     kij = mixture.kij
     feed = list(z)
 
-    flash = pt_flash(mixture, T=from_si(t_si, "K"), P=from_si(p_si, "Pa"), z=feed)
-    warnings.extend(flash.warnings)
-    phases = _phases_of(flash, reduced, kij, feed)
+    # **A stalled two-phase flash is warned about rather than propagated.** Upstream's flash is
+    # the *seed* this model's seeding starts from and not its answer, and there are states - a
+    # water dew point's incipient aqueous phase among them - where it reaches its cap and stops
+    # short: measured, `300` steps to a residual of `5.3e-5` against the `1e-10` it declares, at
+    # `261.876` K and `111.6` bara on the gas `eos.water_dew_point_line` sweeps. Refusing there
+    # loses an answer the seeding and the fraction solve would have found. The set falls back to
+    # the feed on its lower-Gibbs root, which is the same set `_phases_of` builds where the
+    # flash reports no fraction at all.
+    try:
+        flash = pt_flash(mixture, T=from_si(t_si, "K"), P=from_si(p_si, "Pa"), z=feed)
+    except SolverNotConvergedError as error:
+        warnings.append(
+            Warning(
+                code=WarningCode.SOLVER_NOT_CONVERGED,
+                message=(
+                    "the two-phase flash reached its cap after "
+                    f"{error.iterations} steps with a residual of {error.residual:.3e} against "
+                    f"the {error.tolerance:.3e} it declares, so the seeding below starts from "
+                    f"the feed instead of from the split it nearly reached"
+                ),
+            )
+        )
+        phases = [_Phase(1.0, list(feed), liquid=_is_liquid(reduced, kij, list(feed)))]
+        flash_min_t_over_tc = math.inf
+    else:
+        warnings.extend(flash.warnings)
+        phases = _phases_of(flash, reduced, kij, feed)
+        flash_min_t_over_tc = flash.min_t_over_tc
+
+    # The seeding. **This is `TPmultiflash`'s own `stabilityAnalysis` and not the base method
+    # `eos.stability_test` ports** - the two share a name and nothing else - and the difference
+    # is the whole of what this model was missing: the override adds a pure-component trial per
+    # eligible component, which is what finds a water-rich phase in a gas carrying ppm water.
+    seeding = multiflash_stability_test(mixture, T=from_si(t_si, "K"), P=from_si(p_si, "Pa"), z=feed)
+    warnings.extend(seeding.warnings)
+
     base_count = len(phases)
-
-    stability = stability_test(mixture, T=T, P=P, z=feed)
-    warnings.extend(stability.warnings)
-
-    for trial, distance in zip(stability.w, stability.tm, strict=True):
-        if distance >= TM_LIMIT:
-            continue
-        if any(_distance(list(trial), phase.composition) < TRIVIAL_TOLERANCE for phase in phases):
-            continue
-        trial_row = list(trial)
-        liquid = _is_liquid(reduced, kij, trial_row)
-        # Upstream's starting fraction: the feed's mole fraction of the trial's largest
-        # component. A share of the feed rather than a guess at the answer.
-        #
-        # The **last** largest, matching Rust's `max_by`, which keeps the last element among
-        # equal maxima. A first-maximum rule picks a different component when two entries tie,
-        # which is a different starting fraction and so a different iteration.
-        dominant = 0
-        for index in range(1, n):
-            if trial_row[index] >= trial_row[dominant]:
-                dominant = index
-        phases.append(_Phase(feed[dominant], trial_row, liquid=liquid))
-        # Upstream returns after the first phase it adds; a second seeding would start from a
-        # set the solve has not seen.
-        break
+    if seeding.path is not MultiflashSeedPath.STABLE:
+        seed_row = list(seeding.seed_composition)
+        phases.append(
+            _Phase(
+                seeding.seed_fraction,
+                seed_row,
+                liquid=_is_liquid(reduced, kij, seed_row),
+            )
+        )
 
     # **Nothing seeded, nothing to solve.** When the trial added no phase the answer is the
     # two-phase flash's, and re-solving the fractions it already converged would replace a
@@ -437,7 +452,7 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
             )
         )
 
-    min_t_over_tc = min(flash.min_t_over_tc, stability.min_t_over_tc)
+    min_t_over_tc = min(flash_min_t_over_tc, seeding.min_t_over_tc)
     geometry = [phase_state(reduced, kij, phase.composition, liquid=phase.liquid) for phase in kept]
 
     return TpMultiflashResult(
@@ -447,7 +462,7 @@ def tp_multiflash(mixture: Mixture, T: Q, P: Q, z: list[float]) -> TpMultiflashR
         z_factor=tuple(state.z for state in geometry),
         ln_phi=tuple(tuple(state.ln_phi) for state in geometry),
         seeded=(TpMultiflashSeed.STABILITY_SEEDED if grew else TpMultiflashSeed.TWO_PHASE_FLASH),
-        tm=tuple(stability.tm),
+        tm=tuple(seeding.tm),
         iterations=iterations,
         residual=residual,
         min_t_over_tc=min_t_over_tc,

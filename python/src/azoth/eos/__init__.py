@@ -208,6 +208,7 @@ from azoth.core.result import (
     VsFlashResult,
     VuFlashResult,
     VuFlashSingleCompResult,
+    WaterDewPointLineResult,
     WaterDewPointMultiphaseResult,
     WaterDewPointTemperatureResult,
     WaterPhaseResult,
@@ -364,6 +365,7 @@ __all__ = [
     "vs_flash",
     "vu_flash",
     "vu_flash_single_comp",
+    "water_dew_point_line",
     "water_dew_point_multiphase",
     "water_dew_point_temperature",
     "water_phase",
@@ -408,6 +410,7 @@ _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusiv
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _IAPWS_HENRY_LAW = "eos.iapws_henry_law"
 _HYBRID_EOS_GE_FLASH = "eos.hybrid_eos_ge_flash"
+_WATER_DEW_POINT_LINE = "eos.water_dew_point_line"
 _WATER_DEW_POINT_MULTIPHASE = "eos.water_dew_point_multiphase"
 _WATER_DEW_POINT_TEMPERATURE = "eos.water_dew_point_temperature"
 _WATER_PHASE = "eos.water_phase"
@@ -3869,6 +3872,36 @@ def multiflash_stability_test(
     See :func:`azoth.eos.reference.multiflash_stability_test`.
     """
     return resolve(_MULTIFLASH_STABILITY_TEST)(mixture=mixture, T=T, P=P, z=z)  # type: ignore[no-any-return]
+
+
+def water_dew_point_line(
+    components: list[str],
+    z: list[float],
+    minimum_pressure: Q,
+    maximum_pressure: Q,
+    eos: str = "srk",
+) -> WaterDewPointLineResult:
+    """The water dew point against pressure, in NeqSim's own ten points.
+
+    NeqSim's ``WaterDewPointEquilibriumLine``, which holds no arithmetic of its own: it steps
+    the pressure in 10 equal increments from ``minimum_pressure`` to ``maximum_pressure`` and
+    calls :func:`water_dew_point_multiphase` at each. ``failed_points`` reports how many points
+    did not solve, because upstream records the previous point's temperature where one fails and
+    says nothing - so a bad point is a repeated value with no marker otherwise.
+
+    Raises:
+        InvalidInputError: if ``minimum_pressure`` is not positive, if it is above
+            ``maximum_pressure``, or if the fluid names no ``water``.
+
+    See :func:`azoth.eos.reference.water_dew_point_line`.
+    """
+    return resolve(_WATER_DEW_POINT_LINE)(  # type: ignore[no-any-return]
+        components=components,
+        z=z,
+        minimum_pressure=minimum_pressure,
+        maximum_pressure=maximum_pressure,
+        eos=eos,
+    )
 
 
 def water_dew_point_multiphase(

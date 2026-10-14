@@ -1,0 +1,73 @@
+id = "eos.water_dew_point_line"
+name = "Water dew-point line against pressure"
+kind = "procedure"
+assumptions = [
+    "**this id holds no arithmetic of its own.** It steps the pressure in `10` equal increments from `minimum_pressure` to `maximum_pressure` and calls `eos.water_dew_point_multiphase` at each, which is what the class does - so every assumption that id carries is this one's too.",
+    "**the point count is the class's, not a caller's.** `numberOfPoints = 10` is a field with no setter, so there is no input for it and a caller wanting a denser curve has no expressible request.",
+    "**the endpoints are included.** `dp = (max - min) / (n - 1)` and the sweep starts at `min`, so the first and last points are the stated pressures rather than one step inside them.",
+    "**a point that does not solve keeps the previous point's temperature, and `failed_points` says how many did.** Upstream logs the failure and records whatever temperature the fluid is at, so a bad point is a repeated value with no marker.",
+    "**the sweep refuses to run backwards.** A `minimum_pressure` above `maximum_pressure`, or either at or below zero, is refused rather than swept - the class would step negatively and answer a reversed curve.",
+]
+references = [
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `WaterDewPointEquilibriumLine` and `ThermodynamicOperations.waterDewPointLine(minimumPressure, maximumPressure)` are the port source.\n",
+    "`validation/neqsim/captures/water_dew_point_probe.tsv` - the class's own ten points from `1` to `200` bara, from `WaterDewPointProbe`.\n",
+]
+[source]
+standard = "NeqSim master `WaterDewPointEquilibriumLine`"
+edition = "The class's own sweep, which its field `hydratePoints` misnames: it holds water dew points and not hydrate points."
+[algorithm]
+scheme = "water_dew_point_pressure_sweep"
+initialisation = "ten_equal_pressure_increments"
+convergence = "absolute"
+tolerance = 1e-04
+max_iterations = 100
+[inputs]
+[inputs.components]
+type = "components"
+length = "one entry per component"
+description = "the fluid's substances, by name, resolved against the component databank with the keycard's overrides applied. One must be `water` at a positive mole fraction - the same condition the multiphase route east of it refuses on."
+[inputs.z]
+type = "vector"
+unit = "dimensionless"
+length = "one per component"
+description = "the overall mole fractions, checked rather than renormalised."
+[inputs.minimum_pressure]
+unit = "Pa"
+description = "the lowest pressure on the line, and the first point the sweep solves."
+[inputs.maximum_pressure]
+unit = "Pa"
+description = "the highest pressure on the line, and the last point the sweep solves."
+[inputs.eos]
+type = "enum"
+values = ["pr", "srk", "rk"]
+optional = true
+description = "the cubic the fluid and every point's flash run. NeqSim's own probe uses SRK, which is the default."
+[outputs]
+[outputs.temperature]
+type = "vector"
+unit = "K"
+length = "one entry per point"
+description = "the water dew point at each pressure on the line, in `[minimum_pressure, maximum_pressure]` order."
+[outputs.pressure]
+type = "vector"
+unit = "Pa"
+length = "one entry per point"
+description = "the pressures the line was formed at, parallel to `temperature`."
+[outputs.failed_points]
+unit = "dimensionless"
+description = "how many of the ten points did not solve. **Upstream records the previous point's temperature where one fails and says nothing**, so a line with a failure in it is a line with a repeated value and no marker; this is the marker."
+[[valid_range]]
+quantity = "minimum_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[[valid_range]]
+quantity = "maximum_pressure"
+min = 0
+min_inclusive = false
+severity = "error"
+rationale = "an absolute pressure; zero and below are not states"
+[implementations]
+python = "azoth.eos.water_dew_point_line"
+rust = "azoth_eos::water_dew_point_line"

@@ -59,6 +59,7 @@ not an equation, and both implementations read it from here.
 - **the fraction is the trial's own component's feed fraction, and the two paths differ**: the Wilson pair takes the trial's *dominant* component's `z`, the fallback the trial component's own `z`.
 - the pure-component fallback runs one trial per eligible component, seeded at that component alone - `1.0`, every other at `1e-12` - scanned from the last component down.
 - **an ineligible component is skipped**: one whose feed fraction is absent, and every hydrocarbon but the heaviest and the lightest. A skipped component's distance stays at the `0.0` upstream leaves, which the selection reads as stable.
+- **a hydrocarbon with no molar mass is refused rather than ordered at zero.** The heaviest and the lightest are picked by molar mass, so a card-added component carrying none has no place in that ordering.
 - **a trial that converges to the feed is not an instability.** Upstream compares it against the feed in sum-absolute terms and marks it stable below `1e-4`, because the tangent plane passes through the feed and a trial reproducing it is zero by construction.
 - **a failed or trivial trial is marked `10.0`**, far above any real distance, so the selection cannot pick it. Zero would not do: a skipped component's distance is already zero and reads as stable.
 - **the trial's phase is evaluated on a fixed root** - the smallest for the liquid-like Wilson seed and for every pure-component seed, the largest for the vapour-like one - which is `eos.stability_test`'s own reading of the same two seeds.

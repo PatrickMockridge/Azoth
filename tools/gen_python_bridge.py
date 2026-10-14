@@ -124,6 +124,12 @@ MIXTURE_EXPANSION: dict[str, str] = {
     "Tc": "[c.Tc.to_base_units().magnitude for c in mixture.components]",
     "Pc": "[c.Pc.to_base_units().magnitude for c in mixture.components]",
     "omega": "[c.omega for c in mixture.components]",
+    # The component *class* - `hc`, `inert`, `water`, `ion`. `eos.multiflash_stability_test`'s
+    # pure-component fallback reads it to skip all but a mixture's heaviest and lightest
+    # hydrocarbon, and `eos.hydrate_inhibitor_wt`'s label reads it too; a boundary that dropped
+    # it would hand the Rust kernel a mixture whose every component is classless, and every
+    # component would then be "not a hydrocarbon" and get a trial it should have been skipped.
+    "classes": "[c.component_class for c in mixture.components]",
     "kij": "mixture.flattened_kij()",
     "association": "_association_spec(mixture)",
     "eos": "mixture.cubic.name",
