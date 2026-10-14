@@ -21,6 +21,7 @@ from typing import Any
 from azoth import _models_gen
 from azoth.core.errors import (
     InvalidInputError,
+    PropertyUnavailableError,
     SolverNotConvergedError,
 )
 from azoth.core.range import apply_checks, checks_for
@@ -145,7 +146,6 @@ def _seed(entries: list[Any], z: list[float], ion: list[bool]) -> list[_Phase]:
     for i in range(n):
         entry = entries[i]
         fraction = max(z[i], ION_CONFINEMENT)
-        heavy = (entry.molar_mass is not None) and (entry.molar_mass.to("kg/mol").magnitude > 0.045)
         if ion[i]:
             gas[i] = ION_CONFINEMENT
             oil[i] = ION_CONFINEMENT
@@ -157,7 +157,15 @@ def _seed(entries: list[Any], z: list[float], ion: list[bool]) -> list[_Phase]:
             aqueous[i] = fraction
             aqueous_feed += max(z[i], 0.0)
         elif entry.component_type == HYDROCARBON:
-            if heavy:
+            # **The hydrocarbon's role is decided by its molar mass**, so one that carries none
+            # has no role to start in: the zero a default would give it is a mass every real
+            # fluid has more of, not an absence, and it would seed the component into the gas as
+            # if it were the lightest thing in the feed.
+            if entry.molar_mass is None:
+                raise PropertyUnavailableError(
+                    "component", "molar mass", "a card-added component needs its own molar mass"
+                )
+            if entry.molar_mass.to("kg/mol").magnitude > 0.045:
                 gas[i] = max(fraction * 1.0e-2, 1.0e-16)
                 oil[i] = fraction
                 oil_feed += max(z[i], 0.0)

@@ -116,8 +116,14 @@ def desmukh_mather_phase(
     solvent_weight = 0.0
     for i in solvent:
         mass = entries[i].molar_mass
-        if mass is not None:
-            solvent_weight += x[i] * mass.to_base_units().magnitude
+        # **A solvent with no molar mass has no weight to divide by.** Every molality in the
+        # phase is `x_i / solvent_weight`, so the zero a default would give it is not an
+        # absence the arithmetic can carry - it is the divisor.
+        if mass is None:
+            raise PropertyUnavailableError(
+                "component", "molar mass", "a card-added component needs its own molar mass"
+            )
+        solvent_weight += x[i] * mass.to_base_units().magnitude
     solvent_moles = sum(x[i] for i in solvent)
     if not solvent_weight > 0.0 or not solvent_moles > 0.0:
         raise InvalidInputError(
@@ -149,7 +155,14 @@ def desmukh_mather_phase(
         if entry.name.lower() == "water":
             p0 = saturation_pressure(entry, t_si, warnings)
             mass = entry.molar_mass
-            molar_volume = 1.0e-3 * (mass.to_base_units().magnitude if mass is not None else 0.0)
+            # The liquid molar volume is `M / rho` at `rho = 1000 kg/m3`, so a water with no
+            # molar mass would take a zero volume and a Poynting factor of exactly one - the
+            # correction silently deleted rather than absent.
+            if mass is None:
+                raise PropertyUnavailableError(
+                    "component", "molar mass", "a card-added component needs its own molar mass"
+                )
+            molar_volume = 1.0e-3 * mass.to_base_units().magnitude
             poynting = math.exp(molar_volume / (R * t_si) * (p_si - p0))
             coefficient = math.exp(ln_gamma[i]) * p0 / p_si * poynting
         elif neutral and is_solvent:

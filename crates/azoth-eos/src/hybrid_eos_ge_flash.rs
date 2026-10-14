@@ -352,7 +352,6 @@ pub fn seed_phases(mixture: &Mixture, z: &[f64], ion: &[bool]) -> Result<Vec<Mul
         let component = &mixture.components()[i];
         let fraction = z[i].max(ION_CONFINEMENT);
         let is_water_like = is_aqueous_feed_component(&names[i]);
-        let heavy = component.molar_mass.unwrap_or_default() > 0.045;
         if ion[i] {
             gas[i] = ION_CONFINEMENT;
             oil[i] = ION_CONFINEMENT;
@@ -364,7 +363,19 @@ pub fn seed_phases(mixture: &Mixture, z: &[f64], ion: &[bool]) -> Result<Vec<Mul
             aqueous[i] = fraction;
             aqueous_feed += z[i].max(0.0);
         } else if component.class == HYDROCARBON {
-            if heavy {
+            // **The hydrocarbon's role is decided by its molar mass**, so one that carries none
+            // has no role to start in: the `0.0` an `unwrap_or_default` would give it is a mass
+            // every real fluid has more of, not an absence, and it would seed the component into
+            // the gas as if it were the lightest thing in the feed.
+            let molar_mass = component.molar_mass.ok_or_else(|| {
+                AzothError::property_unavailable(
+                    names[i].clone(),
+                    "molar mass",
+                    "this seed sorts a hydrocarbon between the oil and the gas by its molar \
+                     mass, so one without a mass has no role to be given",
+                )
+            })?;
+            if molar_mass > 0.045 {
                 gas[i] = (fraction * 1.0e-2).max(1.0e-16);
                 oil[i] = fraction;
                 oil_feed += z[i].max(0.0);

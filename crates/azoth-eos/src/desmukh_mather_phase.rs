@@ -138,18 +138,25 @@ pub fn desmukh_mather_phase(
 
     // **The solvent is whatever `REFERENCESTATETYPE` says it is**, which is NeqSim's rule
     // here and not `PhasePitzer`'s. An amine tagged `solvent` joins water in the sum.
-    let solvent_weight: f64 = entries
-        .iter()
-        .zip(x)
-        .filter(|(entry, _)| entry.reference_state == crate::databank::SOLVENT)
-        .map(|(entry, &xi)| xi * entry.molar_mass.unwrap_or_default())
-        .sum();
-    let solvent_moles: f64 = entries
-        .iter()
-        .zip(x)
-        .filter(|(entry, _)| entry.reference_state == crate::databank::SOLVENT)
-        .map(|(_, &xi)| xi)
-        .sum();
+    let mut solvent_weight = 0.0_f64;
+    let mut solvent_moles = 0.0_f64;
+    for (entry, &xi) in entries.iter().zip(x) {
+        if entry.reference_state != crate::databank::SOLVENT {
+            continue;
+        }
+        // **A solvent with no molar mass has no weight to divide by.** Every molality in the
+        // phase is `x_i / solvent_weight`, so the zero an `unwrap_or_default` would give it is
+        // not an absence the arithmetic can carry - it is the divisor.
+        let mass = entry.molar_mass.ok_or_else(|| {
+            AzothError::property_unavailable(
+                entry.name.clone(),
+                "molar mass",
+                "a card-added component needs its own molar mass",
+            )
+        })?;
+        solvent_weight += xi * mass;
+        solvent_moles += xi;
+    }
     if solvent_weight <= 0.0 || solvent_moles <= 0.0 {
         return Err(AzothError::invalid_input(
             "components",
@@ -197,7 +204,17 @@ pub fn desmukh_mather_phase(
             // `exp(v (P - P0) / R T)`, with `v` the liquid molar volume. NeqSim converts
             // the pressure difference from bar with a `1e5` because its pressures are in
             // bar; everything here is SI already, so the factor is absent.
-            let molar_volume = 1.0e-3 * entry.molar_mass.unwrap_or_default();
+            // The liquid molar volume is `M / rho` at `rho = 1000 kg/m3`, so a water with no
+            // molar mass would take a zero volume and a Poynting factor of exactly one - the
+            // correction silently deleted rather than absent.
+            let water_mass = entry.molar_mass.ok_or_else(|| {
+                AzothError::property_unavailable(
+                    entry.name.clone(),
+                    "molar mass",
+                    "a card-added component needs its own molar mass",
+                )
+            })?;
+            let molar_volume = 1.0e-3 * water_mass;
             let poynting = (molar_volume / (R * T) * (P - p0)).exp();
             ln_gamma[i].exp() * p0 / P * poynting
         } else if neutral && solvent {

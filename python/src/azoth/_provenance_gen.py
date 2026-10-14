@@ -337,8 +337,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.desmukh_mather_phase': {
         "calc_id": 'eos.desmukh_mather_phase',
         "name": 'Activity coefficients of a Desmukh-Mather electrolyte phase',
-        "spec": {'path': 'specs/models/eos/desmukh_mather_phase.toml', 'sha256': '9e4d159d86fb46f7907e3fc0d2295d2ab091ab6b81951f085ac9333e7779713a'},
-        "code": [{'path': 'python/src/azoth/eos/reference/desmukh_mather_phase.py', 'sha256': 'd6d1cf91ef8162f9d6814c6c6417418ccde02c27a2252e3305f207237122bdf5'}, {'path': 'crates/azoth-eos/src/desmukh_mather_phase.rs', 'sha256': 'd91df1318a53e881173456594523213c7682043fb47c122fa6a881e4e44fb148'}],
+        "spec": {'path': 'specs/models/eos/desmukh_mather_phase.toml', 'sha256': '1fd68c93a2b659e09b351c5075d3d6ce15f2b23746bdc84731046630b64d4981'},
+        "code": [{'path': 'python/src/azoth/eos/reference/desmukh_mather_phase.py', 'sha256': '8dd0b04643c51c2473e363bd70235b328a80cdcd9cee50106c3189a7d1a89d2a'}, {'path': 'crates/azoth-eos/src/desmukh_mather_phase.rs', 'sha256': 'fc6f36731df550f9e3034884dc912f20802ede97f28885b1c1053519489ce401'}],
         "source": 'NeqSim master `PhaseDesmukhMather`',
         "verification": 'partially_verified',
         "validation_cases": 0,
@@ -557,8 +557,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.hybrid_eos_ge_flash': {
         "calc_id": 'eos.hybrid_eos_ge_flash',
         "name": 'Isothermal flash of a fixed gas-oil-brine topology',
-        "spec": {'path': 'specs/models/eos/hybrid_eos_ge_flash.toml', 'sha256': '1f52c06424dec2cb412b9a63715707ebe3662de9382b0bfd47b1ae869e27984e'},
-        "code": [{'path': 'python/src/azoth/eos/reference/hybrid_eos_ge_flash.py', 'sha256': 'e52a1d57348faee49b66ab7444a2fa5cd8ddc3de8a6fcddb071fc3f70f96e765'}, {'path': 'crates/azoth-eos/src/hybrid_eos_ge_flash.rs', 'sha256': '1ab45e55155b14cd7935d1f4604ca405c15dd5a3e8bdb981a777293938711308'}],
+        "spec": {'path': 'specs/models/eos/hybrid_eos_ge_flash.toml', 'sha256': '1b4b911f89335ac930dcb673cb32f80d003c990a67fa144017c7274b221f4b65'},
+        "code": [{'path': 'python/src/azoth/eos/reference/hybrid_eos_ge_flash.py', 'sha256': '207c7d08044bbd6b3e4a4fd1c782a69898420b6fb084fa9678813dd999aece31'}, {'path': 'crates/azoth-eos/src/hybrid_eos_ge_flash.rs', 'sha256': '4ca85c319db8f1d5833242a3ae37dcd723f7d18b5356ceb190f695fb8bf4a7ec'}],
         "source": "NeqSim master `SystemEosGE`'s hybrid route",
         "verification": 'partially_verified',
         "validation_cases": 0,
