@@ -38,6 +38,20 @@ writes - `IapwsIf97Probe` prints its whole state grid and reads nothing.
 java -cp .:neqsim-f0c7436.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
 ```
 
+**`BrineProbe` prints the electrolyte-CPA phase's layers and then runs the four brine
+operations.** It reads nothing and covers its whole grid, so it needs the recipe for the same
+reason. Two things in it are measured rather than assumed: the two halves of
+`PhaseElectrolyteCPA`'s sum are printed separately (`FCPA` and `F_super`), and the statoil RDF
+is printed beside the interface default's value. **Its reactive fluids call
+`chemicalReactionInit()` before `setMixingRule`** - the reaction tables grow the system from
+five components to nine, and the electrolyte mixing rule's `wijCalcOrFitted` is built at the
+count of the moment, so the other order throws `Index 4 out of bounds for length 4` from
+`calcWij`.
+
+```bash
+java -cp .:neqsim-f0c7436.jar BrineProbe > captures/brine_probe.tsv
+```
+
 ```bash
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 150 50 methane 1 > captures/pcsaft_probe_methane_150_50.tsv
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 300 100 propane 1 > captures/pcsaft_probe_propane_300_100.tsv
