@@ -128,6 +128,17 @@ public class BrineProbe {
           row("charge[" + i + "]", phase.getComponent(i).getIonicCharge());
           row("b[" + i + "]", species.getb());
           row("a[" + i + "]", species.geta());
+          // `a` is temperature-independent and `aT` is `a alpha(T)`, so the pair reads out
+          // the alpha the phase actually runs. `ComponentElectrolyteCPA.setAttractiveTerm`
+          // calls `getAttractiveTerm().setm(mCPA)` for a component with a fitted set, so
+          // this is Schwartzentruber's form with the *fitted* Soave coefficient rather than
+          // the one `0.48508 + 1.55191 w - 0.15613 w^2` gives.
+          row("aT[" + i + "]", species.getaT());
+          row("alpha[" + i + "]", species.getAttractiveTerm().alpha(phase.getTemperature()));
+          // **Which attractive term the phase installs**, which the alpha alone only hints at.
+          // `SystemElectrolyteCPAstatoil`'s constructor sets `attractiveTermNumber = 15`, and
+          // that number is what each component's term is built from.
+          text("term[" + i + "]", species.getAttractiveTerm().getClass().getSimpleName());
           // **The Huron-Vidal rule's own per-component quantity.** The phase's `A` is
           // `n B R T alphaMix` with `alphaMix = sum_i x_i ader_i`, so `ader` is where a
           // divergence in `A` localises to a component. An ion's first term is `1e-35`
