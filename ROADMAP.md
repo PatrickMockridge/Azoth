@@ -140,13 +140,19 @@ reaches equilibrium through.
   this tier.** `ComponentWater`'s `calca`, `calcb` and `alpha` are zero and its `fugcoef` is
   `1.0`; `PhaseWaterIAPWS` reads IF97 and types itself by specific volume, `v_spec < 0.01` being
   `AQUEOUS` and anything above it `GAS`; `SystemWaterIF97` is a pure-water fluid you can flash,
-  and it refuses any component but water. `SystemPitzer`, `SystemKentEisenberg`,
-  `SystemDesmukhMather`, `SystemFurstElectrolyteEos` and `SystemSoreideWhitson` are that shape
-  again in the bullets below, each owed while the phase it wraps is an id.
-  **So the unported thing is one question and not five**: a phase model that is not a cubic.
-  `Mixture` selects its phase among the cubics (`cubic.rs`) and every flash reaches the phase
-  through it, so a system-level phase model is an addition to that boundary rather than a new
-  calculation. Owed, with this reason.
+  and it refuses any component but water.
+  **The `System*` classes the bullets below name are not one finding, and the distinction is
+  which of them a flash reaches.** **One is**: `SystemPitzer`, whose phase is
+  `eos.pitzer_phase`, called by `eos.multiphase`, `reactions.reactive_hybrid_eos_ge_flash` and
+  `eos.salt_precipitation`. **Four are not**: `eos.kent_eisenberg_phase`,
+  `eos.desmukh_mather_phase`, `eos.furst_electrolyte_phase` (with its Mod2004 twin) and
+  `eos.soreide_whitson_phase` are each a phase state whose resolver **no flash calls** -
+  `soreide_whitson_mixture_of`'s only caller is the phase model itself. So the gap is a route
+  from these phases into a flash, which is not the same thing as the phase's arithmetic being
+  absent, and the reason it is missing differs by model: the Fürst one's Huron-Vidal rule
+  refuses the `d ln phi / d n` Jacobian a flash needs, while the other three have never been
+  wired. The one class in the family whose phase model really is not a cubic is
+  `SystemWaterIF97`. Owed, with this reason.
 - **Water content and dehydration.** Two of the four classes in this bullet are ids now.
   `WaterDewPointTemperatureFlash` is `eos.water_dew_point_temperature`: it **prescribes** its
   incipient phase - `1e-30` on every component but one `water`-or-`MEG` at `1.0` - and walks the
