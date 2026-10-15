@@ -771,6 +771,11 @@ class IapwsHenryLawResult:
     warnings: list[Warning]
 
 @final
+class IapwsSaturationPressureResult:
+    p_sat: Qty
+    warnings: list[Warning]
+
+@final
 class IdealGasCpResult:
     cp: Qty
     warnings: list[Warning]
@@ -1564,6 +1569,7 @@ class WaterPhaseResult:
     cv: Qty
     cp: Qty
     g: Qty
+    w: Qty
     warnings: list[Warning]
 
 @final
@@ -2782,6 +2788,7 @@ def hydrogen_phase(
     hydrogen_type: str = "normal",
 ) -> HydrogenPhaseResult: ...
 def iapws_henry_law(gas: str, T: float) -> IapwsHenryLawResult: ...
+def iapws_saturation_pressure(T: float) -> IapwsSaturationPressureResult: ...
 def ideal_gas_cp(
     cp_a: float,
     cp_b: float,

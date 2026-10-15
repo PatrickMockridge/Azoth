@@ -48,6 +48,7 @@
   - [Liquid binary diffusivity from the Hayduk-Minhas correlation](./eos/hayduk_minhas_diffusivity.md)
   - [Heat of vaporisation from NeqSim's correlation](./eos/heat_of_vaporization.md)
   - [Henry constant of a gas in water, from the IAPWS guideline](./eos/iapws_henry_law.md)
+  - [Saturation pressure of water, IAPWS-IF97 Region 4](./eos/iapws_saturation_pressure.md)
   - [Ideal-gas heat capacity from a polynomial](./eos/ideal_gas_cp.md)
   - [Liquid heat capacity from NeqSim's polynomial](./eos/liquid_heat_capacity.md)
   - [One component's pure-liquid viscosity from the LIQVISC correlation](./eos/liquid_viscosity_pure.md)

@@ -114,6 +114,7 @@ from azoth.core.result import (
     HydrateInhibitorWtResult,
     HydrogenPhaseResult,
     IapwsHenryLawResult,
+    IapwsSaturationPressureResult,
     IdealGasCpResult,
     KentEisenbergPhaseResult,
     LiquidConductivityPolynomResult,
@@ -291,6 +292,7 @@ __all__ = [
     "hydrate_inhibitor_wt",
     "hydrogen_phase",
     "iapws_henry_law",
+    "iapws_saturation_pressure",
     "ideal_gas_cp",
     "kent_eisenberg_phase",
     "liquid_conductivity_polynom",
@@ -409,6 +411,7 @@ _FREEZING_POINT = "eos.freezing_point"
 _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusivity"
 _HYDROGEN_PHASE = "eos.hydrogen_phase"
 _IAPWS_HENRY_LAW = "eos.iapws_henry_law"
+_IAPWS_SATURATION_PRESSURE = "eos.iapws_saturation_pressure"
 _HYBRID_EOS_GE_FLASH = "eos.hybrid_eos_ge_flash"
 _WATER_DEW_POINT_LINE = "eos.water_dew_point_line"
 _WATER_DEW_POINT_MULTIPHASE = "eos.water_dew_point_multiphase"
@@ -2681,6 +2684,26 @@ def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
     See :func:`azoth.eos.reference.iapws_henry_law`.
     """
     return resolve(_IAPWS_HENRY_LAW)(gas=gas, T=T)  # type: ignore[no-any-return]
+
+
+def iapws_saturation_pressure(T: Q) -> IapwsSaturationPressureResult:
+    """The saturation pressure of water, from the IAPWS-IF97 Region 4 equation.
+
+    This is the curve :func:`water_phase` selects its region by, and it is a *different*
+    answer from :func:`pure_saturation` to a question that sounds the same: that one is the
+    pressure where a Peng-Robinson fluid's two roots cross, which is a property of the cubic.
+    A water dew point wants this one.
+
+    The two directions are separate fits in the release, so this is the forward one only;
+    the inverse is not an id and is pinned by the round-trip test beside this model.
+
+    Raises:
+        OutOfRangeError: if ``T`` is outside ``[273.15, 647.096)`` K - the triple point to the
+            critical point, which is the curve's own domain.
+
+    See :func:`azoth.eos.reference.iapws_saturation_pressure`.
+    """
+    return resolve(_IAPWS_SATURATION_PRESSURE)(T=T)  # type: ignore[no-any-return]
 
 
 def hydrogen_phase(

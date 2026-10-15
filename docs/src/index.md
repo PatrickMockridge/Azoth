@@ -112,6 +112,7 @@ Five sections, and the difference between them is the point:
 - [`eos.hayduk_minhas_diffusivity`](./eos/hayduk_minhas_diffusivity.md)
 - [`eos.heat_of_vaporization`](./eos/heat_of_vaporization.md)
 - [`eos.iapws_henry_law`](./eos/iapws_henry_law.md)
+- [`eos.iapws_saturation_pressure`](./eos/iapws_saturation_pressure.md)
 - [`eos.ideal_gas_cp`](./eos/ideal_gas_cp.md)
 - [`eos.liquid_heat_capacity`](./eos/liquid_heat_capacity.md)
 - [`eos.liquid_viscosity_pure`](./eos/liquid_viscosity_pure.md)

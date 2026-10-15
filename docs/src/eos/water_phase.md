@@ -34,6 +34,7 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 | `cv` | J/(mol*K) | the isochoric heat capacity |
 | `cp` | J/(mol*K) | the isobaric heat capacity |
 | `g` | J/mol | the Gibbs energy, `h - T s` |
+| `w` | m/s | the speed of sound. **The one output that does not scale with the molar mass**: `h`, `s` and `g` are molar and this is intensive, so it crosses the mass-to-molar conversion unchanged. |
 
 | Bound | On violation | Why |
 |---|---|---|
@@ -44,17 +45,17 @@ A **direct** model: a computation over vectors, with no iteration and therefore 
 
 - the fluid is pure water; the equation of state is the IAPWS-IF97 industrial formulation of NeqSim's `thermo.util.steam.Iapws_if97`, a Gibbs-energy form rather than the single Helmholtz form of the other reference equations.
 - the region is selected by the Region 4 saturation curve: subcooled liquid (Region 1) at or below `Tsat(p)` and superheated vapour (Region 2) above it; Regions 3 (near-critical) and 5 (high-temperature) are not implemented in NeqSim and are not here.
-- IF97 is mass-based: `R = 0.461526` kJ/(kg.K), pressure in MPa, and the properties specific; the model converts to the molar SI convention with the molar mass `M = 0.01801528` kg/mol.
+- IF97 is mass-based: `R = 0.461526` kJ/(kg.K), pressure in MPa, and the properties specific; the model converts to the molar SI convention with the molar mass `M = 0.01801528` kg/mol. The speed of sound is the exception, being already intensive.
 - the isochoric heat capacity follows the exact identity `cv = cp + R (g_pi - tau g_pitau)^2 / g_pipi` in the reduced Gibbs variables, since NeqSim's class does not expose it.
 
 ## Cases
 
 | Case | Inputs | Expected |
 |---|---|---|
-| `subcooled_liquid_1_mpa` | T = 300.0, P = 1000000.0 | z_factor = 0.007244437998302719, u = 2026.525392109388, h = 2044.595599751971, s = 7.077282723476562, cv = 74.3621768060132, cp = 75.27815042731845, g = -78.58921729099703 |
-| `subcooled_liquid_5_mpa` | T = 500.0, P = 5000000.0 | z_factor = 0.02599492030038509, u = 17474.61863648531, h = 17582.68628037763, s = 46.41646185365476, cv = 58.00635694412464, cp = 83.56244307544678, g = -5625.54464644975 |
-| `superheated_vapour_0_1_mpa` | T = 400.0, P = 100000.0 | z_factor = 0.9892213858361777, u = 45898.9212613165, h = 49188.88170650791, s = 135.157852743207, cv = 27.17571680600745, cp = 36.17575750369828, g = -4874.259390774879 |
-| `superheated_vapour_10_mpa` | T = 600.0, P = 10000000.0 | z_factor = 0.7255997212984295, u = 47180.15827766464, h = 50799.96636556177, s = 104.0450172030427, cv = 47.30749121738625, cp = 92.6111035134201, g = -11627.04395626384 |
+| `subcooled_liquid_1_mpa` | T = 300.0, P = 1000000.0 | z_factor = 0.007244437998302719, u = 2026.525392109388, h = 2044.595599751971, s = 7.077282723476562, cv = 74.3621768060132, cp = 75.27815042731845, g = -78.58921729099703, w = 1504.55754967515 |
+| `subcooled_liquid_5_mpa` | T = 500.0, P = 5000000.0 | z_factor = 0.02599492030038509, u = 17474.61863648531, h = 17582.68628037763, s = 46.41646185365476, cv = 58.00635694412464, cp = 83.56244307544678, g = -5625.54464644975, w = 1249.71388537516 |
+| `superheated_vapour_0_1_mpa` | T = 400.0, P = 100000.0 | z_factor = 0.9892213858361777, u = 45898.9212613165, h = 49188.88170650791, s = 135.157852743207, cv = 27.17571680600745, cp = 36.17575750369828, g = -4874.259390774879, w = 490.306673226272 |
+| `superheated_vapour_10_mpa` | T = 600.0, P = 10000000.0 | z_factor = 0.7255997212984295, u = 47180.15827766464, h = 50799.96636556177, s = 104.0450172030427, cv = 47.30749121738625, cp = 92.6111035134201, g = -11627.04395626384, w = 503.347444338065 |
 
 ## How far this is checked
 **`partially_verified`** — exercised against expectations pinned in its own spec, with no independent oracle recorded for it - **the normal case rather than a defect**.

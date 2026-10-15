@@ -30,7 +30,13 @@ three that read arguments take `T_K P_bara n_water` triplets.
 **A state that a probe only prints when it is invoked for one needs its own recipe here**,
 because this file is the registry `tools/oracle_sweep.py` reads: a run with no recipe has
 no committed capture to compare against, so the next pin move cannot say whether it moved.
-`PcsaftProbe`'s three aside from its two defaults are the ones a test asserts.
+`PcsaftProbe`'s three aside from its two defaults are the ones a test asserts. **A probe that
+takes no argument needs one too**, because the recipe is also what names the capture a bare run
+writes - `IapwsIf97Probe` prints its whole state grid and reads nothing.
+
+```bash
+java -cp .:neqsim-f0c7436.jar IapwsIf97Probe > captures/iapws_if97_probe.tsv
+```
 
 ```bash
 java -cp .:neqsim-f0c7436.jar PcsaftProbe 150 50 methane 1 > captures/pcsaft_probe_methane_150_50.tsv

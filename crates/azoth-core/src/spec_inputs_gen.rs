@@ -59,6 +59,7 @@
 //!   - specs/models/eos/hydrate_inhibitor_wt.toml
 //!   - specs/models/eos/hydrogen_phase.toml
 //!   - specs/calcs/eos/iapws_henry_law.toml
+//!   - specs/calcs/eos/iapws_saturation_pressure.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/models/eos/kent_eisenberg_phase.toml
 //!   - specs/models/eos/liquid_conductivity_polynom.toml
@@ -619,6 +620,11 @@ pub const SPEC_INPUT_DIMENSIONS: &[(&str, &str, &str)] = &[
     ("eos.hydrogen_phase", "T", "thermodynamic_temperature"),
     ("eos.hydrogen_phase", "P", "pressure"),
     ("eos.iapws_henry_law", "T", "thermodynamic_temperature"),
+    (
+        "eos.iapws_saturation_pressure",
+        "T",
+        "thermodynamic_temperature",
+    ),
     ("eos.ideal_gas_cp", "cp_a", "molar_heat_capacity"),
     (
         "eos.ideal_gas_cp",

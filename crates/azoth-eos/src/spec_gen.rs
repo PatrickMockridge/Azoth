@@ -12,6 +12,7 @@
 //!   - specs/calcs/eos/hayduk_minhas_diffusivity.toml
 //!   - specs/calcs/eos/heat_of_vaporization.toml
 //!   - specs/calcs/eos/iapws_henry_law.toml
+//!   - specs/calcs/eos/iapws_saturation_pressure.toml
 //!   - specs/calcs/eos/ideal_gas_cp.toml
 //!   - specs/calcs/eos/liquid_heat_capacity.toml
 //!   - specs/calcs/eos/liquid_viscosity_pure.toml
@@ -1634,6 +1635,134 @@ pub static IAPWS_HENRY_LAW_SPEC: CalcSpec = CalcSpec {
         expected_records: &[],
     },
     tests: IAPWS_HENRY_LAW_TESTS,
+};
+
+/// Registry entry for `eos.iapws_saturation_pressure`.
+static IAPWS_SATURATION_PRESSURE_CHECKS: &[SpecCheck] = &[SpecCheck {
+    on_input: true,
+    check: RangeCheck {
+        quantity: "T",
+        min: Some(273.15),
+        min_inclusive: true,
+        max: Some(647.096),
+        max_inclusive: false,
+        equals: None,
+        band: Band::Outside,
+        severity: Severity::Error,
+        code: WarningCode::OutOfValidRange,
+        rationale: "The curve is defined between the triple point and the critical point. Below the first there is no liquid water to saturate and at the second the two phases become one, so a caller asking outside either end is asking a different question.",
+    },
+}];
+
+static IAPWS_SATURATION_PRESSURE_TESTS: &[TestCase] = &[
+    TestCase {
+        id: "the_triple_point_temperature",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 273.16)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("p_sat", 611.657000010665)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "at_the_room_temperature_the_pressure_is_negligible",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 300.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("p_sat", 3536.58941301301)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "up_the_curve_to_500_k",
+        kind: "reference",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 500.0)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("p_sat", 2638897.75627322)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    TestCase {
+        id: "round_trip_units",
+        kind: "property",
+        property: Some("unit_round_trip"),
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+];
+
+/// Registered spec for `eos.iapws_saturation_pressure`.
+///
+/// Public and addressable directly, so a calc can hold `&IAPWS_SATURATION_PRESSURE_SPEC` with no
+/// lookup and no failure path. A calc whose spec is missing is a build-time
+/// invariant, not a runtime condition, and this shape makes it unrepresentable
+/// rather than something to handle.
+pub static IAPWS_SATURATION_PRESSURE_SPEC: CalcSpec = CalcSpec {
+    id: "eos.iapws_saturation_pressure",
+    checks: IAPWS_SATURATION_PRESSURE_CHECKS,
+    solver: None,
+    worked_example: TestCase {
+        id: "the_normal_boiling_point",
+        kind: "worked_example",
+        property: None,
+        status: "active",
+        skip_reason: None,
+        tolerance: 1e-12,
+        numbers: &[("T", 373.15)],
+        flags: &[],
+        lists: &[],
+        strings: &[],
+        vectors: &[],
+        matrices: &[],
+        expected: &[("p_sat", 101417.97792131)],
+        expected_vectors: &[],
+        expected_strings: &[],
+        records: &[],
+        expected_records: &[],
+    },
+    tests: IAPWS_SATURATION_PRESSURE_TESTS,
 };
 
 /// Registry entry for `eos.ideal_gas_cp`.
@@ -7440,6 +7569,7 @@ static ALL_SPECS: &[&CalcSpec] = &[
     &HAYDUK_MINHAS_DIFFUSIVITY_SPEC,
     &HEAT_OF_VAPORIZATION_SPEC,
     &IAPWS_HENRY_LAW_SPEC,
+    &IAPWS_SATURATION_PRESSURE_SPEC,
     &IDEAL_GAS_CP_SPEC,
     &LIQUID_HEAT_CAPACITY_SPEC,
     &LIQUID_VISCOSITY_PURE_SPEC,

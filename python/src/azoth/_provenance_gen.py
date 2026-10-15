@@ -653,6 +653,17 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
         "tests_active": 6,
         "tests_skipped": 0,
     },
+    'eos.iapws_saturation_pressure': {
+        "calc_id": 'eos.iapws_saturation_pressure',
+        "name": 'Saturation pressure of water, IAPWS-IF97 Region 4',
+        "spec": {'path': 'specs/calcs/eos/iapws_saturation_pressure.toml', 'sha256': '2c7a08b2ebdd64a87212390f4c01301bf9a1cadf4e4ac17ddbcd65c5c878b2c3'},
+        "code": [{'path': 'python/src/azoth/eos/reference/iapws_saturation_pressure.py', 'sha256': '4b34aee618c29c3121af6d848754884af24b35189a5afb70f643067cdbcbc3f3'}, {'path': 'crates/azoth-eos/src/iapws_saturation_pressure.rs', 'sha256': 'ee8b3e222be24c1398e200a82c676b9ba90f4f88e580f298e0242e179afda928'}],
+        "source": 'IAPWS (2007), Region 4',
+        "verification": 'partially_verified',
+        "validation_cases": 0,
+        "tests_active": 5,
+        "tests_skipped": 0,
+    },
     'eos.ideal_gas_cp': {
         "calc_id": 'eos.ideal_gas_cp',
         "name": 'Ideal-gas heat capacity from a polynomial',
@@ -1723,8 +1734,8 @@ PROVENANCE: Final[dict[str, dict[str, Any]]] = {
     'eos.water_phase': {
         "calc_id": 'eos.water_phase',
         "name": 'Water reference phase state',
-        "spec": {'path': 'specs/models/eos/water_phase.toml', 'sha256': 'd94ba5eef18666fdd129b905d81c8405b83a76e95292ef6527a093267fd2b8d7'},
-        "code": [{'path': 'python/src/azoth/eos/reference/water_phase.py', 'sha256': '6edcb3258df131d65b9d21764cd5f2505fa941b730914b9a3a1c1c8d8f22474b'}, {'path': 'crates/azoth-eos/src/water_phase.rs', 'sha256': '09725e556923d0a26dad4891eec8f9874232e9f653b8b0311472690d55a46762'}],
+        "spec": {'path': 'specs/models/eos/water_phase.toml', 'sha256': '94029cc6120d3161650af92255a79dd62f639139649aafb4a133006f331b6b25'},
+        "code": [{'path': 'python/src/azoth/eos/reference/water_phase.py', 'sha256': '5c81f5fe97bb3049da81d5edaa4efb07edbe09e3cdbcd60f751198c43196ee50'}, {'path': 'crates/azoth-eos/src/water_phase.rs', 'sha256': '1785e07bcf67a240aa3fd8fae8eb44e599f7b829d6b22a082799cbb9daaa5126'}],
         "source": 'Wagner, W.; Kretzschmar, H.-J. (2008); IAPWS (2007)',
         "verification": 'partially_verified',
         "validation_cases": 0,

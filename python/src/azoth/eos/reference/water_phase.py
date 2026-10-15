@@ -335,6 +335,14 @@ def _properties(p_mpa: float, t: float) -> dict[str, float]:
         pi = p_mpa / 16.53
         tau = 1386.0 / t
         d = _gamma1(pi, tau)
+        # Region 1's speed of sound, from the region's own Gibbs function.
+        w = math.sqrt(
+            1000.0
+            * R
+            * t
+            * d["gp"] ** 2
+            / ((d["gp"] - tau * d["gpt"]) ** 2 / (tau * tau * d["gtt"]) - d["gpp"])
+        )
     else:
         pi = p_mpa
         tau = 540.0 / t
@@ -348,6 +356,19 @@ def _properties(p_mpa: float, t: float) -> dict[str, float]:
             "gpt": dr["gpt"],
             "gtt": d0["gtt"] + dr["gtt"],
         }
+        # Region 2's is the ideal part's `1` plus the residual's own derivatives, so it reads
+        # the *residual* `gp`, `gpp` and `gpt` where every property above reads their sum.
+        w = math.sqrt(
+            1000.0
+            * R
+            * t
+            * (1.0 + 2.0 * pi * dr["gp"] + pi * pi * dr["gp"] ** 2)
+            / (
+                (1.0 - pi * pi * dr["gpp"])
+                + (1.0 + pi * dr["gp"] - tau * pi * dr["gpt"]) ** 2
+                / (tau * tau * d["gtt"])
+            )
+        )
 
     z = pi * d["gp"]
     h = R * t * tau * d["gt"]
@@ -357,7 +378,7 @@ def _properties(p_mpa: float, t: float) -> dict[str, float]:
     g = R * t * d["g"]
     u = h - R * t * z
 
-    return {"z": z, "u": u, "h": h, "s": s, "cv": cv, "cp": cp, "g": g}
+    return {"z": z, "u": u, "h": h, "s": s, "cv": cv, "cp": cp, "g": g, "w": w}
 
 
 def water_phase(T: Q, P: Q) -> WaterPhaseResult:
@@ -392,5 +413,8 @@ def water_phase(T: Q, P: Q) -> WaterPhaseResult:
         cv=from_si(props["cv"] * molar, "J/(mol*K)"),
         cp=from_si(props["cp"] * molar, "J/(mol*K)"),
         g=from_si(props["g"] * molar, "J/mol"),
+        # The speed of sound is already intensive, so the factor above does not apply to it:
+        # it is the same number in `m/s` that IF97's `w_pt` returns.
+        w=from_si(props["w"], "m/s"),
         warnings=tuple(warnings),
     )

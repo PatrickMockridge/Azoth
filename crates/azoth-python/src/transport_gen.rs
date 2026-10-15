@@ -3589,6 +3589,45 @@ impl From<&azoth_eos::results::IapwsHenryLawResult> for PyIapwsHenryLawResult {
         }
     }
 }
+/// Result of `eos.iapws_saturation_pressure`, transported.
+#[pyclass(
+    frozen,
+    skip_from_py_object,
+    module = "azoth._core",
+    name = "IapwsSaturationPressureResult"
+)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct PyIapwsSaturationPressureResult {
+    /// The saturation pressure: the pressure at which liquid water and its vapour are in equilibrium at `T`. 101325 Pa near 373.15 K.
+    #[pyo3(get)]
+    pub p_sat: PyQty,
+    /// Caveats, deduplicated.
+    #[pyo3(get)]
+    pub warnings: Vec<PyWarning>,
+}
+
+#[pymethods]
+impl PyIapwsSaturationPressureResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "IapwsSaturationPressureResult(p_sat={:?}, {} warning(s))",
+            self.p_sat,
+            self.warnings.len()
+        )
+    }
+}
+
+impl From<&azoth_eos::results::IapwsSaturationPressureResult> for PyIapwsSaturationPressureResult {
+    fn from(r: &azoth_eos::results::IapwsSaturationPressureResult) -> Self {
+        Self {
+            p_sat: PyQty {
+                magnitude_si: r.p_sat.value,
+                unit: "Pa".to_string(),
+            },
+            warnings: transport(&r.warnings),
+        }
+    }
+}
 /// Result of `eos.ideal_gas_cp`, transported.
 #[pyclass(
     frozen,
@@ -8972,6 +9011,9 @@ pub struct PyWaterPhaseResult {
     /// the Gibbs energy, `h - T s`
     #[pyo3(get)]
     pub g: PyQty,
+    /// the speed of sound. **The one output that does not scale with the molar mass**: `h`, `s` and `g` are molar and this is intensive, so it crosses the mass-to-molar conversion unchanged.
+    #[pyo3(get)]
+    pub w: PyQty,
     /// Caveats, deduplicated.
     #[pyo3(get)]
     pub warnings: Vec<PyWarning>,
@@ -8981,7 +9023,7 @@ pub struct PyWaterPhaseResult {
 impl PyWaterPhaseResult {
     fn __repr__(&self) -> String {
         format!(
-            "WaterPhaseResult(z_factor={:?}, u={:?}, h={:?}, s={:?}, cv={:?}, cp={:?}, g={:?}, {} warning(s))",
+            "WaterPhaseResult(z_factor={:?}, u={:?}, h={:?}, s={:?}, cv={:?}, cp={:?}, g={:?}, w={:?}, {} warning(s))",
             self.z_factor,
             self.u,
             self.h,
@@ -8989,6 +9031,7 @@ impl PyWaterPhaseResult {
             self.cv,
             self.cp,
             self.g,
+            self.w,
             self.warnings.len()
         )
     }
@@ -9021,6 +9064,10 @@ impl From<&azoth_eos::results::WaterPhaseResult> for PyWaterPhaseResult {
             g: PyQty {
                 magnitude_si: r.g.value,
                 unit: "J/mol".to_string(),
+            },
+            w: PyQty {
+                magnitude_si: r.w.value,
+                unit: "m/s".to_string(),
             },
             warnings: transport(&r.warnings),
         }

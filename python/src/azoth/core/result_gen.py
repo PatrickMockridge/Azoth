@@ -1411,6 +1411,19 @@ class IapwsHenryLawResult(_HasWarnings):
 
 
 @dataclass(frozen=True, slots=True, eq=False)
+class IapwsSaturationPressureResult(_HasWarnings):
+    """Result of ``eos.iapws_saturation_pressure``."""
+
+    CALC_ID: ClassVar[str] = "eos.iapws_saturation_pressure"
+
+    #: The saturation pressure: the pressure at which liquid water and its vapour are in equilibrium at `T`. 101325 Pa near 373.15 K.
+    p_sat: Q
+
+    #: Caveats.
+    warnings: tuple[Warning, ...]
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class IdealGasCpResult(_HasWarnings):
     """Result of ``eos.ideal_gas_cp``."""
 
@@ -3597,6 +3610,9 @@ class WaterPhaseResult(_HasWarnings):
 
     #: the Gibbs energy, `h - T s`
     g: Q
+
+    #: the speed of sound. **The one output that does not scale with the molar mass**: `h`, `s` and `g` are molar and this is intensive, so it crosses the mass-to-molar conversion unchanged.
+    w: Q
 
     #: Caveats.
     warnings: tuple[Warning, ...]

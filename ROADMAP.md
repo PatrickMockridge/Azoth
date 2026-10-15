@@ -126,7 +126,27 @@ solubility, electrolytes, salts and scale, freezing, and the reactions an aqueou
 reaches equilibrium through.
 
 - **The water EOS.** `ComponentWater`, `PhaseWaterIAPWS`, `SystemWaterIF97`,
-  `thermo/util/steam/Iapws_if97`.
+  `thermo/util/steam/Iapws_if97` - **and `Iapws_if97` is the tree's already.** Regions 1, 2 and
+  4 are `crates/azoth-eos/src/iapws_if97.rs`, with the dimensionless Gibbs functions and their
+  derivatives, and `eos.water_phase` is that module as a model. **This is the fourth bullet in
+  this register that names as owed what the tree already carries** - after the brine operations,
+  the wax bullet's `WATcalc`, and the water-dew-point seeds. What is left of it is small and
+  named here rather than left to be re-derived: `w`, the speed of sound, is computed and checked
+  against NeqSim in the kernel's own test and is **not** an output of the model; and the Region 4
+  saturation curve, which the module carries in both directions, has no id of its own - it is the
+  boundary everything else in IF97 is selected by, and it is neither `eos.pure_saturation` (a
+  cubic's roots crossing) nor `eos.antoine_vapor_pressure`.
+  **The classes the bullet does name are the plumbing, and the same finding is in every bullet of
+  this tier.** `ComponentWater`'s `calca`, `calcb` and `alpha` are zero and its `fugcoef` is
+  `1.0`; `PhaseWaterIAPWS` reads IF97 and types itself by specific volume, `v_spec < 0.01` being
+  `AQUEOUS` and anything above it `GAS`; `SystemWaterIF97` is a pure-water fluid you can flash,
+  and it refuses any component but water. `SystemPitzer`, `SystemKentEisenberg`,
+  `SystemDesmukhMather`, `SystemFurstElectrolyteEos` and `SystemSoreideWhitson` are that shape
+  again in the bullets below, each owed while the phase it wraps is an id.
+  **So the unported thing is one question and not five**: a phase model that is not a cubic.
+  `Mixture` selects its phase among the cubics (`cubic.rs`) and every flash reaches the phase
+  through it, so a system-level phase model is an addition to that boundary rather than a new
+  calculation. Owed, with this reason.
 - **Water content and dehydration.** Two of the four classes in this bullet are ids now.
   `WaterDewPointTemperatureFlash` is `eos.water_dew_point_temperature`: it **prescribes** its
   incipient phase - `1e-30` on every component but one `water`-or-`MEG` at `1.0` - and walks the

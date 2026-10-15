@@ -77,6 +77,7 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::transport_gen::PyHydrateInhibitorWtResult>()?;
     m.add_class::<crate::transport_gen::PyHydrogenPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyIapwsHenryLawResult>()?;
+    m.add_class::<crate::transport_gen::PyIapwsSaturationPressureResult>()?;
     m.add_class::<crate::transport_gen::PyIdealGasCpResult>()?;
     m.add_class::<crate::transport_gen::PyKentEisenbergPhaseResult>()?;
     m.add_class::<crate::transport_gen::PyLiquidConductivityPolynomResult>()?;
@@ -371,6 +372,10 @@ pub(crate) fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(crate::eos::hydrate_inhibitor_wt, m)?)?;
     m.add_function(wrap_pyfunction!(crate::eos::hydrogen_phase, m)?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::iapws_henry_law, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        crate::wrappers_gen::iapws_saturation_pressure,
+        m
+    )?)?;
     m.add_function(wrap_pyfunction!(crate::wrappers_gen::ideal_gas_cp, m)?)?;
     m.add_function(wrap_pyfunction!(
         crate::wrappers_gen::kent_eisenberg_phase,

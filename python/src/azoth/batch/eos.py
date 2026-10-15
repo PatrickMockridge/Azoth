@@ -30,6 +30,7 @@ __all__ = [
     "CostaldMolarVolumeBatch",
     "FullerSchettlerGiddingsDiffusivityBatch",
     "HeatOfVaporizationBatch",
+    "IapwsSaturationPressureBatch",
     "IdealGasCpBatch",
     "LiquidHeatCapacityBatch",
     "Matcop5PrumrAlphaBatch",
@@ -80,6 +81,7 @@ __all__ = [
     "costald_molar_volume",
     "fuller_schettler_giddings_diffusivity",
     "heat_of_vaporization",
+    "iapws_saturation_pressure",
     "ideal_gas_cp",
     "liquid_heat_capacity",
     "matcop5_prumr_alpha",
@@ -175,6 +177,7 @@ _UMRPR_ALPHA = "eos.umrpr_alpha"
 _WILKE_CHANG_DIFFUSIVITY = "eos.wilke_chang_diffusivity"
 _CHAPMAN_ENSKOG_DIFFUSIVITY = "eos.chapman_enskog_diffusivity"
 _FULLER_SCHETTLER_GIDDINGS_DIFFUSIVITY = "eos.fuller_schettler_giddings_diffusivity"
+_IAPWS_SATURATION_PRESSURE = "eos.iapws_saturation_pressure"
 
 
 @dataclass(frozen=True, slots=True, eq=False, repr=False)
@@ -209,6 +212,41 @@ def pr_kappa(*, omega: Sequence[float]) -> PrKappaBatch:
         _PR_KAPPA,
         {"omega": sequence(omega, "omega")},
         _build,
+    )
+    return result
+
+
+@dataclass(frozen=True, slots=True, eq=False, repr=False)
+class IapwsSaturationPressureBatch(BatchResult):
+    """Result of a batch :func:`azoth.eos.iapws_saturation_pressure`."""
+
+    #: The saturation pressure of water per element.
+    p_sat: array[float]
+
+
+def _build_saturation(
+    columns: dict[str, object],
+    units: dict[str, str],
+    warnings: tuple[tuple[Warning, ...], ...],
+) -> IapwsSaturationPressureBatch:
+    return IapwsSaturationPressureBatch(
+        warnings=warnings,
+        units=units,
+        p_sat=columns["p_sat"],  # type: ignore[arg-type]
+    )
+
+
+def iapws_saturation_pressure(*, T: Sequence[float]) -> IapwsSaturationPressureBatch:
+    """The saturation pressure of water, over an array of temperatures.
+
+    An element outside the Region 4 curve's ``[273.15, 647.096)`` K **raises**, because the
+    spec declares both ends ``error`` - there the question is a different one rather than a
+    bad number. See :func:`azoth.eos.iapws_saturation_pressure` for the calculation itself.
+    """
+    result: IapwsSaturationPressureBatch = run(
+        _IAPWS_SATURATION_PRESSURE,
+        {"T": sequence(T, "T")},
+        _build_saturation,
     )
     return result
 

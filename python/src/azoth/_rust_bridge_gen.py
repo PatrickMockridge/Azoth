@@ -86,6 +86,7 @@ from azoth.core.result import (
     HydrateInhibitorWtResult,
     HydrateStructure,
     IapwsHenryLawResult,
+    IapwsSaturationPressureResult,
     IdealGasCpResult,
     Iso6976Result,
     KComponent,
@@ -339,6 +340,7 @@ __all__ = [
     "hydrate_inhibitor_concentration",
     "hydrate_inhibitor_wt",
     "iapws_henry_law",
+    "iapws_saturation_pressure",
     "ideal_gas_cp",
     "iso6976",
     "kent_eisenberg_phase",
@@ -1662,6 +1664,18 @@ def iapws_henry_law(gas: str, T: Q) -> IapwsHenryLawResult:
         d_ln_henry_d_t=from_si(result.d_ln_henry_d_t.magnitude_si, result.d_ln_henry_d_t.unit),
         status=_HenryStatus(result.status),
         rms_log_residual=result.rms_log_residual,
+        warnings=_warnings(result.warnings),
+    )
+
+
+def iapws_saturation_pressure(T: Q) -> IapwsSaturationPressureResult:
+    """``eos.iapws_saturation_pressure``, computed in Rust."""
+    spec = _spec_for("eos.iapws_saturation_pressure")
+    result = _core.iapws_saturation_pressure(
+        input_to_si(spec, "T", T),
+    )
+    return IapwsSaturationPressureResult(
+        p_sat=from_si(result.p_sat.magnitude_si, result.p_sat.unit),
         warnings=_warnings(result.warnings),
     )
 
@@ -3666,6 +3680,7 @@ def water_phase(T: Q, P: Q) -> WaterPhaseResult:
         cv=from_si(result.cv.magnitude_si, result.cv.unit),
         cp=from_si(result.cp.magnitude_si, result.cp.unit),
         g=from_si(result.g.magnitude_si, result.g.unit),
+        w=from_si(result.w.magnitude_si, result.w.unit),
         warnings=_warnings(result.warnings),
     )
 

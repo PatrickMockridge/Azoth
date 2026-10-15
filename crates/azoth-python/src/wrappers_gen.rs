@@ -1096,6 +1096,22 @@ pub fn iapws_henry_law(
         .map_err(|e| to_pyerr(py, e))
 }
 
+/// Saturation pressure of water, IAPWS-IF97 Region 4.
+///
+/// All arguments are SI magnitudes. See the module documentation for why.
+#[pyfunction]
+#[pyo3(signature = (T))]
+#[pyo3(text_signature = "(T)")]
+#[allow(non_snake_case)] // symbols from the published equation
+pub fn iapws_saturation_pressure(
+    py: Python<'_>,
+    T: f64,
+) -> PyResult<crate::transport_gen::PyIapwsSaturationPressureResult> {
+    azoth_eos::iapws_saturation_pressure::iapws_saturation_pressure(kelvins(T))
+        .map(|r| crate::transport_gen::PyIapwsSaturationPressureResult::from(&r))
+        .map_err(|e| to_pyerr(py, e))
+}
+
 /// Ideal-gas heat capacity from a polynomial.
 ///
 /// All arguments are SI magnitudes. See the module documentation for why.

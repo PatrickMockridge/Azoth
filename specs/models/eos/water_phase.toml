@@ -4,7 +4,7 @@ kind = "direct"
 assumptions = [
     "the fluid is pure water; the equation of state is the IAPWS-IF97 industrial formulation of NeqSim's `thermo.util.steam.Iapws_if97`, a Gibbs-energy form rather than the single Helmholtz form of the other reference equations.",
     "the region is selected by the Region 4 saturation curve: subcooled liquid (Region 1) at or below `Tsat(p)` and superheated vapour (Region 2) above it; Regions 3 (near-critical) and 5 (high-temperature) are not implemented in NeqSim and are not here.",
-    "IF97 is mass-based: `R = 0.461526` kJ/(kg.K), pressure in MPa, and the properties specific; the model converts to the molar SI convention with the molar mass `M = 0.01801528` kg/mol.",
+    "IF97 is mass-based: `R = 0.461526` kJ/(kg.K), pressure in MPa, and the properties specific; the model converts to the molar SI convention with the molar mass `M = 0.01801528` kg/mol. The speed of sound is the exception, being already intensive.",
     "the isochoric heat capacity follows the exact identity `cv = cp + R (g_pi - tau g_pitau)^2 / g_pipi` in the reduced Gibbs variables, since NeqSim's class does not expose it.",
 ]
 references = [
@@ -44,6 +44,9 @@ description = "the isobaric heat capacity"
 [outputs.g]
 unit = "J/mol"
 description = "the Gibbs energy, `h - T s`"
+[outputs.w]
+unit = "m/s"
+description = "the speed of sound. **The one output that does not scale with the molar mass**: `h`, `s` and `g` are molar and this is intensive, so it crosses the mass-to-molar conversion unchanged."
 [[valid_range]]
 quantity = "T"
 min = 0

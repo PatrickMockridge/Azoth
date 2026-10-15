@@ -7,7 +7,7 @@
 
 use azoth_core::units::{
     DiffusionCoefficient, DynamicViscosity, MassDensity, MolarEnergy, MolarHeatCapacity,
-    MolarVolume, Pressure, SurfaceTension, ThermalConductivity, ThermodynamicTemperature,
+    MolarVolume, Pressure, SurfaceTension, ThermalConductivity, ThermodynamicTemperature, Velocity,
 };
 use azoth_core::{CalcResult, Warning};
 
@@ -179,6 +179,25 @@ impl CalcResult for Co2PhaseResult {
     }
 }
 
+/// Result of `eos.iapws_saturation_pressure`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IapwsSaturationPressureResult {
+    /// The pressure at which liquid water and its vapour are in equilibrium at the
+    /// temperature given, from the IAPWS-IF97 Region 4 equation.
+    pub p_sat: Pressure,
+    /// Caveats.
+    pub warnings: Vec<Warning>,
+}
+
+impl CalcResult for IapwsSaturationPressureResult {
+    const CALC_ID: &'static str = "eos.iapws_saturation_pressure";
+    const FIELDS: &'static [&'static str] = &["p_sat", "warnings"];
+
+    fn warnings(&self) -> &[Warning] {
+        &self.warnings
+    }
+}
+
 /// Result of `eos.water_phase`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WaterPhaseResult {
@@ -196,6 +215,9 @@ pub struct WaterPhaseResult {
     pub cp: MolarHeatCapacity,
     /// The Gibbs energy.
     pub g: MolarEnergy,
+    /// The speed of sound. **The one output that is not molar**: IF97 gives it in `m/s` and it
+    /// crosses the mass-to-molar conversion untouched.
+    pub w: Velocity,
     /// Caveats.
     pub warnings: Vec<Warning>,
 }
@@ -203,7 +225,7 @@ pub struct WaterPhaseResult {
 impl CalcResult for WaterPhaseResult {
     const CALC_ID: &'static str = "eos.water_phase";
     const FIELDS: &'static [&'static str] =
-        &["z_factor", "u", "h", "s", "cv", "cp", "g", "warnings"];
+        &["z_factor", "u", "h", "s", "cv", "cp", "g", "w", "warnings"];
 
     fn warnings(&self) -> &[Warning] {
         &self.warnings

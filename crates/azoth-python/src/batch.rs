@@ -456,6 +456,24 @@ pub fn batch_run(py: Python<'_>, calc_id: &str, inputs: Inputs) -> PyResult<PyBa
             push_values(&mut columns, "kappa", "dimensionless", kappa);
         }
 
+        "eos.iapws_saturation_pressure" => {
+            let t_values = take(&inputs, "T")?;
+            let mut p_sat = Vec::with_capacity(n);
+            for value in &t_values {
+                // The batch carries SI magnitudes, so the kelvin conversion the scalar
+                // boundary does is not repeated here - the column already is one. An element
+                // outside the Region 4 curve raises rather than being dropped: the spec
+                // declares both ends `error`, because there the question is a different one.
+                let r = element(
+                    py,
+                    eos::iapws_saturation_pressure(kelvins(*value)),
+                    &mut warnings,
+                )?;
+                p_sat.push(r.p_sat.value);
+            }
+            push_values(&mut columns, "p_sat", "Pa", p_sat);
+        }
+
         "eos.nitric_sulfuric_acid_vapor_pressure" => {
             let t_values = take(&inputs, "T")?;
             let mut p_water = Vec::with_capacity(n);

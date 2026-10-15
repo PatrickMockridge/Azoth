@@ -1,0 +1,85 @@
+id = "eos.iapws_saturation_pressure"
+name = "Saturation pressure of water, IAPWS-IF97 Region 4"
+equation = "p_sat = (2C / (-B + sqrt(B**2 - 4*A*C)))**4, with theta = T + n9/(T - n10), A = theta**2 + n1*theta + n2, B = n3*theta**2 + n4*theta + n5, C = n6*theta**2 + n7*theta + n8 and n1..n10 = [1167.0521452767, -724213.16703206, -17.073846940092, 12020.82470247, -3232555.0322333, 14.91510861353, -4823.2657361591, 405113.40542057, -0.23855557567849, 650.17534844798]"
+latex = '''p_\sigma = \left[ \frac{2C}{-B + \sqrt{B^2 - 4AC}} \right]^4, \quad \vartheta = T + \frac{n_9}{T - n_{10}}'''
+assumptions = [
+    "**this is the boundary everything else in IF97 is selected by.** `eos.water_phase` asks it whether a state is Region 1 or Region 2, and the ten coefficients are the IAPWS release's own - not a fit of this library's and not a rearrangement of `eos.antoine_vapor_pressure`'s row for water.",
+    "`eos.pure_saturation` is a *different* answer to the same question: it is the pressure where a Peng-Robinson fluid's two roots cross, which is a property of that cubic and not of water. A water dew point wants this one.",
+    "**the domain is the Region 4 curve's own, `[273.15, 647.096)` K**: below the triple point it is not liquid water and at the critical point the two phases meet. Both ends are `error` and neither is extrapolated to.",
+    "the equation is the **forward** direction only. `p4_T` and `T4_p` are separate fits in the IAPWS release and in NeqSim's class, not an inversion of one another, so `tsat_p` is owed as its own id rather than read out of this one.",
+    "the returned pressure is **pascals**, where NeqSim's method returns megapascals - the same `1e6` `eos.iapws_henry_law` applies to the class's bar. The equation above is stated in the release's own MPa.",
+]
+references = [
+    "IAPWS (2007). \"Revised Release on the IAPWS Industrial Formulation 1997 for the Thermodynamic Properties of Water and Steam.\" The International Association for the Properties of Water and Steam, Lucerne. Table 34 is the Region 4 saturation equation.",
+    "Wagner, W.; Kretzschmar, H.-J. (2008). \"International Steam Tables: Properties of Water and Steam Based on the Industrial Formulation IAPWS-IF97.\" Springer, 2nd edition.",
+    "NeqSim - https://github.com/equinor/neqsim - Apache-2.0. `thermo/util/steam/Iapws_if97.p4_T`, ported verbatim.",
+]
+[source]
+standard = "IAPWS (2007), Region 4"
+edition = "The revised release's saturation equation, as NeqSim master implements it in `Iapws_if97.p4_T`."
+[inputs]
+[inputs.T]
+unit = "K"
+description = "Absolute temperature, inside the Region 4 domain: `[273.15, 647.096)` K.\n"
+[outputs]
+[outputs.p_sat]
+unit = "Pa"
+description = "The saturation pressure: the pressure at which liquid water and its vapour are in equilibrium at `T`. 101325 Pa near 373.15 K.\n"
+[[valid_range]]
+quantity = "T"
+min = 273.15
+min_inclusive = true
+max = 647.096
+max_inclusive = false
+severity = "error"
+rationale = "The curve is defined between the triple point and the critical point. Below the first there is no liquid water to saturate and at the second the two phases become one, so a caller asking outside either end is asking a different question.\n"
+[worked_example]
+source = "the IAPWS release's equation at the normal boiling point, and `validation/neqsim/captures/iapws_if97_probe.tsv`'s `psat_t(373.15)`"
+derivation = "T = 373.15 K. The release's ten coefficients are `n1..n10` above, and `theta` is the only place the temperature enters:\n\n  theta = T + n9/(T - n10)\n        = 373.15 + (-0.23855557567849)/(373.15 - 650.17534844798)\n        = 373.1508611326617\n\n  A = theta**2 + n1*theta + n2                             = -149485.0888712922\n  B = n3*theta**2 + n4*theta + n5                          = -1124363.1142916325\n  C = n6*theta**2 + n7*theta + n8                          = 682110.7104408161\n\n  B**2 - 4*A*C                                             = 1.6429627...e12\n  sqrt(that)                                               = 1281780.9...\n  -B + that                                                = 2402444.0...\n  2C / that                                                = 0.56780202...\n  **(4)                                                    = 0.10141797792130998  [MPa]\n\nwhich is 101417.977921310 Pa, the `psat_t(373.15)` row of `captures/iapws_if97_probe.tsv`, and 0.05 kPa below the 101.325 kPa a reader would expect at 373.15 K - because the boiling point of water at one atmosphere is 373.1243 K, not 373.15.\n"
+tolerance = 1e-12
+[worked_example.inputs]
+T = 373.15
+[worked_example.expected]
+p_sat = 101417.977921310
+[implementations]
+python = "azoth.eos.iapws_saturation_pressure"
+rust = "azoth_eos::iapws_saturation_pressure"
+[[tests]]
+id = "the_normal_boiling_point"
+type = "worked_example"
+status = "active"
+[[tests]]
+id = "the_triple_point_temperature"
+type = "reference"
+status = "active"
+source = "The bottom of the curve's domain, where the saturation pressure is the triple-point pressure by definition: 611.657 Pa is the IAPWS value and `n8`'s fit reproduces it to `1e-5` Pa. From the same capture's `psat_t(273.16)` = `0.000611657000010665` MPa.\n"
+tolerance = 1e-12
+[tests.inputs]
+T = 273.16
+[tests.expected]
+p_sat = 611.657000010665
+[[tests]]
+id = "at_the_room_temperature_the_pressure_is_negligible"
+type = "reference"
+status = "active"
+source = "A second temperature well away from the first, so an error in `theta` that cancels at 373 K cannot pass both. From the same capture's `psat_t(300)` = `0.00353658941301301` MPa.\n"
+tolerance = 1e-12
+[tests.inputs]
+T = 300.0
+[tests.expected]
+p_sat = 3536.58941301301
+[[tests]]
+id = "up_the_curve_to_500_k"
+type = "reference"
+status = "active"
+source = "The same equation near the top of its range, where `A` has changed sign - the only test here where it is positive, which is what makes the root selection `-B + sqrt(...)` rather than the other one observable. From the same capture's `psat_t(500)` = `2.63889775627322` MPa.\n"
+tolerance = 1e-12
+[tests.inputs]
+T = 500.0
+[tests.expected]
+p_sat = 2638897.75627322
+[[tests]]
+id = "round_trip_units"
+type = "property"
+property = "unit_round_trip"
+status = "active"

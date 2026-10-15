@@ -1,4 +1,9 @@
 //! The IAPWS-IF97 (water) steam formulation, checked against NeqSim.
+//!
+//! **The oracle is `validation/neqsim/captures/iapws_if97_probe.tsv`**, written by
+//! `validation/neqsim/IapwsIf97Probe.java` against the pinned jar. It was NeqSim's own shipped
+//! `Iapws_if97Test` literals copied by hand until 2026-10-15, which an earlier reader could not
+//! re-run and so could not say whether a pin move had changed.
 
 // The oracle values are NeqSim's ground truth, so their full digits are the point, and
 // the per-state tuple is clearer than a factored type.
@@ -15,12 +20,13 @@ fn assert_close(actual: f64, expected: f64, tol: f64) {
     );
 }
 
-/// The specific properties reproduce NeqSim's `Iapws_if97` for two liquid and two vapour
+/// The specific properties reproduce NeqSim's `Iapws_if97` for three liquid and three vapour
 /// states. NeqSim exposes no `cv`, so it is checked separately below.
 #[test]
 fn properties_reproduce_neqsim() {
-    // (p in MPa, T in K, v, h, s, cp, w).
-    let cases: [(f64, f64, f64, f64, f64, f64, f64); 4] = [
+    // (p in MPa, T in K, v, h, s, cp, w), from `captures/iapws_if97_probe.tsv`. The last row is
+    // the state NeqSim's own shipped test states, kept so a reader can tie this to `h = 3479.00`.
+    let cases: [(f64, f64, f64, f64, f64, f64, f64); 6] = [
         (
             1.0,
             300.0,
@@ -56,6 +62,24 @@ fn properties_reproduce_neqsim() {
             5.775_376_080_918_124,
             5.140_697_425_375_575,
             5.033_474_443_380_647e2,
+        ),
+        (
+            3.0,
+            500.0,
+            1.202_418_003_378_336e-3,
+            9.755_422_390_972_245e2,
+            2.580_419_120_051_806,
+            4.655_806_822_111_205,
+            1.240_713_373_101_727e3,
+        ),
+        (
+            1.0,
+            773.15,
+            3.541_102_656_247_171e-1,
+            3.479_003_674_758_910e3,
+            7.763_965_038_557_445,
+            2.168_203_745_568_266,
+            6.723_448_068_553_923e2,
         ),
     ];
     for (p, t, v, h, s, cp, w) in cases {

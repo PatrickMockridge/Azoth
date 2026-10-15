@@ -10,7 +10,7 @@
 //! is chosen directly rather than by a root of `P(rho)`.
 
 use azoth_core::units::{
-    Pressure, ThermodynamicTemperature, joules_per_mole, joules_per_mole_kelvin,
+    Pressure, ThermodynamicTemperature, joules_per_mole, joules_per_mole_kelvin, meters_per_second,
 };
 use azoth_core::{Result, apply_checks};
 
@@ -53,6 +53,9 @@ pub fn water_phase(t: ThermodynamicTemperature, p: Pressure) -> Result<WaterPhas
         cv: joules_per_mole_kelvin(props.cv * molar),
         cp: joules_per_mole_kelvin(props.cp * molar),
         g: joules_per_mole(props.g * molar),
+        // The speed of sound is already intensive, so the factor above does not apply to it:
+        // it is the same number in `m/s` that IF97's `w_pt` returns.
+        w: meters_per_second(props.w),
         warnings,
     })
 }
